@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -50,6 +51,10 @@ func Inspect() {
 		return multizone.UniZone1
 	}
 
+	testServerDPPName := hash.HashedName(meshName, "test-server", "kuma-4")
+	ingressName := hash.HashedName("", "ingress", "kuma-4")
+	egressName := hash.HashedName("", "egress", "kuma-4")
+
 	Context("Dataplane", func() {
 		DescribeTable("should execute envoy inspection",
 			func(given testCase) {
@@ -62,17 +67,17 @@ func Inspect() {
 			},
 			Entry("of config dump for a dataplane using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"dataplane", "kuma-4.test-server", "--type", "config-dump", "--mesh", meshName},
+				args:        []string{"dataplane", testServerDPPName, "--type", "config-dump", "--mesh", meshName},
 				expectedOut: `"dataplane.proxyType": "dataplane"`,
 			}),
 			Entry("of stats for a dataplane using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"dataplane", "kuma-4.test-server", "--type", "stats", "--mesh", meshName},
+				args:        []string{"dataplane", testServerDPPName, "--type", "stats", "--mesh", meshName},
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a dataplane using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"dataplane", "kuma-4.test-server", "--type", "clusters", "--mesh", meshName},
+				args:        []string{"dataplane", testServerDPPName, "--type", "clusters", "--mesh", meshName},
 				expectedOut: `kuma:envoy:admin::`,
 			}),
 			Entry("of config dump for a dataplane using Zone CP", testCase{
@@ -92,17 +97,17 @@ func Inspect() {
 			}),
 			Entry("of config dump for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "config-dump"},
+				args:        []string{"zoneingress", ingressName, "--type", "config-dump"},
 				expectedOut: `"dataplane.proxyType": "ingress"`,
 			}),
 			Entry("of stats for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "stats"},
+				args:        []string{"zoneingress", ingressName, "--type", "stats"},
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a zoneingress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneingress", "kuma-4.ingress", "--type", "clusters"},
+				args:        []string{"zoneingress", ingressName, "--type", "clusters"},
 				expectedOut: `kuma:envoy:admin::`,
 			}),
 			Entry("of config dump for a zoneingress using Zone CP", testCase{
@@ -122,17 +127,17 @@ func Inspect() {
 			}),
 			Entry("of config dump for a zoneegress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", "kuma-4.egress", "--type", "config-dump"},
+				args:        []string{"zoneegress", egressName, "--type", "config-dump"},
 				expectedOut: `"dataplane.proxyType": "egress"`,
 			}),
 			Entry("of stats for a zoneegress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", "kuma-4.egress", "--type", "stats"},
+				args:        []string{"zoneegress", egressName, "--type", "stats"},
 				expectedOut: `server.live: 1`,
 			}),
 			Entry("of clusters for a zoneegress using Global CP", testCase{
 				cluster:     GlobalCluster,
-				args:        []string{"zoneegress", "kuma-4.egress", "--type", "clusters"},
+				args:        []string{"zoneegress", egressName, "--type", "clusters"},
 				expectedOut: `kuma:envoy:admin::`,
 			}),
 			Entry("of config dump for a zoneegress using Zone CP", testCase{
@@ -166,7 +171,7 @@ func Inspect() {
 
 				g.Expect(result.Items).To(HaveLen(1))
 				g.Expect(result.Total).To(Equal(1))
-				g.Expect(result.Items[0].Name).To(HavePrefix("kuma-4.test-server"))
+				g.Expect(result.Items[0].Name).To(HavePrefix(testServerDPPName))
 			}, "30s", "1s").Should(Succeed())
 		})
 
@@ -187,8 +192,7 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, meshName))(multizone.Global)).To(Succeed())
 			Eventually(func(g Gomega) {
-				clientDp := "kuma-4.test-server"
-				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, clientDp))
+				r, err := http.Get(multizone.Global.GetKuma().GetAPIServerAddress() + fmt.Sprintf("/meshes/%s/dataplanes/%s/_rules", meshName, testServerDPPName))
 				g.Expect(err).ToNot(HaveOccurred())
 				defer r.Body.Close()
 				g.Expect(r).To(HaveHTTPStatus(200))
@@ -198,7 +202,7 @@ spec:
 				result := api_types.InspectRulesResponse{}
 				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
 
-				g.Expect(result.Resource.Name).To(Equal(clientDp))
+				g.Expect(result.Resource.Name).To(Equal(testServerDPPName))
 				g.Expect(result.Rules).ToNot(BeEmpty())
 				for _, rule := range result.Rules {
 					if rule.Type == "MeshTimeout" {

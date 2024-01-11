@@ -1,0 +1,30 @@
+resources:
+- name: outbound:127.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.kafka_broker
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.kafka_broker.v3.KafkaBroker
+          statPrefix: backend
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          statPrefix: backend
+          weightedClusters:
+            clusters:
+            - name: backend-bb38a94289f18fb9
+              weight: 60
+            - name: backend-c72efb5be46fae6b
+              weight: 40
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:127.0.0.1:10001
+    trafficDirection: OUTBOUND

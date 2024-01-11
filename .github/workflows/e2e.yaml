@@ -39,7 +39,7 @@ jobs:
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=${{ env.E2E_PARAM_ARCH }}' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
@@ -77,37 +77,19 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
-      - name: "GitHub Actions: download build artifacts with retry"
-        if: steps.eval-params.outputs.run-type == 'github'
-        uses: Wandalen/wretry.action@master
-        with:
-          action: actions/download-artifact@v4
-          with: |
-            path: build
-            name: build-output
-          attempt_limit: 5
-          attempt_delay: 1000
-      - name: "GitHub Actions: extract artifacts"
+      - name: "Github Actions: build"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
-          echo "Extracting artifacts..."
-          ARTIFACT=$(find build/distributions/out/*-linux-${{ env.E2E_PARAM_ARCH }}.tar.gz)
-          if [[ "$ARTIFACT" == "" ]]; then
-            echo "Could not find built artifact for linux(${{ env.E2E_PARAM_ARCH }})."
-            exit 1
-          fi
-          cat $ARTIFACT.sha256 | sha256sum --check
-
-          mkdir build/distributions/artifacts
-          tar -xzf $ARTIFACT -C build/distributions/artifacts
-
-          SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
-          DEST_DIR=build/artifacts-linux-${{ env.E2E_PARAM_ARCH }}
-          for BIN in $(ls $SRC_DIR); do
-            mkdir -p $DEST_DIR/$BIN
-            cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
-          done
+          make build
+      - name: "Github Actions: distributions"
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          make -j build/distributions
+      - name: "Github Actions: images"
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          make -j images
+          make -j docker/save
       - name: "GitHub Actions: setup helm"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
@@ -176,7 +158,7 @@ jobs:
             };
 
             if ( "${{ github.event_name }}" == "pull_request" ) {
-              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.id }}/merge';
+              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.number }}/merge';
             } else {
               circleCIBody["tag"] = '${{ github.sha }}'
             }
