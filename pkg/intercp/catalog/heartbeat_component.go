@@ -83,7 +83,7 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 }
 
 func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
-	heartbeatLog = heartbeatLog.WithValues(
+	heartbeatLog := heartbeatLog.WithValues(
 		"instanceId", h.request.InstanceId,
 		"ready", ready,
 	)
