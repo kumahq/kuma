@@ -179,13 +179,16 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	s.applicationsToScrapeMutex.Lock()
-	defer s.applicationsToScrapeMutex.Unlock()
+	var appsToScrape []ApplicationToScrape
+	appsToScrape = append(appsToScrape, s.applicationsToScrape...)
+	s.applicationsToScrapeMutex.Unlock()
+
 	ctx := req.Context()
-	out := make(chan []byte, len(s.applicationsToScrape))
-	contentTypes := make(chan expfmt.Format, len(s.applicationsToScrape))
+	out := make(chan []byte, len(appsToScrape))
+	contentTypes := make(chan expfmt.Format, len(appsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
-	wg.Add(len(s.applicationsToScrape))
+	wg.Add(len(appsToScrape))
 	go func() {
 		wg.Wait()
 		close(out)
@@ -193,7 +196,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		close(done)
 	}()
 
-	for _, app := range s.applicationsToScrape {
+	for _, app := range appsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
 			content, contentType := s.getStats(ctx, req, app)

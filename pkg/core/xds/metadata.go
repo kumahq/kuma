@@ -29,7 +29,7 @@ const (
 	FieldVersion                    = "version"
 	FieldPrefixDependenciesVersion  = "version.dependencies"
 	FieldFeatures                   = "features"
-	WorkDir                         = "workDirPath"
+	FieldWorkdir                    = "workdir"
 	FieldAccessLogSocketPath        = "accessLogSocketPath"
 	FieldMetricsSocketPath          = "metricsSocketPath"
 	FieldMetricsCertPath            = "metricsCertPath"
@@ -194,7 +194,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
 	}
 
-	metadata.WorkDir = xdsMetadata.Fields[WorkDir].GetStringValue()
+	metadata.WorkDir = xdsMetadata.Fields[FieldWorkdir].GetStringValue()
 
 	if xdsMetadata.Fields[FieldMetricsCertPath] != nil {
 		metadata.MetricsCertPath = xdsMetadata.Fields[FieldMetricsCertPath].GetStringValue()

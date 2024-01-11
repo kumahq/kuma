@@ -252,6 +252,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					metricsServer,
 					kumaSidecarConfiguration.Networking.Address,
 					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 				),
 			)
 			components = append(components, metricsServer, meshMetricsConfigFetcher)

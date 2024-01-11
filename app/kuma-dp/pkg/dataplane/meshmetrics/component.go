@@ -20,32 +20,35 @@ import (
 )
 
 type ConfigFetcher struct {
-	httpClient     http.Client
-	socketPath     string
-	ticker         *time.Ticker
-	hijacker       *metrics.Hijacker
-	defaultAddress string
-	envoyAdminPort uint32
+	httpClient        http.Client
+	socketPath        string
+	ticker            *time.Ticker
+	hijacker          *metrics.Hijacker
+	defaultAddress    string
+	envoyAdminAddress string
+	envoyAdminPort    uint32
 }
 
 var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, address string, envoyAdminPort uint32) component.Component {
+func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, address string, envoyAdminPort uint32, envoyAdminAddress string) component.Component {
 	return &ConfigFetcher{
 		httpClient: http.Client{
+			Timeout: 5 * time.Second,
 			Transport: &http.Transport{
 				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 					return net.Dial("unix", socketPath)
 				},
 			},
 		},
-		socketPath:     socketPath,
-		ticker:         ticker,
-		hijacker:       hijacker,
-		defaultAddress: address,
-		envoyAdminPort: envoyAdminPort,
+		socketPath:        socketPath,
+		ticker:            ticker,
+		hijacker:          hijacker,
+		defaultAddress:    address,
+		envoyAdminAddress: envoyAdminAddress,
+		envoyAdminPort:    envoyAdminPort,
 	}
 }
 
@@ -80,6 +83,8 @@ func (cf *ConfigFetcher) NeedLeaderElection() bool {
 }
 
 func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
+	// since we use socket for communication "localhost" is ignored but this is needed for this
+	// http call to work
 	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
 	if err != nil {
 		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
@@ -122,7 +127,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 		Name:          "envoy",
 		Path:          "/stats",
-		Address:       "127.0.0.1",
+		Address:       cf.envoyAdminAddress,
 		Port:          cf.envoyAdminPort,
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,

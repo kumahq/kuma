@@ -18,8 +18,8 @@ func MetricsHijackerSocketName(tmpDir, name, mesh string) string {
 }
 
 // MeshMetricsDynamicConfigurationSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars
-func MeshMetricsDynamicConfigurationSocketName(tmpDir string) string {
-	return socketName(filepath.Join(tmpDir, "kuma-mesh-metric-config"))
+func MeshMetricsDynamicConfigurationSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-mesh-metric-config"))
 }
 
 func socketName(s string) string {
