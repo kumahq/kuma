@@ -24,7 +24,7 @@ func API() {
 		// Delete the default meshretry policy
 		Eventually(func() error {
 			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", meshName))
-		}).Should(Succeed())
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterEach(func() {

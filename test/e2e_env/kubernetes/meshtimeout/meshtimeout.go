@@ -32,10 +32,10 @@ func MeshTimeout() {
 		// Delete the default meshtimeout policy
 		Eventually(func() error {
 			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", mesh))
-		}).Should(Succeed())
+		}, "10s", "1s").Should(Succeed())
 		Eventually(func() error {
 			return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
-		}).Should(Succeed())
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterEach(func() {

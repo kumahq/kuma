@@ -32,7 +32,7 @@ func Inspect() {
 		// remove default
 		Eventually(func() error {
 			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", meshName))
-		}).Should(Succeed())
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterAll(func() {

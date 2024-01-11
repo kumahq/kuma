@@ -328,7 +328,7 @@ spec:
 				)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(status.ResponseCode).To(Equal(503))
+				g.Expect(status.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
