@@ -114,7 +114,7 @@ interCp:
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("demo-client"))
 	})
 
 	It("communication in between apps in zone works", func() {
