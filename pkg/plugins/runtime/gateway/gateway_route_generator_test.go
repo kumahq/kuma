@@ -1646,26 +1646,6 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`,
-		),
-		Entry("works with no Timeout policy",
-			"no-timeout.yaml", `
-type: MeshGatewayRoute
-mesh: default
-name: echo-service
-selectors:
-- match:
-    kuma.io/service: gateway-default
-conf:
-  http:
-    rules:
-    - matches:
-      - path:
-          match: EXACT
-          value: /
-      backends:
-      - destination:
-          kuma.io/service: echo-service
 `, WithoutResource{
 				Resource: meshtimeout_api.MeshTimeoutType,
 				Mesh:     "default",
