@@ -75,7 +75,6 @@ func CreateDefaultSigningKeyIfNotExist(
 	if _, ok := err.(*SigningKeyNotFound); !ok {
 		return err
 	}
-	logger.Info("trying to create signing key")
 	if err := signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
 		logger.V(1).Info("could not create signing key", "err", err)
 		return err
