@@ -82,13 +82,7 @@ jobs:
           sudo df -h
       - name: Run tests
         run: |
-          make test TEST_REPORTS=1
-      - name: Save test reports
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
-        with:
-          name: test-reports
-          path: build/reports
-          retention-days: 7
+          make test
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
