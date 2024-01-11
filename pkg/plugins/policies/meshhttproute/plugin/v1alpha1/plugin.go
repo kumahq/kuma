@@ -67,7 +67,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	}
 
 	ctx := context.TODO()
-	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, policies.ToRules.Rules); err != nil {
+	if err := ApplyToGateway(ctx, proxy, rs, xdsCtx, policies.GatewayRules); err != nil {
 		return err
 	}
 
@@ -111,31 +111,49 @@ func ApplyToGateway(
 	proxy *core_xds.Proxy,
 	resources *core_xds.ResourceSet,
 	xdsCtx xds_context.Context,
-	rawRules []ToRouteRule,
+	rawRules rules.GatewayRules,
 ) error {
-	if len(rawRules) == 0 {
+	var limits []plugin_gateway.RuntimeResoureLimitListener
+
+	if len(rawRules.ToRules) == 0 {
 		return nil
 	}
 
-	var keys []string
-	rulesByHostname := map[string][]ToRouteRule{}
-	for _, rule := range rawRules {
-		hostnames := rule.Hostnames
-		if len(rule.Hostnames) == 0 {
-			hostnames = []string{"*"}
-		}
-		for _, hostname := range hostnames {
-			accRule, ok := rulesByHostname[hostname]
-			if !ok {
-				keys = append(keys, hostname)
-			}
-			rulesByHostname[hostname] = append(accRule, rule)
-		}
-	}
-
-	var limits []plugin_gateway.RuntimeResoureLimitListener
-
 	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
+		address := proxy.Dataplane.Spec.GetNetworking().Address
+		port := info.Listener.Port
+		inboundListener := rules.InboundListener{
+			Address: address,
+			Port:    port,
+		}
+		rawRules, ok := rawRules.ToRules[inboundListener]
+		if !ok {
+			continue
+		}
+
+		var keys []string
+		rulesByHostname := map[string][]ToRouteRule{}
+		for _, rawRule := range rawRules {
+			conf := rawRule.Conf.(api.PolicyDefault)
+			rule := ToRouteRule{
+				Subset:    rawRule.Subset,
+				Rules:     conf.Rules,
+				Hostnames: conf.Hostnames,
+				Origin:    rawRule.Origin,
+			}
+			hostnames := rule.Hostnames
+			if len(rule.Hostnames) == 0 {
+				hostnames = []string{"*"}
+			}
+			for _, hostname := range hostnames {
+				accRule, ok := rulesByHostname[hostname]
+				if !ok {
+					keys = append(keys, hostname)
+				}
+				rulesByHostname[hostname] = append(accRule, rule)
+			}
+		}
+
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
 			listenerHostname := info.Host.Hostname
