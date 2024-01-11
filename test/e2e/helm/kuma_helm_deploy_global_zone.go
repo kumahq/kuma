@@ -176,16 +176,13 @@ interCp:
 			g.Expect(err).ToNot(HaveOccurred())
 			// Dataplane names are generated, so we check for a partial match.
 			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("demo-client")))
+			for _, dpName := range dataplanes {
+				if strings.Contains(dpName, "demo-client") {
+					_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dpName, "--type", "config-dump")
+					Expect(err).ToNot(HaveOccurred())
+				}
+			}
 		}, "30s", "250ms").Should(Succeed())
 
-		podName, err := PodNameOfApp(c2, "demo-client", TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-		dataplaneName := fmt.Sprintf("%s.%s.%s.%s", Kuma2, podName, TestNamespace, Config.KumaNamespace)
-
-		// when
-		_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--type", "config-dump")
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
 	})
 }
