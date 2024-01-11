@@ -157,6 +157,13 @@ Routes:
               pattern:
                 regex: .*
               substitution: /
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 15s
             weightedClusters:
               clusters:
@@ -172,6 +179,13 @@ Routes:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 1800s
             prefixRewrite: /
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             timeout: 15s
             weightedClusters:
               clusters:
