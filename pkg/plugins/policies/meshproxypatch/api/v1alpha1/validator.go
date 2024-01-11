@@ -36,6 +36,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.MeshGatewaysSubset,
 			common_api.MeshGateway,
 		},
 		GatewayListenerTagsAllowed: false,

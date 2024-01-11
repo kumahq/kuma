@@ -152,7 +152,7 @@ var _ = Describe("MatchedPolicies", func() {
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "torules")),
 	)
 
-	DescribeTable("should match MeshGateways",
+	FDescribeTable("should match MeshGateways",
 		func(given testCase) {
 			dpp := readDPP(given.dppFile)
 

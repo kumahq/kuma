@@ -1967,6 +1967,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -2007,6 +2008,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -2205,6 +2207,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -2576,6 +2579,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -2616,6 +2620,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -2959,6 +2964,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -3116,6 +3122,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -3156,6 +3163,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -3285,6 +3293,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -3348,6 +3357,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -3603,6 +3613,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -3666,6 +3677,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -3725,6 +3737,7 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
+                                      - MeshGatewaysSubset
                                       - MeshGateway
                                       - MeshService
                                       - MeshServiceSubset
@@ -3822,6 +3835,7 @@ components:
                                             enum:
                                               - Mesh
                                               - MeshSubset
+                                              - MeshGatewaysSubset
                                               - MeshGateway
                                               - MeshService
                                               - MeshServiceSubset
@@ -4140,6 +4154,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -4201,6 +4216,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -4706,6 +4722,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -4870,6 +4887,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -5348,6 +5366,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -5544,6 +5563,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -5584,6 +5604,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -5756,6 +5777,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -5819,6 +5841,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -6225,6 +6248,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -6288,6 +6312,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -6338,6 +6363,7 @@ components:
                                     enum:
                                       - Mesh
                                       - MeshSubset
+                                      - MeshGatewaysSubset
                                       - MeshGateway
                                       - MeshService
                                       - MeshServiceSubset
@@ -6387,6 +6413,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -6510,6 +6537,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -6550,6 +6578,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -6644,6 +6673,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -6875,6 +6905,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -6955,6 +6986,7 @@ components:
                         enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -6995,6 +7027,7 @@ components:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset

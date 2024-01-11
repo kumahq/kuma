@@ -141,6 +141,20 @@ func dppSelectedByPolicy(
 			}
 		}
 		return result, false, nil
+	case common_api.MeshGatewaysSubset:
+		if gateway == nil || !dpp.Spec.IsBuiltinGateway() {
+			return nil, false, nil
+		}
+		var result []core_rules.InboundListener
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			if mesh_proto.TagSelector(ref.Tags).Matches(listener.GetTags()) {
+				result = append(result, core_rules.InboundListener{
+					Address: dpp.Spec.GetNetworking().GetAddress(),
+					Port:    listener.Port,
+				})
+			}
+		}
+		return result, false, nil
 	case common_api.MeshHTTPRoute:
 		mhr := resolveMeshHTTPRouteRef(meta, ref.Name, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if mhr == nil {

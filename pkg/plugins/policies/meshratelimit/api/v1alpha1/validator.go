@@ -21,6 +21,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	supportedKinds := []common_api.TargetRefKind{
 		common_api.Mesh,
 		common_api.MeshSubset,
+		common_api.MeshGatewaysSubset,
 		common_api.MeshGateway,
 		common_api.MeshService,
 		common_api.MeshServiceSubset,

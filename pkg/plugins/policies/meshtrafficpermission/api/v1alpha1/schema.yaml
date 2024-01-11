@@ -38,6 +38,7 @@ properties:
                   enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -67,6 +68,7 @@ properties:
             enum:
               - Mesh
               - MeshSubset
+              - MeshGatewaysSubset
               - MeshGateway
               - MeshService
               - MeshServiceSubset

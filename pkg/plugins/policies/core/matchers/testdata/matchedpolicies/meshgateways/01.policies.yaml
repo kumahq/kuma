@@ -68,6 +68,21 @@ spec:
 ---
 type: MeshAccessLog
 mesh: mesh-1
+name: gateway-subset
+spec:
+ targetRef:
+  kind: MeshGatewaysSubset
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /gateway-subset
+---
+type: MeshAccessLog
+mesh: mesh-1
 name: nonmatchinggatewaylistener
 spec:
  targetRef:

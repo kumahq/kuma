@@ -482,6 +482,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset

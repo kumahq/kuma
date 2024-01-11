@@ -308,6 +308,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
@@ -343,6 +344,7 @@ spec:
                     enum:
                     - Mesh
                     - MeshSubset
+                    - MeshGatewaysSubset
                     - MeshGateway
                     - MeshService
                     - MeshServiceSubset
@@ -628,6 +630,7 @@ spec:
                           enum:
                           - Mesh
                           - MeshSubset
+                          - MeshGatewaysSubset
                           - MeshGateway
                           - MeshService
                           - MeshServiceSubset
