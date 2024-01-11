@@ -3,7 +3,6 @@ package meshcircuitbreaker
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -31,33 +30,16 @@ func MeshCircuitBreaker() {
 
 		// Delete the default meshretry policy
 		Eventually(func() error {
-			_, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
-				 "delete", "meshretry", fmt.Sprintf("mesh-retry-all-%s", mesh),
-			)
-			if err != nil {
-				return err
-			}
-			return nil
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
 		}).Should(Succeed())
 
-		// Delete the default meshcricuitbreaker policy
 		Eventually(func() error {
-			_, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
-				 "delete", "meshcircuitbreaker", fmt.Sprintf("mesh-circuit-breaker-all-%s", mesh),
-			)
-			if err != nil {
-				return err
-			}
-			return nil
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-circuit-breaker-all-%s", mesh))
 		}).Should(Succeed())
 	})
 
-	BeforeEach(func() {
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, 
+	E2EAfterEach(func() {
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 		)).To(Succeed())

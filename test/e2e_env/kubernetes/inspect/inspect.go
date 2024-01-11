@@ -30,7 +30,9 @@ func Inspect() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 		// remove default
-		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", meshName))
+		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {

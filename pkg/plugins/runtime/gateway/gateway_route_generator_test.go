@@ -834,7 +834,7 @@ conf:
 				Mesh:     "default",
 				Name:     "mesh-circuit-breaker-all-default",
 			},
-    ),
+		),
 
 		Entry("match health check policy",
 			"17-gateway-route.yaml", `

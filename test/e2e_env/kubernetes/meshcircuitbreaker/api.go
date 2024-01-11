@@ -23,15 +23,7 @@ func API() {
 
 		// Delete the default meshcricuitbreaker policy
 		Eventually(func() error {
-			_, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
-				 "delete", "meshcircuitbreaker", fmt.Sprintf("mesh-circuit-breaker-all-%s", meshName),
-			)
-			if err != nil {
-				return err
-			}
-			return nil
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-circuit-breaker-all-%s", meshName))
 		}).Should(Succeed())
 	})
 

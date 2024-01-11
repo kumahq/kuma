@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -31,15 +31,10 @@ func MeshTimeout() {
 
 		// Delete the default meshtimeout policy
 		Eventually(func() error {
-			_, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace),
-				 "delete", "meshtimeout", fmt.Sprintf("mesh-timeout-all-%s", mesh),
-			)
-			if err != nil {
-				return err
-			}
-			return nil
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", mesh))
+		}).Should(Succeed())
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
 		}).Should(Succeed())
 	})
 

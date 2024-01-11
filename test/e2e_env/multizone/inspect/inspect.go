@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -29,7 +28,9 @@ func Inspect() {
 		))
 		Expect(err).ToNot(HaveOccurred())
 		// remove default
-		Expect(DeleteMeshResources(multizone.Global, meshName, v1alpha1.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
+		Eventually(func() error {
+			return multizone.Global.GetKumactlOptions().RunKumactl("delete", "meshtimeout", "--mesh", meshName, "mesh-timeout-all-"+meshName)
+		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -203,7 +204,7 @@ spec:
 					if rule.Type == "MeshTimeout" {
 						g.Expect(rule.ToRules).ToNot(BeNil())
 						g.Expect(*rule.ToRules).ToNot(BeEmpty())
-						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mesh-timeout-all"))
+						g.Expect((*rule.ToRules)[0].Origin[0].Name).To(ContainSubstring("mt1"))
 					}
 				}
 			}, "30s", "1s").Should(Succeed())

@@ -30,6 +30,18 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 	return errors.Join(errs...)
 }
 
+func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
+	_, err := k8s.RunKubectlAndGetOutputE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(Config.KumaNamespace),
+		"delete", descriptor.KumactlArg, policyName,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
 	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
