@@ -119,7 +119,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			Address:       address,
 			Path:          application.Path,
 			Port:          application.Port,
-			IsIPv6:        utilnet.IsAddressIPv6(application.Address),
+			IsIPv6:        utilnet.IsAddressIPv6(address),
 			QueryModifier: metrics.RemoveQueryParameters,
 		})
 	}
