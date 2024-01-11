@@ -24,6 +24,7 @@ func GenerateClusters(
 		service := services[serviceName]
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
+
 		for _, cluster := range service.Clusters() {
 			clusterName := cluster.Name()
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
@@ -84,6 +85,7 @@ func GenerateClusters(
 			if err != nil {
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
+
 			resources = resources.Add(&core_xds.Resource{
 				Name:     clusterName,
 				Origin:   generator.OriginOutbound,
