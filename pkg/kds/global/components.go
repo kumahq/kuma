@@ -2,8 +2,6 @@ package global
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -52,7 +50,7 @@ func Setup(rt runtime.Runtime) error {
 	kdsServer, err := kds_server.New(
 		kdsGlobalLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
+		reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
 		"global",
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
@@ -66,7 +64,7 @@ func Setup(rt runtime.Runtime) error {
 	kdsServerV2, err := kds_server_v2.New(
 		kdsDeltaGlobalLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
+		reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
 		"global",
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
@@ -100,7 +98,7 @@ func Setup(rt runtime.Runtime) error {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
-		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -140,7 +138,7 @@ func Setup(rt runtime.Runtime) error {
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
-			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)),
+			reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
 			kdsStream,
 			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
@@ -226,7 +224,18 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
-			util.AddPrefixToNames(rs.GetItems(), clusterName)
+			if isOldZone(rs) {
+				// todo: remove in 2 releases after 2.6.x
+				util.AddPrefixToNames(rs.GetItems(), clusterName)
+			}
+
+			for _, r := range rs.GetItems() {
+				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
+					util.WithLabel(mesh_proto.ZoneTag, clusterName),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				))
+			}
+
 			if k8sStore {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
@@ -250,8 +259,20 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
+				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
 			}), sync_store.Zone(clusterName))
 		},
 	}
+}
+
+// isOldZone checks if zone is running not the latest version of Kuma CP and doesn't support hash suffixes
+func isOldZone(rs model.ResourceList) bool {
+	if len(rs.GetItems()) == 0 {
+		// if there are no resources it doesn't matter if it's old or new Zone
+		return false
+	}
+
+	r := rs.GetItems()[0]
+	_, exist := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	return !exist
 }

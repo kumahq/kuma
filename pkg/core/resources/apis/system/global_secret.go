@@ -105,7 +105,7 @@ func init() {
 		ReadOnly:       false,
 		AdminOnly:      true,
 		Scope:          model.ScopeGlobal,
-		KDSFlags:       model.FromGlobalToZone,
+		KDSFlags:       model.GlobalToAllZonesFlag,
 		WsPath:         "global-secrets",
 		KumactlArg:     "global-secret",
 		KumactlListArg: "global-secrets",

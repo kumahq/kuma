@@ -7,8 +7,8 @@
 **Code quality**
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5576/badge)](https://bestpractices.coreinfrastructure.org/projects/5576)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5576/badge)](https://www.bestpractices.dev/projects/5576)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://securityscorecards.dev/viewer/?uri=github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
 
 **Releases**

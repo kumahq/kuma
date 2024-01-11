@@ -26,7 +26,7 @@ func GenerateEndpoints(
 		service := services[serviceName]
 		meshCtx := ctx.Mesh
 
-		if !service.HasExternalService() || meshCtx.Resource.ZoneEgressEnabled() {
+		if !ctx.Mesh.IsExternalService(serviceName) || meshCtx.Resource.ZoneEgressEnabled() {
 			for _, cluster := range service.Clusters() {
 				var endpoints core_xds.EndpointMap
 				if cluster.Mesh() != "" {

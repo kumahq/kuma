@@ -305,11 +305,14 @@ to:
               version: v1
 
 `),
-		ErrorCase("hostnames not allowed with services",
-			validators.Violation{
+		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
+			[]validators.Violation{{
 				Field:   `spec.to[0].hostnames`,
 				Message: `must not be defined`,
-			}, `
+			}, {
+				Field:   "spec.to[0].rules[0].default.filters[0].urlRewrite.hostToBackendHostname",
+				Message: "can only be set with MeshGateway",
+			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
 name: route-1
@@ -328,6 +331,10 @@ to:
           type: PathPrefix
           value: /
       default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              hostToBackendHostname: true
         backendRefs:
           - kind: MeshService
             name: backend
@@ -600,6 +607,10 @@ to:
           value: /
           type: PathPrefix
       default:
+        filters:
+          - type: URLRewrite
+            urlRewrite:
+              hostToBackendHostname: true
         backendRefs:
           - kind: MeshService
             name: backend
