@@ -12,7 +12,7 @@ GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) -p --keep-going --keep-separate-re
 .PHONY: test
 test: build/ebpf | $(REPORTS_DIR) ## Dev: Run tests for all modules. to include reports set `make TEST_REPORTS=1` and `make TEST_REPORTS=coverage` to include coverage. To run only some tests by set `TEST_PKG_LIST=./pkg/...` for example
 ifdef TEST_REPORTS
-	$(UNIT_TEST_ENV) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) $(if $(findstring coverage,$(TEST_REPORTS)),--cover --covermode atomic --coverpkg ./... --coverprofile coverage.out) $(TEST_PKG_LIST)
+	$(UNIT_TEST_ENV) $(GINKGO_TEST) $(GINKGO_UNIT_TEST_FLAGS) --procs=2 --compilers=2 $(if $(findstring coverage,$(TEST_REPORTS)),--cover --covermode atomic --coverpkg ./... --coverprofile coverage.out) $(TEST_PKG_LIST)
 	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
 endif
 ifndef TEST_REPORTS
