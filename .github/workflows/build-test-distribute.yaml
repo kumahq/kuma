@@ -22,11 +22,6 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
@@ -48,76 +43,6 @@ jobs:
           make clean
       - run: |
           make check
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
-      - name: Free up disk space for the Runner
-        run: |
-          echo "Disk usage before cleanup"
-          sudo df -h
-          echo "Removing big directories"
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          echo "Removing images"
-          docker system prune --all -f
-          echo "Disk usage after cleanup"
-          sudo df -h
-      - name: "Set switches based on if run full matrix"
-        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
-        id: set-full-matrix-switches
-        run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-      - run: |
-          make build
-      - run: |
-          make -j build/distributions
-      - name: Install dependencies for cross builds
-        run: |
-          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - run: |
-          make -j images
-      - run: |
-          make -j docker/save
-      - name: Cleanup redundant build outputs
-        run: |
-          find  ./build/artifacts-* -maxdepth 0 -type d | xargs -I % rm -rf %
-          find ./build/distributions/* -maxdepth 0 -type d | grep -v '/out' | xargs -I % rm -rf %
-          find  ./build/tools-* -maxdepth 0 -type d | xargs -I % rm -rf %
-          rm -rf ./build/oapitmp
-          rm -rf ./build/ebpf/
-      - name: Upload build output
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
-        with:
-          name: build-output
-          path: build
-          retention-days: 1
-      - name: Run container structure test
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
-        run: |
-          make test/container-structure
   test:
     runs-on: ubuntu-latest
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -209,16 +134,30 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
-      - name: Download artifacts with retry
-        uses: Wandalen/wretry.action@a163f62ae554a8f3cbe27b23db15b60c0ae2e93c # master
-        with:
-          action: actions/download-artifact@v4
-          with: |
-            path: build
-            name: build-output
-          attempt_limit: 5
-          attempt_delay: 1000
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - run: |
+          make -j images
+          make -j docker/save
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure
       - name: Inspect created tars
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
@@ -229,9 +168,6 @@ jobs:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
           make publish/pulp
-      - name: Load images
-        run: |
-          make docker/load
       - name: Publish images
         env:
           DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
@@ -305,7 +241,7 @@ jobs:
               "test_e2e": {
                 "target": [""],
                 "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["amd64", "arm64"],
+                "arch": ["amd64"],
                 "parallelism": [3],
                 "cniNetworkPlugin": ["flannel"],
                 "legacyKDS": [false]
@@ -313,19 +249,21 @@ jobs:
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
                 "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["amd64", "arm64"],
+                "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
                 "legacyKDS": [false],
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
-                  {"arch": "arm64", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
                   {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "universal", "arch": "arm64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]
               }
@@ -345,7 +283,7 @@ jobs:
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
-    needs: ["gen_e2e_matrix", "build"]
+    needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
@@ -356,7 +294,7 @@ jobs:
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
-    needs: ["gen_e2e_matrix", "build"]
+    needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
