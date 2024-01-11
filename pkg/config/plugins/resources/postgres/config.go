@@ -65,6 +65,7 @@ type PostgresStoreConfig struct {
 	MaxOpenConnections int `json:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
 	// MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
 	// <0 value means no idle connections and 0 means default max idle connections
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MaxIdleConnections int `json:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `json:"tls"`
@@ -73,9 +74,11 @@ type PostgresStoreConfig struct {
 	// consecutive failure this interval is doubled, until MaxReconnectInterval
 	// is reached. Successfully completing the connection establishment procedure
 	// resets the interval back to MinReconnectInterval.
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 	// MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
 	MaxListQueryElements uint32 `json:"maxListQueryElements" envconfig:"kuma_store_postgres_max_list_query_elements"`
@@ -260,6 +263,7 @@ func (p *PostgresStoreConfig) Validate() error {
 			logger.Info(warning + "MaxReconnectInterval " + pqAlternativeMessage)
 		}
 	case DriverNamePq:
+		logger.Info(warning + "DriverName='postgres' (pq) is deprecated. Please use DriverName='pgx' instead.")
 		pgxAlternativeMessage := "does not have an equivalent for pq driver. " +
 			"If you need this setting consider using pgx as a postgres driver by setting driverName='pgx' or " +
 			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='pgx' env variable."

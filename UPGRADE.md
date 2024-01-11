@@ -33,6 +33,11 @@ With the release of Kuma 2.6.0, we've made some changes to the implementation of
 
 To ensure a smooth transition to Kuma 2.6.0, carefully review your existing configuration files and make necessary adjustments related to denied request responses and RBAC-related Envoy stats.
 
+### Deprecation of postgres driverName=postgres (lib/pq)
+
+The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
+Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
+
 ## Upgrade to `2.5.x`
 
 ### Transparent-proxy and CNI v1 removal
