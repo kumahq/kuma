@@ -1,4 +1,33 @@
 resources:
+- name: _kuma:dynamicconfig:observability
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      pipe:
+        path: kuma-mesh-metric-config.sock
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:dynamicconfig:observability
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}]}}}'
+                  status: 200
+                match:
+                  prefix: /
+          statPrefix: _kuma_dynamicconfig_observability
+    name: _kuma:dynamicconfig:observability
 - name: _kuma:metrics:prometheus
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

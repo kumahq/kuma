@@ -33,6 +33,12 @@ func OutboundListener(address string, port uint32, protocol core_xds.SocketAddre
 	})
 }
 
+func PipeListener(socketPath string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.PipeListenerConfigurer{
+		SocketPath: socketPath,
+	})
+}
+
 func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying) ListenerBuilderOpt {
 	virtual := transparentProxying.GetRedirectPortOutbound() != 0 && transparentProxying.GetRedirectPortInbound() != 0
 	if virtual {

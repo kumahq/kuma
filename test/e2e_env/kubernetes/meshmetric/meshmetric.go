@@ -91,6 +91,33 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func MeshMetricWithApplicationForMesh(policyName, mesh, path string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    applications:
+      - path: "%s"
+        port: 80
+    backends:
+      - type: Prometheus
+        prometheus: 
+          port: 8080
+          path: /metrics
+          tls:
+            mode: Disabled
+`, policyName, Config.KumaNamespace, mesh, path)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetric() {
 	const (
 		namespace             = "meshmetric"
@@ -156,6 +183,45 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+		}).Should(Succeed())
+	})
+
+	It("MeshMetric policy with dynamic configuration and application aggregation correctly exposes aggregated metrics", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/path-stats"))).To(Succeed())
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+			g.Expect(stdout).To(ContainSubstring("path-stats"))
+		}).Should(Succeed())
+
+		// update policy config and check if changes was applied on DPP
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/app-stats"))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
+			g.Expect(stdout).To(ContainSubstring("app-stats"))
 		}).Should(Succeed())
 	})
 

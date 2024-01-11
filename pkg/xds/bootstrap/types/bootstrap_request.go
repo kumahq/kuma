@@ -17,6 +17,7 @@ type BootstrapRequest struct {
 	OperatingSystem     string            `json:"operatingSystem"`
 	Features            []string          `json:"features"`
 	Resources           ProxyResources    `json:"resources"`
+	Workdir             string            `json:"workdir"`
 	AccessLogSocketPath string            `json:"accessLogSocketPath"`
 	MetricsResources    MetricsResources  `json:"metricsResources"`
 }
