@@ -47,17 +47,20 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			continue
 		}
 
-		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
+		isExternalService := xdsCtx.Mesh.IsExternalService(service)
+		if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
+			isExternalService = route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
+		}
 
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
 		// have mTLS enabled and traffic through zoneEgress is enabled.
-		isDirectExternalService := firstEndpointExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isDirectExternalService := isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		isExternalCluster := isDirectExternalService && len(matched) > 0
 
-		isExternalServiceThroughZoneEgress := firstEndpointExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isExternalServiceThroughZoneEgress := isExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 
 		var r *core_xds.Resource
 		var err error
@@ -78,7 +81,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				upstreamServiceName = mesh_proto.ZoneEgressServiceName
 			}
 
-			r, err = c.generateMeshCluster(xdsCtx.Mesh.Resource, info, dest, upstreamServiceName, hostTags)
+			r, err = c.generateMeshCluster(xdsCtx.Mesh, info, dest, upstreamServiceName, hostTags)
 		}
 
 		if err != nil {
@@ -123,20 +126,19 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
-	mesh *core_mesh.MeshResource,
+	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
-		Tags: dest.Destination,
-	}}, dest.RouteProtocol)
+	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 
@@ -167,12 +169,12 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 		endpoints = append(endpoints, *ep)
 	}
-
-	protocol := route.InferServiceProtocol(endpoints, dest.RouteProtocol)
+	serviceName := dest.Destination[mesh_proto.ServiceTag]
+	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
-		newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
 			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),

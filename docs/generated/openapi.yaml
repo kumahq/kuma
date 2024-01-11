@@ -33,7 +33,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /meshes/{mesh}/dataplanes/{dataplaneName}/_rules:
+  /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
       summary: Returns rules matching this dataplane
@@ -49,15 +49,24 @@ paths:
           required: true
           description: The mesh the policy is part of
         - in: path
-          name: dataplaneName
+          name: resourceType
+          example: dataplanes
+          schema:
+            type: string
+            enum:
+              - dataplanes
+              - meshgateways
+          description: The type of resource (only some resources support rules api)
+        - in: path
+          name: resourceName
           example: my-dp
           schema:
             type: string
           required: true
-          description: The name of the dataplane
+          description: The name of the resource
       responses:
         '200':
-          $ref: '#/components/responses/InspectRulesForDataplaneResponse'
+          $ref: '#/components/responses/InspectRulesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -628,6 +637,91 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshLoadBalancingStrategyList'
+  /meshes/{mesh}/meshmetrics/{name}:
+    get:
+      summary: Returns MeshMetric entity
+      tags:
+        - MeshMetric
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMetric
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMetricItem'
+    put:
+      summary: Creates or Updates MeshMetric entity
+      tags:
+        - MeshMetric
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMetric
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMetricItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+    delete:
+      summary: Deletes MeshMetric entity
+      tags:
+        - MeshMetric
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMetric
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshmetrics:
+    get:
+      summary: Returns a list of MeshMetric in the mesh.
+      tags:
+        - MeshMetric
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMetricList'
   /meshes/{mesh}/meshproxypatches/{name}:
     get:
       summary: Returns MeshProxyPatch entity
@@ -1253,13 +1347,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
-    InspectRulesForDataplane:
+    InspectRules:
       type: object
-      title: InspectRulesForDataplane
+      title: InspectRules
       description: A list of rules for a dataplane
       required:
         - rules
         - resource
+        - httpMatches
       properties:
         resource:
           $ref: '#/components/schemas/Meta'
@@ -1267,6 +1362,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InspectRule'
+        httpMatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/HttpMatch'
     BaseStatus:
       type: object
       title: Status
@@ -1663,6 +1762,17 @@ components:
             - Mesh is not Mtls enabled this policy will have no effect
           items:
             type: string
+    HttpMatch:
+      type: object
+      required:
+        - hash
+        - match
+      properties:
+        hash:
+          type: string
+        match:
+          type: object
+          x-go-type: interface{}
     MeshAccessLogItem:
       type: object
       properties:
@@ -3586,6 +3696,15 @@ components:
                 configuration.
               items:
                 properties:
+                  hostnames:
+                    description: >-
+                      Hostnames is only valid when targeting MeshGateway and
+                      limits the effects of the rules to requests to this
+                      hostname. Given hostnames must intersect with the hostname
+                      of the listeners the route attaches to.
+                    items:
+                      type: string
+                    type: array
                   rules:
                     description: >-
                       Rules contains the routing rules applies to a combination
@@ -3866,6 +3985,13 @@ components:
                                     type: string
                                   urlRewrite:
                                     properties:
+                                      hostToBackendHostname:
+                                        description: >-
+                                          HostToBackendHostname rewrites the
+                                          hostname to the hostname of the upstream
+                                          host. This option is only available when
+                                          targeting MeshGateways.
+                                        type: boolean
                                       hostname:
                                         description: >-
                                           Hostname is the value to be used to
@@ -4612,6 +4738,165 @@ components:
           required:
             - targetRef
           type: object
+    MeshMetricItem:
+      type: object
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshMetric
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        spec:
+          description: Spec is the specification of the Kuma MeshMetric resource.
+          properties:
+            default:
+              description: MeshMetric configuration.
+              properties:
+                applications:
+                  description: >-
+                    Applications is a list of application that Dataplane Proxy
+                    will scrape
+                  items:
+                    properties:
+                      address:
+                        description: Address on which an application listens.
+                        type: string
+                      path:
+                        default: /metrics/prometheus
+                        description: >-
+                          Path on which an application expose HTTP endpoint with
+                          metrics.
+                        type: string
+                      port:
+                        description: >-
+                          Port on which an application expose HTTP endpoint with
+                          metrics.
+                        format: int32
+                        type: integer
+                    required:
+                      - port
+                    type: object
+                  type: array
+                backends:
+                  description: Backends list that will be used to collect metrics.
+                  items:
+                    properties:
+                      prometheus:
+                        description: Prometheus backend configuration.
+                        properties:
+                          clientId:
+                            description: >-
+                              ClientId of the Prometheus backend. Needed when
+                              using MADS for DP discovery.
+                            type: string
+                          path:
+                            default: /metrics
+                            description: >-
+                              Path on which a dataplane should expose HTTP
+                              endpoint with Prometheus metrics.
+                            type: string
+                          port:
+                            default: 5670
+                            description: >-
+                              Port on which a dataplane should expose HTTP
+                              endpoint with Prometheus metrics.
+                            format: int32
+                            type: integer
+                          tls:
+                            description: Configuration of TLS for prometheus listener.
+                            properties:
+                              mode:
+                                default: Disabled
+                                description: Configuration of TLS for Prometheus listener.
+                                enum:
+                                  - Disabled
+                                  - ProvidedTLS
+                                  - ActiveMTLSBackend
+                                type: string
+                            required:
+                              - mode
+                            type: object
+                        required:
+                          - path
+                          - port
+                        type: object
+                      type:
+                        description: >-
+                          Type of the backend that will be used to collect
+                          metrics. At the moment only Prometheus backend is
+                          available.
+                        enum:
+                          - Prometheus
+                        type: string
+                    required:
+                      - type
+                    type: object
+                  type: array
+                sidecar:
+                  description: Sidecar metrics collection configuration
+                  properties:
+                    regex:
+                      description: >-
+                        Regex that will be used to filter sidecar metrics. It
+                        uses Google RE2 engine https://github.com/google/re2
+                      type: string
+                    usedOnly:
+                      default: false
+                      description: >-
+                        UsedOnly will scrape only metrics that has been by
+                        sidecar (counters incremented at least once, gauges
+                        changed at least once, and histograms added to at least
+                        once).
+                      type: boolean
+                  type: object
+              type: object
+            targetRef:
+              description: >-
+                TargetRef is a reference to the resource the policy takes an
+                effect on. The resource could be either a real store object or
+                virtual resource defined in-place.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                  type: string
+                mesh:
+                  description: >-
+                    Mesh is reserved for future use to identify cross mesh
+                    resources.
+                  type: string
+                name:
+                  description: >-
+                    Name of the referenced resource. Can only be used with
+                    kinds: `MeshService`, `MeshServiceSubset` and
+                    `MeshGatewayRoute`
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Tags used to select a subset of proxies by tags. Can only be
+                    used with kinds `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          required:
+            - targetRef
+          type: object
     MeshProxyPatchItem:
       type: object
       properties:
@@ -5323,6 +5608,183 @@ components:
                     used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
+            to:
+              description: >-
+                To list makes a match between clients and corresponding
+                configurations
+              items:
+                properties:
+                  default:
+                    description: >-
+                      Default is a configuration specific to the group of
+                      clients referenced in 'targetRef'
+                    properties:
+                      local:
+                        description: >-
+                          LocalConf defines local http or/and tcp rate limit
+                          configuration
+                        properties:
+                          http:
+                            description: >-
+                              LocalHTTP defines confguration of local HTTP rate
+                              limiting
+                              https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                            properties:
+                              disabled:
+                                description: Define if rate limiting should be disabled.
+                                type: boolean
+                              onRateLimit:
+                                description: >-
+                                  Describes the actions to take on a rate limit
+                                  event
+                                properties:
+                                  headers:
+                                    description: >-
+                                      The Headers to be added to the HTTP
+                                      response on a rate limit event
+                                    properties:
+                                      add:
+                                        items:
+                                          properties:
+                                            name:
+                                              maxLength: 256
+                                              minLength: 1
+                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                            - name
+                                            - value
+                                          type: object
+                                        maxItems: 16
+                                        type: array
+                                        x-kubernetes-list-map-keys:
+                                          - name
+                                        x-kubernetes-list-type: map
+                                      set:
+                                        items:
+                                          properties:
+                                            name:
+                                              maxLength: 256
+                                              minLength: 1
+                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                            - name
+                                            - value
+                                          type: object
+                                        maxItems: 16
+                                        type: array
+                                        x-kubernetes-list-map-keys:
+                                          - name
+                                        x-kubernetes-list-type: map
+                                    type: object
+                                  status:
+                                    description: >-
+                                      The HTTP status code to be set on a rate
+                                      limit event
+                                    format: int32
+                                    type: integer
+                                type: object
+                              requestRate:
+                                description: >-
+                                  Defines how many requests are allowed per
+                                  interval.
+                                properties:
+                                  interval:
+                                    description: >-
+                                      The interval the number of units is
+                                      accounted for.
+                                    type: string
+                                  num:
+                                    description: >-
+                                      Number of units per interval (depending on
+                                      usage it can be a number of requests, or a
+                                      number of connections).
+                                    format: int32
+                                    type: integer
+                                required:
+                                  - interval
+                                  - num
+                                type: object
+                            type: object
+                          tcp:
+                            description: >-
+                              LocalTCP defines confguration of local TCP rate
+                              limiting
+                              https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                            properties:
+                              connectionRate:
+                                description: >-
+                                  Defines how many connections are allowed per
+                                  interval.
+                                properties:
+                                  interval:
+                                    description: >-
+                                      The interval the number of units is
+                                      accounted for.
+                                    type: string
+                                  num:
+                                    description: >-
+                                      Number of units per interval (depending on
+                                      usage it can be a number of requests, or a
+                                      number of connections).
+                                    format: int32
+                                    type: integer
+                                required:
+                                  - interval
+                                  - num
+                                type: object
+                              disabled:
+                                description: >-
+                                  Define if rate limiting should be disabled.
+                                  Default: false
+                                type: boolean
+                            type: object
+                        type: object
+                    type: object
+                  targetRef:
+                    description: >-
+                      TargetRef is a reference to the resource that represents a
+                      group of clients.
+                    properties:
+                      kind:
+                        description: Kind of the referenced resource
+                        enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                        type: string
+                      mesh:
+                        description: >-
+                          Mesh is reserved for future use to identify cross mesh
+                          resources.
+                        type: string
+                      name:
+                        description: >-
+                          Name of the referenced resource. Can only be used with
+                          kinds: `MeshService`, `MeshServiceSubset` and
+                          `MeshGatewayRoute`
+                        type: string
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags used to select a subset of proxies by tags. Can
+                          only be used with kinds `MeshSubset` and
+                          `MeshServiceSubset`
+                        type: object
+                    type: object
+                required:
+                  - targetRef
+                type: object
+              type: array
           required:
             - targetRef
           type: object
@@ -6585,12 +7047,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
-    InspectRulesForDataplaneResponse:
-      description: A response containing policies that match a dataplane
+    InspectRulesResponse:
+      description: A response containing policies that match a resource
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InspectRulesForDataplane'
+            $ref: '#/components/schemas/InspectRules'
     BadRequest:
       description: Bad Request
       content:
@@ -6735,6 +7197,29 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshMetricItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshMetricItem'
+    MeshMetricList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshMetricItem'
               total:
                 type: number
                 description: The total number of entities

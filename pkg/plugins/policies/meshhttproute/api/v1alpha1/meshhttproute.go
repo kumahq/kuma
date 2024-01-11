@@ -2,9 +2,12 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 // MeshHTTPRoute
@@ -26,6 +29,11 @@ type MeshHTTPRoute struct {
 }
 
 type To struct {
+	// Hostnames is only valid when targeting MeshGateway and limits the
+	// effects of the rules to requests to this hostname.
+	// Given hostnames must intersect with the hostname of the listeners the
+	// route attaches to.
+	Hostnames []string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
@@ -42,6 +50,12 @@ type Rule struct {
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
 	Default RuleConf `json:"default"`
+}
+
+func HashMatches(m []Match) string {
+	bytes, _ := json.Marshal(m)
+	h := sha256.Hash(string(bytes))
+	return h
 }
 
 type Match struct {
@@ -182,6 +196,9 @@ type URLRewrite struct {
 	Hostname *PreciseHostname `json:"hostname,omitempty"`
 	// Path defines a path rewrite.
 	Path *PathRewrite `json:"path,omitempty"`
+	// HostToBackendHostname rewrites the hostname to the hostname of the
+	// upstream host. This option is only available when targeting MeshGateways.
+	HostToBackendHostname bool `json:"hostToBackendHostname,omitempty"`
 }
 
 type RequestMirror struct {

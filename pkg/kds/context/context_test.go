@@ -20,7 +20,9 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -55,7 +57,7 @@ var _ = Describe("Context", func() {
 				out, _ := mapper(kds.Features{}, given.resource)
 
 				// then
-				Expect(out.GetMeta()).To(Equal(given.expect.GetMeta()))
+				Expect(out.GetMeta()).To(Equal(util.CloneResourceMeta(given.expect.GetMeta())))
 				Expect(out.Descriptor()).To(Equal(given.expect.Descriptor()))
 				Expect(out.GetSpec()).To(matchers.MatchProto(given.expect.GetSpec()))
 			},
@@ -83,7 +85,12 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.DataplaneInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "dpi-1",
+						Name: hash.HashedName("", "dpi-1", "zone"),
+						Labels: map[string]string{
+							"kuma.io/origin":       "zone",
+							"kuma.io/zone":         "zone",
+							"kuma.io/display-name": "dpi-1",
+						},
 					},
 					Spec: &mesh_proto.DataplaneInsight{
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
@@ -123,7 +130,12 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneIngressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zii-1",
+						Name: hash.HashedName("", "zii-1", "zone"),
+						Labels: map[string]string{
+							"kuma.io/display-name": "zii-1",
+							"kuma.io/origin":       "zone",
+							"kuma.io/zone":         "zone",
+						},
 					},
 					Spec: &mesh_proto.ZoneIngressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
@@ -157,7 +169,12 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.ZoneEgressInsightResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zei-1",
+						Name: hash.HashedName("", "zei-1", "zone"),
+						Labels: map[string]string{
+							"kuma.io/zone":         "zone",
+							"kuma.io/display-name": "zei-1",
+							"kuma.io/origin":       "zone",
+						},
 					},
 					Spec: &mesh_proto.ZoneEgressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
@@ -198,7 +215,12 @@ var _ = Describe("Context", func() {
 				},
 				expect: &core_mesh.CircuitBreakerResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "cb-1",
+						Name: hash.HashedName("", "cb-1", "zone"),
+						Labels: map[string]string{
+							"kuma.io/display-name": "cb-1",
+							"kuma.io/origin":       "zone",
+							"kuma.io/zone":         "zone",
+						},
 					},
 					Spec: &mesh_proto.CircuitBreaker{
 						Sources: []*mesh_proto.Selector{
@@ -244,22 +266,6 @@ var _ = Describe("Context", func() {
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
 			predicate = context.GlobalProvidedFilter(rm, configs)
-		})
-
-		It("should filter out dataplanes", func() {
-			// given
-			ctx := stdcontext.Background()
-			dp := &core_mesh.DataplaneResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "dp-1",
-				},
-			}
-
-			// when
-			ok := predicate(ctx, clusterID, kds.Features{}, dp)
-
-			// then
-			Expect(ok).To(BeFalse())
 		})
 
 		It("should filter out configs if not in provided argument", func() {
@@ -413,7 +419,7 @@ var _ = Describe("Context", func() {
 				name := descriptor.Name
 				_, ignoreType := ignoreTypes[name]
 
-				if descriptor.KDSFlags.Has(model.ProvidedByGlobal) && !ignoreType {
+				if descriptor.KDSFlags.Has(model.GlobalToAllZonesFlag) && !ignoreType {
 					resource := descriptor.NewObject()
 					resource.SetMeta(&test_model.ResourceMeta{
 						Name: string(name),
@@ -448,6 +454,7 @@ var _ = Describe("Context", func() {
 		type testCase struct {
 			config                     config
 			name                       string
+			displayName                string
 			expectedName               string
 			isResourcePluginOriginated bool
 			scope                      model.ResourceScope
@@ -475,7 +482,12 @@ var _ = Describe("Context", func() {
 				Scope:              given.scope,
 			}
 
-			meta := &test_model.ResourceMeta{Name: given.name}
+			meta := &test_model.ResourceMeta{
+				Name: given.name,
+				Labels: map[string]string{
+					mesh_proto.DisplayName: given.displayName,
+				},
+			}
 
 			return &test_model.Resource{TypeDescriptor: descriptor, Meta: meta}
 		}
@@ -503,6 +515,7 @@ var _ = Describe("Context", func() {
 					k8sSystemNamespace: "custom-namespace",
 				},
 				name:         "foo.custom-namespace",
+				displayName:  "foo",
 				expectedName: "foo-zxw6c95d42zfz9cc",
 				scope:        model.ScopeMesh,
 				features: map[string]bool{

@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -55,6 +57,8 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return err
 	}
+
+	obj.GetObjectMeta().SetLabels(opts.Labels)
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
@@ -83,6 +87,8 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 }
 
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
+	opts := store.NewUpdateOptions(fs...)
+
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		if typeIsUnregistered(err) {
@@ -90,6 +96,9 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
+
+	obj.GetObjectMeta().SetLabels(opts.Labels)
+	obj.SetMesh(r.GetMeta().GetMesh())
 
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
@@ -254,6 +263,20 @@ func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
 
 func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
+	labels := maps.Clone(m.GetObjectMeta().GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if _, ok := labels[v1alpha1.DisplayName]; !ok {
+		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+	}
+	if m.Namespace != "" {
+		labels[v1alpha1.KubeNamespaceTag] = m.Namespace
+	}
+	return labels
 }
 
 type KubeFactory interface {

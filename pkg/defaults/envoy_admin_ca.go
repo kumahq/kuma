@@ -24,17 +24,24 @@ var _ component.Component = &EnvoyAdminCaDefaultComponent{}
 
 func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
 	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	defer cancelFn()
+	logger := kuma_log.AddFieldsFromCtx(log, ctx, e.Extensions)
+	errChan := make(chan error)
 	go func() {
-		<-stop
-		cancelFn()
+		errChan <- retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
+			if err := EnsureEnvoyAdminCaExist(ctx, e.ResManager, e.Extensions); err != nil {
+				logger.V(1).Info("could not ensure that Envoy Admin CA exists. Retrying.", "err", err)
+				return retry.RetryableError(err)
+			}
+			return nil
+		})
 	}()
-	return retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-		if err := EnsureEnvoyAdminCaExist(ctx, e.ResManager, e.Extensions); err != nil {
-			log.V(1).Info("could not ensure that Envoy Admin CA exists. Retrying.", "err", err)
-			return retry.RetryableError(err)
-		}
+	select {
+	case <-stop:
 		return nil
-	})
+	case err := <-errChan:
+		return err
+	}
 }
 
 func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
@@ -53,15 +60,14 @@ func EnsureEnvoyAdminCaExist(
 		return nil
 	}
 	if !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "error while loading admin client certificate")
+		return errors.Wrap(err, "error while loading envoy admin CA")
 	}
-	logger.V(1).Info("trying to create Envoy Admin CA")
 	pair, err := tls.GenerateCA()
 	if err != nil {
-		return errors.Wrap(err, "could not generate admin client certificate")
+		return errors.Wrap(err, "could not generate envoy admin CA")
 	}
 	if err := tls.CreateCA(ctx, *pair, resManager); err != nil {
-		return errors.Wrap(err, "could not create admin client certificate")
+		return errors.Wrap(err, "could not create envoy admin CA")
 	}
 	logger.Info("Envoy Admin CA created")
 	return nil

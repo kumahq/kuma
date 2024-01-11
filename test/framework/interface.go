@@ -571,6 +571,7 @@ type Cluster interface {
 	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
 	Verbose() bool
 	Install(fn InstallFunc) error
+	ZoneName() string
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
@@ -586,6 +587,7 @@ type Cluster interface {
 type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
+	GetMonitoringAssignment(clientId string) (string, error)
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
 	GetXDSServerAddress() string

@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/connectivity"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/defaults"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
@@ -59,7 +60,7 @@ var (
 	_ = Describe("Connectivity", connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", multizone_sync.Sync, Ordered)
-	_ = Describe("Sync V2", multizone_sync.SyncV2, Ordered)
+	_ = Describe("Sync V2", multizone_sync.SyncLegacy, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
@@ -72,4 +73,5 @@ var (
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
+	_ = Describe("Defaults", defaults.Defaults, Ordered)
 )

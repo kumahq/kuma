@@ -6,58 +6,61 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func MakeTCPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
+			core_mesh.ProtocolKafka:   {},
 			core_mesh.ProtocolTCP:     {},
 			core_mesh.ProtocolHTTP:    {},
 			core_mesh.ProtocolHTTP2:   {},
+			core_mesh.ProtocolGRPC:    {},
 		},
 		clusterCache,
 		servicesAcc,
 		refs,
+		meshCtx,
 	)
 }
 
 func MakeHTTPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
+			core_mesh.ProtocolGRPC:  {},
 		},
 		clusterCache,
 		servicesAcc,
 		refs,
+		meshCtx,
 	)
 }
 
 func makeSplit(
-	proxy *core_xds.Proxy,
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
+	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
@@ -73,7 +76,8 @@ func makeSplit(
 			continue
 		}
 
-		if _, ok := protocols[plugins_xds.InferProtocol(proxy.Routing, service)]; !ok {
+		protocol := meshCtx.GetServiceProtocol(service)
+		if _, ok := protocols[protocol]; !ok {
 			return nil
 		}
 
@@ -89,7 +93,7 @@ func makeSplit(
 			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
 		}
 
-		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
+		isExternalService := meshCtx.IsExternalService(service)
 		refHash := ref.TargetRef.Hash()
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {

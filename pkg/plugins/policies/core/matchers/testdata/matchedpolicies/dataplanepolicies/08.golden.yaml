@@ -1,0 +1,35 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    kuma.io/display-name: default-demo-app-b
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: default-demo-app-b.kuma-system
+  spec:
+    targetRef:
+      kind: Mesh
+    to:
+    - default:
+        http:
+          requestTimeout: 5s
+      targetRef:
+        kind: Mesh
+  type: MeshTimeout
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    kuma.io/display-name: default-demo-app
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: default-demo-app.kuma-system
+  spec:
+    targetRef:
+      kind: Mesh
+    to:
+    - default:
+        http:
+          requestTimeout: 3s
+      targetRef:
+        kind: Mesh
+  type: MeshTimeout
+next: null
+total: 0

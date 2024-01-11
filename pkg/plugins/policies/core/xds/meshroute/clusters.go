@@ -22,7 +22,7 @@ func GenerateClusters(
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
-		protocol := generator.InferProtocol(proxy, service.Clusters())
+		protocol := meshCtx.GetServiceProtocol(serviceName)
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
@@ -31,7 +31,7 @@ func GenerateClusters(
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
-			if service.HasExternalService() {
+			if meshCtx.IsExternalService(serviceName) {
 				if meshCtx.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
@@ -43,7 +43,7 @@ func GenerateClusters(
 							clusterTags,
 						))
 				} else {
-					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
+					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.

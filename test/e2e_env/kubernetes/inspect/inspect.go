@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/openapi/types"
+	api_types "github.com/kumahq/kuma/api/openapi/types"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -73,7 +73,7 @@ func Inspect() {
 
 				body, err := io.ReadAll(r.Body)
 				g.Expect(err).ToNot(HaveOccurred())
-				result := types.InspectDataplanesForPolicyResponse{}
+				result := api_types.InspectDataplanesForPolicyResponse{}
 				g.Expect(json.Unmarshal(body, &result)).To(Succeed())
 
 				g.Expect(result.Items).To(HaveLen(1))
@@ -123,7 +123,7 @@ spec:
 
 			body, err := io.ReadAll(r.Body)
 			g.Expect(err).ToNot(HaveOccurred())
-			result := types.InspectRulesForDataplaneResponse{}
+			result := api_types.InspectRulesResponse{}
 			g.Expect(json.Unmarshal(body, &result)).To(Succeed())
 
 			g.Expect(result.Resource.Name).To(Equal(clientDp))

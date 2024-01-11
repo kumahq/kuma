@@ -20,7 +20,7 @@ import (
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z-_]*$`)
+	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
@@ -48,7 +48,8 @@ type ValidateSelectorsOpts struct {
 }
 
 type ValidateTargetRefOpts struct {
-	SupportedKinds []common_api.TargetRefKind
+	SupportedKinds             []common_api.TargetRefKind
+	GatewayListenerTagsAllowed bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -361,6 +362,9 @@ func ValidateTargetRef(
 		err.Add(validateName(ref.Name))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
+			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		}
 	}
 
 	return err
@@ -372,7 +376,7 @@ func validateName(value string) validators.ValidationError {
 	if !nameCharacterSet.MatchString(value) {
 		err.AddViolation(
 			"name",
-			"invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.",
+			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",
 		)
 	}
 

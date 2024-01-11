@@ -44,12 +44,11 @@ func Setup(rt core_runtime.Runtime) error {
 	kdsServer, err := kds_server.New(
 		kdsZoneLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
+		reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
 		zone,
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
-		false,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -59,12 +58,11 @@ func Setup(rt core_runtime.Runtime) error {
 	kdsServerV2, err := kds_server_v2.New(
 		kdsZoneLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
+		reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
 		zone,
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
-		false,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
@@ -95,7 +93,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
 			Callbacks(
 				rt.KDSContext().Configs,
 				resourceSyncer,
@@ -119,14 +117,13 @@ func Setup(rt core_runtime.Runtime) error {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
 		syncClient := kds_client_v2.NewKDSSyncClient(
 			log,
-			reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-			kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson)),
+			reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
+			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
 				stream.Context(),
 				rt.KDSContext().Configs,
 				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
-				zone,
 				kubeFactory,
 				rt.Config().Store.Kubernetes.SystemNamespace,
 			),

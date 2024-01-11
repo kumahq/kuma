@@ -30,7 +30,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /meshes/{mesh}/dataplanes/{dataplaneName}/_rules:
+  /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
       summary: Returns rules matching this dataplane
@@ -45,15 +45,22 @@ paths:
           required: true
           description: The mesh the policy is part of
         - in: path
-          name: dataplaneName
+          name: resourceType
+          example: dataplanes
+          schema:
+            type: string
+            enum: [dataplanes, meshgateways]
+          description: The type of resource (only some resources support rules api)
+        - in: path
+          name: resourceName
           example: my-dp
           schema:
             type: string
           required: true
-          description: The name of the dataplane
+          description: The name of the resource
       responses:
         '200':
-          $ref: '#/components/responses/InspectRulesForDataplaneResponse'
+          $ref: '#/components/responses/InspectRulesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -138,11 +145,11 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
-    InspectRulesForDataplane:
+    InspectRules:
       type: object
-      title: InspectRulesForDataplane
+      title: InspectRules
       description: A list of rules for a dataplane
-      required: [rules, resource]
+      required: [rules, resource, httpMatches]
       properties:
         resource:
           $ref: './common/resource.yaml#/components/schemas/Meta'
@@ -150,6 +157,10 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/InspectRule'
+        httpMatches:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/HttpMatch'
     BaseStatus:
       type: object
       title: Status
@@ -335,12 +346,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
-    InspectRulesForDataplaneResponse:
-      description: A response containing policies that match a dataplane
+    InspectRulesResponse:
+      description: A response containing policies that match a resource
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InspectRulesForDataplane'
+            $ref: '#/components/schemas/InspectRules'
     BadRequest:
       description: Bad Request
       content:

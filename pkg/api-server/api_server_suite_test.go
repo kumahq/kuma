@@ -135,7 +135,7 @@ func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
 	return response
 }
 
-func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
+func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string, keyAndValue ...string) {
 	resource := core_mesh.TrafficRouteResource{
 		Spec: &mesh_proto.TrafficRoute{
 			Conf: &mesh_proto.TrafficRoute_Conf{
@@ -145,7 +145,11 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 			},
 		},
 	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh))
+	labels := map[string]string{}
+	for i := 0; i < len(keyAndValue); i += 2 {
+		labels[keyAndValue[i]] = keyAndValue[i+1]
+	}
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh), store.CreateWithLabels(labels))
 	Expect(err).NotTo(HaveOccurred())
 }
 

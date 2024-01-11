@@ -11,7 +11,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -59,7 +60,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			resources, _ := readPolicies(given.policiesFile)
 
 			// when
-			policies, err := matchers.EgressMatchedPolicies(policies_api.MeshTrafficPermissionType, es.Spec.Tags, resources)
+			policies, err := matchers.EgressMatchedPolicies(mtp_api.MeshTrafficPermissionType, es.Spec.Tags, resources)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -67,6 +68,23 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "fromrules")))
+
+	DescribeTable("should return egress fromRules for the given external service when policy has From and To",
+		func(given testCase) {
+			// given external service resource
+			es := readES(given.esFile)
+			// given policies
+			resources, _ := readPolicies(given.policiesFile)
+
+			// when
+			policies, err := matchers.EgressMatchedPolicies(mt_api.MeshTimeoutType, es.Spec.Tags, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(policies.FromRules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "fromtorules")))
 
 	DescribeTable("should return egress toRules for the given external service",
 		func(given testCase) {

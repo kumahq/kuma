@@ -48,50 +48,34 @@ component that syncs policies from Zone to Global
 
 ### Apply policies on Zone CP, scope is bounded to a single zone
 
-Users apply policies on Zone CP and Kuma automatically adds `kuma.io/zone` tag to the top-level targetRefs before syncing
-these policies to Global. For example, when user creates a policy in `us-east` zone:
+There are 2 ways to deal with policies in Zone CP:
 
-```yaml
-type: MeshTimeout
-mesh: mesh-1
-name: t-1
-labels: # not implemented today, requires Postgres schema change
-  kuma.io/managed-by: zone
-spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  to: [...]
-```
+1. Automatically add `kuma.io/zone` tag to the top-level targetRefs before syncing these policies to Global. 
+   The conversion is visible inside the Zone store.
 
-Kuma automatically converts this to:
+2. Don't modify policies' spec, sync them to Global as is but add a label `kuma.io/origin` during the KDS sync. 
+   Update `BuildRules` algorithm to be aware of policies' origin. 
 
-```yaml
-type: MeshTimeout
-mesh: mesh-1
-name: t-1
-labels: # not implemented today, requires Postgres schema 
-  kuma.io/managed-by: zone
-spec:
-  targetRef:
-    kind: MeshServiceSubset
-    name: backend
-    tags:
-      kuma.io/zone: us-east
-  to: [...]
-```
+The [initial version](https://github.com/kumahq/kuma/pull/8427) of this document was proposing the 1st option, but after
+discussion with the team we found a few issues with it:
 
-This conversion is visible inside the Zone store (so it happens **not** in Zone CP memory).
-If users provide a policy with a correct `kuma.io/zone` tag then no additional conversion is required, but we have to
-validate that zone tag is matching the zone's name. The actual security check is happening on Global but validation is
-helpful to prevent unexpected behaviour.
+* transition from a non-federated zone to federated can be tricky. We have to update all existing in the store policies with
+  `kuma.io/zone` tag. At the same time DPPs are going to be updated with `kuma.io/zone` tag. This leads to a race condition. 
+* policies in store and in git are not the same
+* top-level targetRef's kind provided by user will be changed to a new kind `*Subset` and this can be confusing for users
+
+So we decided to go with the 2nd option.
 
 If users apply a policy on a zone without a `kuma.io/managed-by: zone` label then Zone CP returns an error saying
 "if you want to apply a policy on the zone please add `kuma.io/managed-by: zone` label".
 This measure is going to prevent users form unintentionally applying policies at the wrong place.
+In order to simplify the migration from non-federated zone to federated we can add a flag to Zone CP that will allow
+applying policies without `kuma.io/managed-by: zone` label. Label `kuma.io/managed-by: zone` is purely UX feature and 
+CP should not rely on it in `BuildRules` algorithm or KDS sync.
 
 Besides policies with top level targetRef we also have MeshGateway and MeshGatewayRoute resources.
-During the resource creation Zone CP will append `kuma.io/zone` tag to MeshGateway listeners and MeshGatewayRoute selectors.
+Same as with policies we're not going to add `kuma.io/zone` tag to MeshGateway listeners and MeshGatewayRoute selectors.
+Instead, the algorithm will be aware of the origin of the resource.  
 
 Syncing Zone originated policies to Global is needed only for visibility in GUI.
 

@@ -175,6 +175,18 @@ tags:
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshGateway,
 				},
+				GatewayListenerTagsAllowed: true,
+			},
+		}),
+		Entry("MeshGateway with period", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway.namespace
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
 			},
 		}),
 		Entry("MeshHTTPRoute", testCase{
@@ -465,7 +477,7 @@ name: "*"
 			expected: `
 violations:
   - field: targetRef.name
-    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshGateway when it's not supported", testCase{
@@ -528,7 +540,7 @@ name: "*"
 			expected: `
 violations:
   - field: targetRef.name
-    message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols. 
+    message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshServiceSubset when it's not supported", testCase{
@@ -576,7 +588,7 @@ tags: {}
 			expected: `
 violations:
  - field: targetRef.name
-   message: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+   message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
 		Entry("MeshServiceSubset with mesh", testCase{
@@ -611,6 +623,24 @@ kind: MeshGatewayRoute
 violations:
   - field: targetRef.kind
     message: value is not supported
+`,
+		}),
+		Entry("MeshGateway and no tags allowed", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: edge
+tags:
+  port: http
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: must not be set with kind MeshGateway
 `,
 		}),
 	)

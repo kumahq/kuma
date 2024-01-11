@@ -210,6 +210,20 @@
   },
   {
    "includeInDump": false,
+   "name": "MeshMetric",
+   "path": "meshmetrics",
+   "pluralDisplayName": "Mesh Metrics",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Metric"
+  },
+  {
+   "includeInDump": false,
    "name": "MeshProxyPatch",
    "path": "meshproxypatches",
    "pluralDisplayName": "Mesh Proxy Patches",
@@ -229,7 +243,7 @@
    "pluralDisplayName": "Mesh Rate Limits",
    "policy": {
     "hasFromTargetRef": true,
-    "hasToTargetRef": false,
+    "hasToTargetRef": true,
     "isTargetRef": true
    },
    "readOnly": false,

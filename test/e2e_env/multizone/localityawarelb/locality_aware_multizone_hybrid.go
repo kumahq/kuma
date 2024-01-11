@@ -17,66 +17,12 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func LocalityAwareLB() {
 	const mesh = "locality-aware-lb"
 	const namespace = "locality-aware-lb"
-
-	meshLoadBalancingStrategyDemoClient := YamlUniversal(fmt.Sprintf(`
-type: MeshLoadBalancingStrategy
-name: mlbs-1
-mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: demo-client_locality-aware-lb_svc
-  to:
-    - targetRef:
-        kind: MeshService
-        name: test-server_locality-aware-lb_svc_80
-      default:
-        localityAwareness:
-          localZone:
-            affinityTags:
-            - key: k8s.io/node
-            - key: k8s.io/az
-          crossZone:
-            failover:
-              - from:
-                  zones: ["kuma-4", "kuma-5"]
-                to:
-                  type: Only
-                  zones: ["kuma-4", "kuma-5"]
-              - from:
-                  zones: ["kuma-1-zone", "kuma-2-zone"]
-                to:
-                  type: Only
-                  zones: ["kuma-1-zone", "kuma-2-zone"]
-              - from:
-                  zones: ["kuma-4"]
-                to:
-                  type: Only
-                  zones: ["kuma-1-zone"]`, mesh))
-	meshLoadBalancingStrategyDemoClientMeshRoute := YamlUniversal(fmt.Sprintf(`
-type: MeshLoadBalancingStrategy
-name: mlbs-2
-mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: demo-client-mesh-route_locality-aware-lb_svc
-  to:
-    - targetRef:
-        kind: MeshService
-        name: test-server-mesh-route_locality-aware-lb_svc_80
-      default:
-        localityAwareness:
-          crossZone:
-            failover:
-              - to:
-                  type: Only
-                  zones: ["kuma-1-zone"]`, mesh))
 
 	BeforeAll(func() {
 		// Global
@@ -201,14 +147,6 @@ spec:
 		)).To(Succeed())
 	})
 
-	successRequestCount := func(cluster Cluster, name string) (int, error) {
-		return collectMetric(cluster, name, namespace, "test-server-mesh-route_locality-aware-lb_svc_80-f3615f466e37e855.upstream_rq_2xx")
-	}
-
-	failRequestCount := func(cluster Cluster, name string) (int, error) {
-		return collectMetric(cluster, name, namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
-	}
-
 	It("should route based on defined strategy", func() {
 		// should load balance traffic equally when no policy
 		Eventually(func() (map[string]int, error) {
@@ -226,7 +164,43 @@ spec:
 		)
 
 		// when load balancing policy created
-		Expect(NewClusterSetup().Install(meshLoadBalancingStrategyDemoClient).Setup(multizone.Global)).To(Succeed())
+		meshLoadBalancingStrategyDemoClient := utils.FromTemplate(Default, `
+type: MeshLoadBalancingStrategy
+name: mlbs-1
+mesh: {{.Mesh}} 
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client_locality-aware-lb_svc
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_locality-aware-lb_svc_80
+      default:
+        localityAwareness:
+          localZone:
+            affinityTags:
+            - key: k8s.io/node
+            - key: k8s.io/az
+          crossZone:
+            failover:
+              - from:
+                  zones: ["{{ .UniZone1 }}", "{{ .UniZone2 }}"]
+                to:
+                  type: Only
+                  zones: ["{{ .UniZone1 }}", "{{ .UniZone2 }}"]
+              - from:
+                  zones: ["{{ .KubeZone1 }}", "{{ .KubeZone2 }}"]
+                to:
+                  type: Only
+                  zones: ["{{ .KubeZone1 }}", "{{ .KubeZone2 }}"]
+              - from:
+                  zones: ["{{ .UniZone1 }}"]
+                to:
+                  type: Only
+                  zones: ["{{ .KubeZone1 }}"]`,
+			multizone.ZoneInfoForMesh(mesh))
+		Expect(NewClusterSetup().Install(YamlUniversal(meshLoadBalancingStrategyDemoClient)).Setup(multizone.Global)).To(Succeed())
 
 		// then traffic should be routed based on the policy
 		Eventually(func() (map[string]int, error) {
@@ -327,13 +301,13 @@ spec:
                 name: test-server-mesh-route_locality-aware-lb_svc_80
                 weight: 50
                 tags:
-                  kuma.io/zone: kuma-5
+                  kuma.io/zone: "%s" 
               - kind: MeshServiceSubset
                 name: test-server-mesh-route_locality-aware-lb_svc_80
                 weight: 50
                 tags:
-                  kuma.io/zone: kuma-1-zone
-`, mesh))(multizone.Global)).To(Succeed())
+                  kuma.io/zone: "%s"
+`, mesh, multizone.UniZone2.ZoneName(), multizone.KubeZone1.ZoneName()))(multizone.Global)).To(Succeed())
 
 		// then traffic should be routed equally
 		Eventually(func() (map[string]int, error) {
@@ -353,7 +327,27 @@ spec:
 		Expect(resetCounter(multizone.KubeZone2, "demo-client-mesh-route", namespace)).To(Succeed())
 
 		// when load balancing policy created
-		Expect(NewClusterSetup().Install(meshLoadBalancingStrategyDemoClientMeshRoute).Setup(multizone.Global)).To(Succeed())
+		meshLoadBalancingStrategyDemoClientMeshRoute := utils.FromTemplate(Default, `
+type: MeshLoadBalancingStrategy
+name: mlbs-2
+mesh: "{{ .Mesh }}"
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client-mesh-route_{{ .Mesh }}_svc
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server-mesh-route_{{ .Mesh }}_svc_80
+      default:
+        localityAwareness:
+          crossZone:
+            failover:
+              - to:
+                  type: Only
+                  zones: ["{{ .KubeZone1 }}"]`, multizone.ZoneInfoForMesh(mesh))
+
+		Expect(NewClusterSetup().Install(YamlUniversal(meshLoadBalancingStrategyDemoClientMeshRoute)).Setup(multizone.Global)).To(Succeed())
 
 		// and generate some traffic
 		_, err := client.CollectResponsesAndFailures(
@@ -366,10 +360,10 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		failedRequests, err := failRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
+		failedRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-ce3d32a0f959e460.upstream_rq_5xx")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(failedRequests).To(BeNumerically("~", 100, 25))
-		successRequests, err := successRequestCount(multizone.KubeZone2, "demo-client-mesh-route")
+		successRequests, err := collectMetric(multizone.KubeZone2, "demo-client-mesh-route", namespace, "test-server-mesh-route_locality-aware-lb_svc_80-70a8d85bc2519528.upstream_rq_2xx")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(successRequests).To(BeNumerically("~", 100, 25))
 	})

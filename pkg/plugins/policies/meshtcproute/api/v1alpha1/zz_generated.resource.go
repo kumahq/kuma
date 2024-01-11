@@ -126,7 +126,7 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:            NewMeshTCPRouteResource(),
 	ResourceList:        &MeshTCPRouteResourceList{},
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshtcproutes",
 	KumactlArg:          "meshtcproute",
 	KumactlListArg:      "meshtcproutes",

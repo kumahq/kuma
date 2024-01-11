@@ -2,13 +2,17 @@ package api_server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	oapi_helpers "github.com/kumahq/kuma/pkg/api-server/oapi-helpers"
@@ -30,8 +34,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -102,8 +107,8 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 	}
-	if r.descriptor.Name == mesh.DataplaneType {
-		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(r.rulesForDataplanes()).
+	if r.descriptor.Name == mesh.DataplaneType || r.descriptor.Name == mesh.MeshGatewayType {
+		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(r.rulesForResource()).
 			Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -317,13 +322,20 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response)
+		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response)
+		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
 	}
 }
 
-func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
+func (r *resourceEndpoints) createResource(
+	ctx context.Context,
+	name string,
+	meshName string,
+	spec model.ResourceSpec,
+	response *restful.Response,
+	labels map[string]string,
+) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		model.ResourceKey{Mesh: meshName, Name: name},
@@ -337,7 +349,7 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
-	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
+	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
 	} else {
 		response.WriteHeader(201)
@@ -349,6 +361,7 @@ func (r *resourceEndpoints) updateResource(
 	currentRes model.Resource,
 	newSpec model.ResourceSpec,
 	response *restful.Response,
+	labels map[string]string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
@@ -364,7 +377,7 @@ func (r *resourceEndpoints) updateResource(
 
 	_ = currentRes.SetSpec(newSpec)
 
-	if err := r.resManager.Update(ctx, currentRes); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)
@@ -428,6 +441,9 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
+
+	err.AddError("labels", r.validateLabels(resourceMeta.Labels))
+
 	if create {
 		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
 	} else {
@@ -438,6 +454,19 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		}
 	}
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
+	var err validators.ValidationError
+	for _, k := range maps.SortedKeys(labels) {
+		for _, msg := range validation.IsQualifiedName(k) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+		for _, msg := range validation.IsValidLabelValue(labels[k]) {
+			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+	}
+	return err
 }
 
 // The resource is prefixed with the zone name when it is synchronized
@@ -496,7 +525,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 
 		var dependentTypes []model.ResourceType
 		if r.descriptor.IsTargetRefBased {
-			dependentTypes = []model.ResourceType{v1alpha1.MeshHTTPRouteType, mesh.MeshGatewayType}
+			dependentTypes = []model.ResourceType{meshhttproute_api.MeshHTTPRouteType, mesh.MeshGatewayType}
 		} else if r.descriptor.Name == mesh.MeshGatewayRouteType {
 			dependentTypes = []model.ResourceType{mesh.MeshGatewayType}
 		}
@@ -538,7 +567,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			return false
 		}
-		dppList, _ := registry.Global().NewList(mesh.DataplaneType)
+		dppList := registry.Global().MustNewList(mesh.DataplaneType)
 		err = r.resManager.List(request.Request.Context(), dppList,
 			store.ListByMesh(meshName),
 			store.ListByNameContains(nameContains),
@@ -564,7 +593,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 	}
 }
 
-func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
+func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		resourceName := request.PathParameter("name")
 		meshName := r.meshFromRequest(request)
@@ -584,31 +613,65 @@ func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
 			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 			return
 		}
-		dp := resource.(*mesh.DataplaneResource)
+		var dp *mesh.DataplaneResource
+		switch {
+		case r.descriptor.Name == mesh.DataplaneType:
+			dp = resource.(*mesh.DataplaneResource)
+		case r.descriptor.Name == mesh.MeshGatewayType:
+			// Create a dataplane that would match this gateway.
+			// It might not show all policies but most of the ones matching this specific gateway and its routes
+			gw := resource.(*mesh.MeshGatewayResource)
+			if len(gw.Spec.Selectors) == 0 {
+				rest_errors.HandleError(request.Request.Context(), response, errors.New("no selectors on MeshGateway this is not supported"), "Invalid MeshGateway")
+				return
+			}
+			dp = &mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+							Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+							Tags: gw.Spec.Selectors[0].Match,
+						},
+					},
+				},
+			}
+		// In the future we will probably add externalService
+		default:
+			rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
+			return
+		}
 		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build Mesh context")
 		}
 
+		resources := xds_context.Resources{
+			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
+			MeshLocalResources: baseMeshContext.ResourceMap,
+		}
+		matchesByHash := map[string][]meshhttproute_api.Match{}
 		// Get all the matching policies
 		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
-		for _, policy := range allPlugins {
-			res, err := policy.Plugin.MatchedPolicies(dp, xds_context.Resources{
-				CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
-				MeshLocalResources: baseMeshContext.ResourceMap,
-			})
+		for _, policyPlugin := range allPlugins {
+			res, err := policyPlugin.Plugin.MatchedPolicies(dp, resources)
+			if res.Type == meshhttproute_api.MeshHTTPRouteType {
+				for _, pol := range res.ToRules.Rules {
+					for _, r := range pol.Conf.(meshhttproute_api.PolicyDefault).Rules {
+						matchesByHash[meshhttproute_api.HashMatches(r.Matches)] = r.Matches
+					}
+				}
+			}
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policy.Name))
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
 			}
 			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policy.Name))
+				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
 			}
 
 			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
-			// TODO resolve MeshHTTPRoute hashes in response
 			toRules := []api_common.Rule{}
 			for _, ruleItem := range res.ToRules.Rules {
 				toRules = append(toRules, api_common.Rule{
@@ -671,9 +734,20 @@ func (r *resourceEndpoints) rulesForDataplanes() restful.RouteFunction {
 				Warnings:  &warnings,
 			})
 		}
-		out := api_types.InspectRulesForDataplaneResponse{
-			Resource: oapi_helpers.ResourceToMeta(dp),
-			Rules:    rules,
+		httpMatches := []api_common.HttpMatch{}
+		for k, v := range matchesByHash {
+			httpMatches = append(httpMatches, api_common.HttpMatch{
+				Match: v,
+				Hash:  k,
+			})
+		}
+		sort.Slice(httpMatches, func(i, j int) bool {
+			return httpMatches[i].Hash < httpMatches[j].Hash
+		})
+		out := api_types.InspectRulesResponse{
+			HttpMatches: httpMatches,
+			Resource:    oapi_helpers.ResourceToMeta(resource),
+			Rules:       rules,
 		}
 		if err := response.WriteAsJson(out); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")

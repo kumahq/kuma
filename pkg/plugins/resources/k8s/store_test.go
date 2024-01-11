@@ -483,6 +483,7 @@ var _ = Describe("KubernetesStore", func() {
 				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      name,
 			}))
+			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal(name))
 			// and
 			Expect(actual.Spec.Conf.Destination["path"]).To(Equal("/example"))
 		})

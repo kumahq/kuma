@@ -14,13 +14,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -61,22 +60,46 @@ func DefaultContext(
 		config_manager.ClusterIdConfigKey: true,
 	}
 
-	mappers := []reconcile.ResourceMapper{
-		MapZoneTokenSigningKeyGlobalToPublicKey,
-		RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
-			cfg.Store.Type,
-			cfg.Store.Kubernetes.SystemNamespace,
+	globalMappers := []reconcile.ResourceMapper{
+		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginGlobal)),
+		reconcile.If(
+			reconcile.And(
+				reconcile.TypeIs(system.GlobalSecretType),
+				reconcile.NameHasPrefix(zone_tokens.SigningKeyPrefix),
+			),
+			MapZoneTokenSigningKeyGlobalToPublicKey),
+		reconcile.If(
+			reconcile.IsKubernetes(cfg.Store.Type),
+			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
+		reconcile.If(
+			reconcile.And(
+				reconcile.ScopeIs(core_model.ScopeMesh),
+				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
+				// particular format to be able to reference them
+				reconcile.Not(reconcile.TypeIs(system.SecretType)),
+			),
+			HashSuffixMapper(true)),
+	}
+
+	zoneMappers := []reconcile.ResourceMapper{
+		UpdateResourceMeta(
+			util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 		),
-		AddHashSuffix,
+		MapInsightResourcesZeroGeneration,
+		reconcile.If(
+			reconcile.IsKubernetes(cfg.Store.Type),
+			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
+		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 
 	return &Context{
 		ZoneClientCtx:        ctx,
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
-		ZoneProvidedFilter:   ZoneProvidedFilter(cfg.Multizone.Zone.Name),
+		ZoneProvidedFilter:   ZoneProvidedFilter,
 		Configs:              configs,
-		GlobalResourceMapper: CompositeResourceMapper(mappers...),
-		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
+		GlobalResourceMapper: CompositeResourceMapper(globalMappers...),
+		ZoneResourceMapper:   CompositeResourceMapper(zoneMappers...),
 		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
 	}
 }
@@ -85,7 +108,7 @@ func DefaultContext(
 // a single ResourceMapper which calls each in order. If an error
 // occurs, the first one is returned and no further mappers are executed.
 func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
-	return func(features kds.Features, r model.Resource) (model.Resource, error) {
+	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
 			if mapper == nil {
@@ -109,7 +132,7 @@ type specWithDiscoverySubscriptions interface {
 // MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
 // the field has only local relevance. This prevents reconciliation from unnecessarily
 // deeming the object to have changed.
-func MapInsightResourcesZeroGeneration(_ kds.Features, r model.Resource) (model.Resource, error) {
+func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
 		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
 		for _, sub := range spec.GetSubscriptions() {
@@ -119,9 +142,9 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r model.Resource) (model.
 		meta := r.GetMeta()
 		resType := reflect.TypeOf(r).Elem()
 
-		newR := reflect.New(resType).Interface().(model.Resource)
+		newR := reflect.New(resType).Interface().(core_model.Resource)
 		newR.SetMeta(meta)
-		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
+		if err := newR.SetSpec(spec.(core_model.ResourceSpec)); err != nil {
 			panic(any(errors.Wrap(err, "error setting spec on resource")))
 		}
 
@@ -131,112 +154,81 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r model.Resource) (model.
 	return r, nil
 }
 
-func MapZoneTokenSigningKeyGlobalToPublicKey(
-	_ kds.Features,
-	r model.Resource,
-) (model.Resource, error) {
-	resType := r.Descriptor().Name
-	currentMeta := r.GetMeta()
-	resName := currentMeta.GetName()
-
-	if resType == system.GlobalSecretType && strings.HasPrefix(resName, zone_tokens.SigningKeyPrefix) {
-		signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
-		publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
-		if err != nil {
-			return nil, err
-		}
-
-		publicSigningKeyResource := system.NewGlobalSecretResource()
-		newResName := strings.ReplaceAll(
-			resName,
-			zone_tokens.SigningKeyPrefix,
-			zone_tokens.SigningPublicKeyPrefix,
-		)
-		publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(currentMeta, newResName))
-
-		if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-			Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
-		}); err != nil {
-			return nil, err
-		}
-
-		return publicSigningKeyResource, nil
+func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+	signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
+	publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
+	if err != nil {
+		return nil, err
 	}
 
-	return r, nil
+	publicSigningKeyResource := system.NewGlobalSecretResource()
+	newResName := strings.ReplaceAll(
+		r.GetMeta().GetName(),
+		zone_tokens.SigningKeyPrefix,
+		zone_tokens.SigningPublicKeyPrefix,
+	)
+	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
+
+	if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
+		Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
+	}); err != nil {
+		return nil, err
+	}
+
+	return publicSigningKeyResource, nil
 }
 
-// RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper is a mapper
-// responsible for removing control plane system namespace suffixes from names
-// of plugin originated resources if resources are stored in kubernetes. Plugin
-// originated resources could be namespace scoped, but in this case, they
-// will be synced from the zone to global, so this mapper can be used as
-// a GlobalResourceMapper as the ones synced from global to zones will always be
-// placed in system namespace of the global control plane.
-func RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper(
-	storeType config_store.StoreType,
-	k8sSystemNamespace string,
-) reconcile.ResourceMapper {
-	// This mapper is intended for kubernetes only
-	if storeType != config_store.KubernetesStore {
-		return nil
-	}
-
-	return func(_ kds.Features, r model.Resource) (model.Resource, error) {
-		if r.Descriptor().IsPluginOriginated {
-			util.TrimSuffixFromName(r, k8sSystemNamespace)
-		}
-
+// RemoveK8sSystemNamespaceSuffixMapper is a mapper responsible for removing control plane system namespace suffixes
+// from names of resources if resources are stored in kubernetes.
+func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
+	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		util.TrimSuffixFromName(r, k8sSystemNamespace)
 		return r, nil
 	}
 }
 
-func AddHashSuffix(features kds.Features, r model.Resource) (model.Resource, error) {
-	if !features.HasFeature(kds.FeatureHashSuffix) {
-		return r, nil
+// HashSuffixMapper returns mapper that adds a hash suffix to the name during KDS sync
+func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.ResourceMapper {
+	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		if checkKDSFeature && !features.HasFeature(kds.FeatureHashSuffix) {
+			return r, nil
+		}
+
+		name := core_model.GetDisplayName(r)
+		values := make([]string, 0, len(labelsToUse))
+		for _, lbl := range labelsToUse {
+			values = append(values, r.GetMeta().GetLabels()[lbl])
+		}
+
+		newObj := r.Descriptor().NewObject()
+		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...)))
+		newObj.SetMeta(newMeta)
+		_ = newObj.SetSpec(r.GetSpec())
+
+		return newObj, nil
 	}
-
-	if r.Descriptor().Scope == model.ScopeGlobal {
-		return r, nil
-	}
-	if r.Descriptor().Name == system.SecretType {
-		// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
-		// particular format to be able to reference them
-		return r, nil
-	}
-
-	newObj := r.Descriptor().NewObject()
-
-	// When syncing mesh-scoped resources from Global to Zone, the only possible namespace on Global is system namespace.
-	// We always trim system namespace in RemoveK8sSystemNamespaceSuffixFromPluginOriginatedResourcesMapper,
-	// that's why r.GetMeta().GetName() never has a namespace suffix, so we can safely call SyncedNameInZone with it.
-	newObj.SetMeta(util.NewResourceMeta(hash.SyncedNameInZone(r.GetMeta().GetMesh(), r.GetMeta().GetName()), r.GetMeta().GetMesh()))
-	_ = newObj.SetSpec(r.GetSpec())
-
-	return newObj, nil
 }
 
-// GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
-// excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
+func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
+	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		r.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
+		return r, nil
+	}
+}
+
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
-	return func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool {
+	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
-		switch r.Descriptor().Name {
-		case mesh.DataplaneType:
-			return false
-		case system.ConfigType:
+		switch {
+		case r.Descriptor().Name == system.ConfigType:
 			return configs[resName]
-		case system.GlobalSecretType:
-			prefixes := []string{zoneingress.ZoneIngressSigningKeyPrefix}
-			if features.HasFeature(kds.FeatureZoneToken) {
-				// We need to sync Zone Token signing keys only to zone cps that can support it.
-				// Otherwise, Zone CP after the restart of either Zone or Global CP tries to recreate resource
-				// The result is that it NACKs the DiscoveryResponse and gets into a loop.
-				prefixes = append(prefixes, zone_tokens.SigningKeyPrefix)
-			}
-			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, prefixes...)
-		case mesh.ZoneIngressType:
+		case r.Descriptor().Name == system.GlobalSecretType:
+			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
+				zoneingress.ZoneIngressSigningKeyPrefix,
+				zone_tokens.SigningKeyPrefix,
+			}...)
+		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			zoneTag := util.ZoneTag(r)
 
 			if clusterID == zoneTag {
@@ -245,7 +237,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			}
 
 			zone := system.NewZoneResource()
-			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, model.NoMesh)); err != nil {
+			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
 				log.Error(err, "failed to get zone", "zone", zoneTag)
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
@@ -254,27 +246,11 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 			return zone.Spec.IsEnabled()
 		default:
-			return true
+			return core_model.IsLocallyOriginated(config_core.Global, r)
 		}
 	}
 }
 
-// ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
-// that belongs to another zones
-func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ context.Context, _ string, _ kds.Features, r model.Resource) bool {
-		switch r.Descriptor().Name {
-		case mesh.DataplaneType:
-			return clusterName == util.ZoneTag(r)
-		case mesh.ZoneIngressType:
-			return !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName)
-		case mesh.DataplaneInsightType,
-			mesh.ZoneIngressInsightType,
-			mesh.ZoneEgressType,
-			mesh.ZoneEgressInsightType:
-			return true
-		default:
-			return false
-		}
-	}
+func ZoneProvidedFilter(_ context.Context, _ string, _ kds.Features, r core_model.Resource) bool {
+	return core_model.IsLocallyOriginated(config_core.Zone, r)
 }

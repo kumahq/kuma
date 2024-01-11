@@ -63,7 +63,7 @@ func (h *DataplaneValidator) ValidateCreate(ctx context.Context, req admission.R
 
 	if err := h.validator.ValidateCreate(ctx, core_model.MetaToResourceKey(coreRes.GetMeta()), coreRes, mesh); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}
@@ -96,7 +96,7 @@ func (h *DataplaneValidator) ValidateUpdate(ctx context.Context, req admission.R
 
 	if err := h.validator.ValidateUpdate(ctx, coreRes, mesh); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}

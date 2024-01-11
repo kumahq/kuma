@@ -6,26 +6,28 @@ on:
       - versions.yml
       - UPGRADE.md
       - docs/generated/raw/**
-    branches-ignore:
-      - release-*
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
   workflow_dispatch: {}
   schedule:
     - cron: 0 8 * * *
 env:
   DOCS_REPO: kumahq/kuma-website
-  OUTPUT_PATH: app/docs
+  OUTPUT_PATH: app/assets
   VERSION_FILE: app/_data/versions.yml
   EDITION: kuma
+permissions:
+  contents: read
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: master
           path: repo
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: repo/go.mod
       - name: "sync docs" # loop over all the branches and generate the docs
@@ -35,8 +37,8 @@ jobs:
             name=$(echo "${b}" | sed 's/release-\(.*\)/\1.x/g' | sed 's/master/dev/g')
             echo "${b} ${name}"
             git checkout --force "${b}"
-            mkdir -p ../docs-build/${name}
-            cp -R docs/generated/raw/* ../docs-build/${name}/
+            mkdir -p ../docs-build/${name}/raw
+            cp -R docs/generated/raw ../docs-build/${name}/
             mkdir -p ../docs-build/raw
             if [[ "${b}" == "master" ]]; then
               if [[ -f UPGRADE.md ]]; then
@@ -46,7 +48,7 @@ jobs:
               cp versions.yml ../docs-build/raw/
             fi
           done
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           repository: ${{ env.DOCS_REPO }}
           path: docs
@@ -63,7 +65,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
         with:
           path: docs
           commit-message: "chore(deps): update docs from repo source"

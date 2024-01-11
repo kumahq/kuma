@@ -96,3 +96,9 @@ default:
       description: "2.5.x release"
     - title: 2.6.x
       description: "2.6.x release"
+    - title: 2.7.x
+      description: "2.7.x release"
+    - title: 2.8.x
+      description: "2.8.x release"
+    - title: 2.9.x
+      description: "2.9.x release"

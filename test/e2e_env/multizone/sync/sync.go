@@ -8,8 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/api"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -44,6 +46,38 @@ func Sync() {
 			out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(strings.Count(out, "Online")).To(Equal(4))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("show have insights in global and in zone", func() {
+		// Ensure each side of KDS has the respective values for Global and Zone instance info
+		globalName := ""
+		zoneInstance := ""
+		Eventually(func(g Gomega) {
+			result := &system.ZoneInsightResource{}
+			api.FetchResource(g, multizone.Global, result, "", multizone.KubeZone1.ZoneName())
+
+			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
+			sub := result.Spec.Subscriptions[0]
+			g.Expect(sub.GlobalInstanceId).ToNot(BeEmpty())
+			globalName = sub.GlobalInstanceId
+			if !Config.KumaLegacyKDS {
+				g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+			}
+			zoneInstance = sub.ZoneInstanceId
+		}, "30s", "1s").Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			result := &system.ZoneInsightResource{}
+			api.FetchResource(g, multizone.KubeZone1, result, "", multizone.KubeZone1.ZoneName())
+
+			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
+			sub := result.Spec.Subscriptions[0]
+			if !Config.KumaLegacyKDS {
+				// Check that this is the other side of the connection
+				g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
+				g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+			}
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -143,7 +177,7 @@ spec:
 			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 101)))).To(Succeed())
 
 			// then
-			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
+			hashedName := hash.HashedName(meshName, "tr-update")
 			Eventually(func() (string, error) {
 				return k8s.RunKubectlAndGetOutputE(multizone.KubeZone1.GetTesting(), multizone.KubeZone1.GetKubectlOptions(), "get", "trafficroute", hashedName, "-oyaml")
 			}, "30s", "1s").Should(ContainSubstring(`weight: 101`))

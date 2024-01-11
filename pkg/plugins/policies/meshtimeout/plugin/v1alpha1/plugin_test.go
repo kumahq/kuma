@@ -51,7 +51,12 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
-		context := xds_samples.SampleContext()
+		context := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
+			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
@@ -64,7 +69,7 @@ var _ = Describe("MeshTimeout", func() {
 					WithOutboundTargets(
 						xds_builders.EndpointMap().
 							AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()).
-							AddEndpoint("other-service-_0_", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("other-service-c72efb5be46fae6b", xds_samples.HttpEndpointBuilder()).
 							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
 					),
 			).
@@ -100,7 +105,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound-split",
 					Origin:   generator.OriginOutbound,
-					Resource: test_xds.ClusterWithName("other-service-_0_"),
+					Resource: test_xds.ClusterWithName("other-service-c72efb5be46fae6b"),
 				},
 			},
 			toRules: core_rules.ToRules{
@@ -417,7 +422,12 @@ var _ = Describe("MeshTimeout", func() {
 			Items: append([]*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()}, given.routes...),
 		}
 
-		xdsCtx := xds_samples.SampleContextWith(resources)
+		xdsCtx := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(resources).
+			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
 			WithRouting(xds_builders.Routing().
@@ -448,7 +458,7 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 	}, Entry("basic", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshSubset(),
@@ -468,7 +478,7 @@ var _ = Describe("MeshTimeout", func() {
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshSubset(),
@@ -494,7 +504,7 @@ var _ = Describe("MeshTimeout", func() {
 				Build(),
 		},
 		rules: core_rules.GatewayRules{
-			Rules: map[core_rules.InboundListener]core_rules.Rules{
+			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{
 						Subset: core_rules.MeshService("backend"),

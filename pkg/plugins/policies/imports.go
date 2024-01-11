@@ -7,6 +7,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit"
 	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshretry"

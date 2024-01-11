@@ -5,7 +5,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -19,6 +18,7 @@ type Clusters struct {
 	OutboundSplit map[string][]*envoy_cluster.Cluster
 	Gateway       map[string]*envoy_cluster.Cluster
 	Egress        map[string]*envoy_cluster.Cluster
+	Prometheus    *envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
@@ -47,6 +47,8 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			clusters.Gateway[cluster.Name] = cluster
 		case egress.OriginEgress:
 			clusters.Egress[cluster.Name] = cluster
+		case generator.OriginPrometheus:
+			clusters.Prometheus = cluster
 		default:
 			continue
 		}
@@ -73,32 +75,4 @@ func GatherTargetedClusters(
 	}
 
 	return targetedClusters
-}
-
-// InferProtocol infers protocol for the destination listener.
-// It will only return HTTP when all endpoints are tagged with HTTP.
-func InferProtocol(routing core_xds.Routing, serviceName string) core_mesh.Protocol {
-	var allEndpoints []core_xds.Endpoint
-	outboundEndpoints := core_xds.EndpointList(routing.OutboundTargets[serviceName])
-	allEndpoints = append(allEndpoints, outboundEndpoints...)
-	externalEndpoints := routing.ExternalServiceOutboundTargets[serviceName]
-	allEndpoints = append(allEndpoints, externalEndpoints...)
-
-	return generator.InferServiceProtocol(allEndpoints)
-}
-
-func HasExternalService(routing core_xds.Routing, serviceName string) bool {
-	// We assume that all the targets are either ExternalServices or not
-	// therefore we check only the first one
-	if endpoints := routing.OutboundTargets[serviceName]; len(endpoints) > 0 {
-		if endpoints[0].IsExternalService() {
-			return true
-		}
-	}
-
-	if endpoints := routing.ExternalServiceOutboundTargets[serviceName]; len(endpoints) > 0 {
-		return true
-	}
-
-	return false
 }

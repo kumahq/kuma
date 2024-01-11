@@ -167,7 +167,7 @@ var _ = Describe("Resource Endpoints", func() {
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// given
-			putSampleResourceIntoStore(resourceStore, "tr-1", mesh)
+			putSampleResourceIntoStore(resourceStore, "tr-1", mesh, "foo", "bar")
 
 			// when
 			response := client.get("tr-1")
@@ -183,6 +183,9 @@ var _ = Describe("Resource Endpoints", func() {
 				"mesh": "default",
 				"creationTime": "0001-01-01T00:00:00Z",
 				"modificationTime": "0001-01-01T00:00:00Z",
+				"labels": {
+					"foo": "bar"
+				},
 				"conf": {
 				  "destination": {
 					"path": "/sample-path"
@@ -539,6 +542,9 @@ var _ = Describe("Resource Endpoints", func() {
 					Name: "new-resource",
 					Mesh: mesh,
 					Type: string(core_mesh.TrafficRouteType),
+					Labels: map[string]string{
+						"foo": "bar",
+					},
 				},
 				Spec: &mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{{Match: map[string]string{
@@ -561,6 +567,13 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(201))
+
+			// and then
+			resource := core_mesh.NewTrafficRouteResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey("new-resource", mesh))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resource.Spec.Conf.Destination["path"]).To(Equal("/sample-path"))
+			Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
 		})
 
 		It("should update a resource when one already exist", func() {
@@ -574,6 +587,10 @@ var _ = Describe("Resource Endpoints", func() {
 					Name: name,
 					Mesh: mesh,
 					Type: string(core_mesh.TrafficRouteType),
+					Labels: map[string]string{
+						"foo":      "barbar",
+						"newlabel": "newvalue",
+					},
 				},
 				Spec: &mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{{Match: map[string]string{
@@ -598,6 +615,7 @@ var _ = Describe("Resource Endpoints", func() {
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Conf.Destination["path"]).To(Equal("/update-sample-path"))
+			Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 		})
 
 		It("should return 400 on the type in url that is different from request", func() {
@@ -972,6 +990,41 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidMetaTypeWithNewSchema.golden.json")))
 		})
+
+		It("should return 400 when labels are invalid", func() {
+			// given
+			json := `{
+				"type": "MeshTrafficPermission",
+				"name": "sample",
+				"mesh": "default",
+				"labels": {
+					"foo/bar/baz": "bar",
+					"": "bar",
+					"foo": "^*bar"
+				},
+				"spec": {
+					"targetRef": {
+						"kind": "Mesh"
+					},
+					"from": [{"targetRef":{"kind":"Mesh"}, "default":{"action":"Allow"}}]
+				}
+			}`
+
+			// when
+			cl := resourceApiClient{
+				address: apiServer.Address(),
+				path:    "/meshes/" + mesh + "/meshtrafficpermissions",
+			}
+			response := cl.putJson("sample", []byte(json))
+
+			// when
+			bytes, err := io.ReadAll(response.Body)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onInvalidLabels.golden.json")))
+		})
 	})
 
 	Describe("On DELETE", func() {
@@ -1048,4 +1101,9 @@ var _ = Describe("Resource Endpoints", func() {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
 	}, test.EntriesForFolder("inspect/dataplanes/_rules"))
+
+	DescribeTable("inspect meshgateway rules /meshes/{mesh}/meshgateways/{gwName}/_rules", func(inputFile string) {
+		format.MaxLength = 0
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("inspect/meshgateways/_rules"))
 })

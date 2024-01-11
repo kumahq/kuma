@@ -114,7 +114,7 @@ interCp:
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("demo-client"))
 	})
 
 	It("communication in between apps in zone works", func() {
@@ -180,7 +180,7 @@ interCp:
 
 		podName, err := PodNameOfApp(c2, "demo-client", TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.%s", Kuma2, podName, TestNamespace, Config.KumaNamespace)
+		dataplaneName := fmt.Sprintf("%s.%s.%s.%s", Kuma2, podName, TestNamespace, Config.KumaNamespace)
 
 		// when
 		_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--type", "config-dump")

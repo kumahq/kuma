@@ -11,6 +11,8 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
@@ -48,13 +50,31 @@ const (
 type KDSFlagType uint32
 
 const (
-	KDSDisabled      = KDSFlagType(0)
-	ConsumedByZone   = KDSFlagType(1)
-	ConsumedByGlobal = KDSFlagType(1 << 2)
-	ProvidedByZone   = KDSFlagType(1 << 3)
-	ProvidedByGlobal = KDSFlagType(1 << 4)
-	FromZoneToGlobal = ConsumedByGlobal | ProvidedByZone
-	FromGlobalToZone = ProvidedByGlobal | ConsumedByZone
+	// KDSDisabledFlag is a flag that indicates that this resource type is not sent using KDS.
+	KDSDisabledFlag = KDSFlagType(0)
+
+	// ZoneToGlobalFlag is a flag that indicates that this resource type is sent from Zone CP to Global CP.
+	ZoneToGlobalFlag = KDSFlagType(1)
+
+	// GlobalToAllZonesFlag is a flag that indicates that this resource type is sent from Global CP to all zones.
+	GlobalToAllZonesFlag = KDSFlagType(1 << 2)
+
+	// GlobalToAllButOriginalZoneFlag is a flag that indicates that this resource type is sent from Global CP to
+	// all zones except the zone where the resource was originally created. Today the only resource that has this
+	// flag is ZoneIngress.
+	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
+)
+
+const (
+	// GlobalToZoneSelector is selector for all flags that indicate resource sync from Global to Zone.
+	// Can't be used as KDS flag for resource type.
+	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
+
+	// AllowedOnGlobalSelector is selector for all flags that indicate resource can be created on Global.
+	AllowedOnGlobalSelector = GlobalToAllZonesFlag
+
+	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
+	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
@@ -235,7 +255,7 @@ func HasKDSFlag(flagType KDSFlagType) TypeFilter {
 
 func HasKdsEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags != 0
+		return descriptor.KDSFlags != KDSDisabledFlag
 	})
 }
 
@@ -353,6 +373,7 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+	GetLabels() map[string]string
 }
 
 // IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`
@@ -375,9 +396,43 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
 }
 
+func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+	switch mode {
+	case config_core.Global:
+		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		return !ok || origin == mesh_proto.ResourceOriginGlobal
+	case config_core.Zone:
+		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		return !ok || origin == mesh_proto.ResourceOriginZone
+	default:
+		return true
+	}
+}
+
+func GetDisplayName(r Resource) string {
+	// prefer display name as it's more predictable, because
+	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
+	// * When policies are synced to Zone, hash suffix also breaks sorting
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+		return labels[mesh_proto.DisplayName]
+	}
+	return r.GetMeta().GetName()
+}
+
+// ZoneOfResource returns zone from which the resource was synced to Global CP
+// There is no information in the resource itself whether the resource is synced or created on the CP.
+// Therefore, it's a caller responsibility to make use it only on synced resources.
+func ZoneOfResource(res Resource) string {
+	if labels := res.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
+		return labels[mesh_proto.ZoneTag]
+	}
+	parts := strings.Split(res.GetMeta().GetName(), ".")
+	return parts[0]
+}
+
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
-	return n1 == n2 || hash.SyncedNameInZone(mesh, n1) == n2 || hash.SyncedNameInZone(mesh, n2) == n1
+	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
@@ -460,17 +515,13 @@ type ResourceWithAddress interface {
 	AdminAddress(defaultAdminPort uint32) string
 }
 
-// ZoneOfResource returns zone from which the resource was synced to Global CP
-// There is no information in the resource itself whether the resource is synced or created on the CP.
-// Therefore, it's a caller responsibility to make use it only on synced resources.
-func ZoneOfResource(res Resource) string {
-	parts := strings.Split(res.GetMeta().GetName(), ".")
-	return parts[0]
-}
-
 type PolicyItem interface {
 	GetTargetRef() common_api.TargetRef
 	GetDefault() interface{}
+}
+
+type TransformDefaultAfterMerge interface {
+	Transform()
 }
 
 type Policy interface {

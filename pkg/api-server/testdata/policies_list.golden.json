@@ -122,6 +122,17 @@
    "isOutbound": true
   },
   {
+   "name": "MeshMetric",
+   "readOnly": false,
+   "path": "meshmetrics",
+   "singularDisplayName": "Mesh Metric",
+   "pluralDisplayName": "Mesh Metrics",
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": false
+  },
+  {
    "name": "MeshProxyPatch",
    "readOnly": false,
    "path": "meshproxypatches",
@@ -141,7 +152,7 @@
    "isExperimental": false,
    "isTargetRefBased": true,
    "isInbound": true,
-   "isOutbound": false
+   "isOutbound": true
   },
   {
    "name": "MeshRetry",

@@ -80,21 +80,31 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 	}
 }
 
-func YamlK8s(yaml string) InstallFunc {
+func YamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}
 }
 
-func DeleteYamlK8s(yaml string) InstallFunc {
+func DeleteYamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}
@@ -232,9 +242,11 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 
 		var podError error
 		for _, p := range pods {
-			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			pod := p
+			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if podError != nil {
-				return printDetailedPodInfo(testingT, kubectlOptions, podError, p)
+				podPrinter := NewK8sPodDetailPrinter(testingT, c.GetKubectlOptions(namespace), &pod)
+				return errors.New(podError.Error() + "\nPod details:\n" + podPrinter.Print())
 			}
 		}
 		return nil

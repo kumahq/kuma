@@ -29,7 +29,6 @@ func CreateMeshIfNotExist(
 	if !core_store.IsResourceNotFound(err) {
 		return nil, err
 	}
-	logger.Info("trying to create default Mesh")
 	if err := resManager.Create(ctx, mesh, core_store.CreateBy(defaultMeshKey)); err != nil {
 		logger.V(1).Info("could not create default mesh", "err", err)
 		return nil, err

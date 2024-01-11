@@ -115,11 +115,11 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
 		out.KdsDirection = ""
 	case r.Kds.SendToGlobal && r.Kds.SendToZone:
-		out.KdsDirection = "model.FromZoneToGlobal | model.FromGlobalToZone"
+		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag"
 	case r.Kds.SendToGlobal:
-		out.KdsDirection = "model.FromZoneToGlobal"
+		out.KdsDirection = "model.ZoneToGlobalFlag"
 	case r.Kds.SendToZone:
-		out.KdsDirection = "model.FromGlobalToZone"
+		out.KdsDirection = "model.GlobalToAllZonesFlag"
 	}
 
 	if p := desc.Parent(); p != nil {

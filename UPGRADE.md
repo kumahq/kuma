@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upgrade to `2.6.x`
 
+### Policy sorting
+
+Policy merging now gives precedence to policies lexicographically before
+other policies.
+
 ### Unifying Default Connection Timeout Values
 
 To simplify configuration and provide a more consistent user experience, we've unified the default connection timeout values. When no `MeshTimeout` or `Timeout` policy is specified, the connection timeout will now be the same as the default `connectTimeout` values for `MeshTimeout` and `Timeout` policies. This value is now `5s`, which is a decrease from the previous default of `10s`.
@@ -18,9 +23,19 @@ The only users who need to take action are those who are explicitly relying on t
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
 
+### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
+
+With the release of Kuma 2.6.0, we've made some changes to the implementation of `MeshTrafficPermission` policies targeting HTTP services. These changes primarily revolve around the use of the `envoy.filters.http.rbac` envoy filter instead of the `envoy.filters.network.rbac` filter. This migration entails the following adjustments:
+
+1. **Denied Request Response**: Rejected requests will now receive a 403 response code with the message `RBAC: access denied` instead of the previous 503 code. This aligns with the typical HTTP response code for authorization failures.
+
+2. **RBAC-Related Envoy Stats**: The prefix for RBAC-related Envoy stats has been updated from `<inbound|outbound>:<stat_prefix>.rbac.` to `http.<stat_prefix>.rbac.`. This reflects the use of the HTTP filter for RBAC enforcement. For instance, the stat `inbound:127.0.0.1:21011.rbac.allowed` will now become `http.127.0.0.1:21011.rbac.allowed.` If you're utilizing these stats in your observability stack, you'll need to update your configuration to reflect the change.
+
+To ensure a smooth transition to Kuma 2.6.0, carefully review your existing configuration files and make necessary adjustments related to denied request responses and RBAC-related Envoy stats.
+
 ### Deprecation of postgres driverName=postgres (lib/pq)
 
-The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future. 
+The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
 Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
 
 ## Upgrade to `2.5.x`

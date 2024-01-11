@@ -17,7 +17,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -48,7 +47,8 @@ type ToRules struct {
 }
 
 type GatewayRules struct {
-	Rules map[InboundListener]Rules
+	ToRules         map[InboundListener]Rules
+	SingleItemRules map[InboundListener]SingleItemRules
 }
 
 type SingleItemRules struct {
@@ -261,6 +261,7 @@ func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
 	httpRoutes []core_model.Resource,
 ) (GatewayRules, error) {
+	singleItemRules := map[InboundListener]SingleItemRules{}
 	rulesByInbound := map[InboundListener]Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		rules, err := BuildToRules(policies, httpRoutes)
@@ -268,8 +269,16 @@ func BuildGatewayRules(
 			return GatewayRules{}, err
 		}
 		rulesByInbound[inbound] = rules.Rules
+
+		singleItemRules[inbound], err = BuildSingleItemRules(policies)
+		if err != nil {
+			return GatewayRules{}, err
+		}
 	}
-	return GatewayRules{Rules: rulesByInbound}, nil
+	return GatewayRules{
+		ToRules:         rulesByInbound,
+		SingleItemRules: singleItemRules,
+	}, nil
 }
 
 func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]core_model.PolicyItem, error) {
@@ -298,10 +307,7 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range mhr.Spec.To {
 		for _, mhrRule := range mhrRules.Rules {
-			matchesHash, err := sha256.HashAny(mhrRule.Matches)
-			if err != nil {
-				return nil, err
-			}
+			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
 				rv = append(rv, &artificialPolicyItem{
 					targetRef: common_api.TargetRef{
@@ -458,11 +464,13 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				sort.Slice(origins, func(i, j int) bool {
 					return origins[i].GetName() < origins[j].GetName()
 				})
-				rules = append(rules, &Rule{
-					Subset: ss,
-					Conf:   merged,
-					Origin: origins,
-				})
+				for _, mergedRule := range merged {
+					rules = append(rules, &Rule{
+						Subset: ss,
+						Conf:   mergedRule,
+						Origin: origins,
+					})
+				}
 			}
 		}
 	}

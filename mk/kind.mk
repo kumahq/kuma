@@ -1,4 +1,3 @@
-EXAMPLE_NAMESPACE ?= kuma-example
 KIND_CLUSTER_NAME ?= kuma
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
@@ -11,12 +10,10 @@ KIND_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/kind-$(KIND_CLUSTER_NAME)-config
 # Ensure Kubernetes tooling only gets the config we explicitly specify.
 unexport KUBECONFIG
 
-METRICS_SERVER_VERSION := 0.4.1
-
 ifdef IPV6
-KIND_CONFIG ?= $(TOP)/test/kind/cluster-ipv6.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
 else
-KIND_CONFIG ?= $(TOP)/test/kind/cluster.yaml
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
 endif
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
@@ -25,13 +22,6 @@ else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
 
-define KIND_EXAMPLE_DATAPLANE_MESH
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) -n $(EXAMPLE_NAMESPACE) exec $$($(KUBECTL) -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)
-endef
-define KIND_EXAMPLE_DATAPLANE_NAME
-$(shell KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) -n $(EXAMPLE_NAMESPACE) exec $$($(KUBECTL) -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
-endef
-
 CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb3529d9fba91b3951d461edfdb
 
 KUMA_MODE ?= zone
@@ -39,10 +29,10 @@ KUMA_NAMESPACE ?= kuma-system
 
 .PHONY: kind/start
 kind/start: ${KUBECONFIG_DIR}
-	@$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
+	$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		($(KIND) create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
-			--config "$(KIND_CONFIG)" \
+			--config "$(KUMA_DIR)/test/kind/cluster-$(if $(IPV6),ipv6-,)$(KIND_CLUSTER_NAME).yaml" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
@@ -58,9 +48,13 @@ kind/start: ${KUBECONFIG_DIR}
 
 .PHONY: kind/wait
 kind/wait:
-	until \
-		KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-	do echo "Waiting for the cluster to come up" && sleep 1; done
+	@TIMES_TRIED=0; \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
+    	echo "Waiting for the cluster to come up" && sleep 1; \
+  		TIMES_TRIED=$$((TIMES_TRIED+1)); \
+  		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
+    done
 
 .PHONY: kind/stop
 kind/stop:
@@ -85,10 +79,12 @@ kind/deploy/kuma: build/kumactl kind/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
-	@until \
-      KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-    do \
-      echo "Waiting for the cluster to come up" && sleep 1; \
+	@TIMES_TRIED=0; \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
+    	echo "Waiting for the cluster to come up" && sleep 1; \
+  		TIMES_TRIED=$$((TIMES_TRIED+1)); \
+  		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
     done
 
 .PHONY: kind/deploy/helm
@@ -123,19 +119,10 @@ kind/deploy/observability: build/kumactl
 
 .PHONY: kind/deploy/metrics-server
 kind/deploy/metrics-server:
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v$(METRICS_SERVER_VERSION)/components.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.4.1/components.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch -n kube-system deployment/metrics-server \
 		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=2m --for=condition=Available -n kube-system deployment/metrics-server
-
-.PHONY: kind/deploy/example-app
-kind/deploy/example-app:
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/meshes/no-passthrough.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/external-services/httpbin.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/external-services/mockbin.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(EXAMPLE_NAMESPACE) || true
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) annotate namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
 
 .PHONY: run/k8s
 run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
@@ -148,7 +135,3 @@ run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally i
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
 	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
 	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp --log-level=debug
-
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_MESH=$(KIND_EXAMPLE_DATAPLANE_MESH)
-run/example/envoy/k8s: EXAMPLE_DATAPLANE_NAME=$(KIND_EXAMPLE_DATAPLANE_NAME)
-run/example/envoy/k8s: run/example/envoy

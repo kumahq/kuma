@@ -2,7 +2,8 @@ package admin
 
 import (
 	"context"
-	"strings"
+	"fmt"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
+	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 type kdsEnvoyAdminClient struct {
@@ -33,20 +35,19 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 }
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
+
+	err := k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send XDSConfigRequest")
+		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.XDSConfigDump.DeleteWatch(clientID, reqId)
@@ -64,27 +65,26 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 			return nil, errors.New("invalid request type")
 		}
 		if configResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", configResp.GetError())
+			return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: configResp.GetError()}
 		}
 		return configResp.GetConfig(), nil
 	}
 }
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
+
+	err := k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send StatsRequest")
+		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.Stats.DeleteWatch(clientID, reqId)
@@ -102,27 +102,26 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			return nil, errors.New("invalid request type")
 		}
 		if statsResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", statsResp.GetError())
+			return nil, &KDSTransportError{requestType: "StatsRequest", reason: statsResp.GetError()}
 		}
 		return statsResp.GetStats(), nil
 	}
 }
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
-	if err != nil {
-		return nil, err
-	}
+	zone := core_model.ZoneOfResource(proxy)
+	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
 	clientID := service.ClientID(ctx, zone)
-	err = k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
+
+	err := k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not send ClustersRequest")
+		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
 	}
 
 	defer k.rpcs.Clusters.DeleteWatch(clientID, reqId)
@@ -140,26 +139,33 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 			return nil, errors.New("invalid request type")
 		}
 		if clustersResp.GetError() != "" {
-			return nil, errors.Errorf("error response from Zone CP: %s", clustersResp.GetError())
+			return nil, &KDSTransportError{requestType: "ClustersRequest", reason: clustersResp.GetError()}
 		}
 		return clustersResp.GetClusters(), nil
 	}
 }
 
-func resNameInZone(nameInGlobal string, k8sStore bool) (string, string, error) {
-	parts := strings.Split(nameInGlobal, ".")
-	if len(parts) < 2 {
-		return "", "", errors.New("wrong name format. Expected {zone}.{name}")
+func resNameInZone(r core_model.Resource) string {
+	name := core_model.GetDisplayName(r)
+	if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
+		name = k8s.K8sNamespacedNameToCoreName(name, ns)
 	}
-	zone := parts[0] // zone is added by Global CP as a prefix for Dataplane/ZoneIngress/ZoneEgress
-	var nameInZone string
-	if k8sStore {
-		// if the type of store is Kubernetes then DPP resources are stored in namespaces. Kuma core model
-		// is not aware of namespaces and that's why the name in the core model is equal to 'name + .<namespace>'.
-		// Before sending the request we should trim the namespace suffix
-		nameInZone = strings.Join(parts[1:len(parts)-1], ".")
+	return name
+}
+
+type KDSTransportError struct {
+	requestType string
+	reason      string
+}
+
+func (e *KDSTransportError) Error() string {
+	if e.reason == "" {
+		return fmt.Sprintf("could not send %s", e.requestType)
 	} else {
-		nameInZone = strings.Join(parts[1:], ".")
+		return fmt.Sprintf("could not send %s: %s", e.requestType, e.reason)
 	}
-	return zone, nameInZone, nil
+}
+
+func (e *KDSTransportError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }

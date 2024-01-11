@@ -28,6 +28,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 		},
+		GatewayListenerTagsAllowed: true,
 	})
 }
 
@@ -55,6 +56,7 @@ func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.Validat
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
 		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
+		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
 	}
 
 	return errs
@@ -66,10 +68,24 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
+		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(topTargetRef, rule.Default.Filters, rule.Matches))
 		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(topTargetRef, rule.Default.BackendRefs))
 	}
 
+	return errs
+}
+
+func validateHostnames(topTargetRef common_api.TargetRef, hostnames []string) validators.ValidationError {
+	var errs validators.ValidationError
+
+	path := validators.Root()
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+	default:
+		if len(hostnames) > 0 {
+			errs.AddViolationAt(path, validators.MustNotBeDefined)
+		}
+	}
 	return errs
 }
 
@@ -169,7 +185,7 @@ func hasAnyMatchesWithoutPrefix(matches []Match) bool {
 	return false
 }
 
-func validateFilters(filters *[]Filter, matches []Match) validators.ValidationError {
+func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, matches []Match) validators.ValidationError {
 	var errs validators.ValidationError
 
 	if filters == nil {
@@ -215,6 +231,15 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
 			errs.AddErrorAt(path.Field("urlRewrite").Field("hostname"), validatePreciseHostname(filter.URLRewrite.Hostname))
+			if filter.URLRewrite.HostToBackendHostname {
+				if topTargetRef.Kind != common_api.MeshGateway {
+					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "can only be set with MeshGateway")
+				}
+
+				if filter.URLRewrite.Hostname != nil {
+					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "cannot be set together with hostname")
+				}
+			}
 		case RequestMirrorType:
 			if filter.RequestMirror == nil {
 				errs.AddViolationAt(path.Field("requestMirror"), validators.MustBeDefined)

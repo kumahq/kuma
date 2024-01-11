@@ -10,7 +10,6 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
@@ -25,11 +24,7 @@ type RoutesConfigurer struct {
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Matches)
 
-	h, err := sha256.HashAny(c.Matches)
-	if err != nil {
-		return err
-	}
-
+	h := api.HashMatches(c.Matches)
 	for _, match := range matches {
 		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, h).
 			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
