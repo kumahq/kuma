@@ -129,10 +129,6 @@ jobs:
             export KUMA_LEGACY_KDS=true
           fi
 
-          if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
-            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
-          fi
-          env
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else

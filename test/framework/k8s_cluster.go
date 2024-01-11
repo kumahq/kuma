@@ -574,7 +574,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			func() (string, error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
+
 		if err != nil {
+			cpLogs, err2 := c.GetKumaCPLogs()
+			Logf("cp logs", "error", err2, "logs", cpLogs)
 			return err
 		}
 	}
