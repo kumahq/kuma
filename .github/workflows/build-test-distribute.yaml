@@ -266,7 +266,7 @@ jobs:
               }
             }
           OVERRIDE_JQ_CMD: |-
-            .test_e2e = false
+            .test_e2e.k8sVersion = ["${{ env.K8S_MAX_VERSION }}"]
             | .test_e2e_env.include = []
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
         run: |-

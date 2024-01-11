@@ -25,6 +25,10 @@ jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    strategy:
+      fail-fast: false
+      matrix:
+        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '3' && '[0, 1, 2]') || '[0]') }}
     steps:
       - name: "Print parameters"
         id: eval-params
@@ -132,7 +136,7 @@ jobs:
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
-            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+            export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
           fi
           env
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
