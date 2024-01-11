@@ -178,6 +178,19 @@ tags:
 				GatewayListenerTagsAllowed: true,
 			},
 		}),
+		Entry("MeshGatewaysSubset", testCase{
+			inputYaml: `
+kind: MeshGatewaysSubset
+tags:
+  listener: one
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGatewaysSubset,
+				},
+				GatewayListenerTagsAllowed: true,
+			},
+		}),
 		Entry("MeshGateway with period", testCase{
 			inputYaml: `
 kind: MeshGateway
@@ -641,6 +654,39 @@ tags:
 violations:
   - field: targetRef.tags
     message: must not be set with kind MeshGateway
+`,
+		}),
+		Entry("MeshGatewaysSubset and no tags allowed", testCase{
+			inputYaml: `
+kind: MeshGatewaysSubset
+tags:
+  port: http
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGatewaysSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.tags
+    message: must not be set with kind MeshGatewaysSubset
+`,
+		}),
+		Entry("MeshGatewaysSubset and name not supported", testCase{
+			inputYaml: `
+kind: MeshGatewaysSubset
+name: not-possible
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGatewaysSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.name
+    message: must not be set with kind MeshGatewaysSubset
 `,
 		}),
 	)

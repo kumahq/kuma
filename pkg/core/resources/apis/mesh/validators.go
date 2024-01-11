@@ -348,10 +348,13 @@ func ValidateTargetRef(
 		}
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
-	case common_api.MeshSubset:
+	case common_api.MeshSubset, common_api.MeshGatewaysSubset:
 		err.Add(disallowedField("name", ref.Name, ref.Kind))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+		if ref.Kind == common_api.MeshGatewaysSubset && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
+			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		}
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name))
