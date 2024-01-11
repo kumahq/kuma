@@ -59,7 +59,7 @@ func Setup(rt runtime.Runtime) error {
 			ClientCert: certs.client,
 		})
 
-		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca)
+		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
