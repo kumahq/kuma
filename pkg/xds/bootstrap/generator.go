@@ -120,6 +120,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		ProxyType:           request.ProxyType,
 		Features:            request.Features,
 		Resources:           request.Resources,
+		Workdir:             request.Workdir,
 		AccessLogSocketPath: accessLogSocketPath,
 		MetricsSocketPath:   metricsSocketPath,
 		MetricsCertPath:     request.MetricsResources.CertPath,
@@ -161,6 +162,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.IsGatewayDataplane = true
 		}
 		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
+		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
 		if b.config.Params.CorefileTemplatePath != "" {
 			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
 			if err != nil {

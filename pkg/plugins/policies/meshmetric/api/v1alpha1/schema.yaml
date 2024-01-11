@@ -22,6 +22,9 @@ properties:
             description: Applications is a list of application that Dataplane Proxy will scrape
             items:
               properties:
+                address:
+                  description: Address on which an application listens.
+                  type: string
                 path:
                   default: /metrics/prometheus
                   description: Path on which an application expose HTTP endpoint with metrics.

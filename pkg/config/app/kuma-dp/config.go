@@ -33,6 +33,9 @@ var DefaultConfig = func() Config {
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+			DynamicConfiguration: DynamicConfiguration{
+				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
+			},
 		},
 		DNS: DNS{
 			Enabled:                   true,
@@ -204,6 +207,8 @@ type DataplaneRuntime struct {
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
+	// DynamicConfiguration defines properties of dataplane dynamic configuration
+	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 }
 
 type Metrics struct {
@@ -211,6 +216,11 @@ type Metrics struct {
 	CertPath string `json:"metricsCertPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_cert_path"`
 	// KeyPath path to the key for metrics listener
 	KeyPath string `json:"metricsKeyPath,omitempty" envconfig:"kuma_dataplane_runtime_metrics_key_path"`
+}
+
+type DynamicConfiguration struct {
+	// RefreshInterval defines how often DPP should refresh dynamic config. Default: 10s
+	RefreshInterval config_types.Duration `json:"refreshInterval,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_configuration_refresh_interval"`
 }
 
 // DataplaneResources defines the resources available to a dataplane proxy.

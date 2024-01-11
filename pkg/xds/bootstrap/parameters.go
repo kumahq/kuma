@@ -15,6 +15,7 @@ type KumaDpBootstrap struct {
 type NetworkingConfig struct {
 	IsUsingTransparentProxy bool
 	CorefileTemplate        []byte
+	Address                 string
 }
 
 type AggregateMetricsConfig struct {
@@ -33,6 +34,7 @@ type configParameters struct {
 	XdsHost             string
 	XdsPort             uint32
 	XdsConnectTimeout   time.Duration
+	Workdir             string
 	AccessLogSocketPath string
 	MetricsSocketPath   string
 	MetricsCertPath     string
