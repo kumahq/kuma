@@ -31,6 +31,9 @@ targetRef:
 
 Thanks to this we can allow users to target all gateways and apply some good default configuration for them.
 
+> Note:
+> This kind might target all listeners of the gateway, ignoring listener tags, except for policies that support targeting listeners by tags.
+
 ### Positive Consequences
 
 - Users can set things up for all gateways.
