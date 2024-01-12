@@ -34,6 +34,12 @@ var nameToModule = map[string]func(){
 	"meshtrafficpermissions":      meshtrafficpermission.InitPlugin,
 }
 
+func InitAllPolicies() {
+	for _, initializer := range nameToModule {
+		initializer()
+	}
+}
+
 func InitPolicies(enabledPluginPolicies []string) {
 	for _, policy := range enabledPluginPolicies {
 		initializer, ok := nameToModule[policy]
