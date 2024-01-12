@@ -709,6 +709,10 @@ proxy:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+policies:
+  pluginPoliciesEnabled:
+    - meshaccesslog
+    - meshcircuitbreaker
 tracing:
   openTelemetry:
     enabled: true
@@ -975,6 +979,7 @@ tracing:
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
+				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 			},
 			yamlFileConfig: "",
 		}),
