@@ -92,3 +92,4 @@ We could remove requirement of the name when using `kind: MeshGateway` and when 
 
 - Users can impact the configuration of all gateways by mistake
 - Change of the current api
+- Problem with ordering when there is more specific policy with the same kind but with name defined
