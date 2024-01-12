@@ -29,6 +29,8 @@ targetRef:
   tags: {} # not required
 ```
 
+When there is no tags, policy targets all gateways.
+
 Thanks to this we can allow users to target all gateways and apply some good default configuration for them.
 
 > Note:
