@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"net"
 	"net/http"
 
@@ -74,7 +73,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	policies.InitPolicies(cfg.Policies.PluginPoliciesEnabled)
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {

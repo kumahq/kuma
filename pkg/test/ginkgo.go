@@ -1,7 +1,6 @@
 package test
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"os"
 	"path"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 )
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
