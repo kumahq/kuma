@@ -1,0 +1,64 @@
+# Configuring many gateways
+
+- Status: accepted
+
+## Context and Problem Statement
+
+This document aims to clarify how to configure all gateways or a subset of them, especially when adjustments, such as in `MeshTimeout`, are needed compared to regular Mesh traffic.
+
+## Decision Drivers
+
+- When we set up default rules, we want to use different settings for gateways than we do for regular Mesh applications.
+
+## Considered Options
+
+- Introduce new kind `MeshGatewaysSubset`
+- Add label to all gateways and target them by kind `MeshSubset`
+
+## Decision Outcome
+
+- ?
+
+## Introduce new kind `MeshGatewaysSubset`
+
+We can introduce a new kind `MeshGatewaysSubset` It only picks gateways based on tags, if you provide tags. But, it can't pick a specific gateway by name.
+
+```yaml
+targetRef:
+  kind: MeshGatewaysSubset
+  tags: {} # not required
+```
+
+Thanks to this we can allow users to target all gateways and apply some good default configuration for them.
+
+### Positive Consequences
+
+- Users can set things up for all gateways.
+- We can use different defaults for gateways than for the whole Mesh.
+- More explicit
+
+### Negative Consequences
+
+- The name might be a bit confusing.
+
+## Add label to all gateways and target them by kind `MeshSubset`
+
+We could label all gateways with `kuma.io/gateway` label. Currently, we are using this label only on Kubernetes for gateways with value `enabled` for builtin and `provided` for provided gateways. We could start labeling all gateways with it. That would allow us to create a policy with the kind `MeshSubset` and tag selector matching this label.
+
+```yaml
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/gateway: "enabled"
+```
+
+### Positive Consequences
+
+- Users can set things up for all gateways.
+- We can use different defaults for gateways than for the whole Mesh.
+- No need for a new Kind.
+
+### Negative Consequences
+
+- Less explicit
+- We need to add the tag to all gateways.
