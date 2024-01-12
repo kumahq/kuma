@@ -323,7 +323,6 @@ spec:
 				g.Expect(response.ResponseCode).To(Equal(422))
 			}, "30s", "1s").Should(Succeed())
 		})
-
 	})
 
 	Context("when targeting a HTTPS gateway listener", func() {
