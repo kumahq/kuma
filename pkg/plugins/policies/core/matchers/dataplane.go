@@ -43,7 +43,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		selectedInbounds, delegatedGatewaySelected, err := dppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
 		if err != nil {
 			warnings = append(warnings,
-				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:'%s' name:'%s' error:'%s'",
+				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
 					policy.GetMeta().GetMesh(), policy.GetMeta().GetName(), err.Error(),
 				),
 			)
