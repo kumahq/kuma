@@ -17,12 +17,13 @@ limitations under the License.
 package v1alpha1_test
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ = Describe("Mesh", func() {
