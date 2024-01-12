@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
@@ -27,7 +28,7 @@ import (
 var _ = Describe("ZoneInsight", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *ZoneInsight
+		created, fetched *v1alpha1.ZoneInsight
 	)
 
 	BeforeEach(func() {
@@ -47,7 +48,7 @@ var _ = Describe("ZoneInsight", func() {
 			key = types.NamespacedName{
 				Name: "foo",
 			}
-			created = &ZoneInsight{
+			created = &v1alpha1.ZoneInsight{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
@@ -56,7 +57,7 @@ var _ = Describe("ZoneInsight", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &ZoneInsight{}
+			fetched = &v1alpha1.ZoneInsight{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 

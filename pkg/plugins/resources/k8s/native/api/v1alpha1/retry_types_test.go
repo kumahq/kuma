@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/context"
@@ -27,7 +28,7 @@ import (
 var _ = Describe("Retry", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *Retry
+		created, fetched *v1alpha1.Retry
 	)
 
 	BeforeEach(func() {
@@ -48,7 +49,7 @@ var _ = Describe("Retry", func() {
 				Name:      "foo",
 				Namespace: "default",
 			}
-			created = &Retry{
+			created = &v1alpha1.Retry{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "default",
@@ -58,7 +59,7 @@ var _ = Describe("Retry", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &Retry{}
+			fetched = &v1alpha1.Retry{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 
