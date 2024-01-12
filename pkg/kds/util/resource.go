@@ -64,9 +64,9 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 
 func AddPrefixToNames(rs []model.Resource, prefix string) {
 	for _, r := range rs {
-		r.SetMeta(CloneResourceMetaWithNewName(
+		r.SetMeta(CloneResourceMeta(
 			r.GetMeta(),
-			fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName()),
+			WithName(fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())),
 		))
 	}
 }
@@ -80,9 +80,9 @@ func AddPrefixToResourceKeyNames(rk []model.ResourceKey, prefix string) []model.
 
 func AddSuffixToNames(rs []model.Resource, suffix string) {
 	for _, r := range rs {
-		r.SetMeta(CloneResourceMetaWithNewName(
+		r.SetMeta(CloneResourceMeta(
 			r.GetMeta(),
-			fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix),
+			WithName(fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)),
 		))
 	}
 }
@@ -92,7 +92,7 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 func TrimSuffixFromName(r model.Resource, suffix string) {
 	dotSuffix := fmt.Sprintf(".%s", suffix)
 	newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
-	newMeta := CloneResourceMetaWithNewName(r.GetMeta(), newName)
+	newMeta := CloneResourceMeta(r.GetMeta(), WithName(newName))
 
 	r.SetMeta(newMeta)
 }

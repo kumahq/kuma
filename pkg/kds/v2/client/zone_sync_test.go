@@ -38,9 +38,9 @@ var _ = Describe("Zone Delta Sync", func() {
 	newPolicySink := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) client_v2.KDSSyncClient {
 		return client_v2.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
-			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
+			registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
 			client_v2.NewDeltaKDSStream(cs, zoneName, &runtimeInfo, ""),
-			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"), 0,
+			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, nil, "kuma-system"), 0,
 		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
@@ -75,7 +75,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
 		srv, err := setup.NewKdsServerBuilder(globalStore).
-			WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))).
+			WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
 			WithKdsContext(kdsCtx).
 			Delta()
 		Expect(err).ToNot(HaveOccurred())
@@ -134,7 +134,10 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
-		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+			"foo":                          "bar",
+		}))
 	})
 
 	It("should sync policies update and remove from global store to the local", func() {
@@ -158,7 +161,10 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
-		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+			"foo":                          "bar",
+		}))
 
 		// get mesh
 		mesh1 := mesh.NewMeshResource()
@@ -177,7 +183,11 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items).To(HaveLen(1))
 			// then zone store should have updated mesh
 			g.Expect(actual.Items[0].GetSpec().(*mesh_proto.Mesh).Mtls).To(BeNil())
-			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
+			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
+				mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+				"foo":                          "barbar",
+				"newlabel":                     "newvalue",
+			}))
 		}, "5s", "100ms").Should(Succeed())
 
 		// when delete Mesh resource
@@ -235,7 +245,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
 	})
 
 	It("should not delete predefined ConfigMaps in the Zone cluster", func() {

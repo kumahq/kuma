@@ -6,7 +6,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -16,19 +15,19 @@ import (
 )
 
 func MakeTCPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolUnknown: {},
+			core_mesh.ProtocolKafka:   {},
 			core_mesh.ProtocolTCP:     {},
 			core_mesh.ProtocolHTTP:    {},
 			core_mesh.ProtocolHTTP2:   {},
+			core_mesh.ProtocolGRPC:    {},
 		},
 		clusterCache,
 		servicesAcc,
@@ -38,17 +37,16 @@ func MakeTCPSplit(
 }
 
 func MakeHTTPSplit(
-	proxy *core_xds.Proxy,
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
-		proxy,
 		map[core_mesh.Protocol]struct{}{
 			core_mesh.ProtocolHTTP:  {},
 			core_mesh.ProtocolHTTP2: {},
+			core_mesh.ProtocolGRPC:  {},
 		},
 		clusterCache,
 		servicesAcc,
@@ -58,7 +56,6 @@ func MakeHTTPSplit(
 }
 
 func makeSplit(
-	proxy *core_xds.Proxy,
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.TargetRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
@@ -96,7 +93,7 @@ func makeSplit(
 			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
 		}
 
-		isExternalService := plugins_xds.HasExternalService(proxy.Routing, service)
+		isExternalService := meshCtx.IsExternalService(service)
 		refHash := ref.TargetRef.Hash()
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {

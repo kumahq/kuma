@@ -48,28 +48,29 @@ var _ = Describe("Config", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_CONTROL_PLANE_URL":                                 "https://kuma-control-plane.internal:5682",
-				"KUMA_CONTROL_PLANE_RETRY_BACKOFF":                       "1s",
-				"KUMA_CONTROL_PLANE_RETRY_MAX_DURATION":                  "10s",
-				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_BACKOFF":      "2s",
-				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_MAX_DURATION": "11s",
-				"KUMA_DATAPLANE_MESH":                                    "demo",
-				"KUMA_DATAPLANE_NAME":                                    "example",
-				"KUMA_DATAPLANE_DRAIN_TIME":                              "60s",
-				"KUMA_DATAPLANE_PROXY_TYPE":                              "ingress",
-				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                     "envoy.sh",
-				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                      "/var/run/envoy",
-				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                      "/tmp/token",
-				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                 "trace",
-				"KUMA_DNS_ENABLED":                                       "true",
-				"KUMA_DNS_CORE_DNS_PORT":                                 "5300",
-				"KUMA_DNS_CORE_DNS_EMPTY_PORT":                           "5301",
-				"KUMA_DNS_ENVOY_DNS_PORT":                                "5302",
-				"KUMA_DNS_CORE_DNS_BINARY_PATH":                          "/tmp/coredns",
-				"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH":                 "/tmp/Corefile",
-				"KUMA_DNS_CONFIG_DIR":                                    "/var/run/dnsserver",
-				"KUMA_DNS_PROMETHEUS_PORT":                               "6001",
-				"KUMA_DNS_ENABLE_LOGGING":                                "true",
+				"KUMA_CONTROL_PLANE_URL":                                        "https://kuma-control-plane.internal:5682",
+				"KUMA_CONTROL_PLANE_RETRY_BACKOFF":                              "1s",
+				"KUMA_CONTROL_PLANE_RETRY_MAX_DURATION":                         "10s",
+				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_BACKOFF":             "2s",
+				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_MAX_DURATION":        "11s",
+				"KUMA_DATAPLANE_MESH":                                           "demo",
+				"KUMA_DATAPLANE_NAME":                                           "example",
+				"KUMA_DATAPLANE_DRAIN_TIME":                                     "60s",
+				"KUMA_DATAPLANE_PROXY_TYPE":                                     "ingress",
+				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                            "envoy.sh",
+				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                             "/var/run/envoy",
+				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                             "/tmp/token",
+				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                        "trace",
+				"KUMA_DATAPLANE_RUNTIME_DYNAMIC_CONFIGURATION_REFRESH_INTERVAL": "5s",
+				"KUMA_DNS_ENABLED":                                              "true",
+				"KUMA_DNS_CORE_DNS_PORT":                                        "5300",
+				"KUMA_DNS_CORE_DNS_EMPTY_PORT":                                  "5301",
+				"KUMA_DNS_ENVOY_DNS_PORT":                                       "5302",
+				"KUMA_DNS_CORE_DNS_BINARY_PATH":                                 "/tmp/coredns",
+				"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH":                        "/tmp/Corefile",
+				"KUMA_DNS_CONFIG_DIR":                                           "/var/run/dnsserver",
+				"KUMA_DNS_PROMETHEUS_PORT":                                      "6001",
+				"KUMA_DNS_ENABLE_LOGGING":                                       "true",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -95,6 +96,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.ConfigDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
+			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))
 			Expect(cfg.DNS.Enabled).To(BeTrue())
 			Expect(cfg.DNS.CoreDNSPort).To(Equal(uint32(5300)))
 			Expect(cfg.DNS.CoreDNSEmptyPort).To(Equal(uint32(5301)))

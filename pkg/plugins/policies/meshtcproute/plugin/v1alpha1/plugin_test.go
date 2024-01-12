@@ -266,10 +266,11 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).WithExternalServicesEndpointMap(externalServiceOutboundTargets).
 					AddServiceProtocol("backend", util_protocol.GetCommonProtocol(core_mesh.ProtocolTCP, core_mesh.ProtocolHTTP)).
 					AddServiceProtocol("other-backend", core_mesh.ProtocolHTTP).
 					AddServiceProtocol("externalservice", core_mesh.ProtocolHTTP2).
+					AddExternalService("externalservice").
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
@@ -509,6 +510,64 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
 							WithToPolicy(meshhttproute_api.MeshHTTPRouteType, httpRules),
 					).
+					Build(),
+			}
+		}()),
+
+		Entry("kafka", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.4").
+						WithPort(8004).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolKafka, "region", "eu"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.5").
+						WithPort(8005).
+						WithWeight(1).
+						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolKafka, "region", "us"))
+			rules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					{
+						Subset: core_rules.MeshService("backend"),
+						Conf: api.Rule{
+							Default: api.RuleConf{
+								BackendRefs: []common_api.BackendRef{
+									{
+										TargetRef: builders.TargetRefServiceSubset(
+											"backend",
+											"region", "eu",
+										),
+										Weight: pointer.To(uint(60)),
+									},
+									{
+										TargetRef: builders.TargetRefServiceSubset(
+											"backend",
+											"region", "us",
+										),
+										Weight: pointer.To(uint(40)),
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolKafka).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(
+						samples.DataplaneWebBuilder(),
+					).
+					WithRouting(
+						xds_builders.Routing().
+							WithOutboundTargets(outboundTargets),
+					).
+					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
 		}()),

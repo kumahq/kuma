@@ -17,7 +17,7 @@ func NewKubernetesMapper() k8s.ResourceMapperFunc {
 	return func(resource model.Resource, namespace string) (k8s_model.KubernetesObject, error) {
 		res, err := DefaultConverter().ToKubernetesObject(resource)
 		res.TypeMeta = metav1.TypeMeta{
-			APIVersion: v1.SchemeGroupVersion.String(),
+			APIVersion: "v1",
 			Kind:       "Secret",
 		}
 		if err != nil {

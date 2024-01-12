@@ -31,3 +31,8 @@ updates:
     labels:
       - "dependencies"      
       - "ci/skip-test" # No need to run tests on github actions updates
+
+  - package-ecosystem: docker
+    directory: /tools/postgres
+    schedule:
+      interval: daily

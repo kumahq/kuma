@@ -54,22 +54,18 @@ endif
 ifeq ($(K8S_CLUSTER_TOOL),kind)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
+ifdef IPV6
+	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!ipv6-not-supported)
+endif
 
 ifeq ($(shell uname -m | sed -e s/aarch.*/arm64/),arm64)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
 endif
 
-
-ifdef IPV6
-KIND_CONFIG_IPV6=-ipv6
-endif
-
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
-	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/start
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/start
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
@@ -81,8 +77,7 @@ test/e2e/k8s/wait/$1:
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
-	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/stop
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/stop
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
@@ -136,9 +131,11 @@ test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slowe
 .PHONY: test/e2e-kubernetes
 test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag
-	$(MAKE) test/e2e/k8s/start
+	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
+	$(MAKE) test/e2e/k8s/wait/kuma-1
+	$(MAKE) test/e2e/k8s/load/images/kuma-1
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
-	$(MAKE) test/e2e/k8s/stop
+	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
 .PHONY: test/e2e-universal
 test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues

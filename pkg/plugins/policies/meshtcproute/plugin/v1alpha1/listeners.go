@@ -40,8 +40,8 @@ func generateListeners(
 			continue
 		}
 
-		splits := meshroute_xds.MakeTCPSplit(proxy, clusterCache, servicesAccumulator, backendRefs, meshCtx)
-		filterChain := buildFilterChain(proxy, serviceName, splits)
+		splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
+		filterChain := buildFilterChain(proxy, serviceName, splits, protocol)
 
 		listener, err := buildOutboundListener(proxy, outbound, filterChain)
 		if err != nil {

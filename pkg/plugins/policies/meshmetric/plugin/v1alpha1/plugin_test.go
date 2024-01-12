@@ -67,6 +67,12 @@ var _ = Describe("MeshMetric", func() {
 										Regex:    pointer.To("http.*"),
 										UsedOnly: pointer.To(true),
 									},
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
 									Backends: &[]api.Backend{
 										{
 											Type: api.PrometheusBackendType,

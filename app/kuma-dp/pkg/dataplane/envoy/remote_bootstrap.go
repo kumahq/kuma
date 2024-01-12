@@ -183,6 +183,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		OperatingSystem:     b.operatingSystem,
 		Features:            b.features,
 		Resources:           resources,
+		Workdir:             params.Workdir,
 		AccessLogSocketPath: params.AccessLogSocketPath,
 		MetricsResources: types.MetricsResources{
 			SocketPath: params.MetricsSocketPath,

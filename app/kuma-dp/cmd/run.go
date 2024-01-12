@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
@@ -150,6 +151,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
+			meshMetricDynamicConfigSocketPath := core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir)
 			components := []component.Component{
 				tokenComp,
 				component.NewResilientComponent(
@@ -186,6 +188,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
 				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
+				Workdir:             cfg.DataplaneRuntime.SocketDir,
 				AccessLogSocketPath: accessLogSocketPath,
 				MetricsSocketPath:   metricsSocketPath,
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
@@ -241,7 +244,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
-			components = append(components, metricsServer)
+			meshMetricsConfigFetcher := component.NewResilientComponent(
+				runLog.WithName("mesh-metric-config-fetcher"),
+				meshmetrics.NewMeshMetricConfigFetcher(
+					meshMetricDynamicConfigSocketPath,
+					time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+					metricsServer,
+					kumaSidecarConfiguration.Networking.Address,
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+				),
+			)
+			components = append(components, metricsServer, meshMetricsConfigFetcher)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}

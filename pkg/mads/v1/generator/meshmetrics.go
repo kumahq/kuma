@@ -9,9 +9,10 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/mads"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource) ([]*core_xds.Resource, error) {
+func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
 	for meshMetricConf, dataplane := range meshMetricToDataplane {
@@ -19,8 +20,11 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 			if backend.Type != v1alpha1.PrometheusBackendType {
 				continue
 			}
-
 			prometheusEndpoint := backend.Prometheus
+
+			if pointer.Deref(prometheusEndpoint.ClientId) != "" && pointer.Deref(prometheusEndpoint.ClientId) != clientId {
+				continue
+			}
 
 			schema := "http"
 			if prometheusEndpoint.Tls != nil && prometheusEndpoint.Tls.Mode == v1alpha1.ProvidedTLS {

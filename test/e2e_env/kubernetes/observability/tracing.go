@@ -61,8 +61,8 @@ func Tracing() {
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
 			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
 			Setup(kubernetes.Cluster)
-		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 	})
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())

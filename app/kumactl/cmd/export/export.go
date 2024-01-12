@@ -120,6 +120,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					if err != nil {
 						return err
 					}
+					cleanKubeObject(obj)
 					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
 						return err
 					}
@@ -129,7 +130,17 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			return nil
 		},
 	}
-	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: "%s"`, profileFederation))
+	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: %q`, profileFederation))
 	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: %q, %q`, formatUniversal, formatKubernetes))
 	return cmd
+}
+
+// cleans kubernetes object, so it can be applied on any other cluster
+func cleanKubeObject(obj map[string]interface{}) {
+	meta := obj["metadata"].(map[string]interface{})
+	delete(meta, "resourceVersion")
+	delete(meta, "ownerReferences")
+	delete(meta, "uid")
+	delete(meta, "generation")
+	delete(meta, "managedFields")
 }

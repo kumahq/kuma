@@ -245,8 +245,8 @@ func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallF
 			pod := p
 			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
 			if podError != nil {
-				podPrinter := NewK8sPodDetailPrinter(testingT, c.GetKubectlOptions(namespace), &pod)
-				return errors.New(podError.Error() + "\nPod details:\n" + podPrinter.Print())
+				podDetails := ExtractPodDetails(testingT, c.GetKubectlOptions(namespace), pod.Name)
+				return &K8sDecoratedError{Err: podError, Details: podDetails}
 			}
 		}
 		return nil

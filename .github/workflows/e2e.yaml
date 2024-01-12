@@ -39,16 +39,16 @@ jobs:
       - name: "Check if should run on all arch/os combinations"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
+          echo 'RUN_FULL_MATRIX=${{ env.E2E_PARAM_ARCH }}' > .run-full-matrix
           echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -56,7 +56,7 @@ jobs:
             go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@v3
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -77,36 +77,19 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      # FIXME: Workaround for Request Timeout issue of artifacts https://github.com/actions/download-artifact/issues/249
-      - name: "GitHub Actions: download build artifacts with retry"
-        uses: Wandalen/wretry.action@master
-        with:
-          action: actions/download-artifact@v4
-          with: |
-            path: build
-            name: build-output
-          attempt_limit: 5
-          attempt_delay: 1000
-      - name: "GitHub Actions: extract artifacts"
+      - name: "Github Actions: build"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
-          echo "Extracting artifacts..."
-          ARTIFACT=$(find build/distributions/out/*-linux-${{ env.E2E_PARAM_ARCH }}.tar.gz)
-          if [[ "$ARTIFACT" == "" ]]; then
-            echo "Could not find built artifact for linux(${{ env.E2E_PARAM_ARCH }})."
-            exit 1
-          fi
-          cat $ARTIFACT.sha256 | sha256sum --check
-
-          mkdir build/distributions/artifacts
-          tar -xzf $ARTIFACT -C build/distributions/artifacts
-
-          SRC_DIR=$(find build/distributions/artifacts/*/bin -type d)
-          DEST_DIR=build/artifacts-linux-${{ env.E2E_PARAM_ARCH }}
-          for BIN in $(ls $SRC_DIR); do
-            mkdir -p $DEST_DIR/$BIN
-            cp $SRC_DIR/$BIN $DEST_DIR/$BIN/
-          done
+          make build
+      - name: "Github Actions: distributions"
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          make -j build/distributions
+      - name: "Github Actions: images"
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          make -j images
+          make -j docker/save
       - name: "GitHub Actions: setup helm"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
@@ -159,7 +142,7 @@ jobs:
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             let circleCIParams = {
@@ -173,12 +156,11 @@ jobs:
             let circleCIBody = {
               "parameters": circleCIParams,
             };
-            // use pull/<number>/head if it's PR from a fork,
-            // otherwise, always use the current SHA to make sure all CircleCI e2e runnings are using the same commit SHA with this GH Action run
-            if ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}") {
-              circleCIBody["branch"] = '${{ github.ref_name}}'.replace(/^(refs\/)/,"");
+
+            if ( "${{ github.event_name }}" == "pull_request" ) {
+              circleCIBody["branch"] = 'pull/${{ github.event.pull_request.number }}/merge';
             } else {
-              circleCIBody["tag"] = '${{ github.event.pull_request.head.sha || github.sha }}'
+              circleCIBody["tag"] = '${{ github.sha }}'
             }
 
             core.info(`created request object for circleCI ${JSON.stringify(circleCIBody)}`);

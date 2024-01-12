@@ -81,7 +81,7 @@ func Api() {
 				g.Expect(res).To(HaveKey("kind"))
 				g.Expect(res["kind"]).To(Equal("Secret"))
 				g.Expect(res).To(HaveKey("apiVersion"))
-				g.Expect(res["apiVersion"]).To(Equal("meta.k8s.io/v1"))
+				g.Expect(res["apiVersion"]).To(Equal("v1"))
 				g.Expect(res["type"]).To(Equal(given.k8sSecType))
 			}, "30s", "1s").Should(Succeed())
 		},
