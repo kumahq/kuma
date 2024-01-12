@@ -34,6 +34,13 @@ Thanks to this we can allow users to target all gateways and apply some good def
 > Note:
 > This kind might target all listeners of the gateway, ignoring listener tags, except for policies that support targeting listeners by tags.
 
+### Ordering
+
+`MeshGatewaysSubset` is more specific than `MeshSubset` so its priority should be higher. Because `MeshGatewaysSubset` choose subset of Dataplanes that are gateways means is more specific.
+
+Priority:
+`Mesh` < `MeshSubset` < `MeshGatewaysSubset` < `MeshGateway` < `MeshService` < `MeshServiceSubset` < `MeshHTTPRoute`
+
 ### Positive Consequences
 
 - Users can set things up for all gateways.
