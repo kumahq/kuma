@@ -39,6 +39,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v1.55.2
+          skip-pkg-cache: true
       - run: |
           make clean
       - run: |
