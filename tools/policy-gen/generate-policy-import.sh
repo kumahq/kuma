@@ -24,7 +24,7 @@ done)
 echo "package policies
 
 import (
-$imports
+  $imports
 )
 
 var nameToModule = map[string]func(){
@@ -43,7 +43,7 @@ func InitPolicies(enabledPluginPolicies []string) {
 		if ok {
 			initializer()
 		} else {
-			panic("policy " + policy + " not found")
+			panic(\"policy \" + policy + \" not found\")
 		}
 	}
 }
