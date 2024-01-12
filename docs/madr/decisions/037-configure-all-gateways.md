@@ -14,6 +14,7 @@ This document aims to clarify how to configure all gateways or a subset of them,
 
 - Introduce new kind `MeshGatewaysSubset`
 - Add label to all gateways and target them by kind `MeshSubset`
+- Remove requirement of `name` when using kind `MeshGateway`
 
 ## Decision Outcome
 
@@ -76,3 +77,18 @@ In this case, we need to propagate the label from the pod to the dataplane objec
 
 - Less explicit
 - We need to add the tag to all gateways.
+
+### Remove requirement of `name` when using kind `MeshGateway`
+
+We could remove requirement of the name when using `kind: MeshGateway` and when the name is missing policy targets all gateways.
+
+### Positive Consequences
+
+- Users can set things up for all gateways.
+- No need for a new Kind.
+- Not confusing names
+
+### Negative Consequences
+
+- Users can impact the configuration of all gateways by mistake
+- Change of the current api
