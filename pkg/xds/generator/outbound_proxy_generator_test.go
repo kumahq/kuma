@@ -24,7 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = Describe("OutboundProxyGenerator", func() {
+var _ = FDescribe("OutboundProxyGenerator", func() {
 	meta := &test_model.ResourceMeta{
 		Name: "mesh1",
 	}
@@ -122,13 +122,14 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Meta: meta,
 			},
-			VIPOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
+			VIPDomains: []model.VIPDomains{
 				{
 					Address: "240.0.0.3",
-					Port:    80,
-					Tags: map[string]string{
-						mesh_proto.ServiceTag: "backend",
-					},
+					Domains: []string{"backend"},
+				},
+				{
+					Address: "240.0.0.4",
+					Domains: []string{"backend"},
 				},
 			},
 		},
@@ -835,6 +836,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: backend
               - port: 80
                 address: 240.0.0.3
+                tags:
+                  kuma.io/service: backend
+              - port: 80
+                address: 240.0.0.4
                 tags:
                   kuma.io/service: backend
               transparentProxying:

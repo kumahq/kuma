@@ -47,10 +47,11 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
 
-	serviceVips, serviceToVipsMap := buildServiceToVipsMap(outbounds, xdsCtx.Mesh.VIPOutbounds)
+	vipsToSkip, serviceToVipsMap := buildServiceAdditionalAddressMap(outbounds, xdsCtx.Mesh.VIPDomains)
 	for _, outbound := range outbounds {
 		// don't generate listeners for VIPs, they will be added as additional addresses
-		if serviceVips[outbound.Address] {
+		// if a service vip don't have any REAL service behind it, we still need to generate a listener for it
+		if vipsToSkip[outbound.Address] {
 			continue
 		}
 
@@ -450,36 +451,52 @@ func (OutboundProxyGenerator) determineRoutes(
 	return routes
 }
 
-func buildServiceToVipsMap(outbounds []*mesh_proto.Dataplane_Networking_Outbound, meshVIPOutbounds []*mesh_proto.Dataplane_Networking_Outbound) (map[string]bool, map[string][]mesh_proto.OutboundInterface) {
-	vipMap := map[string][]mesh_proto.OutboundInterface{}
+func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networking_Outbound, meshVIPDomains []model.VIPDomains) (map[string]bool, map[string][]mesh_proto.OutboundInterface) {
 	var dpNetworking *mesh_proto.Dataplane_Networking
 
-	serviceVips := map[string]bool{}
-	for _, ob := range meshVIPOutbounds {
-		service := ob.GetService()
-		if service != "" {
-			serviceVips[ob.Address] = true
-		}
+	fullVIPAddrMap := map[string]bool{}
+	vipToSkipMap := map[string]bool{}
+	serviceToVIPMap := map[string][]mesh_proto.OutboundInterface{}
+
+	for _, vipDomain := range meshVIPDomains {
+		fullVIPAddrMap[vipDomain.Address] = true
 	}
 
 	for _, outbound := range outbounds {
 		service := outbound.GetService()
-		if service == "" {
+		if service == "" || !fullVIPAddrMap[outbound.Address] {
 			continue
 		}
 
+		nonVIPServiceFound := false
+		var vips []mesh_proto.OutboundInterface
+
 		// scan from the beginning to find all possible siblings, because the outbounds are not sorted
+		// the value vips will contain all the VIPs pointing to the service, excluding the REAL service itself
 		for _, obInner := range outbounds {
-			if serviceVips[obInner.Address] &&
-				service == obInner.GetService() &&
-				!slices.ContainsFunc(vipMap[service], func(oface mesh_proto.OutboundInterface) bool {
-					return oface.DataplaneIP == obInner.Address
-				}) {
-				vipMap[service] = append(vipMap[service],
-					dpNetworking.ToOutboundInterface(obInner))
+			if service != obInner.GetService() {
+				continue
 			}
+
+			if !fullVIPAddrMap[obInner.Address] {
+				nonVIPServiceFound = true
+				continue
+			}
+
+			if !slices.ContainsFunc(vips, func(oface mesh_proto.OutboundInterface) bool {
+				return oface.DataplaneIP == obInner.Address
+			}) {
+				vips = append(vips, dpNetworking.ToOutboundInterface(obInner))
+			}
+		}
+
+		if nonVIPServiceFound {
+			for _, vip := range vips {
+				vipToSkipMap[vip.DataplaneIP] = true
+			}
+			serviceToVIPMap[service] = vips
 		}
 	}
 
-	return serviceVips, vipMap
+	return vipToSkipMap, serviceToVIPMap
 }
