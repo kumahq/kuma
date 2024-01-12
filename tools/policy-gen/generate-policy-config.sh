@@ -12,8 +12,8 @@ fi
 
 echo "package policies
 
-func DefaultPoliciesConfig() *PoliciesConfig {
-    return &PoliciesConfig{
+func DefaultPoliciesConfig() *Config {
+    return &Config{
         PluginPoliciesEnabled: []string{
             $policies
         },
