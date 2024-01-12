@@ -15,6 +15,7 @@ This document aims to clarify how to configure all gateways or a subset of them,
 - Introduce new kind `MeshGatewaysSubset`
 - Add label to all gateways and target them by kind `MeshSubset`
 - Remove requirement of `name` when using kind `MeshGateway`
+- Use internal tag `gateways: include/exclude/only` when using with `MeshSubset`
 
 ## Decision Outcome
 
@@ -93,3 +94,26 @@ We could remove requirement of the name when using `kind: MeshGateway` and when 
 - Users can impact the configuration of all gateways by mistake
 - Change of the current api
 - Problem with ordering when there is more specific policy with the same kind but with name defined
+
+## Use internal tag `gateways: include/exclude/only` when using with `MeshSubset
+
+We can implement a code change that checks if a policy has the tag `gateway`. If the tag is present, we evaluate one of three possible values: `include`, `exclude`, or `only`. If the value of the tag doesn't match any of these possibilities, we use the actual tag value. If the tag is not defined, we consider it as the default value `include`.
+
+```yaml
+targetRef:
+  kind: MeshSubset
+  tags:
+    gateways: "only"
+```
+
+### Positive Consequences
+
+- Users can set things up for all gateways.
+- No need for a new Kind.
+- Not confusing names
+
+### Negative Consequences
+
+- Configuration is not so obvious
+- What about merging `MeshSubset`'s
+- Can break current behavior if the user has already defined the tag
