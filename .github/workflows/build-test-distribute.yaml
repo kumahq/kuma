@@ -261,10 +261,12 @@ jobs:
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "universal", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]
               }
             }
+          # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
             | .test_e2e_env.include = []
