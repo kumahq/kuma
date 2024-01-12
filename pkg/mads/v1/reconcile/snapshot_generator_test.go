@@ -25,7 +25,6 @@ import (
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	"github.com/kumahq/kuma/pkg/metrics"
 	// to match custom policy resource type like you need to register them manually in tests
-	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"

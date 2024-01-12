@@ -8,8 +8,7 @@ func (c *Config) PostProcess() error {
 	return nil
 }
 
-func (c *Config) Sanitize() error {
-	return nil
+func (c *Config) Sanitize() {
 }
 
 func (c *Config) Validate() error {
