@@ -2,6 +2,6 @@
  "type": "/std-errors",
  "status": 400,
  "title": "Bad Request",
- "detail": "invalid TrafficRoute object: 'json: cannot unmarshal number into Go value of type string'",
- "details": "invalid TrafficRoute object: 'json: cannot unmarshal number into Go value of type string'"
+ "detail": "invalid TrafficRoute object: \"json: cannot unmarshal number into Go value of type string\"",
+ "details": "invalid TrafficRoute object: \"json: cannot unmarshal number into Go value of type string\""
 }

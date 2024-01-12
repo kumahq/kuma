@@ -30,11 +30,11 @@ func (t *VirtualOutboundResource) evalTemplate(tmplStr string, tags map[string]s
 	sb := strings.Builder{}
 	tmpl, err := template.New("").Parse(tmplStr)
 	if err != nil {
-		return "", fmt.Errorf("failed compiling gotemplate error='%s'", err.Error())
+		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
 	}
 	err = tmpl.Execute(&sb, entries)
 	if err != nil {
-		return "", fmt.Errorf("pre evaluation of template with parameters failed with error='%s'", err.Error())
+		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
 	}
 	return sb.String(), nil
 }
@@ -46,10 +46,10 @@ func (t *VirtualOutboundResource) EvalPort(tags map[string]string) (uint32, erro
 	}
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("evaluation of template with parameters didn't evaluate to a parsable number result='%s'", s)
+		return 0, fmt.Errorf("evaluation of template with parameters didn't evaluate to a parsable number result=%q", s)
 	}
 	if i <= 0 || i > 65535 {
-		return 0, fmt.Errorf("evaluation of template returned a port outside of the range [1..65535] result='%d'", i)
+		return 0, fmt.Errorf("evaluation of template returned a port outside of the range [1..65535] result=%d", i)
 	}
 	return uint32(i), nil
 }
@@ -60,7 +60,7 @@ func (t *VirtualOutboundResource) EvalHost(tags map[string]string) (string, erro
 		return "", err
 	}
 	if !govalidator.IsDNSName(s) {
-		return "", fmt.Errorf("evaluation of template with parameters didn't return a valid dns name result='%s'", s)
+		return "", fmt.Errorf("evaluation of template with parameters didn't return a valid dns name result=%q", s)
 	}
 	return s, nil
 }
