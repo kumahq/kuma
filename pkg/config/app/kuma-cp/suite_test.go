@@ -1,4 +1,4 @@
-package kuma_cp
+package kuma_cp_test
 
 import (
 	"testing"
