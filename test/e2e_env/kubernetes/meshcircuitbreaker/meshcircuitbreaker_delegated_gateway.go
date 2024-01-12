@@ -31,9 +31,9 @@ func MeshCircuitBreakerDelegatedGateway() {
 		return
 	}
 
-	namespace := "meshcircuitbreaker"
-	namespaceOutsideMesh := "meshcircuitbreaker-outside-mesh"
-	mesh := "meshcircuitbreaker"
+	namespace := "meshcircuitbreaker-delegated-gateway"
+	namespaceOutsideMesh := "meshcircuitbreaker-delegated-gateway-outside-mesh"
+	mesh := "meshcircuitbreaker-delegated-gateway"
 
 	var kicIP string
 
