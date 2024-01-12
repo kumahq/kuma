@@ -74,7 +74,9 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path = path.Field("http")
-	for idx, fault := range pointer.Deref(conf.Http) {
+	cfg := pointer.Deref(conf.Http)
+	for idx := range cfg {
+		fault := cfg[idx]
 		if fault.Abort != nil {
 			path := path.Field("abort").Index(idx)
 			verr.Add(validators.ValidateStatusCode(path.Field("httpStatus"), fault.Abort.HttpStatus))
