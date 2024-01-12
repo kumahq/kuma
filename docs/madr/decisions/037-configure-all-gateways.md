@@ -55,6 +55,8 @@ targetRef:
     kuma.io/gateway: "enabled"
 ```
 
+In this case, we need to propagate the label from the pod to the dataplane object.
+
 ### Positive Consequences
 
 - Users can set things up for all gateways.
