@@ -10,7 +10,9 @@ import (
 
 const DeploymentName = "kongingresscontroller"
 
-type KIC interface{}
+type KIC interface{
+	IP(namespace string) (string, error)
+}
 
 type Deployment interface {
 	framework.Deployment

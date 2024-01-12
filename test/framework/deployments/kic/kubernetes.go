@@ -2,12 +2,15 @@ package kic
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 type k8sDeployment struct {
@@ -74,4 +77,30 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 
 func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
 	return cluster.DeleteNamespace(t.ingressNamespace)
+}
+
+func (t *k8sDeployment) IP(namespace string) (string, error) {
+	ip, err := retry.DoWithRetryInterfaceE(
+		kubernetes.Cluster.GetTesting(),
+		"get the clusterIP of the Kong Ingress Controller Service",
+		60,
+		time.Second,
+		func() (interface{}, error) {
+			svc, err := k8s.GetServiceE(
+				kubernetes.Cluster.GetTesting(),
+				kubernetes.Cluster.GetKubectlOptions(namespace),
+				"gateway",
+			)
+			if err != nil || svc.Spec.ClusterIP == "" {
+				return nil, errors.Wrapf(err, "could not get clusterIP")
+			}
+
+			return svc.Spec.ClusterIP, nil
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return ip.(string), nil
 }
