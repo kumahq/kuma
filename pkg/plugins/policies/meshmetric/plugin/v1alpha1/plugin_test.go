@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"path/filepath"
@@ -13,6 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
@@ -43,7 +44,7 @@ var _ = Describe("MeshMetric", func() {
 
 	DescribeTable("Apply to sidecar Dataplane", func(given testCase) {
 		resources := core_xds.NewResourceSet()
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 

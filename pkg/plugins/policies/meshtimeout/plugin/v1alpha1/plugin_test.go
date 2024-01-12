@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -79,7 +80,7 @@ var _ = Describe("MeshTimeout", func() {
 			Build()
 
 		// when
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 		// then
@@ -446,7 +447,7 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 		nameSplit := strings.Split(GinkgoT().Name(), " ")
