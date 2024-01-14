@@ -745,17 +745,17 @@ eventBus:
   bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
 policies:
   pluginPoliciesEnabled:
-    - meshaccesslog
-    - meshcircuitbreaker
-    - meshfaultinjection
-    - meshhealthcheck
-    - meshhttproute
-    - meshloadbalancingstrategy
-    - meshmetric
-    - meshproxypatch
-    - meshratelimit
-    - meshretry
-    - meshtcproute
-    - meshtimeout
-    - meshtrace
-    - meshtrafficpermission
+    - meshaccesslogs
+    - meshcircuitbreakers
+    - meshfaultinjections
+    - meshhealthchecks
+    - meshhttproutes
+    - meshloadbalancingstrategies
+    - meshmetrics
+    - meshproxypatches
+    - meshratelimits
+    - meshretries
+    - meshtcproutes
+    - meshtimeouts
+    - meshtraces
+    - meshtrafficpermissions
