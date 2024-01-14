@@ -2,12 +2,14 @@ package reconcile
 
 import (
 	"context"
+	"strings"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/cache"
@@ -16,19 +18,69 @@ import (
 )
 
 type (
-	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
-	ResourceMapper func(features kds.Features, r model.Resource) (model.Resource, error)
+	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool
+	ResourceMapper func(features kds.Features, r core_model.Resource) (core_model.Resource, error)
 )
 
-func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {
+func NoopResourceMapper(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 	return r, nil
 }
 
-func Any(context.Context, string, kds.Features, model.Resource) bool {
+func Any(context.Context, string, kds.Features, core_model.Resource) bool {
 	return true
 }
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []model.ResourceType, filter ResourceFilter, mapper ResourceMapper) SnapshotGenerator {
+func TypeIs(rtype core_model.ResourceType) func(core_model.Resource) bool {
+	return func(r core_model.Resource) bool {
+		return r.Descriptor().Name == rtype
+	}
+}
+
+func IsKubernetes(storeType config_store.StoreType) func(core_model.Resource) bool {
+	return func(_ core_model.Resource) bool {
+		return storeType == config_store.KubernetesStore
+	}
+}
+
+func ScopeIs(s core_model.ResourceScope) func(core_model.Resource) bool {
+	return func(r core_model.Resource) bool {
+		return r.Descriptor().Scope == s
+	}
+}
+
+func NameHasPrefix(prefix string) func(core_model.Resource) bool {
+	return func(r core_model.Resource) bool {
+		return strings.HasPrefix(r.GetMeta().GetName(), prefix)
+	}
+}
+
+func Not(f func(core_model.Resource) bool) func(core_model.Resource) bool {
+	return func(r core_model.Resource) bool {
+		return !f(r)
+	}
+}
+
+func And(fs ...func(core_model.Resource) bool) func(core_model.Resource) bool {
+	return func(r core_model.Resource) bool {
+		for _, f := range fs {
+			if !f(r) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func If(condition func(core_model.Resource) bool, m ResourceMapper) ResourceMapper {
+	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		if condition(r) {
+			return m(features, r)
+		}
+		return r, nil
+	}
+}
+
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []core_model.ResourceType, filter ResourceFilter, mapper ResourceMapper) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
 		resourceTypes:   types,
@@ -39,7 +91,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
-	resourceTypes   []model.ResourceType
+	resourceTypes   []core_model.ResourceType
 	resourceFilter  ResourceFilter
 	resourceMapper  ResourceMapper
 }
@@ -57,7 +109,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	return builder.Build(""), nil
 }
 
-func (s *snapshotGenerator) getResources(ctx context.Context, typ model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
+func (s *snapshotGenerator) getResources(ctx context.Context, typ core_model.ResourceType, node *envoy_core.Node) ([]envoy_types.Resource, error) {
 	rlist, err := registry.Global().NewList(typ)
 	if err != nil {
 		return nil, err
@@ -74,7 +126,7 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 	return util.ToEnvoyResources(resources)
 }
 
-func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
+func (s *snapshotGenerator) filter(ctx context.Context, rs core_model.ResourceList, node *envoy_core.Node) core_model.ResourceList {
 	features := getFeatures(node)
 
 	rv := registry.Global().MustNewList(rs.GetItemType())
@@ -86,7 +138,7 @@ func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, n
 	return rv
 }
 
-func (s *snapshotGenerator) mapper(rs model.ResourceList, node *envoy_core.Node) (model.ResourceList, error) {
+func (s *snapshotGenerator) mapper(rs core_model.ResourceList, node *envoy_core.Node) (core_model.ResourceList, error) {
 	features := getFeatures(node)
 
 	rv := registry.Global().MustNewList(rs.GetItemType())

@@ -41,6 +41,7 @@ func defaultBootstrapParams() BootstrapParams {
 		},
 		AccessLogSocketPath: "/tmp/access",
 		MetricsSocketPath:   "/tmp/metric",
+		Workdir:             "/tmp",
 	}
 }
 

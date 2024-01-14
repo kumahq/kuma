@@ -98,9 +98,16 @@ func applyToGateway(
 			continue
 		}
 
+		var protocol core_mesh.Protocol
+		switch listenerInfo.Listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+			protocol = core_mesh.ProtocolHTTP
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+			protocol = core_mesh.ProtocolTCP
+		}
 		configurer := plugin_xds.Configurer{
 			Retry:    core_rules.ComputeConf[api.Conf](toRules, core_rules.MeshSubset()),
-			Protocol: core_mesh.ParseProtocol(listenerInfo.Listener.Protocol.String()),
+			Protocol: protocol,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {

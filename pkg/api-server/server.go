@@ -144,7 +144,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
-	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
+	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	addZoneEndpoints(ws, resManager)
@@ -311,13 +311,13 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.ApiServer.ReadOnly {
 		return true
 	}
-	if kdsFlag == model.KDSDisabled {
+	if kdsFlag == model.KDSDisabledFlag {
 		return false
 	}
-	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
+	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.GlobalToAllZonesFlag) {
 		return true
 	}
-	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ProvidedByZone) {
+	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ZoneToGlobalFlag) {
 		return true
 	}
 	return false

@@ -16,6 +16,9 @@ ifdef TEST_REPORTS
 	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
 endif
 ifndef TEST_REPORTS
+ifdef CI
+	go clean -testcache
+endif
 	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests")
 endif
 

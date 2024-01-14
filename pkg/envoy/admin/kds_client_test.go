@@ -37,6 +37,9 @@ var _ = Describe("KDS client", func() {
 			dpRes.SetMeta(&test_model.ResourceMeta{
 				Mesh: "default",
 				Name: "zone-1.dp-1",
+				Labels: map[string]string{
+					mesh_proto.DisplayName: "dp-1",
+				},
 			})
 			configContent := []byte("config")
 
@@ -105,6 +108,9 @@ var _ = Describe("KDS client", func() {
 			dpRes.SetMeta(&test_model.ResourceMeta{
 				Mesh: "default",
 				Name: zoneName + ".dp-1",
+				Labels: map[string]string{
+					mesh_proto.DisplayName: "dp-1",
+				},
 			})
 
 			// when
@@ -154,6 +160,9 @@ var _ = Describe("KDS client", func() {
 			dpRes.SetMeta(&test_model.ResourceMeta{
 				Mesh: "default",
 				Name: "zone-1.dp-1.my-namespace",
+				Labels: map[string]string{
+					mesh_proto.DisplayName: "dp-1.my-namespace",
+				},
 			})
 			configContent := []byte("config")
 
@@ -168,7 +177,7 @@ var _ = Describe("KDS client", func() {
 
 			// and
 			request := <-stream.receivedRequests
-			Expect(request.ResourceName).To(Equal("dp-1"))
+			Expect(request.ResourceName).To(Equal("dp-1.my-namespace"))
 
 			Eventually(func() error {
 				return streams.XDSConfigDump.ResponseReceived(clientID, &mesh_proto.XDSConfigResponse{

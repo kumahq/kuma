@@ -31,7 +31,7 @@ func GenerateClusters(
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 
-			if service.HasExternalService() {
+			if meshCtx.IsExternalService(serviceName) {
 				if meshCtx.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster()).
@@ -43,7 +43,7 @@ func GenerateClusters(
 							clusterTags,
 						))
 				} else {
-					endpoints := proxy.Routing.ExternalServiceOutboundTargets[serviceName]
+					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.

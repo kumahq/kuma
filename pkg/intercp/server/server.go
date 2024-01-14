@@ -29,6 +29,7 @@ const (
 type InterCpServer struct {
 	config     intercp.InterCpServerConfig
 	grpcServer *grpc.Server
+	instanceId string
 }
 
 var _ component.Component = &InterCpServer{}
@@ -38,6 +39,7 @@ func New(
 	metrics metrics.Metrics,
 	certificate tls.Certificate,
 	caCert x509.Certificate,
+	instanceId string,
 ) (*InterCpServer, error) {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
@@ -77,6 +79,7 @@ func New(
 	return &InterCpServer{
 		config:     config,
 		grpcServer: grpcServer,
+		instanceId: instanceId,
 	}, nil
 }
 
@@ -85,6 +88,10 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	log := log.WithValues(
+		"instanceId",
+		d.instanceId,
+	)
 
 	errChan := make(chan error)
 	go func() {

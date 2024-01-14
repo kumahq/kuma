@@ -17,19 +17,40 @@ type resourceMeta struct {
 	labels map[string]string
 }
 
-func CloneResourceMetaWithNewName(meta model.ResourceMeta, name string) model.ResourceMeta {
-	labels := maps.Clone(meta.GetLabels())
+type CloneResourceMetaOpt func(*resourceMeta)
+
+func WithName(name string) CloneResourceMetaOpt {
+	return func(m *resourceMeta) {
+		if m.labels[mesh_proto.DisplayName] == "" {
+			m.labels[mesh_proto.DisplayName] = m.name
+		}
+		m.name = name
+	}
+}
+
+func WithLabel(key, value string) CloneResourceMetaOpt {
+	return func(m *resourceMeta) {
+		m.labels[key] = value
+	}
+}
+
+func CloneResourceMeta(m model.ResourceMeta, fs ...CloneResourceMetaOpt) model.ResourceMeta {
+	labels := maps.Clone(m.GetLabels())
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	if labels[mesh_proto.DisplayName] == "" {
-		labels[mesh_proto.DisplayName] = meta.GetName()
-	}
-	return &resourceMeta{
-		name:   name,
-		mesh:   meta.GetMesh(),
+	meta := &resourceMeta{
+		name:   m.GetName(),
+		mesh:   m.GetMesh(),
 		labels: labels,
 	}
+	for _, f := range fs {
+		f(meta)
+	}
+	if len(meta.labels) == 0 {
+		meta.labels = nil
+	}
+	return meta
 }
 
 func kumaResourceMetaToResourceMeta(meta *mesh_proto.KumaResource_Meta) model.ResourceMeta {

@@ -60,15 +60,14 @@ func EnsureEnvoyAdminCaExist(
 		return nil
 	}
 	if !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "error while loading admin client certificate")
+		return errors.Wrap(err, "error while loading envoy admin CA")
 	}
-	logger.V(1).Info("trying to create Envoy Admin CA")
 	pair, err := tls.GenerateCA()
 	if err != nil {
-		return errors.Wrap(err, "could not generate admin client certificate")
+		return errors.Wrap(err, "could not generate envoy admin CA")
 	}
 	if err := tls.CreateCA(ctx, *pair, resManager); err != nil {
-		return errors.Wrap(err, "could not create admin client certificate")
+		return errors.Wrap(err, "could not create envoy admin CA")
 	}
 	logger.Info("Envoy Admin CA created")
 	return nil

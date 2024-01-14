@@ -61,6 +61,7 @@ type RootRuntime struct {
 	NewZoneTokenClient           func(util_http.Client) tokens.ZoneTokenClient
 	NewAPIServerClient           func(util_http.Client) kumactl_resources.ApiServerClient
 	NewKubernetesResourcesClient func(util_http.Client) client.KubernetesResourcesClient
+	NewResourcesListClient       func(util_http.Client) client.ResourcesListClient
 	Registry                     registry.TypeRegistry
 }
 
@@ -118,6 +119,7 @@ func DefaultRootContext() *RootContext {
 			NewKubernetesResourcesClient: func(c util_http.Client) client.KubernetesResourcesClient {
 				return client.NewHTTPKubernetesResourcesClient(c, registry.Global().ObjectDescriptors())
 			},
+			NewResourcesListClient: client.NewHTTPResourcesListClient,
 		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
 		InstallCRDContext:                   install_context.DefaultInstallCrdsContext(),
@@ -220,6 +222,14 @@ func (rc *RootContext) CurrentKubernetesResourcesClient() (client.KubernetesReso
 		return nil, err
 	}
 	return rc.Runtime.NewKubernetesResourcesClient(client), nil
+}
+
+func (rc *RootContext) CurrentResourcesListClient() (client.ResourcesListClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewResourcesListClient(client), nil
 }
 
 func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.DataplaneOverviewClient, error) {

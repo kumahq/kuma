@@ -43,6 +43,13 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	})
 }
 
+func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.DirectResponseConfigurer{
+		VirtualHostName: virtualHostName,
+		Endpoints:       endpoints,
+	})
+}
+
 func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
 		Mesh:           mesh,

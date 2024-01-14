@@ -3160,6 +3160,12 @@ spec:
                                       type: string
                                     urlRewrite:
                                       properties:
+                                        hostToBackendHostname:
+                                          description: HostToBackendHostname rewrites
+                                            the hostname to the hostname of the upstream
+                                            host. This option is only available when
+                                            targeting MeshGateways.
+                                          type: boolean
                                         hostname:
                                           description: Hostname is the value to be
                                             used to replace the host header value
@@ -3958,6 +3964,9 @@ spec:
                       Proxy will scrape
                     items:
                       properties:
+                        address:
+                          description: Address on which an application listens.
+                          type: string
                         path:
                           default: /metrics/prometheus
                           description: Path on which an application expose HTTP endpoint

@@ -70,52 +70,55 @@ func (h *heartbeatComponent) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			start := core.Now()
-			if err := h.heartbeat(ctx, true); err != nil {
-				h.leader = nil
-				heartbeatLog.Error(err, "could not heartbeat the leader")
+			if !h.heartbeat(ctx, true) {
 				continue
 			}
 			h.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			// send final heartbeat to gracefully signal that the instance is going down
-			if err := h.heartbeat(ctx, false); err != nil {
-				h.leader = nil
-				heartbeatLog.Error(err, "could not heartbeat the leader")
-			}
+			_ = h.heartbeat(ctx, false)
 			return nil
 		}
 	}
 }
 
-func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) error {
+func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
+	heartbeatLog := heartbeatLog.WithValues(
+		"instanceId", h.request.InstanceId,
+		"ready", ready,
+	)
 	if h.leader == nil {
 		if err := h.connectToLeader(ctx); err != nil {
-			return err
+			heartbeatLog.Error(err, "could not connect to leader")
+			return false
 		}
 	}
 	if h.leader.Id == h.request.InstanceId {
 		heartbeatLog.V(1).Info("this instance is a leader. No need to send a heartbeat.")
-		return nil
+		return true
 	}
-	heartbeatLog.V(1).Info("sending a heartbeat to a leader",
-		"instanceId", h.request.InstanceId,
+	heartbeatLog = heartbeatLog.WithValues(
 		"leaderAddress", h.leader.Address,
-		"ready", ready,
 	)
+	heartbeatLog.V(1).Info("sending a heartbeat to a leader")
 	h.request.Ready = ready
 	client, err := h.getClientFn(h.leader.InterCpURL())
 	if err != nil {
-		return errors.Wrap(err, "could not get or create a client to a leader")
+		heartbeatLog.Error(err, "could not get or create a client to a leader")
+		h.leader = nil
+		return false
 	}
 	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
-		return errors.Wrap(err, "could not send a heartbeat to a leader")
+		heartbeatLog.Error(err, "could not send a heartbeat to a leader")
+		h.leader = nil
+		return false
 	}
 	if !resp.Leader {
-		heartbeatLog.Info("instance responded that it is no longer a leader")
+		heartbeatLog.V(1).Info("instance responded that it is no longer a leader")
 		h.leader = nil
 	}
-	return nil
+	return true
 }
 
 func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {

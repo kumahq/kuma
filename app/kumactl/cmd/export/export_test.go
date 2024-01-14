@@ -3,6 +3,9 @@ package export_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -10,7 +13,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -19,6 +24,7 @@ import (
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 var _ = Describe("kumactl export", func() {
@@ -32,6 +38,12 @@ var _ = Describe("kumactl export", func() {
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.MeshResourceTypeDescriptor, system.SecretResourceTypeDescriptor, system.GlobalSecretResourceTypeDescriptor)
 		Expect(err).ToNot(HaveOccurred())
+		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
+			return fileBasedKubernetesResourcesClient{}
+		}
+		rootCtx.Runtime.NewResourcesListClient = func(u util_http.Client) client.ResourcesListClient {
+			return staticResourcesListClient{}
+		}
 
 		rootCmd = cmd.NewRootCmd(rootCtx)
 		buf = &bytes.Buffer{}
@@ -67,6 +79,33 @@ var _ = Describe("kumactl export", func() {
 		Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", "export.golden.yaml"))
 	})
 
+	It("should export resources in kubernetes format", func() {
+		// given
+		resources := []model.Resource{
+			samples.MeshDefault(),
+			samples.SampleSigningKeyGlobalSecret(),
+		}
+		for _, res := range resources {
+			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		args := []string{
+			"--config-file",
+			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"export",
+			"--format=kubernetes",
+		}
+		rootCmd.SetArgs(args)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", "export-kube.golden.yaml"))
+	})
+
 	type testCase struct {
 		args []string
 		err  string
@@ -98,3 +137,27 @@ var _ = Describe("kumactl export", func() {
 		}),
 	)
 })
+
+type fileBasedKubernetesResourcesClient struct{}
+
+var _ client.KubernetesResourcesClient = &fileBasedKubernetesResourcesClient{}
+
+func (f fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor model.ResourceTypeDescriptor, name, mesh string) (map[string]interface{}, error) {
+	inputBytes, err := os.ReadFile(filepath.Join("testdata", fmt.Sprintf("kube-input.%s.%s.json", descriptor.Name, name)))
+	if err != nil {
+		return nil, err
+	}
+	res := map[string]interface{}{}
+	if err := json.Unmarshal(inputBytes, &res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+type staticResourcesListClient struct{}
+
+var _ client.ResourcesListClient = &staticResourcesListClient{}
+
+func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
+	return api_types.ResourceTypeDescriptionList{}, nil
+}

@@ -43,7 +43,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		selectedInbounds, delegatedGatewaySelected, err := dppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
 		if err != nil {
 			warnings = append(warnings,
-				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:'%s' name:'%s' error:'%s'",
+				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
 					policy.GetMeta().GetMesh(), policy.GetMeta().GetName(), err.Error(),
 				),
 			)
@@ -219,17 +219,7 @@ func (b ByTargetRef) Less(i, j int) bool {
 		}
 	}
 
-	return nameToCompare(b[i].GetMeta()) > nameToCompare(b[j].GetMeta())
+	return core_model.GetDisplayName(b[i]) > core_model.GetDisplayName(b[j])
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-
-func nameToCompare(meta core_model.ResourceMeta) string {
-	// prefer display name as it's more predictable, because
-	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
-	// * When policies are synced to Zone, hash suffix also breaks sorting
-	if labels := meta.GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
-		return labels[mesh_proto.DisplayName]
-	}
-	return meta.GetName()
-}

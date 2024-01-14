@@ -108,7 +108,6 @@ func applyToGateways(
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := listenerInfo.Listener.Port
-		protocol := core_mesh.ParseProtocol(mesh_proto.MeshGateway_Listener_Protocol_name[int32(listenerInfo.Listener.Protocol)])
 		listenerKey := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
@@ -122,6 +121,13 @@ func applyToGateways(
 			continue
 		}
 
+		var protocol core_mesh.Protocol
+		switch listenerInfo.Listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+			protocol = core_mesh.ProtocolHTTP
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+			protocol = core_mesh.ProtocolTCP
+		}
 		for _, filterChain := range gatewayListener.FilterChains {
 			if err := configure(rules, filterChain, protocol); err != nil {
 				return err
@@ -133,6 +139,12 @@ func applyToGateways(
 
 func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
+	if listeners.Egress == nil {
+		log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
+			"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
+		)
+		return nil
+	}
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, es := range resource.ExternalServices {
 			meshName := resource.Mesh.GetMeta().GetName()
@@ -147,13 +159,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			mfi, ok := policies[api.MeshFaultInjectionType]
 			if !ok {
 				continue
-			}
-			if listeners.Egress == nil {
-				log.V(1).Info("skip applying MeshFaultInjection, Egress has no listener",
-					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
-					"mesh", resource.Mesh.GetMeta().GetName(),
-				)
-				return nil
 			}
 			protocol := util.GetExternalServiceProtocol(es)
 			for _, rule := range mfi.FromRules.Rules {

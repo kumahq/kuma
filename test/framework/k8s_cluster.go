@@ -17,7 +17,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -47,6 +46,7 @@ type K8sNetworkingState struct {
 	ZoneEgress  PortFwd `json:"zoneEgress"`
 	ZoneIngress PortFwd `json:"zoneIngress"`
 	KumaCp      PortFwd `json:"kumaCp"`
+	MADS        PortFwd `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -574,7 +574,8 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
-			return err
+			deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+			return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 		}
 	}
 
@@ -1098,10 +1099,8 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		c.defaultRetries,
 		c.defaultTimeout)
 	if err != nil {
-		deployPrinter := NewK8sDeploymentDetailPrinter(c.t, c.GetKubectlOptions(namespace), namespace, name)
-		logger.Default.Logf(c.t, "Details of deployment '%s/%s': %s",
-			namespace, name, deployPrinter.Print())
-		return err
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(namespace), name)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 	}
 
 	pods := k8s.ListPods(c.t,
@@ -1122,9 +1121,8 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			c.defaultTimeout)
 
 		if podError != nil {
-			podPrinter := NewK8sPodDetailPrinter(c.t, c.GetKubectlOptions(namespace), &pods[i])
-			podError = errors.New(podError.Error() + "\nPod details:\n" + podPrinter.Print())
-			return podError
+			podDetails := ExtractPodDetails(c.t, c.GetKubectlOptions(namespace), pods[i].Name)
+			return &K8sDecoratedError{Err: podError, Details: podDetails}
 		}
 	}
 	return nil

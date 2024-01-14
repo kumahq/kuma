@@ -587,6 +587,7 @@ type Cluster interface {
 type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
+	GetMonitoringAssignment(clientId string) (string, error)
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
 	GetXDSServerAddress() string

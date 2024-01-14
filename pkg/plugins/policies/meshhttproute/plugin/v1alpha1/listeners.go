@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -24,7 +25,7 @@ import (
 
 func generateListeners(
 	proxy *core_xds.Proxy,
-	rules []ToRouteRule,
+	rules rules.Rules,
 	servicesAcc envoy_common.ServicesAccumulator,
 	meshCtx xds_context.MeshContext,
 ) (*core_xds.ResourceSet, error) {
@@ -52,7 +53,7 @@ func generateListeners(
 		protocol := meshCtx.GetServiceProtocol(serviceName)
 		var routes []xds.OutboundRoute
 		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
-			split := meshroute_xds.MakeHTTPSplit(proxy, clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+			split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 			if split == nil {
 				continue
 			}
@@ -60,7 +61,7 @@ func generateListeners(
 				if filter.Type == api.RequestMirrorType {
 					// we need to create a split for the mirror backend
 					_ = meshroute_xds.MakeHTTPSplit(
-						proxy, clusterCache, servicesAcc,
+						clusterCache, servicesAcc,
 						[]common_api.BackendRef{{
 							TargetRef: filter.RequestMirror.BackendRef,
 							Weight:    pointer.To[uint](1), // any non-zero value
@@ -90,6 +91,11 @@ func generateListeners(
 		filterChainBuilder.
 			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
 
+		// TODO: https://github.com/kumahq/kuma/issues/3325
+		switch protocol {
+		case core_mesh.ProtocolGRPC:
+			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
+		}
 		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		listener, err := listenerBuilder.Build()
 		if err != nil {
@@ -107,20 +113,19 @@ func generateListeners(
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(
-	toRules []ToRouteRule,
+	toRules rules.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
 	tags map[string]string,
 ) []Route {
-	var rules []api.Rule
+	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(serviceName))
 
-	for _, toRule := range toRules {
-		if toRule.Subset.IsSubset(core_rules.MeshService(serviceName)) {
-			rules = toRule.Rules
-		}
+	var apiRules []api.Rule
+	if conf != nil {
+		apiRules = conf.Rules
 	}
 
-	if len(rules) == 0 {
+	if len(apiRules) == 0 {
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		default:
@@ -133,18 +138,18 @@ func prepareRoutes(
 		{Path: pointer.To(catchAllPathMatch)},
 	}
 
-	noCatchAll := slices.IndexFunc(rules, func(rule api.Rule) bool {
+	noCatchAll := slices.IndexFunc(apiRules, func(rule api.Rule) bool {
 		return reflect.DeepEqual(rule.Matches, catchAllMatch)
 	}) == -1
 
 	if noCatchAll {
-		rules = append(rules, api.Rule{
+		apiRules = append(apiRules, api.Rule{
 			Matches: catchAllMatch,
 		})
 	}
 
 	var routes []Route
-	for _, rule := range rules {
+	for _, rule := range apiRules {
 		var matches []api.Match
 
 		for _, match := range rule.Matches {

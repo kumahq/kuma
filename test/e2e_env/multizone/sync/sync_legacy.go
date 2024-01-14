@@ -145,7 +145,7 @@ conf:
 			Expect(global.Install(YamlUniversal(universalPolicyNamed(name, 101, meshName)))).To(Succeed())
 
 			// then
-			hashedName := hash.SyncedNameInZone(meshName, "tr-update")
+			hashedName := hash.HashedName(meshName, "tr-update")
 			for _, zone := range []*UniversalCluster{zone1, zone2} {
 				Eventually(func(g Gomega) {
 					output, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")

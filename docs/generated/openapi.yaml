@@ -1555,7 +1555,7 @@ components:
         - path
         - singularDisplayName
         - pluralDisplayName
-        - includeInDump
+        - includeInFederationWithPolicies
       properties:
         name:
           description: the name of the resource type
@@ -1576,11 +1576,12 @@ components:
           type: string
         pluralDisplayName:
           type: string
-        includeInDump:
+        includeInFederationWithPolicies:
           description: >-
-            description resources of this type should be included in dump
-            (especially useful for moving from non-federated to federated or
-            migrating to a new global).
+            description resources of this type should be included in
+            federetion-with-policies export profile (especially useful for
+            moving from non-federated to federated or migrating to a new
+            global).
           type: boolean
         policy:
           $ref: '#/components/schemas/PolicyDescription'
@@ -3985,6 +3986,13 @@ components:
                                     type: string
                                   urlRewrite:
                                     properties:
+                                      hostToBackendHostname:
+                                        description: >-
+                                          HostToBackendHostname rewrites the
+                                          hostname to the hostname of the upstream
+                                          host. This option is only available when
+                                          targeting MeshGateways.
+                                        type: boolean
                                       hostname:
                                         description: >-
                                           Hostname is the value to be used to
@@ -4760,6 +4768,9 @@ components:
                     will scrape
                   items:
                     properties:
+                      address:
+                        description: Address on which an application listens.
+                        type: string
                       path:
                         default: /metrics/prometheus
                         description: >-
