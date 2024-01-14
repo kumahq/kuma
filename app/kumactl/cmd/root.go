@@ -42,7 +42,6 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			policies.InitAllPolicies()
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
@@ -112,4 +111,8 @@ func Execute() {
 	if err := DefaultRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	policies.InitAllPolicies()
 }

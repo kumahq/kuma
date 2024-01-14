@@ -17,34 +17,43 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission"
 )
 
-var nameToModule = map[string]func(){
-	"meshaccesslogs":              meshaccesslog.InitPlugin,
-	"meshcircuitbreakers":         meshcircuitbreaker.InitPlugin,
-	"meshfaultinjections":         meshfaultinjection.InitPlugin,
-	"meshhealthchecks":            meshhealthcheck.InitPlugin,
-	"meshhttproutes":              meshhttproute.InitPlugin,
-	"meshloadbalancingstrategies": meshloadbalancingstrategy.InitPlugin,
-	"meshmetrics":                 meshmetric.InitPlugin,
-	"meshproxypatches":            meshproxypatch.InitPlugin,
-	"meshratelimits":              meshratelimit.InitPlugin,
-	"meshretries":                 meshretry.InitPlugin,
-	"meshtcproutes":               meshtcproute.InitPlugin,
-	"meshtimeouts":                meshtimeout.InitPlugin,
-	"meshtraces":                  meshtrace.InitPlugin,
-	"meshtrafficpermissions":      meshtrafficpermission.InitPlugin,
+type pluginInitializer struct {
+	initFn      func()
+	initialized bool
+}
+
+var nameToModule = map[string]*pluginInitializer{
+	"meshaccesslogs":              {initFn: meshaccesslog.InitPlugin, initialized: false},
+	"meshcircuitbreakers":         {initFn: meshcircuitbreaker.InitPlugin, initialized: false},
+	"meshfaultinjections":         {initFn: meshfaultinjection.InitPlugin, initialized: false},
+	"meshhealthchecks":            {initFn: meshhealthcheck.InitPlugin, initialized: false},
+	"meshhttproutes":              {initFn: meshhttproute.InitPlugin, initialized: false},
+	"meshloadbalancingstrategies": {initFn: meshloadbalancingstrategy.InitPlugin, initialized: false},
+	"meshmetrics":                 {initFn: meshmetric.InitPlugin, initialized: false},
+	"meshproxypatches":            {initFn: meshproxypatch.InitPlugin, initialized: false},
+	"meshratelimits":              {initFn: meshratelimit.InitPlugin, initialized: false},
+	"meshretries":                 {initFn: meshretry.InitPlugin, initialized: false},
+	"meshtcproutes":               {initFn: meshtcproute.InitPlugin, initialized: false},
+	"meshtimeouts":                {initFn: meshtimeout.InitPlugin, initialized: false},
+	"meshtraces":                  {initFn: meshtrace.InitPlugin, initialized: false},
+	"meshtrafficpermissions":      {initFn: meshtrafficpermission.InitPlugin, initialized: false},
 }
 
 func InitAllPolicies() {
 	for _, initializer := range nameToModule {
-		initializer()
+		if !initializer.initialized {
+			initializer.initFn()
+			initializer.initialized = true
+		}
 	}
 }
 
 func InitPolicies(enabledPluginPolicies []string) {
 	for _, policy := range enabledPluginPolicies {
 		initializer, ok := nameToModule[policy]
-		if ok {
-			initializer()
+		if ok && !initializer.initialized {
+			initializer.initFn()
+			initializer.initialized = true
 		} else {
 			panic("policy " + policy + " not found")
 		}

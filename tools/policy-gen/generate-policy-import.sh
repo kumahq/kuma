@@ -17,7 +17,7 @@ mappings=$(for i in "${@:2}"; do
     policy_crd_dir="${policy_dir}/k8s/crd"
     policy_crd_file="$(find "${policy_crd_dir}" -type f)"
     plural=$(yq e '.spec.names.plural' "$policy_crd_file")
-    echo "\"$plural\": ${i}.InitPlugin,"
+    echo "\"$plural\": {initFn: ${i}.InitPlugin, initialized: false},"
   fi
 done)
 
@@ -27,21 +27,30 @@ import (
   $imports
 )
 
-var nameToModule = map[string]func(){
+type pluginInitializer struct {
+	initFn      func()
+	initialized bool
+}
+
+var nameToModule = map[string]*pluginInitializer{
   $mappings
 }
 
 func InitAllPolicies() {
 	for _, initializer := range nameToModule {
-		initializer()
+		if !initializer.initialized {
+			initializer.initFn()
+			initializer.initialized = true
+		}
 	}
 }
 
 func InitPolicies(enabledPluginPolicies []string) {
 	for _, policy := range enabledPluginPolicies {
 		initializer, ok := nameToModule[policy]
-		if ok {
-			initializer()
+		if ok && !initializer.initialized {
+			initializer.initFn()
+			initializer.initialized = true
 		} else {
 			panic(\"policy \" + policy + \" not found\")
 		}
