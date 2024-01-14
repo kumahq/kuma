@@ -136,7 +136,7 @@ func (e *K8sDecoratedError) Error() string {
 			details = string(b)
 		}
 	}
-	return fmt.Sprintf("sourceError: %s K8sDetails:'%s'", e.Err.Error(), details)
+	return fmt.Sprintf("sourceError: %s K8sDetails:%q", e.Err.Error(), details)
 }
 
 func ExtractDeploymentDetails(testingT testing.TestingT,

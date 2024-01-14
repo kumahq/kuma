@@ -3,7 +3,6 @@ package kic
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -33,21 +32,6 @@ func KICKubernetes() {
 	mesh := "kic"
 	namespaceOutsideMesh := "kic-external"
 
-	getKICIP := func() string {
-		var ip string
-		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(namespace),
-				"get", "service", "gateway", "-ojsonpath={.spec.clusterIP}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(BeEmpty())
-			ip = out
-		}, "60s", "1s").Should(Succeed(), "could not get the clusterIP of the Service")
-		return ip
-	}
-
 	var kicIP string
 
 	BeforeAll(func() {
@@ -68,7 +52,10 @@ func KICKubernetes() {
 			)).
 			Setup(kubernetes.Cluster)).To(Succeed())
 
-		kicIP = getKICIP()
+		ip, err := kic.From(kubernetes.Cluster).IP(namespace)
+		Expect(err).To(Succeed())
+
+		kicIP = ip
 	})
 
 	E2EAfterAll(func() {

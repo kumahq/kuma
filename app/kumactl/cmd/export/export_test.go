@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -39,6 +40,9 @@ var _ = Describe("kumactl export", func() {
 		Expect(err).ToNot(HaveOccurred())
 		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
 			return fileBasedKubernetesResourcesClient{}
+		}
+		rootCtx.Runtime.NewResourcesListClient = func(u util_http.Client) client.ResourcesListClient {
+			return staticResourcesListClient{}
 		}
 
 		rootCmd = cmd.NewRootCmd(rootCtx)
@@ -148,4 +152,12 @@ func (f fileBasedKubernetesResourcesClient) Get(_ context.Context, descriptor mo
 		return nil, err
 	}
 	return res, nil
+}
+
+type staticResourcesListClient struct{}
+
+var _ client.ResourcesListClient = &staticResourcesListClient{}
+
+func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
+	return api_types.ResourceTypeDescriptionList{}, nil
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, federatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
+func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
 	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {
@@ -42,13 +42,13 @@ func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, federatedZone
 		response := api_types.ResourceTypeDescriptionList{}
 		for _, def := range defs {
 			td := api_common.ResourceTypeDescription{
-				Name:                string(def.Name),
-				ReadOnly:            readOnly || federatedZone || def.ReadOnly,
-				Path:                def.WsPath,
-				SingularDisplayName: def.SingularDisplayName,
-				PluralDisplayName:   def.PluralDisplayName,
-				Scope:               api_common.ResourceTypeDescriptionScope(def.Scope),
-				IncludeInDump:       isGlobal || def.DumpForGlobal,
+				Name:                            string(def.Name),
+				ReadOnly:                        readOnly || federatedZone || def.ReadOnly,
+				Path:                            def.WsPath,
+				SingularDisplayName:             def.SingularDisplayName,
+				PluralDisplayName:               def.PluralDisplayName,
+				Scope:                           api_common.ResourceTypeDescriptionScope(def.Scope),
+				IncludeInFederationWithPolicies: (def.KDSFlags & model.GlobalToAllZonesFlag) != 0,
 			}
 			if def.IsPolicy {
 				td.Policy = &api_common.PolicyDescription{
