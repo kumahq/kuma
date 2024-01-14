@@ -12,7 +12,7 @@ func (r *MeshTCPRouteResource) validate() error {
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
 
 	return verr.OrNil()
 }
@@ -24,6 +24,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
+				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
@@ -31,22 +32,30 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	)
 }
 
-func validateTo(to []To) validators.ValidationError {
+func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.ValidationError {
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.MeshService,
+			},
+		})
+	}
+}
+
+func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
 	var verr validators.ValidationError
 
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 
-		verr.AddErrorAt(
-			path.Field("targetRef"),
-			mesh.ValidateTargetRef(toItem.TargetRef,
-				&mesh.ValidateTargetRefOpts{
-					SupportedKinds: []common_api.TargetRefKind{
-						common_api.MeshService,
-					},
-				},
-			),
-		)
+		verr.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, toItem.TargetRef))
 		verr.AddErrorAt(path.Field("rules"), validateRules(toItem.Rules))
 	}
 
