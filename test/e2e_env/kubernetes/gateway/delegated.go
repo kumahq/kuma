@@ -1,4 +1,4 @@
-package meshcircuitbreaker
+package gateway
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -16,24 +16,10 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func MeshCircuitBreakerDelegatedGateway() {
-	// IPv6 currently not supported by Kong Ingress Controller
-	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
-	if Config.IPV6 {
-		fmt.Println("Test not supported on IPv6")
-		return
-	}
-	if Config.K8sType == KindK8sType {
-		// KIC 2.0 when started with service type LoadBalancer requires external
-		// IP to be provisioned before it's healthy. KIND cannot provision
-		// external IP, K3D can.
-		fmt.Println("Test not supported on KIND")
-		return
-	}
-
-	namespace := "meshcircuitbreaker-delegated-gateway"
-	namespaceOutsideMesh := "meshcircuitbreaker-delegated-gateway-outside-mesh"
-	mesh := "meshcircuitbreaker-delegated-gateway"
+func Delegated() {
+	namespace := "delegated-gateway"
+	namespaceOutsideMesh := "delegated-gateway-outside-mesh"
+	mesh := "delegated-gateway"
 
 	var kicIP string
 
@@ -78,22 +64,8 @@ spec:
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
-			core_mesh.CircuitBreakerResourceTypeDescriptor,
-			core_mesh.RetryResourceTypeDescriptor,
-			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
-		)).To(Succeed())
-
 		kicIP, err = kic.From(kubernetes.Cluster).IP(namespace)
 		Expect(err).To(Succeed())
-	})
-
-	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(
-			kubernetes.Cluster,
-			mesh,
-			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
-		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -104,49 +76,66 @@ spec:
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should configure circuit breaker limits and outlier"+
-		" detectors for connections", func(config string) {
-		// given no MeshCircuitBreaker
-		mcbs, err := kubernetes.Cluster.GetKumactlOptions().
-			KumactlList("meshcircuitbreakers", mesh)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(mcbs).To(BeEmpty())
+	Context("MeshCircuitBreaker", func() {
+		BeforeAll(func() {
+			Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
+				core_mesh.CircuitBreakerResourceTypeDescriptor,
+				core_mesh.RetryResourceTypeDescriptor,
+				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
+			)).To(Succeed())
+		})
 
-		Eventually(func() ([]client.FailureResponse, error) {
-			return client.CollectResponsesAndFailures(
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(
 				kubernetes.Cluster,
-				"demo-client",
-				fmt.Sprintf("http://%s/test-server", kicIP),
-				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
-				client.WithNumberOfRequests(10),
-			)
-		}, "30s", "1s").Should(And(
-			HaveLen(10),
-			HaveEach(HaveField("ResponseCode", 200)),
-		))
+				mesh,
+				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
+			)).To(Succeed())
+		})
 
-		// when
-		Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
+		DescribeTable("should configure circuit breaker limits and outlier"+
+			" detectors for connections", func(config string) {
+			// given no MeshCircuitBreaker
+			mcbs, err := kubernetes.Cluster.GetKumactlOptions().
+				KumactlList("meshcircuitbreakers", mesh)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mcbs).To(BeEmpty())
 
-		// then
-		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
-			return client.CollectResponsesAndFailures(
-				kubernetes.Cluster,
-				"demo-client",
-				fmt.Sprintf("http://%s/test-server", kicIP),
-				client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
-				client.WithNumberOfRequests(10),
-				// increase processing time of a request to increase
-				// a probability of triggering maxPendingRequest limit
-				client.WithHeader("x-set-response-delay-ms", "1000"),
-				client.WithoutRetries(),
-			)
-		}, "30s", "1s").Should(And(
-			HaveLen(10),
-			ContainElement(HaveField("ResponseCode", 503)),
-		))
-	},
-		Entry("outbound circuit breaker", fmt.Sprintf(`
+			Eventually(func() ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", kicIP),
+					client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+					client.WithNumberOfRequests(10),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				HaveEach(HaveField("ResponseCode", 200)),
+			))
+
+			// when
+			Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
+
+			// then
+			Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", kicIP),
+					client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+					client.WithNumberOfRequests(10),
+					// increase processing time of a request to increase
+					// a probability of triggering maxPendingRequest limit
+					client.WithHeader("x-set-response-delay-ms", "1000"),
+					client.WithoutRetries(),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				ContainElement(HaveField("ResponseCode", 503)),
+			))
+		},
+			Entry("outbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
@@ -168,7 +157,7 @@ spec:
           maxRequests: 1
           maxRetries: 1
 `, Config.KumaNamespace, mesh)),
-		Entry("inbound circuit breaker", fmt.Sprintf(`
+			Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
@@ -190,5 +179,6 @@ spec:
           maxRequests: 1
           maxRetries: 1
 `, Config.KumaNamespace, mesh)),
-	)
+		)
+	})
 }
