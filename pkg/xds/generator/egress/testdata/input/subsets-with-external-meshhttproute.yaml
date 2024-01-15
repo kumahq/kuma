@@ -38,7 +38,7 @@ mesh: mesh-1
 spec:
   targetRef:
     kind: MeshService
-    name: externalservice-1
+    name: internalservice-1
   to:
     - targetRef:
         kind: MeshService
