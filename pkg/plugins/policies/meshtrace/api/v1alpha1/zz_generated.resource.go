@@ -126,7 +126,7 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:            NewMeshTraceResource(),
 	ResourceList:        &MeshTraceResourceList{},
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:              "meshtraces",
 	KumactlArg:          "meshtrace",
 	KumactlListArg:      "meshtraces",

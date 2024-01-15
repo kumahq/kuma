@@ -119,4 +119,48 @@ spec:
 			g.Expect(response.ResponseCode).To(Equal(504))
 		}, "30s", "1s").Should(Succeed())
 	})
+
+	It("should apply MeshTimeout policy on Zone CP", func() {
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", "test-server_mutlizone-meshtimeout-ns_svc_80.mesh",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		}, "30s", "1s").Should(Succeed())
+
+		Expect(YamlK8s(fmt.Sprintf(`
+kind: MeshTimeout
+apiVersion: kuma.io/v1alpha1
+metadata:
+  name: mt-on-zone
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+`, Config.KumaNamespace, mesh))(multizone.KubeZone1)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			response, err := framework_client.CollectFailure(
+				multizone.KubeZone1, "test-client", "test-server_mutlizone-meshtimeout-ns_svc_80.mesh",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "30s", "1s").Should(Succeed())
+	})
 }
