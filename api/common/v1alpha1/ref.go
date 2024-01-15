@@ -29,6 +29,13 @@ var order = map[TargetRefKind]int{
 	MeshHTTPRoute:     6,
 }
 
+type TargetRefProxyType string
+
+var (
+	Sidecar TargetRefProxyType = "Sidecar"
+	Gateway TargetRefProxyType = "Gateway"
+)
+
 func (k TargetRefKind) Less(o TargetRefKind) bool {
 	return order[k] < order[o]
 }
@@ -46,6 +53,8 @@ type TargetRef struct {
 	Tags map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
+	// ProxyTypes types of affected Datapplanes by the policy.
+	ProxyTypes []TargetRefProxyType `json:"proxyType,omitempty"`
 }
 
 type TargetRefHash string

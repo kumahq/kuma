@@ -346,27 +346,50 @@ func ValidateTargetRef(
 		if ref.Name != "" {
 			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
 		}
+		if ref.ProxyTypes != nil {
+			err.Add(validateProxyTypes(ref.ProxyTypes))
+		}
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 	case common_api.MeshSubset:
 		err.Add(disallowedField("name", ref.Name, ref.Kind))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		if ref.ProxyTypes != nil {
+			err.Add(validateProxyTypes(ref.ProxyTypes))
+		}
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 	case common_api.MeshServiceSubset, common_api.MeshGateway:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
 			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 		}
 	}
 
+	return err
+}
+
+func validateProxyTypes(proxyTypes []common_api.TargetRefProxyType) validators.ValidationError {
+	var err validators.ValidationError
+	for i, proxyType := range proxyTypes {
+		switch proxyType {
+		case common_api.Gateway:
+			continue
+		case common_api.Sidecar:
+			continue
+		default:
+			err.AddViolationAt(validators.RootedAt("proxyTypes").Index(i), fmt.Sprintf("%s is not supported", proxyType))
+		}
+	}
 	return err
 }
 
@@ -383,7 +406,7 @@ func validateName(value string) validators.ValidationError {
 	return err
 }
 
-func disallowedField[T ~string | ~map[string]string](
+func disallowedField[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](
 	name string,
 	value T,
 	kind common_api.TargetRefKind,
@@ -411,11 +434,13 @@ func requiredField[T ~string | ~map[string]string](
 	return err
 }
 
-func isSet[T ~string | ~map[string]string](value T) bool {
+func isSet[T ~string | ~map[string]string | ~[]common_api.TargetRefProxyType](value T) bool {
 	switch v := any(value).(type) {
 	case string:
 		return v != ""
 	case map[string]string:
+		return len(v) > 0
+	case []common_api.TargetRefProxyType:
 		return len(v) > 0
 	default:
 		return false
