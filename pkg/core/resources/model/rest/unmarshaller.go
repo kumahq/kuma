@@ -45,7 +45,7 @@ func (e *InvalidResourceError) Is(target error) bool {
 func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 	m := v1alpha1.ResourceMeta{}
 	if err := u.unmarshalFn(bytes, &m); err != nil {
-		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid meta type: '%s'", err.Error())}
+		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid meta type: %q", err.Error())}
 	}
 	desc, err := registry.Global().DescriptorFor(core_model.ResourceType(m.Type))
 	if err != nil {
@@ -70,7 +70,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		rawObj := map[string]interface{}{}
 		// Unfortunately to validate new policies we must first unmarshal into a rawObj
 		if err := u.unmarshalFn(bytes, &rawObj); err != nil {
-			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: '%s'", desc.Name, err.Error())}
+			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 		}
 		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
 		res := validator.Validate(rawObj)
@@ -80,7 +80,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 	}
 
 	if err := u.unmarshalFn(bytes, restResource); err != nil {
-		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: '%s'", desc.Name, err.Error())}
+		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 	}
 
 	if err := core_model.Validate(resource); err != nil {

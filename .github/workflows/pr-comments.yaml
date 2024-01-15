@@ -10,8 +10,6 @@ permissions:
   contents: read
 jobs:
   pr_comments:
-    permissions:
-      contents: write # for Git to git push
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-latest
     steps:

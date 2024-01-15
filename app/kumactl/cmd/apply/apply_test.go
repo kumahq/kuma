@@ -505,7 +505,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: `YAML contains invalid resource: invalid Dataplane object: 'error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []json.RawMessage'`,
+			err: `YAML contains invalid resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []json.RawMessage"`,
 		}),
 		Entry("no resource", testCase{
 			resource: ``,

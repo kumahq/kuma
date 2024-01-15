@@ -83,7 +83,7 @@ func (t *VirtualOutboundResource) validateHost(path validators.PathBuilder) vali
 	}
 	_, lerr := t.EvalHost(fakeTags)
 	if lerr != nil {
-		err.AddViolationAt(path, fmt.Sprintf("template pre evaluation failed with error='%s'", lerr.Error()))
+		err.AddViolationAt(path, fmt.Sprintf("template pre evaluation failed with error=%q", lerr.Error()))
 	}
 	return err
 }
@@ -101,7 +101,7 @@ func (t *VirtualOutboundResource) validatePort(path validators.PathBuilder) vali
 	}
 	_, lerr := t.EvalPort(fakeTags)
 	if lerr != nil {
-		err.AddViolationAt(path, fmt.Sprintf("template pre evaluation failed with error='%s'", lerr.Error()))
+		err.AddViolationAt(path, fmt.Sprintf("template pre evaluation failed with error=%q", lerr.Error()))
 	}
 	return err
 }

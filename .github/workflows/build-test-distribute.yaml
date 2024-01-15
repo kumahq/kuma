@@ -8,6 +8,8 @@ on:
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
+permissions:
+  contents: read
 env:
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
@@ -38,7 +40,8 @@ jobs:
       - uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3.7.0
         with:
           args: --fix=false --verbose
-          version: v1.54.1
+          version: v1.55.2
+          skip-pkg-cache: true
       - run: |
           make clean
       - run: |
@@ -82,13 +85,7 @@ jobs:
           sudo df -h
       - name: Run tests
         run: |
-          make test TEST_REPORTS=1
-      - name: Save test reports
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
-        with:
-          name: test-reports
-          path: build/reports
-          retention-days: 7
+          make test
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
@@ -264,10 +261,12 @@ jobs:
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "universal", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]
               }
             }
+          # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
             | .test_e2e_env.include = []
