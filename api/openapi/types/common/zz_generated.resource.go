@@ -76,8 +76,8 @@ type ProxyRule struct {
 
 // ResourceTypeDescription Description of a resource type, this is useful for dynamically generated clients and the gui
 type ResourceTypeDescription struct {
-	// IncludeInDump description resources of this type should be included in dump (especially useful for moving from non-federated to federated or migrating to a new global).
-	IncludeInDump bool `json:"includeInDump"`
+	// IncludeInFederationWithPolicies description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
+	IncludeInFederationWithPolicies bool `json:"includeInFederationWithPolicies"`
 
 	// Name the name of the resource type
 	Name string `json:"name"`
