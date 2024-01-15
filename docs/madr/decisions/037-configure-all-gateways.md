@@ -129,7 +129,7 @@ We can add a new field `proxyTypes` to targetRef which allows to apply policy to
 ```yaml
 targetRef:
   kind: Mesh|MeshSubset
-  proxyTypes: ["sidecar", "gateway"]
+  proxyTypes: ["Sidecar", "Gateway"]
 ```
 When field is not defined or empty we assume that the user wants to apply configuration to all dataplanes. 
 In this situtation we won't break current behaviour. Also, worth mentioning that `proxyTypes` can only be set when 
