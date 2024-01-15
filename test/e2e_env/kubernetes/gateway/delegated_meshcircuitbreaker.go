@@ -13,14 +13,14 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func CircuitBreaker(namespaceOutsideMesh, mesh, kicIP string) func() {
+func CircuitBreaker(config *delegatedE2EConfig) func() {
 	GinkgoHelper()
 
 	return func() {
 		BeforeAll(func() {
 			Expect(DeleteMeshResources(
 				kubernetes.Cluster,
-				mesh,
+				config.mesh,
 				core_mesh.CircuitBreakerResourceTypeDescriptor,
 				core_mesh.RetryResourceTypeDescriptor,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
@@ -30,16 +30,16 @@ func CircuitBreaker(namespaceOutsideMesh, mesh, kicIP string) func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(
 				kubernetes.Cluster,
-				mesh,
+				config.mesh,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 			)).To(Succeed())
 		})
 
 		DescribeTable("should configure circuit breaker limits and outlier"+
-			" detectors for connections", func(config string) {
+			" detectors for connections", func(yaml string) {
 			// given no MeshCircuitBreaker
 			mcbs, err := kubernetes.Cluster.GetKumactlOptions().
-				KumactlList("meshcircuitbreakers", mesh)
+				KumactlList("meshcircuitbreakers", config.mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(mcbs).To(BeEmpty())
 
@@ -47,8 +47,8 @@ func CircuitBreaker(namespaceOutsideMesh, mesh, kicIP string) func() {
 				return client.CollectResponsesAndFailures(
 					kubernetes.Cluster,
 					"demo-client",
-					fmt.Sprintf("http://%s/test-server", kicIP),
-					client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+					fmt.Sprintf("http://%s/test-server", config.kicIP),
+					client.FromKubernetesPod(config.namespaceOutsideMesh, "demo-client"),
 					client.WithNumberOfRequests(10),
 				)
 			}, "30s", "1s").Should(And(
@@ -57,15 +57,15 @@ func CircuitBreaker(namespaceOutsideMesh, mesh, kicIP string) func() {
 			))
 
 			// when
-			Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(yaml))).To(Succeed())
 
 			// then
 			Eventually(func(g Gomega) ([]client.FailureResponse, error) {
 				return client.CollectResponsesAndFailures(
 					kubernetes.Cluster,
 					"demo-client",
-					fmt.Sprintf("http://%s/test-server", kicIP),
-					client.FromKubernetesPod(namespaceOutsideMesh, "demo-client"),
+					fmt.Sprintf("http://%s/test-server", config.kicIP),
+					client.FromKubernetesPod(config.namespaceOutsideMesh, "demo-client"),
 					client.WithNumberOfRequests(10),
 					// increase processing time of a request to increase
 					// a probability of triggering maxPendingRequest limit
@@ -98,7 +98,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, Config.KumaNamespace, mesh)),
+`, Config.KumaNamespace, config.mesh)),
 			Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
@@ -120,7 +120,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, Config.KumaNamespace, mesh)),
+`, Config.KumaNamespace, config.mesh)),
 		)
 	}
 }

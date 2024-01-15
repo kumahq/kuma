@@ -13,31 +13,39 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func Delegated() {
-	namespace := "delegated-gateway"
-	namespaceOutsideMesh := "delegated-gateway-outside-mesh"
-	mesh := "delegated-gateway"
+type delegatedE2EConfig struct {
+	namespace            string
+	namespaceOutsideMesh string
+	mesh                 string
+	kicIP                string
+}
 
-	var kicIP string
+func Delegated() {
+	config := &delegatedE2EConfig{
+		namespace:            "delegated-gateway",
+		namespaceOutsideMesh: "delegated-gateway-outside-mesh",
+		mesh:                 "delegated-gateway",
+		kicIP:                "",
+	}
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(Namespace(namespaceOutsideMesh)).
+			Install(MTLSMeshKubernetes(config.mesh)).
+			Install(NamespaceWithSidecarInjection(config.namespace)).
+			Install(Namespace(config.namespaceOutsideMesh)).
 			Install(democlient.Install(
-				democlient.WithNamespace(namespaceOutsideMesh),
+				democlient.WithNamespace(config.namespaceOutsideMesh),
 			)).
 			Install(testserver.Install(
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
+				testserver.WithMesh(config.mesh),
+				testserver.WithNamespace(config.namespace),
 				testserver.WithName("test-server"),
 			)).
 			Install(kic.KongIngressController(
-				kic.WithNamespace(namespace),
-				kic.WithMesh(mesh),
+				kic.WithNamespace(config.namespace),
+				kic.WithMesh(config.mesh),
 			)).
-			Install(kic.KongIngressService(kic.WithNamespace(namespace))).
+			Install(kic.KongIngressService(kic.WithNamespace(config.namespace))).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -57,21 +65,23 @@ spec:
             name: test-server
             port:
               number: 80
-`, namespace, mesh))).
+`, config.namespace, config.mesh))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		kicIP, err = kic.From(kubernetes.Cluster).IP(namespace)
+		kicIP, err := kic.From(kubernetes.Cluster).IP(config.namespace)
 		Expect(err).To(Succeed())
+
+		config.kicIP = kicIP
 	})
 
 	E2EAfterAll(func() {
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.namespace)).
 			To(Succeed())
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.namespaceOutsideMesh)).
 			To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(config.mesh)).To(Succeed())
 	})
 
-	Context("MeshCircuitBreaker", CircuitBreaker(namespaceOutsideMesh, mesh, kicIP))
+	Context("MeshCircuitBreaker", CircuitBreaker(config))
 }
