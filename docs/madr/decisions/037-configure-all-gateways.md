@@ -12,7 +12,7 @@ This document aims to clarify how to configure all gateways or a subset of them,
 
 ## Considered Options
 
-- Introduce new kind `MeshGatewaysSubset`
+- Introduce new kind `MeshGatewaysSuperset`
 - Add label to all gateways and target them by kind `MeshSubset`
 - Remove requirement of `name` when using kind `MeshGateway`
 - Use internal tag `gateways: include/exclude/only` when using with `MeshSubset`
@@ -22,13 +22,13 @@ This document aims to clarify how to configure all gateways or a subset of them,
 
 - Add a new field to targetRef `gateways: include/exclude/only`
 
-## Introduce new kind `MeshGatewaysSubset`
+## Introduce new kind `MeshGatewaysSuperset`
 
-We can introduce a new kind `MeshGatewaysSubset` It only picks gateways based on tags, if you provide tags. But, it can't pick a specific gateway by name.
+We can introduce a new kind `MeshGatewaysSuperset` It only picks gateways based on tags, if you provide tags. But, it can't pick a specific gateway by name.
 
 ```yaml
 targetRef:
-  kind: MeshGatewaysSubset
+  kind: MeshGatewaysSuperset
   tags: {} # not required
 ```
 
@@ -41,10 +41,10 @@ Thanks to this we can allow users to target all gateways and apply some good def
 
 ### Ordering
 
-`MeshGatewaysSubset` is more specific than `MeshSubset` so its priority should be higher. Because `MeshGatewaysSubset` choose subset of Dataplanes that are gateways means is more specific.
+`MeshGatewaysSuperset` is more specific than `MeshSubset` so its priority should be higher. Because `MeshGatewaysSuperset` choose subset of Dataplanes that are gateways means is more specific.
 
 Priority:
-`Mesh` < `MeshSubset` < `MeshGatewaysSubset` < `MeshGateway` < `MeshService` < `MeshServiceSubset` < `MeshHTTPRoute`
+`Mesh` < `MeshSubset` < `MeshGatewaysSuperset` < `MeshGateway` < `MeshService` < `MeshServiceSubset` < `MeshHTTPRoute`
 
 ### Positive Consequences
 
