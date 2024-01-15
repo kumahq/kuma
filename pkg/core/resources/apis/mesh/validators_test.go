@@ -130,6 +130,17 @@ kind: Mesh
 				},
 			},
 		}),
+		Entry("Mesh", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: ["Gateway", "Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+		}),
 		Entry("MeshSubset with tags", testCase{
 			inputYaml: `
 kind: MeshSubset
@@ -146,6 +157,17 @@ tags:
 		Entry("MeshSubset without tags", testCase{
 			inputYaml: `
 kind: MeshSubset
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshSubset,
+				},
+			},
+		}),
+		Entry("MeshSubset with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshSubset
+proxyTypes: ["Gateway"]
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -319,6 +341,38 @@ name: mesh-1
 violations:
   - field: targetRef.name
     message: using name with kind Mesh is not yet supported 
+`,
+		}),
+		Entry("Mesh with incorrect proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: ["incorrect"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes[0]
+    message: incorrect is not supported
+`,
+		}),
+		Entry("Mesh with empty proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: []
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must be not empty when defined
 `,
 		}),
 		Entry("MeshSubset when it's not supported", testCase{

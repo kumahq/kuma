@@ -54,6 +54,19 @@ from:
     default:
       http: []
 `),
+		Entry("Kind Mesh with to and only gateway", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+  proxyTypes: ["Gateway"]
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: []
+`),
 	)
 
 	DescribeErrorCases(

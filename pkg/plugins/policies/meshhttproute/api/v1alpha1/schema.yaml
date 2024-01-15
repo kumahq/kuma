@@ -34,7 +34,7 @@ properties:
           name:
             description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
             type: string
-          proxyType:
+          proxyTypes:
             description: ProxyTypes types of affected Datapplanes by the policy.
             items:
               type: string
@@ -81,7 +81,7 @@ properties:
                             name:
                               description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                               type: string
-                            proxyType:
+                            proxyTypes:
                               description: ProxyTypes types of affected Datapplanes by the policy.
                               items:
                                 type: string
@@ -168,7 +168,7 @@ properties:
                                     name:
                                       description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                                       type: string
-                                    proxyType:
+                                    proxyTypes:
                                       description: ProxyTypes types of affected Datapplanes by the policy.
                                       items:
                                         type: string
@@ -426,7 +426,7 @@ properties:
                 name:
                   description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                   type: string
-                proxyType:
+                proxyTypes:
                   description: ProxyTypes types of affected Datapplanes by the policy.
                   items:
                     type: string

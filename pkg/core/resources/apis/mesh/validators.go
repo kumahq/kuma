@@ -378,8 +378,16 @@ func ValidateTargetRef(
 	return err
 }
 
+func DoesTargetRefSupportsGateway(ref common_api.TargetRef) bool {
+	return (ref.Kind == common_api.Mesh || ref.Kind == common_api.MeshSubset) &&
+		(len(ref.ProxyTypes) > 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway))
+}
+
 func validateProxyTypes(proxyTypes []common_api.TargetRefProxyType) validators.ValidationError {
 	var err validators.ValidationError
+	if len(proxyTypes) == 0 {
+		err.AddViolation("proxyTypes", "must be not empty when defined")
+	}
 	for i, proxyType := range proxyTypes {
 		switch proxyType {
 		case common_api.Gateway:

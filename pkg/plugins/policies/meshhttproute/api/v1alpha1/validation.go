@@ -41,6 +41,13 @@ func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.Vali
 			},
 		})
 	default:
+		if mesh.DoesTargetRefSupportsGateway(topTargetRef) {
+			return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			})
+		}
 		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.MeshService,
