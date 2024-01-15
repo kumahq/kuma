@@ -16,10 +16,11 @@ This document aims to clarify how to configure all gateways or a subset of them,
 - Add label to all gateways and target them by kind `MeshSubset`
 - Remove requirement of `name` when using kind `MeshGateway`
 - Use internal tag `gateways: include/exclude/only` when using with `MeshSubset`
+- Add a new field to targetRef `gateways: include/exclude/only`
 
 ## Decision Outcome
 
-- ?
+- Add a new field to targetRef `gateways: include/exclude/only`
 
 ## Introduce new kind `MeshGatewaysSubset`
 
@@ -117,3 +118,29 @@ targetRef:
 - Configuration is not so obvious
 - What about merging `MeshSubset`'s
 - Can break current behavior if the user has already defined the tag
+
+## Add a new field to targetRef `gateways: include/exclude/only`
+
+We can add a new field `gateways` to targetRef which allows to apply policy to: 
+* only gateways
+* all dataplanes including gateways
+* all dataplanes excluding gateways
+
+```yaml
+targetRef:
+  kind: MeshSubset
+  gateways: "only/include/exclude"
+```
+By default we are going to include gateways to don't change the  current behavior.
+
+### Positive Consequences
+
+- Users can set things up for all gateways.
+- No need for a new Kind.
+- Not confusing names
+- Explicit for the user
+
+### Negative Consequences
+
+- Extending targetRef object
+- Merging might be a bit different
