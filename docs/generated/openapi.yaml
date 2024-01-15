@@ -1985,9 +1985,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -2032,7 +2030,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -2235,9 +2233,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -2613,9 +2609,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -2660,7 +2654,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -3008,9 +3002,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -3172,9 +3164,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -3219,7 +3209,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -3353,9 +3343,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -3423,7 +3411,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -3683,9 +3671,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -3753,7 +3739,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -3818,8 +3804,8 @@ components:
                                     type: string
                                   proxyTypes:
                                     description: >-
-                                      ProxyTypes types of affected Datapplanes
-                                      by the policy.
+                                      ProxyTypes types of affected Dataplanes by
+                                      the policy.
                                     items:
                                       type: string
                                     type: array
@@ -3923,7 +3909,7 @@ components:
                                             type: string
                                           proxyTypes:
                                             description: >-
-                                              ProxyTypes types of affected Datapplanes
+                                              ProxyTypes types of affected Dataplanes
                                               by the policy.
                                             items:
                                               type: string
@@ -4246,9 +4232,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -4314,7 +4298,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -4824,9 +4808,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -4995,7 +4977,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -5478,7 +5460,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -5679,9 +5661,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -5726,7 +5706,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -5903,9 +5883,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -5973,7 +5951,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -6384,9 +6362,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -6454,7 +6430,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -6510,8 +6486,8 @@ components:
                                     type: string
                                   proxyTypes:
                                     description: >-
-                                      ProxyTypes types of affected Datapplanes
-                                      by the policy.
+                                      ProxyTypes types of affected Dataplanes by
+                                      the policy.
                                     items:
                                       type: string
                                     type: array
@@ -6565,9 +6541,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -6695,9 +6669,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -6742,7 +6714,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -6841,9 +6813,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -7079,7 +7049,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array
@@ -7164,9 +7134,7 @@ components:
                           `MeshGatewayRoute`
                         type: string
                       proxyTypes:
-                        description: >-
-                          ProxyTypes types of affected Datapplanes by the
-                          policy.
+                        description: ProxyTypes types of affected Dataplanes by the policy.
                         items:
                           type: string
                         type: array
@@ -7211,7 +7179,7 @@ components:
                     `MeshGatewayRoute`
                   type: string
                 proxyTypes:
-                  description: ProxyTypes types of affected Datapplanes by the policy.
+                  description: ProxyTypes types of affected Dataplanes by the policy.
                   items:
                     type: string
                   type: array

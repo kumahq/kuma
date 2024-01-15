@@ -53,7 +53,7 @@ type TargetRef struct {
 	Tags map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
-	// ProxyTypes types of affected Datapplanes by the policy.
+	// ProxyTypes types of affected Dataplanes by the policy.
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
 }
 

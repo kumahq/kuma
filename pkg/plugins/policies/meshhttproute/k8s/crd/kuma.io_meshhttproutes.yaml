@@ -66,7 +66,7 @@ spec:
                       with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                     type: string
                   proxyTypes:
-                    description: ProxyTypes types of affected Datapplanes by the policy.
+                    description: ProxyTypes types of affected Dataplanes by the policy.
                     items:
                       type: string
                     type: array
@@ -124,7 +124,7 @@ spec:
                                         `MeshServiceSubset` and `MeshGatewayRoute`'
                                       type: string
                                     proxyTypes:
-                                      description: ProxyTypes types of affected Datapplanes
+                                      description: ProxyTypes types of affected Dataplanes
                                         by the policy.
                                       items:
                                         type: string
@@ -226,7 +226,7 @@ spec:
                                               type: string
                                             proxyTypes:
                                               description: ProxyTypes types of affected
-                                                Datapplanes by the policy.
+                                                Dataplanes by the policy.
                                               items:
                                                 type: string
                                               type: array
@@ -529,7 +529,7 @@ spec:
                             and `MeshGatewayRoute`'
                           type: string
                         proxyTypes:
-                          description: ProxyTypes types of affected Datapplanes by
+                          description: ProxyTypes types of affected Dataplanes by
                             the policy.
                           items:
                             type: string
