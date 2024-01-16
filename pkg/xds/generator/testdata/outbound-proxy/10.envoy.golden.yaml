@@ -75,6 +75,10 @@ resources:
             socketAddress:
               address: 240.0.0.4
               portValue: 80
+        - address:
+            socketAddress:
+              address: 240.0.0.4
+              portValue: 8080
       address:
         socketAddress:
           address: 127.0.0.1

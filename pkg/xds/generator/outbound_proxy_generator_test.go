@@ -24,7 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = FDescribe("OutboundProxyGenerator", func() {
+var _ = Describe("OutboundProxyGenerator", func() {
 	meta := &test_model.ResourceMeta{
 		Name: "mesh1",
 	}
@@ -839,6 +839,10 @@ var _ = FDescribe("OutboundProxyGenerator", func() {
                 tags:
                   kuma.io/service: backend
               - port: 80
+                address: 240.0.0.4
+                tags:
+                  kuma.io/service: backend
+              - port: 8080
                 address: 240.0.0.4
                 tags:
                   kuma.io/service: backend

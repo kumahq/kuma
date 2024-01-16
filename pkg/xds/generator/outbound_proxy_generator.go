@@ -484,7 +484,7 @@ func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networki
 			}
 
 			if !slices.ContainsFunc(vips, func(oface mesh_proto.OutboundInterface) bool {
-				return oface.DataplaneIP == obInner.Address
+				return oface.DataplaneIP == obInner.Address && oface.DataplanePort == obInner.Port
 			}) {
 				vips = append(vips, dpNetworking.ToOutboundInterface(obInner))
 			}
