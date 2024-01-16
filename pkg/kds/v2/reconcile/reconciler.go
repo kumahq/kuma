@@ -46,7 +46,11 @@ type reconciler struct {
 	lock sync.Mutex
 }
 
+<<<<<<< HEAD
 func (r *reconciler) Clear(node *envoy_core.Node) {
+=======
+func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
+>>>>>>> 9346b2d5c (fix(kds): race condition on fill metadata (#8872))
 	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -63,6 +67,7 @@ func (r *reconciler) Clear(node *envoy_core.Node) {
 	}
 }
 
+<<<<<<< HEAD
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
 	new, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
@@ -71,6 +76,9 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
+=======
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
+>>>>>>> 9346b2d5c (fix(kds): race condition on fill metadata (#8872))
 	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(new, old)
