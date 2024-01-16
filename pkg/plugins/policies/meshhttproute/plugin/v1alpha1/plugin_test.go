@@ -546,6 +546,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Port:     8081,
 								Hostname: "go.dev",
 							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_TCP,
+								Port:     9080,
+							},
 						},
 					},
 				},
