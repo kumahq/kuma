@@ -464,7 +464,7 @@ func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networki
 
 	for _, outbound := range outbounds {
 		service := outbound.GetService()
-		if service == "" || !fullVIPAddrMap[outbound.Address] {
+		if !fullVIPAddrMap[outbound.Address] {
 			continue
 		}
 
