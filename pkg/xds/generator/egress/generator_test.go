@@ -216,5 +216,9 @@ var _ = Describe("EgressGenerator", func() {
 			fileWithResourcesName: "subsets-with-meshhttproute.yaml",
 			expected:              "subsets-with-meshhttproute.golden.yaml",
 		}),
+		Entry("subsets with MeshHTTPRoute, external", testCase{
+			fileWithResourcesName: "subsets-with-external-meshhttproute.yaml",
+			expected:              "subsets-with-external-meshhttproute.golden.yaml",
+		}),
 	)
 })
