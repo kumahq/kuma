@@ -67,7 +67,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	if !h.isPrivilegedUser(req.UserInfo) {
-		// check if operation is allowed only if the user is not privileged
+		// we're checking if the operation is allowed only when the user is not privileged
 		if resp := h.isOperationAllowed(resType); !resp.Allowed {
 			return resp
 		}
@@ -83,9 +83,9 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		}
 
 		if !h.isPrivilegedUser(req.UserInfo) {
-			// check if resource has origin label only if the user is not privileged
-			if h.federatedZone && k8sObj.GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
-				return noOriginLabelResponse()
+			// we're checking presence of the origin label only when the user is not privileged
+			if resp := h.checkOriginLabel(coreRes); !resp.Allowed {
+				return resp
 			}
 		}
 
@@ -145,6 +145,16 @@ func (h *validatingHandler) isPrivilegedUser(userInfo authenticationv1.UserInfo)
 	// - storageversionmigratior
 	// Not security; protecting user from self.
 	return slices.Contains(h.allowedUsers, userInfo.Username)
+}
+
+func (h *validatingHandler) checkOriginLabel(r core_model.Resource) admission.Response {
+	if !h.federatedZone || !r.Descriptor().IsPluginOriginated {
+		return admission.Allowed("")
+	}
+	if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
+		return noOriginLabelResponse()
+	}
+	return admission.Allowed("")
 }
 
 func noOriginLabelResponse() admission.Response {
