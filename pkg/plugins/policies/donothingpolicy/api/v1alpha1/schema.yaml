@@ -20,14 +20,20 @@ properties:
         items:
           properties:
             default:
-              description: Default is a configuration specific to the group of clients referenced in 'targetRef'
+              description: |-
+                Default is a configuration specific to the group of clients referenced in
+                'targetRef'
               properties:
                 enableDoNothing:
-                  description: User defined fields Set true in case of doing nothing
+                  description: |-
+                    User defined fields
+                    Set true in case of doing nothing
                   type: boolean
               type: object
             targetRef:
-              description: TargetRef is a reference to the resource that represents a group of clients.
+              description: |-
+                TargetRef is a reference to the resource that represents a group of
+                clients.
               properties:
                 kind:
                   description: Kind of the referenced resource
@@ -43,7 +49,9 @@ properties:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
                 name:
-                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  description: |-
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                    `MeshServiceSubset` and `MeshGatewayRoute`
                   type: string
                 proxyTypes:
                   description: ProxyTypes types of affected Dataplanes by the policy.
@@ -53,7 +61,9 @@ properties:
                 tags:
                   additionalProperties:
                     type: string
-                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  description: |-
+                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                    `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
           required:
@@ -61,7 +71,10 @@ properties:
           type: object
         type: array
       targetRef:
-        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
+        description: |-
+          TargetRef is a reference to the resource the policy takes an effect on.
+          The resource could be either a real store object or virtual resource
+          defined inplace.
         properties:
           kind:
             description: Kind of the referenced resource
@@ -77,7 +90,9 @@ properties:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
           name:
-            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            description: |-
+              Name of the referenced resource. Can only be used with kinds: `MeshService`,
+              `MeshServiceSubset` and `MeshGatewayRoute`
             type: string
           proxyTypes:
             description: ProxyTypes types of affected Dataplanes by the policy.
@@ -87,7 +102,9 @@ properties:
           tags:
             additionalProperties:
               type: string
-            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            description: |-
+              Tags used to select a subset of proxies by tags. Can only be used with kinds
+              `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
       to:
@@ -95,14 +112,20 @@ properties:
         items:
           properties:
             default:
-              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
+              description: |-
+                Default is a configuration specific to the group of destinations referenced in
+                'targetRef'
               properties:
                 enableDoNothing:
-                  description: User defined fields Set true in case of doing nothing
+                  description: |-
+                    User defined fields
+                    Set true in case of doing nothing
                   type: boolean
               type: object
             targetRef:
-              description: TargetRef is a reference to the resource that represents a group of destinations.
+              description: |-
+                TargetRef is a reference to the resource that represents a group of
+                destinations.
               properties:
                 kind:
                   description: Kind of the referenced resource
@@ -118,7 +141,9 @@ properties:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
                 name:
-                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                  description: |-
+                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                    `MeshServiceSubset` and `MeshGatewayRoute`
                   type: string
                 proxyTypes:
                   description: ProxyTypes types of affected Dataplanes by the policy.
@@ -128,7 +153,9 @@ properties:
                 tags:
                   additionalProperties:
                     type: string
-                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                  description: |-
+                    Tags used to select a subset of proxies by tags. Can only be used with kinds
+                    `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
           required:

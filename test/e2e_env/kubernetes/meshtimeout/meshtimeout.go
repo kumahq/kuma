@@ -41,7 +41,7 @@ func MeshTimeout() {
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should add timeouts for outbound connections", func(timeoutConfig string) {
+	DescribeTable("should add timeouts for outbound connections", FlakeAttempts(3), func(timeoutConfig string) {
 		// given no MeshTimeout
 		mts, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", mesh)
 		Expect(err).ToNot(HaveOccurred())

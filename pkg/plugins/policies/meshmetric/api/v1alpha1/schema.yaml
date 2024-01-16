@@ -91,12 +91,18 @@ properties:
                 type: string
               usedOnly:
                 default: false
-                description: UsedOnly will scrape only metrics that has been by sidecar (counters incremented at least once, gauges changed at least once, and histograms added to at least once).
+                description: |-
+                  UsedOnly will scrape only metrics that has been by sidecar (counters incremented
+                  at least once, gauges changed at least once, and histograms added to at
+                  least once).
                 type: boolean
             type: object
         type: object
       targetRef:
-        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined in-place.
+        description: |-
+          TargetRef is a reference to the resource the policy takes an effect on.
+          The resource could be either a real store object or virtual resource
+          defined in-place.
         properties:
           kind:
             description: Kind of the referenced resource
@@ -112,7 +118,9 @@ properties:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
           name:
-            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            description: |-
+              Name of the referenced resource. Can only be used with kinds: `MeshService`,
+              `MeshServiceSubset` and `MeshGatewayRoute`
             type: string
           proxyTypes:
             description: ProxyTypes types of affected Dataplanes by the policy.
@@ -122,7 +130,9 @@ properties:
           tags:
             additionalProperties:
               type: string
-            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            description: |-
+              Tags used to select a subset of proxies by tags. Can only be used with kinds
+              `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
     required:
