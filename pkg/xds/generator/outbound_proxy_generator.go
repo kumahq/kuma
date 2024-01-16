@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -46,7 +47,14 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
 
+	vipsToSkip, serviceToVipsMap := buildServiceAdditionalAddressMap(outbounds, xdsCtx.Mesh.VIPDomains)
 	for _, outbound := range outbounds {
+		// don't generate listeners for VIPs, they will be added as additional addresses
+		// if a service vip don't have any REAL service behind it, we still need to generate a listener for it
+		if vipsToSkip[outbound.Address] {
+			continue
+		}
+
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
@@ -63,7 +71,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		servicesAcc.Add(clusters...)
 
 		// Generate listener
-		listener, err := g.generateLDS(xdsCtx, proxy, routes, outbound, protocol)
+		listener, err := g.generateLDS(xdsCtx, proxy, routes, outbound, protocol, serviceToVipsMap[outbound.GetService()])
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +99,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 	return resources, nil
 }
 
-func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol, vips []mesh_proto.OutboundInterface) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	rateLimits := []*core_mesh.RateLimitResource{}
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
@@ -175,6 +183,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.AdditionalAddresses(vips)).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -440,4 +449,54 @@ func (OutboundProxyGenerator) determineRoutes(
 	}
 
 	return routes
+}
+
+func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networking_Outbound, meshVIPDomains []model.VIPDomains) (map[string]bool, map[string][]mesh_proto.OutboundInterface) {
+	var dpNetworking *mesh_proto.Dataplane_Networking
+
+	fullVIPAddrMap := map[string]bool{}
+	vipToSkipMap := map[string]bool{}
+	serviceToVIPMap := map[string][]mesh_proto.OutboundInterface{}
+
+	for _, vipDomain := range meshVIPDomains {
+		fullVIPAddrMap[vipDomain.Address] = true
+	}
+
+	for _, outbound := range outbounds {
+		service := outbound.GetService()
+		if !fullVIPAddrMap[outbound.Address] {
+			continue
+		}
+
+		nonVIPServiceFound := false
+		var vips []mesh_proto.OutboundInterface
+
+		// scan from the beginning to find all possible siblings, because the outbounds are not sorted
+		// the value vips will contain all the VIPs pointing to the service, excluding the REAL service itself
+		for _, obInner := range outbounds {
+			if service != obInner.GetService() {
+				continue
+			}
+
+			if !fullVIPAddrMap[obInner.Address] {
+				nonVIPServiceFound = true
+				continue
+			}
+
+			if !slices.ContainsFunc(vips, func(oface mesh_proto.OutboundInterface) bool {
+				return oface.DataplaneIP == obInner.Address && oface.DataplanePort == obInner.Port
+			}) {
+				vips = append(vips, dpNetworking.ToOutboundInterface(obInner))
+			}
+		}
+
+		if nonVIPServiceFound {
+			for _, vip := range vips {
+				vipToSkipMap[vip.DataplaneIP] = true
+			}
+			serviceToVIPMap[service] = vips
+		}
+	}
+
+	return vipToSkipMap, serviceToVIPMap
 }
