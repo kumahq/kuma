@@ -109,5 +109,43 @@ default:
     regex: "())(!("
     usedOnly: true
 `),
+		resources.ErrorCase(
+			"invalid regex",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
+				Message: "must be a valid url",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "asdasd123"
+`),
+		resources.ErrorCase(
+			"invalid regex",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry",
+				Message: "must be defined",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      prometheus:
+        endpoint: "asdasd123"
+`),
 	)
 })
