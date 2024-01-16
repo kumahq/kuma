@@ -16,11 +16,11 @@ This document aims to clarify how to configure all gateways or a subset of them,
 - Add label to all gateways and target them by kind `MeshSubset`
 - Remove requirement of `name` when using kind `MeshGateway`
 - Use internal tag `gateways: include/exclude/only` when using with `MeshSubset`
-- Add a new field to targetRef `gateways: include/exclude/only`
+- Add a new field to targetRef `proxyTypes: [Sidecar, Gateway]`
 
 ## Decision Outcome
 
-- Add a new field to targetRef `gateways: include/exclude/only`
+- Add a new field to targetRef `proxyTypes: [Sidecar, Gateway]`
 
 ## Introduce new kind `MeshGatewaysSuperset`
 
@@ -119,7 +119,7 @@ targetRef:
 - What about merging `MeshSubset`'s
 - Can break current behavior if the user has already defined the tag
 
-## Add a new field to targetRef `proxyTypes: [sidecar, gateway]`
+## Add a new field to targetRef `proxyTypes: [Sidecar, Gateway]`
 
 We can add a new field `proxyTypes` to targetRef which allows to apply policy to: 
 * only gateways
