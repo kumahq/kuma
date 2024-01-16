@@ -68,7 +68,7 @@ func EnsureOnlyOneZoneExists(
 			exists = true
 		} else {
 			logger.Info("detected Zone resource with different name than Zone CP name. Deleting. This might happen if you change the name of the Zone CP", "name", zoneName)
-			if err := resManager.Delete(ctx, zone); err != nil {
+			if err := resManager.Delete(ctx, zone, store.DeleteByKey(zone.GetMeta().GetName(), model.NoMesh)); err != nil {
 				return errors.Wrap(err, "cannot delete old zone")
 			}
 		}
