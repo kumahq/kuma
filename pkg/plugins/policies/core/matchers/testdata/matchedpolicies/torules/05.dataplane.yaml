@@ -9,3 +9,8 @@ networking:
         kuma.io/service: web
         version: v1
         team: mesh
+    - port: 8081
+      tags:
+        kuma.io/service: web-api
+        version: v1
+        team: mesh

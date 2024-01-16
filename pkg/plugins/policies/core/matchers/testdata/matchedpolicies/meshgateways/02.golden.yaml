@@ -1,0 +1,62 @@
+SingleItemRules:
+  127.0.0.1:8080:
+    Rules: null
+  127.0.0.1:8081:
+    Rules: null
+  127.0.0.1:8082:
+    Rules: null
+ToRules:
+  127.0.0.1:8080:
+  - Conf:
+      backends:
+      - file:
+          path: /meshsubset
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mesh
+      type: MeshAccessLog
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: meshsubset
+      type: MeshAccessLog
+    Subset: []
+  127.0.0.1:8081:
+  - Conf:
+      backends:
+      - file:
+          path: /meshsubset
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mesh
+      type: MeshAccessLog
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: meshsubset
+      type: MeshAccessLog
+    Subset: []
+  127.0.0.1:8082:
+  - Conf:
+      backends:
+      - file:
+          path: /meshsubset
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mesh
+      type: MeshAccessLog
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: meshsubset
+      type: MeshAccessLog
+    Subset: []

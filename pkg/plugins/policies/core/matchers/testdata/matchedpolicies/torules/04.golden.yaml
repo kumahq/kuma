@@ -1,19 +1,12 @@
 Rules:
 - Conf:
     http:
-<<<<<<< HEAD
-      requestTimeout: 7s
-=======
       requestTimeout: 3s
       streamIdleTimeout: 5s
->>>>>>> master
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-<<<<<<< HEAD
-    name: mtp-1
-=======
     name: aaa
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
@@ -22,20 +15,13 @@ Rules:
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: bbb
->>>>>>> master
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-<<<<<<< HEAD
-    name: mtp-3
-    type: MeshTimeout
-  Subset: []
-=======
     name: ccc
     type: MeshTimeout
   Subset:
   - Key: kuma.io/service
     Not: false
     Value: backend
->>>>>>> master
