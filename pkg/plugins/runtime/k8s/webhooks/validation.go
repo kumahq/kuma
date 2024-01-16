@@ -13,6 +13,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -65,8 +66,11 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Allowed("")
 	}
 
-	if resp := h.isOperationAllowed(resType, req.UserInfo); !resp.Allowed {
-		return resp
+	if !h.isPrivilegedUser(req.UserInfo) {
+		// check if operation is allowed only if the user is not privileged
+		if resp := h.isOperationAllowed(resType); !resp.Allowed {
+			return resp
+		}
 	}
 
 	switch req.Operation {
@@ -76,6 +80,13 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		coreRes, k8sObj, err := h.decode(req)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
+		}
+
+		if !h.isPrivilegedUser(req.UserInfo) {
+			// check if resource has origin label only if the user is not privileged
+			if h.federatedZone && k8sObj.GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
+				return noOriginLabelResponse()
+			}
 		}
 
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
@@ -113,16 +124,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 }
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
-	if slices.Contains(h.allowedUsers, userInfo.Username) {
-		// Assume this means one of the following:
-		// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName))
-		// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
-		// - storageversionmigratior
-		// Not security; protecting user from self.
-		return admission.Allowed("")
-	}
-
+func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType) admission.Response {
 	descriptor, err := h.coreRegistry.DescriptorFor(resType)
 	if err != nil {
 		return syncErrorResponse(resType, h.mode)
@@ -134,6 +136,38 @@ func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, 
 		return syncErrorResponse(resType, h.mode)
 	}
 	return admission.Allowed("")
+}
+
+func (h *validatingHandler) isPrivilegedUser(userInfo authenticationv1.UserInfo) bool {
+	// Assume this means one of the following:
+	// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName))
+	// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
+	// - storageversionmigratior
+	// Not security; protecting user from self.
+	return slices.Contains(h.allowedUsers, userInfo.Username)
+}
+
+func noOriginLabelResponse() admission.Response {
+	return admission.Response{
+		AdmissionResponse: v1.AdmissionResponse{
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  "Failure",
+				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP requires %s label to be set to %s.", mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				Reason:  "Forbidden",
+				Code:    403,
+				Details: &metav1.StatusDetails{
+					Causes: []metav1.StatusCause{
+						{
+							Type:    "FieldValueInvalid",
+							Message: "cannot be empty",
+							Field:   "metadata.labels[kuma.io/origin]",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {

@@ -458,6 +458,13 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 
 func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
+
+	if r.federatedZone && r.descriptor.IsPluginOriginated {
+		if labels == nil || labels[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ResourceOriginZone))
+		}
+	}
+
 	for _, k := range maps.SortedKeys(labels) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
