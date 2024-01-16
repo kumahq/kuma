@@ -16,10 +16,7 @@ properties:
     description: Spec is the specification of the Kuma MeshHTTPRoute resource.
     properties:
       targetRef:
-        description: |-
-          TargetRef is a reference to the resource the policy takes an effect on.
-          The resource could be either a real store object or virtual resource
-          defined inplace.
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined inplace.
         properties:
           kind:
             description: Kind of the referenced resource
@@ -35,9 +32,7 @@ properties:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
           name:
-            description: |-
-              Name of the referenced resource. Can only be used with kinds: `MeshService`,
-              `MeshServiceSubset` and `MeshGatewayRoute`
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
             type: string
           proxyTypes:
             description: ProxyTypes types of affected Dataplanes by the policy.
@@ -47,9 +42,7 @@ properties:
           tags:
             additionalProperties:
               type: string
-            description: |-
-              Tags used to select a subset of proxies by tags. Can only be used with kinds
-              `MeshSubset` and `MeshServiceSubset`
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
       to:
@@ -57,24 +50,16 @@ properties:
         items:
           properties:
             hostnames:
-              description: |-
-                Hostnames is only valid when targeting MeshGateway and limits the
-                effects of the rules to requests to this hostname.
-                Given hostnames must intersect with the hostname of the listeners the
-                route attaches to.
+              description: Hostnames is only valid when targeting MeshGateway and limits the effects of the rules to requests to this hostname. Given hostnames must intersect with the hostname of the listeners the route attaches to.
               items:
                 type: string
               type: array
             rules:
-              description: |-
-                Rules contains the routing rules applies to a combination of top-level
-                targetRef and the targetRef in this entry.
+              description: Rules contains the routing rules applies to a combination of top-level targetRef and the targetRef in this entry.
               items:
                 properties:
                   default:
-                    description: |-
-                      Default holds routing rules that can be merged with rules from other
-                      policies.
+                    description: Default holds routing rules that can be merged with rules from other policies.
                     properties:
                       backendRefs:
                         items:
@@ -94,9 +79,7 @@ properties:
                               description: Mesh is reserved for future use to identify cross mesh resources.
                               type: string
                             name:
-                              description: |-
-                                Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                `MeshServiceSubset` and `MeshGatewayRoute`
+                              description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                               type: string
                             proxyTypes:
                               description: ProxyTypes types of affected Dataplanes by the policy.
@@ -106,9 +89,7 @@ properties:
                             tags:
                               additionalProperties:
                                 type: string
-                              description: |-
-                                Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                `MeshSubset` and `MeshServiceSubset`
+                              description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                               type: object
                             weight:
                               default: 1
@@ -120,10 +101,7 @@ properties:
                         items:
                           properties:
                             requestHeaderModifier:
-                              description: |-
-                                Only one action is supported per header name.
-                                Configuration to set or add multiple values for a header must use RFC 7230
-                                header value formatting, separating each value with a comma.
+                              description: Only one action is supported per header name. Configuration to set or add multiple values for a header must use RFC 7230 header value formatting, separating each value with a comma.
                               properties:
                                 add:
                                   items:
@@ -188,9 +166,7 @@ properties:
                                       description: Mesh is reserved for future use to identify cross mesh resources.
                                       type: string
                                     name:
-                                      description: |-
-                                        Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                                        `MeshServiceSubset` and `MeshGatewayRoute`
+                                      description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                                       type: string
                                     proxyTypes:
                                       description: ProxyTypes types of affected Dataplanes by the policy.
@@ -200,18 +176,14 @@ properties:
                                     tags:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                        `MeshSubset` and `MeshServiceSubset`
+                                      description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                                       type: object
                                   type: object
                                 percentage:
                                   anyOf:
                                     - type: integer
                                     - type: string
-                                  description: |-
-                                    Percentage of requests to mirror. If not specified, all requests
-                                    to the target cluster will be mirrored.
+                                  description: Percentage of requests to mirror. If not specified, all requests to the target cluster will be mirrored.
                                   x-kubernetes-int-or-string: true
                               required:
                                 - backendRef
@@ -219,24 +191,13 @@ properties:
                             requestRedirect:
                               properties:
                                 hostname:
-                                  description: |-
-                                    PreciseHostname is the fully qualified domain name of a network host. This
-                                    matches the RFC 1123 definition of a hostname with 1 notable exception that
-                                    numeric IP addresses are not allowed.
-
-
-                                    Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
-                                    alphanumeric characters or '-', and must start and end with an alphanumeric
-                                    character. No other punctuation is allowed.
+                                  description: "PreciseHostname is the fully qualified domain name of a network host. This matches the RFC 1123 definition of a hostname with 1 notable exception that numeric IP addresses are not allowed. \n Note that as per RFC1035 and RFC1123, a *label* must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character. No other punctuation is allowed."
                                   maxLength: 253
                                   minLength: 1
                                   pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                   type: string
                                 path:
-                                  description: |-
-                                    Path defines parameters used to modify the path of the incoming request.
-                                    The modified path is then used to construct the location header.
-                                    When empty, the request path is used as-is.
+                                  description: Path defines parameters used to modify the path of the incoming request. The modified path is then used to construct the location header. When empty, the request path is used as-is.
                                   properties:
                                     replaceFullPath:
                                       type: string
@@ -251,10 +212,7 @@ properties:
                                     - type
                                   type: object
                                 port:
-                                  description: |-
-                                    Port is the port to be used in the value of the `Location`
-                                    header in the response.
-                                    When empty, port (if specified) of the request is used.
+                                  description: Port is the port to be used in the value of the `Location` header in the response. When empty, port (if specified) of the request is used.
                                   format: int32
                                   maximum: 65535
                                   minimum: 1
@@ -276,10 +234,7 @@ properties:
                                   type: integer
                               type: object
                             responseHeaderModifier:
-                              description: |-
-                                Only one action is supported per header name.
-                                Configuration to set or add multiple values for a header must use RFC 7230
-                                header value formatting, separating each value with a comma.
+                              description: Only one action is supported per header name. Configuration to set or add multiple values for a header must use RFC 7230 header value formatting, separating each value with a comma.
                               properties:
                                 add:
                                   items:
@@ -336,9 +291,7 @@ properties:
                             urlRewrite:
                               properties:
                                 hostToBackendHostname:
-                                  description: |-
-                                    HostToBackendHostname rewrites the hostname to the hostname of the
-                                    upstream host. This option is only available when targeting MeshGateways.
+                                  description: HostToBackendHostname rewrites the hostname to the hostname of the upstream host. This option is only available when targeting MeshGateways.
                                   type: boolean
                                 hostname:
                                   description: Hostname is the value to be used to replace the host header value during forwarding.
@@ -368,21 +321,15 @@ properties:
                         type: array
                     type: object
                   matches:
-                    description: |-
-                      Matches describes how to match HTTP requests this rule should be applied
-                      to.
+                    description: Matches describes how to match HTTP requests this rule should be applied to.
                     items:
                       properties:
                         headers:
                           items:
-                            description: |-
-                              HeaderMatch describes how to select an HTTP route by matching HTTP request
-                              headers.
+                            description: HeaderMatch describes how to select an HTTP route by matching HTTP request headers.
                             properties:
                               name:
-                                description: |-
-                                  Name is the name of the HTTP Header to be matched. Name MUST be lower case
-                                  as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
+                                description: Name is the name of the HTTP Header to be matched. Name MUST be lower case as they will be handled with case insensitivity (See https://tools.ietf.org/html/rfc7230#section-3.2).
                                 maxLength: 256
                                 minLength: 1
                                 pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
@@ -425,9 +372,7 @@ properties:
                                 - RegularExpression
                               type: string
                             value:
-                              description: |-
-                                Exact or prefix matches must be an absolute path. A prefix matches only
-                                if separated by a slash or the entire path.
+                              description: Exact or prefix matches must be an absolute path. A prefix matches only if separated by a slash or the entire path.
                               minLength: 1
                               type: string
                           required:
@@ -435,9 +380,7 @@ properties:
                             - value
                           type: object
                         queryParams:
-                          description: |-
-                            QueryParams matches based on HTTP URL query parameters. Multiple matches
-                            are ANDed together such that all listed matches must succeed.
+                          description: QueryParams matches based on HTTP URL query parameters. Multiple matches are ANDed together such that all listed matches must succeed.
                           items:
                             properties:
                               name:
@@ -465,9 +408,7 @@ properties:
                 type: object
               type: array
             targetRef:
-              description: |-
-                TargetRef is a reference to the resource that represents a group of
-                request destinations.
+              description: TargetRef is a reference to the resource that represents a group of request destinations.
               properties:
                 kind:
                   description: Kind of the referenced resource
@@ -483,9 +424,7 @@ properties:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
                 name:
-                  description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                   type: string
                 proxyTypes:
                   description: ProxyTypes types of affected Dataplanes by the policy.
@@ -495,9 +434,7 @@ properties:
                 tags:
                   additionalProperties:
                     type: string
-                  description: |-
-                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                    `MeshSubset` and `MeshServiceSubset`
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
           type: object

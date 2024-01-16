@@ -20,9 +20,7 @@ properties:
         items:
           properties:
             default:
-              description: |-
-                Default is a configuration specific to the group of clients referenced in
-                'targetRef'
+              description: Default is a configuration specific to the group of clients referenced in 'targetRef'
               properties:
                 backends:
                   items:
@@ -31,9 +29,7 @@ properties:
                         description: FileBackend defines configuration for file based access logs
                         properties:
                           format:
-                            description: |-
-                              Format of access logs. Placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 example:
@@ -75,9 +71,7 @@ properties:
                         description: Defines an OpenTelemetry logging backend.
                         properties:
                           attributes:
-                            description: |-
-                              Attributes can contain placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Attributes can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             example:
                               - key: mesh
                                 value: '%KUMA_MESH%'
@@ -90,11 +84,7 @@ properties:
                               type: object
                             type: array
                           body:
-                            description: |-
-                              Body is a raw string or an OTLP any value as described at
-                              https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                              It can contain placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Body is a raw string or an OTLP any value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             example:
                               kvlistValue:
                                 values:
@@ -119,9 +109,7 @@ properties:
                             minLength: 1
                             type: string
                           format:
-                            description: |-
-                              Format of access logs. Placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 example:
@@ -166,9 +154,7 @@ properties:
                   type: array
               type: object
             targetRef:
-              description: |-
-                TargetRef is a reference to the resource that represents a group of
-                clients.
+              description: TargetRef is a reference to the resource that represents a group of clients.
               properties:
                 kind:
                   description: Kind of the referenced resource
@@ -184,9 +170,7 @@ properties:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
                 name:
-                  description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                   type: string
                 proxyTypes:
                   description: ProxyTypes types of affected Dataplanes by the policy.
@@ -196,9 +180,7 @@ properties:
                 tags:
                   additionalProperties:
                     type: string
-                  description: |-
-                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                    `MeshSubset` and `MeshServiceSubset`
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
           required:
@@ -206,10 +188,7 @@ properties:
           type: object
         type: array
       targetRef:
-        description: |-
-          TargetRef is a reference to the resource the policy takes an effect on.
-          The resource could be either a real store object or virtual resource
-          defined in-place.
+        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined in-place.
         properties:
           kind:
             description: Kind of the referenced resource
@@ -225,9 +204,7 @@ properties:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
           name:
-            description: |-
-              Name of the referenced resource. Can only be used with kinds: `MeshService`,
-              `MeshServiceSubset` and `MeshGatewayRoute`
+            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
             type: string
           proxyTypes:
             description: ProxyTypes types of affected Dataplanes by the policy.
@@ -237,9 +214,7 @@ properties:
           tags:
             additionalProperties:
               type: string
-            description: |-
-              Tags used to select a subset of proxies by tags. Can only be used with kinds
-              `MeshSubset` and `MeshServiceSubset`
+            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
       to:
@@ -247,9 +222,7 @@ properties:
         items:
           properties:
             default:
-              description: |-
-                Default is a configuration specific to the group of destinations referenced in
-                'targetRef'
+              description: Default is a configuration specific to the group of destinations referenced in 'targetRef'
               properties:
                 backends:
                   items:
@@ -258,9 +231,7 @@ properties:
                         description: FileBackend defines configuration for file based access logs
                         properties:
                           format:
-                            description: |-
-                              Format of access logs. Placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 example:
@@ -302,9 +273,7 @@ properties:
                         description: Defines an OpenTelemetry logging backend.
                         properties:
                           attributes:
-                            description: |-
-                              Attributes can contain placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Attributes can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             example:
                               - key: mesh
                                 value: '%KUMA_MESH%'
@@ -317,11 +286,7 @@ properties:
                               type: object
                             type: array
                           body:
-                            description: |-
-                              Body is a raw string or an OTLP any value as described at
-                              https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-                              It can contain placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Body is a raw string or an OTLP any value as described at https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body It can contain placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             example:
                               kvlistValue:
                                 values:
@@ -346,9 +311,7 @@ properties:
                             minLength: 1
                             type: string
                           format:
-                            description: |-
-                              Format of access logs. Placeholders available on
-                              https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                            description: Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
                                 example:
@@ -393,9 +356,7 @@ properties:
                   type: array
               type: object
             targetRef:
-              description: |-
-                TargetRef is a reference to the resource that represents a group of
-                destinations.
+              description: TargetRef is a reference to the resource that represents a group of destinations.
               properties:
                 kind:
                   description: Kind of the referenced resource
@@ -411,9 +372,7 @@ properties:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
                 name:
-                  description: |-
-                    Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
                   type: string
                 proxyTypes:
                   description: ProxyTypes types of affected Dataplanes by the policy.
@@ -423,9 +382,7 @@ properties:
                 tags:
                   additionalProperties:
                     type: string
-                  description: |-
-                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                    `MeshSubset` and `MeshServiceSubset`
+                  description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
           required:

@@ -380,7 +380,7 @@ func ValidateTargetRef(
 
 func DoesTargetRefSupportsGateway(ref common_api.TargetRef) bool {
 	return (ref.Kind == common_api.Mesh || ref.Kind == common_api.MeshSubset) &&
-		(len(ref.ProxyTypes) > 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway))
+		(len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway))
 }
 
 func validateProxyTypes(proxyTypes []common_api.TargetRefProxyType) validators.ValidationError {

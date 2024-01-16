@@ -126,7 +126,7 @@ var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:            NewMeshHealthCheckResource(),
 	ResourceList:        &MeshHealthCheckResourceList{},
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshhealthchecks",
 	KumactlArg:          "meshhealthcheck",
 	KumactlListArg:      "meshhealthchecks",

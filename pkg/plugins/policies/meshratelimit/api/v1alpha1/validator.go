@@ -38,7 +38,7 @@ func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.Val
 		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
 		return verr
 	}
-	if (topTargetRef.Kind != common_api.MeshGateway && !mesh.DoesTargetRefSupportsGateway(topTargetRef)) && len(from) == 0 {
+	if topTargetRef.Kind != common_api.MeshGateway && len(from) == 0 {
 		verr.AddViolationAt(validators.RootedAt("from"), "needs at least one item")
 	}
 	for idx, fromItem := range from {
@@ -60,7 +60,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 		verr.AddViolationAt(validators.RootedAt("to"), validators.MustNotBeDefined)
 		return verr
 	}
-	if (topTargetRef.Kind == common_api.MeshGateway || mesh.DoesTargetRefSupportsGateway(topTargetRef)) && len(to) == 0 {
+	if topTargetRef.Kind == common_api.MeshGateway && len(to) == 0 {
 		verr.AddViolationAt(validators.RootedAt("to"), "needs at least one item")
 	}
 	for idx, toItem := range to {

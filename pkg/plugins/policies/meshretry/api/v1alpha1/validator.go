@@ -51,11 +51,6 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 				common_api.Mesh,
 				common_api.MeshService,
 			}
-			if mesh.DoesTargetRefSupportsGateway(topLevelKind) {
-				supportedKinds = []common_api.TargetRefKind{
-					common_api.Mesh,
-				}
-			}
 		}
 
 		verr.AddErrorAt(
