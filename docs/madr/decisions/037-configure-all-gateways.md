@@ -131,7 +131,7 @@ targetRef:
   kind: Mesh|MeshSubset
   proxyTypes: ["Sidecar", "Gateway"]
 ```
-When field is not defined or empty we assume that the user wants to apply configuration to all sidecar, not gateways. 
+When field is not defined or empty we assume that the user wants to apply configuration to all sidecar and gateways. 
 In this situtation we won't break current behaviour. Also, worth mentioning that `proxyTypes` can only be set when 
 kind `Mesh` or `MeshSubset`. Another thing is that `proxyTypes` won't affect ordering and we base order on name.
 
