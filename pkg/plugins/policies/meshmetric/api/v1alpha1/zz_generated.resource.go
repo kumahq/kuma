@@ -126,7 +126,7 @@ var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:            NewMeshMetricResource(),
 	ResourceList:        &MeshMetricResourceList{},
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:              "meshmetrics",
 	KumactlArg:          "meshmetric",
 	KumactlListArg:      "meshmetrics",

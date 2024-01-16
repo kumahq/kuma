@@ -10,6 +10,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5576/badge)](https://www.bestpractices.dev/projects/5576)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://securityscorecards.dev/viewer/?uri=github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
+[![CLOMonitor](https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/kuma/badge)](https://clomonitor.io/projects/cncf/kuma)
 
 **Releases**
 
@@ -131,6 +132,11 @@ You can use Kuma for modern greenfield applications built on containers as well 
 
 Kuma also provides an easy to use `kumactl` CLI client for every environment, and an official GUI that can be accessed by the browser.
 
+## Roadmap
+
+Kuma releases a minor version on a 10 week release cycle.
+The roadmap is tracked using milestones: https://github.com/kumahq/kuma/milestones
+
 ## Development
 
 Kuma is under active development and production-ready.
@@ -145,4 +151,3 @@ If you are implementing Kuma in a mission-critical environment and require enter
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
 [kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.jpg
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png
-
