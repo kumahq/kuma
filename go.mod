@@ -15,7 +15,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.2
 	github.com/envoyproxy/go-control-plane v0.12.0
 	github.com/envoyproxy/protoc-gen-validate v1.0.2
-	github.com/evanphx/json-patch/v5 v5.7.0
+	github.com/evanphx/json-patch/v5 v5.8.0
 	github.com/exaring/otelpgx v0.5.2
 	github.com/go-logr/logr v1.4.1
 	github.com/go-logr/zapr v1.3.0
