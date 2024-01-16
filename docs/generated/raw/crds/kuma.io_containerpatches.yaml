@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -23,14 +23,19 @@ spec:
           sidecar containers.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           mesh:
             type: string
@@ -62,9 +67,9 @@ spec:
                       description: Path is a jsonpatch path string.
                       type: string
                     value:
-                      description: Value must be a string representing a valid json
-                        object used by replace and add operations. String has to be
-                        escaped with " to be valid a json object.
+                      description: |-
+                        Value must be a string representing a valid json object used
+                        by replace and add operations. String has to be escaped with " to be valid a json object.
                       type: string
                   required:
                   - op
@@ -94,9 +99,9 @@ spec:
                       description: Path is a jsonpatch path string.
                       type: string
                     value:
-                      description: Value must be a string representing a valid json
-                        object used by replace and add operations. String has to be
-                        escaped with " to be valid a json object.
+                      description: |-
+                        Value must be a string representing a valid json object used
+                        by replace and add operations. String has to be escaped with " to be valid a json object.
                       type: string
                   required:
                   - op
