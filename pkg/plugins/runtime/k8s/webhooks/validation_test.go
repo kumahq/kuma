@@ -18,6 +18,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
@@ -453,6 +454,113 @@ var _ = Describe("Validation", func() {
 					Allowed: true,
 					Result: &kube_meta.Status{
 						Code: 200,
+					},
+				},
+			},
+			operation: admissionv1.Create,
+		}),
+		Entry("should pass validation on Zone CP when user is not privileged and origin label is set", testCase{
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &v1alpha1.MeshTimeout{},
+			username:      "cli-user",
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "MeshTimeout",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null,
+				"labels": {
+				  "kuma.io/origin": "zone"
+				}
+			  },
+			  "spec": {
+			    "targetRef": {
+			      "kind": "Mesh"
+			    },
+			    "to": [
+			      {
+			        "targetRef": {
+			          "kind": "Mesh"
+			        },
+			        "default": {
+			          "idleTimeout": "21s",
+			          "connectionTimeout": "21s",
+			          "http": {
+			            "requestTimeout": "21s"
+			          }
+			        }
+			      }
+			    ]
+			  }
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: true,
+					Result: &kube_meta.Status{
+						Code: 200,
+					},
+				},
+			},
+			operation: admissionv1.Create,
+		}),
+		Entry("should fail validation on Zone CP when user is not privileged and origin label is not set", testCase{
+			mode:          core.Zone,
+			federatedZone: true,
+			objTemplate:   &v1alpha1.MeshTimeout{},
+			username:      "cli-user",
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "MeshTimeout",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null
+			  },
+			  "spec": {
+			    "targetRef": {
+			      "kind": "Mesh"
+			    },
+			    "to": [
+			      {
+			        "targetRef": {
+			          "kind": "Mesh"
+			        },
+			        "default": {
+			          "idleTimeout": "21s",
+			          "connectionTimeout": "21s",
+			          "http": {
+			            "requestTimeout": "21s"
+			          }
+			        }
+			      }
+			    ]
+			  }
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Status:  "Failure",
+						Message: "Operation not allowed. Applying policies on Zone CP requires 'kuma.io/origin' label to be set to 'zone'.",
+						Reason:  "Forbidden",
+						Code:    403,
+						Details: &kube_meta.StatusDetails{
+							Causes: []kube_meta.StatusCause{
+								{
+									Type:    "FieldValueInvalid",
+									Message: "cannot be empty",
+									Field:   "metadata.labels[kuma.io/origin]",
+								},
+							},
+						},
 					},
 				},
 			},
