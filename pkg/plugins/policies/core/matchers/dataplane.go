@@ -43,7 +43,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		selectedInbounds, delegatedGatewaySelected, err := dppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
 		if err != nil {
 			warnings = append(warnings,
-				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:'%s' name:'%s' error:'%s'",
+				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
 					policy.GetMeta().GetMesh(), policy.GetMeta().GetName(), err.Error(),
 				),
 			)
@@ -213,6 +213,11 @@ func (b ByTargetRef) Less(i, j int) bool {
 		return tr1.Kind.Less(tr2.Kind)
 	}
 
+	o1, o2 := originToNumber(b[i]), originToNumber(b[j])
+	if o1 != o2 {
+		return o1 < o2
+	}
+
 	if tr1.Kind == common_api.MeshGateway {
 		if len(tr1.Tags) != len(tr2.Tags) {
 			return len(tr1.Tags) < len(tr2.Tags)
@@ -223,3 +228,27 @@ func (b ByTargetRef) Less(i, j int) bool {
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+
+// The logic of this method is to recreate the following comparison table:
+
+// origin_1 | origin_2 | has_more_priority
+// ---------|----------|-------------
+// Global   | Zone     | origin_2
+// Global   | Unknown  | origin_2
+// Zone     | Global   | origin_1
+// Zone     | Unknown  | origin_1
+// Unknown  | Global   | origin_1
+// Unknown  | Zone     | origin_2
+//
+// If we assign numbers to origins like Global=-1, Zone=1, Unknown=0, then we can compare them as numbers
+// and get the same result as in the table above.
+func originToNumber(r core_model.Resource) int {
+	switch r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] {
+	case mesh_proto.ResourceOriginGlobal:
+		return -1
+	case mesh_proto.ResourceOriginZone:
+		return 1
+	default:
+		return 0
+	}
+}

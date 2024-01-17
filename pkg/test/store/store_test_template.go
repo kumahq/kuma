@@ -85,7 +85,7 @@ func ExecuteStoreTests(
 				Expect(resource.Meta.GetName()).To(Equal(name))
 				Expect(resource.Meta.GetMesh()).To(Equal(mesh))
 				Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
-				Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
+				Expect(resource.Meta.GetCreationTime()).ToNot(BeZero())
 				Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
 				Expect(resource.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
 				Expect(resource.Spec).To(MatchProto(created.Spec))

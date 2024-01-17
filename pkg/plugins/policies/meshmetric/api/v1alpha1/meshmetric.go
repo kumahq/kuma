@@ -49,12 +49,17 @@ type Backend struct {
 	Type BackendType `json:"type"`
 	// Prometheus backend configuration.
 	Prometheus *PrometheusBackend `json:"prometheus,omitempty"`
+	// OpenTelemetry backend configuration
+	OpenTelemetry *OpenTelemetryBackend `json:"openTelemetry,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Prometheus
+// +kubebuilder:validation:Enum=Prometheus;OpenTelemetry
 type BackendType string
 
-const PrometheusBackendType BackendType = "Prometheus"
+const (
+	PrometheusBackendType    BackendType = "Prometheus"
+	OpenTelemetryBackendType BackendType = "OpenTelemetry"
+)
 
 type PrometheusBackend struct {
 	// ClientId of the Prometheus backend. Needed when using MADS for DP discovery.
@@ -73,6 +78,11 @@ type PrometheusTls struct {
 	// Configuration of TLS for Prometheus listener.
 	// +kubebuilder:default="Disabled"
 	Mode TlsMode `json:"mode"`
+}
+
+type OpenTelemetryBackend struct {
+	// Endpoint for OpenTelemetry collector
+	Endpoint string `json:"endpoint"`
 }
 
 // +kubebuilder:validation:Enum=Disabled;ProvidedTLS;ActiveMTLSBackend

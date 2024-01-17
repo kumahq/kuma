@@ -204,7 +204,7 @@ func MeshMetric() {
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).To(ContainSubstring("path-stats"))
-		}).Should(Succeed())
+		}, "1m", "1s").Should(Succeed())
 
 		// update policy config and check if changes was applied on DPP
 		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/app-stats"))).To(Succeed())
@@ -222,7 +222,7 @@ func MeshMetric() {
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
 			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
 			g.Expect(stdout).To(ContainSubstring("app-stats"))
-		}).Should(Succeed())
+		}, "1m", "1s").Should(Succeed())
 	})
 
 	It("MADS server response contains DPPs from all meshes when prometheus client id is empty", func() {

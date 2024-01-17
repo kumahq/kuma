@@ -44,13 +44,10 @@ type reconciler struct {
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
-	id, err := r.hashId(ctx, node)
-	if err != nil {
-		return err
-	}
+	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	snapshot, _ := r.cache.GetSnapshot(id)
+	snapshot, err := r.cache.GetSnapshot(id)
 	if err != nil {
 		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to error here
 	}
@@ -65,10 +62,7 @@ func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
-	id, err := r.hashId(ctx, node)
-	if err != nil {
-		return err, false
-	}
+	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
 
 	// construct builder with unchanged types from the old snapshot
@@ -169,14 +163,4 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 			r.statsCallbacks.ConfigReadyForDelivery(nodeID + typ)
 		}
 	}
-}
-
-func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) (string, error) {
-	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
-	tenantID, err := r.tenants.GetID(ctx)
-	if err != nil {
-		return "", err
-	}
-	util_kds_v2.FillTenantMetadata(tenantID, node)
-	return r.hasher.ID(node), nil
 }

@@ -11,6 +11,8 @@ on:
     secrets:
       circleCIToken:
         required: true
+permissions:
+  contents: read
 env:
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
@@ -23,6 +25,10 @@ jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    strategy:
+      fail-fast: false
+      matrix:
+        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '3' && '[0, 1, 2]') || '[0]') }}
     steps:
       - name: "Print parameters"
         id: eval-params
@@ -56,7 +62,7 @@ jobs:
             go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -130,7 +136,7 @@ jobs:
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
-            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+            export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
           fi
           env
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then

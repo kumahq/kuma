@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"time"
@@ -174,6 +175,9 @@ var _ = Describe("MeshTCPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 			given.xdsContext.ControlPlane.CLACache = claCache
 
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), given.xdsContext.Mesh, given.proxy)).To(Succeed(), n)
+			}
 			resourceSet := core_xds.NewResourceSet()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(resourceSet, given.xdsContext, given.proxy)).
@@ -559,7 +563,6 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 			}
 		}()),
-
 		Entry("kafka", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoints("backend",
@@ -614,6 +617,77 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithOutboundTargets(outboundTargets),
 					).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
+					Build(),
+			}
+		}()),
+		Entry("gateway", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Hostname: "go.dev",
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_TCP,
+								Port:     9080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolTCP, "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMesh(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshTCPRouteType, core_rules.GatewayRules{
+								ToRules: map[core_rules.InboundListener]core_rules.Rules{
+									{Address: "192.168.0.1", Port: 9080}: {
+										{
+											Subset: core_rules.MeshSubset(),
+											Conf: api.RuleConf{
+												BackendRefs: []common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										},
+									},
+								},
+							}),
+					).
 					Build(),
 			}
 		}()),

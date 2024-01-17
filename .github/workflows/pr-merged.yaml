@@ -8,6 +8,8 @@ on:
     branches:
       - master
       - release-*
+permissions:
+  contents: read
 jobs:
   notify-about-merged-pr:
     if: github.event_name != 'pull_request_target' || github.event.pull_request.merged

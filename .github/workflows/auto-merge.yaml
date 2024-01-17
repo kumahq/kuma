@@ -1,16 +1,33 @@
 name: auto-merge
+concurrency:
+  cancel-in-progress: true
+  group: ${{github.workflow}}-${{github.event.pull_request.number}}
 on:
   pull_request:
-    types: [labeled, opened, reopened]
+    types: [labeled, opened, reopened, synchronize]
     branches:
       - 'master'
       - 'release-*'
+permissions:
+  contents: read
 jobs:
-  pr-mgmt:
-    uses: kumahq/.github/.github/workflows/wfc_pr_management.yml@main
-    with:
-      approve: true
-      merge: true
-      matchLabel: "ci/auto-merge"
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
+  approve-and-auto-merge:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Approve PR
+        run: gh pr review ${{ github.event.pull_request.number }} -a -R ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Enable auto-merge
+        run: gh pr merge ${{ github.event.pull_request.number }} --auto --squash -R ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

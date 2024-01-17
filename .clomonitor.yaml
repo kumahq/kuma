@@ -1,0 +1,13 @@
+# CLOMonitor metadata file
+# This file must be located at the root of the repository
+
+# Checks exemptions
+exemptions:
+  - check: artifacthub_badge # Check identifier (see https://github.com/cncf/clomonitor/blob/main/docs/checks.md#exemptions)
+    reason: "" # Justification of this exemption (mandatory, it will be displayed on the UI)
+
+# License scanning information
+licenseScanning:
+  # Our license scanning is generated daily from master and is published as an artifact along with a
+  # basic SBOM as a workflow artifact
+  url: https://github.com/kumahq/kuma/actions/workflows/bom.yaml
