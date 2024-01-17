@@ -76,6 +76,15 @@ spec:
                     description: Backends list that will be used to collect metrics.
                     items:
                       properties:
+                        openTelemetry:
+                          description: OpenTelemetry backend configuration
+                          properties:
+                            endpoint:
+                              description: Endpoint for OpenTelemetry collector
+                              type: string
+                          required:
+                          - endpoint
+                          type: object
                         prometheus:
                           description: Prometheus backend configuration.
                           properties:
@@ -118,6 +127,7 @@ spec:
                             metrics. At the moment only Prometheus backend is available.
                           enum:
                           - Prometheus
+                          - OpenTelemetry
                           type: string
                       required:
                       - type

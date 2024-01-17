@@ -162,10 +162,28 @@ func createDynamicConfig(conf api.Conf) xds.MeshMetricDpConfig {
 		})
 	}
 
+	var backends []xds.Backend
+	for _, backend := range pointer.Deref(conf.Backends) {
+		switch backend.Type {
+		case api.PrometheusBackendType:
+			backends = append(backends, xds.Backend{
+				Type: string(backend.Type),
+			})
+		case api.OpenTelemetryBackendType:
+			backends = append(backends, xds.Backend{
+				Type: string(backend.Type),
+				OpenTelemetry: &xds.OpenTelemetryBackend{
+					Endpoint: backend.OpenTelemetry.Endpoint,
+				},
+			})
+		}
+	}
+
 	return xds.MeshMetricDpConfig{
 		Observability: xds.Observability{
 			Metrics: xds.Metrics{
 				Applications: applications,
+				Backends:     backends,
 			},
 		},
 	}
