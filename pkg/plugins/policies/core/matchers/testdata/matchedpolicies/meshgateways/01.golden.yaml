@@ -1,3 +1,43 @@
+FromRules:
+  127.0.0.1:8080:
+  - Conf:
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gateway
+      type: MeshAccessLog
+    Subset: []
+  127.0.0.1:8081:
+  - Conf:
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gateway
+      type: MeshAccessLog
+    Subset: []
+  127.0.0.1:8082:
+  - Conf:
+      backends:
+      - file:
+          path: /from-gateway
+        type: File
+    Origin:
+    - creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: gateway
+      type: MeshAccessLog
+    Subset: []
 SingleItemRules:
   127.0.0.1:8080:
     Rules: null
@@ -56,7 +96,7 @@ ToRules:
   - Conf:
       backends:
       - file:
-          path: /gateway
+          path: /to-gateway
         type: File
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
