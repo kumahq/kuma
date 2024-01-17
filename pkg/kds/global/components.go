@@ -2,6 +2,8 @@ package global
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -224,7 +226,9 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
-			if isOldZone(rs) {
+			supportsHashSuffixes := !isOldZone(rs)
+
+			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				util.AddPrefixToNames(rs.GetItems(), clusterName)
 			}
@@ -259,6 +263,10 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
 			}), sync_store.Zone(clusterName))
 		},
