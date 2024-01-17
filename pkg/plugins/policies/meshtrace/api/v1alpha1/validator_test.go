@@ -93,6 +93,19 @@ default:
         url: http://intake.datadoghq.eu:8126
         splitService: true
 `),
+			Entry("top level MeshGateway", `
+targetRef:
+  kind: MeshGateway
+  name: edge
+  tags:
+    name: listener-1
+default:
+  backends:
+    - type: Datadog
+      datadog:
+        url: http://intake.datadoghq.eu:8126
+        splitService: true
+`),
 		)
 
 		type testCase struct {
