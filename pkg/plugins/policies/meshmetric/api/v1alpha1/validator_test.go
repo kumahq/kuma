@@ -110,7 +110,7 @@ default:
     usedOnly: true
 `),
 		resources.ErrorCase(
-			"invalid regex",
+			"invalid url",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
 				Message: "must be a valid url",
@@ -129,7 +129,7 @@ default:
         endpoint: "asdasd123"
 `),
 		resources.ErrorCase(
-			"invalid regex",
+			"undefined openTelemetry backend when type is OpenTelemetry",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry",
 				Message: "must be defined",
@@ -145,7 +145,7 @@ default:
   backends:
     - type: OpenTelemetry
       prometheus:
-        endpoint: "asdasd123"
+        port: 5670
 `),
 	)
 })
