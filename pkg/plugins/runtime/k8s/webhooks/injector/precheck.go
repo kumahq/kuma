@@ -3,13 +3,15 @@ package injector
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger logr.Logger) (string, error) {
