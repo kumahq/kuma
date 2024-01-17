@@ -49,7 +49,7 @@ func Sync() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("show have insights in global and in zone", func() {
+	It("should have insights in global and in zone", func() {
 		// Ensure each side of KDS has the respective values for Global and Zone instance info
 		Eventually(func(g Gomega) {
 			result := &system.ZoneInsightResource{}
@@ -62,7 +62,7 @@ func Sync() {
 			}
 
 			zoneResult := &system.ZoneInsightResource{}
-			api.FetchResource(g, multizone.KubeZone1, result, "", multizone.KubeZone1.ZoneName())
+			api.FetchResource(g, multizone.KubeZone1, zoneResult, "", multizone.KubeZone1.ZoneName())
 			g.Expect(zoneResult.Spec.Subscriptions).ToNot(BeEmpty())
 			zoneSub := zoneResult.Spec.Subscriptions[0]
 			if !Config.KumaLegacyKDS {
