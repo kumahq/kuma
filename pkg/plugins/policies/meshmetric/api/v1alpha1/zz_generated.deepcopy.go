@@ -178,8 +178,8 @@ func (in *Sidecar) DeepCopyInto(out *Sidecar) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.UsedOnly != nil {
-		in, out := &in.UsedOnly, &out.UsedOnly
+	if in.IncludeUnused != nil {
+		in, out := &in.IncludeUnused, &out.IncludeUnused
 		*out = new(bool)
 		**out = **in
 	}

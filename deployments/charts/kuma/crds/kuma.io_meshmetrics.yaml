@@ -143,9 +143,9 @@ spec:
                       usedOnly:
                         default: false
                         description: |-
-                          UsedOnly will scrape only metrics that has been by sidecar (counters incremented
+                          IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                           at least once, gauges changed at least once, and histograms added to at
-                          least once).
+                          least once). If true will scrape all metrics (even the ones with zeros).
                         type: boolean
                     type: object
                 type: object

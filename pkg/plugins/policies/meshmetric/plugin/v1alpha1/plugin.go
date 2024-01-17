@@ -143,7 +143,7 @@ func envoyMetricsFilter(conf api.Conf) string {
 	if query != "" {
 		query += "&"
 	}
-	if pointer.Deref(conf.Sidecar.UsedOnly) {
+	if !pointer.Deref(conf.Sidecar.IncludeUnused) {
 		query += "usedonly"
 	}
 	if query != "" {
