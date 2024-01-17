@@ -14,7 +14,7 @@ const (
 	DefaultMaxStreamDuration     = 0
 	DefaultMaxConnectionDuration = 0
 	// Gateway
-	DefaultGatewayIdleTimeout          = 5 * time.Minute
-	DefaultGatewayStreamIdleTimeout    = 5 * time.Second
-	DefaultGateayRequestHeadersTimeout = 500 * time.Millisecond
+	DefaultGatewayIdleTimeout           = 5 * time.Minute
+	DefaultGatewayStreamIdleTimeout     = 5 * time.Second
+	DefaultGatewayRequestHeadersTimeout = 500 * time.Millisecond
 )

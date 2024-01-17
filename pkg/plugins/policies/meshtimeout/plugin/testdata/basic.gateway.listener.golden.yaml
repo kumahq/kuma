@@ -43,6 +43,7 @@ filterChains:
           resourceApiVersion: V3
         routeConfigName: sample-gateway:HTTP:8080
       requestHeadersTimeout: 99s
+      requestTimeout: 311s
       serverName: Kuma Gateway
       statPrefix: sample-gateway
       streamIdleTimeout: 1s

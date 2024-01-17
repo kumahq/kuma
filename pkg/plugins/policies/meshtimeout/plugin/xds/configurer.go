@@ -178,12 +178,15 @@ func ConfigureGatewayListener(
 		)
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
-			policies_defaults.DefaultGateayRequestHeadersTimeout,
+			policies_defaults.DefaultGatewayRequestHeadersTimeout,
 		)
 		hcm.StreamIdleTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).StreamIdleTimeout,
 			policies_defaults.DefaultGatewayStreamIdleTimeout,
 		)
+		if httpConf := pointer.Deref(conf.Http); httpConf.RequestTimeout != nil {
+			hcm.RequestTimeout = util_proto.Duration(httpConf.RequestTimeout.Duration)
+		}
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {

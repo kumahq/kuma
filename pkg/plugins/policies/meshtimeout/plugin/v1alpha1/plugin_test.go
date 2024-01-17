@@ -465,6 +465,7 @@ var _ = Describe("MeshTimeout", func() {
 						Conf: api.Conf{
 							IdleTimeout: test.ParseDuration("1h"),
 							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("311s"),
 								StreamIdleTimeout:     test.ParseDuration("1s"),
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
