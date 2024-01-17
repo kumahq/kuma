@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -358,6 +360,10 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
 			}), Zone(upstream.ControlPlaneId))
 		},
