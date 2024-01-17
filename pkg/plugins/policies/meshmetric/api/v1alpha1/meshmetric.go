@@ -27,11 +27,11 @@ type Conf struct {
 type Sidecar struct {
 	// Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
 	Regex *string `json:"regex,omitempty"`
-	// UsedOnly will scrape only metrics that has been by sidecar (counters incremented
+	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
-	// least once).
+	// least once). If true will scrape all metrics (even the ones with zeros).
 	// +kubebuilder:default=false
-	UsedOnly *bool `json:"usedOnly,omitempty"`
+	IncludeUnused *bool `json:"usedOnly,omitempty"`
 }
 
 type Application struct {
