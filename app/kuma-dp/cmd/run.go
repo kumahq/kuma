@@ -239,17 +239,20 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, envoyComponent)
 
+			baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 			metricsServer := metrics.New(
 				metricsSocketPath,
-				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
+				baseApplicationsToScrape,
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
+			openTelemetryProducer := metrics.NewAggregatedMetricsProducer(baseApplicationsToScrape, kumaSidecarConfiguration.Networking.IsUsingTransparentProxy)
 			meshMetricsConfigFetcher := component.NewResilientComponent(
 				runLog.WithName("mesh-metric-config-fetcher"),
 				meshmetrics.NewMeshMetricConfigFetcher(
 					meshMetricDynamicConfigSocketPath,
 					time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 					metricsServer,
+					openTelemetryProducer,
 					kumaSidecarConfiguration.Networking.Address,
 					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
 					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
@@ -332,6 +335,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Port:          item.Port,
 				IsIPv6:        net.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
+				OtelMutator:   metrics.ParsePrometheusMetrics,
 			})
 		}
 	}
@@ -344,6 +348,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
+		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 	return applicationsToScrape
 }

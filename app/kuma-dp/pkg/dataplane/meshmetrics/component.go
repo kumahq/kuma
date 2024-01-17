@@ -11,44 +11,53 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	utilnet "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type ConfigFetcher struct {
-	httpClient        http.Client
-	socketPath        string
-	ticker            *time.Ticker
-	hijacker          *metrics.Hijacker
-	defaultAddress    string
-	envoyAdminAddress string
-	envoyAdminPort    uint32
+	httpClient            http.Client
+	socketPath            string
+	ticker                *time.Ticker
+	hijacker              *metrics.Hijacker
+	defaultAddress        string
+	envoyAdminAddress     string
+	envoyAdminPort        uint32
+	openTelemetryProducer *metrics.AggregatedProducer
+	openTelemetryExporter *sdkmetric.MeterProvider
 }
+
+const unixDomainSocket = "unix"
 
 var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, address string, envoyAdminPort uint32, envoyAdminAddress string) component.Component {
+func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string) component.Component {
 	return &ConfigFetcher{
 		httpClient: http.Client{
 			Timeout: 5 * time.Second,
 			Transport: &http.Transport{
 				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial("unix", socketPath)
+					return net.Dial(unixDomainSocket, socketPath)
 				},
 			},
 		},
-		socketPath:        socketPath,
-		ticker:            ticker,
-		hijacker:          hijacker,
-		defaultAddress:    address,
-		envoyAdminAddress: envoyAdminAddress,
-		envoyAdminPort:    envoyAdminPort,
+		socketPath:            socketPath,
+		ticker:                ticker,
+		hijacker:              hijacker,
+		openTelemetryProducer: openTelemetryProducer,
+		defaultAddress:        address,
+		envoyAdminAddress:     envoyAdminAddress,
+		envoyAdminPort:        envoyAdminPort,
 	}
 }
 
@@ -70,7 +79,13 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			cf.hijacker.SetApplicationsToScrape(cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications))
+			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications)
+			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
+			err = cf.configureOpenTelemetryExporter(newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
+			if err != nil {
+				logger.Error(err, "Configuring OpenTelemetry Exporter failed")
+				continue
+			}
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
 			return nil
@@ -107,6 +122,80 @@ func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
 	return &conf, nil
 }
 
+func (cf *ConfigFetcher) configurePrometheus(applicationsToScrape []metrics.ApplicationToScrape, prometheusBackends []xds.Backend) {
+	if len(prometheusBackends) == 0 {
+		return
+	}
+	cf.hijacker.SetApplicationsToScrape(applicationsToScrape)
+}
+
+func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends []xds.Backend) error {
+	if len(openTelemetryBackends) == 0 {
+		return cf.shutdownOpenTelemetryExporterIfRunning()
+	}
+	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
+	return cf.startOpenTelemetryExporterIfNotRunning(openTelemetryBackends[0].OpenTelemetry.Endpoint)
+}
+
+func (cf *ConfigFetcher) shutdownOpenTelemetryExporterIfRunning() error {
+	if cf.openTelemetryExporter != nil {
+		logger.Info("Stopping OpenTelemetry exporter")
+		err := cf.openTelemetryExporter.Shutdown(context.Background())
+		cf.openTelemetryExporter = nil
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (cf *ConfigFetcher) startOpenTelemetryExporterIfNotRunning(endpoint string) error {
+	if cf.openTelemetryExporter != nil {
+		return nil
+	}
+	// TODO dynamic reconfigure if config changed
+	logger.Info("Starting OpenTelemetry exporter")
+	exporter, err := otlpmetricgrpc.New(
+		context.Background(),
+		otlpmetricgrpc.WithEndpoint(endpoint),
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithDialOption(dialOptions()...),
+	)
+	if err != nil {
+		return err
+	}
+	cf.openTelemetryExporter = sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
+			exporter,
+			// TODO probably can be configured from policy
+			sdkmetric.WithInterval(30*time.Second),
+			sdkmetric.WithProducer(cf.openTelemetryProducer),
+		)),
+	)
+
+	return nil
+}
+
+func getOpenTelemetryBackends(allBackends []xds.Backend) []xds.Backend {
+	var openTelemetryBackends []xds.Backend
+	for _, backend := range allBackends {
+		if backend.Type == string(v1alpha1.OpenTelemetryBackendType) {
+			openTelemetryBackends = append(openTelemetryBackends, backend)
+		}
+	}
+	return openTelemetryBackends
+}
+
+func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
+	var prometheusBackends []xds.Backend
+	for _, backend := range allBackends {
+		if backend.Type == string(v1alpha1.PrometheusBackendType) {
+			prometheusBackends = append(prometheusBackends, backend)
+		}
+	}
+	return prometheusBackends
+}
+
 func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
@@ -121,6 +210,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			Port:          application.Port,
 			IsIPv6:        utilnet.IsAddressIPv6(address),
 			QueryModifier: metrics.RemoveQueryParameters,
+			OtelMutator:   metrics.ParsePrometheusMetrics,
 		})
 	}
 
@@ -132,7 +222,18 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
+		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 
 	return applicationsToScrape
+}
+
+func dialOptions() []grpc.DialOption {
+	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, unixDomainSocket, addr)
+	}
+	return []grpc.DialOption{
+		grpc.WithContextDialer(dialer),
+	}
 }
