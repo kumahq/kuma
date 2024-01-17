@@ -134,7 +134,7 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 
 func envoyMetricsFilter(conf api.Conf) string {
 	if conf.Sidecar == nil {
-		return ""
+		return "?usedonly" // as the default for IncludeUnused is false
 	}
 	var query string
 	if pointer.Deref(conf.Sidecar.Regex) != "" {

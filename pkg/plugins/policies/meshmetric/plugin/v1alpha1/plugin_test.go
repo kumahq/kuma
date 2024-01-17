@@ -52,6 +52,38 @@ var _ = Describe("MeshMetric", func() {
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 	},
+		Entry("default", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
 		Entry("basic", testCase{
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
