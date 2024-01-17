@@ -72,6 +72,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 		return nil, nil
 	case <-done:
 		otelMetrics := combineMetrics(out)
+		// TODO probably each app that we scrape could have different scope, it could be the name from ApplicationToScrape config
 		metrics := metricdata.ScopeMetrics{
 			Metrics: otelMetrics,
 		}
