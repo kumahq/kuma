@@ -37,10 +37,12 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 
 	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
 		c.configureRequestTimeout(hcm.GetRouteConfig())
+		c.configureRequestHeadersTimeout(hcm)
 		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
 		if hcm.CommonHttpProtocolOptions == nil {
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 		}
+
 		hcm.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(0)
 		return nil
 	}
@@ -84,6 +86,15 @@ func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_r
 				)
 			}
 		}
+	}
+}
+
+func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+	if conf := c.getConf(c.Subset); conf != nil {
+		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
+			pointer.Deref(conf.Http).RequestHeadersTimeout,
+			policies_defaults.DefaultRequestHeadersTimeout,
+		)
 	}
 }
 
@@ -146,6 +157,56 @@ func ConfigureRouteAction(
 	} else if routeAction.IdleTimeout == nil {
 		routeAction.IdleTimeout = util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout)
 	}
+}
+
+func ConfigureGatewayListener(
+	conf *api.Conf,
+	protocol core_mesh.Protocol,
+	listener *envoy_listener.Listener,
+) error {
+	if listener == nil {
+		return nil
+	}
+
+	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
+		if hcm.CommonHttpProtocolOptions == nil {
+			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+		}
+
+		hcm.CommonHttpProtocolOptions.IdleTimeout = toProtoDurationOrDefault(
+			pointer.Deref(conf).IdleTimeout,
+			policies_defaults.DefaultGatewayIdleTimeout,
+		)
+		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
+			pointer.Deref(conf.Http).RequestHeadersTimeout,
+			policies_defaults.DefaultGateayRequestHeadersTimeout,
+		)
+		hcm.StreamIdleTimeout = toProtoDurationOrDefault(
+			pointer.Deref(conf.Http).StreamIdleTimeout,
+			policies_defaults.DefaultGatewayStreamIdleTimeout,
+		)
+		return nil
+	}
+	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
+		if conf != nil {
+			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
+		}
+		return nil
+	}
+	for _, filterChain := range listener.FilterChains {
+		switch protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Duration) *durationpb.Duration {

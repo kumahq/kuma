@@ -470,6 +470,7 @@ var _ = Describe("MeshTimeout", func() {
 								StreamIdleTimeout:     test.ParseDuration("1s"),
 								MaxStreamDuration:     test.ParseDuration("10m"),
 								MaxConnectionDuration: test.ParseDuration("10m"),
+								RequestHeadersTimeout: test.ParseDuration("99s"),
 							},
 						},
 					},

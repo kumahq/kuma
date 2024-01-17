@@ -10,7 +10,7 @@ filterChains:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
       commonHttpProtocolOptions:
         headersWithUnderscoresAction: REJECT_REQUEST
-        idleTimeout: 300s
+        idleTimeout: 3600s
       http2ProtocolOptions:
         allowConnect: true
         initialConnectionWindowSize: 1048576
@@ -42,10 +42,10 @@ filterChains:
           ads: {}
           resourceApiVersion: V3
         routeConfigName: sample-gateway:HTTP:8080
-      requestHeadersTimeout: 0.500s
+      requestHeadersTimeout: 99s
       serverName: Kuma Gateway
       statPrefix: sample-gateway
-      streamIdleTimeout: 5s
+      streamIdleTimeout: 1s
       useRemoteAddress: true
 listenerFilters:
 - name: envoy.filters.listener.tls_inspector

@@ -51,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -162,17 +162,19 @@ func applyToClusters(
 }
 
 func applyToGateway(
-	rules core_rules.GatewayRules,
+	gwRules core_rules.GatewayRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		rules, ok := rules.ToRules[core_rules.InboundListener{
+		key := core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
-		}]
+		}
+		rules, ok := gwRules.ToRules[key]
 		if !ok {
 			continue
 		}
@@ -181,6 +183,17 @@ func applyToGateway(
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 
 		if conf != nil && ok {
+			var protocol core_mesh.Protocol
+			switch listenerInfo.Listener.Protocol {
+			case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+				protocol = core_mesh.ProtocolHTTP
+			case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+				protocol = core_mesh.ProtocolTCP
+			}
+
+			if err := plugin_xds.ConfigureGatewayListener(conf, protocol, gatewayListeners[key]); err != nil {
+				return err
+			}
 			for _, vh := range route.VirtualHosts {
 				for _, r := range vh.Routes {
 					plugin_xds.ConfigureRouteAction(

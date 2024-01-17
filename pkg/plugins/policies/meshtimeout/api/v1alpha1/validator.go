@@ -128,6 +128,7 @@ func validateHttp(path validators.PathBuilder, http *Http) validators.Validation
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("streamIdleTimeout"), http.StreamIdleTimeout))
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("maxStreamDuration"), http.MaxStreamDuration))
 	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("maxConnectionDuration"), http.MaxConnectionDuration))
+	verr.Add(validators.ValidateDurationNotNegativeOrNil(path.Field("requestHeadersTimeout"), http.RequestHeadersTimeout))
 
 	return verr
 }

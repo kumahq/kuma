@@ -10,7 +10,7 @@ filterChains:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
       commonHttpProtocolOptions:
         headersWithUnderscoresAction: REJECT_REQUEST
-        idleTimeout: 300s
+        idleTimeout: 3600s
       http2ProtocolOptions:
         allowConnect: true
         initialConnectionWindowSize: 1048576

@@ -14,6 +14,7 @@ filterChains:
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      requestHeadersTimeout: 0s
       routeConfig:
         name: inbound:backend
         requestHeadersToRemove:
