@@ -290,6 +290,9 @@ func configureGatewayListener(
 	gatewayService := dataplane.Spec.GetIdentifyingService()
 
 	conf := core_rules.ComputeConf[api.Conf](rules, subset)
+	if conf == nil {
+		return nil
+	}
 
 	for _, backend := range pointer.Deref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
