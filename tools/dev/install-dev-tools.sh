@@ -28,12 +28,14 @@ done
 
 DYNAMIC_VERSION_FILES=$(find "${TOOLS_DEPS_DIRS[@]}" -name '*.versions' | sort)
 for i in ${DYNAMIC_VERSION_FILES}; do
+  echo "::debug::Dynamic version file: ${i}:"
+  echo "::debug::$(cat "${i}")"
   FILES+=" "${i}
 done
 # use dev.mk to calculate the hash
 FILES+=" "${TOOLS_MAKEFILE}
 echo "::debug::Files used to calculate hash:"
-for i in ${FILES}; do echo "::debug::  ${i}"; done
+for i in ${FILES}; do echo "::debug::  ${i} $(git hash-object "${i}")"; done
 for i in ${FILES}; do cat "${i}"; done | git hash-object --stdin > "$TOOLS_DEPS_LOCK_FILE"
 echo "::debug::Calculated hash: $(cat "${TOOLS_DEPS_LOCK_FILE}")"
 
