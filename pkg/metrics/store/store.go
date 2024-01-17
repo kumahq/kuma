@@ -41,7 +41,11 @@ func (m *MeteredStore) Create(ctx context.Context, resource model.Resource, opti
 	defer func() {
 		m.metric.WithLabelValues("create", string(resource.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
-	return m.delegate.Create(ctx, resource, optionsFunc...)
+	err := m.delegate.Create(ctx, resource, optionsFunc...)
+	if errors.Is(err, &store.ResourceConflictError{}) {
+		m.conflicts.WithLabelValues(string(resource.Descriptor().Name)).Inc()
+	}
+	return err
 }
 
 func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...store.UpdateOptionsFunc) error {

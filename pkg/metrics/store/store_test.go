@@ -32,7 +32,7 @@ var _ = Describe("Metered Store", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should public metrics of GET", func() {
+	It("should public metrics of Get", func() {
 		// when
 		err := store.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 
@@ -41,7 +41,7 @@ var _ = Describe("Metered Store", func() {
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
-	It("should public metrics of LIST", func() {
+	It("should public metrics of List", func() {
 		// when
 		err := store.List(context.Background(), &core_mesh.MeshResourceList{}, core_store.ListByMesh(model.DefaultMesh))
 
@@ -50,7 +50,7 @@ var _ = Describe("Metered Store", func() {
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "list", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
-	It("should public metrics of DELETE", func() {
+	It("should public metrics of Delete", func() {
 		// when
 		err := store.Delete(context.Background(), core_mesh.NewMeshResource(), core_store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 
@@ -59,7 +59,7 @@ var _ = Describe("Metered Store", func() {
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "delete", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
-	It("should public metrics of UPDATE", func() {
+	It("should public metrics of Update", func() {
 		// when
 		mesh := core_mesh.NewMeshResource()
 		err := store.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
@@ -74,7 +74,7 @@ var _ = Describe("Metered Store", func() {
 		Expect(test_metrics.FindMetric(metrics, "store", "operation", "update", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
-	It("should public metrics of UPDATE conflict", func() {
+	It("should public metrics of Update conflict", func() {
 		// when
 		mesh := core_mesh.NewMeshResource()
 		anotherMesh := core_mesh.NewMeshResource()
@@ -87,6 +87,15 @@ var _ = Describe("Metered Store", func() {
 		err = store.Update(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
 		err = store.Update(context.Background(), anotherMesh)
+
+		// then
+		Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
+		Expect(test_metrics.FindMetric(metrics, "store_conflicts", "resource_type", "Mesh").GetCounter().GetValue()).To(Equal(1.0))
+	})
+
+	It("should public metrics of Create conflict", func() {
+		// when
+		err := store.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
 		Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
