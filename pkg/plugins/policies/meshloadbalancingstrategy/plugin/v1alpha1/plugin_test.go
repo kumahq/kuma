@@ -1258,21 +1258,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
-			getResourceYaml := func(list core_xds.ResourceList) []byte {
-				actualResource, err := util_proto.ToYAML(list[0].Resource)
-				Expect(err).ToNot(HaveOccurred())
-				return actualResource
-			}
-
 			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.EndpointType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_endpoint.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_listener.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_route.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.clusters.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.EndpointType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.endpoints.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.ListenerType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.RouteType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
