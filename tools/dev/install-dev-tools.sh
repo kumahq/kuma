@@ -32,6 +32,9 @@ for i in ${DYNAMIC_VERSION_FILES}; do
 done
 # use dev.mk to calculate the hash
 FILES+=" "${TOOLS_MAKEFILE}
+echo "::debug::Files used to calculate hash:"
+for i in ${FILES}; do echo "::debug::  ${i}"; done
 for i in ${FILES}; do cat "${i}"; done | git hash-object --stdin > "$TOOLS_DEPS_LOCK_FILE"
+echo "::debug::Calculated hash: $(cat "${TOOLS_DEPS_LOCK_FILE}")"
 
 echo "All non code dependencies installed, if you use these tools outside of make add $CI_TOOLS_BIN_DIR to your PATH"
