@@ -174,26 +174,15 @@ func applyToGateway(
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
 		}
-		rules, ok := gwRules.ToRules[key]
+		toRules, ok := gwRules.ToRules[key]
 		if !ok {
 			continue
 		}
 
-		conf := getConf(rules, core_rules.MeshSubset())
+		conf := getConf(toRules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 
 		if conf != nil && ok {
-			var protocol core_mesh.Protocol
-			switch listenerInfo.Listener.Protocol {
-			case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-				protocol = core_mesh.ProtocolHTTP
-			case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-				protocol = core_mesh.ProtocolTCP
-			}
-
-			if err := plugin_xds.ConfigureGatewayListener(conf, protocol, gatewayListeners[key]); err != nil {
-				return err
-			}
 			for _, vh := range route.VirtualHosts {
 				for _, r := range vh.Routes {
 					plugin_xds.ConfigureRouteAction(
@@ -219,13 +208,13 @@ func applyToGateway(
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-				conf := getConf(rules, core_rules.MeshService(serviceName))
+				conf := getConf(toRules, core_rules.MeshService(serviceName))
 				if conf == nil {
 					continue
 				}
 
 				if err := applyToClusters(
-					rules,
+					toRules,
 					serviceName,
 					meshCtx.GetServiceProtocol(serviceName),
 					cluster,
@@ -233,6 +222,23 @@ func applyToGateway(
 					return err
 				}
 			}
+		}
+		fromRules, ok := gwRules.FromRules[key]
+		if !ok {
+			continue
+		}
+
+		conf = getConf(fromRules, core_rules.MeshSubset())
+
+		var protocol core_mesh.Protocol
+		switch listenerInfo.Listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+			protocol = core_mesh.ProtocolHTTP
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+			protocol = core_mesh.ProtocolTCP
+		}
+		if err := plugin_xds.ConfigureGatewayListener(conf, protocol, gatewayListeners[key]); err != nil {
+			return err
 		}
 	}
 

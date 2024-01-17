@@ -172,7 +172,6 @@ func ConfigureGatewayListener(
 		if hcm.CommonHttpProtocolOptions == nil {
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 		}
-
 		hcm.CommonHttpProtocolOptions.IdleTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf).IdleTimeout,
 			policies_defaults.DefaultGatewayIdleTimeout,
