@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -276,7 +278,7 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
-func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
+func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
@@ -302,6 +304,14 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+				if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
+					// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
+					// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
+					// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
+					// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
+					// todo: remove in 2 releases after 2.6.x
+					return zi.IsRemoteIngress(localZone)
+				}
 				return !core_model.IsLocallyOriginated(config_core.Zone, r)
 			}))
 		},
@@ -350,6 +360,10 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
 			}), Zone(upstream.ControlPlaneId))
 		},

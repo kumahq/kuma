@@ -11,6 +11,8 @@ on:
     secrets:
       circleCIToken:
         required: true
+permissions:
+  contents: read
 env:
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
@@ -23,6 +25,10 @@ jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    strategy:
+      fail-fast: false
+      matrix:
+        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '3' && '[0, 1, 2]') || '[0]') }}
     steps:
       - name: "Print parameters"
         id: eval-params
@@ -36,11 +42,6 @@ jobs:
           fi
           echo "Running with: ${{ toJSON(inputs) }} ${{ toJSON(env) }}"
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=${{ env.E2E_PARAM_ARCH }}' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -51,12 +52,9 @@ jobs:
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -66,7 +64,7 @@ jobs:
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools
-      - name: Free up disk space for the Runner
+      - name: "Github Actions: Free up disk space for the Runner"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
           echo "Disk usage before cleanup"
@@ -130,7 +128,7 @@ jobs:
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
-            export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
+            export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
           fi
           env
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then

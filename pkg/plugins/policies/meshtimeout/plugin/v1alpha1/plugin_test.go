@@ -458,6 +458,23 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", fmt.Sprintf("%s.gateway.route.golden.yaml", name))))
 	}, Entry("basic", gatewayTestCase{
 		rules: core_rules.GatewayRules{
+			FromRules: map[core_rules.InboundListener]core_rules.Rules{
+				{Address: "192.168.0.1", Port: 8080}: {
+					{
+						Subset: core_rules.MeshSubset(),
+						Conf: api.Conf{
+							IdleTimeout: test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("311s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+								RequestHeadersTimeout: test.ParseDuration("99s"),
+							},
+						},
+					},
+				},
+			},
 			ToRules: map[core_rules.InboundListener]core_rules.Rules{
 				{Address: "192.168.0.1", Port: 8080}: {
 					{

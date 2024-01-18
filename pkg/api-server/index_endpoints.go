@@ -10,7 +10,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, enableGUI bool, guiURL string) error {
+func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string, guiURL string) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
@@ -30,10 +30,6 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 
 			if clusterId == "" {
 				clusterId = getClusterId()
-			}
-
-			if !enableGUI {
-				guiURL = ""
 			}
 
 			response := types.IndexResponse{

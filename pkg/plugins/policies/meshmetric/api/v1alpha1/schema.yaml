@@ -41,6 +41,15 @@ properties:
             description: Backends list that will be used to collect metrics.
             items:
               properties:
+                openTelemetry:
+                  description: OpenTelemetry backend configuration
+                  properties:
+                    endpoint:
+                      description: Endpoint for OpenTelemetry collector
+                      type: string
+                  required:
+                    - endpoint
+                  type: object
                 prometheus:
                   description: Prometheus backend configuration.
                   properties:
@@ -78,6 +87,7 @@ properties:
                   description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
                   enum:
                     - Prometheus
+                    - OpenTelemetry
                   type: string
               required:
                 - type
@@ -91,12 +101,18 @@ properties:
                 type: string
               usedOnly:
                 default: false
-                description: UsedOnly will scrape only metrics that has been by sidecar (counters incremented at least once, gauges changed at least once, and histograms added to at least once).
+                description: |-
+                  IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
+                  at least once, gauges changed at least once, and histograms added to at
+                  least once). If true will scrape all metrics (even the ones with zeros).
                 type: boolean
             type: object
         type: object
       targetRef:
-        description: TargetRef is a reference to the resource the policy takes an effect on. The resource could be either a real store object or virtual resource defined in-place.
+        description: |-
+          TargetRef is a reference to the resource the policy takes an effect on.
+          The resource could be either a real store object or virtual resource
+          defined in-place.
         properties:
           kind:
             description: Kind of the referenced resource
@@ -112,12 +128,16 @@ properties:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
           name:
-            description: 'Name of the referenced resource. Can only be used with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+            description: |-
+              Name of the referenced resource. Can only be used with kinds: `MeshService`,
+              `MeshServiceSubset` and `MeshGatewayRoute`
             type: string
           tags:
             additionalProperties:
               type: string
-            description: Tags used to select a subset of proxies by tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+            description: |-
+              Tags used to select a subset of proxies by tags. Can only be used with kinds
+              `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
     required:

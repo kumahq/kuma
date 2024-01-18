@@ -10,8 +10,6 @@ permissions:
   contents: read
 jobs:
   pr_comments:
-    permissions:
-      contents: write # for Git to git push
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-latest
     steps:
@@ -49,7 +47,7 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+      - uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}

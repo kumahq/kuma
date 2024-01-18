@@ -144,13 +144,16 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
-	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
+	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	addZoneEndpoints(ws, resManager)
-	guiUrl := cfg.ApiServer.GUI.BasePath
-	if cfg.ApiServer.GUI.RootUrl != "" {
-		guiUrl = cfg.ApiServer.GUI.RootUrl
+	guiUrl := ""
+	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
+		guiUrl = cfg.ApiServer.GUI.BasePath
+		if cfg.ApiServer.GUI.RootUrl != "" {
+			guiUrl = cfg.ApiServer.GUI.RootUrl
+		}
 	}
 	apiUrl := cfg.ApiServer.BasePath
 	if cfg.ApiServer.RootUrl != "" {
@@ -161,7 +164,7 @@ func NewApiServer(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
-	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, cfg.ApiServer.GUI.Enabled, guiUrl); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, guiUrl); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	addWhoamiEndpoints(ws)
@@ -198,7 +201,7 @@ func NewApiServer(
 		basePath = u.Path
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
-	guiHandler, err := NewGuiHandler(guiPath, cfg.ApiServer.GUI.Enabled, GuiConfig{
+	guiHandler, err := NewGuiHandler(guiPath, !cfg.ApiServer.GUI.Enabled || cfg.IsFederatedZoneCP(), GuiConfig{
 		BaseGuiPath: basePath,
 		ApiUrl:      apiUrl,
 		Version:     version.Build.Version,

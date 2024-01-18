@@ -63,8 +63,8 @@ func Tracing() {
 			Install(TrafficRouteKubernetes(mesh)).
 			Install(TrafficPermissionKubernetes(mesh)).
 			Setup(kubernetes.Cluster)
-		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 	})
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())

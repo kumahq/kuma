@@ -124,6 +124,7 @@ func Setup(rt core_runtime.Runtime) error {
 				rt.KDSContext().Configs,
 				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
+				zone,
 				kubeFactory,
 				rt.Config().Store.Kubernetes.SystemNamespace,
 			),

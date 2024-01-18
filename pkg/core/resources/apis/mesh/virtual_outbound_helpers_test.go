@@ -40,7 +40,7 @@ var _ = Describe("VirtualOutbound_Helpers", func() {
 				},
 			},
 			givenTags: map[string]string{"port": "hello"},
-			thenErr:   "evaluation of template with parameters didn't evaluate to a parsable number result='hello'",
+			thenErr:   `evaluation of template with parameters didn't evaluate to a parsable number result="hello"`,
 		}),
 		Entry("complex template", portTestCase{
 			in: &mesh_proto.VirtualOutbound_Conf{
@@ -61,7 +61,7 @@ var _ = Describe("VirtualOutbound_Helpers", func() {
 				},
 			},
 			givenTags: map[string]string{"port": "80000", "offset": "81"},
-			thenErr:   "a port outside of the range [1..65535] result='80000'",
+			thenErr:   "a port outside of the range [1..65535] result=80000",
 		}),
 	)
 
@@ -96,7 +96,7 @@ var _ = Describe("VirtualOutbound_Helpers", func() {
 				},
 			},
 			givenTags: map[string]string{"kuma.io/service": "foo()bar"},
-			thenErr:   "evaluation of template with parameters didn't return a valid dns name result='foo()bar'",
+			thenErr:   `evaluation of template with parameters didn't return a valid dns name result="foo()bar"`,
 		}),
 		Entry("simple eval", hostTestCase{
 			in: &mesh_proto.VirtualOutbound_Conf{
