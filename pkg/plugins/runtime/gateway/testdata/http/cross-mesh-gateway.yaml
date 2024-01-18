@@ -660,7 +660,7 @@ Routes:
             path: /echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -681,7 +681,7 @@ Routes:
             path: /ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -698,7 +698,7 @@ Routes:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -719,7 +719,7 @@ Routes:
             prefix: /ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -753,7 +753,7 @@ Routes:
             path: /hostname-and-hostname-on-listener-match-echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -774,7 +774,7 @@ Routes:
             path: /hostname-and-hostname-on-listener-match-ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -791,7 +791,7 @@ Routes:
             path: /echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -812,7 +812,7 @@ Routes:
             path: /ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -829,7 +829,7 @@ Routes:
             prefix: /hostname-and-hostname-on-listener-match-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -850,7 +850,7 @@ Routes:
             prefix: /hostname-and-hostname-on-listener-match-ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -867,7 +867,7 @@ Routes:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -888,7 +888,7 @@ Routes:
             prefix: /ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -922,7 +922,7 @@ Routes:
             path: /hostname-echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -943,7 +943,7 @@ Routes:
             path: /hostname-ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -960,7 +960,7 @@ Routes:
             prefix: /hostname-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -981,7 +981,7 @@ Routes:
             prefix: /hostname-ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1008,7 +1008,7 @@ Routes:
             path: /hostname-echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1029,7 +1029,7 @@ Routes:
             path: /hostname-ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1046,7 +1046,7 @@ Routes:
             prefix: /hostname-echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1067,7 +1067,7 @@ Routes:
             prefix: /hostname-ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1094,7 +1094,7 @@ Routes:
             path: /echo
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1115,7 +1115,7 @@ Routes:
             path: /ext
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1132,7 +1132,7 @@ Routes:
             prefix: /echo/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -1153,7 +1153,7 @@ Routes:
             prefix: /ext/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

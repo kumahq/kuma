@@ -175,7 +175,7 @@ Routes:
             path: /v2
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -196,7 +196,7 @@ Routes:
             path: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -221,7 +221,7 @@ Routes:
             path: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

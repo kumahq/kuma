@@ -77,7 +77,7 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: common_api.TargetRef{
-				Kind: common_api.Mesh,
+				Kind: common_api.MeshSubset,
 				ProxyTypes: []common_api.TargetRefProxyType{
 					common_api.Gateway,
 				},
@@ -96,6 +96,20 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
 							},
 							MaxStreamDuration: &v1.Duration{
+								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
+							},
+						},
+					},
+				},
+			},
+			To: []v1alpha1.To{
+				{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.Mesh,
+					},
+					Default: v1alpha1.Conf{
+						Http: &v1alpha1.Http{
+							StreamIdleTimeout: &v1.Duration{
 								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
 							},
 						},

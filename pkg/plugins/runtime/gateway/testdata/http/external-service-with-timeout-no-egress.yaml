@@ -7,7 +7,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
-      connectTimeout: 113s
+      connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: external-http2-httpbin
@@ -52,8 +52,9 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 115s
-            maxStreamDuration: 117s
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
@@ -144,7 +145,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 114s
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
@@ -161,7 +162,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 114s
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7

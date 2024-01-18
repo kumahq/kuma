@@ -258,9 +258,9 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-timeout-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			// and default Gateway's MeshTimeout for the mesh doesn't exists
+			// and default Gateway's MeshTimeout for the mesh does exists
 			err = resManager.Get(context.Background(), meshtimeout.NewMeshTimeoutResource(), core_store.GetByKey("mesh-gateways-timeout-all-default", model.DefaultMesh))
-			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+			Expect(err).ToNot(HaveOccurred())
 
 			// and default MeshCircuitBreaker for the mesh does exists
 			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))

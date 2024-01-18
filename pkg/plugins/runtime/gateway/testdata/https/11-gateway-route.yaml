@@ -210,7 +210,7 @@ Routes:
                   regex: .*sh
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -235,7 +235,7 @@ Routes:
                 exact: application/json
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -260,7 +260,7 @@ Routes:
                 exact: gibberish
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-            idleTimeout: 1800s
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
