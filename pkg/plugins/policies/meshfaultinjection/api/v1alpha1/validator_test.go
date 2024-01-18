@@ -54,6 +54,19 @@ from:
     default:
       http: []
 `),
+		Entry("Kind Mesh with to and only gateway", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+  proxyTypes: ["Gateway"]
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: []
+`),
 	)
 
 	DescribeErrorCases(
@@ -196,27 +209,6 @@ to:
           httpStatus: 503
           percentage: 50
 from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50`,
-		),
-		ErrorCases("top level Mesh and to",
-			[]validators.Violation{
-				{
-					Field:   "spec.to",
-					Message: "must not be defined",
-				},
-			}, `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: Mesh
-to:
   - targetRef:
       kind: Mesh
     default:
