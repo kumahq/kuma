@@ -53,17 +53,9 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
       - uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           path: |
@@ -73,18 +65,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
-      - name: Free up disk space for the Runner
-        run: |
-          echo "Disk usage before cleanup"
-          sudo df -h
-          echo "Removing big directories"
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          echo "Removing images"
-          docker system prune --all -f
-          echo "Disk usage after cleanup"
-          sudo df -h
-      - name: Run tests
-        run: |
+      - run: |
           make test
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
@@ -100,18 +81,16 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - name: "Check if should run on all arch/os combinations"
+      - name: "Maybe set full matrix"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
-      - name: "Set switches based on if run full matrix"
-        if: ${{ env.RUN_FULL_MATRIX == 'true' }}
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-      - name: "Check if force push"
+      - name: "Add matrix to .run-full-matrix for cache"
+        run: |
+          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
+      - name: "Maybe set flag to push build artifacts"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
         run: |
           echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
@@ -145,11 +124,9 @@ jobs:
           make build
       - run: |
           make -j build/distributions
-      - name: Install dependencies for cross builds
-        run: |
-          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - run: |
           make -j images
+      - run: |
           make -j docker/save
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -225,14 +202,10 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=true' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - id: generate-matrix
         name: Generate matrix
         env:
+          RUN_FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
           BASE_MATRIX: |-
             {
               "test_e2e": {
@@ -273,7 +246,7 @@ jobs:
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
         run: |-
           BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
-          if [[ "${RUN_FULL_MATRIX}" != "true" ]]; then
+          if [[ "${{ env.RUN_FULL_MATRIX }}" != "true" ]]; then
             BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
           fi
 
