@@ -162,7 +162,7 @@ func applyToClusters(
 }
 
 func applyToGateway(
-	gwRules core_rules.GatewayRules,
+	gatewayRules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
@@ -174,7 +174,7 @@ func applyToGateway(
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
 		}
-		toRules, ok := gwRules.ToRules[key]
+		toRules, ok := gatewayRules.ToRules[key]
 		if !ok {
 			continue
 		}
@@ -223,21 +223,17 @@ func applyToGateway(
 				}
 			}
 		}
-		fromRules, ok := gwRules.FromRules[key]
+		fromRules, ok := gatewayRules.FromRules[key]
 		if !ok {
 			continue
 		}
 
 		conf = getConf(fromRules, core_rules.MeshSubset())
-
-		var protocol core_mesh.Protocol
-		switch listenerInfo.Listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			protocol = core_mesh.ProtocolHTTP
-		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			protocol = core_mesh.ProtocolTCP
-		}
-		if err := plugin_xds.ConfigureGatewayListener(conf, protocol, gatewayListeners[key]); err != nil {
+		if err := plugin_xds.ConfigureGatewayListener(
+			conf, 
+			listenerInfo.Listener.Protocol,
+			gatewayListeners[key],
+		); err != nil {
 			return err
 		}
 	}

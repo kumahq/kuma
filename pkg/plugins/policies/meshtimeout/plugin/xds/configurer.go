@@ -10,10 +10,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoy_upstream_http "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -22,6 +19,9 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ListenerConfigurer struct {
@@ -161,7 +161,7 @@ func ConfigureRouteAction(
 
 func ConfigureGatewayListener(
 	conf *api.Conf,
-	protocol core_mesh.Protocol,
+	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	listener *envoy_listener.Listener,
 ) error {
 	if listener == nil {
@@ -197,11 +197,11 @@ func ConfigureGatewayListener(
 	}
 	for _, filterChain := range listener.FilterChains {
 		switch protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
 			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
-		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
 			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
 				return err
 			}
