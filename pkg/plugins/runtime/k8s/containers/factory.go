@@ -2,7 +2,6 @@ package containers
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"sort"
 	"strconv"
 	"time"
@@ -14,6 +13,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
