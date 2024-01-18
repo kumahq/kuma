@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -29,7 +29,13 @@ func MeshTimeout() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		// Delete the default meshtimeout policy
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", mesh))
+		}, "10s", "1s").Should(Succeed())
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterEach(func() {

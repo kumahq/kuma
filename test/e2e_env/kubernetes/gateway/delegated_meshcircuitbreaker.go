@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -18,13 +18,12 @@ func CircuitBreaker(config *delegatedE2EConfig) func() {
 
 	return func() {
 		BeforeAll(func() {
-			Expect(DeleteMeshResources(
-				kubernetes.Cluster,
-				config.mesh,
-				core_mesh.CircuitBreakerResourceTypeDescriptor,
-				core_mesh.RetryResourceTypeDescriptor,
-				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
-			)).To(Succeed())
+			Eventually(func() error {
+				return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", config.mesh))
+			}, "10s", "1s").Should(Succeed())
+			Eventually(func() error {
+				return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", config.mesh))
+			}, "10s", "1s").Should(Succeed())
 		})
 
 		E2EAfterEach(func() {

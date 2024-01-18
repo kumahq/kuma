@@ -64,6 +64,7 @@ mtls:
 				Install(YamlUniversal(meshYaml)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -114,7 +115,7 @@ mtls:
 
 		// Disable retries so that we see every failed request
 		kumactl := universal.Cluster.GetKumactlOptions()
-		Expect(kumactl.KumactlDelete("retry", fmt.Sprintf("retry-all-%s", meshName), meshName)).To(Succeed())
+		Expect(kumactl.KumactlDelete("meshretry", fmt.Sprintf("mesh-retry-all-%s", meshName), meshName)).To(Succeed())
 
 		// We must start client before server to test this properly. The client
 		// should get XDS refreshes first to trigger the race condition fixed by
@@ -127,6 +128,7 @@ mtls:
 		trafficAllowed("test-server.mesh")
 
 		By("Enable permissions mtls")
+		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
 		meshYaml := fmt.Sprintf(
 			`
 type: Mesh
@@ -154,16 +156,6 @@ mtls:
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 				Setup(universal.Cluster)
-			Expect(err).ToNot(HaveOccurred())
-			By("Remove default traffic-permission")
-			// Default default traffic-permission
-			var items []string
-			Eventually(func(g Gomega) {
-				items, err = universal.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(items).To(HaveLen(1))
-			}).Should(Succeed())
-			err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", items[0], meshName)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Can access test-server")

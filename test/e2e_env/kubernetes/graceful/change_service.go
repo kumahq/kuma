@@ -1,6 +1,7 @@
 package graceful
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -9,7 +10,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/channels"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
@@ -59,6 +60,7 @@ func ChangeService() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -88,7 +90,9 @@ func ChangeService() {
 		Expect(err).To(Succeed())
 
 		// remove retries to avoid covering failed request
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterAll(func() {

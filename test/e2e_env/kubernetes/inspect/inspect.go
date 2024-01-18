@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/api/openapi/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -25,8 +26,16 @@ func Inspect() {
 			Install(NamespaceWithSidecarInjection(nsName)).
 			Install(MeshKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(nsName), democlient.WithMesh(meshName))).
+			Install(TimeoutKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+		// remove default
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", meshName))
+		}, "10s", "1s").Should(Succeed())
+		Eventually(func() error {
+			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-gateways-timeout-all-%s", meshName))
+		}, "10s", "1s").Should(Succeed())
 	})
 
 	E2EAfterAll(func() {

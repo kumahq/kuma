@@ -54,7 +54,10 @@ type State struct {
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
-	globalOptions := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)
+	globalOptions := append([]framework.KumaDeploymentOption{
+		framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "false"),
+	},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
 	wg := sync.WaitGroup{}

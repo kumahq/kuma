@@ -89,7 +89,7 @@ var (
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
-	_ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
+	_ = Describe("Traffic Permission", trafficpermission.TrafficPermissionTestUniversal, Ordered)
 	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)

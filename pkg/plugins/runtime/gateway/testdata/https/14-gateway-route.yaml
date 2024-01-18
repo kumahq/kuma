@@ -18,6 +18,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
@@ -26,6 +28,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:

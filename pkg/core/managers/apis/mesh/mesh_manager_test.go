@@ -49,8 +49,8 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := mesh.NewMeshValidator(caManagers, resStore)
-		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false, context.Background())
-		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true, context.Background())
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false, context.Background(), false, false, "")
+		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true, context.Background(), false, false, "")
 	})
 
 	Describe("Create()", func() {
@@ -94,14 +94,6 @@ var _ = Describe("Mesh Manager", func() {
 			err := samples.MeshDefaultBuilder().WithName(meshName).Create(resManager)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// and default TrafficPermission for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), store.GetByKey("allow-all-mesh-1", meshName))
-			Expect(err).ToNot(HaveOccurred())
-
-			// and default TrafficRoute for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists

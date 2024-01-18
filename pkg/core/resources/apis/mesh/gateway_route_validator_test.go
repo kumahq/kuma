@@ -6,7 +6,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
-	. "github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("MeshGatewayRoute", func() {

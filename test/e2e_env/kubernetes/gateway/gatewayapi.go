@@ -44,6 +44,7 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(externalServicesNamespace)).
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(testserver.Install(
 				testserver.WithName("test-server-1"),
 				testserver.WithMesh(meshName),

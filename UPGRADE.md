@@ -23,6 +23,11 @@ The only users who need to take action are those who are explicitly relying on t
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
 
+### Default resources are not created when creating a new `Mesh`
+
+We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
+If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
+
 ### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
 
 With the release of Kuma 2.6.0, we've made some changes to the implementation of `MeshTrafficPermission` policies targeting HTTP services. These changes primarily revolve around the use of the `envoy.filters.http.rbac` envoy filter instead of the `envoy.filters.network.rbac` filter. This migration entails the following adjustments:

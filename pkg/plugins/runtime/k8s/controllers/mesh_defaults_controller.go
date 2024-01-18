@@ -20,9 +20,12 @@ import (
 
 // MeshDefaultsReconciler creates default resources for created Mesh
 type MeshDefaultsReconciler struct {
-	ResourceManager manager.ResourceManager
-	Log             logr.Logger
-	Extensions      context.Context
+	ResourceManager            manager.ResourceManager
+	Log                        logr.Logger
+	Extensions                 context.Context
+	CreateMeshRoutingResources bool
+	K8sStore                   bool
+	SystemNamespace            string
 }
 
 func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -46,6 +49,9 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		mesh,
 		mesh.Spec.GetSkipCreatingInitialPolicies(),
 		r.Extensions,
+		r.CreateMeshRoutingResources,
+		r.K8sStore,
+		r.SystemNamespace,
 	); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
 	}

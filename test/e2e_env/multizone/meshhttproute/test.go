@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -28,10 +27,14 @@ func Test() {
 func test(meshName string, meshBuilder *builders.MeshBuilder) {
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(ResourceUniversal(meshBuilder.WithName(meshName).Build()))).To(Succeed())
+		err := NewClusterSetup().
+			Install(ResourceUniversal(meshBuilder.WithName(meshName).Build())).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Setup(multizone.Global)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
+		err = NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "zone1-v1"}),
@@ -72,8 +75,6 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 			)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(DeleteMeshResources(multizone.Global, meshName, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
