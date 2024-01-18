@@ -7,8 +7,11 @@ import (
 	"net/url"
 	"sync"
 
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"golang.org/x/exp/maps"
@@ -19,6 +22,9 @@ import (
 var log = core.Log.WithName("metrics-custom-producer")
 
 type AggregatedProducer struct {
+	mesh                      string
+	dataplane                 string
+	service                   string
 	httpClientIPv4            http.Client
 	httpClientIPv6            http.Client
 	AppToScrape               ApplicationToScrape
@@ -28,8 +34,11 @@ type AggregatedProducer struct {
 
 var _ sdkmetric.Producer = &AggregatedProducer{}
 
-func NewAggregatedMetricsProducer(applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *AggregatedProducer {
+func NewAggregatedMetricsProducer(mesh string, dataplane string, service string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *AggregatedProducer {
 	return &AggregatedProducer{
+		mesh:                      mesh,
+		dataplane:                 dataplane,
+		service:                   service,
 		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
 		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
 		applicationsToScrape:      applicationsToScrape,
@@ -49,7 +58,7 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	appsToScrape = append(appsToScrape, ap.applicationsToScrape...)
 	ap.applicationsToScrapeMutex.Unlock()
 
-	out := make(chan []metricdata.Metrics, len(appsToScrape))
+	out := make(chan *metricdata.ScopeMetrics, len(appsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
 	wg.Add(len(appsToScrape))
@@ -71,24 +80,19 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 	case <-ctx.Done():
 		return nil, nil
 	case <-done:
-		otelMetrics := combineMetrics(out)
-		// TODO probably each app that we scrape could have different scope, it could be the name from ApplicationToScrape config
-		metrics := metricdata.ScopeMetrics{
-			Metrics: otelMetrics,
-		}
-		return []metricdata.ScopeMetrics{metrics}, nil
+		return combineMetrics(out), nil
 	}
 }
 
-func combineMetrics(metrics <-chan []metricdata.Metrics) []metricdata.Metrics {
-	var combinedMetrics []metricdata.Metrics
+func combineMetrics(metrics <-chan *metricdata.ScopeMetrics) []metricdata.ScopeMetrics {
+	var combinedMetrics []metricdata.ScopeMetrics
 	for metric := range metrics {
-		combinedMetrics = append(combinedMetrics, metric...)
+		combinedMetrics = append(combinedMetrics, *metric)
 	}
 	return combinedMetrics
 }
 
-func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) []metricdata.Metrics {
+func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToScrape) *metricdata.ScopeMetrics {
 	req, err := http.NewRequest("GET", rewriteMetricsURL(app.Address, app.Port, app.Path, app.QueryModifier, &url.URL{}), nil)
 	if err != nil {
 		log.Error(err, "failed to create request")
@@ -104,8 +108,14 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 	metricsFromApplication, err := app.OtelMutator(resp.Body)
 	if err != nil {
 		log.Error(err, "failed to mutate metrics")
+		return nil
 	}
-	return FromPrometheusMetrics(metricsFromApplication)
+	return &metricdata.ScopeMetrics{
+		Scope: instrumentation.Scope{
+			Name: app.Name,
+		},
+		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service),
+	}
 }
 
 func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request, isIPv6 bool) (*http.Response, error) {

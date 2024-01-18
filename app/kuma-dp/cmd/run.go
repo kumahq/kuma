@@ -245,7 +245,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				baseApplicationsToScrape,
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
-			openTelemetryProducer := metrics.NewAggregatedMetricsProducer(baseApplicationsToScrape, kumaSidecarConfiguration.Networking.IsUsingTransparentProxy)
+			openTelemetryProducer := metrics.NewAggregatedMetricsProducer(cfg.Dataplane.Mesh, cfg.Dataplane.Name, "TODO", baseApplicationsToScrape, kumaSidecarConfiguration.Networking.IsUsingTransparentProxy)
 			meshMetricsConfigFetcher := component.NewResilientComponent(
 				runLog.WithName("mesh-metric-config-fetcher"),
 				meshmetrics.NewMeshMetricConfigFetcher(

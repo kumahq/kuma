@@ -8,7 +8,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily) []metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
+	extraAttributes := extraAttributesFrom(mesh, dataplane, service)
+
 	var openTelemetryMetrics []metricdata.Metrics
 	for _, prometheusMetric := range appMetrics {
 		otelMetric := metricdata.Metrics{
@@ -19,22 +21,22 @@ func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily) []me
 		switch prometheusMetric.GetType() {
 		case io_prometheus_client.MetricType_GAUGE:
 			otelMetric.Data = metricdata.Gauge[float64]{
-				DataPoints: gaugeDataPoints(prometheusMetric.Metric),
+				DataPoints: gaugeDataPoints(prometheusMetric.Metric, extraAttributes),
 			}
 		case io_prometheus_client.MetricType_SUMMARY:
 			otelMetric.Data = metricdata.Summary{
-				DataPoints: summaryDataPoints(prometheusMetric.Metric),
+				DataPoints: summaryDataPoints(prometheusMetric.Metric, extraAttributes),
 			}
 		case io_prometheus_client.MetricType_COUNTER:
 			otelMetric.Data = metricdata.Sum[float64]{
 				IsMonotonic: true,
 				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  counterDataPoints(prometheusMetric.Metric),
+				DataPoints:  counterDataPoints(prometheusMetric.Metric, extraAttributes),
 			}
 		case io_prometheus_client.MetricType_HISTOGRAM:
 			otelMetric.Data = metricdata.Histogram[float64]{
 				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  histogramDataPoints(prometheusMetric.Metric),
+				DataPoints:  histogramDataPoints(prometheusMetric.Metric, extraAttributes),
 			}
 		default:
 			log.Info("Got unsupported metric type", "type", prometheusMetric.Type)
@@ -45,10 +47,10 @@ func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily) []me
 	return openTelemetryMetrics
 }
 
-func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric) []metricdata.DataPoint[float64] {
+func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.DataPoint[float64] {
 	var dataPoints []metricdata.DataPoint[float64]
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label)
+		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
 			Attributes: attributes,
 			Value:      metric.Gauge.GetValue(),
@@ -57,10 +59,10 @@ func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric) []metricdata
 	return dataPoints
 }
 
-func summaryDataPoints(prometheusData []*io_prometheus_client.Metric) []metricdata.SummaryDataPoint {
+func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.SummaryDataPoint {
 	var dataPoints []metricdata.SummaryDataPoint
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label)
+		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.SummaryDataPoint{
 			Attributes:     attributes,
 			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
@@ -70,10 +72,10 @@ func summaryDataPoints(prometheusData []*io_prometheus_client.Metric) []metricda
 	return dataPoints
 }
 
-func counterDataPoints(prometheusData []*io_prometheus_client.Metric) []metricdata.DataPoint[float64] {
+func counterDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.DataPoint[float64] {
 	var dataPoints []metricdata.DataPoint[float64]
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label)
+		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
 			Attributes: attributes,
 			Value:      metric.Counter.GetValue(),
@@ -82,10 +84,10 @@ func counterDataPoints(prometheusData []*io_prometheus_client.Metric) []metricda
 	return dataPoints
 }
 
-func histogramDataPoints(prometheusData []*io_prometheus_client.Metric) []metricdata.HistogramDataPoint[float64] {
+func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.HistogramDataPoint[float64] {
 	var dataPoints []metricdata.HistogramDataPoint[float64]
 	for _, metric := range prometheusData {
-		attributes := createOpenTelemetryAttributes(metric.Label)
+		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 
 		var bounds []float64
 		var bucketCounts []uint64
@@ -107,11 +109,12 @@ func histogramDataPoints(prometheusData []*io_prometheus_client.Metric) []metric
 	return dataPoints
 }
 
-func createOpenTelemetryAttributes(labels []*io_prometheus_client.LabelPair) attribute.Set {
+func createOpenTelemetryAttributes(labels []*io_prometheus_client.LabelPair, extraAttributes []attribute.KeyValue) attribute.Set {
 	var attributes []attribute.KeyValue
 	for _, label := range labels {
 		attributes = append(attributes, attribute.String(label.GetName(), label.GetValue()))
 	}
+	attributes = append(attributes, extraAttributes...)
 	return attribute.NewSet(attributes...)
 }
 
@@ -124,4 +127,12 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 		})
 	}
 	return otelQuantiles
+}
+
+func extraAttributesFrom(mesh string, dataplane string, service string) []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("mesh", mesh),
+		attribute.String("dataplane", dataplane),
+		attribute.String("service", service),
+	}
 }
