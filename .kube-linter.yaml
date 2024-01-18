@@ -2,9 +2,10 @@ checks:
   addAllBuiltIn: true
   exclude:
     - "unset-cpu-requirements"
+    # Look at https://github.com/kumahq/kuma/issues/8908 to reenable all these
     - dnsconfig-options
-    - "access-to-secrets"
-    - "minimum-three-replicas"
+    - access-to-secrets
+    - minimum-three-replicas
     - no-liveness-probe
     - no-readiness-probe
     - required-label-owner
