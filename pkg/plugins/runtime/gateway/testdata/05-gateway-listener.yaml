@@ -54,6 +54,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
@@ -117,6 +118,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
@@ -180,6 +182,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
@@ -241,6 +244,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s

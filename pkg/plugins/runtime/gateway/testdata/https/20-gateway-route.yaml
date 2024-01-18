@@ -198,6 +198,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: gateway-multihost:HTTPS:9443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
@@ -261,6 +262,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: gateway-multihost:HTTPS:9443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s
@@ -324,6 +326,7 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: gateway-multihost:HTTPS:9443
             requestHeadersTimeout: 0.500s
+            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s

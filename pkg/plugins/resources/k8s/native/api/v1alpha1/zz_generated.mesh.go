@@ -2157,7 +2157,6 @@ func init() {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
-// +kubebuilder:printcolumn:description="Zone name",JSONPath=`.spec.zone`,name="zone",type=string
 type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

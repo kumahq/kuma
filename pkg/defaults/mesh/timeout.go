@@ -73,6 +73,39 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	}
 }
 
+var defaulMeshGatewaysTimeoutResource = func() model.Resource {
+	return &v1alpha1.MeshTimeoutResource{
+		Spec: &v1alpha1.MeshTimeout{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.Mesh,
+				ProxyTypes: []common_api.TargetRefProxyType{
+					common_api.Gateway,
+				},
+			},
+			From: []v1alpha1.From{
+				{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.Mesh,
+					},
+					Default: v1alpha1.Conf{
+						IdleTimeout: &v1.Duration{
+							Duration: policies_defaults.DefaultGatewayIdleTimeout,
+						},
+						Http: &v1alpha1.Http{
+							StreamIdleTimeout: &v1.Duration{
+								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
+							},
+							MaxStreamDuration: &v1.Duration{
+								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // DefaultInboundTimeout returns timeouts for the inbound side. This resource is not created
 // in the store. It's used directly in InboundProxyGenerator. In the future, it could be replaced
 // with a new InboundTimeout policy. The main idea around these values is to have them either
