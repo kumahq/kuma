@@ -49,36 +49,28 @@ func Sync() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("show have insights in global and in zone", func() {
+	It("should have insights in global and in zone", func() {
 		// Ensure each side of KDS has the respective values for Global and Zone instance info
-		globalName := ""
-		zoneInstance := ""
 		Eventually(func(g Gomega) {
 			result := &system.ZoneInsightResource{}
 			api.FetchResource(g, multizone.Global, result, "", multizone.KubeZone1.ZoneName())
-
 			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
-			sub := result.Spec.Subscriptions[0]
-			g.Expect(sub.GlobalInstanceId).ToNot(BeEmpty())
-			globalName = sub.GlobalInstanceId
+			globalSub := result.Spec.Subscriptions[0]
+			g.Expect(globalSub.GlobalInstanceId).ToNot(BeEmpty())
 			if !Config.KumaLegacyKDS {
-				g.Expect(sub.ZoneInstanceId).ToNot(BeEmpty())
+				g.Expect(globalSub.ZoneInstanceId).ToNot(BeEmpty())
 			}
-			zoneInstance = sub.ZoneInstanceId
-		}, "30s", "1s").Should(Succeed())
 
-		Eventually(func(g Gomega) {
-			result := &system.ZoneInsightResource{}
-			api.FetchResource(g, multizone.KubeZone1, result, "", multizone.KubeZone1.ZoneName())
-
-			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
-			sub := result.Spec.Subscriptions[0]
+			zoneResult := &system.ZoneInsightResource{}
+			api.FetchResource(g, multizone.KubeZone1, zoneResult, "", multizone.KubeZone1.ZoneName())
+			g.Expect(zoneResult.Spec.Subscriptions).ToNot(BeEmpty())
+			zoneSub := zoneResult.Spec.Subscriptions[0]
 			if !Config.KumaLegacyKDS {
 				// Check that this is the other side of the connection
-				g.Expect(sub.GlobalInstanceId).To(Equal(globalName))
-				g.Expect(sub.ZoneInstanceId).To(Equal(zoneInstance))
+				g.Expect(zoneSub.GlobalInstanceId).To(Equal(globalSub.GlobalInstanceId))
+				g.Expect(zoneSub.ZoneInstanceId).To(Equal(globalSub.ZoneInstanceId))
 			}
-		}, "30s", "1s").Should(Succeed())
+		}, "1m", "1s").Should(Succeed())
 	})
 
 	Context("from Remote to Global", func() {
