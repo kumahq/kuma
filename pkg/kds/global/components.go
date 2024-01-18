@@ -113,14 +113,14 @@ func Setup(rt runtime.Runtime) error {
 	})
 
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
-		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
 			errChan <- err
 		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), log, clientId, rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
 			errChan <- errors.Wrap(err, "Global CP could not create a zone")
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
@@ -131,13 +131,13 @@ func Setup(rt runtime.Runtime) error {
 	})
 
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
-		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
 			errChan <- err
 		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, rt, "")
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zoneID, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
