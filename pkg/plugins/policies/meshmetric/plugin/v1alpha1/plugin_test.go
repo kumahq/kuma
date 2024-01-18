@@ -55,7 +55,7 @@ var _ = Describe("MeshMetric", func() {
 		Entry("basic", testCase{
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -86,6 +86,36 @@ var _ = Describe("MeshMetric", func() {
 						},
 					}),
 				).
+				Build(),
+		}),
+		Entry("openTelemetry", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
+							},
+						},
+					})).
 				Build(),
 		}),
 		Entry("provided_tls", testCase{
