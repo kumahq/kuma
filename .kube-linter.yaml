@@ -1,6 +1,21 @@
 checks:
+  addAllBuiltIn: true
   exclude:
     - "unset-cpu-requirements"
+    - dnsconfig-options
+    - "access-to-secrets"
+    - "minimum-three-replicas"
+    - no-liveness-probe
+    - no-readiness-probe
+    - required-label-owner
+    - required-annotation-email
+    - access-to-create-pods
+    - no-node-affinity
+    - non-isolated-pod
+    - no-rolling-update-strategy
+    - writable-host-mount
+    - exposed-services
+    - use-namespace
 
 customChecks:
 - name: "unset-cpu-requests"
