@@ -354,6 +354,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -391,6 +402,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -508,6 +530,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -1288,6 +1321,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -1519,6 +1563,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -1612,6 +1667,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -1669,6 +1735,17 @@ spec:
                                         Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                         `MeshServiceSubset` and `MeshGatewayRoute`
                                       type: string
+                                    proxyTypes:
+                                      description: |-
+                                        ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                        all data plane types are targeted by the policy.
+                                      items:
+                                        enum:
+                                        - Sidecar
+                                        - Gateway
+                                        type: string
+                                      minItems: 1
+                                      type: array
                                     tags:
                                       additionalProperties:
                                         type: string
@@ -1762,6 +1839,17 @@ spec:
                                                 Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                                 `MeshServiceSubset` and `MeshGatewayRoute`
                                               type: string
+                                            proxyTypes:
+                                              description: |-
+                                                ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                                all data plane types are targeted by the policy.
+                                              items:
+                                                enum:
+                                                - Sidecar
+                                                - Gateway
+                                                type: string
+                                              minItems: 1
+                                              type: array
                                             tags:
                                               additionalProperties:
                                                 type: string
@@ -2058,6 +2146,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -2198,6 +2297,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -2618,6 +2728,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -2813,6 +2934,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -3393,6 +3525,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -3607,6 +3750,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -3644,6 +3798,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -3801,6 +3966,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -3894,6 +4070,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -4250,6 +4437,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -4343,6 +4541,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -4392,6 +4601,17 @@ spec:
                                         Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                         `MeshServiceSubset` and `MeshGatewayRoute`
                                       type: string
+                                    proxyTypes:
+                                      description: |-
+                                        ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                                        all data plane types are targeted by the policy.
+                                      items:
+                                        enum:
+                                        - Sidecar
+                                        - Gateway
+                                        type: string
+                                      minItems: 1
+                                      type: array
                                     tags:
                                       additionalProperties:
                                         type: string
@@ -4438,6 +4658,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -4588,6 +4819,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -4625,6 +4867,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -4714,6 +4967,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -4973,6 +5237,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -5081,6 +5356,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -5118,6 +5404,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -6387,6 +6684,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -6424,6 +6732,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -6610,6 +6929,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -6947,6 +7277,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -6984,6 +7325,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -7261,6 +7613,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
