@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"math/rand"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -1915,6 +1914,18 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 		Entry("generates direct cluster for TCP external service",
 			"tcp-route-no-egress.yaml", `
@@ -2009,6 +2020,18 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 	}
 
@@ -2089,6 +2112,18 @@ conf:
       - destination:
           kuma.io/service: echo-service
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 	}
 	handleArg := func(arg interface{}) {
@@ -2159,15 +2194,10 @@ conf:
 
 	Context("with a TCP gateway", func() {
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				// #nosec G404 -- used just for tests
-				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
-				r.Shuffle(len(fixtureResources), func(i, j int) {
-					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
-				})
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when
@@ -2187,15 +2217,10 @@ conf:
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				// #nosec G404 -- used just for tests
-				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
-				r.Shuffle(len(fixtureResources), func(i, j int) {
-					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
-				})
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when

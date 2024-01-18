@@ -17,6 +17,9 @@ var defaultMeshTimeoutResource = func() model.Resource {
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.Mesh,
+				ProxyTypes: []common_api.TargetRefProxyType{
+					common_api.Sidecar,
+				},
 			},
 
 			// bigger than outbound side timeouts or disabled.

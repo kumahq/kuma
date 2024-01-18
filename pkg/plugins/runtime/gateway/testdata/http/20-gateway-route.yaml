@@ -194,7 +194,6 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: gateway-multihost:HTTP:9080
             requestHeadersTimeout: 0.500s
-            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
             streamIdleTimeout: 5s

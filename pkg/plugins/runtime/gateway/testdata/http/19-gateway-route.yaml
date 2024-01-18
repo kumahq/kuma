@@ -109,7 +109,6 @@ Listeners:
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTP:8080
             requestHeadersTimeout: 0.500s
-            requestTimeout: 0s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
