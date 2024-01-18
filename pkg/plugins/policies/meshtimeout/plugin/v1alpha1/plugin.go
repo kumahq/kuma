@@ -174,12 +174,22 @@ func applyToGateway(
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
 		}
+
+		conf := getConf(gatewayRules.FromRules[key], core_rules.MeshSubset())
+		if err := plugin_xds.ConfigureGatewayListener(
+			conf,
+			listenerInfo.Listener.Protocol,
+			gatewayListeners[key],
+		); err != nil {
+			return err
+		}
+
 		toRules, ok := gatewayRules.ToRules[key]
 		if !ok {
 			continue
 		}
 
-		conf := getConf(toRules, core_rules.MeshSubset())
+		conf = getConf(toRules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 
 		if conf != nil && ok {
@@ -222,19 +232,6 @@ func applyToGateway(
 					return err
 				}
 			}
-		}
-		fromRules, ok := gatewayRules.FromRules[key]
-		if !ok {
-			continue
-		}
-
-		conf = getConf(fromRules, core_rules.MeshSubset())
-		if err := plugin_xds.ConfigureGatewayListener(
-			conf, 
-			listenerInfo.Listener.Protocol,
-			gatewayListeners[key],
-		); err != nil {
-			return err
 		}
 	}
 
