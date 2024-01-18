@@ -204,7 +204,7 @@ jobs:
       - id: generate-matrix
         name: Generate matrix
         env:
-          RUN_FULL_MATRIX: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+          RUN_FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
           BASE_MATRIX: |-
             {
               "test_e2e": {
