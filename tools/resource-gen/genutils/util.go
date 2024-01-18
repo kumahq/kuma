@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/kumahq/kuma/api/mesh"
+	mesh2 "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -120,6 +121,10 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		out.KdsDirection = "model.ZoneToGlobalFlag"
 	case r.Kds.SendToZone:
 		out.KdsDirection = "model.GlobalToAllZonesFlag"
+	}
+
+	if out.ResourceType == string(mesh2.MeshGatewayType) || out.ResourceType == string(mesh2.MeshGatewayRouteType) {
+		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag"
 	}
 
 	if p := desc.Parent(); p != nil {
