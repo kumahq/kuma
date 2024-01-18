@@ -27,9 +27,7 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
-            maxConnectionDuration: 0s
-            maxStreamDuration: 0s
+            idleTimeout: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -134,7 +132,6 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-9f149ed9e14091ca

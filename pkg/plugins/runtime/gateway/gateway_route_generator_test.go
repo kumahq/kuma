@@ -829,10 +829,12 @@ conf:
   detectors:
     localErrors:
       consecutive: 30
-`, WithoutResource{
-				Resource: meshcircuitbreaker_api.MeshCircuitBreakerType,
-				Mesh:     "default",
-				Name:     "mesh-circuit-breaker-all-default",
+`, []WithoutResource{
+				{
+					Resource: meshcircuitbreaker_api.MeshCircuitBreakerType,
+					Mesh:     "default",
+					Name:     "mesh-circuit-breaker-all-default",
+				},
 			},
 		),
 
@@ -1435,10 +1437,12 @@ conf:
       backends:
       - destination:
           kuma.io/service: external-httpbin
-`, WithoutResource{
-				Resource: core_mesh.TrafficPermissionType,
-				Mesh:     "default",
-				Name:     "allow-all-default",
+`, []WithoutResource{
+				{
+					Resource: core_mesh.TrafficPermissionType,
+					Mesh:     "default",
+					Name:     "allow-all-default",
+				},
 			},
 		),
 
@@ -1646,10 +1650,17 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`, WithoutResource{
-				Resource: meshtimeout_api.MeshTimeoutType,
-				Mesh:     "default",
-				Name:     "mesh-timeout-all-default",
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
 			},
 		),
 
@@ -1718,10 +1729,17 @@ conf:
     idle_timeout: 115s
     stream_idle_timeout: 116s
     max_stream_duration: 117s
-`, WithoutResource{
-				Resource: meshtimeout_api.MeshTimeoutType,
-				Mesh:     "default",
-				Name:     "mesh-timeout-all-default",
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
 			},
 		),
 
@@ -1788,10 +1806,11 @@ conf:
     retryOn:
       - all_5xx
     numRetries: 20
-`, WithoutResource{
-				Resource: meshretry_api.MeshRetryType,
-				Mesh:     "default",
-				Name:     "mesh-retry-all-default",
+`, []WithoutResource{
+				{Resource: meshretry_api.MeshRetryType,
+					Mesh: "default",
+					Name: "mesh-retry-all-default",
+				},
 			},
 		),
 		Entry("handled unresolved-backend tag",
@@ -2075,12 +2094,14 @@ conf:
 		switch val := arg.(type) {
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
-		case WithoutResource:
-			obj, err := registry.Global().NewObject(val.Resource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(rt.ResourceManager().Delete(
-				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
-			)).To(Succeed())
+		case []WithoutResource:
+			for _, resource := range val {
+				obj, err := registry.Global().NewObject(resource.Resource)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(rt.ResourceManager().Delete(
+					context.Background(), obj, store.DeleteByKey(resource.Name, resource.Mesh),
+				)).To(Succeed())
+			}
 		}
 	}
 	Context("with a HTTP gateway", func() {

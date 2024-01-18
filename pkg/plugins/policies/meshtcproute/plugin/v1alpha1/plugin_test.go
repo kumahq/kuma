@@ -321,7 +321,8 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "externalservice", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP2))
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+				xdsContext: *xds_builders.Context().
+					WithEndpointMap(outboundTargets).
 					AddServiceProtocol("backend", util_protocol.GetCommonProtocol(core_mesh.ProtocolTCP, core_mesh.ProtocolHTTP)).
 					AddServiceProtocol("other-backend", core_mesh.ProtocolHTTP).
 					AddServiceProtocol("externalservice", core_mesh.ProtocolHTTP2).
