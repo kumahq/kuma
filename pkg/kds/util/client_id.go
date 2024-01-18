@@ -13,10 +13,10 @@ const clientIDKey = "client-id"
 // ClientIDFromIncomingCtx returns the ID of the peer. Global has the ID
 // "global" while zones have the zone name. This is also known as the peer ID.
 func ClientIDFromIncomingCtx(ctx context.Context) (string, error) {
-	return metadataFromIncomingCtx(ctx, clientIDKey)
+	return MetadataFromIncomingCtx(ctx, clientIDKey)
 }
 
-func metadataFromIncomingCtx(ctx context.Context, key string) (string, error) {
+func MetadataFromIncomingCtx(ctx context.Context, key string) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.New("metadata is not provided")
