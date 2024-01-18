@@ -176,10 +176,7 @@ func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.Targ
 }
 
 func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
-	if len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType) {
-		return true
-	}
-	return false
+	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
 // inboundsSelectedByTags returns which inbounds are selected and whether a

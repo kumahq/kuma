@@ -29,6 +29,7 @@ var order = map[TargetRefKind]int{
 	MeshHTTPRoute:     6,
 }
 
+// +kubebuilder:validation:Enum=Sidecar;Gateway
 type TargetRefProxyType string
 
 var (
@@ -53,7 +54,8 @@ type TargetRef struct {
 	Tags map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
-	// ProxyTypes types of affected Dataplanes by the policy.
+	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+	// all data plane types are targeted by the policy.
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
 }
 

@@ -372,7 +372,7 @@ proxyTypes: []
 			expected: `
 violations:
   - field: targetRef.proxyTypes
-    message: must be not empty when defined
+    message: must not be empty when defined
 `,
 		}),
 		Entry("MeshSubset when it's not supported", testCase{

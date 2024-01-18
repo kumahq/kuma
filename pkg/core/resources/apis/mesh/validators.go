@@ -378,21 +378,23 @@ func ValidateTargetRef(
 	return err
 }
 
-func DoesTargetRefSupportsGateway(ref common_api.TargetRef) bool {
-	return (ref.Kind == common_api.Mesh || ref.Kind == common_api.MeshSubset) &&
-		(len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway))
+func DoesTargetRefSupportGateway(ref common_api.TargetRef) bool {
+	isGateway := ref.Kind == common_api.MeshGateway
+	isMeshKind := ref.Kind == common_api.Mesh || ref.Kind == common_api.MeshSubset
+	isGatewayInProxyTypes := len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway)
+	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
+
+	return isGateway || isGatewayCompatible
 }
 
 func validateProxyTypes(proxyTypes []common_api.TargetRefProxyType) validators.ValidationError {
 	var err validators.ValidationError
 	if len(proxyTypes) == 0 {
-		err.AddViolation("proxyTypes", "must be not empty when defined")
+		err.AddViolation("proxyTypes", "must not be empty when defined")
 	}
 	for i, proxyType := range proxyTypes {
 		switch proxyType {
-		case common_api.Gateway:
-			continue
-		case common_api.Sidecar:
+		case common_api.Gateway, common_api.Sidecar:
 			continue
 		default:
 			err.AddViolationAt(validators.RootedAt("proxyTypes").Index(i), fmt.Sprintf("%s is not supported", proxyType))

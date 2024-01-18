@@ -226,9 +226,13 @@ spec:
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
                         proxyTypes:
-                          description: ProxyTypes types of affected Dataplanes by
-                            the policy.
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
                           items:
+                            enum:
+                            - Sidecar
+                            - Gateway
                             type: string
                           type: array
                         tags:
@@ -269,8 +273,13 @@ spec:
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
                   proxyTypes:
-                    description: ProxyTypes types of affected Dataplanes by the policy.
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
                     items:
+                      enum:
+                      - Sidecar
+                      - Gateway
                       type: string
                     type: array
                   tags:
@@ -460,9 +469,13 @@ spec:
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
                         proxyTypes:
-                          description: ProxyTypes types of affected Dataplanes by
-                            the policy.
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
                           items:
+                            enum:
+                            - Sidecar
+                            - Gateway
                             type: string
                           type: array
                         tags:
