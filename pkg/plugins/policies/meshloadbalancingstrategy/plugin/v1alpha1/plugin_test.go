@@ -1258,21 +1258,15 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
-			getResourceYaml := func(list core_xds.ResourceList) []byte {
-				actualResource, err := util_proto.ToYAML(list[0].Resource)
-				Expect(err).ToNot(HaveOccurred())
-				return actualResource
-			}
-
 			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.EndpointType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_endpoint.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ListenerType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_listener.golden.yaml", given.name))))
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.RouteType))).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_route.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.clusters.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.EndpointType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.endpoints.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.ListenerType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", given.name))))
+			Expect(getResource(generatedResources, envoy_resource.RouteType)).
+				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster", gatewayTestCase{
 			name: "basic",
@@ -1374,6 +1368,42 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												To: v1alpha1.ToZone{
 													Type:  v1alpha1.Only,
 													Zones: &[]string{"zone-4"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("no cross zone", gatewayTestCase{
+			name: "no-cross-zone",
+			endpointMap: xds_builders.EndpointMap().
+				AddEndpoints("backend",
+					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.3", map[string]string{"k8s.io/az": "test"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.4", map[string]string{"k8s.io/region": "test"}),
+					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
+					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
+					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
+					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
+				),
+			rules: core_rules.GatewayRules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: v1alpha1.Conf{
+								LocalityAwareness: &v1alpha1.LocalityAwareness{
+									CrossZone: &v1alpha1.CrossZone{
+										Failover: []v1alpha1.Failover{
+											{
+												To: v1alpha1.ToZone{
+													Type: v1alpha1.None,
 												},
 											},
 										},

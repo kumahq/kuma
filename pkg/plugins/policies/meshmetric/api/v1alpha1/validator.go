@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"regexp"
 
+	"github.com/asaskevich/govalidator"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -76,6 +78,12 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 				verr.AddViolationAt(path.Field("prometheus"), validators.MustBeDefined)
 			} else {
 				verr.Add(validators.ValidatePort(path.Field("port"), backend.Prometheus.Port))
+			}
+		case OpenTelemetryBackendType:
+			if backend.OpenTelemetry == nil {
+				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
+			} else if !govalidator.IsURL(backend.OpenTelemetry.Endpoint) {
+				verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")
