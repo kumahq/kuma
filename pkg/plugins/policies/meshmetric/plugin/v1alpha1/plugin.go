@@ -134,7 +134,7 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 
 func envoyMetricsFilter(conf api.Conf) string {
 	if conf.Sidecar == nil {
-		return ""
+		return "?usedonly" // as the default for IncludeUnused is false
 	}
 	var query string
 	if pointer.Deref(conf.Sidecar.Regex) != "" {
@@ -143,7 +143,7 @@ func envoyMetricsFilter(conf api.Conf) string {
 	if query != "" {
 		query += "&"
 	}
-	if pointer.Deref(conf.Sidecar.UsedOnly) {
+	if !pointer.Deref(conf.Sidecar.IncludeUnused) {
 		query += "usedonly"
 	}
 	if query != "" {
@@ -162,10 +162,28 @@ func createDynamicConfig(conf api.Conf) xds.MeshMetricDpConfig {
 		})
 	}
 
+	var backends []xds.Backend
+	for _, backend := range pointer.Deref(conf.Backends) {
+		switch backend.Type {
+		case api.PrometheusBackendType:
+			backends = append(backends, xds.Backend{
+				Type: string(backend.Type),
+			})
+		case api.OpenTelemetryBackendType:
+			backends = append(backends, xds.Backend{
+				Type: string(backend.Type),
+				OpenTelemetry: &xds.OpenTelemetryBackend{
+					Endpoint: backend.OpenTelemetry.Endpoint,
+				},
+			})
+		}
+	}
+
 	return xds.MeshMetricDpConfig{
 		Observability: xds.Observability{
 			Metrics: xds.Metrics{
 				Applications: applications,
+				Backends:     backends,
 			},
 		},
 	}

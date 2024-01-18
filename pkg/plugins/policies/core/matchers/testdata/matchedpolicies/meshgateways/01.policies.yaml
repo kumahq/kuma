@@ -39,6 +39,14 @@ spec:
  targetRef:
   kind: MeshGateway
   name: gateway-1
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /from-gateway
  to:
   - targetRef:
      kind: Mesh
@@ -46,7 +54,7 @@ spec:
       backends:
         - type: File
           file:
-            path: /gateway
+            path: /to-gateway
 ---
 type: MeshAccessLog
 mesh: mesh-1
