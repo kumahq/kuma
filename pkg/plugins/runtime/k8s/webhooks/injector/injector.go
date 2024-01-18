@@ -93,7 +93,9 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	sidecarTmp := kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
 		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{},
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
 		},
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
@@ -301,9 +303,6 @@ func (i *KumaInjector) NewSidecarContainer(
 	}
 
 	container.Name = k8s_util.KumaSidecarContainerName
-	container.Resources.Requests[kube_core.ResourceEphemeralStorage] = pointer.Deref(kube_api.NewScaledQuantity(10, kube_api.Mega))
-	container.Resources.Limits[kube_core.ResourceEphemeralStorage] = pointer.Deref(kube_api.NewScaledQuantity(10, kube_api.Mega))
-
 	return container, nil
 }
 

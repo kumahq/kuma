@@ -2,6 +2,7 @@ package containers
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"sort"
 	"strconv"
 	"time"
@@ -158,12 +159,14 @@ func (i *DataplaneProxyFactory) NewContainer(
 		},
 		Resources: kube_core.ResourceRequirements{
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
 			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
 			},
 		},
 	}
