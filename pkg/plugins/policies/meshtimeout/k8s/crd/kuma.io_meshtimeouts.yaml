@@ -130,6 +130,7 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
+                          minItems: 1
                           type: array
                         tags:
                           additionalProperties:
@@ -177,6 +178,7 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
+                    minItems: 1
                     type: array
                   tags:
                     additionalProperties:
@@ -269,6 +271,7 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
+                          minItems: 1
                           type: array
                         tags:
                           additionalProperties:

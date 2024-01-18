@@ -346,17 +346,11 @@ func ValidateTargetRef(
 		if ref.Name != "" {
 			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
 		}
-		if ref.ProxyTypes != nil {
-			err.Add(validateProxyTypes(ref.ProxyTypes))
-		}
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 	case common_api.MeshSubset:
 		err.Add(disallowedField("name", ref.Name, ref.Kind))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
-		if ref.ProxyTypes != nil {
-			err.Add(validateProxyTypes(ref.ProxyTypes))
-		}
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
@@ -375,31 +369,6 @@ func ValidateTargetRef(
 		}
 	}
 
-	return err
-}
-
-func DoesTargetRefSupportGateway(ref common_api.TargetRef) bool {
-	isGateway := ref.Kind == common_api.MeshGateway
-	isMeshKind := ref.Kind == common_api.Mesh || ref.Kind == common_api.MeshSubset
-	isGatewayInProxyTypes := len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, common_api.Gateway)
-	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
-
-	return isGateway || isGatewayCompatible
-}
-
-func validateProxyTypes(proxyTypes []common_api.TargetRefProxyType) validators.ValidationError {
-	var err validators.ValidationError
-	if len(proxyTypes) == 0 {
-		err.AddViolation("proxyTypes", "must not be empty when defined")
-	}
-	for i, proxyType := range proxyTypes {
-		switch proxyType {
-		case common_api.Gateway, common_api.Sidecar:
-			continue
-		default:
-			err.AddViolationAt(validators.RootedAt("proxyTypes").Index(i), fmt.Sprintf("%s is not supported", proxyType))
-		}
-	}
 	return err
 }
 

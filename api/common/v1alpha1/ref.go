@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -56,6 +57,7 @@ type TargetRef struct {
 	Mesh string `json:"mesh,omitempty"`
 	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
 	// all data plane types are targeted by the policy.
+	// +kubebuilder:validation:MinItems=1
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
 }
 
@@ -70,6 +72,15 @@ func (in TargetRef) Hash() TargetRefHash {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
 	return TargetRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh))
+}
+
+func IncludesGateways(ref TargetRef) bool {
+	isGateway := ref.Kind == MeshGateway
+	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
+	isGatewayInProxyTypes := len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, Gateway)
+	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
+
+	return isGateway || isGatewayCompatible
 }
 
 // BackendRef defines where to forward traffic.

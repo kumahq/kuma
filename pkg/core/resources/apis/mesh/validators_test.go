@@ -343,38 +343,6 @@ violations:
     message: using name with kind Mesh is not yet supported 
 `,
 		}),
-		Entry("Mesh with incorrect proxyTypes", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: ["incorrect"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes[0]
-    message: incorrect is not supported
-`,
-		}),
-		Entry("Mesh with empty proxyTypes", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: []
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes
-    message: must not be empty when defined
-`,
-		}),
 		Entry("MeshSubset when it's not supported", testCase{
 			inputYaml: `
 kind: MeshSubset
