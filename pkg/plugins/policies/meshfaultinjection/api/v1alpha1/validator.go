@@ -32,7 +32,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
-	if topTargetRef.Kind == common_api.MeshGateway && len(from) != 0 {
+	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
 		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
 		return verr
 	}
@@ -54,7 +54,7 @@ func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.Val
 
 func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
 	var verr validators.ValidationError
-	if topTargetRef.Kind != common_api.MeshGateway && len(to) != 0 {
+	if !common_api.IncludesGateways(topTargetRef) && len(to) != 0 {
 		verr.AddViolationAt(validators.RootedAt("to"), validators.MustNotBeDefined)
 		return verr
 	}
