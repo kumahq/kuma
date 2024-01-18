@@ -87,8 +87,9 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-      - run: |
-          echo '${ENABLED_GOARCHES}|${ENABKED_GOOSES}' > .run-full-matrix
+      - name: "Add matrix to .run-full-matrix for cache"
+        run: |
+          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
       - name: "Maybe set flag to push build artifacts"
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
         run: |
