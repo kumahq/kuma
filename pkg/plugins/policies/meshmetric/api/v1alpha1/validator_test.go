@@ -109,7 +109,7 @@ default:
     regex: "())(!("
     usedOnly: true
 `),
-		resources.ErrorCase(
+		ErrorCase(
 			"invalid url",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
@@ -128,7 +128,7 @@ default:
       openTelemetry:
         endpoint: "asdasd123"
 `),
-		resources.ErrorCase(
+		ErrorCase(
 			"undefined openTelemetry backend when type is OpenTelemetry",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry",
