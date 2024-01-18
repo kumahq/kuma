@@ -1807,9 +1807,10 @@ conf:
       - all_5xx
     numRetries: 20
 `, []WithoutResource{
-				{Resource: meshretry_api.MeshRetryType,
-					Mesh: "default",
-					Name: "mesh-retry-all-default",
+				{
+					Resource: meshretry_api.MeshRetryType,
+					Mesh:     "default",
+					Name:     "mesh-retry-all-default",
 				},
 			},
 		),
