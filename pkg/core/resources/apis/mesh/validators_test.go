@@ -130,17 +130,6 @@ kind: Mesh
 				},
 			},
 		}),
-		Entry("Mesh", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: ["Gateway", "Sidecar"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-		}),
 		Entry("MeshSubset with tags", testCase{
 			inputYaml: `
 kind: MeshSubset
@@ -157,17 +146,6 @@ tags:
 		Entry("MeshSubset without tags", testCase{
 			inputYaml: `
 kind: MeshSubset
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshSubset,
-				},
-			},
-		}),
-		Entry("MeshSubset with proxyTypes", testCase{
-			inputYaml: `
-kind: MeshSubset
-proxyTypes: ["Gateway"]
 `,
 			opts: &ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
@@ -500,6 +478,57 @@ name: "*"
 violations:
   - field: targetRef.name
     message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
+`,
+		}),
+		Entry("MeshService with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshService
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshService
+`,
+		}),
+		Entry("MeshServiceSubset with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshServiceSubset
+`,
+		}),
+		Entry("MeshGateway with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshGateway
 `,
 		}),
 		Entry("MeshGateway when it's not supported", testCase{
