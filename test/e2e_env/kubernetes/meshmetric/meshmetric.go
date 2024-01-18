@@ -12,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -118,13 +120,35 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func MeshMetricWithOpenTelemetryBackend(mesh, openTelemetryEndpoint string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: otel-metrics
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: OpenTelemetry
+        openTelemetry: 
+          endpoint: %s
+`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetric() {
 	const (
-		namespace             = "meshmetric"
-		mainMesh              = "main-metrics-mesh"
-		mainPrometheusId      = "main-prometheus"
-		secondaryMesh         = "secondary-metrics-mesh"
-		secondaryPrometheusId = "secondary-prometheus"
+		namespace              = "meshmetric"
+		observabilityNamespace = "observability"
+		mainMesh               = "main-metrics-mesh"
+		mainPrometheusId       = "main-prometheus"
+		secondaryMesh          = "secondary-metrics-mesh"
+		secondaryPrometheusId  = "secondary-prometheus"
 	)
 
 	BeforeAll(func() {
@@ -132,6 +156,9 @@ func MeshMetric() {
 			Install(MeshKubernetes(mainMesh)).
 			Install(MeshKubernetes(secondaryMesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(observabilityNamespace)).
+			Install(otelcollector.Install(otelcollector.WithNamespace(observabilityNamespace))).
+			Install(democlient.Install(democlient.WithNamespace(observabilityNamespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
@@ -315,6 +342,23 @@ func MeshMetric() {
 			// single DPP overridden by MeshService targetRef
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-1_meshmetric_svc_80"))
 		}).Should(Succeed())
+	})
+
+	It("MeshMetric with OpenTelemetry enabled", func() {
+		// given
+		openTelemetryCollector := otelcollector.From(kubernetes.Cluster)
+		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
+				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
+				client.WithVerbose(),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
+		}, "2m", "3s").Should(Succeed())
 	})
 }
 
