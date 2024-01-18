@@ -7,8 +7,6 @@ import (
 	"net/url"
 	"sync"
 
-	"go.opentelemetry.io/otel/sdk/instrumentation"
-
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
