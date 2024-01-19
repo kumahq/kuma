@@ -3,7 +3,7 @@ package mesh
 import (
 	"time"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -28,28 +28,28 @@ var defaultMeshRetryResource = func() model.Resource {
 						},
 						HTTP: &v1alpha1.HTTP{
 							NumRetries: pointer.To[uint32](5),
-							PerTryTimeout: &v1.Duration{
+							PerTryTimeout: &kube_meta.Duration{
 								Duration: 16 * time.Second,
 							},
 							BackOff: &v1alpha1.BackOff{
-								BaseInterval: &v1.Duration{
+								BaseInterval: &kube_meta.Duration{
 									Duration: 25 * time.Millisecond,
 								},
-								MaxInterval: &v1.Duration{
+								MaxInterval: &kube_meta.Duration{
 									Duration: 250 * time.Millisecond,
 								},
 							},
 						},
 						GRPC: &v1alpha1.GRPC{
 							NumRetries: pointer.To[uint32](5),
-							PerTryTimeout: &v1.Duration{
+							PerTryTimeout: &kube_meta.Duration{
 								Duration: 16 * time.Second,
 							},
 							BackOff: &v1alpha1.BackOff{
-								BaseInterval: &v1.Duration{
+								BaseInterval: &kube_meta.Duration{
 									Duration: 25 * time.Millisecond,
 								},
-								MaxInterval: &v1.Duration{
+								MaxInterval: &kube_meta.Duration{
 									Duration: 250 * time.Millisecond,
 								},
 							},

@@ -35,6 +35,8 @@ var _ = Describe("Gateway Route", func() {
 	}
 
 	Do := func() (cache.ResourceSnapshot, error) {
+		GinkgoHelper()
+
 		serverCtx := xds_server.NewXdsContext()
 		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 		if err != nil {
@@ -2151,6 +2153,8 @@ conf:
 		),
 	}
 	handleArg := func(arg interface{}) {
+		GinkgoHelper()
+		
 		switch val := arg.(type) {
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())

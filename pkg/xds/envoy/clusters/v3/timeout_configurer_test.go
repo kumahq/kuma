@@ -45,7 +45,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
-	defaultTimeoutResource := &core_mesh.TimeoutResource{
+	timeoutResource := &core_mesh.TimeoutResource{
 		Spec: &mesh_proto.Timeout{
 			Sources: []*mesh_proto.Selector{{
 				Match: mesh_proto.MatchAnyService(),
@@ -106,7 +106,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: defaultTimeoutResource.Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:
@@ -173,7 +173,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: defaultTimeoutResource.Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:

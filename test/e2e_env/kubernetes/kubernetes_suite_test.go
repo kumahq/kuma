@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhttproute"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
@@ -81,6 +82,7 @@ var (
 	_ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 	_ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
 	_ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
+	_ = Describe("MeshMetric", meshmetric.MeshMetric, Ordered)
 	_ = Describe("MeshRetry", meshretry.API, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)

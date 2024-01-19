@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
-func TrafficPermissionTestUniversal() {
+func TrafficPermission() {
 	meshName := "trafficpermission"
 
 	BeforeAll(func() {
@@ -58,6 +58,8 @@ destinations:
 	})
 
 	trafficAllowed := func() {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
@@ -67,6 +69,8 @@ destinations:
 	}
 
 	trafficBlocked := func() {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
@@ -77,11 +81,15 @@ destinations:
 	}
 
 	removeDefaultTrafficPermission := func() {
+		GinkgoHelper()
+
 		err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
 	addAllowAllTrafficPermission := func() {
+		GinkgoHelper()
+
 		Expect(NewClusterSetup().Install(TrafficPermissionUniversal(meshName)).Setup(universal.Cluster)).ToNot(HaveOccurred())
 	}
 

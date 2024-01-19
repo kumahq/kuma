@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -29,20 +29,20 @@ var defaultMeshTimeoutResource = func() model.Resource {
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
-						ConnectionTimeout: &v1.Duration{
+						ConnectionTimeout: &kube_meta.Duration{
 							Duration: factor * policies_defaults.DefaultConnectTimeout,
 						},
-						IdleTimeout: &v1.Duration{
+						IdleTimeout: &kube_meta.Duration{
 							Duration: factor * policies_defaults.DefaultIdleTimeout,
 						},
 						Http: &v1alpha1.Http{
-							RequestTimeout: &v1.Duration{
+							RequestTimeout: &kube_meta.Duration{
 								Duration: 0,
 							},
-							StreamIdleTimeout: &v1.Duration{
+							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
 							},
-							MaxStreamDuration: &v1.Duration{
+							MaxStreamDuration: &kube_meta.Duration{
 								Duration: 0,
 							},
 						},
@@ -55,17 +55,17 @@ var defaultMeshTimeoutResource = func() model.Resource {
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
-						ConnectionTimeout: &v1.Duration{
+						ConnectionTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultConnectTimeout,
 						},
-						IdleTimeout: &v1.Duration{
+						IdleTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultIdleTimeout,
 						},
 						Http: &v1alpha1.Http{
-							RequestTimeout: &v1.Duration{
+							RequestTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultRequestTimeout,
 							},
-							StreamIdleTimeout: &v1.Duration{
+							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultStreamIdleTimeout,
 							},
 						},
@@ -91,14 +91,14 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
-						IdleTimeout: &v1.Duration{
+						IdleTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultGatewayIdleTimeout,
 						},
 						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &v1.Duration{
+							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
 							},
-							RequestHeadersTimeout: &v1.Duration{
+							RequestHeadersTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultGatewayRequestHeadersTimeout,
 							},
 						},
@@ -111,11 +111,11 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
-						IdleTimeout: &v1.Duration{
+						IdleTimeout: &kube_meta.Duration{
 							Duration: policies_defaults.DefaultIdleTimeout,
 						},
 						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &v1.Duration{
+							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
 							},
 						},

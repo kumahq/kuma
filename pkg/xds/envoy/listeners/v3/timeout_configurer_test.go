@@ -30,7 +30,7 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
-	defaultTimeoutResource := &core_mesh.TimeoutResource{
+	timeoutResource := &core_mesh.TimeoutResource{
 		Spec: &mesh_proto.Timeout{
 			Sources: []*mesh_proto.Selector{{
 				Match: mesh_proto.MatchAnyService(),
@@ -109,7 +109,7 @@ trafficDirection: OUTBOUND
 `,
 		}),
 		Entry("default timeout", testCase{
-			timeout: defaultTimeoutResource.Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:
@@ -192,7 +192,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: defaultTimeoutResource.Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:
@@ -280,7 +280,7 @@ name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: defaultTimeoutResource.Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 address:
   socketAddress:
