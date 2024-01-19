@@ -97,8 +97,6 @@ default:
 targetRef:
   kind: MeshGateway
   name: edge
-  tags:
-    name: listener-1
 default:
   backends:
     - type: Datadog
@@ -394,6 +392,24 @@ default:
 violations:
   - field: spec.default.backends[0].openTelemetry
     message: must be defined`,
+			}),
+			Entry("gateway listener tags not allowed", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: edge
+  tags:
+    name: listener-1
+default:
+  backends:
+    - type: Datadog
+      datadog:
+        url: http://intake.datadoghq.eu:8126
+        splitService: true`,
+				expected: `
+violations:
+  - field: spec.targetRef.tags
+    message: must not be set with kind MeshGateway`,
 			}),
 		)
 	})
