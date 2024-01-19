@@ -177,7 +177,7 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 	return nil
 }
 
-// TODO this most likely won't work with OpenTelemetry
+// TODO this most likely won't work with OpenTelemetry. Issue: https://github.com/kumahq/kuma/issues/8926
 func envoyMetricsFilter(conf api.Conf) string {
 	if conf.Sidecar == nil {
 		return "?usedonly" // as the default for IncludeUnused is false

@@ -167,7 +167,7 @@ func (cf *ConfigFetcher) startOpenTelemetryExporterIfNotRunning(endpoint string)
 	cf.openTelemetryExporter = sdkmetric.NewMeterProvider(
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
 			exporter,
-			// TODO probably can be configured from policy
+			// TODO probably can be configured from policy. Issue: https://github.com/kumahq/kuma/issues/8925
 			sdkmetric.WithInterval(30*time.Second),
 			sdkmetric.WithProducer(cf.openTelemetryProducer),
 		)),
