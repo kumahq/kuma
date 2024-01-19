@@ -18,12 +18,16 @@ func CircuitBreaker(config *delegatedE2EConfig) func() {
 
 	return func() {
 		BeforeAll(func() {
-			Eventually(func() error {
-				return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-circuit-breaker-all-%s", config.mesh))
-			}, "10s", "1s").Should(Succeed())
-			Eventually(func() error {
-				return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", config.mesh))
-			}, "10s", "1s").Should(Succeed())
+			Expect(DeleteMeshPolicyOrError(
+				kubernetes.Cluster,
+				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+				fmt.Sprintf("mesh-circuit-breaker-all-%s", config.mesh),
+			)).To(Succeed())
+			Expect(DeleteMeshPolicyOrError(
+				kubernetes.Cluster,
+				meshretry_api.MeshRetryResourceTypeDescriptor,
+				fmt.Sprintf("mesh-retry-all-%s", config.mesh),
+			)).To(Succeed())
 		})
 
 		E2EAfterEach(func() {

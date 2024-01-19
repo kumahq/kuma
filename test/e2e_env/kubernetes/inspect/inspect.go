@@ -30,12 +30,16 @@ func Inspect() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 		// remove default meshtimeout policies
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-timeout-all-%s", meshName))
-		}, "10s", "1s").Should(Succeed())
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshTimeoutResourceTypeDescriptor, fmt.Sprintf("mesh-gateways-timeout-all-%s", meshName))
-		}, "10s", "1s").Should(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshTimeoutResourceTypeDescriptor,
+			fmt.Sprintf("mesh-timeout-all-%s", meshName),
+		)).To(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshTimeoutResourceTypeDescriptor,
+			fmt.Sprintf("mesh-gateways-timeout-all-%s", meshName),
+		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -175,11 +174,8 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 		builder.CaManagers(),
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
-		builder.Config().Store.UnsafeDelete,
 		builder.Extensions(),
-		builder.Config().Defaults.CreateMeshRoutingResources,
-		builder.Config().Store.Type == config_store.KubernetesStore,
-		builder.Config().Store.Kubernetes.SystemNamespace,
+		builder.Config(),
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 

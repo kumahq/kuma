@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -21,24 +23,24 @@ func NewMeshManager(
 	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
-	unsafeDelete bool,
 	extensions context.Context,
-	createMeshRoutingResources bool,
-	k8sStore bool,
-	systemNamespace string,
+	config kuma_cp.Config,
 ) core_manager.ResourceManager {
-	return &meshManager{
+	meshManager := &meshManager{
 		store:                      store,
 		otherManagers:              otherManagers,
 		caManagers:                 caManagers,
 		registry:                   registry,
 		meshValidator:              validator,
-		unsafeDelete:               unsafeDelete,
+		unsafeDelete:               config.Store.UnsafeDelete,
 		extensions:                 extensions,
-		createMeshRoutingResources: createMeshRoutingResources,
-		k8sStore:                   k8sStore,
-		systemNamespace:            systemNamespace,
+		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
 	}
+	if config.Store.Type == config_store.KubernetesStore {
+		meshManager.k8sStore = true
+		meshManager.systemNamespace = config.Store.Kubernetes.SystemNamespace
+	}
+	return meshManager
 }
 
 type meshManager struct {

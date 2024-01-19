@@ -90,9 +90,11 @@ func ChangeService() {
 		Expect(err).To(Succeed())
 
 		// remove retries to avoid covering failed request
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
-		}, "10s", "1s").Should(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", mesh),
+		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

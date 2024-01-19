@@ -383,6 +383,7 @@ func DefaultGeneralConfig() *GeneralConfig {
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
 		SkipMeshCreation:           false,
+		SkipTenantResources:        false,
 		CreateMeshRoutingResources: true,
 	}
 }

@@ -22,9 +22,11 @@ func API() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// Delete the default meshcricuitbreaker policy
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-circuit-breaker-all-%s", meshName))
-		}, "10s", "1s").Should(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+			fmt.Sprintf("mesh-circuit-breaker-all-%s", meshName),
+		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

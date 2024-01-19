@@ -29,13 +29,17 @@ func MeshCircuitBreaker() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// Delete the default meshretry policy
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, meshretry_api.MeshRetryResourceTypeDescriptor, fmt.Sprintf("mesh-retry-all-%s", mesh))
-		}, "10s", "1s").Should(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", mesh),
+		)).To(Succeed())
 
-		Eventually(func() error {
-			return DeleteMeshPolicyOrError(kubernetes.Cluster, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor, fmt.Sprintf("mesh-circuit-breaker-all-%s", mesh))
-		}, "10s", "1s").Should(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+			fmt.Sprintf("mesh-circuit-breaker-all-%s", mesh),
+		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

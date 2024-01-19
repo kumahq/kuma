@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -31,15 +32,23 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 }
 
 func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
-	_, err := k8s.RunKubectlAndGetOutputE(
+	_, err := retry.DoWithRetryE(
 		cluster.GetTesting(),
-		cluster.GetKubectlOptions(Config.KumaNamespace),
-		"delete", descriptor.KumactlArg, policyName,
+		"delete policy",
+		10,
+		time.Second,
+		func() (string, error) {
+			return k8s.RunKubectlAndGetOutputE(
+				cluster.GetTesting(),
+				cluster.GetKubectlOptions(Config.KumaNamespace),
+				"delete",
+				descriptor.KumactlArg,
+				policyName,
+			)
+		},
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
