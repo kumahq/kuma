@@ -38,13 +38,6 @@ FromRules:
       name: gateway
       type: MeshAccessLog
     Subset: []
-SingleItemRules:
-  127.0.0.1:8080:
-    Rules: null
-  127.0.0.1:8081:
-    Rules: null
-  127.0.0.1:8082:
-    Rules: null
 ToRules:
   127.0.0.1:8080:
   - Conf:
