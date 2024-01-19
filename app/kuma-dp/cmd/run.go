@@ -351,10 +351,11 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 	)
 
+	runLog.Info("bootstrap.Node.Cluster: " + bootstrap.Node.Cluster)
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
 		cfg.Dataplane.Mesh,
 		cfg.Dataplane.Name,
-		"TODO",
+		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
 		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 	)
