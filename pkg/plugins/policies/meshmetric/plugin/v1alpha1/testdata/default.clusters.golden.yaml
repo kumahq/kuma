@@ -1,0 +1,16 @@
+resources:
+- name: _kuma:metrics:hijacker
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: _kuma_metrics_hijacker
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: _kuma:metrics:hijacker
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-metrics-backend-default.sock
+    name: _kuma:metrics:hijacker
+    type: STATIC

@@ -102,9 +102,9 @@ properties:
               usedOnly:
                 default: false
                 description: |-
-                  UsedOnly will scrape only metrics that has been by sidecar (counters incremented
+                  IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                   at least once, gauges changed at least once, and histograms added to at
-                  least once).
+                  least once). If true will scrape all metrics (even the ones with zeros).
                 type: boolean
             type: object
         type: object
@@ -132,6 +132,17 @@ properties:
               Name of the referenced resource. Can only be used with kinds: `MeshService`,
               `MeshServiceSubset` and `MeshGatewayRoute`
             type: string
+          proxyTypes:
+            description: |-
+              ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+              all data plane types are targeted by the policy.
+            items:
+              enum:
+                - Sidecar
+                - Gateway
+              type: string
+            minItems: 1
+            type: array
           tags:
             additionalProperties:
               type: string

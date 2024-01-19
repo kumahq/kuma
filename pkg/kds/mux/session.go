@@ -14,6 +14,7 @@ import (
 type Session interface {
 	ServerStream() mesh_proto.KumaDiscoveryService_StreamKumaResourcesServer
 	ClientStream() mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient
+	// PeerID is also known as the client id.
 	PeerID() string
 	Error() <-chan error
 	SetError(err error)

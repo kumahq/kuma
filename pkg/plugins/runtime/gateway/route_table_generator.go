@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -69,7 +70,7 @@ func GenerateVirtualHost(
 
 				route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
 				route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
-				envoy_routes.RouteActionIdleTimeout(DefaultStreamIdleTimeout),
+				envoy_routes.RouteActionIdleTimeout(policies_defaults.DefaultGatewayStreamIdleTimeout),
 			)
 
 		if e.Rewrite != nil {

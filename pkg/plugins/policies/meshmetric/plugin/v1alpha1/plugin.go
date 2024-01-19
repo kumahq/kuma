@@ -180,7 +180,7 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 // TODO this most likely won't work with OpenTelemetry
 func envoyMetricsFilter(conf api.Conf) string {
 	if conf.Sidecar == nil {
-		return ""
+		return "?usedonly" // as the default for IncludeUnused is false
 	}
 	var query string
 	if pointer.Deref(conf.Sidecar.Regex) != "" {
@@ -189,7 +189,7 @@ func envoyMetricsFilter(conf api.Conf) string {
 	if query != "" {
 		query += "&"
 	}
-	if pointer.Deref(conf.Sidecar.UsedOnly) {
+	if !pointer.Deref(conf.Sidecar.IncludeUnused) {
 		query += "usedonly"
 	}
 	if query != "" {

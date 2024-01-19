@@ -58,7 +58,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /
+                  prefixRewrite: /?usedonly
           statPrefix: _kuma_metrics_prometheus
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -79,7 +79,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /
+                  prefixRewrite: /?usedonly
           statPrefix: _kuma_metrics_prometheus
       transportSocket:
         name: envoy.transport_sockets.tls

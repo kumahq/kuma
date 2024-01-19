@@ -120,7 +120,8 @@ func ApplyToGateway(
 		return nil
 	}
 
-	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
+	listeners := plugin_gateway.ExtractGatewayListeners(proxy)
+	for listenerIndex, info := range listeners {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := info.Listener.Port
 		inboundListener := rules.InboundListener{
@@ -186,6 +187,10 @@ func ApplyToGateway(
 		sort.Slice(hostInfos, func(i, j int) bool {
 			return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
 		})
+
+		info.HostInfos = hostInfos
+		listeners[listenerIndex] = info
+		plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
 		if err != nil {
