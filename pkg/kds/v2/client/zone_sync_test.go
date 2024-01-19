@@ -286,4 +286,21 @@ var _ = Describe("Zone Delta Sync", func() {
 		}
 		Expect(actualNames).To(ConsistOf(expectedNames))
 	})
+
+	It("should override zone resources that moved to global by user during the federation process", func() {
+		// given zone with "mesh-1"
+		Expect(zoneStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).To(Succeed())
+		// when user manually exports "mesh-1" to global
+		Expect(globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).To(Succeed())
+		// then it's synced back to zone with "kuma.io/origin" label
+		Eventually(func(g Gomega) {
+			actual := mesh.MeshResourceList{}
+			err := zoneStore.List(context.Background(), &actual)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(HaveLen(1))
+			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
+				mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+			}))
+		}, "5s", "100ms").Should(Succeed())
+	})
 })
