@@ -30,6 +30,23 @@ filterChains:
               '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
           responseDirectionConfig:
             disableOnEtagHeader: true
+      - name: envoy.filters.http.fault
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+          abort:
+            httpStatus: 444
+            percentage:
+              numerator: 12
+          delay:
+            fixedDelay: 55s
+            percentage:
+              numerator: 55
+          responseRateLimit:
+            fixedLimit:
+              limitKbps: "111000"
+            percentage:
+              denominator: TEN_THOUSAND
+              numerator: 6290
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

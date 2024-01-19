@@ -98,7 +98,7 @@ func applyToInbounds(
 }
 
 func applyToGateways(
-	rules core_rules.GatewayRules,
+	gwRules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	proxy *core_xds.Proxy,
 ) error {
@@ -116,7 +116,18 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := rules.ToRules[listenerKey]
+		rules, ok := gwRules.ToRules[listenerKey]
+		// Previously we supported `from` for gateways
+		// via kind: MeshService
+		// but we have to ignore the targetRef kind
+		if !ok || len(rules) == 0 {
+			rules, ok = gwRules.FromRules[listenerKey]
+			for i, rule := range rules {
+				rule := *rule
+				rule.Subset = core_rules.MeshSubset()
+				rules[i] = &rule
+			}
+		}
 		if !ok {
 			continue
 		}
