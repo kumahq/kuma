@@ -23,10 +23,27 @@ The only users who need to take action are those who are explicitly relying on t
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
 
-### Default resources are not created when creating a new `Mesh`
+### Default `TrafficRoute` and `TrafficPermission` resources are not created when creating a new `Mesh`
 
 We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
 If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
+
+When enabling mTLS, remember to add `MeshTrafficPermission`. Previously, we used to create the default `TrafficPermission` policy, which was necessary for traffic routing. However, starting from version `2.6`, Kuma no longer requires it without mTLS enabled. Nevertheless, it becomes necessary when mTLS is enabled. Therefore, before enabling mTLS, make sure to add the default `MeshTrafficPermission`.
+
+* Policies no longer created by default:
+  * `CircuitBreaker`
+  * `Retry`
+  * `Timeout`
+  * `TrafficPermission`
+  * `TrafficRoute`
+* Policies created by default:
+  * `MeshCircuitBreaker`
+  * `MeshRetry`
+  * `MeshTimeout`
+
+When might you want to set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`?
+
+* When zones connecting to the global control-plane might be running on a version lower than `2.6`.
 
 ### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
 
