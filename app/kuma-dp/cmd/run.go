@@ -7,7 +7,6 @@ import (
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
