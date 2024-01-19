@@ -1,4 +1,4 @@
-package resources
+package validators
 
 import (
 	. "github.com/onsi/ginkgo/v2"
