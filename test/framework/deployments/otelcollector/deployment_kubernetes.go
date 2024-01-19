@@ -18,6 +18,7 @@ type K8SDeployment struct {
 	image              string
 	waitingToBeReady   bool
 	serviceAccountName string
+	isIPv6             bool
 }
 
 var _ Deployment = &K8SDeployment{}
@@ -75,6 +76,11 @@ func (k *K8SDeployment) WithWaitingToBeReady(waitingToBeReady bool) *K8SDeployme
 
 func (k *K8SDeployment) WithServiceAccount(serviceAccountName string) *K8SDeployment {
 	k.serviceAccountName = serviceAccountName
+	return k
+}
+
+func (k *K8SDeployment) WithIPv6(isIPv6 bool) *K8SDeployment {
+	k.isIPv6 = isIPv6
 	return k
 }
 
@@ -242,48 +248,7 @@ func (k *K8SDeployment) configMap() *corev1.ConfigMap {
 		},
 		ObjectMeta: meta(k.namespace, "otel-collector-conf", map[string]string{"app": k.Name()}),
 		Data: map[string]string{
-			"config": `receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: ${env:MY_POD_IP}:4317
-      http:
-        endpoint: ${env:MY_POD_IP}:4318
-processors:
-  batch:
-    send_batch_size: 4096
-    send_batch_max_size: 8192
-  memory_limiter:
-    # 80% of maximum memory up to 2G
-    limit_mib: 1500
-    # 25% of limit up to 2G
-    spike_limit_mib: 512
-    check_interval: 5s
-extensions:
-  zpages: {}
-  memory_ballast:
-    # Memory Ballast size should be max 1/3 to 1/2 of memory.
-    size_mib: 683
-exporters:
-  debug:
-    verbosity: basic
-  prometheus:
-    endpoint: ${env:MY_POD_IP}:8889
-service:
-  extensions: [zpages, memory_ballast]
-  pipelines:
-    traces/1:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, prometheus]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [debug]`,
+			"config": config(k.endpointBasedOnIP()),
 		},
 	}
 }
@@ -304,4 +269,54 @@ func meta(namespace string, name string, labels map[string]string) metav1.Object
 		Namespace: namespace,
 		Labels:    labels,
 	}
+}
+
+func (k *K8SDeployment) endpointBasedOnIP() string {
+	if k.isIPv6 {
+		return "[${env:MY_POD_IP}]"
+	}
+	return "${env:MY_POD_IP}"
+}
+
+func config(endpoint string) string {
+	return fmt.Sprintf(`receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "%s:4317"
+      http:
+        endpoint: "%s:4318"
+processors:
+  batch:
+    send_batch_size: 4096
+    send_batch_max_size: 8192
+  memory_limiter:
+    limit_mib: 1500
+    spike_limit_mib: 512
+    check_interval: 5s
+extensions:
+  zpages: {}
+  memory_ballast:
+    # Memory Ballast size should be max 1/3 to 1/2 of memory.
+    size_mib: 683
+exporters:
+  debug:
+    verbosity: basic
+  prometheus:
+    endpoint: "%s:8889"
+service:
+  extensions: [zpages, memory_ballast]
+  pipelines:
+    traces/1:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]`, endpoint, endpoint, endpoint)
 }

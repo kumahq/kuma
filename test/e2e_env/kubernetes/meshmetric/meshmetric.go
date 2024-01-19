@@ -184,7 +184,10 @@ func MeshMetric() {
 			Install(MeshKubernetes(secondaryMesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(observabilityNamespace)).
-			Install(otelcollector.Install(otelcollector.WithNamespace(observabilityNamespace))).
+			Install(otelcollector.Install(
+				otelcollector.WithNamespace(observabilityNamespace),
+				otelcollector.WithIPv6(Config.IPV6),
+			)).
 			Install(democlient.Install(democlient.WithNamespace(observabilityNamespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())

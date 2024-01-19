@@ -31,6 +31,7 @@ type DeploymentOpts struct {
 	logLevel           string
 	serviceAccountName string
 	waitingToBeReady   bool
+	isIPv6             bool
 }
 
 func DefaultOpts() DeploymentOpts {
@@ -75,6 +76,12 @@ func WithServiceAccount(serviceAccountName string) DeploymentOpt {
 	}
 }
 
+func WithIPv6(isIPv6 bool) DeploymentOpt {
+	return func(opts *DeploymentOpts) {
+		opts.isIPv6 = isIPv6
+	}
+}
+
 func From(cluster framework.Cluster) OpenTelemetryCollector {
 	return cluster.Deployment(DeploymentName).(OpenTelemetryCollector)
 }
@@ -94,7 +101,8 @@ func Install(fs ...DeploymentOpt) framework.InstallFunc {
 				WithImage(opts.image).
 				WithNamespace(opts.namespace).
 				WithWaitingToBeReady(opts.waitingToBeReady).
-				WithServiceAccount(opts.serviceAccountName)
+				WithServiceAccount(opts.serviceAccountName).
+				WithIPv6(opts.isIPv6)
 		default:
 			return errors.New("invalid cluster")
 		}
