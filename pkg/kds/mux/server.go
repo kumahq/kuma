@@ -131,8 +131,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcOptions = append(
 		grpcOptions,
 		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
-		//nolint:staticcheck
-		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
