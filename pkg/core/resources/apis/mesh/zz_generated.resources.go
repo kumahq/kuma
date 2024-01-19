@@ -1132,7 +1132,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshgatewayroutes",
 	KumactlArg:          "meshgatewayroute",
 	KumactlListArg:      "meshgatewayroutes",
