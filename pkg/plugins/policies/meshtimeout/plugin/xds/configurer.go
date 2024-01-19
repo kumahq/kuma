@@ -165,7 +165,7 @@ func ConfigureGatewayListener(
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	listener *envoy_listener.Listener,
 ) error {
-	if listener == nil {
+	if listener == nil || conf == nil {
 		return nil
 	}
 

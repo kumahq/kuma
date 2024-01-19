@@ -223,7 +223,7 @@ var _ = Describe("ConvertBandwidth", func() {
 		input    string
 		expected uint64
 	}
-	DescribeTable("should properly converts to kbps from gbps, mbps, kbps",
+	DescribeTable("should properly convert to kbps from gbps, mbps, kbps",
 		func(given testCase) {
 			// when
 			limitKbps, err := ConvertBandwidthToKbps(given.input)
@@ -236,11 +236,11 @@ var _ = Describe("ConvertBandwidth", func() {
 			expected: 120,
 		}),
 		Entry("mbps input", testCase{
-			input:    "120 mbps",
+			input:    "120 Mbps",
 			expected: 120000,
 		}),
 		Entry("gbps input", testCase{
-			input:    "120 gbps",
+			input:    "120 Gbps",
 			expected: 120000000,
 		}),
 	)

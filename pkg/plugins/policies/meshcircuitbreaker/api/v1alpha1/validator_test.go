@@ -414,9 +414,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
-    message: has to be in [0 - 100] range
+    message: must be in inclusive range [0, 100]
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
-    message: has to be in [0 - 100] range`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `

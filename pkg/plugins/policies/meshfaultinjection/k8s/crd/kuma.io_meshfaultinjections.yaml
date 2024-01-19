@@ -115,7 +115,7 @@ spec:
                                 properties:
                                   limit:
                                     description: |-
-                                      Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+                                      Limit is represented by value measure in Gbps, Mbps, kbps, e.g.
                                       10kbps
                                     type: string
                                   percentage:
@@ -291,7 +291,7 @@ spec:
                                 properties:
                                   limit:
                                     description: |-
-                                      Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+                                      Limit is represented by value measure in Gbps, Mbps, kbps, e.g.
                                       10kbps
                                     type: string
                                   percentage:

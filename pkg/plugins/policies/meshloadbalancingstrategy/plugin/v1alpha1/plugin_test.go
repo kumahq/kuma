@@ -472,6 +472,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
+												FailoverThreshold: &v1alpha1.FailoverThreshold{Percentage: intstr.FromString("99")},
 												Failover: []v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{

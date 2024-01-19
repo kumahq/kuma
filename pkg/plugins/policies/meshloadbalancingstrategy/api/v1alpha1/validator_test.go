@@ -292,7 +292,7 @@ to:
 `),
 		ErrorCases("percentage can't be zero", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
-			Message: "must be greater than: 0",
+			Message: "must be greater than 0",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -309,9 +309,9 @@ to:
           failoverThreshold:
             percentage: 0
 `),
-		ErrorCases("percentage can't be set to 100", []validators.Violation{{
+		ErrorCases("percentage is not a parseable number", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
-			Message: "must be less than: 100",
+			Message: "string must be a valid number",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -326,7 +326,7 @@ to:
       localityAwareness:
         crossZone:
           failoverThreshold:
-            percentage: 100
+            percentage: "hello"
 `),
 		ErrorCases("broken failover rules", []validators.Violation{
 			{

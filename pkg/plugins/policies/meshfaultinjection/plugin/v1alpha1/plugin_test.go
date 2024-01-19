@@ -137,7 +137,7 @@ var _ = Describe("MeshFaultInjection", func() {
 											Percentage: intstr.FromString("55"),
 										},
 										ResponseBandwidth: &api.ResponseBandwidthConf{
-											Limit:      "111mbps",
+											Limit:      "111Mbps",
 											Percentage: intstr.FromString("62.9"),
 										},
 									},
@@ -164,7 +164,7 @@ var _ = Describe("MeshFaultInjection", func() {
 											Percentage: intstr.FromInt32(22),
 										},
 										ResponseBandwidth: &api.ResponseBandwidthConf{
-											Limit:      "333mbps",
+											Limit:      "333Mbps",
 											Percentage: intstr.FromString("33.3"),
 										},
 									},
@@ -186,7 +186,7 @@ var _ = Describe("MeshFaultInjection", func() {
 										Percentage: intstr.FromInt(55),
 									},
 									ResponseBandwidth: &api.ResponseBandwidthConf{
-										Limit:      "111mbps",
+										Limit:      "111Mbps",
 										Percentage: intstr.FromString("62.9"),
 									},
 								},
@@ -305,7 +305,7 @@ var _ = Describe("MeshFaultInjection", func() {
 																	Percentage: intstr.FromString("55"),
 																},
 																ResponseBandwidth: &api.ResponseBandwidthConf{
-																	Limit:      "111mbps",
+																	Limit:      "111Mbps",
 																	Percentage: intstr.FromString("62.9"),
 																},
 															},
@@ -374,7 +374,7 @@ var _ = Describe("MeshFaultInjection", func() {
 																	Percentage: intstr.FromString("55"),
 																},
 																ResponseBandwidth: &api.ResponseBandwidthConf{
-																	Limit:      "111mbps",
+																	Limit:      "111Mbps",
 																	Percentage: intstr.FromString("62.9"),
 																},
 															},
@@ -407,7 +407,7 @@ var _ = Describe("MeshFaultInjection", func() {
 																	Percentage: intstr.FromString("55"),
 																},
 																ResponseBandwidth: &api.ResponseBandwidthConf{
-																	Limit:      "111mbps",
+																	Limit:      "111Mbps",
 																	Percentage: intstr.FromString("62.9"),
 																},
 															},
@@ -456,7 +456,7 @@ var _ = Describe("MeshFaultInjection", func() {
 									Percentage: intstr.FromString("55"),
 								},
 								ResponseBandwidth: &api.ResponseBandwidthConf{
-									Limit:      "111mbps",
+									Limit:      "111Mbps",
 									Percentage: intstr.FromString("62.9"),
 								},
 							},

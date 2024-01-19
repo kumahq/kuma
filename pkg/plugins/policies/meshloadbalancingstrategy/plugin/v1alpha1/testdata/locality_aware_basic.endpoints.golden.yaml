@@ -135,4 +135,4 @@ resources:
         zone: zone-4
       priority: 3
     policy:
-      overprovisioningFactor: 200
+      overprovisioningFactor: 100
