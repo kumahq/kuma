@@ -2154,7 +2154,7 @@ conf:
 	}
 	handleArg := func(arg interface{}) {
 		GinkgoHelper()
-		
+
 		switch val := arg.(type) {
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
