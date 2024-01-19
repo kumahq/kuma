@@ -2,8 +2,10 @@ package v1alpha1_test
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"path/filepath"
+	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -438,61 +440,73 @@ var _ = Describe("MeshFaultInjection", func() {
 		Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "egress_basic_listener.golden.yaml")))
 	})
 
-	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
-		// given
-		rules := core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: core_rules.Subset{},
-					Conf: api.Conf{
-						Http: &[]api.FaultInjectionConf{
-							{
-								Abort: &api.AbortConf{
-									HttpStatus: int32(444),
-									Percentage: intstr.FromInt(12),
-								},
-								Delay: &api.DelayConf{
-									Value:      *test.ParseDuration("55s"),
-									Percentage: intstr.FromString("55"),
-								},
-								ResponseBandwidth: &api.ResponseBandwidthConf{
-									Limit:      "111mbps",
-									Percentage: intstr.FromString("62.9"),
+	type gatewayTestCase struct {
+		rules core_rules.GatewayRules
+	}
+	DescribeTable("should generate proper Envoy config for MeshGateway",
+		func(given gatewayTestCase) {
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			}
+
+			xdsCtx := xds_samples.SampleContextWith(resources)
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, given.rules)).
+				Build()
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+			}
+			gatewayGenerator := gatewayGenerator()
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			nameSplit := strings.Split(GinkgoT().Name(), " ")
+			name := nameSplit[len(nameSplit)-1]
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+
+			// then
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+			Expect(
+				util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource),
+			).To(
+				test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listeners.golden.yaml", name))),
+			)
+		},
+		Entry("gateway-to", gatewayTestCase{
+			rules: core_rules.GatewayRules{
+				ToRules: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {{
+						Subset: core_rules.Subset{},
+						Conf: api.Conf{
+							Http: &[]api.FaultInjectionConf{
+								{
+									Abort: &api.AbortConf{
+										HttpStatus: int32(444),
+										Percentage: intstr.FromInt(12),
+									},
+									Delay: &api.DelayConf{
+										Value:      *test.ParseDuration("55s"),
+										Percentage: intstr.FromString("55"),
+									},
+									ResponseBandwidth: &api.ResponseBandwidthConf{
+										Limit:      "111mbps",
+										Percentage: intstr.FromString("62.9"),
+									},
 								},
 							},
 						},
-					},
-				}},
+					}},
+				},
 			},
-		}
-
-		resources := xds_context.NewResources()
-		resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
-			Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
-		}
-		resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-			Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
-		}
-
-		xdsCtx := xds_samples.SampleContextWith(resources)
-		proxy := xds_builders.Proxy().
-			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshFaultInjectionType, rules)).
-			Build()
-		for n, p := range core_plugins.Plugins().ProxyPlugins() {
-			Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
-		}
-		gatewayGenerator := gatewayGenerator()
-		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
-		Expect(err).NotTo(HaveOccurred())
-
-		// when
-		plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
-
-		// then
-		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
-		Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "gateway_basic_listener.golden.yaml")))
-	})
+		}),
+	)
 })
 
 func gatewayGenerator() gateway_plugin.Generator {
