@@ -59,7 +59,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectPortOutBound:           "15001",
 		RedirectInbound:                true,
 		RedirectPortInBound:            "15006",
-		RedirectPortInBoundV6:          "15010",
+		RedirectPortInBoundV6:          "15006",
 		IPv6Disabled:                   false,
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
@@ -167,7 +167,9 @@ runuser -u kuma-dp -- \
 			}
 
 			// Backward compatibility
-			if args.RedirectPortInBoundV6 != "" && args.RedirectPortInBoundV6 != "15010" {
+			if args.RedirectPortInBoundV6 != "" &&
+				args.RedirectPortInBoundV6 != "15006" /* default value */ &&
+				args.RedirectPortInBoundV6 != "15010" /* old default value */ {
 				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ipv6-disabled instead\n"))
 			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {

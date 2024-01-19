@@ -29,7 +29,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
 				RedirectPortInbound:   15006,
-				RedirectPortInboundV6: 15010,
+				RedirectPortInboundV6: 15006,
 				RedirectPortOutbound:  15001,
 				DataplaneContainer: DataplaneContainer{
 					Image:     "kuma/kuma-dp:latest",
