@@ -66,7 +66,6 @@ func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttri
 		dataPoints = append(dataPoints, metricdata.SummaryDataPoint{
 			Attributes:     attributes,
 			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
-			Time:           metric.Summary.CreatedTimestamp.AsTime(),
 		})
 	}
 	return dataPoints
