@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -114,15 +115,15 @@ func ConfigureEndpointLocalityAwareLb(
 	clusterLb := loadAssignment.(*envoy_endpoint.ClusterLoadAssignment)
 	overprovisingFactor := defaultOverprovisingFactor
 	if conf.LocalityAwareness.CrossZone != nil && conf.LocalityAwareness.CrossZone.FailoverThreshold != nil {
-		overprovisingFactor = uint32(100/conf.LocalityAwareness.CrossZone.FailoverThreshold.Percentage.IntVal) * 100
+		val, err := common_api.NewDecimalFromIntOrString(conf.LocalityAwareness.CrossZone.FailoverThreshold.Percentage)
+		if err == nil && !val.IsZero() {
+			overprovisingFactor = uint32(100/val.InexactFloat64()) * 100
+		}
 	}
 	if clusterLb.Policy == nil {
-		clusterLb.Policy = &envoy_endpoint.ClusterLoadAssignment_Policy{
-			OverprovisioningFactor: wrapperspb.UInt32(overprovisingFactor),
-		}
-	} else {
-		clusterLb.Policy.OverprovisioningFactor = wrapperspb.UInt32(overprovisingFactor)
+		clusterLb.Policy = &envoy_endpoint.ClusterLoadAssignment_Policy{}
 	}
+	clusterLb.Policy.OverprovisioningFactor = wrapperspb.UInt32(overprovisingFactor)
 	return loadAssignment, nil
 }
 

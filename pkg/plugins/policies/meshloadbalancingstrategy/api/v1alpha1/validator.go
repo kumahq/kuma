@@ -136,8 +136,7 @@ func validateFailoverThreshold(failoverThreshold *FailoverThreshold) validators.
 	if failoverThreshold == nil {
 		return verr
 	}
-	verr.Add(validators.ValidateIntOrStringGreaterThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 0))
-	verr.Add(validators.ValidateIntOrStringLessThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 100))
+	verr.Add(validators.ValidatePercentage(validators.RootedAt("percentage"), &failoverThreshold.Percentage, false))
 	return verr
 }
 
