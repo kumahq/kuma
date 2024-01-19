@@ -36,7 +36,8 @@ type Defaults struct {
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
-	// If true, it creates the default routing (TrafficPermisson and TrafficRoute) resources for a new Mesh
+	// If true, it creates the default routing (TrafficPermisson and TrafficRoute) resources for a new Mesh.
+	// They are required for traffic to work when you are running global control-plane and zones connecting might have an older version.
 	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 }
 

@@ -44,6 +44,7 @@ When enabling mTLS, remember to add `MeshTrafficPermission`. Previously, we used
 When might you want to set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`?
 
 * When zones connecting to the global control-plane might be running on a version lower than `2.6`.
+* When you are recreating environment with CD(continous delivery) with old policies (without `Mesh..` prefix). In this situation, because of lack of `TrafficRoute` old policies won't be applied.
 
 ### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
 
