@@ -130,9 +130,15 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 }
 
 func extraAttributesFrom(mesh string, dataplane string, service string) []attribute.KeyValue {
-	return []attribute.KeyValue{
-		attribute.String("mesh", mesh),
-		attribute.String("dataplane", dataplane),
-		attribute.String("service", service),
+	var extraAttributes []attribute.KeyValue
+	if mesh != "" {
+		extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))
 	}
+	if dataplane != "" {
+		extraAttributes = append(extraAttributes, attribute.String("dataplane", dataplane))
+	}
+	if service != "" {
+		extraAttributes = append(extraAttributes, attribute.String("service", service))
+	}
+	return extraAttributes
 }
