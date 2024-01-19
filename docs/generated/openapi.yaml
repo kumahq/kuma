@@ -3524,7 +3524,7 @@ components:
                                 limit:
                                   description: >-
                                     Limit is represented by value measure in
-                                    gbps, mbps, kbps or bps, e.g.
+                                    Gbps, Mbps, kbps, e.g.
 
                                     10kbps
                                   type: string
@@ -3742,7 +3742,7 @@ components:
                                 limit:
                                   description: >-
                                     Limit is represented by value measure in
-                                    gbps, mbps, kbps or bps, e.g.
+                                    Gbps, Mbps, kbps, e.g.
 
                                     10kbps
                                   type: string
