@@ -122,6 +122,10 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		out.KdsDirection = "model.GlobalToAllZonesFlag"
 	}
 
+	if out.ResourceType == "MeshGateway" {
+		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag"
+	}
+
 	if p := desc.Parent(); p != nil {
 		if _, ok := p.(protoreflect.MessageDescriptor); ok {
 			out.ProtoType = fmt.Sprintf("%s_%s", p.Name(), desc.Name())
