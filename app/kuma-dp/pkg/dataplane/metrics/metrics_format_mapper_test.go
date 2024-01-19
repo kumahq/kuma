@@ -2,13 +2,15 @@ package metrics
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"os"
 	"path"
 	"sort"
 	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 func testCaseName(ginkgo FullGinkgoTInterface) string {
