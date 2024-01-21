@@ -135,7 +135,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
-			mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			"foo":                          "bar",
 		}))
 	})
@@ -162,7 +162,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
-			mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			"foo":                          "bar",
 		}))
 
@@ -184,7 +184,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			// then zone store should have updated mesh
 			g.Expect(actual.Items[0].GetSpec().(*mesh_proto.Mesh).Mtls).To(BeNil())
 			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
-				mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 				"foo":                          "barbar",
 				"newlabel":                     "newvalue",
 			}))
