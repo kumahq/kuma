@@ -50,10 +50,24 @@ const (
 
 	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
 	// It can be either "global" or "zone".
-	ResourceOriginLabel  = "kuma.io/origin"
-	ResourceOriginGlobal = "global"
-	ResourceOriginZone   = "zone"
+	ResourceOriginLabel = "kuma.io/origin"
 )
+
+type ResourceOrigin string
+
+const (
+	GlobalResourceOrigin ResourceOrigin = "global"
+	ZoneResourceOrigin   ResourceOrigin = "zone"
+)
+
+func (o ResourceOrigin) IsValid() error {
+	switch o {
+	case GlobalResourceOrigin, ZoneResourceOrigin:
+		return nil
+	default:
+		return errors.Errorf("unknown resource origin %q", o)
+	}
+}
 
 type ProxyType string
 

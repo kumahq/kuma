@@ -32,25 +32,28 @@ func NewValidatingWebhook(
 	mode core.CpMode,
 	federatedZone bool,
 	allowedUsers []string,
+	disableOriginLabelValidation bool,
 ) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry:  coreRegistry,
-		k8sRegistry:   k8sRegistry,
-		converter:     converter,
-		mode:          mode,
-		federatedZone: federatedZone,
-		allowedUsers:  allowedUsers,
+		coreRegistry:                 coreRegistry,
+		k8sRegistry:                  k8sRegistry,
+		converter:                    converter,
+		mode:                         mode,
+		federatedZone:                federatedZone,
+		allowedUsers:                 allowedUsers,
+		disableOriginLabelValidation: disableOriginLabelValidation,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry  core_registry.TypeRegistry
-	k8sRegistry   k8s_registry.TypeRegistry
-	converter     k8s_common.Converter
-	decoder       *admission.Decoder
-	mode          core.CpMode
-	federatedZone bool
-	allowedUsers  []string
+	coreRegistry                 core_registry.TypeRegistry
+	k8sRegistry                  k8s_registry.TypeRegistry
+	converter                    k8s_common.Converter
+	decoder                      *admission.Decoder
+	mode                         core.CpMode
+	federatedZone                bool
+	allowedUsers                 []string
+	disableOriginLabelValidation bool
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
@@ -72,6 +75,10 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Allowed("")
 	default:
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
+			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
+		}
+
+		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
@@ -157,10 +164,22 @@ func (h *validatingHandler) isResourceAllowed(r core_model.Resource) bool {
 	if !h.federatedZone || !r.Descriptor().IsPluginOriginated {
 		return true
 	}
-	if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
-		return false
+	if !h.disableOriginLabelValidation {
+		if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != string(mesh_proto.ZoneResourceOrigin) {
+			return false
+		}
 	}
 	return true
+}
+
+func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+	var verr validators.ValidationError
+	if origin, ok := core_model.ResourceOrigin(rm); ok {
+		if err := origin.IsValid(); err != nil {
+			verr.AddViolationAt(validators.Root().Field("labels").Key(mesh_proto.ResourceOriginLabel), err.Error())
+		}
+	}
+	return verr
 }
 
 func resourceIsNotAllowedResponse() admission.Response {
@@ -169,7 +188,7 @@ func resourceIsNotAllowedResponse() admission.Response {
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
 				Reason:  "Forbidden",
 				Code:    403,
 				Details: &metav1.StatusDetails{

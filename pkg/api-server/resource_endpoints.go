@@ -51,15 +51,16 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode               config_core.CpMode
-	federatedZone      bool
-	zoneName           string
-	resManager         manager.ResourceManager
-	descriptor         model.ResourceTypeDescriptor
-	resourceAccess     access.ResourceAccess
-	k8sMapper          k8s.ResourceMapperFunc
-	filter             func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder xds_context.MeshContextBuilder
+	mode                         config_core.CpMode
+	federatedZone                bool
+	zoneName                     string
+	resManager                   manager.ResourceManager
+	descriptor                   model.ResourceTypeDescriptor
+	resourceAccess               access.ResourceAccess
+	k8sMapper                    k8s.ResourceMapperFunc
+	filter                       func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder           xds_context.MeshContextBuilder
+	disableOriginLabelValidation bool
 }
 
 func typeToLegacyOverviewPath(resourceType model.ResourceType) string {
@@ -442,7 +443,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
-	err.AddError("labels", r.validateLabels(resourceMeta.Labels))
+	err.AddError("labels", r.validateLabels(resourceMeta))
 
 	if create {
 		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
@@ -456,20 +457,27 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	return err.OrNil()
 }
 
-func (r *resourceEndpoints) validateLabels(labels map[string]string) validators.ValidationError {
+func (r *resourceEndpoints) validateLabels(rm model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
 
-	if r.federatedZone && r.descriptor.IsPluginOriginated {
-		if labels == nil || labels[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ResourceOriginZone))
+	origin, ok := model.ResourceOrigin(rm)
+	if ok {
+		if oerr := origin.IsValid(); oerr != nil {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
 		}
 	}
 
-	for _, k := range maps.SortedKeys(labels) {
+	if !r.disableOriginLabelValidation && r.federatedZone && r.descriptor.IsPluginOriginated {
+		if !ok || origin != mesh_proto.ZoneResourceOrigin {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
+		}
+	}
+
+	for _, k := range maps.SortedKeys(rm.GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(labels[k]) {
+		for _, msg := range validation.IsValidLabelValue(rm.GetLabels()[k]) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}

@@ -61,7 +61,7 @@ func DefaultContext(
 	}
 
 	globalMappers := []reconcile.ResourceMapper{
-		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginGlobal)),
+		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))),
 		reconcile.If(
 			reconcile.And(
 				reconcile.TypeIs(system.GlobalSecretType),
@@ -83,7 +83,7 @@ func DefaultContext(
 
 	zoneMappers := []reconcile.ResourceMapper{
 		UpdateResourceMeta(
-			util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 		),
 		MapInsightResourcesZeroGeneration,
