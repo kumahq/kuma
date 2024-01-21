@@ -34,6 +34,7 @@ var _ = Describe("Validation", func() {
 	type testCase struct {
 		objTemplate   core_model.ResourceSpec
 		obj           string
+		oldObj        string
 		mode          core.CpMode
 		federatedZone bool
 		resp          kube_admission.Response
@@ -57,6 +58,9 @@ var _ = Describe("Validation", func() {
 					UID: kube_types.UID("12345"),
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.obj),
+					},
+					OldObject: kube_runtime.RawExtension{
+						Raw: []byte(given.oldObj),
 					},
 					Kind: kube_meta.GroupVersionKind{
 						Group:   obj.GetObjectKind().GroupVersionKind().Group,
@@ -669,6 +673,44 @@ var _ = Describe("Validation", func() {
 			mode:          core.Zone,
 			federatedZone: true,
 			objTemplate:   &mesh_proto.TrafficRoute{},
+			oldObj: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"TrafficRoute",
+              "metadata":{
+                "name":"empty",
+                "creationTimestamp":null,
+                "annotations": {
+                  "k8s.kuma.io/synced": "true"
+                }
+              },
+              "spec":{
+                "sources":[
+                  {
+                    "match":{
+                      "kuma.io/service":"web"
+                    }
+                  }
+                ],
+                "destinations":[
+                  {
+                    "match":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ],
+                "conf":{
+                 "split":[
+                  {
+                    "weight":100,
+                    "destination":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ]
+                }
+              }
+            }`,
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
@@ -758,6 +800,44 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation on DELETE in Global CP", testCase{
 			mode:        core.Global,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			oldObj: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"TrafficRoute",
+              "metadata":{
+                "name":"empty",
+                "creationTimestamp":null,
+                "annotations": {
+                  "k8s.kuma.io/synced": "true"
+                }
+              },
+              "spec":{
+                "sources":[
+                  {
+                    "match":{
+                      "kuma.io/service":"web"
+                    }
+                  }
+                ],
+                "destinations":[
+                  {
+                    "match":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ],
+                "conf":{
+                 "split":[
+                  {
+                    "weight":100,
+                    "destination":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ]
+                }
+              }
+            }`,
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
@@ -772,7 +852,34 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation on DELETE in Global CP by GC", testCase{
 			mode:        core.Global,
 			objTemplate: &mesh_proto.Dataplane{},
-			username:    "system:serviceaccount:kube-system:generic-garbage-collector",
+			oldObj: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"Dataplane",
+              "mesh":"demo",
+              "metadata":{
+                "namespace":"example",
+                "name":"empty",
+                "creationTimestamp":null,
+                "annotations": {
+                  "k8s.kuma.io/synced": "true"
+                }
+              },
+              "spec":{
+                "networking": {
+                  "address": "127.0.0.1",
+                  "inbound": [
+                    {
+                      "port": 11011,
+                      "tags": {
+                        "kuma.io/service": "backend"
+                      }
+                    }
+                  ]
+                }
+              }
+            }`,
+			username: "system:serviceaccount:kube-system:generic-garbage-collector",
 			resp: kube_admission.Response{
 				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",

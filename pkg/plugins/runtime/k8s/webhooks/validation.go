@@ -58,37 +58,19 @@ func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
 }
 
 func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	resType := core_model.ResourceType(req.Kind.Kind)
-
-	_, err := h.coreRegistry.DescriptorFor(resType)
+	coreRes, k8sObj, err := h.decode(req)
 	if err != nil {
-		// we only care about types in the registry for this handler
-		return admission.Allowed("")
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if !h.isPrivilegedUser(req.UserInfo) {
-		// we're checking if the operation is allowed only when the user is not privileged
-		if resp := h.isOperationAllowed(resType); !resp.Allowed {
-			return resp
-		}
+	if resp := h.isOperationAllowed(req.UserInfo, coreRes); !resp.Allowed {
+		return resp
 	}
 
 	switch req.Operation {
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
-		coreRes, k8sObj, err := h.decode(req)
-		if err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-
-		if !h.isPrivilegedUser(req.UserInfo) {
-			// we're checking presence of the origin label only when the user is not privileged
-			if resp := h.checkOriginLabel(coreRes); !resp.Allowed {
-				return resp
-			}
-		}
-
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
@@ -114,9 +96,18 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := h.decoder.Decode(req, k8sObj); err != nil {
-		return nil, nil, err
+
+	switch req.Operation {
+	case v1.Delete:
+		if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
+			return nil, nil, err
+		}
+	default:
+		if err := h.decoder.Decode(req, k8sObj); err != nil {
+			return nil, nil, err
+		}
 	}
+
 	if err := h.converter.ToCoreResource(k8sObj, coreRes); err != nil {
 		return nil, nil, err
 	}
@@ -124,40 +115,55 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 }
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType) admission.Response {
-	descriptor, err := h.coreRegistry.DescriptorFor(resType)
-	if err != nil {
-		return syncErrorResponse(resType, h.mode)
-	}
-	if descriptor.KDSFlags == core_model.KDSDisabledFlag {
+func (h *validatingHandler) isOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource) admission.Response {
+	if h.isPrivilegedUser(userInfo) {
 		return admission.Allowed("")
 	}
-	if (h.mode == core.Global && !descriptor.KDSFlags.Has(core_model.AllowedOnGlobalSelector)) || (h.federatedZone && !descriptor.KDSFlags.Has(core_model.AllowedOnZoneSelector)) {
-		return syncErrorResponse(resType, h.mode)
+
+	if !h.isResourceTypeAllowed(r.Descriptor()) {
+		return resourceTypeIsNotAllowedResponse(r.Descriptor().Name, h.mode)
 	}
+
+	if !h.isResourceAllowed(r) {
+		return resourceIsNotAllowedResponse()
+	}
+
 	return admission.Allowed("")
 }
 
 func (h *validatingHandler) isPrivilegedUser(userInfo authenticationv1.UserInfo) bool {
 	// Assume this means one of the following:
-	// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName))
+	// - sync from another zone (rt.Config().Runtime.Kubernetes.ServiceAccountName)
 	// - GC cleanup resources due to OwnerRef. ("system:serviceaccount:kube-system:generic-garbage-collector")
 	// - storageversionmigratior
 	// Not security; protecting user from self.
 	return slices.Contains(h.allowedUsers, userInfo.Username)
 }
 
-func (h *validatingHandler) checkOriginLabel(r core_model.Resource) admission.Response {
-	if !h.federatedZone || !r.Descriptor().IsPluginOriginated {
-		return admission.Allowed("")
+func (h *validatingHandler) isResourceTypeAllowed(d core_model.ResourceTypeDescriptor) bool {
+	if d.KDSFlags == core_model.KDSDisabledFlag {
+		return true
 	}
-	if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
-		return noOriginLabelResponse()
+	if h.mode == core.Global && !d.KDSFlags.Has(core_model.AllowedOnGlobalSelector) {
+		return false
 	}
-	return admission.Allowed("")
+	if h.federatedZone && !d.KDSFlags.Has(core_model.AllowedOnZoneSelector) {
+		return false
+	}
+	return true
 }
 
-func noOriginLabelResponse() admission.Response {
+func (h *validatingHandler) isResourceAllowed(r core_model.Resource) bool {
+	if !h.federatedZone || !r.Descriptor().IsPluginOriginated {
+		return true
+	}
+	if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != mesh_proto.ResourceOriginZone {
+		return false
+	}
+	return true
+}
+
+func resourceIsNotAllowedResponse() admission.Response {
 	return admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
@@ -180,7 +186,7 @@ func noOriginLabelResponse() admission.Response {
 	}
 }
 
-func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
+func resourceTypeIsNotAllowedResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
 	otherCpMode := ""
 	if cpMode == core.Zone {
 		otherCpMode = core.Global
