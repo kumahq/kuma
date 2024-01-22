@@ -10,8 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
-
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
