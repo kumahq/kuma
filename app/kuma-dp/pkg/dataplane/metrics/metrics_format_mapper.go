@@ -1,12 +1,13 @@
 package metrics
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"math"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
