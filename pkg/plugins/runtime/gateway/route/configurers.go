@@ -9,9 +9,9 @@ import (
 	"golang.org/x/exp/slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -153,7 +153,7 @@ func RouteRewrite(rewrite *Rewrite) envoy_routes.RouteConfigurer {
 // RouteActionForward configures the route to forward traffic to the
 // given destinations, with the appropriate weights. This replaces any
 // previous action specification.
-func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.EndpointMap, proxyTags mesh_proto.MultiValueTagSet, destinations []Destination) envoy_routes.RouteConfigurer {
+func RouteActionForward(xdsCtx xds_context.Context, endpoints core_xds.EndpointMap, proxyTags mesh_proto.MultiValueTagSet, destinations []Destination) envoy_routes.RouteConfigurer {
 	if len(destinations) == 0 {
 		return envoy_routes.RouteConfigureFunc(nil)
 	}
@@ -178,7 +178,7 @@ func RouteActionForward(mesh *core_mesh.MeshResource, endpoints core_xds.Endpoin
 			destination := byName[name]
 			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption
 
-			isMeshCluster := mesh.ZoneEgressEnabled() || !HasExternalServiceEndpoint(mesh, endpoints, destination)
+			isMeshCluster := xdsCtx.Mesh.Resource.ZoneEgressEnabled() || !xdsCtx.Mesh.IsExternalService(destination.Destination[mesh_proto.ServiceTag])
 
 			if isMeshCluster {
 				requestHeadersToAdd = []*envoy_config_core.HeaderValueOption{{
