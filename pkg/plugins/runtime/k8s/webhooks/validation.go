@@ -171,7 +171,7 @@ func (h *validatingHandler) isResourceAllowed(r core_model.Resource) bool {
 		return true
 	}
 	if !h.disableOriginLabelValidation {
-		if r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != string(mesh_proto.ZoneResourceOrigin) {
+		if origin, ok := core_model.ResourceOrigin(r.GetMeta()); !ok || origin != mesh_proto.ZoneResourceOrigin {
 			return false
 		}
 	}
