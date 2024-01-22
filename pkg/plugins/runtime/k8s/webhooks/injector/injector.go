@@ -517,13 +517,12 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                             mesh, // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
-		metadata.KumaSidecarUID:                                 fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
-		metadata.KumaTransparentProxyingAnnotation:              metadata.AnnotationEnabled,
-		metadata.KumaTransparentProxyingInboundPortAnnotation:   fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-		metadata.KumaTransparentProxyingInboundPortAnnotationV6: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
-		metadata.KumaTransparentProxyingOutboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+		metadata.KumaMeshAnnotation:                            mesh, // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
+		metadata.KumaSidecarUID:                                fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
+		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI

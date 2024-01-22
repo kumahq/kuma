@@ -5,7 +5,6 @@ metadata:
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
-    kuma.io/service-account-token-volume: token
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
@@ -14,12 +13,12 @@ metadata:
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
+    kuma.io/disable-ipv6: "true"
   creationTimestamp: null
   labels:
     run: busybox
   name: busybox
 spec:
-  automountServiceAccountToken: false
   containers:
   - args:
     - run
@@ -107,14 +106,25 @@ spec:
       runAsUser: 5678
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: token
+      name: default-token-w7dxf
       readOnly: true
     - mountPath: /tmp
       name: kuma-sidecar-tmp
   - image: busybox
     name: busybox
     resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
   initContainers:
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -128,6 +138,7 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --disable-ipv6
     command:
     - /usr/bin/kumactl
     - install
@@ -150,13 +161,9 @@ spec:
       runAsGroup: 0
       runAsUser: 0
   volumes:
-  - name: token
-    projected:
-      sources:
-      - serviceAccountToken:
-          audience: https://kubernetes.default.svc.cluster.local
-          expirationSeconds: 7200
-          path: token
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
   - emptyDir: {}
     name: kuma-sidecar-tmp
 status: {}

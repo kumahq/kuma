@@ -54,11 +54,13 @@ type transparentProxyArgs struct {
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparentProxyArgs{
-		DryRun:                         false,
-		Verbose:                        false,
-		RedirectPortOutBound:           "15001",
-		RedirectInbound:                true,
-		RedirectPortInBound:            "15006",
+		DryRun:               false,
+		Verbose:              false,
+		RedirectPortOutBound: "15001",
+		RedirectInbound:      true,
+		RedirectPortInBound:  "15006",
+		// this argument is to be deprecated, it now defaults to the same port with ipv4 (instead of 15010)
+		// before deprecation, the user can still change it as needed
 		RedirectPortInBoundV6:          "15006",
 		IPv6Disabled:                   false,
 		ExcludeInboundPorts:            "",

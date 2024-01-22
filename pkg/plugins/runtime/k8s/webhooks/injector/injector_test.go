@@ -671,6 +671,40 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("33. kuma.io/disable-ipv6", testCase{
+			num: "33",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("34. kuma.io/transparent-proxying-inbound-v6-port to be deleted when deprecated", testCase{
+			num: "34",
+			mesh: `
+                  apiVersion: kuma.io/v1alpha1
+                  kind: Mesh
+                  metadata:
+                    name: default
+                  spec: {}`,
+			namespace: `
+                  apiVersion: v1
+                  kind: Namespace
+                  metadata:
+                    name: default
+                    labels:
+                      kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

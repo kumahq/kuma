@@ -152,8 +152,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
 		"--redirect-inbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortInbound),
-		"--redirect-inbound-port-v6",
-		fmt.Sprintf("%d", pr.RedirectPortInboundV6),
 		"--kuma-dp-uid",
 		pr.UID,
 		"--exclude-inbound-ports",
@@ -178,6 +176,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 	if pr.IPv6Disabled {
 		result = append(result, "--disable-ipv6")
+	} else if pr.RedirectPortInboundV6 > 0 {
+		result = append(result,
+			"--redirect-inbound-port-v6",
+			fmt.Sprintf("%d", pr.RedirectPortInboundV6))
 	}
 
 	if pr.TransparentProxyEnableEbpf {

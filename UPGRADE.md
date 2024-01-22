@@ -40,8 +40,8 @@ Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` conf
 
 ### Deprecated argument to transparent-proxy
 
-Parameters `--redirect-inbound-port-v6` will be deprecated and will be removed in the future. The proxy will redirect IPv6 traffic using the same port (15006) as ipv4 traffic, if you want to disable traffic redirection for IPv6 traffic, please use `--disable-ipv6`.
-The matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+Parameter `--redirect-inbound-port-v6` is deprecated and will be removed in the future. The proxy will now redirect IPv6 traffic using the same port (15006) as ipv4 traffic, if you want to disable traffic redirection for IPv6 traffic, please use `--disable-ipv6`.
+Hence, the matching annotation `kuma.io/transparent-proxying-inbound-v6-port` is now deprecated and we've also added a new Kubernetes annotation `kuma.io/disable-ipv6` for disabling IPv6 traffic redirection on Kubernetes pods.
 
 ## Upgrade to `2.5.x`
 
