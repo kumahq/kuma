@@ -71,7 +71,7 @@ func generateGatewayClusters(
 
 	gen := plugin_gateway.ClusterGenerator{Zone: xdsCtx.ControlPlane.Zone}
 	for _, hostInfo := range hostInfos {
-		clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries, hostInfo.Host.Tags)
+		clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries(), hostInfo.Host.Tags)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
@@ -96,7 +96,7 @@ func generateGatewayRoutes(
 
 	// Make a pass over the generators for each virtual host.
 	for _, hostInfo := range hostInfos {
-		vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries)
+		vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
 		if err != nil {
 			return nil, err
 		}
