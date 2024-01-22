@@ -1,3 +1,5 @@
+SHELLCHECK_IGNORE_PATH=
+
 .PHONY: fmt
 fmt: golangci-lint-fmt fmt/proto fmt/ci ## Dev: Run various format tools
 
@@ -14,7 +16,7 @@ tidy:
 
 .PHONY: shellcheck
 shellcheck:
-	find . -name "*.sh" -not -path "./.git/*" -exec $(SHELLCHECK) -P SCRIPTDIR -x {} +
+	find . -name "*.sh" -not \( -path "./.git/*" -o -path "$(SHELLCHECK_IGNORE_PATH)" \) -exec $(SHELLCHECK) -P SCRIPTDIR -x {} +
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
