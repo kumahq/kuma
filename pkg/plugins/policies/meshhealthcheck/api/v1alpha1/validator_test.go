@@ -220,9 +220,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.intervalJitterPercent
-    message: has to be in [0 - 100] range
+    message: must be in inclusive range [0, 100]
   - field: spec.to[0].default.healthyPanicThreshold
-    message: has to be in [0.0 - 100.0] range`,
+    message: must be in inclusive range [0.0, 100.0]`,
 			}),
 			Entry("path is invalid", testCase{
 				inputYaml: `
@@ -244,7 +244,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.eventLogPath
-    message: has to be a valid path when defined`,
+    message: must be a valid path when defined`,
 			}),
 			Entry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `
@@ -267,9 +267,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.http.expectedStatuses[0]
-    message: must be in range [100, 600)
+    message: must be in inclusive range [100, 599]
   - field: spec.to[0].default.http.expectedStatuses[1]
-    message: must be in range [100, 600)`,
+    message: must be in inclusive range [100, 599]`,
 			}),
 		)
 	})

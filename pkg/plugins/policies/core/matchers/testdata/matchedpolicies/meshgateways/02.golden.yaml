@@ -2,13 +2,6 @@ FromRules:
   127.0.0.1:8080: []
   127.0.0.1:8081: []
   127.0.0.1:8082: []
-SingleItemRules:
-  127.0.0.1:8080:
-    Rules: null
-  127.0.0.1:8081:
-    Rules: null
-  127.0.0.1:8082:
-    Rules: null
 ToRules:
   127.0.0.1:8080:
   - Conf:

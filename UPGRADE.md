@@ -33,12 +33,18 @@ With the release of Kuma 2.6.0, we've made some changes to the implementation of
 
 To ensure a smooth transition to Kuma 2.6.0, carefully review your existing configuration files and make necessary adjustments related to denied request responses and RBAC-related Envoy stats.
 
+### Make format SI valid for bandwidth in MeshFaultInjection policy
+
+Prior to this upgrade `mbps` and `gbps` were used for units for parameter `conf.responseBandwidth.percentage`.
+These are not valid units according to the [International System of Units](https://en.wikipedia.org/wiki/International_System_of_Units) they are respectively corrected to `Gbps` and `Mbps` if using
+these invalid units convert them into `kbps` prior to upgrade to avoid invalid format.
+
 ### Deprecation of postgres driverName=postgres (lib/pq)
 
 The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
 Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
 
-### Deprecated argument to transparent-proxy
+### Deprecation of argument to transparent-proxy
 
 Parameter `--redirect-inbound-port-v6` is deprecated and will be removed in the future. The proxy will now redirect IPv6 traffic using the same port (15006) as ipv4 traffic, if you want to disable traffic redirection for IPv6 traffic, please use `--disable-ipv6`.
 Hence, the matching annotation `kuma.io/transparent-proxying-inbound-v6-port` is now deprecated and we've also added a new Kubernetes annotation `kuma.io/disable-ipv6` for disabling IPv6 traffic redirection on Kubernetes pods.

@@ -52,7 +52,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
 		return err
 	}
 
@@ -60,7 +60,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 }
 
 func applyToGateway(
-	listenerRules map[core_rules.InboundListener]core_rules.SingleItemRules,
+	rules core_rules.SingleItemRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	resources xds_context.ResourceMap,
 	dataplane *core_mesh.DataplaneResource,
@@ -85,10 +85,6 @@ func applyToGateway(
 			Port:    port,
 		}
 		listener, ok := gatewayListeners[inboundListener]
-		if !ok {
-			continue
-		}
-		rules, ok := listenerRules[inboundListener]
 		if !ok {
 			continue
 		}

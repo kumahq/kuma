@@ -75,7 +75,7 @@ type DelayConf struct {
 }
 
 type ResponseBandwidthConf struct {
-	// Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+	// Limit is represented by value measure in Gbps, Mbps, kbps, e.g.
 	// 10kbps
 	Limit string `json:"limit"`
 	// Percentage of requests on which response bandwidth limit will be
