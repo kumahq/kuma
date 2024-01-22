@@ -110,7 +110,7 @@ func (p *PodConverter) dataplaneFor(
 		}
 
 		var inboundPortV6 uint32
-		ipv6Disabled, _, err := annotations.GetEnabledWithDefault(false, metadata.KumaTransparentProxyingDisableIPv6)
+		ipv6Disabled, _, _ := annotations.GetEnabledWithDefault(false, metadata.KumaTransparentProxyingDisableIPv6)
 		if ipv6Disabled {
 			inboundPortV6 = 0
 		} else {
