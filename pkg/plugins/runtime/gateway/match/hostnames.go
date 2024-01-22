@@ -1,10 +1,12 @@
 package match
 
-import "strings"
+import (
+	"strings"
+)
 
 type hostname struct {
-	Host   string
-	Domain string
+	Host        string
+	DomainParts []string
 }
 
 func (h *hostname) wildcard() bool {
@@ -12,37 +14,35 @@ func (h *hostname) wildcard() bool {
 }
 
 func (h *hostname) matches(name string) bool {
-	if name == "*" {
-		return true
-	}
 	n := makeHostname(name)
+	return h.contains(n) || n.contains(*h)
+}
 
-	if h.wildcard() || n.wildcard() {
-		return h.Domain == n.Domain
+func (h *hostname) contains(n hostname) bool {
+	if len(h.DomainParts) > len(n.DomainParts) {
+		return false
 	}
 
-	return h.Host == n.Host && h.Domain == n.Domain
+	for i := 1; i <= len(h.DomainParts); i++ {
+		hInd := len(h.DomainParts) - i
+		nInd := len(n.DomainParts) - i
+		if n.DomainParts[nInd] != h.DomainParts[hInd] {
+			return false
+		}
+	}
+
+	return h.wildcard() || h.Host == n.Host
 }
 
 func makeHostname(name string) hostname {
-	parts := strings.SplitN(name, ".", 2)
-	return hostname{Host: parts[0], Domain: parts[1]}
+	parts := strings.Split(name, ".")
+	return hostname{Host: parts[0], DomainParts: parts[1:]}
 }
 
 func Contains(target string, test string) bool {
-	if target == "*" {
-		return true
-	}
-	if test == "*" {
-		return false
-	}
 	targetHost := makeHostname(target)
 	testHost := makeHostname(test)
-	// TODO domain has to be less
-	if (targetHost.wildcard() || targetHost.Host == testHost.Host) && targetHost.Domain == testHost.Domain {
-		return true
-	}
-	return false
+	return targetHost.contains(testHost)
 }
 
 // Hostnames returns true if target is a host or domain name match for
@@ -54,9 +54,6 @@ func Contains(target string, test string) bool {
 // 1. They are exactly equal, OR
 // 2. One of them is a domain wildcard and the domain part matches.
 func Hostnames(target string, matches ...string) bool {
-	if target == "*" {
-		return true
-	}
 	targetHost := makeHostname(target)
 
 	for _, m := range matches {
