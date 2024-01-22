@@ -528,6 +528,7 @@ multizone:
       # Response backoff is a time Zone CP waits before sending ACK/NACK.
       # This is a way to slow down Global CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
+    # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
 
 # Diagnostics configuration
