@@ -13,7 +13,20 @@ resources:
       name: other.dev
       routes:
       - match:
-          path: /other
+          path: /other-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          path: /wild-dev
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -39,7 +52,20 @@ resources:
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
       - match:
-          prefix: /other/
+          prefix: /other-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /wild-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -53,19 +79,6 @@ resources:
               weight: 100
       - match:
           prefix: /wild/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-26cb64fa4e85e7b7
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -82,6 +95,32 @@ resources:
       name: go.dev
       routes:
       - match:
+          path: /wild-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          path: /go-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
           path: /wild
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -95,7 +134,20 @@ resources:
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
       - match:
-          path: /go
+          prefix: /wild-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /go-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -109,32 +161,6 @@ resources:
               weight: 100
       - match:
           prefix: /wild/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-26cb64fa4e85e7b7
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /go/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-26cb64fa4e85e7b7
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -151,7 +177,33 @@ resources:
       name: '*.dev'
       routes:
       - match:
+          path: /wild-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
           path: /wild
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /wild-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -176,8 +228,12 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
+    - domains:
+      - '*'
+      name: '*'
+      routes:
       - match:
-          prefix: /
+          path: /wild
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -189,12 +245,8 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
-    - domains:
-      - '*'
-      name: '*'
-      routes:
       - match:
-          prefix: /
+          prefix: /wild/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -220,6 +272,32 @@ resources:
       name: go.dev
       routes:
       - match:
+          path: /wild-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          path: /go-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
           path: /wild
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -233,7 +311,20 @@ resources:
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
       - match:
-          path: /go
+          prefix: /wild-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /go-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
@@ -247,32 +338,6 @@ resources:
               weight: 100
       - match:
           prefix: /wild/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-26cb64fa4e85e7b7
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /go/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-26cb64fa4e85e7b7
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
