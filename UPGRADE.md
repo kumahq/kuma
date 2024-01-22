@@ -8,10 +8,24 @@ does not have any particular instructions.
 
 ## Upgrade to `2.6.x`
 
-### Policy sorting
+### Policy
+
+#### Sorting
 
 Policy merging now gives precedence to policies lexicographically before
 other policies.
+
+#### `targetRef.kind: MeshGateway`
+
+Note that when targeting `MeshGateways` you should be using `targetRef.kind:
+MeshGateway`. Previously `targetRef.kind: MeshService` was necessary but this
+left the control plane unable to fully validate policies for builtin gateway
+usage.
+
+##### `to` instead of `from`
+
+With `MeshFaultInjection` and `MeshRateLimit`, `spec.to` with `kind:
+MeshGateway` is now required instead of `spec.from` and `kind: MeshService`.
 
 ### Unifying Default Connection Timeout Values
 
