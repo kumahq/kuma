@@ -38,6 +38,11 @@ To ensure a smooth transition to Kuma 2.6.0, carefully review your existing conf
 The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
 Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
 
+### Deprecated argument to transparent-proxy
+
+Parameters `--redirect-inbound-port-v6` will be deprecated and will be removed in the future. The proxy will redirect IPv6 traffic using the same port (15006) as ipv4 traffic, if you want to disable traffic redirection for IPv6 traffic, please use `--disable-ipv6`.
+The matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+
 ## Upgrade to `2.5.x`
 
 ### Transparent-proxy and CNI v1 removal

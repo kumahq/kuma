@@ -124,6 +124,9 @@ var PodAnnotationDeprecations = []Deprecation{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 	},
+	NewRemoveDeprecation("kuma.io/transparent-proxying-inbound-v6-port",
+		fmt.Sprintf("if you want to disable redirection for IPv6 traffic, please use '%s' instead",
+			KumaTransparentProxyingDisableIPv6), false),
 }
 
 type Deprecation struct {
@@ -142,6 +145,17 @@ func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
 	}
 }
 
+func NewRemoveDeprecation(old string, msg string, removed bool) Deprecation {
+	fullMessage := fmt.Sprintf("'%s' will be removed in the future, '%s'", old, msg)
+	if removed {
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored", old)
+	}
+	return Deprecation{
+		Key:     old,
+		Message: fullMessage,
+	}
+}
+
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                      = "kuma.io/sidecar-injected"
@@ -151,6 +165,7 @@ const (
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
 	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
+	KumaTransparentProxyingDisableIPv6                 = "kuma.io/disable-ipv6"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
