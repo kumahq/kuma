@@ -605,6 +605,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts), metadata.KumaTrafficExcludeOutboundPorts); val != "" {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
+
+	if i.cfg.SidecarContainer.DisableIPv6 {
+		annotations[metadata.KumaTransparentProxyingDisableIPv6] = "true"
+	}
+
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err

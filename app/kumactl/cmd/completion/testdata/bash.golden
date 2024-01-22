@@ -5538,6 +5538,8 @@ _kumactl_install_transparent-proxy()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--disable-ipv6")
+    local_nonpersistent_flags+=("--disable-ipv6")
     flags+=("--dry-run")
     local_nonpersistent_flags+=("--dry-run")
     flags+=("--ebpf-bpffs-path=")

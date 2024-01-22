@@ -30,6 +30,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			SidecarContainer: SidecarContainer{
 				RedirectPortInbound:   15006,
 				RedirectPortInboundV6: 15006,
+				DisableIPv6:           false,
 				RedirectPortOutbound:  15001,
 				DataplaneContainer: DataplaneContainer{
 					Image:     "kuma/kuma-dp:latest",
@@ -259,7 +260,10 @@ type SidecarContainer struct {
 	// Redirect port for inbound traffic.
 	RedirectPortInbound uint32 `json:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
 	// Redirect port for inbound IPv6 traffic.
+	// Deprecated: Use RedirectPortInbound or DisableIPv6 instead.
 	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
+	// Disable ipv6 traffic redirection
+	DisableIPv6 bool `json:"disableIPv6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_disable_ipv6"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `json:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 	// WaitForDataplaneReady enables a script that waits until Envoy is ready.
