@@ -38,8 +38,8 @@
           ],
           "StartTime": "0001-01-01T00:00:00Z",
           "Time": "0001-01-01T00:00:00Z",
-          "Count": 0,
-          "Sum": 0,
+          "Count": 500,
+          "Sum": 1000,
           "QuantileValues": [
             {
               "Quantile": 0.5,
@@ -88,8 +88,8 @@
           ],
           "StartTime": "0001-01-01T00:00:00Z",
           "Time": "0001-01-01T00:00:00Z",
-          "Count": 0,
-          "Sum": 0,
+          "Count": 100,
+          "Sum": 600,
           "QuantileValues": [
             {
               "Quantile": 0.5,
@@ -138,8 +138,8 @@
           ],
           "StartTime": "0001-01-01T00:00:00Z",
           "Time": "0001-01-01T00:00:00Z",
-          "Count": 0,
-          "Sum": 0,
+          "Count": 200,
+          "Sum": 800,
           "QuantileValues": [
             {
               "Quantile": 0.5,

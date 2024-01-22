@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"math"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -66,6 +67,8 @@ func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttri
 		dataPoints = append(dataPoints, metricdata.SummaryDataPoint{
 			Attributes:     attributes,
 			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
+			Sum:            pointer.Deref(metric.Summary.SampleSum),
+			Count:          pointer.Deref(metric.Summary.SampleCount),
 		})
 	}
 	return dataPoints
