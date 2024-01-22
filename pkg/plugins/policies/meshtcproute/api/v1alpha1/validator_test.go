@@ -5,7 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("validator", func() {
@@ -40,7 +40,22 @@ targetRef:
   name: frontend
 to:
 - targetRef:
-    kind: BlahBlah
+    kind: Mesh
+`),
+		ErrorCase("spec.to.targetRef error",
+			validators.Violation{
+				Field:   "spec.to[0].targetRef.kind",
+				Message: "value is not supported",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: MeshService
     name: backend
 `),
 		ErrorCase("invalid backendRefs",
@@ -96,6 +111,22 @@ to:
 - targetRef:
     kind: MeshService
     name: backend
+`),
+		Entry("accepts MeshGateway targeted route", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+- targetRef:
+    kind: Mesh
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+        name: other
 `),
 	)
 })

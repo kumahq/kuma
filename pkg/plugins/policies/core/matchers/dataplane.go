@@ -3,6 +3,7 @@ package matchers
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -108,11 +109,17 @@ func dppSelectedByPolicy(
 ) ([]core_rules.InboundListener, bool, error) {
 	switch ref.Kind {
 	case common_api.Mesh:
-		inbounds, gateway := inboundsSelectedByTags(nil, dpp, gateway)
-		return inbounds, gateway, nil
+		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+			inbounds, gateway := inboundsSelectedByTags(nil, dpp, gateway)
+			return inbounds, gateway, nil
+		}
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshSubset:
-		inbounds, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
-		return inbounds, gateway, nil
+		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+			inbounds, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+			return inbounds, gateway, nil
+		}
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshService:
 		inbounds, gateway := inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: ref.Name,
@@ -159,6 +166,17 @@ func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, mh
 		}
 	}
 	return nil
+}
+
+func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.TargetRefProxyType {
+	if dpp.Spec.GetNetworking().GetGateway() != nil {
+		return common_api.Gateway
+	}
+	return common_api.Sidecar
+}
+
+func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
+	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
 // inboundsSelectedByTags returns which inbounds are selected and whether a

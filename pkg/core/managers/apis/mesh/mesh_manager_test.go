@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -49,8 +51,28 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := mesh.NewMeshValidator(caManagers, resStore)
-		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false, context.Background())
-		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true, context.Background())
+		resManager = mesh.NewMeshManager(
+			resStore, manager, caManagers, test_resources.Global(),
+			validator, context.Background(),
+			kuma_cp.Config{
+				Store: &config_store.StoreConfig{
+					Type: config_store.MemoryStore, UnsafeDelete: false,
+				},
+				Defaults: &kuma_cp.Defaults{
+					CreateMeshRoutingResources: false,
+				},
+			})
+		unsafeDeleteResManager = mesh.NewMeshManager(
+			resStore, manager, caManagers, test_resources.Global(),
+			validator, context.Background(),
+			kuma_cp.Config{
+				Store: &config_store.StoreConfig{
+					Type: config_store.MemoryStore, UnsafeDelete: true,
+				},
+				Defaults: &kuma_cp.Defaults{
+					CreateMeshRoutingResources: false,
+				},
+			})
 	})
 
 	Describe("Create()", func() {
@@ -94,14 +116,6 @@ var _ = Describe("Mesh Manager", func() {
 			err := samples.MeshDefaultBuilder().WithName(meshName).Create(resManager)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			// and default TrafficPermission for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), store.GetByKey("allow-all-mesh-1", meshName))
-			Expect(err).ToNot(HaveOccurred())
-
-			// and default TrafficRoute for the mesh exists
-			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists

@@ -9,12 +9,13 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
-func TrafficPermissionUniversal() {
+func TrafficPermission() {
 	meshName := "trafficpermission"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -57,6 +58,8 @@ destinations:
 	})
 
 	trafficAllowed := func() {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
@@ -66,6 +69,8 @@ destinations:
 	}
 
 	trafficBlocked := func() {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
@@ -76,12 +81,21 @@ destinations:
 	}
 
 	removeDefaultTrafficPermission := func() {
+		GinkgoHelper()
+
 		err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	addAllowAllTrafficPermission := func() {
+		GinkgoHelper()
+
+		Expect(NewClusterSetup().Install(TrafficPermissionUniversal(meshName)).Setup(universal.Cluster)).ToNot(HaveOccurred())
+	}
+
 	It("should allow the traffic with default traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
 
 		// then
 		trafficAllowed()
@@ -168,7 +182,10 @@ destinations:
 	})
 
 	It("should use most specific traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
+
+		// then
 		trafficAllowed()
 
 		// when more specific traffic permission on service tag is applied

@@ -66,6 +66,7 @@ func NewZoneInsightSink(
 		accessor:         accessor,
 		store:            store,
 		log:              log,
+		extensions:       extensions,
 	}
 }
 

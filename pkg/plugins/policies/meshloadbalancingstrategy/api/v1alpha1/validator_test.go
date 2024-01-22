@@ -5,13 +5,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
-	resources.DescribeErrorCases(
+	DescribeErrorCases(
 		api.NewMeshLoadBalancingStrategyResource,
-		resources.ErrorCases(
+		ErrorCases(
 			"spec errors",
 			[]validators.Violation{
 				{
@@ -32,7 +32,7 @@ targetRef:
   name: route-1
 to: []
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"spec.to errors",
 			[]validators.Violation{{
 				Field:   "spec.to[0].targetRef.kind",
@@ -52,7 +52,7 @@ to:
       tags:
         version: v1
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"ringHash error",
 			[]validators.Violation{
 				{
@@ -98,7 +98,7 @@ to:
             - type: QueryParameter
             - type: FilterState
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"ringHash cookie error",
 			[]validators.Violation{{
 				Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].cookie.path",
@@ -126,7 +126,7 @@ to:
                 ttl: 1s
                 path: relative-path
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"maglev error",
 			[]validators.Violation{
 				{
@@ -168,7 +168,7 @@ to:
             - type: QueryParameter
             - type: FilterState
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"maglev cookie error",
 			[]validators.Violation{{
 				Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[0].cookie.path",
@@ -196,7 +196,7 @@ to:
                 ttl: 1s
                 path: relative-path
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"leastRequest error",
 			[]validators.Violation{{
 				Field:   "spec.to[0].default.loadBalancer.leastRequest.activeRequestBias",
@@ -219,7 +219,7 @@ to:
         leastRequest:
           activeRequestBias: -1
 `),
-		resources.ErrorCases("empty from in failover", []validators.Violation{{
+		ErrorCases("empty from in failover", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].from.zones",
 			Message: "must not be empty",
 		}}, `
@@ -241,7 +241,7 @@ to:
               to: 
                 type: None
 `),
-		resources.ErrorCases("incorrect weight", []validators.Violation{
+		ErrorCases("incorrect weight", []validators.Violation{
 			{
 				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
 				Message: "must be greater than 0",
@@ -269,7 +269,7 @@ to:
             - key: ""
               weight: 10
 `),
-		resources.ErrorCases("mixing affinity tags with and without weights", []validators.Violation{{
+		ErrorCases("mixing affinity tags with and without weights", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",
 			Message: "all or none affinity tags should have weight",
 		}}, `
@@ -290,9 +290,9 @@ to:
               weight: 10
             - key: k8s/az
 `),
-		resources.ErrorCases("percentage can't be zero", []validators.Violation{{
+		ErrorCases("percentage can't be zero", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
-			Message: "must be greater than: 0",
+			Message: "must be greater than 0",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -309,9 +309,9 @@ to:
           failoverThreshold:
             percentage: 0
 `),
-		resources.ErrorCases("percentage can't be set to 100", []validators.Violation{{
+		ErrorCases("percentage is not a parseable number", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
-			Message: "must be less than: 100",
+			Message: "string must be a valid number",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1
@@ -326,9 +326,9 @@ to:
       localityAwareness:
         crossZone:
           failoverThreshold:
-            percentage: 100
+            percentage: "hello"
 `),
-		resources.ErrorCases("broken failover rules", []validators.Violation{
+		ErrorCases("broken failover rules", []validators.Violation{
 			{
 				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].to.zones",
 				Message: "must be empty when type is None",
@@ -397,7 +397,7 @@ to:
 `),
 	)
 
-	resources.DescribeValidCases(
+	DescribeValidCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		Entry(
 			"full spec",
@@ -485,6 +485,29 @@ to:
                 type: None
           failoverThreshold:
             percentage: 70
+`),
+		Entry(
+			"top level MeshGateway",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+  tags:
+    name: listener-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
 `),
 	)
 })

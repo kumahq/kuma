@@ -94,6 +94,9 @@ func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.Outlier
 
 func configureDetectors(outlierDetection *envoy_cluster.OutlierDetection, detectors *api.Detectors) error {
 	if detectors == nil {
+		configureTotalFailures(outlierDetection, nil)
+		configureLocalOriginFailures(outlierDetection, nil)
+		configureGatewayFailures(outlierDetection, nil)
 		return nil
 	}
 

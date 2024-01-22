@@ -38,6 +38,7 @@ func TestPlugin() {
 			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
 			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())
 	})
 	E2EAfterAll(func() {

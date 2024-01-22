@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -41,6 +42,28 @@ var _ = Describe("TimeoutConfigurer", func() {
 		Grpc: &mesh_proto.Timeout_Conf_Grpc{
 			StreamIdleTimeout: util_proto.Duration(104 * time.Second),
 			MaxStreamDuration: util_proto.Duration(105 * time.Second),
+		},
+	}
+
+	timeoutResource := &core_mesh.TimeoutResource{
+		Spec: &mesh_proto.Timeout{
+			Sources: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Destinations: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Conf: &mesh_proto.Timeout_Conf{
+				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+				Tcp: &mesh_proto.Timeout_Conf_Tcp{
+					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+				},
+				Http: &mesh_proto.Timeout_Conf_Http{
+					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
+				},
+			},
 		},
 	}
 
@@ -83,7 +106,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:
@@ -150,7 +173,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:

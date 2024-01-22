@@ -1,6 +1,7 @@
 package graceful
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -9,7 +10,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/channels"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
@@ -30,6 +31,12 @@ func ChangeService() {
 	secondTestServerLabels := map[string]string{
 		"app":                  "test-server",
 		"changesvc-test-label": "second",
+	}
+
+	thirdTestServerLabels := map[string]string{
+		"kuma.io/sidecar-injection": "disabled",
+		"app":                       "test-server",
+		"changesvc-test-label":      "third",
 	}
 
 	newSvc := func(selector map[string]string) *corev1.Service {
@@ -59,6 +66,7 @@ func ChangeService() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -83,12 +91,24 @@ func ChangeService() {
 				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
 				testserver.WithPodLabels(secondTestServerLabels),
 			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithName("test-server-third"),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-third"),
+				testserver.WithoutService(),
+				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+				testserver.WithPodLabels(thirdTestServerLabels),
+			)).
 			Install(YamlK8sObject(newSvc(firstTestServerLabels))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
 		// remove retries to avoid covering failed request
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", mesh),
+		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
@@ -145,5 +165,26 @@ func ChangeService() {
 
 		// and we did not drop a single request
 		Expect(failedErr).ToNot(HaveOccurred())
+	})
+
+	It("should switch to the instance of a service that in not in the mesh", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(YamlK8sObject(newSvc(firstTestServerLabels)))).To(Succeed())
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("test-server-first"))
+		}, "30s", "1s").Should(Succeed())
+
+		// when
+		err := kubernetes.Cluster.Install(YamlK8sObject(newSvc(thirdTestServerLabels)))
+
+		// then
+		Expect(err).To(Succeed())
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("test-server-third"))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

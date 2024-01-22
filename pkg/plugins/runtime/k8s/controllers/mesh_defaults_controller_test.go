@@ -66,6 +66,8 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 			ResourceManager: customizableManager,
 			Log:             logr.Discard(),
 			Extensions:      context.Background(),
+			K8sStore:        true,
+			SystemNamespace: "kuma-system",
 		}
 	})
 
@@ -92,21 +94,8 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	deleteTrafficPermission := func() {
-		Expect(
-			resourceManager.Delete(context.Background(), mesh.NewTrafficPermissionResource(),
-				core_store.DeleteByKey("allow-all-default", "default")),
-		).To(Succeed())
-	}
-
-	It("should not create a new default policy if it was deleted", func() {
+	It("should not create a default policy and after reconcile", func() {
 		createMesh()
-		Expect(hasTrafficPermissions()).To(BeFalse())
-
-		reconcile()
-		Expect(hasTrafficPermissions()).To(BeTrue())
-
-		deleteTrafficPermission()
 		Expect(hasTrafficPermissions()).To(BeFalse())
 
 		reconcile()

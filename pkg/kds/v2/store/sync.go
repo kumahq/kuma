@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -310,10 +312,17 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 					// todo: remove in 2 releases after 2.6.x
 					return zi.IsRemoteIngress(localZone)
 				}
-				return !core_model.IsLocallyOriginated(config_core.Zone, r)
+				return !core_model.IsLocallyOriginated(config_core.Zone, r) || !isExpectedOnZoneCP(r.Descriptor())
 			}))
 		},
 	}
+}
+
+// isExpectedOnZoneCP returns true if it's possible for the resource type to be on Zone CP. Some resource types
+// (i.e. Mesh, Secret) are allowed on non-federated Zone CPs, but after transition to federated Zone CP they're moved
+// to Global and must be replaced during the KDS sync.
+func isExpectedOnZoneCP(desc core_model.ResourceTypeDescriptor) bool {
+	return desc.KDSFlags.Has(core_model.ZoneToGlobalFlag)
 }
 
 func GlobalSyncCallback(
@@ -358,6 +367,10 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
 			}), Zone(upstream.ControlPlaneId))
 		},

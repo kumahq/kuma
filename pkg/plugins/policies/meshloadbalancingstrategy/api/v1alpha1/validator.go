@@ -26,9 +26,11 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 		},
+		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
@@ -134,8 +136,7 @@ func validateFailoverThreshold(failoverThreshold *FailoverThreshold) validators.
 	if failoverThreshold == nil {
 		return verr
 	}
-	verr.Add(validators.ValidateIntOrStringGreaterThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 0))
-	verr.Add(validators.ValidateIntOrStringLessThan(validators.RootedAt("percentage"), &failoverThreshold.Percentage, 100))
+	verr.Add(validators.ValidatePercentage(validators.RootedAt("percentage"), &failoverThreshold.Percentage, false))
 	return verr
 }
 

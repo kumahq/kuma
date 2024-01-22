@@ -391,8 +391,8 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			builder.CaManagers(),
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
-			cfg.Store.UnsafeDelete,
 			builder.Extensions(),
+			cfg,
 		),
 	)
 

@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	framework_client "github.com/kumahq/kuma/test/framework/client"
@@ -41,7 +41,7 @@ func MeshTimeout() {
 			Setup(multizone.KubeZone1),
 		).To(Succeed())
 
-		Expect(DeleteMeshResources(multizone.Global, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, mesh, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

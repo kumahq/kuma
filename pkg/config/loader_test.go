@@ -267,6 +267,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
+			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeFalse())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -595,6 +596,7 @@ dnsServer:
 defaults:
   skipMeshCreation: true
   skipTenantResources: true
+  createMeshRoutingResources: false
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -894,6 +896,7 @@ tracing:
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
+				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "false",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",

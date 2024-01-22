@@ -64,6 +64,7 @@ spec:
 				testserver.WithName("perm-tls-external-service"),
 				testserver.WithoutProbes(), // not compatible with TLS
 			)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

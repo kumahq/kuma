@@ -45,10 +45,21 @@ type Observability struct {
 
 type Metrics struct {
 	Applications []Application `json:"applications"`
+	Backends     []Backend     `json:"backends"`
 }
 
 type Application struct {
-	Path    string `json:"path"`
-	Port    uint32 `json:"port"`
-	Address string `json:"address"`
+	Name    *string `json:"name,omitempty"`
+	Path    string  `json:"path"`
+	Port    uint32  `json:"port"`
+	Address string  `json:"address"`
+}
+
+type Backend struct {
+	Type          string                `json:"type"`
+	OpenTelemetry *OpenTelemetryBackend `json:"openTelemetry,omitempty"`
+}
+
+type OpenTelemetryBackend struct {
+	Endpoint string `json:"endpoint"`
 }

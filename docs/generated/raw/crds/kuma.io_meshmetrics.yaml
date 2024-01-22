@@ -58,6 +58,9 @@ spec:
                         address:
                           description: Address on which an application listens.
                           type: string
+                        name:
+                          description: Name of the application to scrape
+                          type: string
                         path:
                           default: /metrics/prometheus
                           description: Path on which an application expose HTTP endpoint
@@ -76,6 +79,15 @@ spec:
                     description: Backends list that will be used to collect metrics.
                     items:
                       properties:
+                        openTelemetry:
+                          description: OpenTelemetry backend configuration
+                          properties:
+                            endpoint:
+                              description: Endpoint for OpenTelemetry collector
+                              type: string
+                          required:
+                          - endpoint
+                          type: object
                         prometheus:
                           description: Prometheus backend configuration.
                           properties:
@@ -118,6 +130,7 @@ spec:
                             metrics. At the moment only Prometheus backend is available.
                           enum:
                           - Prometheus
+                          - OpenTelemetry
                           type: string
                       required:
                       - type
@@ -126,17 +139,17 @@ spec:
                   sidecar:
                     description: Sidecar metrics collection configuration
                     properties:
+                      includeUnused:
+                        default: false
+                        description: |-
+                          IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
+                          at least once, gauges changed at least once, and histograms added to at
+                          least once). If true will scrape all metrics (even the ones with zeros).
+                        type: boolean
                       regex:
                         description: Regex that will be used to filter sidecar metrics.
                           It uses Google RE2 engine https://github.com/google/re2
                         type: string
-                      usedOnly:
-                        default: false
-                        description: |-
-                          UsedOnly will scrape only metrics that has been by sidecar (counters incremented
-                          at least once, gauges changed at least once, and histograms added to at
-                          least once).
-                        type: boolean
                     type: object
                 type: object
               targetRef:
@@ -164,6 +177,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string

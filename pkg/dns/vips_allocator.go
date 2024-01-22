@@ -195,6 +195,9 @@ func (d *VIPsAllocator) BuildVirtualOutboundMeshView(ctx context.Context, mesh s
 	var errs error
 	for _, dp := range dataplanes.Items {
 		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
+			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+				continue
+			}
 			if d.serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
 			}

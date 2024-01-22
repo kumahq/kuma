@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -119,7 +120,8 @@ func ApplyToGateway(
 		return nil
 	}
 
-	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
+	listeners := plugin_gateway.ExtractGatewayListeners(proxy)
+	for listenerIndex, info := range listeners {
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := info.Listener.Port
 		inboundListener := rules.InboundListener{
@@ -155,6 +157,10 @@ func ApplyToGateway(
 		}
 
 		var hostInfos []plugin_gateway.GatewayHostInfo
+		if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TCP {
+			continue
+		}
+
 		for _, info := range info.HostInfos {
 			listenerHostname := info.Host.Hostname
 			separateHostnames := map[string][]ToRouteRule{}
@@ -181,6 +187,10 @@ func ApplyToGateway(
 		sort.Slice(hostInfos, func(i, j int) bool {
 			return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
 		})
+
+		info.HostInfos = hostInfos
+		listeners[listenerIndex] = info
+		plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
 		if err != nil {

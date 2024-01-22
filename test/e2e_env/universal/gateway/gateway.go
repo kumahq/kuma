@@ -15,6 +15,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -24,6 +25,7 @@ func Gateway() {
 	mesh := "gateway"
 
 	const gatewayPort = 8080
+	const gateway2Port = 8088
 
 	BeforeAll(func() {
 		setup := NewClusterSetup().
@@ -31,7 +33,9 @@ func Gateway() {
 			Install(GatewayClientAppUniversal("gateway-client")).
 			Install(echoServerApp(mesh, "echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
-			Install(YamlUniversal(MkGateway("edge-gateway", mesh, false, "example.kuma.io", "echo-service", gatewayPort)))
+			Install(YamlUniversal(MkGateway("gateway-proxy", mesh, false, "example.kuma.io", "echo-service", gatewayPort))).
+			Install(GatewayProxyUniversal(mesh, "second-gateway-proxy")).
+			Install(YamlUniversal(MkGateway("second-gateway-proxy", mesh, false, "test.kuma.io", "echo-service", gateway2Port)))
 
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
@@ -61,9 +65,14 @@ func Gateway() {
 	Context("when mTLS is enabled", func() {
 		It("should proxy simple HTTP requests", func() {
 			Expect(universal.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
 
 			ProxySimpleRequests(universal.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 	})
 
@@ -85,7 +94,7 @@ mesh: %s
 name: external-routes
 selectors:
 - match:
-    kuma.io/service: edge-gateway
+    kuma.io/service: gateway-proxy
 conf:
   http:
     rules:
@@ -110,6 +119,13 @@ networking:
   address: "%s"
 `, mesh, net.JoinHostPort(universal.Cluster.GetApp("external-echo-gateway").GetIP(), "8080")))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -125,10 +141,10 @@ networking:
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: ProxyTemplate
 mesh: %s
-name: edge-gateway
+name: gateway-proxy
 selectors:
   - match:
-      kuma.io/service: edge-gateway
+      kuma.io/service: gateway-proxy
 conf:
   imports:
     - gateway-proxy
@@ -153,7 +169,7 @@ mesh: %s
 name: echo-rate-limit
 sources:
 - match:
-    kuma.io/service: edge-gateway
+    kuma.io/service: gateway-proxy
 destinations:
 - match:
     kuma.io/service: echo-service
@@ -163,9 +179,11 @@ conf:
     interval: 10s
 `, mesh))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
 		})
 		AfterAll(func() {
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -194,7 +212,7 @@ name: mesh-rate-limit-all-sources
 spec:
   targetRef:
     kind: MeshGateway
-    name: edge-gateway
+    name: gateway-proxy
   to:
     - targetRef:
         kind: Mesh
@@ -233,7 +251,12 @@ spec:
 	})
 
 	Context("when a MeshFaultInjection is configured", func() {
-		BeforeAll(func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
+		})
+
+		It("should return custom error code for all requests", func() {
+			// give
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshFaultInjection
@@ -242,7 +265,7 @@ name: mesh-fault-injection-all-sources
 spec:
   targetRef:
     kind: MeshGateway
-    name: edge-gateway
+    name: gateway-proxy
   to:
     - targetRef:
         kind: Mesh
@@ -252,12 +275,7 @@ spec:
               httpStatus: 421
               percentage: 100`, mesh))),
 			).To(Succeed())
-		})
-		AfterAll(func() {
-			Expect(DeleteMeshResources(universal.Cluster, mesh, meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
-		})
 
-		It("should return custom error code for all requests", func() {
 			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
 			Logf("expecting 421 response from %q", gatewayAddr)
 			Eventually(func(g Gomega) {
@@ -269,6 +287,56 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(421))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should return custom error code for all requests from both gateways", func() {
+			// given
+			Expect(
+				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshFaultInjection
+mesh: "%s"
+name: mesh-fault-injection-all-sources-all-gateways
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes: ["Gateway"]
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 422
+              percentage: 100`, mesh))),
+			).To(Succeed())
+
+			// then
+			gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
+			Logf("expecting 422 response from %q", gatewayAddr)
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(422))
+			}, "30s", "1s").Should(Succeed())
+
+			// and second gateway returns the same error
+			gatewayAddr = GatewayAddressPort("second-gateway-proxy", gateway2Port)
+			Logf("expecting 422 response from %q", gatewayAddr)
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					gatewayAddr, path.Join("test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", "test.kuma.io"))
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(422))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
@@ -295,10 +363,10 @@ data: %s
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGateway
 mesh: %s
-name: edge-gateway
+name: gateway-proxy
 selectors:
 - match:
-    kuma.io/service: edge-gateway
+    kuma.io/service: gateway-proxy
 conf:
   listeners:
   - port: 8080
@@ -321,6 +389,11 @@ conf:
       - secret: example-kuma-io-certificate
 `, mesh))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should proxy simple HTTPS requests with Host header", func() {
@@ -343,16 +416,6 @@ conf:
 	})
 
 	It("really uses mTLS", func() {
-		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
-		// traffic, so removing the permission should cause requests to fail. We use this to
-		// prove that mTLS is enabled
-		PermissionName := "allow-all-" + mesh
-
-		Logf("deleting TrafficPermission %q", PermissionName)
-		Expect(universal.Cluster.GetKumactlOptions().KumactlDelete(
-			"traffic-permission", PermissionName, mesh),
-		).To(Succeed())
-
 		gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
 		host := "example.kuma.io"
 		Logf("expecting 503 response from %q", gatewayAddr)

@@ -67,6 +67,8 @@ Clusters:
         enforcingConsecutiveGatewayFailure: 0
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
+        enforcingFailurePercentageLocalOrigin: 0
+        enforcingLocalOriginSuccessRate: 0
         enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
