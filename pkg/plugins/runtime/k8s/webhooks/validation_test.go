@@ -891,5 +891,67 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Delete,
 		}),
+		Entry("should fail validation on CREATE in Zone CP when origin label has unkown value", testCase{
+			mode:        core.Zone,
+			objTemplate: &v1alpha1.MeshTimeout{},
+			username:    "cli-user",
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "MeshTimeout",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null,
+			    "labels": {
+			      "kuma.io/origin": "some_unknown_origin"
+			    }
+			  },
+			  "spec": {
+			    "targetRef": {
+			      "kind": "Mesh"
+			    },
+			    "to": [
+			      {
+			        "targetRef": {
+			          "kind": "Mesh"
+			        },
+			        "default": {
+			          "idleTimeout": "21s",
+			          "connectionTimeout": "21s",
+			          "http": {
+			            "requestTimeout": "21s"
+			          }
+			        }
+			      }
+			    ]
+			  }
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Code:    422,
+						Status:  "Failure",
+						Reason:  "Invalid",
+						Message: "labels[\"kuma.io/origin\"]: unknown resource origin \"some_unknown_origin\"",
+						Details: &kube_meta.StatusDetails{
+							Name:  "zone-1",
+							Group: "",
+							Kind:  "MeshTimeout",
+							UID:   "",
+							Causes: []kube_meta.StatusCause{{
+								Type:    "FieldValueInvalid",
+								Message: "unknown resource origin \"some_unknown_origin\"",
+								Field:   "labels[\"kuma.io/origin\"]",
+							}},
+						},
+					},
+				},
+			},
+			operation: admissionv1.Create,
+		}),
 	)
 })
