@@ -283,9 +283,9 @@ func config(endpoint string) string {
   otlp:
     protocols:
       grpc:
-        endpoint: "%s:4317"
+        endpoint: "%s:%d"
       http:
-        endpoint: "%s:4318"
+        endpoint: "%s:%d"
 processors:
   batch:
     send_batch_size: 4096
@@ -303,7 +303,7 @@ exporters:
   debug:
     verbosity: basic
   prometheus:
-    endpoint: "%s:8889"
+    endpoint: "%s:%d"
 service:
   extensions: [zpages, memory_ballast]
   pipelines:
@@ -318,5 +318,5 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug]`, endpoint, endpoint, endpoint)
+      exporters: [debug]`, endpoint, GRPCPort, endpoint, HTTPPort, endpoint, PrometheusExporterPort)
 }

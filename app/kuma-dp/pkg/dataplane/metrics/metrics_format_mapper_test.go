@@ -5,23 +5,18 @@ import (
 	"os"
 	"path"
 	"sort"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
-func testCaseName(ginkgo FullGinkgoTInterface) string {
-	nameSplit := strings.Split(ginkgo.Name(), " ")
-	return nameSplit[len(nameSplit)-1]
-}
-
-var _ = Describe("", func() {
+var _ = Describe("Metrics format mapper", func() {
 	DescribeTable("should convert from Prometheus metrics to OpenTelemetry backend", func() {
 		// given
-		name := testCaseName(GinkgoT())
+		name := utils.TestCaseName(GinkgoT())
 		input, err := os.Open(path.Join("testdata", "otel", name+".in"))
 		Expect(err).ToNot(HaveOccurred())
 

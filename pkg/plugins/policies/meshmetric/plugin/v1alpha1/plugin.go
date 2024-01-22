@@ -32,6 +32,7 @@ const (
 	OriginOpenTelemetry       = "open-telemetry"
 	OriginDynamicConfig       = "dynamic-config"
 	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
+	OpenTelemetryGrpcPort     = 4317
 )
 
 type plugin struct{}
@@ -235,7 +236,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 
 func endpointForOpenTelemetry(endpoint string) *core_xds.Endpoint {
 	target := strings.Split(endpoint, ":")
-	port := uint32(4317) // default gRPC port
+	port := uint32(OpenTelemetryGrpcPort) // default gRPC port
 	if len(target) > 1 {
 		val, _ := strconv.ParseInt(target[1], 10, 32)
 		port = uint32(val)

@@ -39,7 +39,7 @@ func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh
 				DataPoints:  histogramDataPoints(prometheusMetric.Metric, extraAttributes),
 			}
 		default:
-			log.Info("Got unsupported metric type", "type", prometheusMetric.Type)
+			log.Info("got unsupported metric type", "type", prometheusMetric.Type)
 		}
 		openTelemetryMetrics = append(openTelemetryMetrics, otelMetric)
 	}

@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"path/filepath"
-	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -28,11 +28,6 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 	Expect(err).ToNot(HaveOccurred())
 
 	return actual
-}
-
-func testCaseName(ginkgo FullGinkgoTInterface) string {
-	nameSplit := strings.Split(ginkgo.Name(), " ")
-	return nameSplit[len(nameSplit)-1]
 }
 
 var _ = Describe("MeshMetric", func() {
@@ -47,7 +42,7 @@ var _ = Describe("MeshMetric", func() {
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 
-		name := testCaseName(GinkgoT())
+		name := utils.TestCaseName(GinkgoT())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
