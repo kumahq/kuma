@@ -148,7 +148,7 @@ func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
 func NewRemoveDeprecation(old string, msg string, removed bool) Deprecation {
 	fullMessage := fmt.Sprintf("'%s' will be removed in the future, '%s'", old, msg)
 	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored", old)
+		fullMessage = fmt.Sprintf("'%s' is no longer supported and it will be ignored", old)
 	}
 	return Deprecation{
 		Key:     old,
