@@ -61,7 +61,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := policies_xds.GatherClusters(rs)
 	removeResourcesConfiguredByMesh(rs, listeners.Prometheus, clusters.Prometheus)
 
-	// TODO multiple backends of the same type support
+	// TODO multiple backends of the same type support. Issue: https://github.com/kumahq/kuma/issues/8942
 	prometheusBackend := firstPrometheusBackend(conf.Backends)
 	openTelemetryBackend := firstOpenTelemetryBackend(conf.Backends)
 
