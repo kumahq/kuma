@@ -77,6 +77,13 @@ spec:
                                 MaxStreamDuration is the maximum time that a stream’s lifetime will span.
                                 Setting this timeout to 0 will disable it. Disabled by default.
                               type: string
+                            requestHeadersTimeout:
+                              description: |-
+                                RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
+                                activated when the first byte of the headers is received, and is disarmed when the last byte of
+                                the headers has been received. If not specified or set to 0, this timeout is disabled.
+                                Disabled by default.
+                              type: string
                             requestTimeout:
                               description: |-
                                 RequestTimeout The amount of time that proxy will wait for the entire request to be received.
@@ -121,6 +128,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string
@@ -158,6 +176,17 @@ spec:
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
                   tags:
                     additionalProperties:
                       type: string
@@ -195,6 +224,13 @@ spec:
                               description: |-
                                 MaxStreamDuration is the maximum time that a stream’s lifetime will span.
                                 Setting this timeout to 0 will disable it. Disabled by default.
+                              type: string
+                            requestHeadersTimeout:
+                              description: |-
+                                RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
+                                activated when the first byte of the headers is received, and is disarmed when the last byte of
+                                the headers has been received. If not specified or set to 0, this timeout is disabled.
+                                Disabled by default.
                               type: string
                             requestTimeout:
                               description: |-
@@ -240,6 +276,17 @@ spec:
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
                         tags:
                           additionalProperties:
                             type: string

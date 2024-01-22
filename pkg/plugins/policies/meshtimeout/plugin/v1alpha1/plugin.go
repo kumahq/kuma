@@ -51,7 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -162,22 +162,34 @@ func applyToClusters(
 }
 
 func applyToGateway(
-	rules core_rules.GatewayRules,
+	gatewayRules core_rules.GatewayRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
 	gatewayRoutes map[string]*envoy_route.RouteConfiguration,
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		rules, ok := rules.ToRules[core_rules.InboundListener{
+		key := core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
 			Port:    listenerInfo.Listener.Port,
-		}]
+		}
+
+		conf := getConf(gatewayRules.FromRules[key], core_rules.MeshSubset())
+		if err := plugin_xds.ConfigureGatewayListener(
+			conf,
+			listenerInfo.Listener.Protocol,
+			gatewayListeners[key],
+		); err != nil {
+			return err
+		}
+
+		toRules, ok := gatewayRules.ToRules[key]
 		if !ok {
 			continue
 		}
 
-		conf := getConf(rules, core_rules.MeshSubset())
+		conf = getConf(toRules, core_rules.MeshSubset())
 		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
 
 		if conf != nil && ok {
@@ -206,13 +218,13 @@ func applyToGateway(
 
 				serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-				conf := getConf(rules, core_rules.MeshService(serviceName))
+				conf := getConf(toRules, core_rules.MeshService(serviceName))
 				if conf == nil {
 					continue
 				}
 
 				if err := applyToClusters(
-					rules,
+					toRules,
 					serviceName,
 					meshCtx.GetServiceProtocol(serviceName),
 					cluster,

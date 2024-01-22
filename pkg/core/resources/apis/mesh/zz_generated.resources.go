@@ -1019,7 +1019,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag,
 	WsPath:              "meshgateways",
 	KumactlArg:          "meshgateway",
 	KumactlListArg:      "meshgateways",

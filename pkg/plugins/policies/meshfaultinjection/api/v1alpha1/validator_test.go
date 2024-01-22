@@ -54,6 +54,19 @@ from:
     default:
       http: []
 `),
+		Entry("Kind Mesh with to and only gateway", `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Mesh
+  proxyTypes: ["Gateway"]
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http: []
+`),
 	)
 
 	DescribeErrorCases(
@@ -62,11 +75,11 @@ from:
 			[]validators.Violation{
 				{
 					Field:   `spec.from[0].default.http.abort[0].httpStatus`,
-					Message: `must be in range [100, 600)`,
+					Message: `must be in inclusive range [100, 599]`,
 				},
 				{
 					Field:   `spec.from[0].default.http.abort[0].percentage`,
-					Message: `has to be in [0.0 - 100.0] range`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 				{
 					Field:   "spec.from[0].default.http.delay[1].value",
@@ -74,15 +87,15 @@ from:
 				},
 				{
 					Field:   `spec.from[0].default.http.delay[1].percentage`,
-					Message: `has to be in [0.0 - 100.0] range`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 				{
 					Field:   `spec.from[0].default.http.responseBandwidth[2].responseBandwidth`,
-					Message: `has to be in kbps/mbps/gbps units`,
+					Message: `must be in kbps/Mbps/Gbps units`,
 				},
 				{
 					Field:   `spec.from[0].default.http.responseBandwidth[2].percentage`,
-					Message: `has to be in [0.0 - 100.0] range`,
+					Message: `must be in inclusive range [0.0, 100.0]`,
 				},
 			}, `
 type: MeshFaultInjection
@@ -111,11 +124,11 @@ from:
 			[]validators.Violation{
 				{
 					Field:   "spec.from[0].default.http.abort[0].httpStatus",
-					Message: "must be in range [100, 600)",
+					Message: "must be in inclusive range [100, 599]",
 				},
 				{
 					Field:   "spec.from[0].default.http.responseBandwidth[2].responseBandwidth",
-					Message: "has to be in kbps/mbps/gbps units",
+					Message: "must be in kbps/Mbps/Gbps units",
 				},
 			}, `
 type: MeshFaultInjection
@@ -139,11 +152,11 @@ from:
 			[]validators.Violation{
 				{
 					Field:   "spec.from[0].default.http.responseBandwidth[0].responseBandwidth",
-					Message: "has to be in kbps/mbps/gbps units",
+					Message: "must be in kbps/Mbps/Gbps units",
 				},
 				{
 					Field:   "spec.from[0].default.http.responseBandwidth[0].percentage",
-					Message: "string has to be a valid number",
+					Message: "string must be a valid number",
 				},
 			}, `
 type: MeshFaultInjection
@@ -196,27 +209,6 @@ to:
           httpStatus: 503
           percentage: 50
 from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 503
-          percentage: 50`,
-		),
-		ErrorCases("top level Mesh and to",
-			[]validators.Violation{
-				{
-					Field:   "spec.to",
-					Message: "must not be defined",
-				},
-			}, `
-type: MeshFaultInjection
-mesh: mesh-1
-name: fi1
-targetRef:
-  kind: Mesh
-to:
   - targetRef:
       kind: Mesh
     default:
