@@ -25,6 +25,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-mirror-3dd740a2de879d4c:
@@ -52,6 +54,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-9f149ed9e14091ca:
@@ -79,6 +83,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:

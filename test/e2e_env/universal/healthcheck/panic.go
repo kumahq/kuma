@@ -52,6 +52,8 @@ networking:
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(healthCheck)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 

@@ -37,6 +37,39 @@ The only users who need to take action are those who are explicitly relying on t
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
 
+### Default `TrafficRoute` and `TrafficPermission` resources are not created when creating a new `Mesh`
+
+We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
+If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
+
+**The following policies will no longer be created automatically**:
+  
+  * `CircuitBreaker`
+  * `Retry`
+  * `Timeout`
+  * `TrafficPermission`
+  * `TrafficRoute`
+
+**The following policies will be created by default**:
+
+  * `MeshCircuitBreaker`
+  * `MeshRetry`
+  * `MeshTimeout`
+
+> [!CAUTION]
+> Before enabling `mTLS`, remember to add `MeshTrafficPermission.`
+
+Previously, Kuma would automatically create the default `TrafficPermission` policy for traffic routing. However, starting from version `2.6.0`, this is no longer the case.
+
+If you are using `mTLS`, you will need to manually create the `MeshTrafficPermission` policy before enabling `mTLS`.
+
+The `MeshTrafficPermission` policy allows you to specify which services can communicate with each other. This is necessary in a `mTLS` environment because `mTLS` requires that all communication between services be authenticated and authorized.
+
+#### When is it appropriate to set the `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` environment variable to `true`?
+
+* When zones connecting to the global control plane may be running an older version than `2.6.0`.
+* When recreating an environment using continuous delivery (CD) with legacy policies, missing the `TrafficRoute` policy will prevent legacy policies from being applied.
+
 ### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
 
 With the release of Kuma 2.6.0, we've made some changes to the implementation of `MeshTrafficPermission` policies targeting HTTP services. These changes primarily revolve around the use of the `envoy.filters.http.rbac` envoy filter instead of the `envoy.filters.network.rbac` filter. This migration entails the following adjustments:

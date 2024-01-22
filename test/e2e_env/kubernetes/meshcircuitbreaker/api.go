@@ -20,6 +20,13 @@ func API() {
 			Install(MeshKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshcricuitbreaker policy
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+			fmt.Sprintf("mesh-circuit-breaker-all-%s", meshName),
+		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

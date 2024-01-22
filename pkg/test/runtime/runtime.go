@@ -174,8 +174,8 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 		builder.CaManagers(),
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
-		builder.Config().Store.UnsafeDelete,
 		builder.Extensions(),
+		builder.Config(),
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 

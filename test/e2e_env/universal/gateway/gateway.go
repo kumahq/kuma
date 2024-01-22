@@ -15,6 +15,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit_api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -64,9 +65,14 @@ func Gateway() {
 	Context("when mTLS is enabled", func() {
 		It("should proxy simple HTTP requests", func() {
 			Expect(universal.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
 
 			ProxySimpleRequests(universal.Cluster, "universal",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 	})
 
@@ -113,6 +119,13 @@ networking:
   address: "%s"
 `, mesh, net.JoinHostPort(universal.Cluster.GetApp("external-echo-gateway").GetIP(), "8080")))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -166,9 +179,11 @@ conf:
     interval: 10s
 `, mesh))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
 		})
 		AfterAll(func() {
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.RateLimitResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should be rate limited", func() {
@@ -374,6 +389,11 @@ conf:
       - secret: example-kuma-io-certificate
 `, mesh))),
 			).To(Succeed())
+			Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		})
+
+		AfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, mesh, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 		})
 
 		It("should proxy simple HTTPS requests with Host header", func() {
@@ -396,16 +416,6 @@ conf:
 	})
 
 	It("really uses mTLS", func() {
-		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
-		// traffic, so removing the permission should cause requests to fail. We use this to
-		// prove that mTLS is enabled
-		PermissionName := "allow-all-" + mesh
-
-		Logf("deleting TrafficPermission %q", PermissionName)
-		Expect(universal.Cluster.GetKumactlOptions().KumactlDelete(
-			"traffic-permission", PermissionName, mesh),
-		).To(Succeed())
-
 		gatewayAddr := GatewayAddressPort("gateway-proxy", gatewayPort)
 		host := "example.kuma.io"
 		Logf("expecting 503 response from %q", gatewayAddr)

@@ -3,6 +3,7 @@ package mesh
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -32,6 +33,9 @@ func EnsureDefaultMeshResources(
 	mesh model.Resource,
 	skippedPolicies []string,
 	extensions context.Context,
+	createMeshDefaultRoutingResources bool,
+	k8sStore bool,
+	systemNamespace string,
 ) error {
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
@@ -51,25 +55,32 @@ func EnsureDefaultMeshResources(
 	} else {
 		logger.Info("Dataplane Token Signing Key already exists")
 	}
-
 	if slices.Contains(skippedPolicies, "*") {
 		logger.Info("skipping all default policy creation")
 		return nil
 	}
 
 	defaultResourceBuilders := map[string]func() model.Resource{
-		"allow-all":           defaultTrafficPermissionResource,
-		"route-all":           defaultTrafficRouteResource,
-		"timeout-all":         DefaultTimeoutResource,
-		"circuit-breaker-all": defaultCircuitBreakerResource,
-		"retry-all":           defaultRetryResource,
+		"mesh-gateways-timeout-all": defaulMeshGatewaysTimeoutResource,
+		"mesh-timeout-all":          defaultMeshTimeoutResource,
+		"mesh-circuit-breaker-all":  defaultMeshCircuitBreakerResource,
+		"mesh-retry-all":            defaultMeshRetryResource,
 	}
-
+	if createMeshDefaultRoutingResources {
+		defaultResourceBuilders["allow-all"] = defaultTrafficPermissionResource
+		defaultResourceBuilders["route-all"] = defaultTrafficRouteResource
+	}
 	for prefix, resourceBuilder := range defaultResourceBuilders {
+		resourceName := fmt.Sprintf("%s-%s", prefix, meshName)
+		// new policies are created in a kuma system namespace
+		if k8sStore && strings.HasPrefix(prefix, "mesh-") {
+			resourceName = fmt.Sprintf("%s.%s", resourceName, systemNamespace)
+		}
 		key := model.ResourceKey{
 			Mesh: meshName,
-			Name: fmt.Sprintf("%s-%s", prefix, meshName),
+			Name: resourceName,
 		}
+
 		resource := resourceBuilder()
 
 		var msg string
@@ -89,7 +100,6 @@ func EnsureDefaultMeshResources(
 
 		logger.Info(msg, "name", key.Name)
 	}
-
 	return nil
 }
 

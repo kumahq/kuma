@@ -17,6 +17,7 @@ func ReachableServices() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("client-server"),

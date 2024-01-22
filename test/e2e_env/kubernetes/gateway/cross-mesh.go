@@ -52,6 +52,8 @@ func CrossMeshGatewayOnKubernetes() {
 		setup := NewClusterSetup().
 			Install(MTLSMeshKubernetes(gatewayMesh)).
 			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace2)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
@@ -150,6 +152,7 @@ func CrossMeshGatewayOnKubernetes() {
 
 			setup := NewClusterSetup().
 				Install(MTLSMeshKubernetes(gatewayMesh2)).
+				Install(MeshTrafficPermissionAllowAllKubernetes(gatewayMesh2)).
 				Install(YamlK8s(crossMeshGatewayYaml2)).
 				Install(YamlK8s(crossMeshGatewayInstanceYaml2))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())

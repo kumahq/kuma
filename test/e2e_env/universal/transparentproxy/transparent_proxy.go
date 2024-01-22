@@ -20,6 +20,7 @@ func TransparentProxy() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Install(DemoClientUniversal("tp-client", mesh, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

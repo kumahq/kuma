@@ -36,6 +36,9 @@ type Defaults struct {
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
+	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
+	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
+	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 }
 
 type Metrics struct {
@@ -219,9 +222,7 @@ var DefaultConfig = func() Config {
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
-		Defaults: &Defaults{
-			SkipMeshCreation: false,
-		},
+		Defaults:                   DefaultDefaultsConfig(),
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				SubscriptionLimit: 2,
@@ -377,6 +378,14 @@ func DefaultGeneralConfig() *GeneralConfig {
 		WorkDir:         "",
 		TlsCipherSuites: []string{},
 		TlsMinVersion:   "TLSv1_2",
+	}
+}
+
+func DefaultDefaultsConfig() *Defaults {
+	return &Defaults{
+		SkipMeshCreation:           false,
+		SkipTenantResources:        false,
+		CreateMeshRoutingResources: true,
 	}
 }
 

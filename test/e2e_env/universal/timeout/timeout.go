@@ -51,6 +51,11 @@ conf:
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(faultInjection)).
+			Install(TimeoutUniversal(meshName)).
+			Install(RetryUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Install(CircuitBreakerUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true)),
 			).
@@ -59,6 +64,11 @@ conf:
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshtimeout policy
+		Eventually(func() error {
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshtimeout", "--mesh", meshName, "mesh-timeout-all-"+meshName)
+		}).Should(Succeed())
 	})
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())

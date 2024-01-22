@@ -51,6 +51,11 @@ destinations:
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
+				Install(TimeoutUniversal(meshName)).
+				Install(RetryUniversal(meshName)).
+				Install(TrafficRouteUniversal(meshName)).
+				Install(TrafficPermissionUniversal(meshName)).
+				Install(CircuitBreakerUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})

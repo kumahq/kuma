@@ -3,7 +3,6 @@ package meshhttproute
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -39,10 +38,6 @@ func Test() {
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(
-			k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "delete", "trafficroute", "route-all-meshhttproute"),
-		).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

@@ -26,7 +26,9 @@ func SetupAndGetState() []byte {
 			"--experimental-gatewayapi": "true",
 		}),
 		framework.WithEgress(),
-	}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+		framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "false"), // remove when default is to not create default policies
+	},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
