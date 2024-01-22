@@ -51,6 +51,32 @@ func MergeClusters(in io.Reader, out io.Writer) error {
 	return nil
 }
 
+func MergeClustersForOpenTelemetry(in io.Reader) ([]*io_prometheus_client.MetricFamily, error) {
+	var parser expfmt.TextParser
+	metricFamilies, err := parser.TextToMetricFamilies(in)
+	if err != nil {
+		return nil, err
+	}
+
+	var metrics []*io_prometheus_client.MetricFamily
+	for _, metricFamily := range metricFamilies {
+		switch {
+		case isClusterMetricFamily(metricFamily):
+			if err := handleClusterMetric(metricFamily); err != nil {
+				return nil, err
+			}
+		case isHttpMetricFamily(metricFamily):
+			if err := handleHttpMetricFamily(metricFamily); err != nil {
+				return nil, err
+			}
+		}
+
+		metrics = append(metrics, metricFamily)
+	}
+
+	return metrics, nil
+}
+
 func handleClusterMetric(metricFamily *io_prometheus_client.MetricFamily) error {
 	// metricsByClusterNames returns the data in the following format:
 	// 'cluster_name' ->

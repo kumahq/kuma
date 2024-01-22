@@ -5585,6 +5585,9 @@ components:
                       address:
                         description: Address on which an application listens.
                         type: string
+                      name:
+                        description: Name of the application to scrape
+                        type: string
                       path:
                         default: /metrics/prometheus
                         description: >-
@@ -5669,12 +5672,7 @@ components:
                 sidecar:
                   description: Sidecar metrics collection configuration
                   properties:
-                    regex:
-                      description: >-
-                        Regex that will be used to filter sidecar metrics. It
-                        uses Google RE2 engine https://github.com/google/re2
-                      type: string
-                    usedOnly:
+                    includeUnused:
                       default: false
                       description: >-
                         IncludeUnused if false will scrape only metrics that has
@@ -5686,6 +5684,11 @@ components:
                         least once). If true will scrape all metrics (even the
                         ones with zeros).
                       type: boolean
+                    regex:
+                      description: >-
+                        Regex that will be used to filter sidecar metrics. It
+                        uses Google RE2 engine https://github.com/google/re2
+                      type: string
                   type: object
               type: object
             targetRef:

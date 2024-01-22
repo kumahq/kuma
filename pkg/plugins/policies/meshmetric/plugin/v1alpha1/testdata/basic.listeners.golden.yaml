@@ -4,7 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: kuma-mesh-metric-config.sock
+        path: /tmp/kuma-mesh-metric-config.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -28,7 +28,7 @@ resources:
                   prefix: /
           statPrefix: _kuma_dynamicconfig_observability
     name: _kuma:dynamicconfig:observability
-- name: _kuma:metrics:prometheus
+- name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -50,13 +50,13 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:prometheus
+              name: _kuma:metrics:prometheus:default-backend
               routes:
               - match:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
                   prefixRewrite: /?filter=http.*&usedonly
-          statPrefix: _kuma_metrics_prometheus
-    name: _kuma:metrics:prometheus
+          statPrefix: _kuma_metrics_prometheus_default-backend
+    name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

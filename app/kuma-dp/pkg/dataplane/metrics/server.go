@@ -17,6 +17,7 @@ import (
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -52,7 +53,10 @@ var (
 
 var _ component.Component = &Hijacker{}
 
-type MetricsMutator func(in io.Reader, out io.Writer) error
+type (
+	MetricsMutator func(in io.Reader, out io.Writer) error
+	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
+)
 
 type QueryParametersModifier func(queryParameters url.Values) string
 
@@ -74,6 +78,7 @@ type ApplicationToScrape struct {
 	IsIPv6        bool
 	QueryModifier QueryParametersModifier
 	Mutator       MetricsMutator
+	OtelMutator   OtelMutator
 }
 
 type Hijacker struct {

@@ -49,9 +49,10 @@ type Metrics struct {
 }
 
 type Application struct {
-	Path    string `json:"path"`
-	Port    uint32 `json:"port"`
-	Address string `json:"address"`
+	Name    *string `json:"name,omitempty"`
+	Path    string  `json:"path"`
+	Port    uint32  `json:"port"`
+	Address string  `json:"address"`
 }
 
 type Backend struct {

@@ -104,7 +104,8 @@ func ApplyToGateway(
 
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 
-	for _, info := range plugin_gateway.ExtractGatewayListeners(proxy) {
+	listeners := plugin_gateway.ExtractGatewayListeners(proxy)
+	for listenerIndex, info := range listeners {
 		if info.Listener.Protocol != mesh_proto.MeshGateway_Listener_TCP {
 			continue
 		}
@@ -127,6 +128,8 @@ func ApplyToGateway(
 			})
 		}
 		info.HostInfos = hostInfos
+		listeners[listenerIndex] = info
+		plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
 		if err != nil {

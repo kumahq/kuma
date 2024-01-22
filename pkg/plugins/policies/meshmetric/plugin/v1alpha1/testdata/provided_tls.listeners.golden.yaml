@@ -28,7 +28,7 @@ resources:
                   prefix: /
           statPrefix: _kuma_dynamicconfig_observability
     name: _kuma:dynamicconfig:observability
-- name: _kuma:metrics:prometheus
+- name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -52,14 +52,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:prometheus
+              name: _kuma:metrics:prometheus:default-backend
               routes:
               - match:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
                   prefixRewrite: /?usedonly
-          statPrefix: _kuma_metrics_prometheus
+          statPrefix: _kuma_metrics_prometheus_default-backend
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
@@ -73,14 +73,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:prometheus
+              name: _kuma:metrics:prometheus:default-backend
               routes:
               - match:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
                   prefixRewrite: /?usedonly
-          statPrefix: _kuma_metrics_prometheus
+          statPrefix: _kuma_metrics_prometheus_default-backend
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -91,5 +91,5 @@ resources:
                 filename: /path/cert
               privateKey:
                 filename: /path/key
-    name: _kuma:metrics:prometheus
+    name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

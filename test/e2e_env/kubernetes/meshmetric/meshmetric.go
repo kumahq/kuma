@@ -12,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
+	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -37,6 +39,38 @@ spec:
           tls:
             mode: Disabled
 `, policyName, Config.KumaNamespace, mesh)
+	return YamlK8s(meshMetric)
+}
+
+func MeshMetricMultiplePrometheusBackends(policyName string, mesh string, firstPrometheus string, secondPrometheus string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: Prometheus
+        prometheus: 
+          clientId: %s
+          port: 8080
+          path: /metrics
+          tls:
+            mode: Disabled
+      - type: Prometheus
+        prometheus: 
+          clientId: %s
+          port: 8081
+          path: /metrics
+          tls:
+            mode: Disabled
+`, policyName, Config.KumaNamespace, mesh, firstPrometheus, secondPrometheus)
 	return YamlK8s(meshMetric)
 }
 
@@ -118,13 +152,62 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func MeshMetricWithOpenTelemetryBackend(mesh, openTelemetryEndpoint string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: otel-metrics
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: OpenTelemetry
+        openTelemetry: 
+          endpoint: %s
+`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
+	return YamlK8s(meshMetric)
+}
+
+func MeshMetricWithOpenTelemetryAndPrometheusBackend(mesh, openTelemetryEndpoint string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: otel-metrics
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: OpenTelemetry
+        openTelemetry: 
+          endpoint: %s
+      - type: Prometheus
+        prometheus: 
+          port: 8080
+          path: /metrics
+          tls:
+            mode: Disabled
+`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetric() {
 	const (
-		namespace             = "meshmetric"
-		mainMesh              = "main-metrics-mesh"
-		mainPrometheusId      = "main-prometheus"
-		secondaryMesh         = "secondary-metrics-mesh"
-		secondaryPrometheusId = "secondary-prometheus"
+		namespace              = "meshmetric"
+		observabilityNamespace = "observability"
+		mainMesh               = "main-metrics-mesh"
+		mainPrometheusId       = "main-prometheus"
+		secondaryMesh          = "secondary-metrics-mesh"
+		secondaryPrometheusId  = "secondary-prometheus"
 	)
 
 	BeforeAll(func() {
@@ -132,6 +215,12 @@ func MeshMetric() {
 			Install(MeshKubernetes(mainMesh)).
 			Install(MeshKubernetes(secondaryMesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(observabilityNamespace)).
+			Install(otelcollector.Install(
+				otelcollector.WithNamespace(observabilityNamespace),
+				otelcollector.WithIPv6(Config.IPV6),
+			)).
+			Install(democlient.Install(democlient.WithNamespace(observabilityNamespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 
@@ -176,6 +265,37 @@ func MeshMetric() {
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+		}).Should(Succeed())
+	})
+
+	It("MeshMetric policy with multiple Prometheus backends", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(MeshMetricMultiplePrometheusBackends("mesh-policy", mainMesh, mainPrometheusId, secondaryPrometheusId))).To(Succeed())
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			// main Prometheus backend
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+
+			// secondary Prometheus backend
+			stdout, _, err = client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8081")+"/metrics",
 				client.FromKubernetesPod(namespace, "test-server-0"),
 			)
 
@@ -315,6 +435,52 @@ func MeshMetric() {
 			// single DPP overridden by MeshService targetRef
 			g.Expect(getServicesFrom(madsResponse)).To(ConsistOf("test-server-1_meshmetric_svc_80"))
 		}).Should(Succeed())
+	})
+
+	It("MeshMetric with OpenTelemetry enabled", func() {
+		// given
+		openTelemetryCollector := otelcollector.From(kubernetes.Cluster)
+		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
+				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
+				client.WithVerbose(),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
+		}, "2m", "3s").Should(Succeed())
+	})
+
+	It("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
+		// given
+		openTelemetryCollector := otelcollector.From(kubernetes.Cluster)
+		testServerIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndPrometheusBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			// metrics from OpenTelemetry
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
+				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
+				client.WithVerbose(),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
+
+			// metrics from Prometheus
+			stdout, _, err = client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(testServerIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+		}, "2m", "3s").Should(Succeed())
 	})
 }
 
