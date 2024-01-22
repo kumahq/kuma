@@ -299,7 +299,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(actual.Items).To(HaveLen(1))
 			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
-				mesh_proto.ResourceOriginLabel: mesh_proto.ResourceOriginGlobal,
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			}))
 		}, "5s", "100ms").Should(Succeed())
 	})
