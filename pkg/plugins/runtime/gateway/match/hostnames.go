@@ -12,6 +12,9 @@ func (h *hostname) wildcard() bool {
 }
 
 func (h *hostname) matches(name string) bool {
+	if name == "*" {
+		return true
+	}
 	n := makeHostname(name)
 
 	if h.wildcard() || n.wildcard() {
@@ -26,6 +29,22 @@ func makeHostname(name string) hostname {
 	return hostname{Host: parts[0], Domain: parts[1]}
 }
 
+func Contains(target string, test string) bool {
+	if target == "*" {
+		return true
+	}
+	if test == "*" {
+		return false
+	}
+	targetHost := makeHostname(target)
+	testHost := makeHostname(test)
+	// TODO domain has to be less
+	if (targetHost.wildcard() || targetHost.Host == testHost.Host) && targetHost.Domain == testHost.Domain {
+		return true
+	}
+	return false
+}
+
 // Hostnames returns true if target is a host or domain name match for
 // any of the given matches. All the hostnames are assumed to be fully
 // qualified (e.g. "foo.example.com") or wildcards (e.g. "*.example.com).
@@ -35,6 +54,9 @@ func makeHostname(name string) hostname {
 // 1. They are exactly equal, OR
 // 2. One of them is a domain wildcard and the domain part matches.
 func Hostnames(target string, matches ...string) bool {
+	if target == "*" {
+		return true
+	}
 	targetHost := makeHostname(target)
 
 	for _, m := range matches {

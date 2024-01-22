@@ -44,8 +44,25 @@ var ConnectionPolicyTypes = []model.ResourceType{
 }
 
 type GatewayHostInfo struct {
-	Host    GatewayHost
-	Entries []route.Entry
+	Host GatewayHost
+	// These are entries created internally in this plugin by MeshGatewayRoute
+	// before the Mesh*Route policies run
+	meshGatewayRouteEntries []route.Entry
+	// This are entries created by new Mesh*Route policies
+	routeEntries []route.Entry
+}
+
+func (i GatewayHostInfo) Entries() []route.Entry {
+	// We need to return one or the other because the gateway plugin doesn't
+	// know about Mesh*Routes and generates a 404 entry.
+	if len(i.routeEntries) > 0 {
+		return i.routeEntries
+	}
+	return i.meshGatewayRouteEntries
+}
+
+func (i *GatewayHostInfo) AppendEntries(entries []route.Entry) {
+	i.routeEntries = append(i.routeEntries, entries...)
 }
 
 type GatewayHost struct {
@@ -177,8 +194,8 @@ func gatewayListenerInfoFromProxy(
 			)
 
 			hostInfos = append(hostInfos, GatewayHostInfo{
-				Host:    host,
-				Entries: GenerateEnvoyRouteEntries(host),
+				Host:                    host,
+				meshGatewayRouteEntries: GenerateEnvoyRouteEntries(host),
 			})
 		}
 

@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"context"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -133,7 +132,7 @@ func ApplyToGateway(
 			continue
 		}
 
-		var keys []string
+		var ruleHostnames []string
 		rulesByHostname := map[string][]ToRouteRule{}
 		for _, rawRule := range rawRules {
 			conf := rawRule.Conf.(api.PolicyDefault)
@@ -150,7 +149,7 @@ func ApplyToGateway(
 			for _, hostname := range hostnames {
 				accRule, ok := rulesByHostname[hostname]
 				if !ok {
-					keys = append(keys, hostname)
+					ruleHostnames = append(ruleHostnames, hostname)
 				}
 				rulesByHostname[hostname] = append(accRule, rule)
 			}
@@ -162,26 +161,26 @@ func ApplyToGateway(
 		}
 
 		for _, info := range info.HostInfos {
-			listenerHostname := info.Host.Hostname
-			separateHostnames := map[string][]ToRouteRule{}
-			for _, routeHostname := range keys {
-				if !(listenerHostname == "*" || routeHostname == "*" || match.Hostnames(listenerHostname, routeHostname)) {
+			// We need to find the set of hostnames that match the listener hostname
+			// but are also less than or equal to the listener hostname
+			for _, ruleHostname := range ruleHostnames {
+				if !match.Hostnames(info.Host.Hostname, ruleHostname) || !match.Contains(info.Host.Hostname, ruleHostname) {
 					continue
 				}
-				// We need to take the most specific hostname
-				hostnameKey := listenerHostname
-				if strings.HasPrefix(listenerHostname, "*") && !strings.HasPrefix(routeHostname, "*") {
-					hostnameKey = routeHostname
+				// Find all rules that match this hostname
+				var rules []ToRouteRule
+				for otherRuleHostname, hostnameRules := range rulesByHostname {
+					if !match.Hostnames(ruleHostname, otherRuleHostname) || !match.Contains(otherRuleHostname, ruleHostname) {
+						continue
+					}
+					rules = append(rules, hostnameRules...)
 				}
-				separateHostnames[hostnameKey] = append(separateHostnames[hostnameKey], rulesByHostname[routeHostname]...)
-			}
-			for hostname, rules := range separateHostnames {
-				host := info.Host
-				host.Hostname = hostname
-				hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
-					Host:    host,
-					Entries: GenerateEnvoyRouteEntries(host, rules),
-				})
+				// Create an info for every hostname match
+				// We may end up duplicating info more than once so we copy it here
+				specificInfo := info
+				specificInfo.Host.Hostname = ruleHostname
+				specificInfo.AppendEntries(GenerateEnvoyRouteEntries(info.Host, rules))
+				hostInfos = append(hostInfos, specificInfo)
 			}
 		}
 		sort.Slice(hostInfos, func(i, j int) bool {
