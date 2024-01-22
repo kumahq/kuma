@@ -61,6 +61,12 @@ func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
 }
 
 func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+	_, err := h.coreRegistry.DescriptorFor(core_model.ResourceType(req.Kind.Kind))
+	if err != nil {
+		// we only care about types in the registry for this handler
+		return admission.Allowed("")
+	}
+
 	coreRes, k8sObj, err := h.decode(req)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
