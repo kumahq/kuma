@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	utilnet "github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type ConfigFetcher struct {
