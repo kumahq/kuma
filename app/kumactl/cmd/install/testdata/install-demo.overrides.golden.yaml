@@ -97,6 +97,8 @@ kind: MeshGateway
 mesh: default
 metadata:
   name: demo-app
+  labels:
+    kuma.io/origin: zone
 spec:
   conf:
     listeners:
@@ -118,22 +120,26 @@ spec:
     kuma.io/service: demo-app_gateway
 ---
 apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayRoute
-mesh: default
+kind: MeshHTTPRoute
 metadata:
   name: demo-app
+  namespace: kuma-system
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: default
 spec:
-  conf:
-   http:
-    rules:
-    - matches:
-      - path:
-          match: PREFIX
-          value: /
-      backends:
-      - destination:
-          kuma.io/service: demo-app_not-kuma-demo_svc_5000
-        weight: 1
-  selectors:
-  - match:
-      kuma.io/service: demo-app_gateway
+  targetRef:
+    kind: MeshGateway
+    name: demo-app
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: "/"
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: demo-app_not-kuma-demo_svc_5000

@@ -13,8 +13,9 @@ import (
 )
 
 type demoTemplateArgs struct {
-	Namespace string
-	Zone      string
+	Namespace       string
+	SystemNamespace string
+	Zone            string
 }
 
 type GatewayFilter struct{}
@@ -35,8 +36,9 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 			}
 
 			templateArgs := demoTemplateArgs{
-				Namespace: args.Namespace,
-				Zone:      args.Zone,
+				Namespace:       args.Namespace,
+				Zone:            args.Zone,
+				SystemNamespace: args.SystemNamespace,
 			}
 
 			templateFiles, err := data.ReadFiles(kumactl_data.InstallDemoFS())

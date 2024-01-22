@@ -1,9 +1,10 @@
 package context
 
 type InstallDemoArgs struct {
-	Zone           string
-	Namespace      string
-	WithoutGateway bool
+	Zone            string
+	Namespace       string
+	SystemNamespace string
+	WithoutGateway  bool
 }
 
 type InstallDemoContext struct {
@@ -13,9 +14,10 @@ type InstallDemoContext struct {
 func DefaultInstallDemoContext() InstallDemoContext {
 	return InstallDemoContext{
 		Args: InstallDemoArgs{
-			Zone:           "local",
-			Namespace:      "kuma-demo",
-			WithoutGateway: false,
+			Zone:            "local",
+			Namespace:       "kuma-demo",
+			SystemNamespace: "kuma-system",
+			WithoutGateway:  false,
 		},
 	}
 }
