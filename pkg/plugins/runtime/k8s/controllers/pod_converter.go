@@ -108,11 +108,22 @@ func (p *PodConverter) dataplaneFor(
 		if !exist {
 			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
 		}
-		inboundPortV6, _, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
-		if err != nil {
-			return nil, err
-		}
 
+		var inboundPortV6 uint32
+		ipv6Disabled, _, err := annotations.GetEnabledWithDefault(false, metadata.KumaTransparentProxyingDisableIPv6)
+		if ipv6Disabled {
+			inboundPortV6 = 0
+		} else {
+			// if the user does not specify the inbound port for ipv6, we use the same port as ipv4
+			if _, ok := annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6]; !ok {
+				inboundPortV6 = inboundPort
+			} else {
+				inboundPortV6, _, err = annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 		if err != nil {
 			return nil, err
