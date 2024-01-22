@@ -35,3 +35,9 @@ func GatewayDataplane() *mesh.DataplaneResource {
 		WithBuiltInGateway("sample-gateway").
 		Build()
 }
+
+func IgnoredDataplaneBackendBuilder() *builders.DataplaneBuilder {
+	return DataplaneBackendBuilder().With(func(resource *mesh.DataplaneResource) {
+		resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_Ignored
+	})
+}
