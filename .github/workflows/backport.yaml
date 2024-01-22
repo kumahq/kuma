@@ -4,6 +4,7 @@ on:
     types: [labeled, closed]
 permissions:
   contents: read
+  pull-requests: write
 jobs:
   maybe-backport:
     uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
