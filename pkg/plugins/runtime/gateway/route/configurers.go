@@ -179,6 +179,9 @@ func RouteActionForward(xdsCtx xds_context.Context, endpoints core_xds.EndpointM
 			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption
 
 			isMeshCluster := xdsCtx.Mesh.Resource.ZoneEgressEnabled() || !xdsCtx.Mesh.IsExternalService(destination.Destination[mesh_proto.ServiceTag])
+			if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
+				isMeshCluster = xdsCtx.Mesh.Resource.ZoneEgressEnabled() || !HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, endpoints, destination)
+			}
 
 			if isMeshCluster {
 				requestHeadersToAdd = []*envoy_config_core.HeaderValueOption{{
