@@ -891,7 +891,7 @@ var _ = Describe("Validation", func() {
 			},
 			operation: admissionv1.Delete,
 		}),
-		Entry("should fail validation on CREATE in Zone CP when origin label has unkown value", testCase{
+		Entry("should fail validation on CREATE in Zone CP when origin label has unknown value", testCase{
 			mode:        core.Zone,
 			objTemplate: &v1alpha1.MeshTimeout{},
 			username:    "cli-user",
