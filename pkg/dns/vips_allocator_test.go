@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
 func dpWithTags(tags ...map[string]string) *mesh_proto.Dataplane {
@@ -752,6 +753,29 @@ var _ = DescribeTable("outboundView",
 				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "external-service:es-1", Port: 8080},
 			},
 		},
+	}),
+	Entry("skip ignored listener", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp-1"): samples.IgnoredDataplaneBackendBuilder().WithMesh("mesh").Build(),
+			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.mesh",
+						Port: "8080",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+							{Name: "port"},
+						},
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{},
+		thenOutbounds:       map[vips.HostnameEntry][]vips.OutboundEntry{},
 	}),
 )
 

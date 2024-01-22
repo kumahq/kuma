@@ -33,6 +33,12 @@ func ChangeService() {
 		"changesvc-test-label": "second",
 	}
 
+	thirdTestServerLabels := map[string]string{
+		"kuma.io/sidecar-injection": "disabled",
+		"app":                       "test-server",
+		"changesvc-test-label":      "third",
+	}
+
 	newSvc := func(selector map[string]string) *corev1.Service {
 		return &corev1.Service{
 			TypeMeta: kube_meta.TypeMeta{
@@ -84,6 +90,14 @@ func ChangeService() {
 				testserver.WithoutService(),
 				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
 				testserver.WithPodLabels(secondTestServerLabels),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithName("test-server-third"),
+				testserver.WithEchoArgs("echo", "--instance", "test-server-third"),
+				testserver.WithoutService(),
+				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+				testserver.WithPodLabels(thirdTestServerLabels),
 			)).
 			Install(YamlK8sObject(newSvc(firstTestServerLabels))).
 			Setup(kubernetes.Cluster)
@@ -151,5 +165,26 @@ func ChangeService() {
 
 		// and we did not drop a single request
 		Expect(failedErr).ToNot(HaveOccurred())
+	})
+
+	It("should switch to the instance of a service that in not in the mesh", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(YamlK8sObject(newSvc(firstTestServerLabels)))).To(Succeed())
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("test-server-first"))
+		}, "30s", "1s").Should(Succeed())
+
+		// when
+		err := kubernetes.Cluster.Install(YamlK8sObject(newSvc(thirdTestServerLabels)))
+
+		// then
+		Expect(err).To(Succeed())
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("test-server-third"))
+		}, "30s", "1s").Should(Succeed())
 	})
 }
