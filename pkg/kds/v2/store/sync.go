@@ -214,11 +214,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			creationTime := r.GetMeta().GetCreationTime()
 
 			createOpts := []store.CreateOptionsFunc{
 				store.CreateBy(rk),
-				store.CreatedAt(creationTime),
+				store.CreatedAt(core.Now()),
 				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
 			if opts.Zone != "" {
