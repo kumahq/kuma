@@ -59,6 +59,7 @@ var _ = Describe("MeshMetric", func() {
 								Conf: api.Conf{
 									Applications: &[]api.Application{
 										{
+											Name: pointer.To("test-app"),
 											Path: pointer.To("/metrics"),
 											Port: 8080,
 										},

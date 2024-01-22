@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"io"
 	"net"
 	"net/http"
@@ -205,6 +206,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			address = application.Address
 		}
 		applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
+			Name:          pointer.Deref(application.Name),
 			Address:       address,
 			Path:          application.Path,
 			Port:          application.Port,

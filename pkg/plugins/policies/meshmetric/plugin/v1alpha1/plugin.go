@@ -208,6 +208,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 	var applications []plugin_xds.Application
 	for _, app := range pointer.Deref(conf.Applications) {
 		applications = append(applications, plugin_xds.Application{
+			Name:    app.Name,
 			Address: pointer.Deref(app.Address),
 			Port:    app.Port,
 			Path:    pointer.DerefOr(app.Path, "/metrics"),
