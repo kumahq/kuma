@@ -31,7 +31,9 @@ var (
 const (
 	OriginOpenTelemetry       = "open-telemetry"
 	OriginDynamicConfig       = "dynamic-config"
+	PrometheusListenerName    = "_kuma:metrics:prometheus"
 	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
+	DefaultBackendName        = "default-backend"
 	OpenTelemetryGrpcPort     = 4317
 )
 
@@ -61,11 +63,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	clusters := policies_xds.GatherClusters(rs)
 	removeResourcesConfiguredByMesh(rs, listeners.Prometheus, clusters.Prometheus)
 
+	prometheusBackends := filterPrometheusBackends(conf.Backends)
 	// TODO multiple backends of the same type support. Issue: https://github.com/kumahq/kuma/issues/8942
-	prometheusBackend := firstPrometheusBackend(conf.Backends)
 	openTelemetryBackend := firstOpenTelemetryBackend(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackend, conf)
+	err := configurePrometheus(rs, proxy, prometheusBackends, conf)
 	if err != nil {
 		return err
 	}
@@ -73,7 +75,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	err = configureDynamicDPPConfig(rs, proxy, conf, prometheusBackend, openTelemetryBackend)
+	err = configureDynamicDPPConfig(rs, proxy, conf, prometheusBackends, openTelemetryBackend)
 	if err != nil {
 		return err
 	}
@@ -89,37 +91,40 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackend *api.PrometheusBackend, conf api.Conf) error {
-	if prometheusBackend == nil {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, conf api.Conf) error {
+	if len(prometheusBackends) == 0 {
 		return nil
 	}
-	configurer := &plugin_xds.PrometheusConfigurer{
-		Backend:         prometheusBackend,
-		ListenerName:    fmt.Sprintf("_%s", envoy_names.GetPrometheusListenerName()),
-		EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
-		ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-		StatsPath:       "/" + envoyMetricsFilter(conf),
-	}
 
-	cluster, err := configurer.ConfigureCluster(proxy)
-	if err != nil {
-		return err
-	}
-	rs.Add(&core_xds.Resource{
-		Name:     cluster.GetName(),
-		Origin:   generator.OriginPrometheus,
-		Resource: cluster,
-	})
+	for _, backend := range prometheusBackends {
+		configurer := &plugin_xds.PrometheusConfigurer{
+			Backend:         backend,
+			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
+			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
+			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
+			StatsPath:       "/" + envoyMetricsFilter(conf),
+		}
 
-	listener, err := configurer.ConfigureListener(proxy)
-	if err != nil {
-		return err
+		cluster, err := configurer.ConfigureCluster(proxy)
+		if err != nil {
+			return err
+		}
+		rs.Add(&core_xds.Resource{
+			Name:     cluster.GetName(),
+			Origin:   generator.OriginPrometheus,
+			Resource: cluster,
+		})
+
+		listener, err := configurer.ConfigureListener(proxy)
+		if err != nil {
+			return err
+		}
+		rs.Add(&core_xds.Resource{
+			Name:     listener.GetName(),
+			Origin:   generator.OriginPrometheus,
+			Resource: listener,
+		})
 	}
-	rs.Add(&core_xds.Resource{
-		Name:     listener.GetName(),
-		Origin:   generator.OriginPrometheus,
-		Resource: listener,
-	})
 
 	return nil
 }
@@ -159,10 +164,10 @@ func configureOpenTelemetry(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, ope
 	return nil
 }
 
-func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, conf api.Conf, prometheusBackend *api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) error {
+func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) error {
 	configurer := &plugin_xds.DppConfigConfigurer{
 		ListenerName: DynamicConfigListenerName,
-		DpConfig:     createDynamicConfig(conf, proxy, prometheusBackend, openTelemetryBackend),
+		DpConfig:     createDynamicConfig(conf, proxy, prometheusBackends, openTelemetryBackend),
 	}
 
 	listener, err := configurer.ConfigureListener(proxy)
@@ -199,7 +204,7 @@ func envoyMetricsFilter(conf api.Conf) string {
 	return ""
 }
 
-func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend *api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) plugin_xds.MeshMetricDpConfig {
+func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) plugin_xds.MeshMetricDpConfig {
 	var applications []plugin_xds.Application
 	for _, app := range pointer.Deref(conf.Applications) {
 		applications = append(applications, plugin_xds.Application{
@@ -210,7 +215,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 	}
 
 	var backends []plugin_xds.Backend
-	if prometheusBackend != nil {
+	if len(prometheusBackends) != 0 {
 		backends = append(backends, plugin_xds.Backend{
 			Type: string(api.PrometheusBackendType),
 		})
@@ -256,11 +261,12 @@ func firstOpenTelemetryBackend(backends *[]api.Backend) *api.OpenTelemetryBacken
 	return nil
 }
 
-func firstPrometheusBackend(backends *[]api.Backend) *api.PrometheusBackend {
+func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend {
+	var prometheusBackends []*api.PrometheusBackend
 	for _, backend := range pointer.Deref(backends) {
 		if backend.Type == api.PrometheusBackendType && backend.Prometheus != nil {
-			return backend.Prometheus
+			prometheusBackends = append(prometheusBackends, backend.Prometheus)
 		}
 	}
-	return nil
+	return prometheusBackends
 }

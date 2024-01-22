@@ -42,6 +42,38 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func MeshMetricMultiplePrometheusBackends(policyName string, mesh string, firstPrometheus string, secondPrometheus string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: Prometheus
+        prometheus: 
+          clientId: %s
+          port: 8080
+          path: /metrics
+          tls:
+            mode: Disabled
+      - type: Prometheus
+        prometheus: 
+          clientId: %s
+          port: 8081
+          path: /metrics
+          tls:
+            mode: Disabled
+`, policyName, Config.KumaNamespace, mesh, firstPrometheus, secondPrometheus)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetricWithSpecificPrometheusClientId(policyName string, mesh string, clientId string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -233,6 +265,37 @@ func MeshMetric() {
 		Eventually(func(g Gomega) {
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+		}).Should(Succeed())
+	})
+
+	It("MeshMetric policy with multiple Prometheus backends", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(MeshMetricMultiplePrometheusBackends("mesh-policy", mainMesh, mainPrometheusId, secondaryPrometheusId))).To(Succeed())
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			// main Prometheus backend
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+
+			// secondary Prometheus backend
+			stdout, _, err = client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8081")+"/metrics",
 				client.FromKubernetesPod(namespace, "test-server-0"),
 			)
 

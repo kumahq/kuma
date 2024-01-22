@@ -115,6 +115,51 @@ var _ = Describe("MeshMetric", func() {
 				).
 				Build(),
 		}),
+		Entry("multiple_prometheus", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										Regex:         pointer.To("http.*"),
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												ClientId: pointer.To("first-backend"),
+												Path:     "/metrics",
+												Port:     5670,
+											},
+										},
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												ClientId: pointer.To("second-backend"),
+												Path:     "/metrics",
+												Port:     5671,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
 		Entry("openTelemetry", testCase{
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
