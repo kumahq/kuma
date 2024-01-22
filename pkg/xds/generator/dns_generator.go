@@ -47,9 +47,14 @@ func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xds
 		}
 	}
 
-	listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP).
+	listenAddress := "127.0.0.1"
+	if proxy.Dataplane.IsIPv6() {
+		listenAddress = "::1"
+	}
+	listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, listenAddress, dnsPort, core_xds.SocketAddressProtocolUDP).
 		WithOverwriteName(names.GetDNSListenerName()).
 		Configure(envoy_listeners.DNS(vips)).
+		Configure(envoy_listeners.EnableIPv4CompatPrimaryAddress()).
 		Build()
 	if err != nil {
 		return nil, err

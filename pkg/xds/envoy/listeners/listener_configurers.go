@@ -103,3 +103,15 @@ func AdditionalAddresses(addresses []mesh_proto.OutboundInterface) ListenerBuild
 		Addresses: addresses,
 	})
 }
+
+func EnableIPv4CompatPrimaryAddress() ListenerBuilderOpt {
+	return AddListenerConfigurer(v3.ListenerConfigureFunc(func(listener *envoy_listener.Listener) error {
+		addr := listener.GetAddress().GetSocketAddress()
+		if addr == nil {
+			return nil
+		}
+
+		addr.Ipv4Compat = true
+		return nil
+	}))
+}
