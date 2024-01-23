@@ -162,7 +162,7 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		case profileAll:
 			resTypes = append(resTypes, model.ResourceType(res.Name))
 		case profileFederation:
-			if res.IncludeInFederation && ( res.Policy != nil && !res.Policy.IsTargetRef ) && res.Name != string(core_mesh.MeshGatewayType) {
+			if res.IncludeInFederation && ( res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef) ) && res.Name != string(core_mesh.MeshGatewayType) {
 				resTypes = append(resTypes, model.ResourceType(res.Name))
 			}
 		case profileFederationWithPolicies:
