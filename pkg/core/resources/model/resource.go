@@ -409,6 +409,13 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 	}
 }
 
+func GetOriginStoreType(r Resource) string {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.OriginStoreType] != "" {
+		return labels[mesh_proto.OriginStoreType]
+	}
+	return ""
+}
+
 func GetDisplayName(r Resource) string {
 	// prefer display name as it's more predictable, because
 	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this

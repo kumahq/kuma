@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -17,14 +19,12 @@ import (
 )
 
 type kdsEnvoyAdminClient struct {
-	rpcs     service.EnvoyAdminRPCs
-	k8sStore bool
+	rpcs service.EnvoyAdminRPCs
 }
 
-func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, k8sStore bool) EnvoyAdminClient {
+func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs) EnvoyAdminClient {
 	return &kdsEnvoyAdminClient{
-		rpcs:     rpcs,
-		k8sStore: k8sStore,
+		rpcs: rpcs,
 	}
 }
 
@@ -147,8 +147,16 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 
 func resNameInZone(r core_model.Resource) string {
 	name := core_model.GetDisplayName(r)
+	// we need to check for the legacy name which starts with zoneName
+	if strings.HasPrefix(r.GetMeta().GetName(), core_model.ZoneOfResource(r)) {
+		return name
+	}
+	// since 2.6 zone sets store type so we can figure out if we need to add namespace
+	if core_model.GetOriginStoreType(r) != store.KubernetesStore {
+		return name
+	}
 	if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
-		name = k8s.K8sNamespacedNameToCoreName(name, ns)
+		return k8s.K8sNamespacedNameToCoreName(name, ns)
 	}
 	return name
 }

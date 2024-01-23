@@ -87,9 +87,10 @@ var _ = Describe("Context", func() {
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "dpi-1", "zone"),
 						Labels: map[string]string{
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
-							"kuma.io/display-name": "dpi-1",
+							"kuma.io/origin-store-type": "kubernetes",
+							"kuma.io/origin":            "zone",
+							"kuma.io/zone":              "zone",
+							"kuma.io/display-name":      "dpi-1",
 						},
 					},
 					Spec: &mesh_proto.DataplaneInsight{
@@ -132,9 +133,10 @@ var _ = Describe("Context", func() {
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "zii-1", "zone"),
 						Labels: map[string]string{
-							"kuma.io/display-name": "zii-1",
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
+							"kuma.io/origin-store-type": "kubernetes",
+							"kuma.io/display-name":      "zii-1",
+							"kuma.io/origin":            "zone",
+							"kuma.io/zone":              "zone",
 						},
 					},
 					Spec: &mesh_proto.ZoneIngressInsight{
@@ -171,9 +173,10 @@ var _ = Describe("Context", func() {
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "zei-1", "zone"),
 						Labels: map[string]string{
-							"kuma.io/zone":         "zone",
-							"kuma.io/display-name": "zei-1",
-							"kuma.io/origin":       "zone",
+							"kuma.io/origin-store-type": "kubernetes",
+							"kuma.io/zone":              "zone",
+							"kuma.io/display-name":      "zei-1",
+							"kuma.io/origin":            "zone",
 						},
 					},
 					Spec: &mesh_proto.ZoneEgressInsight{
@@ -217,9 +220,10 @@ var _ = Describe("Context", func() {
 					Meta: &test_model.ResourceMeta{
 						Name: hash.HashedName("", "cb-1", "zone"),
 						Labels: map[string]string{
-							"kuma.io/display-name": "cb-1",
-							"kuma.io/origin":       "zone",
-							"kuma.io/zone":         "zone",
+							"kuma.io/origin-store-type": "kubernetes",
+							"kuma.io/display-name":      "cb-1",
+							"kuma.io/origin":            "zone",
+							"kuma.io/zone":              "zone",
 						},
 					},
 					Spec: &mesh_proto.CircuitBreaker{

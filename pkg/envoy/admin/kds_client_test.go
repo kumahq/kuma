@@ -18,7 +18,7 @@ import (
 var _ = Describe("KDS client", func() {
 	Context("Universal", func() {
 		rpcs := service.NewEnvoyAdminRPCs()
-		client := admin.NewKDSEnvoyAdminClient(rpcs, false)
+		client := admin.NewKDSEnvoyAdminClient(rpcs)
 
 		zoneName := "zone-1"
 		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
@@ -141,7 +141,7 @@ var _ = Describe("KDS client", func() {
 
 	Context("Kubernetes", func() {
 		streams := service.NewEnvoyAdminRPCs()
-		client := admin.NewKDSEnvoyAdminClient(streams, true)
+		client := admin.NewKDSEnvoyAdminClient(streams)
 
 		zoneName := "zone-1"
 		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
