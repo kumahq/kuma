@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -1435,7 +1434,7 @@ conf:
 `,
 		),
 
-		Entry("external service works without default traffic permission policy",
+		Entry("external service works without traffic permission policy",
 			"external-service-without-default-traffic-permission.yaml", `
 type: ExternalService
 mesh: default
@@ -1462,13 +1461,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: external-httpbin
-`, []WithoutResource{
-				{
-					Resource: core_mesh.TrafficPermissionType,
-					Mesh:     "default",
-					Name:     "allow-all-default",
-				},
-			},
+`,
 		),
 
 		Entry("generates cross mesh gateway listeners",
