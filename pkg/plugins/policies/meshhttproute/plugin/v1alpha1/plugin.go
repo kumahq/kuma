@@ -130,6 +130,7 @@ func ApplyToGateway(
 	}
 
 	listeners := CollectListenerInfos(
+		ctx,
 		xdsCtx.Mesh,
 		gateway,
 		proxy,

@@ -34,6 +34,7 @@ type listenersHostnames struct {
 }
 
 func CollectListenerInfos(
+	ctx context.Context,
 	meshCtx xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
 	proxy *core_xds.Proxy,
@@ -88,7 +89,7 @@ func CollectListenerInfos(
 		}
 
 		esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
-			context.TODO(),
+			ctx,
 			meshCtx.Resource,
 			matchedExternalServices,
 			meshCtx.DataSourceLoader,
