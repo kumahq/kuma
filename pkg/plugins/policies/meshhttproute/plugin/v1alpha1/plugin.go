@@ -2,13 +2,10 @@ package v1alpha1
 
 import (
 	"context"
-	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,9 +15,9 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -120,85 +117,35 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := plugin_gateway.ExtractGatewayListeners(proxy)
-	for listenerIndex, info := range listeners {
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := info.Listener.Port
-		inboundListener := rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		rawRules, ok := rawRules.ToRules[inboundListener]
-		if !ok {
-			continue
-		}
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
 
-		var keys []string
-		rulesByHostname := map[string][]ToRouteRule{}
-		for _, rawRule := range rawRules {
-			conf := rawRule.Conf.(api.PolicyDefault)
-			rule := ToRouteRule{
-				Subset:    rawRule.Subset,
-				Rules:     conf.Rules,
-				Hostnames: conf.Hostnames,
-				Origin:    rawRule.Origin,
-			}
-			hostnames := rule.Hostnames
-			if len(rule.Hostnames) == 0 {
-				hostnames = []string{"*"}
-			}
-			for _, hostname := range hostnames {
-				accRule, ok := rulesByHostname[hostname]
-				if !ok {
-					keys = append(keys, hostname)
-				}
-				rulesByHostname[hostname] = append(accRule, rule)
-			}
-		}
+	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
 
-		var hostInfos []plugin_gateway.GatewayHostInfo
-		if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TCP {
-			continue
-		}
+	listeners := CollectListenerInfos(
+		ctx,
+		xdsCtx.Mesh,
+		gateway,
+		proxy,
+		rawRules,
+	)
+	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
-		for _, info := range info.HostInfos {
-			listenerHostname := info.Host.Hostname
-			separateHostnames := map[string][]ToRouteRule{}
-			for _, routeHostname := range keys {
-				if !(listenerHostname == "*" || routeHostname == "*" || match.Hostnames(listenerHostname, routeHostname)) {
-					continue
-				}
-				// We need to take the most specific hostname
-				hostnameKey := listenerHostname
-				if strings.HasPrefix(listenerHostname, "*") && !strings.HasPrefix(routeHostname, "*") {
-					hostnameKey = routeHostname
-				}
-				separateHostnames[hostnameKey] = append(separateHostnames[hostnameKey], rulesByHostname[routeHostname]...)
-			}
-			for hostname, rules := range separateHostnames {
-				host := info.Host
-				host.Hostname = hostname
-				hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
-					Host:    host,
-					Entries: GenerateEnvoyRouteEntries(host, rules),
-				})
-			}
-		}
-		sort.Slice(hostInfos, func(i, j int) bool {
-			return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
-		})
-
-		info.HostInfos = hostInfos
-		listeners[listenerIndex] = info
-		plugin_gateway.SetGatewayListeners(proxy, listeners)
-
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
+	for _, listener := range listeners {
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener, listener.HostInfos)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info, hostInfos)
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener, listener.HostInfos)
 		if err != nil {
 			return err
 		}
@@ -208,7 +155,7 @@ func ApplyToGateway(
 			limits = append(limits, *limit)
 		}
 
-		rdsResources, err := generateGatewayRoutes(xdsCtx, info, hostInfos)
+		rdsResources, err := generateGatewayRoutes(xdsCtx, listener, listener.HostInfos)
 		if err != nil {
 			return err
 		}

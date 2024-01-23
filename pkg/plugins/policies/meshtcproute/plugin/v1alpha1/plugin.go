@@ -122,10 +122,8 @@ func ApplyToGateway(
 
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
-			hostInfos = append(hostInfos, plugin_gateway.GatewayHostInfo{
-				Host:    info.Host,
-				Entries: GenerateEnvoyRouteEntries(info.Host, routes),
-			})
+			info.AppendEntries(GenerateEnvoyRouteEntries(info.Host, routes))
+			hostInfos = append(hostInfos, info)
 		}
 		info.HostInfos = hostInfos
 		listeners[listenerIndex] = info

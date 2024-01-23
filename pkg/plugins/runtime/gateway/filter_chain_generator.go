@@ -324,7 +324,7 @@ func (g *TCPFilterChainGenerator) Generate(
 	var sniNames []string
 
 	for _, host := range info.HostInfos {
-		dests := routeDestinations(host.Entries)
+		dests := routeDestinations(host.Entries())
 		allDests = append(allDests, dests...)
 		sniNames = append(sniNames, host.Host.Hostname)
 
