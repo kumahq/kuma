@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -36,7 +37,7 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone := resNameInZone(proxy, k.k8sStore)
 	reqId := core.NewUUID()
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
@@ -73,7 +74,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone := resNameInZone(proxy, k.k8sStore)
 	reqId := core.NewUUID()
 	tenantZoneId := service.TenantZoneClientIDFromCtx(ctx, zone)
 
@@ -110,7 +111,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone := resNameInZone(proxy, k.k8sStore)
 	reqId := core.NewUUID()
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
@@ -145,11 +146,21 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 	}
 }
 
-func resNameInZone(r core_model.Resource) string {
+func resNameInZone(r core_model.Resource, k8sStore bool) string {
 	name := core_model.GetDisplayName(r)
-	if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
-		name = k8s.K8sNamespacedNameToCoreName(name, ns)
+	// we need to check for the legacy name
+	core.Log.Info("resNameInZone namespaces", "name", name)
+	if strings.HasPrefix(r.GetMeta().GetName(), core_model.ZoneOfResource(r)) {
+		return name
 	}
+
+	if k8sStore {
+		if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
+			name = k8s.K8sNamespacedNameToCoreName(name, ns)
+			core.Log.Info("resNameInZone namespaces", "name", name)
+		}
+	}
+
 	return name
 }
 

@@ -17,6 +17,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -69,7 +70,10 @@ func DefaultContext(
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		reconcile.If(
-			reconcile.IsKubernetes(cfg.Store.Type),
+			reconcile.And(
+				reconcile.IsKubernetes(cfg.Store.Type),
+				reconcile.Not(reconcile.TypeIs(mesh.ZoneIngressType)),
+			),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile.If(
 			reconcile.And(
@@ -88,7 +92,10 @@ func DefaultContext(
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile.If(
-			reconcile.IsKubernetes(cfg.Store.Type),
+			reconcile.And(
+				reconcile.IsKubernetes(cfg.Store.Type),
+				reconcile.Not(reconcile.TypeIs(mesh.ZoneIngressType)),
+			),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}

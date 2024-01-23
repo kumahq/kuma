@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -273,9 +274,11 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	if _, ok := labels[v1alpha1.DisplayName]; !ok {
 		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
 	}
-	if m.Namespace != "" {
+	if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok {
 		labels[v1alpha1.KubeNamespaceTag] = m.Namespace
 	}
+
+	core.Log.Info("GetLabels", " m.GetObjectMeta().GetName()", labels[v1alpha1.DisplayName], "m.GetObjectMeta().GetName()", m.GetObjectMeta().GetName(), "labels[v1alpha1.KubeNamespaceTag]", labels[v1alpha1.KubeNamespaceTag])
 	return labels
 }
 
