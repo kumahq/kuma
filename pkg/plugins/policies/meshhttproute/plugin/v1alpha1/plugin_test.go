@@ -548,6 +548,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Hostname: "go.dev",
 							},
 							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8082,
+								Hostname: "*.dev",
+							},
+							{
 								Protocol: mesh_proto.MeshGateway_Listener_TCP,
 								Port:     9080,
 							},
@@ -664,6 +669,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								ToRules: map[rules.InboundListener]rules.Rules{
 									{Address: "192.168.0.1", Port: 8080}: commonRules,
 									{Address: "192.168.0.1", Port: 8081}: commonRules,
+									{Address: "192.168.0.1", Port: 8082}: commonRules,
 								},
 							}),
 					).
