@@ -19,4 +19,3 @@ func ServiceInsight(mesh string) *mesh.ServiceInsightResource {
 func ServiceInsightBuilderBuilder() *builders.ServiceInsightBuilder {
 	return builders.ServiceInsight()
 }
-
