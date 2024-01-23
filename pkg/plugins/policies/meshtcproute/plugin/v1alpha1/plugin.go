@@ -44,7 +44,7 @@ func (p plugin) Apply(
 
 	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
 	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
-	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 {
 		return nil
 	}
 
@@ -98,7 +98,7 @@ func ApplyToGateway(
 	xdsCtx xds_context.Context,
 	policies core_xds.TypedMatchingPolicies,
 ) error {
-	if len(policies.GatewayRules.ToRules) == 0 {
+	if len(policies.GatewayRules.ToRules.ByListener) == 0 {
 		return nil
 	}
 
@@ -111,17 +111,18 @@ func ApplyToGateway(
 		}
 		address := proxy.Dataplane.Spec.GetNetworking().Address
 		port := info.Listener.Port
-		inboundListener := rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		routes, ok := policies.GatewayRules.ToRules[inboundListener]
-		if !ok {
-			continue
-		}
-
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
+			inboundListener := rules.InboundListenerHostname{
+				Address:  address,
+				Port:     port,
+				Hostname: info.Host.Hostname,
+			}
+			routes, ok := policies.GatewayRules.ToRules.ByListenerAndHostname[inboundListener]
+			if !ok {
+				continue
+			}
+
 			info.AppendEntries(GenerateEnvoyRouteEntries(info.Host, routes))
 			hostInfos = append(hostInfos, info)
 		}
