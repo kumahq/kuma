@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -35,14 +34,6 @@ const (
 	formatUniversal  = "universal"
 	formatKubernetes = "kubernetes"
 )
-
-var staticProfiles = map[string][]model.ResourceType{
-	profileFederation: {
-		core_mesh.MeshType,
-		core_system.GlobalSecretType,
-		core_system.SecretType,
-	},
-}
 
 func NewExportCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	ctx := &exportContext{RootContext: pctx}
@@ -144,7 +135,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 // cleans kubernetes object, so it can be applied on any other cluster
 func cleanKubeObject(obj map[string]interface{}) {
-	meta := obj["metadata"].(map[string]interface{})
+	metadata, ok := obj["metadata"]
+	if !ok {
+		return
+	}
+	meta := metadata.(map[string]interface{})
 	delete(meta, "resourceVersion")
 	delete(meta, "ownerReferences")
 	delete(meta, "uid")
@@ -153,10 +148,6 @@ func cleanKubeObject(obj map[string]interface{}) {
 }
 
 func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.ResourceType, error) {
-	rt, ok := staticProfiles[ectx.args.profile]
-	if ok {
-		return rt, nil
-	}
 	client, err := ectx.CurrentResourcesListClient()
 	if err != nil {
 		return nil, err
@@ -170,8 +161,12 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		switch ectx.args.profile {
 		case profileAll:
 			resTypes = append(resTypes, model.ResourceType(res.Name))
+		case profileFederation:
+			if res.IncludeInFederation && !res.Policy.IsTargetRef && res.Name != string(core_mesh.MeshGatewayType) {
+				resTypes = append(resTypes, model.ResourceType(res.Name))
+			}
 		case profileFederationWithPolicies:
-			if res.IncludeInFederationWithPolicies {
+			if res.IncludeInFederation {
 				resTypes = append(resTypes, model.ResourceType(res.Name))
 			}
 		default:

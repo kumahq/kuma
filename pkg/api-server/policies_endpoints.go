@@ -1,6 +1,7 @@
 package api_server
 
 import (
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"sort"
 
 	"github.com/emicklei/go-restful/v3"
@@ -48,7 +49,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly
 				SingularDisplayName:             def.SingularDisplayName,
 				PluralDisplayName:               def.PluralDisplayName,
 				Scope:                           api_common.ResourceTypeDescriptionScope(def.Scope),
-				IncludeInFederationWithPolicies: (def.KDSFlags & model.GlobalToAllZonesFlag) != 0,
+				IncludeInFederation: includeInFederation(def.KDSFlags, def.Name),
 			}
 			if def.IsPolicy {
 				td.Policy = &api_common.PolicyDescription{
@@ -66,4 +67,11 @@ func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly
 			log.Error(err, "Could not write the response")
 		}
 	}))
+}
+
+func includeInFederation(kdsFlags model.KDSFlagType, name model.ResourceType) bool {
+	if name == mesh.ServiceInsightType {
+		return false
+	}
+	return kdsFlags & model.GlobalToAllZonesFlag != 0
 }
