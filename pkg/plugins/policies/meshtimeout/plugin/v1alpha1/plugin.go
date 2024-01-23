@@ -37,7 +37,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 {
 		return nil
 	}
 
@@ -184,7 +184,7 @@ func applyToGateway(
 			return err
 		}
 
-		toRules, ok := gatewayRules.ToRules[key]
+		toRules, ok := gatewayRules.ToRules.ByListener[key]
 		if !ok {
 			continue
 		}
