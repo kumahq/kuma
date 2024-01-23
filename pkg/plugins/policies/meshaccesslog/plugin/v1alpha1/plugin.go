@@ -14,6 +14,7 @@ import (
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -55,7 +56,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
 
@@ -159,8 +160,12 @@ func applyToDirectAccess(
 }
 
 func applyToGateway(
-	rules core_rules.GatewayRules, gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator, path string,
+	rules core_rules.GatewayRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	resources xds_context.ResourceMap,
+	proxy *core_xds.Proxy,
+	backends *plugin_xds.EndpointAccumulator,
+	path string,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -169,27 +174,27 @@ func applyToGateway(
 		return nil
 	}
 
-	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
+	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
 	if gateway == nil {
 		return nil
 	}
 
-	for _, listener := range gateway.Spec.GetConf().GetListeners() {
-		address := dataplane.Spec.GetNetworking().Address
-		port := listener.GetPort()
-		rulesListener := core_rules.InboundListener{
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
+		address := proxy.Dataplane.Spec.GetNetworking().Address
+		port := listenerInfo.Listener.Port
+		listenerKey := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
 		}
-		listener, ok := gatewayListeners[rulesListener]
+		listener, ok := gatewayListeners[listenerKey]
 		if !ok {
 			continue
 		}
 
-		if toListenerRules, ok := rules.ToRules[rulesListener]; ok {
+		if toListenerRules, ok := rules.ToRules[listenerKey]; ok {
 			if err := configureOutbound(
 				toListenerRules,
-				dataplane,
+				proxy.Dataplane,
 				core_rules.Subset{},
 				mesh_proto.MatchAllTag,
 				listener,
@@ -200,8 +205,8 @@ func applyToGateway(
 			}
 		}
 
-		if fromListenerRules, ok := rules.FromRules[rulesListener]; ok {
-			if err := configureInbound(fromListenerRules, dataplane, listener, backends, path); err != nil {
+		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
+			if err := configureInbound(fromListenerRules, proxy.Dataplane, listener, backends, path); err != nil {
 				return err
 			}
 		}
