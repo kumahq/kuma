@@ -66,7 +66,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&ctx.Args.Zone, "zone", ctx.Args.Zone, "Zone in which to install demo")
 	cmd.Flags().StringVar(&ctx.Args.Namespace, "namespace", ctx.Args.Namespace, "Namespace to install demo to")
-	cmd.Flags().StringVar(&ctx.Args.SystemNamespace, "system-namespace", ctx.Args.Namespace, "System namespace of the control plane")
+	cmd.Flags().StringVar(&ctx.Args.SystemNamespace, "system-namespace", ctx.Args.SystemNamespace, "System namespace of the control plane")
 	cmd.Flags().BoolVar(&ctx.Args.WithoutGateway, "without-gateway", ctx.Args.WithoutGateway, "Skip MeshGateway resources")
 	return cmd
 }
