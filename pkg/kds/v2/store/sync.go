@@ -214,11 +214,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			creationTime := r.GetMeta().GetCreationTime()
 
 			createOpts := []store.CreateOptionsFunc{
 				store.CreateBy(rk),
-				store.CreatedAt(creationTime),
+				store.CreatedAt(core.Now()),
 				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
 			if opts.Zone != "" {
@@ -345,7 +344,7 @@ func GlobalSyncCallback(
 			for _, r := range upstream.AddedResources.GetItems() {
 				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
 					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
-					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 				))
 			}
 

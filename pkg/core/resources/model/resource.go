@@ -399,11 +399,11 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 	switch mode {
 	case config_core.Global:
-		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-		return !ok || origin == mesh_proto.ResourceOriginGlobal
+		origin, ok := ResourceOrigin(r.GetMeta())
+		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, ok := r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-		return !ok || origin == mesh_proto.ResourceOriginZone
+		origin, ok := ResourceOrigin(r.GetMeta())
+		return !ok || origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
 	}
@@ -417,6 +417,13 @@ func GetDisplayName(r Resource) string {
 		return labels[mesh_proto.DisplayName]
 	}
 	return r.GetMeta().GetName()
+}
+
+func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
+	}
+	return "", false
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

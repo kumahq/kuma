@@ -13,6 +13,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -158,12 +159,14 @@ func (i *DataplaneProxyFactory) NewContainer(
 		},
 		Resources: kube_core.ResourceRequirements{
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
 			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
 			},
 		},
 	}

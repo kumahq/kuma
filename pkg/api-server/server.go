@@ -263,14 +263,15 @@ func addResourcesEndpoints(
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			k8sMapper:          k8sMapper,
-			mode:               cfg.Mode,
-			federatedZone:      cfg.IsFederatedZoneCP(),
-			resManager:         resManager,
-			descriptor:         definition,
-			resourceAccess:     resourceAccess,
-			filter:             filters.Resource(definition),
-			meshContextBuilder: meshContextBuilder,
+			k8sMapper:                    k8sMapper,
+			mode:                         cfg.Mode,
+			federatedZone:                cfg.IsFederatedZoneCP(),
+			resManager:                   resManager,
+			descriptor:                   definition,
+			resourceAccess:               resourceAccess,
+			filter:                       filters.Resource(definition),
+			meshContextBuilder:           meshContextBuilder,
+			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
