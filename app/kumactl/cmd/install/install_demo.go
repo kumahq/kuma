@@ -25,20 +25,15 @@ func (GatewayFilter) Filter(name string) bool {
 }
 
 func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
-	args := ctx.Args
 	cmd := &cobra.Command{
 		Use:   "demo",
 		Short: "Install Kuma demo on Kubernetes",
 		Long:  "Install Kuma demo on Kubernetes in its own namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := validateDemoArgs(args); err != nil {
-				return err
-			}
-
 			templateArgs := demoTemplateArgs{
-				Namespace:       args.Namespace,
-				Zone:            args.Zone,
-				SystemNamespace: args.SystemNamespace,
+				Namespace:       ctx.Args.Namespace,
+				Zone:            ctx.Args.Zone,
+				SystemNamespace: ctx.Args.SystemNamespace,
 			}
 
 			templateFiles, err := data.ReadFiles(kumactl_data.InstallDemoFS())
@@ -47,7 +42,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 			}
 
 			var filter templateFilter = NoneFilter{}
-			if args.WithoutGateway {
+			if ctx.Args.WithoutGateway {
 				filter = GatewayFilter{}
 			}
 
@@ -69,12 +64,9 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "Zone in which to install demo")
-	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "Namespace to install demo to")
-	cmd.Flags().BoolVar(&args.WithoutGateway, "without-gateway", args.WithoutGateway, "Skip MeshGateway resources")
+	cmd.Flags().StringVar(&ctx.Args.Zone, "zone", ctx.Args.Zone, "Zone in which to install demo")
+	cmd.Flags().StringVar(&ctx.Args.Namespace, "namespace", ctx.Args.Namespace, "Namespace to install demo to")
+	cmd.Flags().StringVar(&ctx.Args.SystemNamespace, "system-namespace", ctx.Args.Namespace, "System namespace of the control plane")
+	cmd.Flags().BoolVar(&ctx.Args.WithoutGateway, "without-gateway", ctx.Args.WithoutGateway, "Skip MeshGateway resources")
 	return cmd
-}
-
-func validateDemoArgs(args install_context.InstallDemoArgs) error {
-	return nil
 }
