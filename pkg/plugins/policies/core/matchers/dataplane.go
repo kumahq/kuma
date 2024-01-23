@@ -261,10 +261,11 @@ func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
 // If we assign numbers to origins like Global=-1, Zone=1, Unknown=0, then we can compare them as numbers
 // and get the same result as in the table above.
 func originToNumber(r core_model.Resource) int {
-	switch r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] {
-	case mesh_proto.ResourceOriginGlobal:
+	origin, _ := core_model.ResourceOrigin(r.GetMeta())
+	switch origin {
+	case mesh_proto.GlobalResourceOrigin:
 		return -1
-	case mesh_proto.ResourceOriginZone:
+	case mesh_proto.ZoneResourceOrigin:
 		return 1
 	default:
 		return 0

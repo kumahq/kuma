@@ -61,6 +61,8 @@ type ZoneConfig struct {
 	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
 	KDS *KdsClientConfig `json:"kds,omitempty"`
+	// DisableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
+	DisableOriginLabelValidation bool `json:"disableOriginLabelValidation,omitempty" envconfig:"kuma_multizone_zone_disable_origin_label_validation"`
 }
 
 func (r *ZoneConfig) Sanitize() {
@@ -118,6 +120,7 @@ func DefaultZoneConfig() *ZoneConfig {
 			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
 			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
 		},
+		DisableOriginLabelValidation: false,
 	}
 }
 
