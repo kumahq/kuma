@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/api-server/mappers"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,8 +18,6 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -36,7 +36,8 @@ var _ = Describe("kumactl export", func() {
 
 	BeforeEach(func() {
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
-		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.MeshResourceTypeDescriptor, system.SecretResourceTypeDescriptor, system.GlobalSecretResourceTypeDescriptor)
+		defs := registry.Global().ObjectDescriptors()
+		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, defs...)
 		Expect(err).ToNot(HaveOccurred())
 		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
 			return fileBasedKubernetesResourcesClient{}
@@ -189,5 +190,6 @@ type staticResourcesListClient struct{}
 var _ client.ResourcesListClient = &staticResourcesListClient{}
 
 func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
-	return api_types.ResourceTypeDescriptionList{}, nil
+	defs := registry.Global().ObjectDescriptors()
+	return mappers.MapResourceTypeDescription(defs, false, true), nil
 }
