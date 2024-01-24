@@ -51,10 +51,6 @@ const (
 	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
 	// It can be either "global" or "zone".
 	ResourceOriginLabel = "kuma.io/origin"
-
-	// OriginStoreType is a standard label that has information about the origin store type of the resource.
-	// It can be equal to the values in pkg/config/core/resources/store/config.go
-	OriginStoreType = "kuma.io/origin-store-type"
 )
 
 type ResourceOrigin string

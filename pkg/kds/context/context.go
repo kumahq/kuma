@@ -89,7 +89,6 @@ func DefaultContext(
 		UpdateResourceMeta(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
-			util.WithLabel(mesh_proto.OriginStoreType, cfg.Store.Type),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile.If(

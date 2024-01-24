@@ -9,22 +9,30 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_util "github.com/kumahq/kuma/pkg/config"
+	config_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 type kdsEnvoyAdminClient struct {
-	rpcs service.EnvoyAdminRPCs
+	rpcs       service.EnvoyAdminRPCs
+	resManager manager.ReadOnlyResourceManager
 }
 
-func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs) EnvoyAdminClient {
+func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceManager) EnvoyAdminClient {
 	return &kdsEnvoyAdminClient{
-		rpcs: rpcs,
+		rpcs:       rpcs,
+		resManager: resManager,
 	}
 }
 
@@ -36,11 +44,14 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
+	if err != nil {
+		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
+	}
 	reqId := core.NewUUID()
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.XDSConfigDump.Send(tenantZoneID.String(), &mesh_proto.XDSConfigRequest{
+	err = k.rpcs.XDSConfigDump.Send(tenantZoneID.String(), &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -73,11 +84,14 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
+	if err != nil {
+		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
+	}
 	reqId := core.NewUUID()
 	tenantZoneId := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.Stats.Send(tenantZoneId.String(), &mesh_proto.StatsRequest{
+	err = k.rpcs.Stats.Send(tenantZoneId.String(), &mesh_proto.StatsRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -110,11 +124,14 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone := resNameInZone(proxy)
+	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
+	if err != nil {
+		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
+	}
 	reqId := core.NewUUID()
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.Clusters.Send(tenantZoneID.String(), &mesh_proto.ClustersRequest{
+	err = k.rpcs.Clusters.Send(tenantZoneID.String(), &mesh_proto.ClustersRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -145,20 +162,55 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 	}
 }
 
-func resNameInZone(r core_model.Resource) string {
+func resNameInZone(
+	ctx context.Context,
+	resManager manager.ReadOnlyResourceManager,
+	r core_model.Resource,
+) (string, error) {
 	name := core_model.GetDisplayName(r)
+	zone := core_model.ZoneOfResource(r)
 	// we need to check for the legacy name which starts with zoneName
-	if strings.HasPrefix(r.GetMeta().GetName(), core_model.ZoneOfResource(r)) {
-		return name
+	if strings.HasPrefix(r.GetMeta().GetName(), zone) {
+		return name, nil
 	}
-	// since 2.6 zone sets store type so we can figure out if we need to add namespace
-	if core_model.GetOriginStoreType(r) != store.KubernetesStore {
-		return name
+	storeType, err := getZoneStoreType(ctx, resManager, zone)
+	if err != nil {
+		return "", err
 	}
+	// only K8s needs namespace added to the resource name
+	if storeType != store.KubernetesStore {
+		return name, nil
+	}
+
 	if ns := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
-		return k8s.K8sNamespacedNameToCoreName(name, ns)
+		name = k8s.K8sNamespacedNameToCoreName(name, ns)
 	}
-	return name
+	return name, nil
+}
+
+func getZoneStoreType(
+	ctx context.Context,
+	resManager manager.ReadOnlyResourceManager,
+	zone string,
+) (store.StoreType, error) {
+	zoneInsightRes := core_system.NewZoneInsightResource()
+	if err := resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
+		return "", err
+	}
+	subscription := zoneInsightRes.Spec.GetLastSubscription()
+	if !subscription.IsOnline() {
+		return "", fmt.Errorf("zone is offline")
+	}
+	kdsSubscription, ok := subscription.(*system_proto.KDSSubscription)
+	if !ok {
+		return "", fmt.Errorf("cannot map subscription")
+	}
+	config := kdsSubscription.GetConfig()
+	cfg := &config_cp.Config{}
+	if err := config_util.FromJson(config, cfg); err != nil {
+		return "", fmt.Errorf("cannot read control-plane configuration")
+	}
+	return cfg.Store.Type, nil
 }
 
 type KDSTransportError struct {

@@ -67,6 +67,7 @@ func Setup(rt runtime.Runtime) error {
 		envoyAdminServer := envoyadmin.NewServer(
 			admin.NewKDSEnvoyAdminClient(
 				rt.KDSContext().EnvoyAdminRPCs,
+				rt.ReadOnlyResourceManager(),
 			),
 			rt.ResourceManager(),
 		)

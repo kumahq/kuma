@@ -23,3 +23,11 @@ func ToJson(cfg Config) ([]byte, error) {
 	// there is no easy way to convert yaml to json using gopkg.in/yaml.v2
 	return yaml.YAMLToJSON(yamlBytes)
 }
+
+func FromJson(cfg string, config Config) error {
+	yamlConfig, err := yaml.JSONToYAML([]byte(cfg))
+	if err != nil {
+		return err
+	}
+	return FromYAML(yamlConfig, config)
+}
