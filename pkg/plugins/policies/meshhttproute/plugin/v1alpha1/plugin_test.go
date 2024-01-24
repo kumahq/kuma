@@ -804,6 +804,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 									"hostname": "go",
 								},
 							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8081,
+								Tags: map[string]string{
+									"hostname": "wild",
+								},
+							},
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Hostname: "*",
+								Port:     8082,
+								Tags: map[string]string{
+									"hostname": "wild",
+								},
+							},
 						},
 					},
 				},
@@ -862,6 +877,46 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Path: &api.PathMatch{
 															Type:  api.PathPrefix,
 															Value: "/to-go-dev",
+														},
+													}},
+													Default: api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+														}},
+													},
+												}},
+											},
+										}},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, ""): {{
+											Subset: core_rules.MeshSubset(),
+											Conf: api.PolicyDefault{
+												Hostnames: []string{"*.dev"},
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.PathPrefix,
+															Value: "/wild-dev",
+														},
+													}},
+													Default: api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+														}},
+													},
+												}},
+											},
+										}},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, ""): {{
+											Subset: core_rules.MeshSubset(),
+											Conf: api.PolicyDefault{
+												Hostnames: []string{"*.dev"},
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.PathPrefix,
+															Value: "/wild-dev",
 														},
 													}},
 													Default: api.RuleConf{
