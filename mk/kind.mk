@@ -14,9 +14,15 @@ unexport KUBECONFIG
 METRICS_SERVER_VERSION := 0.4.1
 
 ifdef IPV6
+<<<<<<< HEAD
 KIND_CONFIG ?= $(TOP)/test/kind/cluster-ipv6.yaml
 else
 KIND_CONFIG ?= $(TOP)/test/kind/cluster.yaml
+=======
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
+else
+KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
+>>>>>>> 6f6e380ae (Revert "chore(mk): fix make kind/start (#8977)" (#9020))
 endif
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
@@ -42,7 +48,7 @@ kind/start: ${KUBECONFIG_DIR}
 	@$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		($(KIND) create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
-			--config "$(KIND_CONFIG)" \
+			--config "$(KUMA_DIR)/test/kind/cluster-$(if $(IPV6),ipv6-,)$(KIND_CLUSTER_NAME).yaml" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
