@@ -16,3 +16,26 @@ metadata:
   creationTimestamp: "2024-01-08T17:25:45Z"
   name: default
 spec: {}
+---
+apiVersion: kuma.io/v1alpha1
+kind: Retry
+mesh: default
+metadata:
+  creationTimestamp: "2024-01-24T09:32:02Z"
+  name: retry-all-default
+spec:
+  conf:
+    http:
+      backOff:
+        baseInterval: 0.025s
+        maxInterval: 0.250s
+      numRetries: 5
+      perTryTimeout: 16s
+    tcp:
+      maxConnectAttempts: 5
+  destinations:
+  - match:
+      kuma.io/service: '*'
+  sources:
+  - match:
+      kuma.io/service: '*'

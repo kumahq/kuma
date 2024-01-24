@@ -88,6 +88,7 @@ var _ = Describe("kumactl export", func() {
 			samples.MeshDefault(),
 			samples.SampleSigningKeyGlobalSecret(),
 			samples.ServiceInsight("default"),
+			samples.Retry(),
 		}
 		for _, res := range resources {
 			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
@@ -99,6 +100,7 @@ var _ = Describe("kumactl export", func() {
 			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 			"export",
 			"--format=kubernetes",
+			"--profile", "all",
 		}
 		rootCmd.SetArgs(args)
 

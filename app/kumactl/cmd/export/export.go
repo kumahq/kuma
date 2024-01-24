@@ -16,7 +16,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
 )
 
 type exportContext struct {
@@ -84,9 +85,10 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				}
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
-					// filter out envoy-admin-ca otherwise it will cause TLS handshake errors
+					// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
 					if err := rs.List(cmd.Context(), list, store.ListByFilterFunc(func(rs model.Resource) bool {
-						return rs.GetMeta().GetName() != tls.GlobalSecretKey.Name
+						return rs.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
+							rs.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name
 					})); err != nil {
 						return errors.Wrapf(err, "could not list %q", resType)
 					}
