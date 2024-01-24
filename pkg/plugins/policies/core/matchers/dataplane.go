@@ -213,11 +213,11 @@ func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.
 					inbounds = append(inbounds, inboundListener)
 					inboundSet[inboundListener] = struct{}{}
 				}
-				gwListeners = append(gwListeners, core_rules.InboundListenerHostname{
-					Address:  dpp.Spec.GetNetworking().GetAddress(),
-					Port:     listener.Port,
-					Hostname: listener.GetHostname(),
-				})
+				gwListeners = append(gwListeners, core_rules.NewInboundListenerHostname(
+					dpp.Spec.GetNetworking().GetAddress(),
+					listener.Port,
+					listener.GetHostname(),
+				))
 			}
 		}
 	}

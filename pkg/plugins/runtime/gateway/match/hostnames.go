@@ -35,6 +35,9 @@ func (h *hostname) contains(n hostname) bool {
 }
 
 func makeHostname(name string) hostname {
+	if name == "" {
+		name = "*"
+	}
 	parts := strings.Split(name, ".")
 	return hostname{Host: parts[0], DomainParts: parts[1:]}
 }

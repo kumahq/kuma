@@ -113,11 +113,11 @@ func ApplyToGateway(
 		port := info.Listener.Port
 		var hostInfos []plugin_gateway.GatewayHostInfo
 		for _, info := range info.HostInfos {
-			inboundListener := rules.InboundListenerHostname{
-				Address:  address,
-				Port:     port,
-				Hostname: info.Host.Hostname,
-			}
+			inboundListener := rules.NewInboundListenerHostname(
+				address,
+				port,
+				info.Host.Hostname,
+			)
 			routes, ok := policies.GatewayRules.ToRules.ByListenerAndHostname[inboundListener]
 			if !ok {
 				continue

@@ -49,7 +49,7 @@ type ToRules struct {
 type InboundListenerHostname struct {
 	Address  string
 	Port     uint32
-	Hostname string
+	hostname string
 }
 
 var _ encoding.TextMarshaler = InboundListenerHostname{}
@@ -59,18 +59,29 @@ func (i InboundListenerHostname) MarshalText() ([]byte, error) {
 }
 
 func (i InboundListenerHostname) String() string {
-	return fmt.Sprintf("%s:%d:%s", i.Address, i.Port, i.Hostname)
+	return fmt.Sprintf("%s:%d:%s", i.Address, i.Port, i.hostname)
+}
+
+func NewInboundListenerHostname(address string, port uint32, hostname string) InboundListenerHostname {
+	if hostname == "" {
+		hostname = "*"
+	}
+	return InboundListenerHostname{
+		Address:  address,
+		Port:     port,
+		hostname: hostname,
+	}
 }
 
 func InboundListenerHostnameFromGatewayListener(
 	l *mesh_proto.MeshGateway_Listener,
 	address string,
 ) InboundListenerHostname {
-	return InboundListenerHostname{
-		Address:  address,
-		Port:     l.GetPort(),
-		Hostname: l.GetHostname(),
-	}
+	return NewInboundListenerHostname(
+		address,
+		l.GetPort(),
+		l.GetHostname(),
+	)
 }
 
 type GatewayToRules struct {

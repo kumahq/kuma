@@ -135,11 +135,11 @@ func SortRulesToHosts(
 	var hostInfos []plugin_gateway.GatewayHostInfo
 
 	for _, hostnameTag := range hostnameTags {
-		inboundListener := rules.InboundListenerHostname{
-			Address:  address,
-			Port:     listener.GetPort(),
-			Hostname: hostnameTag.Hostname,
-		}
+		inboundListener := rules.NewInboundListenerHostname(
+			address,
+			listener.GetPort(),
+			hostnameTag.Hostname,
+		)
 		rawRules, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
 		if !ok {
 			continue
