@@ -27,7 +27,11 @@ var defaultMeshCircuitBreakerResource = func() model.Resource {
 						},
 						OutlierDetection: &v1alpha1.OutlierDetection{
 							Disabled:  pointer.To[bool](false),
-							Detectors: &v1alpha1.Detectors{},
+							Detectors: &v1alpha1.Detectors{
+								TotalFailures: &v1alpha1.DetectorTotalFailures{},
+								GatewayFailures: &v1alpha1.DetectorGatewayFailures{},
+								LocalOriginFailures: &v1alpha1.DetectorLocalOriginFailures{},
+							},
 						},
 					},
 				},
