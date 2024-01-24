@@ -668,9 +668,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
 									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.Rules{
-										{Address: "192.168.0.1", Port: 8080, Hostname: "*"}:      commonRules,
-										{Address: "192.168.0.1", Port: 8081, Hostname: "go.dev"}: commonRules,
-										{Address: "192.168.0.1", Port: 8082, Hostname: "*.dev"}:  commonRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"):      commonRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "go.dev"): commonRules,
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.dev"):  commonRules,
 									},
 								},
 							}),
@@ -729,7 +729,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
 									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.Rules{
-										{Address: "192.168.0.1", Port: 8080, Hostname: "*"}: {{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {{
 											Subset: core_rules.MeshSubset(),
 											Conf: api.PolicyDefault{
 												Rules: []api.Rule{{
@@ -748,7 +748,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 											},
 										}},
-										{Address: "192.168.0.1", Port: 8081, Hostname: "go.dev"}: {{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "go.dev"): {{
 											Subset: core_rules.MeshSubset(),
 											Conf: api.PolicyDefault{
 												Hostnames: []string{"go.dev"},
@@ -833,7 +833,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
 									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.Rules{
-										{Address: "192.168.0.1", Port: 8080, Hostname: "other.dev"}: {{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "other.dev"): {{
 											Subset: core_rules.MeshSubset(),
 											Conf: api.PolicyDefault{
 												Hostnames: []string{"*.dev"},
@@ -853,7 +853,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 											},
 										}},
-										{Address: "192.168.0.1", Port: 8080, Hostname: "go.dev"}: {{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "go.dev"): {{
 											Subset: core_rules.MeshSubset(),
 											Conf: api.PolicyDefault{
 												Hostnames: []string{"*.dev"},
