@@ -83,7 +83,7 @@ ToRules:
         type: MeshAccessLog
       Subset: []
   ByListenerAndHostname:
-    '127.0.0.1:8080:':
+    127.0.0.1:8080:*:
     - Conf:
         backends:
         - file:
@@ -101,7 +101,7 @@ ToRules:
         name: meshsubset
         type: MeshAccessLog
       Subset: []
-    '127.0.0.1:8081:':
+    127.0.0.1:8081:*:
     - Conf:
         backends:
         - file:
@@ -119,7 +119,7 @@ ToRules:
         name: meshsubset
         type: MeshAccessLog
       Subset: []
-    '127.0.0.1:8082:':
+    127.0.0.1:8082:*:
     - Conf:
         backends:
         - file:
