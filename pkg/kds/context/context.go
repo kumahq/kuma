@@ -92,10 +92,7 @@ func DefaultContext(
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile.If(
-			reconcile.And(
-				reconcile.IsKubernetes(cfg.Store.Type),
-				reconcile.Not(reconcile.TypeIs(mesh.ZoneIngressType)),
-			),
+			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}

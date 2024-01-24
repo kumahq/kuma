@@ -207,7 +207,7 @@ func getZoneStoreType(
 	}
 	config := kdsSubscription.GetConfig()
 	cfg := &config_cp.Config{}
-	if err := config_util.FromJson(config, cfg); err != nil {
+	if err := config_util.FromYAML([]byte(config), cfg); err != nil {
 		return "", fmt.Errorf("cannot read control-plane configuration")
 	}
 	return cfg.Store.Type, nil
