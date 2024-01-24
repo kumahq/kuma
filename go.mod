@@ -24,7 +24,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.46.11
 	github.com/hashicorp/go-multierror v1.1.1
@@ -73,7 +73,7 @@ require (
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.14.0

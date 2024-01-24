@@ -194,7 +194,7 @@ func (p plugin) configureGateway(
 		}
 
 		for _, hostInfo := range listenerInfo.HostInfos {
-			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries)
+			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
 			for _, dest := range destinations {
 				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
 				if err != nil {
