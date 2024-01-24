@@ -77,7 +77,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var resources []model.Resource
+			var allResources []model.Resource
 			for _, resType := range resTypes {
 				resDesc, err := pctx.Runtime.Registry.DescriptorFor(resType)
 				if err != nil {
@@ -85,22 +85,27 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				}
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
-					// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
-					if err := rs.List(cmd.Context(), list, store.ListByFilterFunc(func(rs model.Resource) bool {
-						return rs.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
-							rs.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name
-					})); err != nil {
+					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resType)
 					}
-					resources = append(resources, list.GetItems()...)
+					allResources = append(allResources, list.GetItems()...)
 				} else {
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resType)
 						}
-						resources = append(resources, list.GetItems()...)
+						allResources = append(allResources, list.GetItems()...)
 					}
+				}
+			}
+
+			var resources []model.Resource
+			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
+			for _, res := range allResources {
+				if res.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
+					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name {
+					resources = append(resources, res)
 				}
 			}
 
