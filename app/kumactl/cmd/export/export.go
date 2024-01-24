@@ -190,6 +190,6 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 
 func includeInFederationProfile(res api_common.ResourceTypeDescription) bool {
 	return res.IncludeInFederation && // base decision on `IncludeInFederation` field
-		(res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef)) && // do not include new policies (q: should this just be reflected in IncludeInFederation?)
+		(res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef)) && // do not include new policies
 		res.Name != string(core_mesh.MeshGatewayType) // do not include MeshGateways
 }
