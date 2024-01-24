@@ -60,6 +60,7 @@ var _ = Describe("kumactl export", func() {
 			samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
 			samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
 			samples.ServiceInsight("another-mesh"),
+			samples.SampleGlobalSecretAdminCa(),
 		}
 		for _, res := range resources {
 			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
@@ -82,34 +83,6 @@ var _ = Describe("kumactl export", func() {
 	})
 
 	It("should export resources in kubernetes format", func() {
-		// given
-		resources := []model.Resource{
-			samples.MeshDefault(),
-			samples.SampleSigningKeyGlobalSecret(),
-			samples.ServiceInsight("default"),
-		}
-		for _, res := range resources {
-			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		args := []string{
-			"--config-file",
-			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"export",
-			"--format=kubernetes",
-		}
-		rootCmd.SetArgs(args)
-
-		// when
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", "export-kube.golden.yaml"))
-	})
-
-	It("should not export service insight in kubernetes format with all profile", func() {
 		// given
 		resources := []model.Resource{
 			samples.MeshDefault(),

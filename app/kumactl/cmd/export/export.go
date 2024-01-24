@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
@@ -15,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
 )
 
 type exportContext struct {
@@ -82,7 +84,10 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				}
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
-					if err := rs.List(cmd.Context(), list); err != nil {
+					// filter out envoy-admin-ca otherwise it will cause TLS handshake errors
+					if err := rs.List(cmd.Context(), list, store.ListByFilterFunc(func(rs model.Resource) bool {
+						return rs.GetMeta().GetName() != tls.GlobalSecretKey.Name
+					})); err != nil {
 						return errors.Wrapf(err, "could not list %q", resType)
 					}
 					resources = append(resources, list.GetItems()...)
@@ -162,7 +167,7 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		case profileAll:
 			resTypes = append(resTypes, model.ResourceType(res.Name))
 		case profileFederation:
-			if res.IncludeInFederation && (res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef)) && res.Name != string(core_mesh.MeshGatewayType) {
+			if includeInFederationProfile(res) {
 				resTypes = append(resTypes, model.ResourceType(res.Name))
 			}
 		case profileFederationWithPolicies:
@@ -174,4 +179,10 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		}
 	}
 	return resTypes, nil
+}
+
+func includeInFederationProfile(res api_common.ResourceTypeDescription) bool {
+	return res.IncludeInFederation && // base decision on `IncludeInFederation` field
+		(res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef)) && // do not include new policies (q: should this just be reflected in IncludeInFederation?)
+		res.Name != string(core_mesh.MeshGatewayType) // do not include MeshGateways
 }
