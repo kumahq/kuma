@@ -18,6 +18,37 @@ metadata:
 spec: {}
 ---
 apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kuma.io/v1alpha1","kind":"MeshAccessLog","metadata":{"annotations":{},"labels":{"kuma.io/mesh":"default"},"name":"default","namespace":"kuma-system"},"spec":{"from":[{"default":{"backends":[{"file":{"path":"/tmp/access.log"},"type":"File"}]},"targetRef":{"kind":"Mesh"}}],"targetRef":{"kind":"Mesh"},"to":[{"default":{"backends":[{"file":{"path":"/tmp/access.log"},"type":"File"}]},"targetRef":{"kind":"Mesh"}}]}}
+  creationTimestamp: "2024-01-24T09:52:46Z"
+  labels:
+    kuma.io/mesh: default
+  name: default
+  namespace: kuma-system
+spec:
+  from:
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+  targetRef:
+    kind: Mesh
+  to:
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+---
+apiVersion: kuma.io/v1alpha1
 kind: Retry
 mesh: default
 metadata:

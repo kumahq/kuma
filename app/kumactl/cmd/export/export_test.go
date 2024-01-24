@@ -87,7 +87,7 @@ var _ = Describe("kumactl export", func() {
 		resources := []model.Resource{
 			samples.MeshDefault(),
 			samples.SampleSigningKeyGlobalSecret(),
-			samples.ServiceInsight("default"),
+			samples.MeshAccessLogWithFileBackend(),
 			samples.Retry(),
 		}
 		for _, res := range resources {
