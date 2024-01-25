@@ -33,12 +33,3 @@ func DefaultPoliciesConfig() *Config {
 " > "${POLICIES_FILE}"
 
 gofmt -w "${POLICIES_FILE}"
-
-KUMA_DEFAULTS_FILE="pkg/config/app/kuma-cp/kuma-cp.defaults.yaml"
-
-policies_no_newlines=$(echo -n "$policies" | tr -d '\n')
-# shellcheck disable=SC2001
-policies_no_last_char=$(echo "$policies_no_newlines" | sed 's/.$//')
-echo "$policies_no_last_char"
-
-yq e -i ".policies.pluginPoliciesEnabled = [$policies_no_last_char]" $KUMA_DEFAULTS_FILE
