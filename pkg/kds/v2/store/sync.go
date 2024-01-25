@@ -46,8 +46,9 @@ type ResourceSyncer interface {
 }
 
 type SyncOption struct {
-	Predicate func(r core_model.Resource) bool
-	Zone      string
+	Predicate            func(r core_model.Resource) bool
+	Zone                 string
+	DeleteOnlyWithOrigin mesh_proto.ResourceOrigin
 }
 
 type SyncOptionFunc func(*SyncOption)
@@ -69,6 +70,12 @@ func Zone(name string) SyncOptionFunc {
 func PrefilterBy(predicate func(r core_model.Resource) bool) SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.Predicate = predicate
+	}
+}
+
+func DeleteOnlyWithOrigin(origin mesh_proto.ResourceOrigin) SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.DeleteOnlyWithOrigin = origin
 	}
 }
 
@@ -204,6 +211,9 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onDelete {
+			if err := s.validateResourceDelete(ctx, opts.DeleteOnlyWithOrigin, r); err != nil {
+				return err
+			}
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
@@ -244,6 +254,36 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 		return nil
 	})
+}
+
+func (s *syncResourceStore) validateResourceDelete(ctx context.Context, deleteOnlyWithOrigin mesh_proto.ResourceOrigin, r model.Resource) error {
+	if deleteOnlyWithOrigin == "" {
+		return nil
+	}
+	if origin, ok := core_model.ResourceOrigin(r.GetMeta()); ok && origin == deleteOnlyWithOrigin {
+		return nil
+	}
+	switch r.Descriptor().Scope {
+	case core_model.ScopeMesh:
+		mesh := core_mesh.NewMeshResource()
+		if err := s.resourceStore.Get(ctx, mesh, store.GetByKey(r.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
+			return errors.Errorf("could not get mesh %s to verify whether we can delete a resource", r.GetMeta().GetMesh())
+		}
+		if origin, ok := core_model.ResourceOrigin(mesh.GetMeta()); !ok || origin != deleteOnlyWithOrigin {
+			return errors.Errorf("failed to delete resouce %s %s. The resource is managed by mesh %s which is was not exported to %s control plane. "+
+				"This is protection from accidentally removing resources. "+
+				"Either export the resource to %s control plane or remove the resource on this control plane",
+				r.Descriptor().Name, r.GetMeta().GetName(), mesh.GetMeta().GetName(), deleteOnlyWithOrigin, deleteOnlyWithOrigin,
+			)
+		}
+	case core_model.ScopeGlobal:
+		return errors.Errorf("failed to delete resouce %s %s. The resource was not exported to %s control plane. "+
+			"This is protection from accidentally removing resources. "+
+			"Either export the resource to %s control plane or remove the resource on this control plane",
+			r.Descriptor().Name, r.GetMeta().GetName(), deleteOnlyWithOrigin, deleteOnlyWithOrigin,
+		)
+	}
+	return nil
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
@@ -312,7 +352,7 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 					return zi.IsRemoteIngress(localZone)
 				}
 				return !core_model.IsLocallyOriginated(config_core.Zone, r) || !isExpectedOnZoneCP(r.Descriptor())
-			}))
+			}), DeleteOnlyWithOrigin(mesh_proto.GlobalResourceOrigin))
 		},
 	}
 }
