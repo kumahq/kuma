@@ -313,7 +313,7 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithSecretStore(ss)
+		builder.WithSecretStore(core_store.NewPaginationStore(ss))
 		return nil
 	}
 }
