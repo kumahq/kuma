@@ -205,7 +205,7 @@ func ValidatePort(path validators.PathBuilder, port uint32) validators.Validatio
 //   - '*.domain.name'
 //   - 'domain.name'
 func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
-	if hostname == "*" {
+	if hostname == mesh_proto.WildcardHostname {
 		return validators.ValidationError{}
 	}
 

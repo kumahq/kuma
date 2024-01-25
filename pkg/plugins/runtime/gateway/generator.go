@@ -373,11 +373,7 @@ func MakeGatewayListener(
 	// Hostnames must be unique to a listener to remove ambiguity
 	// in policy selection and TLS configuration.
 	for _, l := range listeners {
-		// An empty hostname is the same as "*", i.e. matches all hosts.
-		hostname := l.GetHostname()
-		if hostname == "" {
-			hostname = mesh_proto.WildcardHostname
-		}
+		hostname := l.GetNonEmptyHostname()
 
 		allRoutes := match.Routes(meshContext.Resources.GatewayRoutes().Items, l.GetTags())
 

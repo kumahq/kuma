@@ -64,7 +64,7 @@ func (i InboundListenerHostname) String() string {
 
 func NewInboundListenerHostname(address string, port uint32, hostname string) InboundListenerHostname {
 	if hostname == "" {
-		hostname = "*"
+		hostname = mesh_proto.WildcardHostname
 	}
 	return InboundListenerHostname{
 		Address:  address,
@@ -80,7 +80,7 @@ func InboundListenerHostnameFromGatewayListener(
 	return NewInboundListenerHostname(
 		address,
 		l.GetPort(),
-		l.GetHostname(),
+		l.GetNonEmptyHostname(),
 	)
 }
 

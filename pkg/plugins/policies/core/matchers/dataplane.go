@@ -216,7 +216,7 @@ func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.
 				gwListeners = append(gwListeners, core_rules.NewInboundListenerHostname(
 					dpp.Spec.GetNetworking().GetAddress(),
 					listener.Port,
-					listener.GetHostname(),
+					listener.GetNonEmptyHostname(),
 				))
 			}
 		}

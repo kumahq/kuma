@@ -55,10 +55,7 @@ func CollectListenerInfos(
 				listener: listener,
 			}
 		}
-		hostname := listener.Hostname
-		if hostname == "" {
-			hostname = "*"
-		}
+		hostname := listener.GetNonEmptyHostname()
 		listenerAcc.hostnames = append(listenerAcc.hostnames, hostnameTags{
 			Hostname: hostname,
 			Tags: mesh_proto.Merge(
