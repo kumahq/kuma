@@ -75,7 +75,7 @@ generate/schema/%: generate/controller-gen/%
 	done
 
 generate/policy-import:
-	$(TOOLS_DIR)/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
+	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
 
 generate/policy-config:
 	$(TOOLS_DIR)/policy-gen/generate-policy-config.sh $(policies)

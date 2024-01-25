@@ -27,30 +27,30 @@ import (
   $imports
 )
 
-type pluginInitializer struct {
-	initFn      func()
-	initialized bool
+type PluginInitializer struct {
+	InitFn      func()
+	Initialized bool
 }
 
-var nameToModule = map[string]*pluginInitializer{
+var NameToModule = map[string]*pluginInitializer{
   $mappings
 }
 
 func InitAllPolicies() {
-	for _, initializer := range nameToModule {
-		if !initializer.initialized {
-			initializer.initFn()
-			initializer.initialized = true
+	for _, initializer := range NameToModule {
+		if !initializer.Initialized {
+			initializer.InitFn()
+			initializer.Initialized = true
 		}
 	}
 }
 
 func InitPolicies(enabledPluginPolicies []string) {
 	for _, policy := range enabledPluginPolicies {
-		initializer, ok := nameToModule[policy]
-		if ok && !initializer.initialized {
-			initializer.initFn()
-			initializer.initialized = true
+		initializer, ok := NameToModule[policy]
+		if ok && !initializer.Initialized {
+			initializer.InitFn()
+			initializer.Initialized = true
 		} else {
 			panic(\"policy \" + policy + \" not found\")
 		}
