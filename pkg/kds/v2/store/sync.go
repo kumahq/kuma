@@ -270,14 +270,14 @@ func (s *syncResourceStore) validateResourceDelete(ctx context.Context, deleteOn
 			return errors.Errorf("could not get mesh %s to verify whether we can delete a resource", r.GetMeta().GetMesh())
 		}
 		if origin, ok := core_model.ResourceOrigin(mesh.GetMeta()); !ok || origin != deleteOnlyWithOrigin {
-			return errors.Errorf("failed to delete resouce %s %s. The resource is managed by mesh %s which is was not exported to %s control plane. "+
+			return errors.Errorf("failed to delete resource %s %s. The resource is managed by mesh %s which is was not exported to %s control plane. "+
 				"This is protection from accidentally removing resources. "+
 				"Either export the resource to %s control plane or remove the resource on this control plane",
 				r.Descriptor().Name, r.GetMeta().GetName(), mesh.GetMeta().GetName(), deleteOnlyWithOrigin, deleteOnlyWithOrigin,
 			)
 		}
 	case core_model.ScopeGlobal:
-		return errors.Errorf("failed to delete resouce %s %s. The resource was not exported to %s control plane. "+
+		return errors.Errorf("failed to delete resource %s %s. The resource was not exported to %s control plane. "+
 			"This is protection from accidentally removing resources. "+
 			"Either export the resource to %s control plane or remove the resource on this control plane",
 			r.Descriptor().Name, r.GetMeta().GetName(), deleteOnlyWithOrigin, deleteOnlyWithOrigin,
