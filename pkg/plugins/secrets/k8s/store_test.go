@@ -709,6 +709,18 @@ var _ = Describe("KubernetesStore", func() {
                   value: Zm91cg== # base64(four)
 `, ns, "four"))
 				backend.Create(four)
+
+				five := backend.ParseYAML(fmt.Sprintf(`
+                apiVersion: v1
+                kind: Secret
+                type: system.kuma.io/global-secret
+                metadata:
+                  namespace: %s
+                  name: %s
+                data:
+                  value: Zml2ZQ== # base64(five)
+`, ns, "five"))
+				backend.Create(five)
 			})
 
 			It("should return a list of secrets in all meshes", func() {
@@ -747,7 +759,7 @@ var _ = Describe("KubernetesStore", func() {
 				Expect(secrets.Items[0].Spec.Data.Value).To(Equal([]byte("another")))
 			})
 
-			It("should return a list of global secrets", func() {
+			It("should return a list of global secrets sorted", func() {
 				// given
 				secrets := &core_system.GlobalSecretResourceList{}
 
@@ -756,8 +768,9 @@ var _ = Describe("KubernetesStore", func() {
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(secrets.Items).To(HaveLen(1))
-				Expect(string(secrets.Items[0].Spec.Data.Value)).To(Equal("four"))
+				Expect(secrets.Items).To(HaveLen(2))
+				Expect(string(secrets.Items[0].Spec.Data.Value)).To(Equal("five"))
+				Expect(string(secrets.Items[1].Spec.Data.Value)).To(Equal("four"))
 			})
 		})
 	})
