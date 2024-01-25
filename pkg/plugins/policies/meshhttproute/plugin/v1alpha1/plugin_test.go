@@ -911,17 +911,35 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, ""): {{
 											Subset: core_rules.MeshSubset(),
 											Conf: api.PolicyDefault{
+												Rules: []api.Rule{{
+													Matches: []api.Match{{
+														Path: &api.PathMatch{
+															Type:  api.PathPrefix,
+															Value: "/same-path",
+														},
+													}},
+													Default: api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend-wild"),
+															Weight:    pointer.To(uint(100)),
+														}},
+													},
+												}},
+											},
+										}, {
+											Subset: core_rules.MeshSubset(),
+											Conf: api.PolicyDefault{
 												Hostnames: []string{"*.dev"},
 												Rules: []api.Rule{{
 													Matches: []api.Match{{
 														Path: &api.PathMatch{
 															Type:  api.PathPrefix,
-															Value: "/wild-dev",
+															Value: "/same-path",
 														},
 													}},
 													Default: api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefService("backend"),
+															TargetRef: builders.TargetRefService("backend-wild-dev"),
 															Weight:    pointer.To(uint(100)),
 														}},
 													},
