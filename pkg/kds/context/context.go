@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -17,7 +18,6 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -70,10 +70,7 @@ func DefaultContext(
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		reconcile.If(
-			reconcile.And(
-				reconcile.IsKubernetes(cfg.Store.Type),
-				reconcile.Not(reconcile.TypeIs(mesh.ZoneIngressType)),
-			),
+			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile.If(
 			reconcile.And(
@@ -186,8 +183,13 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 // from names of resources if resources are stored in kubernetes.
 func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		util.TrimSuffixFromName(r, k8sSystemNamespace)
-		return r, nil
+		newObj := r.Descriptor().NewObject()
+		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
+		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
+		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(newName))
+		newObj.SetMeta(newMeta)
+		_ = newObj.SetSpec(r.GetSpec())
+		return newObj, nil
 	}
 }
 

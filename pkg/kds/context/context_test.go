@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -476,10 +477,14 @@ var _ = Describe("Context", func() {
 		}
 
 		resource := func(given testCase) model.Resource {
-			descriptor := model.ResourceTypeDescriptor{
-				IsPluginOriginated: given.isResourcePluginOriginated,
-				Resource:           core_mesh.NewCircuitBreakerResource(),
-				Scope:              given.scope,
+			// var descriptor model.ResourceTypeDescriptor
+			var r model.Resource = core_mesh.NewCircuitBreakerResource()
+			switch given.scope {
+			case model.ScopeGlobal:
+				r = core_mesh.NewZoneIngressResource()
+			}
+			if given.isResourcePluginOriginated {
+				r = v1alpha1.NewMeshCircuitBreakerResource()
 			}
 
 			meta := &test_model.ResourceMeta{
@@ -488,8 +493,8 @@ var _ = Describe("Context", func() {
 					mesh_proto.DisplayName: given.displayName,
 				},
 			}
-
-			return &test_model.Resource{TypeDescriptor: descriptor, Meta: meta}
+			r.SetMeta(meta)
+			return r
 		}
 
 		DescribeTable("system namespace suffix from in resource names",
