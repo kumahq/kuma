@@ -7,15 +7,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
+	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
 )
 
 type exportContext struct {
@@ -35,14 +37,6 @@ const (
 	formatUniversal  = "universal"
 	formatKubernetes = "kubernetes"
 )
-
-var staticProfiles = map[string][]model.ResourceType{
-	profileFederation: {
-		core_mesh.MeshType,
-		core_system.GlobalSecretType,
-		core_system.SecretType,
-	},
-}
 
 func NewExportCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	ctx := &exportContext{RootContext: pctx}
@@ -83,7 +77,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var resources []model.Resource
+			var allResources []model.Resource
 			for _, resType := range resTypes {
 				resDesc, err := pctx.Runtime.Registry.DescriptorFor(resType)
 				if err != nil {
@@ -94,15 +88,24 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resType)
 					}
-					resources = append(resources, list.GetItems()...)
+					allResources = append(allResources, list.GetItems()...)
 				} else {
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resType)
 						}
-						resources = append(resources, list.GetItems()...)
+						allResources = append(allResources, list.GetItems()...)
 					}
+				}
+			}
+
+			var resources []model.Resource
+			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
+			for _, res := range allResources {
+				if res.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
+					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name {
+					resources = append(resources, res)
 				}
 			}
 
@@ -144,7 +147,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 // cleans kubernetes object, so it can be applied on any other cluster
 func cleanKubeObject(obj map[string]interface{}) {
-	meta := obj["metadata"].(map[string]interface{})
+	metadata, ok := obj["metadata"]
+	if !ok {
+		return
+	}
+	meta := metadata.(map[string]interface{})
 	delete(meta, "resourceVersion")
 	delete(meta, "ownerReferences")
 	delete(meta, "uid")
@@ -153,10 +160,6 @@ func cleanKubeObject(obj map[string]interface{}) {
 }
 
 func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.ResourceType, error) {
-	rt, ok := staticProfiles[ectx.args.profile]
-	if ok {
-		return rt, nil
-	}
 	client, err := ectx.CurrentResourcesListClient()
 	if err != nil {
 		return nil, err
@@ -170,8 +173,12 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		switch ectx.args.profile {
 		case profileAll:
 			resTypes = append(resTypes, model.ResourceType(res.Name))
+		case profileFederation:
+			if includeInFederationProfile(res) {
+				resTypes = append(resTypes, model.ResourceType(res.Name))
+			}
 		case profileFederationWithPolicies:
-			if res.IncludeInFederationWithPolicies {
+			if res.IncludeInFederation {
 				resTypes = append(resTypes, model.ResourceType(res.Name))
 			}
 		default:
@@ -179,4 +186,10 @@ func resourcesTypesToDump(ctx context.Context, ectx *exportContext) ([]model.Res
 		}
 	}
 	return resTypes, nil
+}
+
+func includeInFederationProfile(res api_common.ResourceTypeDescription) bool {
+	return res.IncludeInFederation && // base decision on `IncludeInFederation` field
+		(res.Policy == nil || (res.Policy != nil && !res.Policy.IsTargetRef)) && // do not include new policies
+		res.Name != string(core_mesh.MeshGatewayType) // do not include MeshGateways
 }

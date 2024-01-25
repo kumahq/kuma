@@ -1,0 +1,49 @@
+{
+  "apiVersion": "kuma.io/v1alpha1",
+  "kind": "Retry",
+  "mesh": "default",
+  "metadata": {
+    "creationTimestamp": "2024-01-24T09:32:02Z",
+    "generation": 1,
+    "name": "retry-all-default",
+    "ownerReferences": [
+      {
+        "apiVersion": "kuma.io/v1alpha1",
+        "kind": "Mesh",
+        "name": "default",
+        "uid": "9fe5aae8-97c3-481f-b4a1-9e2149f18f55"
+      }
+    ],
+    "resourceVersion": "5148",
+    "uid": "507cb405-18b4-4182-9161-84f629fdffbc"
+  },
+  "spec": {
+    "conf": {
+      "http": {
+        "backOff": {
+          "baseInterval": "0.025s",
+          "maxInterval": "0.250s"
+        },
+        "numRetries": 5,
+        "perTryTimeout": "16s"
+      },
+      "tcp": {
+        "maxConnectAttempts": 5
+      }
+    },
+    "destinations": [
+      {
+        "match": {
+          "kuma.io/service": "*"
+        }
+      }
+    ],
+    "sources": [
+      {
+        "match": {
+          "kuma.io/service": "*"
+        }
+      }
+    ]
+  }
+}

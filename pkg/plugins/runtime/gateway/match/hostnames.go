@@ -2,6 +2,8 @@ package match
 
 import (
 	"strings"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 type hostname struct {
@@ -10,7 +12,7 @@ type hostname struct {
 }
 
 func (h *hostname) wildcard() bool {
-	return h.Host == "*"
+	return h.Host == mesh_proto.WildcardHostname
 }
 
 func (h *hostname) matches(name string) bool {
@@ -35,6 +37,9 @@ func (h *hostname) contains(n hostname) bool {
 }
 
 func makeHostname(name string) hostname {
+	if name == "" {
+		name = mesh_proto.WildcardHostname
+	}
 	parts := strings.Split(name, ".")
 	return hostname{Host: parts[0], DomainParts: parts[1:]}
 }

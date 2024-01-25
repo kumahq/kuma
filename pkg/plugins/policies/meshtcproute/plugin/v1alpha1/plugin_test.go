@@ -666,6 +666,16 @@ var _ = Describe("MeshTCPRoute", func() {
 				WithMesh(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
+
+			rules := core_rules.Rule{
+				Subset: core_rules.MeshSubset(),
+				Conf: api.RuleConf{
+					BackendRefs: []common_api.BackendRef{{
+						TargetRef: builders.TargetRefService("backend"),
+						Weight:    pointer.To(uint(100)),
+					}},
+				},
+			}
 			return outboundsTestCase{
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
@@ -674,17 +684,12 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshTCPRouteType, core_rules.GatewayRules{
-								ToRules: map[core_rules.InboundListener]core_rules.Rules{
-									{Address: "192.168.0.1", Port: 9080}: {
-										{
-											Subset: core_rules.MeshSubset(),
-											Conf: api.RuleConf{
-												BackendRefs: []common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-												}},
-											},
-										},
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 9080, "*"): {&rules},
+									},
+									ByListener: map[core_rules.InboundListener]core_rules.Rules{
+										{Address: "192.168.0.1", Port: 9080}: {&rules},
 									},
 								},
 							}),
