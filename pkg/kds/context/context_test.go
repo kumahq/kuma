@@ -477,7 +477,6 @@ var _ = Describe("Context", func() {
 		}
 
 		resource := func(given testCase) model.Resource {
-			// var descriptor model.ResourceTypeDescriptor
 			var r model.Resource = core_mesh.NewCircuitBreakerResource()
 			switch given.scope {
 			case model.ScopeGlobal:
