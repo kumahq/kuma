@@ -2,9 +2,7 @@
 
 set -e
 
-POLICIES_FILE="pkg/config/plugins/policies/policies.go"
-
-policies=$(for i in "${@:1}"; do
+policies=$(for i in "${@:3}"; do
   if [[ -f pkg/plugins/policies/${i}/zz_generated.plugin.go ]]; then
     policy_dir="pkg/plugins/policies/${i}"
     policy_crd_dir="${policy_dir}/k8s/crd"
@@ -12,27 +10,7 @@ policies=$(for i in "${@:1}"; do
     plural=$(yq e '.spec.names.plural' "$policy_crd_file")
     echo "\"$plural\","
   fi
-done)
-
-if [[ $policies == "" ]]; then
-  rm -f "${POLICIES_FILE}"
-  exit 0
-fi
-
-echo "package policies
-
-var DefaultPluginPoliciesEnabled = []string{
-  $policies
-}
-
-func DefaultPoliciesConfig() *Config {
-	return &Config{
-		PluginPoliciesEnabled: DefaultPluginPoliciesEnabled,
-	}
-}
-" > "${POLICIES_FILE}"
-
-gofmt -w "${POLICIES_FILE}"
+done | sort | uniq)
 
 KUMA_DEFAULTS_FILE="pkg/config/app/kuma-cp/kuma-cp.defaults.yaml"
 
