@@ -17,7 +17,7 @@ mappings=$(for i in "${@:2}"; do
     policy_crd_dir="${policy_dir}/k8s/crd"
     policy_crd_file="$(find "${policy_crd_dir}" -type f)"
     plural=$(yq e '.spec.names.plural' "$policy_crd_file")
-    echo "\"$plural\": {initFn: ${i}.InitPlugin, initialized: false},"
+    echo "\"$plural\": {InitFn: ${i}.InitPlugin, Initialized: false},"
   fi
 done)
 
@@ -32,7 +32,7 @@ type PluginInitializer struct {
 	Initialized bool
 }
 
-var NameToModule = map[string]*pluginInitializer{
+var NameToModule = map[string]*PluginInitializer{
   $mappings
 }
 
