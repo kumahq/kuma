@@ -85,6 +85,7 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(waitingClientNamespace)).
 			Install(Namespace(curlingClientNamespace)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName))).
 			Install(democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName))).
 			Install(YamlK8s(meshGatewayWithoutLimit)).

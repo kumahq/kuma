@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"math/rand"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -10,28 +9,33 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
-type WithoutResource struct {
-	Resource core_model.ResourceType
-	Mesh     string
-	Name     string
-}
-
 var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
 	var dataplanes *DataplaneGenerator
 
+	type WithoutResource struct {
+		Resource core_model.ResourceType
+		Mesh     string
+		Name     string
+	}
+
 	Do := func() (cache.ResourceSnapshot, error) {
+		GinkgoHelper()
+
 		serverCtx := xds_server.NewXdsContext()
 		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 		if err != nil {
@@ -86,6 +90,8 @@ var _ = Describe("Gateway Route", func() {
 			"prefix-service",
 			"regex-header-match",
 			"regex-query-match",
+			"present-header-match",
+			"absent-header-match",
 		} {
 			dataplanes.Generate(service)
 		}
@@ -740,7 +746,18 @@ conf:
   http:
     request_timeout: 30s
     idle_timeout: 30s
-`,
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 
 		Entry("match circuit breaker policy",
@@ -825,7 +842,13 @@ conf:
   detectors:
     localErrors:
       consecutive: 30
-`,
+`, []WithoutResource{
+				{
+					Resource: meshcircuitbreaker_api.MeshCircuitBreakerType,
+					Mesh:     "default",
+					Name:     "mesh-circuit-breaker-all-default",
+				},
+			},
 		),
 
 		Entry("match health check policy",
@@ -1047,7 +1070,18 @@ conf:
   http:
     request_timeout: 30s
     idle_timeout: 30s
-`,
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 
 		Entry("match ratelimit policy",
@@ -1400,7 +1434,7 @@ conf:
 `,
 		),
 
-		Entry("external service works without default traffic permission policy",
+		Entry("external service works without traffic permission policy",
 			"external-service-without-default-traffic-permission.yaml", `
 type: ExternalService
 mesh: default
@@ -1427,11 +1461,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: external-httpbin
-`, WithoutResource{
-				Resource: core_mesh.TrafficPermissionType,
-				Mesh:     "default",
-				Name:     "allow-all-default",
-			},
+`,
 		),
 
 		Entry("generates cross mesh gateway listeners",
@@ -1638,11 +1668,17 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`,
-			WithoutResource{
-				Resource: core_mesh.TimeoutType,
-				Mesh:     "default",
-				Name:     "timeout-all-default",
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
 			},
 		),
 
@@ -1711,7 +1747,18 @@ conf:
     idle_timeout: 115s
     stream_idle_timeout: 116s
     max_stream_duration: 117s
-`,
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 
 		Entry("doesn't create invalid config with tcp route",
@@ -1777,7 +1824,13 @@ conf:
     retryOn:
       - all_5xx
     numRetries: 20
-`,
+`, []WithoutResource{
+				{
+					Resource: meshretry_api.MeshRetryType,
+					Mesh:     "default",
+					Name:     "mesh-retry-all-default",
+				},
+			},
 		),
 		Entry("handled unresolved-backend tag",
 			"unresolved-backend.yaml", `
@@ -1880,6 +1933,18 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 		Entry("generates direct cluster for TCP external service",
 			"tcp-route-no-egress.yaml", `
@@ -1974,6 +2039,18 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 	}
 
@@ -2054,18 +2131,34 @@ conf:
       - destination:
           kuma.io/service: echo-service
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 	}
 	handleArg := func(arg interface{}) {
+		GinkgoHelper()
+
 		switch val := arg.(type) {
-		case WithoutResource:
-			obj, err := registry.Global().NewObject(val.Resource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(rt.ResourceManager().Delete(
-				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
-			)).To(Succeed())
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
+		case []WithoutResource:
+			for _, resource := range val {
+				obj, err := registry.Global().NewObject(resource.Resource)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(rt.ResourceManager().Delete(
+					context.Background(), obj, store.DeleteByKey(resource.Name, resource.Mesh),
+				)).To(Succeed())
+			}
 		}
 	}
 	Context("with a HTTP gateway", func() {
@@ -2122,15 +2215,10 @@ conf:
 
 	Context("with a TCP gateway", func() {
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				// #nosec G404 -- used just for tests
-				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
-				r.Shuffle(len(fixtureResources), func(i, j int) {
-					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
-				})
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when
@@ -2150,15 +2238,10 @@ conf:
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				// #nosec G404 -- used just for tests
-				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
-				r.Shuffle(len(fixtureResources), func(i, j int) {
-					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
-				})
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when

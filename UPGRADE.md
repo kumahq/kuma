@@ -8,10 +8,24 @@ does not have any particular instructions.
 
 ## Upgrade to `2.6.x`
 
-### Policy sorting
+### Policy
+
+#### Sorting
 
 Policy merging now gives precedence to policies lexicographically before
 other policies.
+
+#### `targetRef.kind: MeshGateway`
+
+Note that when targeting `MeshGateways` you should be using `targetRef.kind:
+MeshGateway`. Previously `targetRef.kind: MeshService` was necessary but this
+left the control plane unable to fully validate policies for builtin gateway
+usage.
+
+##### `to` instead of `from`
+
+With `MeshFaultInjection` and `MeshRateLimit`, `spec.to` with `kind:
+MeshGateway` is now required instead of `spec.from` and `kind: MeshService`.
 
 ### Unifying Default Connection Timeout Values
 
@@ -22,6 +36,39 @@ The connection timeout specifies the amount of time Envoy will wait for an upstr
 The only users who need to take action are those who are explicitly relying on the previous default connection timeout value of `10s`. These users will need to create a new `MeshTimeout` policy with the appropriate `connectTimeout` value to maintain their desired behavior.
 
 We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
+
+### Default `TrafficRoute` and `TrafficPermission` resources are not created when creating a new `Mesh`
+
+We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
+If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
+
+**The following policies will no longer be created automatically**:
+  
+  * `CircuitBreaker`
+  * `Retry`
+  * `Timeout`
+  * `TrafficPermission`
+  * `TrafficRoute`
+
+**The following policies will be created by default**:
+
+  * `MeshCircuitBreaker`
+  * `MeshRetry`
+  * `MeshTimeout`
+
+> [!CAUTION]
+> Before enabling `mTLS`, remember to add `MeshTrafficPermission.`
+
+Previously, Kuma would automatically create the default `TrafficPermission` policy for traffic routing. However, starting from version `2.6.0`, this is no longer the case.
+
+If you are using `mTLS`, you will need to manually create the `MeshTrafficPermission` policy before enabling `mTLS`.
+
+The `MeshTrafficPermission` policy allows you to specify which services can communicate with each other. This is necessary in a `mTLS` environment because `mTLS` requires that all communication between services be authenticated and authorized.
+
+#### When is it appropriate to set the `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` environment variable to `true`?
+
+* When zones connecting to the global control plane may be running an older version than `2.6.0`.
+* When recreating an environment using continuous delivery (CD) with legacy policies, missing the `TrafficRoute` policy will prevent legacy policies from being applied.
 
 ### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
 
@@ -37,6 +84,12 @@ To ensure a smooth transition to Kuma 2.6.0, carefully review your existing conf
 
 The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
 Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
+
+### Make format SI valid for bandwidth in MeshFaultInjection policy
+
+Prior to this upgrade `mbps` and `gbps` were used for units for parameter `conf.responseBandwidth.percentage`.
+These are not valid units according to the [International System of Units](https://en.wikipedia.org/wiki/International_System_of_Units) they are respectively corrected to `Gbps` and `Mbps` if using
+these invalid units convert them into `kbps` prior to upgrade to avoid invalid format.
 
 ## Upgrade to `2.5.x`
 

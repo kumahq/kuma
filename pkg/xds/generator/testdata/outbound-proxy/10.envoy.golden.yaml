@@ -1,0 +1,100 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: MAGLEV
+    name: backend
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://mesh1/backend
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:mesh1
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:mesh1
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: backend{mesh=mesh1}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8081
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              region: us
+            envoy.transport_socket_match:
+              region: us
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.2
+              portValue: 8082
+        loadBalancingWeight: 1
+- name: outbound:127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    additionalAddresses:
+    - address:
+        socketAddress:
+          address: 240.0.0.3
+          portValue: 80
+    - address:
+        socketAddress:
+          address: 240.0.0.4
+          portValue: 80
+    - address:
+        socketAddress:
+          address: 240.0.0.4
+          portValue: 8080
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18080
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: backend
+          idleTimeout: 0s
+          statPrefix: backend
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:127.0.0.1:18080
+    trafficDirection: OUTBOUND

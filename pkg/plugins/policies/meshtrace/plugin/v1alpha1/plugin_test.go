@@ -605,7 +605,7 @@ var _ = Describe("MeshTrace", func() {
 		}),
 	)
 	type gatewayTestCase struct {
-		rules map[core_rules.InboundListener]core_rules.SingleItemRules
+		rules core_rules.SingleItemRules
 	}
 	DescribeTable("should generate proper Envoy config for gateways",
 		func(given gatewayTestCase) {
@@ -621,9 +621,7 @@ var _ = Describe("MeshTrace", func() {
 
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshTraceType, core_rules.GatewayRules{
-					SingleItemRules: given.rules,
-				})).
+				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.rules)).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
@@ -643,9 +641,9 @@ var _ = Describe("MeshTrace", func() {
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.listeners.golden.yaml", name))))
 		},
 		Entry("simple-gateway", gatewayTestCase{
-			rules: map[core_rules.InboundListener]core_rules.SingleItemRules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					Rules: []*core_rules.Rule{{
+			rules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
@@ -656,7 +654,7 @@ var _ = Describe("MeshTrace", func() {
 								},
 							}},
 						},
-					}},
+					},
 				},
 			},
 		}),

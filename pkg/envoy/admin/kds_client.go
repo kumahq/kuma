@@ -38,9 +38,9 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 	zone := core_model.ZoneOfResource(proxy)
 	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
-	clientID := service.ClientID(ctx, zone)
+	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.XDSConfigDump.Send(clientID, &mesh_proto.XDSConfigRequest{
+	err := k.rpcs.XDSConfigDump.Send(tenantZoneID.String(), &mesh_proto.XDSConfigRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -50,9 +50,9 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
 	}
 
-	defer k.rpcs.XDSConfigDump.DeleteWatch(clientID, reqId)
+	defer k.rpcs.XDSConfigDump.DeleteWatch(tenantZoneID.String(), reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.XDSConfigDump.WatchResponse(clientID, reqId, ch); err != nil {
+	if err := k.rpcs.XDSConfigDump.WatchResponse(tenantZoneID.String(), reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 
@@ -75,9 +75,9 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 	zone := core_model.ZoneOfResource(proxy)
 	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
-	clientID := service.ClientID(ctx, zone)
+	tenantZoneId := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.Stats.Send(clientID, &mesh_proto.StatsRequest{
+	err := k.rpcs.Stats.Send(tenantZoneId.String(), &mesh_proto.StatsRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -87,9 +87,9 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
 	}
 
-	defer k.rpcs.Stats.DeleteWatch(clientID, reqId)
+	defer k.rpcs.Stats.DeleteWatch(tenantZoneId.String(), reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Stats.WatchResponse(clientID, reqId, ch); err != nil {
+	if err := k.rpcs.Stats.WatchResponse(tenantZoneId.String(), reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 
@@ -112,9 +112,9 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 	zone := core_model.ZoneOfResource(proxy)
 	nameInZone := resNameInZone(proxy)
 	reqId := core.NewUUID()
-	clientID := service.ClientID(ctx, zone)
+	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err := k.rpcs.Clusters.Send(clientID, &mesh_proto.ClustersRequest{
+	err := k.rpcs.Clusters.Send(tenantZoneID.String(), &mesh_proto.ClustersRequest{
 		RequestId:    reqId,
 		ResourceType: string(proxy.Descriptor().Name),
 		ResourceName: nameInZone,                // send the name which without the added prefix
@@ -124,9 +124,9 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
 	}
 
-	defer k.rpcs.Clusters.DeleteWatch(clientID, reqId)
+	defer k.rpcs.Clusters.DeleteWatch(tenantZoneID.String(), reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Clusters.WatchResponse(clientID, reqId, ch); err != nil {
+	if err := k.rpcs.Clusters.WatchResponse(tenantZoneID.String(), reqId, ch); err != nil {
 		return nil, errors.Wrapf(err, "could not watch the response")
 	}
 

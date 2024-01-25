@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"path/filepath"
-	"strings"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -29,11 +29,6 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 	Expect(err).ToNot(HaveOccurred())
 
 	return actual
-}
-
-func testCaseName(ginkgo FullGinkgoTInterface) string {
-	nameSplit := strings.Split(ginkgo.Name(), " ")
-	return nameSplit[len(nameSplit)-1]
 }
 
 var _ = Describe("MeshMetric", func() {
@@ -48,12 +43,12 @@ var _ = Describe("MeshMetric", func() {
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 
-		name := testCaseName(GinkgoT())
+		name := utils.TestCaseName(GinkgoT())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
 	},
-		Entry("basic", testCase{
+		Entry("default", testCase{
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithMetadata(&xds.DataplaneMetadata{MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
@@ -63,9 +58,42 @@ var _ = Describe("MeshMetric", func() {
 							{
 								Subset: []core_rules.Tag{},
 								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{
+											Name: pointer.To("test-app"),
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("basic", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
-										Regex:    pointer.To("http.*"),
-										UsedOnly: pointer.To(true),
+										Regex:         pointer.To("http.*"),
+										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
 										{
@@ -87,6 +115,81 @@ var _ = Describe("MeshMetric", func() {
 						},
 					}),
 				).
+				Build(),
+		}),
+		Entry("multiple_prometheus", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										Regex:         pointer.To("http.*"),
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												ClientId: pointer.To("first-backend"),
+												Path:     "/metrics",
+												Port:     5670,
+											},
+										},
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												ClientId: pointer.To("second-backend"),
+												Path:     "/metrics",
+												Port:     5671,
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("openTelemetry", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
+							},
+						},
+					})).
 				Build(),
 		}),
 		Entry("provided_tls", testCase{
@@ -113,6 +216,48 @@ var _ = Describe("MeshMetric", func() {
 												Tls: &api.PrometheusTls{
 													Mode: api.ProvidedTLS,
 												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("otel_and_prometheus", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										Regex:         pointer.To("http.*"),
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.PrometheusBackendType,
+											Prometheus: &api.PrometheusBackend{
+												Path: "/metrics",
+												Port: 5670,
+											},
+										},
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
 											},
 										},
 									},

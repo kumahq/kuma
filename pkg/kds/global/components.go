@@ -2,6 +2,8 @@ package global
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -111,14 +113,14 @@ func Setup(rt runtime.Runtime) error {
 	})
 
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
-		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
 			errChan <- err
 		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), log, clientId, rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
 			errChan <- errors.Wrap(err, "Global CP could not create a zone")
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
@@ -129,13 +131,13 @@ func Setup(rt runtime.Runtime) error {
 	})
 
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
-		clientId, err := util.ClientIDFromIncomingCtx(stream.Context())
+		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
 			errChan <- err
 		}
-		log := kdsDeltaGlobalLog.WithValues("peer-id", clientId)
+		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
-		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, clientId, rt, "")
+		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zoneID, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
@@ -224,7 +226,9 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
-			if isOldZone(rs) {
+			supportsHashSuffixes := !isOldZone(rs)
+
+			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				util.AddPrefixToNames(rs.GetItems(), clusterName)
 			}
@@ -232,7 +236,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			for _, r := range rs.GetItems() {
 				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
 					util.WithLabel(mesh_proto.ZoneTag, clusterName),
-					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 				))
 			}
 
@@ -259,6 +263,10 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
 			}), sync_store.Zone(clusterName))
 		},

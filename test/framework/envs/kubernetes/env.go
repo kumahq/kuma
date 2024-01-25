@@ -26,7 +26,8 @@ func SetupAndGetState() []byte {
 			"--experimental-gatewayapi": "true",
 		}),
 		framework.WithEgress(),
-	}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+	},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))

@@ -209,7 +209,7 @@ func inspectGatewayRouteDataplanes(
 			}
 			for _, listener := range gateway.ExtractGatewayListeners(proxy) {
 				for _, host := range listener.HostInfos {
-					for _, entry := range host.Entries {
+					for _, entry := range host.Entries() {
 						if entry.Route != gatewayRoute.GetMeta().GetName() {
 							continue
 						}
@@ -369,7 +369,7 @@ func newGatewayDataplaneInspectResponse(
 				Routes:   []api_server_types.RouteInspectEntry{},
 			}
 			routeMap := map[string][]api_server_types.Destination{}
-			for _, entry := range info.Entries {
+			for _, entry := range info.Entries() {
 				destinations := routeMap[entry.Route]
 
 				if entry.Mirror != nil {
@@ -455,7 +455,7 @@ func gatewayEntriesByPolicy(
 		hostMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
 		for _, info := range info.HostInfos {
 			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
-			for _, entry := range info.Entries {
+			for _, entry := range info.Entries() {
 				entryMap := map[inspect.PolicyKey][]tags.Tags{}
 				if entry.Mirror != nil {
 					entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)

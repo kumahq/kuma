@@ -394,6 +394,8 @@ defaults:
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
   # If true, it skips creating the default tenant resources
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
+  # If true, it creates the default routing (TrafficPermisson and TrafficRoute) resources for a new Mesh
+  createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
 # Metrics configuration
 metrics:
   dataplane:
@@ -510,6 +512,8 @@ multizone:
       # Response backoff is a time Zone CP waits before sending ACK/NACK.
       # This is a way to slow down Global CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
+    # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
+    disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -744,7 +748,8 @@ eventBus:
   # If we go over buffer, additional delay may happen to various operation like insight recomputation or KDS.
   bufferSize: 100 # ENV: KUMA_EVENT_BUS_BUFFER_SIZE
 policies:
-  pluginPoliciesEnabled:
+  # PluginPoliciesEnabled controls which policy plugins are enabled
+  pluginPoliciesEnabled: # ENV: KUMA_PLUGIN_POLICIES_ENABLED
     - meshaccesslogs
     - meshcircuitbreakers
     - meshfaultinjections

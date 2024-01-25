@@ -76,7 +76,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				}},
 			}
-
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},

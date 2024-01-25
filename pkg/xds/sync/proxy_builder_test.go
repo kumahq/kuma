@@ -200,29 +200,6 @@ var _ = Describe("Proxy Builder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			trafficRouteList := proxy.ZoneIngressProxy.MeshResourceList[0].Resources[core_mesh.TrafficRouteType].(*core_mesh.TrafficRouteResourceList)
-			Expect(trafficRouteList.Items[0].Spec).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "*",
-						},
-					},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "*",
-						},
-					},
-				},
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: mesh_proto.MatchAnyService(),
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
-					},
-				},
-			}))
 			Expect(proxy.ZoneIngressProxy.MeshResourceList).To(HaveLen(1))
 			Expect(proxy.ZoneIngressProxy.MeshResourceList[0].EndpointMap).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
 				Target: "192.168.0.3",

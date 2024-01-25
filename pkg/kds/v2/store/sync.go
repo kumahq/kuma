@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"maps"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -212,11 +214,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			creationTime := r.GetMeta().GetCreationTime()
 
 			createOpts := []store.CreateOptionsFunc{
 				store.CreateBy(rk),
-				store.CreatedAt(creationTime),
+				store.CreatedAt(core.Now()),
 				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
 			if opts.Zone != "" {
@@ -276,7 +277,7 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
-func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
+func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
@@ -302,10 +303,25 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
-				return !core_model.IsLocallyOriginated(config_core.Zone, r)
+				if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
+					// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
+					// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
+					// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
+					// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
+					// todo: remove in 2 releases after 2.6.x
+					return zi.IsRemoteIngress(localZone)
+				}
+				return !core_model.IsLocallyOriginated(config_core.Zone, r) || !isExpectedOnZoneCP(r.Descriptor())
 			}))
 		},
 	}
+}
+
+// isExpectedOnZoneCP returns true if it's possible for the resource type to be on Zone CP. Some resource types
+// (i.e. Mesh, Secret) are allowed on non-federated Zone CPs, but after transition to federated Zone CP they're moved
+// to Global and must be replaced during the KDS sync.
+func isExpectedOnZoneCP(desc core_model.ResourceTypeDescriptor) bool {
+	return desc.KDSFlags.Has(core_model.ZoneToGlobalFlag)
 }
 
 func GlobalSyncCallback(
@@ -328,7 +344,7 @@ func GlobalSyncCallback(
 			for _, r := range upstream.AddedResources.GetItems() {
 				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
 					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
-					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 				))
 			}
 
@@ -350,6 +366,10 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+				if !supportsHashSuffixes {
+					// todo: remove in 2 releases after 2.6.x
+					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				}
 				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
 			}), Zone(upstream.ControlPlaneId))
 		},

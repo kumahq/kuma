@@ -9,6 +9,7 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	externalservice "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
@@ -148,9 +149,12 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		return errors.Wrap(err, "could not setup mesh reconciller")
 	}
 	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
-		ResourceManager: rt.ResourceManager(),
-		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
-		Extensions:      rt.Extensions(),
+		ResourceManager:            rt.ResourceManager(),
+		Log:                        core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:                 rt.Extensions(),
+		CreateMeshRoutingResources: rt.Config().Defaults.CreateMeshRoutingResources,
+		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
+		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -239,7 +243,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 
 	allowedUsers := append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector")
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().IsFederatedZoneCP(), allowedUsers)
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().IsFederatedZoneCP(), allowedUsers, rt.Config().Multizone.Zone.DisableOriginLabelValidation)
 	composite.AddValidator(handler)
 
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)

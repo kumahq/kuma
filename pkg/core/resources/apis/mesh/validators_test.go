@@ -480,6 +480,57 @@ violations:
     message: "invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'."
 `,
 		}),
+		Entry("MeshService with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshService
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshService,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshService
+`,
+		}),
+		Entry("MeshServiceSubset with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshServiceSubset
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshServiceSubset,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshServiceSubset
+`,
+		}),
+		Entry("MeshGateway with proxyTypes", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: "test"
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must not be set with kind MeshGateway
+`,
+		}),
 		Entry("MeshGateway when it's not supported", testCase{
 			inputYaml: `
 kind: MeshGateway

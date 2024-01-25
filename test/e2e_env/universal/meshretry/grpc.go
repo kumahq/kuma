@@ -29,12 +29,14 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
+			// remove default policies after https://github.com/kumahq/kuma/issues/3325
+			Install(TrafficRouteUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Delete the default retry policy
+		// Delete the default meshretry policy
 		Eventually(func() error {
-			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
 		}).Should(Succeed())
 	})
 

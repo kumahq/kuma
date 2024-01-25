@@ -42,11 +42,6 @@ jobs:
           fi
           echo "Running with: ${{ toJSON(inputs) }} ${{ toJSON(env) }}"
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
-      - name: "Check if should run on all arch/os combinations"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        run: |
-          echo 'RUN_FULL_MATRIX=${{ env.E2E_PARAM_ARCH }}' > .run-full-matrix
-          echo 'RUN_FULL_MATRIX=true' >> $GITHUB_ENV
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -57,12 +52,9 @@ jobs:
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -72,7 +64,7 @@ jobs:
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools
-      - name: Free up disk space for the Runner
+      - name: "Github Actions: Free up disk space for the Runner"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
           echo "Disk usage before cleanup"

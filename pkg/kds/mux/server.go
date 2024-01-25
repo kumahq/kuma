@@ -131,8 +131,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcOptions = append(
 		grpcOptions,
 		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
-		//nolint:staticcheck
-		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
@@ -174,11 +173,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 // StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
-	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
+	zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
 		return err
 	}
-	log := muxServerLog.WithValues("client-id", clientID)
+	log := muxServerLog.WithValues("client-id", zoneID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	// The buffer size should be of a size of all inflight request, so we never write to a blocked buffer.
 	// The buffer is separate for each direction (send/receive) on each multiplexed stream (global acting as server/global acting as client)
@@ -187,7 +186,7 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	// Therefore the maximum number of inflight requests are number of synced resources.
 	// For the simplicity we just take all resources available in Kuma (.
 	bufferSize := len(registry.Global().ObjectTypes())
-	session := NewSession(clientID, stream, uint32(bufferSize), s.config.MsgSendTimeout.Duration)
+	session := NewSession(zoneID, stream, uint32(bufferSize), s.config.MsgSendTimeout.Duration)
 	for _, filter := range s.filters {
 		if err := filter.InterceptSession(session); err != nil {
 			log.Error(err, "closing KDS stream following a callback error")

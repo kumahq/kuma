@@ -3,6 +3,7 @@ package matchers
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -108,11 +109,17 @@ func dppSelectedByPolicy(
 ) ([]core_rules.InboundListener, bool, error) {
 	switch ref.Kind {
 	case common_api.Mesh:
-		inbounds, gateway := inboundsSelectedByTags(nil, dpp, gateway)
-		return inbounds, gateway, nil
+		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+			inbounds, gateway := inboundsSelectedByTags(nil, dpp, gateway)
+			return inbounds, gateway, nil
+		}
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshSubset:
-		inbounds, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
-		return inbounds, gateway, nil
+		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+			inbounds, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+			return inbounds, gateway, nil
+		}
+		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshService:
 		inbounds, gateway := inboundsSelectedByTags(map[string]string{
 			mesh_proto.ServiceTag: ref.Name,
@@ -159,6 +166,17 @@ func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, mh
 		}
 	}
 	return nil
+}
+
+func resolveDataplaneProxyType(dpp *core_mesh.DataplaneResource) common_api.TargetRefProxyType {
+	if dpp.Spec.GetNetworking().GetGateway() != nil {
+		return common_api.Gateway
+	}
+	return common_api.Sidecar
+}
+
+func isSupportedProxyType(supportedTypes []common_api.TargetRefProxyType, dppType common_api.TargetRefProxyType) bool {
+	return len(supportedTypes) == 0 || slices.Contains(supportedTypes, dppType)
 }
 
 // inboundsSelectedByTags returns which inbounds are selected and whether a
@@ -213,6 +231,11 @@ func (b ByTargetRef) Less(i, j int) bool {
 		return tr1.Kind.Less(tr2.Kind)
 	}
 
+	o1, o2 := originToNumber(b[i]), originToNumber(b[j])
+	if o1 != o2 {
+		return o1 < o2
+	}
+
 	if tr1.Kind == common_api.MeshGateway {
 		if len(tr1.Tags) != len(tr2.Tags) {
 			return len(tr1.Tags) < len(tr2.Tags)
@@ -223,3 +246,28 @@ func (b ByTargetRef) Less(i, j int) bool {
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+
+// The logic of this method is to recreate the following comparison table:
+
+// origin_1 | origin_2 | has_more_priority
+// ---------|----------|-------------
+// Global   | Zone     | origin_2
+// Global   | Unknown  | origin_2
+// Zone     | Global   | origin_1
+// Zone     | Unknown  | origin_1
+// Unknown  | Global   | origin_1
+// Unknown  | Zone     | origin_2
+//
+// If we assign numbers to origins like Global=-1, Zone=1, Unknown=0, then we can compare them as numbers
+// and get the same result as in the table above.
+func originToNumber(r core_model.Resource) int {
+	origin, _ := core_model.ResourceOrigin(r.GetMeta())
+	switch origin {
+	case mesh_proto.GlobalResourceOrigin:
+		return -1
+	case mesh_proto.ZoneResourceOrigin:
+		return 1
+	default:
+		return 0
+	}
+}

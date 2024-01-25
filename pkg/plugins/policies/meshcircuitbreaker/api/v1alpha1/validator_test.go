@@ -414,9 +414,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
-    message: has to be in [0 - 100] range
+    message: must be in inclusive range [0, 100]
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
-    message: has to be in [0 - 100] range`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `
@@ -434,24 +434,6 @@ to:
 violations:
   - field: spec.to[0].default.outlierDetection.detectors
     message: must be defined`,
-			}),
-			Entry("detector is empty", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: web-frontend
-to:
-  - targetRef:
-      kind: MeshService
-      name: web-backend
-    default:
-      outlierDetection:
-        maxEjectionPercent: 100
-        detectors: {}`,
-				expected: `
-violations:
-  - field: spec.to[0].default.outlierDetection.detectors
-    message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`,
 			}),
 			Entry("detector is empty", testCase{
 				inputYaml: `

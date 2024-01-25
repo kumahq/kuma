@@ -5,7 +5,6 @@
 .vscode/
 
 .ci_tools/
-mk/dependencies/*.versions
 
 .tool-versions
 .run-full-matrix

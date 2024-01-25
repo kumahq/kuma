@@ -13,3 +13,31 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: external-service
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    loadAssignment:
+      clusterName: external-service
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.5
+                portValue: 8085
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                region: us
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                region: us
+    name: external-service
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}

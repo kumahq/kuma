@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -28,15 +28,25 @@ func MeshCircuitBreaker() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
-			core_mesh.CircuitBreakerResourceTypeDescriptor,
-			core_mesh.RetryResourceTypeDescriptor,
+		// Delete the default meshretry policy
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", mesh),
+		)).To(Succeed())
+
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+			fmt.Sprintf("mesh-circuit-breaker-all-%s", mesh),
 		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, v1alpha1.MeshCircuitBreakerResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
+			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+		)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {

@@ -62,6 +62,10 @@ func ExtractGatewayListeners(proxy *core_xds.Proxy) []GatewayListenerInfo {
 	return ext.([]GatewayListenerInfo)
 }
 
+func SetGatewayListeners(proxy *core_xds.Proxy, infos []GatewayListenerInfo) {
+	proxy.RuntimeExtensions[metadata.PluginName] = infos
+}
+
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.

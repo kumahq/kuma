@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -22,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -49,13 +49,6 @@ const DefaultConcurrentStreams = 100
 const (
 	DefaultInitialStreamWindowSize     = 64 * 1024
 	DefaultInitialConnectionWindowSize = 1024 * 1024
-)
-
-// Timeout defaults.
-const (
-	DefaultRequestHeadersTimeout = 500 * time.Millisecond
-	DefaultStreamIdleTimeout     = 5 * time.Second
-	DefaultIdleTimeout           = 5 * time.Minute
 )
 
 type keyType string
@@ -202,11 +195,11 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 			envoy_listeners_v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
 				hcm.UseRemoteAddress = util_proto.Bool(true)
 
-				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeout)
-				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeout)
+				hcm.RequestHeadersTimeout = util_proto.Duration(policies_defaults.DefaultGatewayRequestHeadersTimeout)
+				hcm.StreamIdleTimeout = util_proto.Duration(policies_defaults.DefaultGatewayStreamIdleTimeout)
 
 				hcm.CommonHttpProtocolOptions = &envoy_config_core.HttpProtocolOptions{
-					IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
+					IdleTimeout:                  util_proto.Duration(policies_defaults.DefaultGatewayIdleTimeout),
 					HeadersWithUnderscoresAction: envoy_config_core.HttpProtocolOptions_REJECT_REQUEST,
 				}
 
@@ -331,7 +324,7 @@ func (g *TCPFilterChainGenerator) Generate(
 	var sniNames []string
 
 	for _, host := range info.HostInfos {
-		dests := routeDestinations(host.Entries)
+		dests := routeDestinations(host.Entries())
 		allDests = append(allDests, dests...)
 		sniNames = append(sniNames, host.Host.Hostname)
 

@@ -21,6 +21,7 @@ func ExcludeOutboundPort() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceExternal)).
 			Install(testserver.Install(

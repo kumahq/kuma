@@ -60,6 +60,8 @@ func Tracing() {
 			Install(democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
 			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
+			Install(TrafficRouteKubernetes(mesh)).
+			Install(TrafficPermissionKubernetes(mesh)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 		obsClient = obs.From(obsDeployment, kubernetes.Cluster)

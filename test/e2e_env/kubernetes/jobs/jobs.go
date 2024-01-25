@@ -55,6 +55,7 @@ func Jobs() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),

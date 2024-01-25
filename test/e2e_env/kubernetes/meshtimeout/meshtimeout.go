@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -29,7 +29,19 @@ func MeshTimeout() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+		// Delete the default meshtimeout policy
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshTimeoutResourceTypeDescriptor,
+			fmt.Sprintf("mesh-timeout-all-%s", mesh),
+		)).To(Succeed())
+
+		// Delete the default meshretry policy
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", mesh),
+		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -41,7 +53,7 @@ func MeshTimeout() {
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should add timeouts for outbound connections", func(timeoutConfig string) {
+	DescribeTable("should add timeouts for outbound connections", FlakeAttempts(3), func(timeoutConfig string) {
 		// given no MeshTimeout
 		mts, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", mesh)
 		Expect(err).ToNot(HaveOccurred())
