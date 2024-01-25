@@ -138,7 +138,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if cfg.Mode == config_core.Global {
 		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
 			builder.KDSContext().EnvoyAdminRPCs,
-			cfg.Store.Type == store.KubernetesStore,
+			builder.ReadOnlyResourceManager(),
 		)
 		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
 			builder.ReadOnlyResourceManager(),
