@@ -3,7 +3,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/pkg/errors"
@@ -302,9 +301,6 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 			}
 			secOut.Items[i] = r
 		}
-		sort.SliceStable(secOut.Items, func(i, j int) bool {
-			return secOut.Items[i].GetMeta().GetName() < secOut.Items[j].GetMeta().GetName()
-		})
 	case secret_model.GlobalSecretType:
 		secOut := out.(*secret_model.GlobalSecretResourceList)
 		secOut.Items = make([]*secret_model.GlobalSecretResource, len(in.Items))
@@ -315,9 +311,6 @@ func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.Re
 			}
 			secOut.Items[i] = r
 		}
-		sort.SliceStable(secOut.Items, func(i, j int) bool {
-			return secOut.Items[i].GetMeta().GetName() < secOut.Items[j].GetMeta().GetName()
-		})
 	default:
 		return errors.Errorf("invalid type %s, expected %s or %s", out.GetItemType(), secret_model.SecretType, secret_model.GlobalSecretType)
 	}
