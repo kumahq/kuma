@@ -122,6 +122,11 @@ func CollectListenerInfos(
 	return infos
 }
 
+type ruleByHostname struct {
+	Rule     ToRouteRule
+	Hostname string
+}
+
 func SortRulesToHosts(
 	meshLocalResources xds_context.ResourceMap,
 	rawRules rules.GatewayRules,
@@ -142,7 +147,7 @@ func SortRulesToHosts(
 			continue
 		}
 		var ruleHostnames []string
-		rulesByHostname := map[string][]ToRouteRule{}
+		rulesByHostname := map[string][]ruleByHostname{}
 		for _, rawRule := range rawRules {
 			conf := rawRule.Conf.(api.PolicyDefault)
 			rule := ToRouteRule{
@@ -160,7 +165,10 @@ func SortRulesToHosts(
 				if !ok {
 					ruleHostnames = append(ruleHostnames, hostname)
 				}
-				rulesByHostname[hostname] = append(accRule, rule)
+				rulesByHostname[hostname] = append(accRule, ruleByHostname{
+					Rule:     rule,
+					Hostname: hostname,
+				})
 			}
 		}
 
@@ -184,7 +192,7 @@ func SortRulesToHosts(
 
 		for _, hostnameMatch := range listenerSpecificHostnameMatches {
 			// Find all rules that match this hostname
-			var rules []ToRouteRule
+			var rules []ruleByHostname
 			for ruleHostname, hostnameRules := range rulesByHostname {
 				if !match.Hostnames(hostnameMatch, ruleHostname) {
 					continue
@@ -225,18 +233,21 @@ func SortRulesToHosts(
 	return hostInfos
 }
 
-func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRouteRule) []route.Entry {
+func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
 	var entries []route.Entry
 
+	sort.Slice(toRules, func(i, j int) bool {
+		return !match.Contains(toRules[i].Hostname, toRules[j].Hostname)
+	})
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
 	exactEntries := map[string][]route.Entry{}
 	prefixEntries := map[string][]route.Entry{}
 
 	for _, rules := range toRules {
-		for _, rule := range rules.Rules {
+		for _, rule := range rules.Rule.Rules {
 			var names []string
-			for _, orig := range rules.Origin {
+			for _, orig := range rules.Rule.Origin {
 				names = append(names, orig.GetName())
 			}
 			slices.Sort(names)
