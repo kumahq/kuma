@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -76,13 +75,9 @@ func processFromRules(
 
 	sort.Sort(ByTargetRef(matchedPolicies))
 
-	fromRules, err := core_rules.BuildFromRules(map[core_rules.InboundListener][]core_model.Resource{
+	return core_rules.BuildFromRules(map[core_rules.InboundListener][]core_model.Resource{
 		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
 	})
-	if err != nil {
-		return rules.FromRules{}, err
-	}
-	return fromRules, nil
 }
 
 // It's not natural for zone egress to have 'to' policies. It doesn't make sense to target
