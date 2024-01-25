@@ -93,7 +93,7 @@ func applyToGateway(
 			continue
 		}
 
-		toRules := rules.ToRules[listenerKey]
+		toRules := rules.ToRules.ByListener[listenerKey]
 		if !ok {
 			continue
 		}

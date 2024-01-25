@@ -116,7 +116,7 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := rules.ToRules[listenerKey]
+		rules, ok := rules.ToRules.ByListener[listenerKey]
 		if !ok {
 			continue
 		}

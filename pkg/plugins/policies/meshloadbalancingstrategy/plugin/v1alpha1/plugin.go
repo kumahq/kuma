@@ -182,7 +182,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		rules, ok := rules.ToRules[inboundListener]
+		rules, ok := rules.ToRules.ByListener[inboundListener]
 		if !ok {
 			continue
 		}

@@ -1277,31 +1277,33 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("test-zone-2", "192.168.1.2", map[string]string{}),
 				),
 			rules: core_rules.GatewayRules{
-				ToRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Subset: core_rules.Subset{},
-							Conf: v1alpha1.Conf{
-								LoadBalancer: &v1alpha1.LoadBalancer{
-									Type: v1alpha1.RingHashType,
-									RingHash: &v1alpha1.RingHash{
-										MinRingSize:  pointer.To[uint32](100),
-										MaxRingSize:  pointer.To[uint32](1000),
-										HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-										HashPolicies: &[]v1alpha1.HashPolicy{
-											{
-												Type: v1alpha1.QueryParameterType,
-												QueryParameter: &v1alpha1.QueryParameter{
-													Name: "queryparam",
+				ToRules: core_rules.GatewayToRules{
+					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							{
+								Subset: core_rules.Subset{},
+								Conf: v1alpha1.Conf{
+									LoadBalancer: &v1alpha1.LoadBalancer{
+										Type: v1alpha1.RingHashType,
+										RingHash: &v1alpha1.RingHash{
+											MinRingSize:  pointer.To[uint32](100),
+											MaxRingSize:  pointer.To[uint32](1000),
+											HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
+											HashPolicies: &[]v1alpha1.HashPolicy{
+												{
+													Type: v1alpha1.QueryParameterType,
+													QueryParameter: &v1alpha1.QueryParameter{
+														Name: "queryparam",
+													},
+													Terminal: pointer.To(true),
 												},
-												Terminal: pointer.To(true),
-											},
-											{
-												Type: v1alpha1.ConnectionType,
-												Connection: &v1alpha1.Connection{
-													SourceIP: pointer.To(true),
+												{
+													Type: v1alpha1.ConnectionType,
+													Connection: &v1alpha1.Connection{
+														SourceIP: pointer.To(true),
+													},
+													Terminal: pointer.To(false),
 												},
-												Terminal: pointer.To(false),
 											},
 										},
 									},
@@ -1326,49 +1328,51 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
 				),
 			rules: core_rules.GatewayRules{
-				ToRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Subset: core_rules.Subset{},
-							Conf: v1alpha1.Conf{
-								LocalityAwareness: &v1alpha1.LocalityAwareness{
-									LocalZone: &v1alpha1.LocalZone{
-										AffinityTags: &[]v1alpha1.AffinityTag{
-											{
-												Key:    "k8s.io/node",
-												Weight: pointer.To[uint32](9000),
-											},
-											{
-												Key:    "k8s.io/az",
-												Weight: pointer.To[uint32](900),
-											},
-											{
-												Key:    "k8s.io/region",
-												Weight: pointer.To[uint32](90),
+				ToRules: core_rules.GatewayToRules{
+					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							{
+								Subset: core_rules.Subset{},
+								Conf: v1alpha1.Conf{
+									LocalityAwareness: &v1alpha1.LocalityAwareness{
+										LocalZone: &v1alpha1.LocalZone{
+											AffinityTags: &[]v1alpha1.AffinityTag{
+												{
+													Key:    "k8s.io/node",
+													Weight: pointer.To[uint32](9000),
+												},
+												{
+													Key:    "k8s.io/az",
+													Weight: pointer.To[uint32](900),
+												},
+												{
+													Key:    "k8s.io/region",
+													Weight: pointer.To[uint32](90),
+												},
 											},
 										},
-									},
-									CrossZone: &v1alpha1.CrossZone{
-										Failover: []v1alpha1.Failover{
-											{
-												To: v1alpha1.ToZone{
-													Type:  v1alpha1.AnyExcept,
-													Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+										CrossZone: &v1alpha1.CrossZone{
+											Failover: []v1alpha1.Failover{
+												{
+													To: v1alpha1.ToZone{
+														Type:  v1alpha1.AnyExcept,
+														Zones: &[]string{"zone-3", "zone-4", "zone-5"},
+													},
 												},
-											},
-											{
-												From: &v1alpha1.FromZone{
-													Zones: []string{"zone-1"},
+												{
+													From: &v1alpha1.FromZone{
+														Zones: []string{"zone-1"},
+													},
+													To: v1alpha1.ToZone{
+														Type:  v1alpha1.Only,
+														Zones: &[]string{"zone-3"},
+													},
 												},
-												To: v1alpha1.ToZone{
-													Type:  v1alpha1.Only,
-													Zones: &[]string{"zone-3"},
-												},
-											},
-											{
-												To: v1alpha1.ToZone{
-													Type:  v1alpha1.Only,
-													Zones: &[]string{"zone-4"},
+												{
+													To: v1alpha1.ToZone{
+														Type:  v1alpha1.Only,
+														Zones: &[]string{"zone-4"},
+													},
 												},
 											},
 										},
@@ -1394,17 +1398,19 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
 				),
 			rules: core_rules.GatewayRules{
-				ToRules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "192.168.0.1", Port: 8080}: {
-						{
-							Subset: core_rules.Subset{},
-							Conf: v1alpha1.Conf{
-								LocalityAwareness: &v1alpha1.LocalityAwareness{
-									CrossZone: &v1alpha1.CrossZone{
-										Failover: []v1alpha1.Failover{
-											{
-												To: v1alpha1.ToZone{
-													Type: v1alpha1.None,
+				ToRules: core_rules.GatewayToRules{
+					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							{
+								Subset: core_rules.Subset{},
+								Conf: v1alpha1.Conf{
+									LocalityAwareness: &v1alpha1.LocalityAwareness{
+										CrossZone: &v1alpha1.CrossZone{
+											Failover: []v1alpha1.Failover{
+												{
+													To: v1alpha1.ToZone{
+														Type: v1alpha1.None,
+													},
 												},
 											},
 										},

@@ -10,7 +10,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -27,10 +26,13 @@ import (
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
+type hostnameTags struct {
+	Hostname string
+	Tags     map[string]string
+}
 type listenersHostnames struct {
-	hostnames []string
 	listener  *mesh_proto.MeshGateway_Listener
-	tags      map[string]string
+	hostnames []hostnameTags
 }
 
 func CollectListenerInfos(
@@ -43,40 +45,31 @@ func CollectListenerInfos(
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	listenersByPort := map[uint32]listenersHostnames{}
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
+		if listener.Protocol == mesh_proto.MeshGateway_Listener_TCP {
+			continue
+		}
+
 		listenerAcc, ok := listenersByPort[listener.GetPort()]
 		if !ok {
 			listenerAcc = listenersHostnames{
 				listener: listener,
 			}
 		}
-		hostname := listener.Hostname
-		if hostname == "" {
-			hostname = "*"
-		}
-		listenerAcc.hostnames = append(listenerAcc.hostnames, hostname)
-		// TODO fix this. we should track a _list_ of tags and then match
-		// policies to these instead of to inbound listener address/port
-		// this doesn't seem to be correct with MeshGatewayRoute either
-		listenerAcc.tags = mesh_proto.Merge(
-			networking.GetGateway().GetTags(),
-			gateway.Spec.GetTags(),
-			listener.GetTags(),
-		)
+		hostname := listener.GetNonEmptyHostname()
+		listenerAcc.hostnames = append(listenerAcc.hostnames, hostnameTags{
+			Hostname: hostname,
+			Tags: mesh_proto.Merge(
+				networking.GetGateway().GetTags(),
+				gateway.Spec.GetTags(),
+				listener.GetTags(),
+			),
+		})
 		listenersByPort[listener.GetPort()] = listenerAcc
 	}
 
 	var infos []plugin_gateway.GatewayListenerInfo
 
 	for port, listener := range listenersByPort {
-		address := networking.Address
-		inboundListener := rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		rawRules, ok := rawRules.ToRules[inboundListener]
-		if !ok {
-			continue
-		}
 		externalServices := meshCtx.Resources.ExternalServices()
 
 		matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
@@ -99,7 +92,13 @@ func CollectListenerInfos(
 			outboundEndpoints[k] = v
 		}
 
-		hostInfos := SortRulesToHosts(meshCtx.Resources.MeshLocalResources, rawRules, listener)
+		hostInfos := SortRulesToHosts(
+			meshCtx.Resources.MeshLocalResources,
+			rawRules,
+			networking.Address,
+			listener.listener,
+			listener.hostnames,
+		)
 		infos = append(infos, plugin_gateway.GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
@@ -123,48 +122,59 @@ func CollectListenerInfos(
 	return infos
 }
 
-func SortRulesToHosts(meshLocalResources xds_context.ResourceMap, rawRules rules.Rules, listener listenersHostnames) []plugin_gateway.GatewayHostInfo {
-	var ruleHostnames []string
-	rulesByHostname := map[string][]ToRouteRule{}
-	for _, rawRule := range rawRules {
-		conf := rawRule.Conf.(api.PolicyDefault)
-		rule := ToRouteRule{
-			Subset:    rawRule.Subset,
-			Rules:     conf.Rules,
-			Hostnames: conf.Hostnames,
-			Origin:    rawRule.Origin,
-		}
-		hostnames := rule.Hostnames
-		if len(rule.Hostnames) == 0 {
-			hostnames = []string{"*"}
-		}
-		for _, hostname := range hostnames {
-			accRule, ok := rulesByHostname[hostname]
-			if !ok {
-				ruleHostnames = append(ruleHostnames, hostname)
-			}
-			rulesByHostname[hostname] = append(accRule, rule)
-		}
-	}
-
-	if listener.listener.Protocol == mesh_proto.MeshGateway_Listener_TCP {
-		return nil
-	}
-
+func SortRulesToHosts(
+	meshLocalResources xds_context.ResourceMap,
+	rawRules rules.GatewayRules,
+	address string,
+	listener *mesh_proto.MeshGateway_Listener,
+	hostnameTags []hostnameTags,
+) []plugin_gateway.GatewayHostInfo {
 	var hostInfos []plugin_gateway.GatewayHostInfo
-	for _, listenerHostname := range listener.hostnames {
+
+	for _, hostnameTag := range hostnameTags {
+		inboundListener := rules.NewInboundListenerHostname(
+			address,
+			listener.GetPort(),
+			hostnameTag.Hostname,
+		)
+		rawRules, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
+		if !ok {
+			continue
+		}
+		var ruleHostnames []string
+		rulesByHostname := map[string][]ToRouteRule{}
+		for _, rawRule := range rawRules {
+			conf := rawRule.Conf.(api.PolicyDefault)
+			rule := ToRouteRule{
+				Subset:    rawRule.Subset,
+				Rules:     conf.Rules,
+				Hostnames: conf.Hostnames,
+				Origin:    rawRule.Origin,
+			}
+			hostnames := rule.Hostnames
+			if len(rule.Hostnames) == 0 {
+				hostnames = []string{"*"}
+			}
+			for _, hostname := range hostnames {
+				accRule, ok := rulesByHostname[hostname]
+				if !ok {
+					ruleHostnames = append(ruleHostnames, hostname)
+				}
+				rulesByHostname[hostname] = append(accRule, rule)
+			}
+		}
+
 		// We need to find the set of hostnames that are contained by the given
 		// listener hostname
 		var listenerSpecificHostnameMatches []string
 		listenerSpecificHostnameMatchSet := map[string]struct{}{}
 		for _, ruleHostname := range ruleHostnames {
-			if !match.Hostnames(listenerHostname, ruleHostname) {
-				core.Log.Info("skipping rule hostname for listener", "listener", listenerHostname, "rule", ruleHostname)
+			if !match.Hostnames(hostnameTag.Hostname, ruleHostname) {
 				continue
 			}
 			hostnameMatch := ruleHostname
-			if match.Contains(ruleHostname, listenerHostname) {
-				hostnameMatch = listenerHostname
+			if match.Contains(ruleHostname, hostnameTag.Hostname) {
+				hostnameMatch = hostnameTag.Hostname
 			}
 			if _, ok := listenerSpecificHostnameMatchSet[hostnameMatch]; !ok {
 				listenerSpecificHostnameMatches = append(listenerSpecificHostnameMatches, hostnameMatch)
@@ -192,8 +202,8 @@ func SortRulesToHosts(meshLocalResources xds_context.ResourceMap, rawRules rules
 				Hostname: hostnameMatch,
 				Routes:   nil,
 				Policies: map[model.ResourceType][]match.RankedPolicy{},
-				TLS:      listener.listener.Tls,
-				Tags:     listener.tags,
+				TLS:      listener.Tls,
+				Tags:     hostnameTag.Tags,
 			}
 			for _, t := range plugin_gateway.ConnectionPolicyTypes {
 				matches := match.ConnectionPoliciesBySource(
