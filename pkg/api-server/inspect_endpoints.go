@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -350,11 +351,13 @@ func newGatewayDataplaneInspectResponse(
 ) api_server_types.GatewayDataplaneInspectResult {
 	result := api_server_types.NewGatewayDataplaneInspectResult()
 	gwListeners := gateway.ExtractGatewayListeners(proxy)
-	if len(gwListeners) > 0 {
+	for _, port := range maps.SortedKeys(gwListeners) {
+		meta := gwListeners[port].Gateway.GetMeta()
 		result.Gateway = api_server_types.ResourceKeyEntry{
-			Mesh: gwListeners[0].Gateway.GetMeta().GetMesh(),
-			Name: gwListeners[0].Gateway.GetMeta().GetName(),
+			Mesh: meta.GetMesh(),
+			Name: meta.GetName(),
 		}
+		break
 	}
 
 	for _, info := range gwListeners {
@@ -450,8 +453,10 @@ func gatewayEntriesByPolicy(
 		Name: dpKey.Name,
 	}
 
+	var gatewayKey api_server_types.ResourceKeyEntry
 	listenersMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
-	for _, info := range gwListeners {
+	for _, port := range maps.SortedKeys(gwListeners) {
+		info := gwListeners[port]
 		hostMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
 		for _, info := range info.HostInfos {
 			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
@@ -495,12 +500,10 @@ func gatewayEntriesByPolicy(
 				},
 			)
 		}
+		// This should be identical between all listeners
+		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(info.Gateway.GetMeta()))
 	}
 
-	var gatewayKey api_server_types.ResourceKeyEntry
-	if len(gwListeners) > 0 {
-		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(gwListeners[0].Gateway.GetMeta()))
-	}
 	for policy, listeners := range listenersMap {
 		result := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
 
