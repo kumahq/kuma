@@ -202,3 +202,156 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
+- name: sample-gateway:HTTPS:8083
+  resource:
+    '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+    ignorePortInHostMatching: true
+    name: sample-gateway:HTTPS:8083
+    requestHeadersToRemove:
+    - x-kuma-tags
+    validateClusters: false
+    virtualHosts:
+    - domains:
+      - second-specific.super-secure.dev
+      name: second-specific.super-secure.dev
+      requireTls: ALL
+      responseHeadersToAdd:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
+          key: Strict-Transport-Security
+          value: max-age=31536000; includeSubDomains
+      routes:
+      - match:
+          path: /second-specific-super-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-dda53ef9426194b2
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /second-specific-super-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-dda53ef9426194b2
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+    - domains:
+      - second-specific.secure.dev
+      name: second-specific.secure.dev
+      requireTls: ALL
+      responseHeadersToAdd:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
+          key: Strict-Transport-Security
+          value: max-age=31536000; includeSubDomains
+      routes:
+      - match:
+          path: /second-specific-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-348a834721ead661
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /second-specific-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-348a834721ead661
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+    - domains:
+      - first-specific.super-secure.dev
+      name: first-specific.super-secure.dev
+      requireTls: ALL
+      responseHeadersToAdd:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
+          key: Strict-Transport-Security
+          value: max-age=31536000; includeSubDomains
+      routes:
+      - match:
+          path: /first-specific-super-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-dda53ef9426194b2
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /first-specific-super-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-dda53ef9426194b2
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+    - domains:
+      - first-specific.secure.dev
+      name: first-specific.secure.dev
+      requireTls: ALL
+      responseHeadersToAdd:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
+          key: Strict-Transport-Security
+          value: max-age=31536000; includeSubDomains
+      routes:
+      - match:
+          path: /first-specific-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-348a834721ead661
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /first-specific-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-348a834721ead661
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
