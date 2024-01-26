@@ -124,9 +124,6 @@ var PodAnnotationDeprecations = []Deprecation{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 	},
-	NewRemoveDeprecation(KumaTransparentProxyingInboundPortAnnotationV6,
-		fmt.Sprintf("if you want to disable redirection for IPv6 traffic, please use '%s' instead",
-			KumaTransparentProxyingDisableIPv6), false),
 }
 
 type Deprecation struct {
@@ -142,17 +139,6 @@ func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
 	return Deprecation{
 		Key:     old,
 		Message: msg,
-	}
-}
-
-func NewRemoveDeprecation(old string, msg string, removed bool) Deprecation {
-	fullMessage := fmt.Sprintf("'%s' will be removed in the future, '%s'", old, msg)
-	if removed {
-		fullMessage = fmt.Sprintf("'%s' is no longer supported and it will be ignored", old)
-	}
-	return Deprecation{
-		Key:     old,
-		Message: fullMessage,
 	}
 }
 

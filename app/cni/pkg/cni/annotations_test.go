@@ -21,4 +21,14 @@ var _ = Describe("NewIntermediateConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.noRedirectUID).To(Equal("1234"))
 	})
+
+	It("should set inbound redirect port for ipv4 and ipv6", func() {
+		a := map[string]string{
+			"kuma.io/transparent-proxying-inbound-port": "1234",
+		}
+		cfg, err := NewIntermediateConfig(a)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.inboundPort).To(Equal("1234"))
+		Expect(cfg.inboundPortV6).To(Equal("1234"))
+	})
 })

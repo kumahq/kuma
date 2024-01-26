@@ -149,6 +149,10 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		if err := mapAnnotation(annotations, fieldPointer, fieldName); err != nil {
 			return nil, err
 		}
+		// defaults to the ipv4 port if ipv6 port is not set
+		if fieldName == "inboundPortV6" && *fieldPointer == defaultInboundPortV6 {
+			*fieldPointer = *allFields["inboundPort"]
+		}
 	}
 
 	return intermediateConfig, nil
