@@ -74,6 +74,11 @@ type GatewayHost struct {
 	Tags mesh_proto.TagSelector
 }
 
+type GatewayListenerFilter struct {
+	Hostnames []string
+	TLS       *mesh_proto.MeshGateway_TLS_Conf
+}
+
 type GatewayListener struct {
 	Port         uint32
 	Protocol     mesh_proto.MeshGateway_Listener_Protocol
@@ -82,6 +87,9 @@ type GatewayListener struct {
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
 	Resources *mesh_proto.MeshGateway_Listener_Resources // TODO verify these don't conflict when merging
+	// Filters, if set, is used for more control over filter chain matches
+	// independent of the routes
+	Filters []GatewayListenerFilter
 }
 
 // GatewayListenerInfo holds everything needed to generate resources for a
