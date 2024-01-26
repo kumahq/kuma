@@ -332,6 +332,27 @@ func newSecretError(i int, msg string) error {
 	return err.OrNil()
 }
 
+func newTCPFilterChain(
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+	service string,
+	clusters []envoy_common.Cluster,
+	retryPolicy *core_mesh.RetryResource,
+) *envoy_listeners.FilterChainBuilder {
+	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
+		envoy_listeners.TcpProxyDeprecated(service, clusters...),
+		envoy_listeners.NetworkAccessLog(
+			ctx.Mesh.Resource.Meta.GetName(),
+			envoy.TrafficDirectionInbound,
+			service,                // Source service is the gateway service.
+			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
+			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			proxy,
+		),
+		envoy_listeners.MaxConnectAttempts(retryPolicy),
+	)
+}
+
 // TCPFilterChainGenerator generates a filter chain for a TCP or TLS listener.
 type TCPFilterChainGenerator struct{}
 
@@ -344,7 +365,7 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	resources := core_xds.NewResourceSet()
 
-	var clusters []envoy.Cluster
+	clustersByHostname := map[string][]envoy.Cluster{}
 	var allDests []route.Destination
 	var sniNames []string
 
@@ -360,9 +381,14 @@ func (g *TCPFilterChainGenerator) Generate(
 				envoy.WithTags(dest.Destination),
 				envoy.WithWeight(dest.Weight),
 			)
-			clusters = append(clusters, cluster)
+			clustersByHostname[host.Host.Hostname] = append(clustersByHostname[host.Host.Hostname], cluster)
 		}
 	}
+	var allClusters []envoy_common.Cluster
+	for _, clusters := range clustersByHostname {
+		allClusters = append(allClusters, clusters...)
+	}
+	sort.Slice(allClusters, func(i, j int) bool { return allClusters[i].Name() < allClusters[j].Name() })
 
 	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
@@ -372,37 +398,55 @@ func (g *TCPFilterChainGenerator) Generate(
 		retryPolicy = policy.(*core_mesh.RetryResource)
 	}
 
-	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
+	switch info.Listener.Protocol {
+	case mesh_proto.MeshGateway_Listener_TLS:
+		var filterChains []*envoy_listeners.FilterChainBuilder
+		if len(info.Listener.Filters) != 0 {
+			for _, filter := range info.Listener.Filters {
+				var clusters []envoy_common.Cluster
+				for _, hostname := range filter.Hostnames {
+					clusters = append(clusters, clustersByHostname[hostname]...)
+				}
+				sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-		envoy_listeners.TcpProxyDeprecated(service, clusters...),
-		envoy_listeners.NetworkAccessLog(
-			ctx.Mesh.Resource.Meta.GetName(),
-			envoy.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
-			info.Proxy,
-		),
-		envoy_listeners.MaxConnectAttempts(retryPolicy),
-	)
+				builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
+				tlsResources, err := configureTLS(
+					ctx,
+					info,
+					filter.TLS,
+					filter.Hostnames,
+					builder,
+					nil,
+				)
+				resources = resources.AddSet(tlsResources)
+				if err != nil {
+					return nil, nil, err
+				}
 
-	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
-		tlsResources, err := configureTLS(
-			ctx,
-			info,
-			info.HostInfos[0].Host.TLS,
-			sniNames,
-			builder,
-			nil,
-		)
-		resources = resources.AddSet(tlsResources)
-		if err != nil {
-			return nil, nil, err
+				filterChains = append(filterChains, builder)
+			}
+		} else {
+			builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters, retryPolicy)
+			tlsResources, err := configureTLS(
+				ctx,
+				info,
+				info.HostInfos[0].Host.TLS,
+				sniNames,
+				builder,
+				nil,
+			)
+			resources = resources.AddSet(tlsResources)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			filterChains = append(filterChains, builder)
 		}
+		return resources, filterChains, nil
+	default:
+		builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters, retryPolicy)
+		return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 	}
-
-	return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 }
 
 func configureTLS(
