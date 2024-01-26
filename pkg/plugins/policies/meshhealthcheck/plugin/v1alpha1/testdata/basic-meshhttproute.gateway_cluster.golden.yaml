@@ -1,5 +1,5 @@
 resources:
-- name: backend-26cb64fa4e85e7b7
+- name: backend-89287678764ce0c5
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonLbConfig:
@@ -45,7 +45,7 @@ resources:
       reuseConnection: true
       timeout: 2s
       unhealthyThreshold: 3
-    name: backend-26cb64fa4e85e7b7
+    name: backend-89287678764ce0c5
     perConnectionBufferLimitBytes: 32768
     type: EDS
     typedExtensionProtocolOptions:
@@ -55,3 +55,19 @@ resources:
           idleTimeout: 0s
         explicitHttpConfig:
           httpProtocolOptions: {}
+- name: backend-945e63bff332f46a
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      healthyPanicThreshold:
+        value: 72.9
+      zoneAwareLbConfig:
+        failTrafficOnPanic: true
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend-945e63bff332f46a
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
