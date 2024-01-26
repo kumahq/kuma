@@ -15,15 +15,16 @@ import (
 
 // OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
 const (
-	OriginTransparent = "transparent"
-	OutboundNameIPv4  = "outbound:passthrough:ipv4"
-	OutboundNameIPv6  = "outbound:passthrough:ipv6"
-	InboundNameIPv4   = "inbound:passthrough:ipv4"
-	InboundNameIPv6   = "inbound:passthrough:ipv6"
-	InPassThroughIPv4 = "127.0.0.6"
-	InPassThroughIPv6 = "::6"
-	allIPv4           = "0.0.0.0"
-	allIPv6           = "::"
+	OriginTransparent    = "transparent"
+	OutboundNameIPv4     = "outbound:passthrough:ipv4"
+	OutboundNameIPv6     = "outbound:passthrough:ipv6"
+	InboundNameIPv4      = "inbound:passthrough:ipv4"
+	InboundNameIPv6      = "inbound:passthrough:ipv6"
+	InPassThroughIPv4    = "127.0.0.6"
+	InPassThroughIPv6    = "::6"
+	allIPv4              = "0.0.0.0"
+	allIPv6              = "::"
+	defaultInboundPortV6 = 15010
 )
 
 type TransparentProxyGenerator struct{}
@@ -42,14 +43,24 @@ func (tpg TransparentProxyGenerator) Generate(ctx context.Context, _ *model.Reso
 	}
 	resources.Add(resourcesIPv4.List()...)
 
+	ipv6Disabled := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpv6Disabled()
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
-	if redirectPortInboundV6 != 0 {
-		resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
-		if err != nil {
-			return nil, err
-		}
-		resources.Add(resourcesIPv6.List()...)
+	if ipv6Disabled || redirectPortInboundV6 == 0 {
+		return resources, nil
 	}
+
+	actualIpv6Port := redirectPortInbound
+	// if redirectPortInboundV6 is not set, by default we use the same port as ipv4
+	// we support this ipv6 inbound port customization for backward compatibility until the deprecation period ends
+	if redirectPortInboundV6 != defaultInboundPortV6 {
+		actualIpv6Port = redirectPortInboundV6
+	}
+
+	resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, actualIpv6Port)
+	if err != nil {
+		return nil, err
+	}
+	resources.Add(resourcesIPv6.List()...)
 
 	return resources, nil
 }

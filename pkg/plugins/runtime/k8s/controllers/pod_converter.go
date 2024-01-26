@@ -109,9 +109,8 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
 		}
 
+		inboundPortV6, _, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 		ipv6Disabled, _, _ := annotations.GetEnabledWithDefault(false, metadata.KumaTransparentProxyingDisableIPv6)
-		inboundPortV6, inboundPortV6Defined, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
-		ipv6Disabled = ipv6Disabled || (inboundPortV6Defined && inboundPortV6 == 0)
 
 		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 		if err != nil {
@@ -121,13 +120,10 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
 		}
 		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPortInbound:  inboundPort,
-			RedirectPortOutbound: outboundPort,
-			Ipv6Disabled:         ipv6Disabled,
-		}
-
-		if !ipv6Disabled && inboundPortV6Defined {
-			dataplane.Networking.TransparentProxying.RedirectPortInboundV6 = inboundPortV6
+			RedirectPortInbound:   inboundPort,
+			RedirectPortOutbound:  outboundPort,
+			RedirectPortInboundV6: inboundPortV6,
+			Ipv6Disabled:          ipv6Disabled,
 		}
 
 		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {

@@ -135,7 +135,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: "03.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true ipv6", testCase{
+		Entry("transparent_proxying=true ipv6 default port", testCase{
 			proxy: &model.Proxy{
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
@@ -164,6 +164,69 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				},
 			},
 			expected: "04.envoy.golden.yaml",
+		}),
+		Entry("transparent_proxying=true ipv6 port customized", testCase{
+			proxy: &model.Proxy{
+				Id: *model.BuildProxyId("", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								RedirectPortOutbound:  15001,
+								RedirectPortInbound:   15006,
+								RedirectPortInboundV6: 15066,
+							},
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: model.MatchedPolicies{
+					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
+						"some-service": {
+							Spec: &mesh_proto.TrafficLog{
+								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
+							},
+						},
+					},
+				},
+			},
+			expected: "05.envoy.golden.yaml",
+		}),
+		Entry("transparent_proxying=true ipv6 disabled", testCase{
+			proxy: &model.Proxy{
+				Id: *model.BuildProxyId("", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								RedirectPortOutbound: 15001,
+								RedirectPortInbound:  15006,
+								Ipv6Disabled:         true,
+								// this value here is actually invalid, it should be always 0 when Ipv6Disabled is true
+								// we will assert this value should be ignored even it's set in this case
+								RedirectPortInboundV6: 15010,
+							},
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: model.MatchedPolicies{
+					TrafficLogs: map[model.ServiceName]*core_mesh.TrafficLogResource{ // to show that is not picked
+						"some-service": {
+							Spec: &mesh_proto.TrafficLog{
+								Conf: &mesh_proto.TrafficLog_Conf{Backend: "file"},
+							},
+						},
+					},
+				},
+			},
+			expected: "06.envoy.golden.yaml",
 		}),
 	)
 })
