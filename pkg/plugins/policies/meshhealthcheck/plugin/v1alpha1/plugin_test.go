@@ -286,14 +286,17 @@ var _ = Describe("MeshHealthCheck", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
-			getResourceYaml := func(list core_xds.ResourceList) []byte {
-				actualResource, err := util_proto.ToYAML(list[0].Resource)
+			getResourcesYaml := func(list core_xds.ResourceList) []byte {
+				resources, err := list.ToDeltaDiscoveryResponse()
 				Expect(err).ToNot(HaveOccurred())
-				return actualResource
+				actual, err := util_proto.ToYAML(resources)
+				Expect(err).ToNot(HaveOccurred())
+
+				return actual
 			}
 
 			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
+			Expect(getResourcesYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster with HTTP health check", gatewayTestCase{
