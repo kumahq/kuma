@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -150,15 +151,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			gracefulCtx, ctx := opts.SetupSignalHandler()
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
-			accessLogSocketPath := core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
-			meshMetricDynamicConfigSocketPath := core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir)
-			components := []component.Component{
-				tokenComp,
-				component.NewResilientComponent(
-					runLog.WithName("access-log-streamer"),
-					accesslogs.NewAccessLogStreamer(accessLogSocketPath),
-				),
-			}
+			components := []component.Component{tokenComp}
 
 			opts := envoy.Opts{
 				Config:    *cfg,
@@ -182,15 +175,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
 			runLog.Info("generating bootstrap configuration")
-			metricsSocketPath := core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh)
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:           opts.Dataplane,
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
 				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
 				Workdir:             cfg.DataplaneRuntime.SocketDir,
-				AccessLogSocketPath: accessLogSocketPath,
-				MetricsSocketPath:   metricsSocketPath,
+				AccessLogSocketPath: core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+				MetricsSocketPath:   core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
 				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
 				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
@@ -239,23 +231,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, envoyComponent)
 
-			metricsServer := metrics.New(
-				metricsSocketPath,
-				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
-				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
-			)
-			meshMetricsConfigFetcher := component.NewResilientComponent(
-				runLog.WithName("mesh-metric-config-fetcher"),
-				meshmetrics.NewMeshMetricConfigFetcher(
-					meshMetricDynamicConfigSocketPath,
-					time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
-					metricsServer,
-					kumaSidecarConfiguration.Networking.Address,
-					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-				),
-			)
-			components = append(components, metricsServer, meshMetricsConfigFetcher)
+			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
+			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
@@ -322,7 +299,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 }
 
 func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
-	applicationsToScrape := []metrics.ApplicationToScrape{}
+	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
@@ -332,6 +309,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Port:          item.Port,
 				IsIPv6:        net.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
+				OtelMutator:   metrics.ParsePrometheusMetrics,
 			})
 		}
 	}
@@ -344,6 +322,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
+		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 	return applicationsToScrape
 }
@@ -353,4 +332,44 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
+}
+
+func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config) []component.Component {
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+
+	accessLogStreamer := component.NewResilientComponent(
+		runLog.WithName("access-log-streamer"),
+		accesslogs.NewAccessLogStreamer(
+			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		),
+	)
+
+	metricsServer := metrics.New(
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		baseApplicationsToScrape,
+		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+	)
+
+	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
+		cfg.Dataplane.Mesh,
+		cfg.Dataplane.Name,
+		bootstrap.Node.Cluster,
+		baseApplicationsToScrape,
+		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+	)
+
+	meshMetricsConfigFetcher := component.NewResilientComponent(
+		runLog.WithName("mesh-metric-config-fetcher"),
+		meshmetrics.NewMeshMetricConfigFetcher(
+			core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+			time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+			metricsServer,
+			openTelemetryProducer,
+			kumaSidecarConfiguration.Networking.Address,
+			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		),
+	)
+
+	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}
 }

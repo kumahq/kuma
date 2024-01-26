@@ -10,6 +10,7 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -21,12 +22,12 @@ func HeadlessServices() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("demo-client"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
+			Install(democlient.Install(
+				democlient.WithNamespace(namespace),
+				democlient.WithMesh(meshName)),
+			).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
 				testserver.WithMesh(meshName),

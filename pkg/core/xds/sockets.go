@@ -22,6 +22,10 @@ func MeshMetricsDynamicConfigurationSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-mesh-metric-config"))
 }
 
+func OpenTelemetrySocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-open-telemetry"))
+}
+
 func socketName(s string) string {
 	trimLen := len(s)
 	if trimLen > 98 {

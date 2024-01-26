@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -27,8 +26,13 @@ func PluginTest() {
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(DeleteMeshResources(universal.Cluster, meshName, core_mesh.RetryResourceTypeDescriptor)).To(Succeed())
+
+		// Delete the default meshretry policy
+		Eventually(func() error {
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
+		}).Should(Succeed())
 	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())

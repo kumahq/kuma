@@ -78,6 +78,8 @@ networking:
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "true"))).
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshNoZoneEgress)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

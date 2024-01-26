@@ -31,6 +31,7 @@ func Delegated() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(config.mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(config.mesh)).
 			Install(NamespaceWithSidecarInjection(config.namespace)).
 			Install(Namespace(config.namespaceOutsideMesh)).
 			Install(democlient.Install(

@@ -86,6 +86,7 @@ conf:
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
+			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Install(YamlUniversal(ptWaitForWarmOnInit)).
 			Install(YamlUniversal(fmt.Sprintf(externalService1, nonDefaultMesh))).
 			Setup(global)).To(Succeed())

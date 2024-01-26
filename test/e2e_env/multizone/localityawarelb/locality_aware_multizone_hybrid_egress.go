@@ -84,6 +84,7 @@ spec:
 		// Global
 		Expect(NewClusterSetup().
 			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(mesh).WithEgressRoutingEnabled().Build())).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

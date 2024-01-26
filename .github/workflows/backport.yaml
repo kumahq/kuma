@@ -7,6 +7,9 @@ permissions:
 jobs:
   maybe-backport:
     uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
     secrets:
       app_id: ${{ secrets.APP_ID }}
       private_key: ${{ secrets.APP_PRIVATE_KEY }}

@@ -37,6 +37,7 @@ func KICKubernetes() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceOutsideMesh)).
 			Install(democlient.Install(democlient.WithNamespace(namespaceOutsideMesh))). // this will not be in the mesh

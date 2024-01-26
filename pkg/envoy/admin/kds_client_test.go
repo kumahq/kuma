@@ -21,14 +21,14 @@ var _ = Describe("KDS client", func() {
 		client := admin.NewKDSEnvoyAdminClient(rpcs, false)
 
 		zoneName := "zone-1"
-		clientID := service.ClientID(context.Background(), zoneName)
+		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
 		var stream *mockStream
 
 		BeforeEach(func() {
 			stream = &mockStream{
 				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
 			}
-			rpcs.XDSConfigDump.ClientConnected(clientID, stream)
+			rpcs.XDSConfigDump.ClientConnected(tenantZoneID.String(), stream)
 		})
 
 		It("should execute config dump", func() {
@@ -57,7 +57,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1"))
 
 			Eventually(func() error {
-				return rpcs.XDSConfigDump.ResponseReceived(clientID, &mesh_proto.XDSConfigResponse{
+				return rpcs.XDSConfigDump.ResponseReceived(tenantZoneID.String(), &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Config{
 						Config: configContent,
@@ -126,7 +126,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1"))
 
 			Eventually(func() error {
-				return rpcs.XDSConfigDump.ResponseReceived(clientID, &mesh_proto.XDSConfigResponse{
+				return rpcs.XDSConfigDump.ResponseReceived(tenantZoneID.String(), &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Error{
 						Error: "failed",
@@ -144,14 +144,14 @@ var _ = Describe("KDS client", func() {
 		client := admin.NewKDSEnvoyAdminClient(streams, true)
 
 		zoneName := "zone-1"
-		clientID := service.ClientID(context.Background(), zoneName)
+		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
 		var stream *mockStream
 
 		BeforeEach(func() {
 			stream = &mockStream{
 				receivedRequests: make(chan *mesh_proto.XDSConfigRequest, 1),
 			}
-			streams.XDSConfigDump.ClientConnected(clientID, stream)
+			streams.XDSConfigDump.ClientConnected(tenantZoneID.String(), stream)
 		})
 
 		It("should execute config dump", func() {
@@ -180,7 +180,7 @@ var _ = Describe("KDS client", func() {
 			Expect(request.ResourceName).To(Equal("dp-1.my-namespace"))
 
 			Eventually(func() error {
-				return streams.XDSConfigDump.ResponseReceived(clientID, &mesh_proto.XDSConfigResponse{
+				return streams.XDSConfigDump.ResponseReceived(tenantZoneID.String(), &mesh_proto.XDSConfigResponse{
 					RequestId: request.RequestId,
 					Result: &mesh_proto.XDSConfigResponse_Config{
 						Config: configContent,

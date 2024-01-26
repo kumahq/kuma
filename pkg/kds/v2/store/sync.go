@@ -214,11 +214,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			creationTime := r.GetMeta().GetCreationTime()
 
 			createOpts := []store.CreateOptionsFunc{
 				store.CreateBy(rk),
-				store.CreatedAt(creationTime),
+				store.CreatedAt(core.Now()),
 				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
 			if opts.Zone != "" {
@@ -312,10 +311,17 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 					// todo: remove in 2 releases after 2.6.x
 					return zi.IsRemoteIngress(localZone)
 				}
-				return !core_model.IsLocallyOriginated(config_core.Zone, r)
+				return !core_model.IsLocallyOriginated(config_core.Zone, r) || !isExpectedOnZoneCP(r.Descriptor())
 			}))
 		},
 	}
+}
+
+// isExpectedOnZoneCP returns true if it's possible for the resource type to be on Zone CP. Some resource types
+// (i.e. Mesh, Secret) are allowed on non-federated Zone CPs, but after transition to federated Zone CP they're moved
+// to Global and must be replaced during the KDS sync.
+func isExpectedOnZoneCP(desc core_model.ResourceTypeDescriptor) bool {
+	return desc.KDSFlags.Has(core_model.ZoneToGlobalFlag)
 }
 
 func GlobalSyncCallback(
@@ -338,7 +344,7 @@ func GlobalSyncCallback(
 			for _, r := range upstream.AddedResources.GetItems() {
 				r.SetMeta(util.CloneResourceMeta(r.GetMeta(),
 					util.WithLabel(mesh_proto.ZoneTag, upstream.ControlPlaneId),
-					util.WithLabel(mesh_proto.ResourceOriginLabel, mesh_proto.ResourceOriginZone),
+					util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 				))
 			}
 

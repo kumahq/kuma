@@ -226,6 +226,7 @@ spec:
 					WithProtocol(mesh.ProtocolTCP),
 					WithServiceName("test-server-mtls")),
 				).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -293,6 +294,7 @@ spec:
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
@@ -425,11 +427,6 @@ spec:
 				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() error {
-				return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "traffic-route", "--mesh", meshName, "route-all-"+meshName)
-			}).Should(Succeed())
-
 			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
 		})
 

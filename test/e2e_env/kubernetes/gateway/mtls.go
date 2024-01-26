@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -86,6 +87,7 @@ type: system.kuma.io/secret
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(YamlK8s(MkGatewayInstance("mtls-edge-gateway", namespace, meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -184,6 +186,10 @@ spec:
 				Install(YamlK8s(meshGatewayRouteHTTP)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		BeforeEach(func() {
+			Expect(kubernetes.Cluster.Install(MeshTrafficPermissionAllowAllKubernetes(meshName))).To(Succeed())
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -293,20 +299,25 @@ spec:
 		Describe("replacing a path prefix with /", replacePrefixWithRoot("drop-prefix-trailing"))
 
 		It("should not access a service for which we don't have traffic permission", func() {
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 			tp := `
 apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
+kind: MeshTrafficPermission
 metadata:
-  name: tp-non-accessible-echo-server
-mesh: gateway-mtls
+  namespace: kuma-system
+  name: tp-non-accessible-echo-server.kuma-system
+  labels:
+    kuma.io/mesh: gateway-mtls
 spec:
-  sources:
-  - match:
-      kuma.io/service: not-mtls-edge-gateway
-  destinations:
-  - match:
-      kuma.io/service: non-accessible-echo-server_gateway-mtls_svc_80
-`
+  targetRef:
+    kind: MeshService
+    name: non-accessible-echo-server_gateway-mtls_svc_80
+  from:
+    - targetRef:
+        kind: MeshService
+        name: not-mtls-edge-gateway
+      default:
+        action: Allow`
 			Expect(kubernetes.Cluster.Install(YamlK8s(tp))).To(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -317,7 +328,7 @@ spec:
 				)
 
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(status.ResponseCode).To(Equal(503))
+				g.Expect(status.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
@@ -351,6 +362,7 @@ spec:
 					testserver.WithNamespace(namespace),
 					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
 				)).
+				Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -423,7 +435,8 @@ spec:
 					testserver.WithName("tcp-server"),
 					testserver.WithNamespace(namespace),
 					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
-				))
+				)).
+				Install(MeshTrafficPermissionAllowAllKubernetes(meshName))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 		})
 

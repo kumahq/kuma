@@ -69,7 +69,7 @@ func GenerateVirtualHost(
 				envoy_routes.RouteMatchExactHeader(":method", e.Match.Method),
 
 				route.RouteActionRedirect(e.Action.Redirect, info.Listener.Port),
-				route.RouteActionForward(ctx.Mesh.Resource, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
+				route.RouteActionForward(ctx, info.OutboundEndpoints, info.Proxy.Dataplane.Spec.TagSet(), e.Action.Forward),
 				envoy_routes.RouteActionIdleTimeout(policies_defaults.DefaultGatewayStreamIdleTimeout),
 			)
 
