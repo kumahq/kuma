@@ -187,7 +187,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - second-specific.super-secure.dev
+        - '*.secure.dev'
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -241,7 +241,7 @@ resources:
             - h2
             - http/1.1
             tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:inline:second-specific.super-secure.dev
+            - name: cert.rsa:inline:*.secure.dev
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -250,7 +250,7 @@ resources:
           requireClientCertificate: false
     - filterChainMatch:
         serverNames:
-        - second-specific.secure.dev
+        - '*.super-secure.dev'
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -304,133 +304,7 @@ resources:
             - h2
             - http/1.1
             tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:inline:second-specific.secure.dev
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    - filterChainMatch:
-        serverNames:
-        - first-specific.super-secure.dev
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-              startChildSpan: true
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTPS:8083
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: sample-gateway
-          streamIdleTimeout: 5s
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:inline:first-specific.super-secure.dev
-              sdsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            tlsParams:
-              tlsMinimumProtocolVersion: TLSv1_2
-          requireClientCertificate: false
-    - filterChainMatch:
-        serverNames:
-        - first-specific.secure.dev
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          commonHttpProtocolOptions:
-            headersWithUnderscoresAction: REJECT_REQUEST
-            idleTimeout: 300s
-          http2ProtocolOptions:
-            allowConnect: true
-            initialConnectionWindowSize: 1048576
-            initialStreamWindowSize: 65536
-            maxConcurrentStreams: 100
-          httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
-          - name: gzip-compress
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-              compressorLibrary:
-                name: gzip
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-              responseDirectionConfig:
-                disableOnEtagHeader: true
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-              startChildSpan: true
-          mergeSlashes: true
-          normalizePath: true
-          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-          rds:
-            configSource:
-              ads: {}
-              resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTPS:8083
-          requestHeadersTimeout: 0.500s
-          serverName: Kuma Gateway
-          statPrefix: sample-gateway
-          streamIdleTimeout: 5s
-          useRemoteAddress: true
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            alpnProtocols:
-            - h2
-            - http/1.1
-            tlsCertificateSdsSecretConfigs:
-            - name: cert.rsa:inline:first-specific.secure.dev
+            - name: cert.rsa:inline:*.super-secure.dev
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
