@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/channels"
 )
 
 var _ = Describe("Writer", func() {
@@ -62,7 +63,9 @@ var _ = Describe("Writer", func() {
 	})
 
 	AfterEach(func() {
-		close(closeCh)
+		if !channels.IsClosed(closeCh) {
+			close(closeCh)
+		}
 		heartbeatCancelFunc()
 	})
 
@@ -93,6 +96,25 @@ var _ = Describe("Writer", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(instances).To(HaveLen(1))
 			g.Expect(instances[0]).To(Equal(leader))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should deregister leader after stopping the component", func() {
+		// given
+		Eventually(func(g Gomega) {
+			instance, err := catalog.InstanceOfID(context.Background(), c, leader.Id)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance.Leader).To(BeTrue())
+		}, "10s", "100ms").Should(Succeed())
+
+		// when
+		close(closeCh)
+
+		// then
+		Eventually(func(g Gomega) {
+			instance, err := catalog.InstanceOfID(context.Background(), c, leader.Id)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance.Leader).To(BeFalse())
 		}, "10s", "100ms").Should(Succeed())
 	})
 })
