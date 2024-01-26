@@ -47,6 +47,31 @@ func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManag
 	}
 }
 
+func (m *Persistence) Get(ctx context.Context, meshes []string) (map[string]*VirtualOutboundMeshView, error) {
+	resourcesByMesh, err := m.getGroupedByMesh(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	virtualOutboundByMesh := map[string]*VirtualOutboundMeshView{}
+	for _, mesh := range meshes {
+		resource, ok := resourcesByMesh[mesh]
+		if !ok {
+			virtualOutboundByMesh[mesh] = NewEmptyVirtualOutboundView()
+			continue
+		}
+
+		virtualOutboundView, err := m.configToVirtualOutboundMeshView(resource)
+		if err != nil {
+			return nil, err
+		}
+
+		virtualOutboundByMesh[mesh] = virtualOutboundView
+	}
+
+	return virtualOutboundByMesh, nil
+}
+
 func (m *Persistence) GetByMesh(ctx context.Context, mesh string) (*VirtualOutboundMeshView, error) {
 	name := fmt.Sprintf(template, mesh)
 	resource := config_model.NewConfigResource()
@@ -58,31 +83,7 @@ func (m *Persistence) GetByMesh(ctx context.Context, mesh string) (*VirtualOutbo
 		return nil, err
 	}
 
-	if resource.Spec.Config == "" {
-		return NewEmptyVirtualOutboundView(), nil
-	}
-
-	var virtualOutboundView *VirtualOutboundMeshView
-	// try reading new format
-	res := NewEmptyTagFirstOutboundView()
-	if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
-		return nil, err
-	}
-	if len(res.PerService) != 0 {
-		virtualOutboundView = res.ToVirtualOutboundView()
-	} else {
-		// fall back to default
-		res := map[HostnameEntry]VirtualOutbound{}
-		if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
-			return nil, err
-		}
-		virtualOutboundView, err = NewVirtualOutboundView(res)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return virtualOutboundView, nil
+	return m.configToVirtualOutboundMeshView(resource)
 }
 
 func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboundMeshView) error {
@@ -122,4 +123,51 @@ func (m *Persistence) Set(ctx context.Context, mesh string, vips *VirtualOutboun
 	} else {
 		return m.configManager.Update(ctx, resource)
 	}
+}
+
+func (m *Persistence) getGroupedByMesh(ctx context.Context) (map[string]*config_model.ConfigResource, error) {
+	resources := config_model.ConfigResourceList{}
+	err := m.configManager.List(ctx, &resources, store.ListByFilterFunc(func(rs model.Resource) bool {
+		return re.FindString(rs.GetMeta().GetName()) != ""
+	}))
+	if err != nil {
+		return nil, err
+	}
+
+	resourceByMesh := map[string]*config_model.ConfigResource{}
+	for _, resource := range resources.Items {
+		mesh, _ := MeshFromConfigKey(resource.GetMeta().GetName())
+		resourceByMesh[mesh] = resource
+	}
+
+	return resourceByMesh, nil
+}
+
+func (m *Persistence) configToVirtualOutboundMeshView(resource *config_model.ConfigResource) (*VirtualOutboundMeshView, error) {
+	if resource.Spec.Config == "" {
+		return NewEmptyVirtualOutboundView(), nil
+	}
+
+	var virtualOutboundView *VirtualOutboundMeshView
+
+	// try reading new format
+	emptyTagFirstOutboundView := NewEmptyTagFirstOutboundView()
+	if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &emptyTagFirstOutboundView); err != nil {
+		return nil, err
+	}
+	if len(emptyTagFirstOutboundView.PerService) != 0 {
+		return emptyTagFirstOutboundView.ToVirtualOutboundView(), nil
+	}
+
+	// fall back to default
+	res := map[HostnameEntry]VirtualOutbound{}
+	if err := json.Unmarshal([]byte(resource.Spec.GetConfig()), &res); err != nil {
+		return nil, err
+	}
+	virtualOutboundView, err := NewVirtualOutboundView(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return virtualOutboundView, nil
 }
