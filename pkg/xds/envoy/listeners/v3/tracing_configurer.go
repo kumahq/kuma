@@ -10,6 +10,7 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -25,6 +26,8 @@ type TracingConfigurer struct {
 	Service          string
 	TrafficDirection envoy_common.TrafficDirection
 	Destination      string
+
+	SpawnUpstreamSpan bool
 }
 
 var _ FilterChainConfigurer = &TracingConfigurer{}
@@ -35,7 +38,9 @@ func (c *TracingConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 	}
 
 	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{}
+		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{
+			SpawnUpstreamSpan: wrapperspb.Bool(c.SpawnUpstreamSpan),
+		}
 		if c.Backend.Sampling != nil {
 			hcm.Tracing.OverallSampling = &envoy_type.Percent{
 				Value: c.Backend.Sampling.Value,
