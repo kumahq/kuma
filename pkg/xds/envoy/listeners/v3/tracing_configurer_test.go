@@ -63,6 +63,7 @@ var _ = Describe("TracingConfigurer", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
+                    spawnUpstreamSpan: false
                     overallSampling:
                       value: 30.5
                     provider:
@@ -101,6 +102,7 @@ var _ = Describe("TracingConfigurer", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
+                    spawnUpstreamSpan: false
                     provider:
                       name: envoy.tracers.zipkin
                       typedConfig:
@@ -139,6 +141,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:
@@ -176,6 +179,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:
@@ -214,6 +218,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:
