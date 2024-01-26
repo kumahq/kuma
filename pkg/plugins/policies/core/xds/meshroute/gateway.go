@@ -41,7 +41,7 @@ func CollectListenerInfos(
 	rawRules rules.GatewayRules,
 	validProtocols []mesh_proto.MeshGateway_Listener_Protocol,
 	mapRules MapGatewayRulesToHosts,
-) []plugin_gateway.GatewayListenerInfo {
+) map[uint32]plugin_gateway.GatewayListenerInfo {
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	listenersByPort := map[uint32]listenersHostnames{}
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
@@ -67,7 +67,7 @@ func CollectListenerInfos(
 		listenersByPort[listener.GetPort()] = listenerAcc
 	}
 
-	var infos []plugin_gateway.GatewayListenerInfo
+	infos := map[uint32]plugin_gateway.GatewayListenerInfo{}
 
 	for port, listener := range listenersByPort {
 		externalServices := meshCtx.Resources.ExternalServices()
@@ -106,7 +106,7 @@ func CollectListenerInfos(
 				TLS:       sublistener.TLS,
 			})
 		}
-		infos = append(infos, plugin_gateway.GatewayListenerInfo{
+		infos[port] = plugin_gateway.GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
 			HostInfos:         hostInfos,
@@ -124,7 +124,7 @@ func CollectListenerInfos(
 				Resources: listener.listener.GetResources(),
 				Filters:   filters,
 			},
-		})
+		}
 	}
 
 	return infos

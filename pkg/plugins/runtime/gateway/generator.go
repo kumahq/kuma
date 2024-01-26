@@ -132,7 +132,7 @@ func (g *FilterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // policies.
 func gatewayListenerInfoFromProxy(
 	ctx context.Context, meshCtx *xds_context.MeshContext, proxy *core_xds.Proxy,
-) []GatewayListenerInfo {
+) map[uint32]GatewayListenerInfo {
 	gateway := xds_topology.SelectGateway(meshCtx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
@@ -168,8 +168,6 @@ func gatewayListenerInfoFromProxy(
 
 	externalServices := meshCtx.Resources.ExternalServices()
 
-	var listenerInfos []GatewayListenerInfo
-
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
 		proxy.Dataplane, externalServices, meshCtx.Resources.TrafficPermissions(),
 	)
@@ -190,6 +188,8 @@ func gatewayListenerInfoFromProxy(
 		outboundEndpoints[k] = v
 	}
 
+	listenerInfos := map[uint32]GatewayListenerInfo{}
+
 	// We already validate that listeners are collapsible
 	for _, listeners := range collapsed {
 		listener, hosts := MakeGatewayListener(meshCtx, gateway, listeners)
@@ -207,14 +207,14 @@ func gatewayListenerInfoFromProxy(
 			})
 		}
 
-		listenerInfos = append(listenerInfos, GatewayListenerInfo{
+		listenerInfos[listener.Port] = GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
 			ExternalServices:  externalServices,
 			OutboundEndpoints: outboundEndpoints,
 			Listener:          listener,
 			HostInfos:         hostInfos,
-		})
+		}
 	}
 
 	return listenerInfos
