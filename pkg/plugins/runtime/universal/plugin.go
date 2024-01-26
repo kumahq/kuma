@@ -46,6 +46,7 @@ func addDNS(rt core_runtime.Runtime) error {
 		*rt.Config().DNSServer,
 		rt.Config().Experimental,
 		zone,
+		rt.Metrics(),
 	)
 	if err != nil {
 		return err

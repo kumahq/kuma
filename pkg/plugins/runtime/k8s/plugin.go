@@ -215,6 +215,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		*rt.Config().DNSServer,
 		rt.Config().Experimental,
 		zone,
+		rt.Metrics(),
 	)
 	if err != nil {
 		return err
