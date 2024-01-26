@@ -19,5 +19,5 @@ spec:
         version: "0.1"
     transparentProxying:
       redirectPortInbound: 15006
-      redirectPortInboundV6: 15006
+      redirectPortInboundV6: 15099
       redirectPortOutbound: 15001
