@@ -168,10 +168,11 @@ runuser -u kuma-dp -- \
 				}
 			}
 
+			defaultCfg := config.DefaultConfig()
 			// Backward compatibility
 			if args.RedirectPortInBoundV6 != "" &&
-				args.RedirectPortInBoundV6 != "15006" /* new default value, identical to ipv4 port */ &&
-				args.RedirectPortInBoundV6 != "15010" /* old default value, dedicated for ipv6 */ {
+				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.Port) /* new default value, identical to ipv4 port */ &&
+				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.PortIPv6) /* old default value, dedicated for ipv6 */ {
 				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --disable-ipv6 instead\n"))
 			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {

@@ -281,6 +281,10 @@ func defaultConfig() Config {
 	}
 }
 
+func DefaultConfig() Config {
+	return defaultConfig()
+}
+
 func MergeConfigWithDefaults(cfg Config) Config {
 	result := defaultConfig()
 

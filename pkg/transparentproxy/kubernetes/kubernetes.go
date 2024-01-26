@@ -104,8 +104,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		return nil, err
 	}
 
-	podRedirect.RedirectPortInboundV6, _, err = metadata.Annotations(pod.Annotations).GetUint32WithDefault(
-		podRedirect.RedirectPortInbound, metadata.KumaTransparentProxyingInboundPortAnnotationV6)
+	podRedirect.RedirectPortInboundV6, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 	if err != nil {
 		return nil, err
 	}

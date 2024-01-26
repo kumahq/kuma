@@ -210,7 +210,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 								Ipv6Disabled:         true,
 								// this value here is actually invalid, it should be always 0 when Ipv6Disabled is true
 								// we will assert this value should be ignored even it's set in this case
-								RedirectPortInboundV6: 15010,
+								RedirectPortInboundV6: 15066,
 							},
 						},
 					},
