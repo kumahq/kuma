@@ -109,7 +109,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		return nil, err
 	}
 
-	podRedirect.IPv6Disabled, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(false, metadata.KumaTransparentProxyingDisableIPv6)
+	podRedirect.IPv6Disabled, _, err = metadata.Annotations(pod.Annotations).GetBooleanWithDefault(false, false, metadata.KumaTransparentProxyingDisableIPv6)
 	if err != nil {
 		return nil, err
 	}

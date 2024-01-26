@@ -124,7 +124,7 @@ var PodAnnotationDeprecations = []Deprecation{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
 	},
-	NewRemoveDeprecation("kuma.io/transparent-proxying-inbound-v6-port",
+	NewRemoveDeprecation(KumaTransparentProxyingInboundPortAnnotationV6,
 		fmt.Sprintf("if you want to disable redirection for IPv6 traffic, please use '%s' instead",
 			KumaTransparentProxyingDisableIPv6), false),
 }
@@ -195,6 +195,8 @@ const (
 	AnnotationDisabled = "disabled"
 	AnnotationTrue     = "true"
 	AnnotationFalse    = "false"
+	AnnotationYes      = "yes"
+	AnnotationNo       = "no"
 )
 
 func BoolToEnabled(b bool) string {
@@ -211,14 +213,30 @@ func (a Annotations) GetEnabled(keys ...string) (bool, bool, error) {
 	return a.GetEnabledWithDefault(false, keys...)
 }
 
+func (a Annotations) GetBoolean(keys ...string) (bool, bool, error) {
+	return a.GetBooleanWithDefault(false, false, keys...)
+}
+
 func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool, error) {
+	return a.GetBooleanWithDefault(def, true, keys...)
+}
+
+func (a Annotations) GetBooleanWithDefault(def bool, supportEnabled bool, keys ...string) (bool, bool, error) {
 	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		switch value {
-		case AnnotationEnabled, AnnotationTrue:
+		case AnnotationTrue, AnnotationYes:
 			return true, nil
-		case AnnotationDisabled, AnnotationFalse:
+		case AnnotationFalse, AnnotationNo:
 			return false, nil
 		default:
+			if supportEnabled {
+				switch value {
+				case AnnotationEnabled:
+					return true, nil
+				case AnnotationDisabled:
+					return false, nil
+				}
+			}
 			return false, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
 		}
 	}, keys...)

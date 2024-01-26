@@ -55,6 +55,53 @@ var _ = Describe("Kubernetes Annotations", func() {
 		})
 	})
 
+	Describe("GetBoolean()", func() {
+		type testCase struct {
+			input    string
+			expected bool
+		}
+		annotations := map[string]string{
+			"key1": "yes",
+			"key2": "no",
+			"key3": "true",
+			"key4": "false",
+		}
+		DescribeTable("should parse value to bool", func(given testCase) {
+			enabled, exist, err := metadata.Annotations(annotations).GetBoolean(given.input)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(enabled).To(Equal(given.expected))
+			Expect(exist).To(BeTrue())
+		},
+			Entry("yes", testCase{
+				input:    "key1",
+				expected: true,
+			}),
+			Entry("no", testCase{
+				input:    "key2",
+				expected: false,
+			}),
+			Entry("true", testCase{
+				input:    "key3",
+				expected: true,
+			}),
+			Entry("false", testCase{
+				input:    "key4",
+				expected: false,
+			}),
+		)
+
+		It("should return error if value is wrong", func() {
+			annotations := map[string]string{
+				"key1": "not-enabled-at-all",
+			}
+			enabled, exist, err := metadata.Annotations(annotations).GetEnabled("key1")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("annotation \"key1\" has wrong value \"not-enabled-at-all\""))
+			Expect(enabled).To(BeFalse())
+			Expect(exist).To(BeTrue())
+		})
+	})
+
 	Describe("withDefaultUint", func() {
 		It("not set annotations", func() {
 			res, exists, err := metadata.Annotations(map[string]string{}).GetUint32WithDefault(23, "foo")
