@@ -77,6 +77,28 @@ func (g *HTTPFilterChainGenerator) Generate(
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
 type HTTPSFilterChainGenerator struct{}
 
+func newTLSFilterChain(
+	ctx xds_context.Context, info GatewayListenerInfo, hostnames []string, tls *mesh_proto.MeshGateway_TLS_Conf,
+) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error) {
+	log.V(1).Info("generating filter chain", "hostname", hostnames)
+
+	builder := newHTTPFilterChain(ctx.Mesh, info)
+
+	hostResources, err := configureTLS(
+		ctx,
+		info,
+		tls,
+		hostnames,
+		builder,
+		[]string{"h2", "http/1.1"},
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return hostResources, builder, nil
+}
+
 func (g *HTTPSFilterChainGenerator) Generate(
 	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
 ) (
@@ -90,26 +112,29 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		// For cross-mesh, we can only add one listener filter chain as there will not be any (usable) SNI available for filter chain matching
 		hosts = hosts[:1]
 	}
-	for _, host := range hosts {
-		log.V(1).Info("generating filter chain", "hostname", host.Hostname)
+	// In this case we want a single chain for multiple hostnames
+	if len(info.Listener.Filters) != 0 {
+		for _, filter := range info.Listener.Filters {
+			hostResources, builder, err := newTLSFilterChain(ctx, info, filter.Hostnames, filter.TLS)
+			if err != nil {
+				return nil, nil, err
+			}
 
-		builder := newHTTPFilterChain(ctx.Mesh, info)
+			filterChainBuilders = append(filterChainBuilders, builder)
 
-		hostResources, err := configureTLS(
-			ctx,
-			info,
-			host.TLS,
-			[]string{host.Hostname},
-			builder,
-			[]string{"h2", "http/1.1"},
-		)
-		if err != nil {
-			return nil, nil, err
+			resources.AddSet(hostResources)
 		}
+	} else {
+		for _, host := range hosts {
+			hostResources, builder, err := newTLSFilterChain(ctx, info, []string{host.Hostname}, host.TLS)
+			if err != nil {
+				return nil, nil, err
+			}
 
-		filterChainBuilders = append(filterChainBuilders, builder)
+			filterChainBuilders = append(filterChainBuilders, builder)
 
-		resources.AddSet(hostResources)
+			resources.AddSet(hostResources)
+		}
 	}
 
 	return resources, filterChainBuilders, nil

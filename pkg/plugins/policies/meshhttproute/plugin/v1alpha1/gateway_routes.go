@@ -26,13 +26,14 @@ import (
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-type hostnameTags struct {
+type sublistener struct {
 	Hostname string
 	Tags     map[string]string
+	TLS      *mesh_proto.MeshGateway_TLS_Conf
 }
 type listenersHostnames struct {
-	listener  *mesh_proto.MeshGateway_Listener
-	hostnames []hostnameTags
+	listener     *mesh_proto.MeshGateway_Listener
+	sublisteners []sublistener
 }
 
 func CollectListenerInfos(
@@ -56,13 +57,14 @@ func CollectListenerInfos(
 			}
 		}
 		hostname := listener.GetNonEmptyHostname()
-		listenerAcc.hostnames = append(listenerAcc.hostnames, hostnameTags{
+		listenerAcc.sublisteners = append(listenerAcc.sublisteners, sublistener{
 			Hostname: hostname,
 			Tags: mesh_proto.Merge(
 				networking.GetGateway().GetTags(),
 				gateway.Spec.GetTags(),
 				listener.GetTags(),
 			),
+			TLS: listener.GetTls(),
 		})
 		listenersByPort[listener.GetPort()] = listenerAcc
 	}
@@ -97,8 +99,15 @@ func CollectListenerInfos(
 			rawRules,
 			networking.Address,
 			listener.listener,
-			listener.hostnames,
+			listener.sublisteners,
 		)
+		var filters []plugin_gateway.GatewayListenerFilter
+		for _, sublistener := range listener.sublisteners {
+			filters = append(filters, plugin_gateway.GatewayListenerFilter{
+				Hostnames: []string{sublistener.Hostname},
+				TLS:       sublistener.TLS,
+			})
+		}
 		infos = append(infos, plugin_gateway.GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
@@ -115,6 +124,7 @@ func CollectListenerInfos(
 				),
 				CrossMesh: listener.listener.GetCrossMesh(),
 				Resources: listener.listener.GetResources(),
+				Filters:   filters,
 			},
 		})
 	}
@@ -132,7 +142,7 @@ func SortRulesToHosts(
 	rawRules rules.GatewayRules,
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
-	hostnameTags []hostnameTags,
+	hostnameTags []sublistener,
 ) []plugin_gateway.GatewayHostInfo {
 	var hostInfos []plugin_gateway.GatewayHostInfo
 
