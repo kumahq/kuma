@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	dnsmetrics "github.com/kumahq/kuma/pkg/dns/metrics"
+	dns_metrics "github.com/kumahq/kuma/pkg/dns/metrics"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
@@ -33,7 +33,7 @@ type VIPsAllocator struct {
 	serviceVipEnabled bool
 	dnsSuffix         string
 	zone              string
-	metrics           *dnsmetrics.Metrics
+	metrics           *dns_metrics.Metrics
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
@@ -41,7 +41,7 @@ type VIPsAllocator struct {
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
 func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, experimentalConfig config.ExperimentalConfig, zone string, metrics core_metrics.Metrics) (*VIPsAllocator, error) {
-	dnsMetrics, err := dnsmetrics.NewMetrics(metrics)
+	dnsMetrics, err := dns_metrics.NewMetrics(metrics)
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	metricspkg "github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -67,7 +67,7 @@ var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
 	var allocator *dns.VIPsAllocator
-	var metrics metricspkg.Metrics
+	var metrics core_metrics.Metrics
 	var err error
 
 	NoModifications := func(view *vips.VirtualOutboundMeshView) error {
@@ -79,7 +79,7 @@ var _ = Describe("VIP Allocator", func() {
 		rm = manager.NewResourceManager(s)
 		cm = config_manager.NewConfigManager(s)
 
-		metrics, err = metricspkg.NewMetrics("")
+		metrics, err = core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
@@ -169,7 +169,7 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		metrics, err := metricspkg.NewMetrics("")
+		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
 		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "", metrics)
@@ -188,7 +188,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		metrics, err := metricspkg.NewMetrics("")
+		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
 		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "", metrics)
@@ -268,7 +268,7 @@ var _ = DescribeTable("outboundView",
 			CIDR:              "240.0.0.0/24",
 			ServiceVipEnabled: !tc.whenSkipServiceVips,
 		}
-		metrics, err := metricspkg.NewMetrics("")
+		metrics, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 
 		// When
