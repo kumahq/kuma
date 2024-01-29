@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -132,13 +133,13 @@ func ApplyToGateway(
 	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, info := range listeners {
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, info.HostInfos)
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info, info.HostInfos) // nolint: contextcheck
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) // nolint: contextcheck
 		if err != nil {
 			return err
 		}
@@ -160,8 +161,8 @@ func sortRulesToHosts(
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
 	sublisteners []meshroute.Sublistener,
-) map[string][]plugin_gateway.GatewayHostInfo {
-	hostInfosByHostname := map[string][]plugin_gateway.GatewayHostInfo{}
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
 		host := plugin_gateway.GatewayHost{
 			Hostname: hostnameTag.Hostname,
@@ -189,7 +190,21 @@ func sortRulesToHosts(
 		if listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
 			hostInfoKey = hostnameTag.Hostname
 		}
-		hostInfosByHostname[hostInfoKey] = append(hostInfosByHostname[hostInfoKey], hostInfo)
+
+		listenerEntry, ok := hostInfosByHostname[hostInfoKey]
+		if !ok {
+			listenerEntry = plugin_gateway.GatewayListenerHostname{
+				Hostname: hostnameTag.Hostname,
+				TLS:      hostnameTag.TLS,
+			}
+		}
+		listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfo)
+		hostInfosByHostname[hostInfoKey] = listenerEntry
 	}
-	return hostInfosByHostname
+	var listenerHostnames []plugin_gateway.GatewayListenerHostname
+	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostInfosByHostname)) {
+		listenerHostnames = append(listenerHostnames, hostInfosByHostname[hostname])
+	}
+
+	return listenerHostnames
 }
