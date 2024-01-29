@@ -63,7 +63,7 @@ const (
 type HTTPFilterChainGenerator struct{}
 
 func (g *HTTPFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, _ []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -104,7 +104,7 @@ func newTLSFilterChain(
 }
 
 func (g *HTTPSFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -112,33 +112,21 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
+	listenerHostnames := info.ListenerHostnames
 	if info.Listener.CrossMesh {
 		// For cross-mesh, we can only add one listener filter chain as there will not be any (usable) SNI available for filter chain matching
-		hosts = hosts[:1]
+		listenerHostnames = listenerHostnames[:1]
 	}
 	// In this case we want a single chain for multiple hostnames
-	if len(info.ListenerHostnames) != 0 {
-		for _, filter := range info.ListenerHostnames {
-			hostResources, builder, err := newTLSFilterChain(ctx, info, []string{filter.Hostname}, filter.TLS)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			filterChainBuilders = append(filterChainBuilders, builder)
-
-			resources.AddSet(hostResources)
+	for _, listenerHostname := range listenerHostnames {
+		hostResources, builder, err := newTLSFilterChain(ctx, info, []string{listenerHostname.Hostname}, listenerHostname.TLS)
+		if err != nil {
+			return nil, nil, err
 		}
-	} else {
-		for _, host := range hosts {
-			hostResources, builder, err := newTLSFilterChain(ctx, info, []string{host.Hostname}, host.TLS)
-			if err != nil {
-				return nil, nil, err
-			}
 
-			filterChainBuilders = append(filterChainBuilders, builder)
+		filterChainBuilders = append(filterChainBuilders, builder)
 
-			resources.AddSet(hostResources)
-		}
+		resources.AddSet(hostResources)
 	}
 
 	return resources, filterChainBuilders, nil
@@ -360,7 +348,7 @@ func newTCPFilterChain(
 type TCPFilterChainGenerator struct{}
 
 func (g *TCPFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -370,14 +358,11 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	clustersByHostname := map[string][]envoy.Cluster{}
 	var allDests []route.Destination
-	var sniNames []string
 
-	// TODO put this together
 	for _, listenerHostnames := range info.ListenerHostnames {
 		for _, host := range listenerHostnames.HostInfos {
 			dests := routeDestinations(host.Entries())
 			allDests = append(allDests, dests...)
-			sniNames = append(sniNames, host.Host.Hostname)
 
 			for _, dest := range dests {
 				cluster := envoy.NewCluster(
@@ -407,34 +392,16 @@ func (g *TCPFilterChainGenerator) Generate(
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_TLS:
 		var filterChains []*envoy_listeners.FilterChainBuilder
-		if len(info.ListenerHostnames) != 0 {
-			for _, filter := range info.ListenerHostnames {
-				clusters := clustersByHostname[filter.Hostname]
-				sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
+		for _, filter := range info.ListenerHostnames {
+			clusters := clustersByHostname[filter.Hostname]
+			sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-				builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
-				tlsResources, err := configureTLS(
-					ctx,
-					info,
-					filter.TLS,
-					[]string{filter.Hostname},
-					builder,
-					nil,
-				)
-				resources = resources.AddSet(tlsResources)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				filterChains = append(filterChains, builder)
-			}
-		} else {
-			builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters, retryPolicy)
+			builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
 			tlsResources, err := configureTLS(
 				ctx,
 				info,
-				info.HostInfos[0].Host.TLS,
-				sniNames,
+				filter.TLS,
+				[]string{filter.Hostname},
 				builder,
 				nil,
 			)
