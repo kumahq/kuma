@@ -19,7 +19,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	dns_metrics "github.com/kumahq/kuma/pkg/dns/metrics"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 var Log = core.Log.WithName("dns-vips-allocator")
@@ -31,13 +33,19 @@ type VIPsAllocator struct {
 	serviceVipEnabled bool
 	dnsSuffix         string
 	zone              string
+	metrics           *dns_metrics.Metrics
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, experimentalConfig config.ExperimentalConfig, zone string) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, config dns_server.Config, experimentalConfig config.ExperimentalConfig, zone string, metrics core_metrics.Metrics) (*VIPsAllocator, error) {
+	dnsMetrics, err := dns_metrics.NewMetrics(metrics)
+	if err != nil {
+		return nil, err
+	}
+
 	return &VIPsAllocator{
 		rm:                rm,
 		persistence:       vips.NewPersistence(rm, configManager, experimentalConfig.UseTagFirstVirtualOutboundModel),
@@ -45,12 +53,16 @@ func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_m
 		cidr:              config.CIDR,
 		dnsSuffix:         config.Domain,
 		zone:              zone,
+		metrics:           dnsMetrics,
 	}, nil
 }
 
 func (d *VIPsAllocator) CreateOrUpdateVIPConfigs(ctx context.Context) error {
+	start := core.Now()
+
 	meshRes := core_mesh.MeshResourceList{}
 	if err := d.rm.List(ctx, &meshRes); err != nil {
+		d.metrics.VipGenerationsErrors.Inc()
 		return err
 	}
 
@@ -60,7 +72,14 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs(ctx context.Context) error {
 			errs = multierr.Append(errs, err)
 		}
 	}
-	return errs
+
+	if errs != nil {
+		d.metrics.VipGenerationsErrors.Inc()
+		return errs
+	}
+
+	d.metrics.VipGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+	return nil
 }
 
 func (d *VIPsAllocator) CreateOrUpdateVIPConfig(ctx context.Context, mesh string, viewModificator func(*vips.VirtualOutboundMeshView) error) error {
