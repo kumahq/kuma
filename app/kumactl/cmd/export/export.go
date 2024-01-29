@@ -3,6 +3,7 @@ package export
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 )
 
 type exportContext struct {
@@ -101,13 +103,21 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			}
 
 			var resources []model.Resource
+			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
 			for _, res := range allResources {
+				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), issuer.UserTokenSigningKeyPrefix)
 				if res.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
-					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name {
+					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name &&
+					!isUserTokenSigningKey {
 					resources = append(resources, res)
 				}
+				if isUserTokenSigningKey {
+					userTokenSigningKeys = append(userTokenSigningKeys, res)
+				}
 			}
+			// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
+			resources = append(resources, userTokenSigningKeys...)
 
 			switch ctx.args.format {
 			case formatUniversal:
