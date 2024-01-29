@@ -68,6 +68,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Expect(err).ToNot(HaveOccurred())
 
 			tmpfile, err := os.CreateTemp("", "export-uni")
+			Expect(err).ToNot(HaveOccurred())
 			_, err = tmpfile.WriteString(out)
 			Expect(err).ToNot(HaveOccurred())
 
