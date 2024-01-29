@@ -45,7 +45,7 @@ resources:
             configSource:
               ads: {}
               resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTP:8080
+            routeConfigName: sample-gateway:HTTP:8080:*
           requestHeadersTimeout: 0.500s
           serverName: Kuma Gateway
           statPrefix: sample-gateway
@@ -104,7 +104,7 @@ resources:
             configSource:
               ads: {}
               resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTP:8081
+            routeConfigName: sample-gateway:HTTP:8081:*
           requestHeadersTimeout: 0.500s
           serverName: Kuma Gateway
           statPrefix: sample-gateway
@@ -163,7 +163,7 @@ resources:
             configSource:
               ads: {}
               resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTP:8082
+            routeConfigName: sample-gateway:HTTP:8082:*
           requestHeadersTimeout: 0.500s
           serverName: Kuma Gateway
           statPrefix: sample-gateway
@@ -226,7 +226,7 @@ resources:
             configSource:
               ads: {}
               resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTPS:8083
+            routeConfigName: sample-gateway:HTTPS:8083:*.secure.dev
           requestHeadersTimeout: 0.500s
           serverName: Kuma Gateway
           statPrefix: sample-gateway
@@ -289,7 +289,7 @@ resources:
             configSource:
               ads: {}
               resourceApiVersion: V3
-            routeConfigName: sample-gateway:HTTPS:8083
+            routeConfigName: sample-gateway:HTTPS:8083:*.super-secure.dev
           requestHeadersTimeout: 0.500s
           serverName: Kuma Gateway
           statPrefix: sample-gateway
