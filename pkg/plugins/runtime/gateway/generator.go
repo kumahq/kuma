@@ -102,7 +102,6 @@ type GatewayListenerInfo struct {
 	OutboundEndpoints core_xds.EndpointMap
 
 	Listener          GatewayListener
-	HostInfos         []GatewayHostInfo
 	ListenerHostnames []GatewayListenerHostname
 }
 
