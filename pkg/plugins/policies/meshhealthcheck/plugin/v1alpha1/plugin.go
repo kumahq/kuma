@@ -78,28 +78,30 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		for _, hostInfo := range listenerInfo.HostInfos {
-			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
-			for _, dest := range destinations {
-				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-				if err != nil {
-					continue
-				}
-				cluster, ok := gatewayClusters[clusterName]
-				if !ok {
-					continue
-				}
+		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
+			for _, hostInfo := range listenerHostnames.HostInfos {
+				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
+				for _, dest := range destinations {
+					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
+					if err != nil {
+						continue
+					}
+					cluster, ok := gatewayClusters[clusterName]
+					if !ok {
+						continue
+					}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
+					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-				if err := configure(
-					proxy.Dataplane,
-					rules,
-					core_rules.MeshService(serviceName),
-					toProtocol(listenerInfo.Listener.Protocol),
-					cluster,
-				); err != nil {
-					return err
+					if err := configure(
+						proxy.Dataplane,
+						rules,
+						core_rules.MeshService(serviceName),
+						toProtocol(listenerInfo.Listener.Protocol),
+						cluster,
+					); err != nil {
+						return err
+					}
 				}
 			}
 		}

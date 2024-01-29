@@ -114,13 +114,15 @@ func applyToGateway(
 			return err
 		}
 
-		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
-		if !ok {
-			continue
-		}
+		for _, listenerHostname := range listenerInfo.ListenerHostnames {
+			route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName+":"+listenerHostname.Hostname]
+			if !ok {
+				continue
+			}
 
-		if err := configurer.ConfigureRoute(route); err != nil {
-			return err
+			if err := configurer.ConfigureRoute(route); err != nil {
+				return err
+			}
 		}
 	}
 
