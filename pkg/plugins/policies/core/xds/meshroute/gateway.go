@@ -31,7 +31,7 @@ type MapGatewayRulesToHosts func(
 	string,
 	*mesh_proto.MeshGateway_Listener,
 	[]Sublistener,
-) []plugin_gateway.GatewayHostInfo
+) []plugin_gateway.GatewayListenerHostname
 
 func CollectListenerInfos(
 	ctx context.Context,
@@ -99,17 +99,10 @@ func CollectListenerInfos(
 			listener.listener,
 			listener.sublisteners,
 		)
-		var filters []plugin_gateway.GatewayListenerFilter
-		for _, sublistener := range listener.sublisteners {
-			filters = append(filters, plugin_gateway.GatewayListenerFilter{
-				Hostnames: []string{sublistener.Hostname},
-				TLS:       sublistener.TLS,
-			})
-		}
 		infos[port] = plugin_gateway.GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
-			HostInfos:         hostInfos,
+			ListenerHostnames: hostInfos,
 			ExternalServices:  externalServices,
 			OutboundEndpoints: outboundEndpoints,
 			Listener: plugin_gateway.GatewayListener{
@@ -122,7 +115,6 @@ func CollectListenerInfos(
 				),
 				CrossMesh: listener.listener.GetCrossMesh(),
 				Resources: listener.listener.GetResources(),
-				Filters:   filters,
 			},
 		}
 	}

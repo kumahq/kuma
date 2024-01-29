@@ -2,9 +2,9 @@ package v1alpha1
 
 import (
 	"slices"
-	"sort"
 	"strings"
 
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -33,8 +33,8 @@ func sortRulesToHosts(
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
 	sublisteners []meshroute.Sublistener,
-) []plugin_gateway.GatewayHostInfo {
-	var hostInfos []plugin_gateway.GatewayHostInfo
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
 	for _, hostnameTag := range sublisteners {
 		inboundListener := rules.NewInboundListenerHostname(
@@ -123,22 +123,45 @@ func sortRulesToHosts(
 				Host: host,
 			}
 			hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-			hostInfos = append(hostInfos, hostInfo)
+			// This is the key by which we partition route rules, which is only
+			// necessary/possible when using HTTPS + listener hostnames
+			hostInfoKey := "*"
+			if listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS {
+				hostInfoKey = hostnameTag.Hostname
+			}
+
+			listenerEntry, ok := hostInfosByHostname[hostInfoKey]
+			if !ok {
+				listenerEntry = plugin_gateway.GatewayListenerHostname{
+					Hostname: hostInfoKey,
+					TLS:      hostnameTag.TLS,
+				}
+			}
+			listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfo)
+			hostInfosByHostname[hostInfoKey] = listenerEntry
 		}
 	}
-	sort.Slice(hostInfos, func(i, j int) bool {
-		return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
-	})
 
-	return hostInfos
+	for hostname, hostInfos := range hostInfosByHostname {
+		hostInfos.HostInfos = match.SortHostnamesOn(hostInfos.HostInfos, func(i plugin_gateway.GatewayHostInfo) string {
+			return i.Host.Hostname
+		})
+		hostInfosByHostname[hostname] = hostInfos
+	}
+
+	var listenerHostnames []plugin_gateway.GatewayListenerHostname
+	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostInfosByHostname)) {
+		listenerHostnames = append(listenerHostnames, hostInfosByHostname[hostname])
+	}
+
+	return listenerHostnames
 }
 
 func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
 	var entries []route.Entry
 
-	sort.Slice(toRules, func(i, j int) bool {
-		return !match.Contains(toRules[i].Hostname, toRules[j].Hostname)
-	})
+	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
+
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
 	exactEntries := map[string][]route.Entry{}

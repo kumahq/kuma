@@ -22,16 +22,10 @@ var FilterChainGenerators = map[mesh_proto.MeshGateway_Listener_Protocol]plugin_
 func generateGatewayListeners(
 	ctx xds_context.Context,
 	info plugin_gateway.GatewayListenerInfo,
-	hostInfos []plugin_gateway.GatewayHostInfo,
 ) (*core_xds.ResourceSet, *plugin_gateway.RuntimeResoureLimitListener, error) {
 	resources := core_xds.NewResourceSet()
 
 	listenerBuilder, limit := plugin_gateway.GenerateListener(info)
-
-	var gatewayHosts []plugin_gateway.GatewayHost
-	for _, hostInfo := range hostInfos {
-		gatewayHosts = append(gatewayHosts, hostInfo.Host)
-	}
 
 	protocol := info.Listener.Protocol
 	if info.Listener.CrossMesh {
@@ -42,7 +36,7 @@ func generateGatewayListeners(
 		return resources, limit, nil
 	}
 
-	res, filterChainBuilders, err := filterGen.Generate(ctx, info, gatewayHosts)
+	res, filterChainBuilders, err := filterGen.Generate(ctx, info)
 	if err != nil {
 		return nil, limit, err
 	}
@@ -65,25 +59,27 @@ func generateGatewayClusters(
 	ctx context.Context,
 	xdsCtx xds_context.Context,
 	info plugin_gateway.GatewayListenerInfo,
-	hostInfos []plugin_gateway.GatewayHostInfo,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	gen := plugin_gateway.ClusterGenerator{Zone: xdsCtx.ControlPlane.Zone}
-	for _, hostInfo := range hostInfos {
-		clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries(), hostInfo.Host.Tags)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+	for _, listenerHostname := range info.ListenerHostnames {
+		for _, hostInfo := range listenerHostname.HostInfos {
+			clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries(), hostInfo.Host.Tags)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+			}
+			resources.AddSet(clusterRes)
 		}
-		resources.AddSet(clusterRes)
 	}
 
 	return resources, nil
 }
 
 func generateGatewayRoutes(
-	ctx xds_context.Context, info plugin_gateway.GatewayListenerInfo, hostInfos []plugin_gateway.GatewayHostInfo,
+	ctx xds_context.Context, info plugin_gateway.GatewayListenerInfo,
 ) (*core_xds.ResourceSet, error) {
+	listenerHostnames := info.ListenerHostnames
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_HTTPS,
 		mesh_proto.MeshGateway_Listener_HTTP:
@@ -92,23 +88,24 @@ func generateGatewayRoutes(
 	}
 
 	resources := core_xds.NewResourceSet()
-	routeConfig := plugin_gateway.GenerateRouteConfig(info)
-
 	// Make a pass over the generators for each virtual host.
-	for _, hostInfo := range hostInfos {
-		vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
-		if err != nil {
-			return nil, err
+	for _, hostInfos := range listenerHostnames {
+		hostname := hostInfos.Hostname
+		routeConfig := plugin_gateway.GenerateRouteConfig(info.Proxy, info.Listener.Protocol, info.Listener.ResourceName+":"+hostname)
+		for _, hostInfo := range hostInfos.HostInfos {
+			vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
+			if err != nil {
+				return nil, err
+			}
+
+			routeConfig.Configure(envoy_routes.VirtualHost(vh))
 		}
-
-		routeConfig.Configure(envoy_routes.VirtualHost(vh))
+		res, err := plugin_gateway.BuildResourceSet(routeConfig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build route configuration resource")
+		}
+		resources.AddSet(res)
 	}
-
-	res, err := plugin_gateway.BuildResourceSet(routeConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build route configuration resource")
-	}
-	resources.AddSet(res)
 
 	return resources, nil
 }

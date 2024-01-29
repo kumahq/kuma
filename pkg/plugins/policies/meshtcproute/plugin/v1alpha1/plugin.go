@@ -160,8 +160,8 @@ func sortRulesToHosts(
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
 	sublisteners []meshroute.Sublistener,
-) []plugin_gateway.GatewayHostInfo {
-	var hostInfos []plugin_gateway.GatewayHostInfo
+) map[string][]plugin_gateway.GatewayHostInfo {
+	hostInfosByHostname := map[string][]plugin_gateway.GatewayHostInfo{}
 	for _, hostnameTag := range sublisteners {
 		host := plugin_gateway.GatewayHost{
 			Hostname: hostnameTag.Hostname,
@@ -183,7 +183,13 @@ func sortRulesToHosts(
 			continue
 		}
 		hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-		hostInfos = append(hostInfos, hostInfo)
+		// This is the key by which we partition route rules, which is only
+		// necessary/possible when using TLS + listener hostnames
+		hostInfoKey := "*"
+		if listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
+			hostInfoKey = hostnameTag.Hostname
+		}
+		hostInfosByHostname[hostInfoKey] = append(hostInfosByHostname[hostInfoKey], hostInfo)
 	}
-	return hostInfos
+	return hostInfosByHostname
 }

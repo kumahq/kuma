@@ -14,6 +14,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
@@ -74,9 +76,10 @@ type GatewayHost struct {
 	Tags mesh_proto.TagSelector
 }
 
-type GatewayListenerFilter struct {
-	Hostnames []string
+type GatewayListenerHostname struct {
+	Hostname  string
 	TLS       *mesh_proto.MeshGateway_TLS_Conf
+	HostInfos []GatewayHostInfo
 }
 
 type GatewayListener struct {
@@ -87,9 +90,6 @@ type GatewayListener struct {
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
 	Resources *mesh_proto.MeshGateway_Listener_Resources // TODO verify these don't conflict when merging
-	// Filters, if set, is used for more control over filter chain matches
-	// independent of the routes
-	Filters []GatewayListenerFilter
 }
 
 // GatewayListenerInfo holds everything needed to generate resources for a
@@ -100,8 +100,9 @@ type GatewayListenerInfo struct {
 	ExternalServices  *core_mesh.ExternalServiceResourceList
 	OutboundEndpoints core_xds.EndpointMap
 
-	Listener  GatewayListener
-	HostInfos []GatewayHostInfo
+	Listener          GatewayListener
+	HostInfos         []GatewayHostInfo
+	ListenerHostnames map[string]GatewayListenerHostname
 }
 
 // FilterChainGenerator is responsible for handling the filter chain for
@@ -214,6 +215,7 @@ func gatewayListenerInfoFromProxy(
 			OutboundEndpoints: outboundEndpoints,
 			Listener:          listener,
 			HostInfos:         hostInfos,
+			// TODO listenerhostnames
 		}
 	}
 
@@ -226,13 +228,29 @@ func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx
 	var limits []RuntimeResoureLimitListener
 
 	for _, info := range ExtractGatewayListeners(proxy) {
-		cdsResources, err := g.generateCDS(ctx, xdsCtx, info, info.HostInfos)
+		switch info.Listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+			httpRoute, ok := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType]
+			if ok && len(httpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
+				continue
+			}
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+			tcpRoute, ok := proxy.Policies.Dynamic[meshtcproute_api.MeshTCPRouteType]
+			if ok && len(tcpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
+				continue
+			}
+		}
+		var allHostInfos []GatewayHostInfo
+		for _, hostInfos := range info.ListenerHostnames {
+			allHostInfos = append(allHostInfos, hostInfos.HostInfos...)
+		}
+		cdsResources, err := g.generateCDS(ctx, xdsCtx, info, allHostInfos)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := g.generateLDS(xdsCtx, info, info.HostInfos)
+		ldsResources, limit, err := g.generateLDS(xdsCtx, info, allHostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -242,6 +260,7 @@ func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx
 			limits = append(limits, *limit)
 		}
 
+		// TODO listenerhostnames
 		rdsResources, err := g.generateRDS(xdsCtx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
@@ -333,7 +352,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 	}
 
 	resources := core_xds.NewResourceSet()
-	routeConfig := GenerateRouteConfig(info)
+	routeConfig := GenerateRouteConfig(info.Proxy, info.Listener.Protocol, info.Listener.ResourceName+":*")
 
 	// Make a pass over the generators for each virtual host.
 	for _, hostInfo := range hostInfos {

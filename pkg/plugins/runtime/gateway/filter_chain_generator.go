@@ -71,7 +71,9 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	return nil, []*envoy_listeners.FilterChainBuilder{newHTTPFilterChain(ctx.Mesh, info)}, nil
+	chain := newHTTPFilterChain(ctx.Mesh, info)
+	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":*"))
+	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
@@ -80,9 +82,11 @@ type HTTPSFilterChainGenerator struct{}
 func newTLSFilterChain(
 	ctx xds_context.Context, info GatewayListenerInfo, hostnames []string, tls *mesh_proto.MeshGateway_TLS_Conf,
 ) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error) {
-	log.V(1).Info("generating filter chain", "hostname", hostnames)
+	log.V(1).Info("generating filter chain", "hostnames", hostnames)
 
+	routeConfigSuffix := strings.Join(hostnames, ":")
 	builder := newHTTPFilterChain(ctx.Mesh, info)
+	builder.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":" + routeConfigSuffix))
 
 	hostResources, err := configureTLS(
 		ctx,
@@ -113,9 +117,9 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		hosts = hosts[:1]
 	}
 	// In this case we want a single chain for multiple hostnames
-	if len(info.Listener.Filters) != 0 {
-		for _, filter := range info.Listener.Filters {
-			hostResources, builder, err := newTLSFilterChain(ctx, info, filter.Hostnames, filter.TLS)
+	if len(info.ListenerHostnames) != 0 {
+		for _, filter := range info.ListenerHostnames {
+			hostResources, builder, err := newTLSFilterChain(ctx, info, []string{filter.Hostname}, filter.TLS)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -210,7 +214,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		// general-purpose gateway.
 		envoy_listeners.HttpConnectionManager(service, false),
 		envoy_listeners.ServerHeader("Kuma Gateway"),
-		envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName),
 	)
 
 	// Add edge proxy recommendations.
@@ -369,19 +372,22 @@ func (g *TCPFilterChainGenerator) Generate(
 	var allDests []route.Destination
 	var sniNames []string
 
-	for _, host := range info.HostInfos {
-		dests := routeDestinations(host.Entries())
-		allDests = append(allDests, dests...)
-		sniNames = append(sniNames, host.Host.Hostname)
+	// TODO put this together
+	for _, listenerHostnames := range info.ListenerHostnames {
+		for _, host := range listenerHostnames.HostInfos {
+			dests := routeDestinations(host.Entries())
+			allDests = append(allDests, dests...)
+			sniNames = append(sniNames, host.Host.Hostname)
 
-		for _, dest := range dests {
-			cluster := envoy.NewCluster(
-				envoy.WithName(dest.Name),
-				envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
-				envoy.WithTags(dest.Destination),
-				envoy.WithWeight(dest.Weight),
-			)
-			clustersByHostname[host.Host.Hostname] = append(clustersByHostname[host.Host.Hostname], cluster)
+			for _, dest := range dests {
+				cluster := envoy.NewCluster(
+					envoy.WithName(dest.Name),
+					envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
+					envoy.WithTags(dest.Destination),
+					envoy.WithWeight(dest.Weight),
+				)
+				clustersByHostname[host.Host.Hostname] = append(clustersByHostname[host.Host.Hostname], cluster)
+			}
 		}
 	}
 	var allClusters []envoy_common.Cluster
@@ -401,12 +407,9 @@ func (g *TCPFilterChainGenerator) Generate(
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_TLS:
 		var filterChains []*envoy_listeners.FilterChainBuilder
-		if len(info.Listener.Filters) != 0 {
-			for _, filter := range info.Listener.Filters {
-				var clusters []envoy_common.Cluster
-				for _, hostname := range filter.Hostnames {
-					clusters = append(clusters, clustersByHostname[hostname]...)
-				}
+		if len(info.ListenerHostnames) != 0 {
+			for _, filter := range info.ListenerHostnames {
+				clusters := clustersByHostname[filter.Hostname]
 				sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
 				builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
@@ -414,7 +417,7 @@ func (g *TCPFilterChainGenerator) Generate(
 					ctx,
 					info,
 					filter.TLS,
-					filter.Hostnames,
+					[]string{filter.Hostname},
 					builder,
 					nil,
 				)
