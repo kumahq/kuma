@@ -43,4 +43,26 @@ var _ = Describe("Hostname matching", func() {
 		Entry("larger wildcard contains smaller", "*.com", "*.foo.com", true),
 		Entry("smaller wildcard doesn't contain larger", "*.foo.com", "*.com", false),
 	)
+	DescribeTable("SortHostnamesDecByInclusion",
+		func(hostnames []string, expect []string) {
+			Expect(match.SortHostnamesByExactnessDec(hostnames)).To(Equal(expect))
+		},
+		Entry("simple exact", []string{"foo.example.com", "bar.example.com"}, []string{"bar.example.com", "foo.example.com"}),
+		Entry("simple exact reverse", []string{"bar.example.com", "foo.example.com"}, []string{"bar.example.com", "foo.example.com"}),
+		Entry("exact less than wild", []string{"foo.example.com", "*.example.com"}, []string{"foo.example.com", "*.example.com"}),
+		Entry("exact less than wild", []string{"*.example.com", "foo.example.com"}, []string{"foo.example.com", "*.example.com"}),
+		Entry("specific wild less than wild", []string{"*.example.com", "*.com"}, []string{"*.example.com", "*.com"}),
+		Entry("specific wild less than wild", []string{"*.com", "*.example.com"}, []string{"*.example.com", "*.com"}),
+	)
+	DescribeTable("SortHostnamesOn",
+		func(hostnames []string, expect []string) {
+			Expect(match.SortHostnamesOn(hostnames, func(e string) string { return e })).To(Equal(expect))
+		},
+		Entry("simple exact", []string{"foo.example.com", "bar.example.com"}, []string{"bar.example.com", "foo.example.com"}),
+		Entry("simple exact reverse", []string{"bar.example.com", "foo.example.com"}, []string{"bar.example.com", "foo.example.com"}),
+		Entry("exact less than wild", []string{"foo.example.com", "*.example.com"}, []string{"foo.example.com", "*.example.com"}),
+		Entry("exact less than wild", []string{"*.example.com", "foo.example.com"}, []string{"foo.example.com", "*.example.com"}),
+		Entry("specific wild less than wild", []string{"*.example.com", "*.com"}, []string{"*.example.com", "*.com"}),
+		Entry("specific wild less than wild", []string{"*.com", "*.example.com"}, []string{"*.example.com", "*.com"}),
+	)
 })
