@@ -22,7 +22,7 @@ project-lifecycle:
 contribution-policy:
   accepts-pull-requests: true
   accepts-automated-pull-requests: true
-    automated-tools-list:
+  automated-tools-list:
     - automated-tool: dependabot
       action: allowed
       path:
