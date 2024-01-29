@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -123,38 +122,18 @@ func sortRulesToHosts(
 				Host: host,
 			}
 			hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-			// This is the key by which we partition route rules, which is only
-			// necessary/possible when using HTTPS + listener hostnames
-			hostInfoKey := "*"
-			if listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS {
-				hostInfoKey = hostnameTag.Hostname
-			}
 
-			listenerEntry, ok := hostInfosByHostname[hostInfoKey]
-			if !ok {
-				listenerEntry = plugin_gateway.GatewayListenerHostname{
-					Hostname: hostInfoKey,
-					TLS:      hostnameTag.TLS,
-				}
-			}
-			listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfo)
-			hostInfosByHostname[hostInfoKey] = listenerEntry
+			meshroute.AddToListenerByHostname(
+				hostInfosByHostname,
+				listener.Protocol,
+				hostnameTag.Hostname,
+				listener.Tls,
+				hostInfo,
+			)
 		}
 	}
 
-	for hostname, hostInfos := range hostInfosByHostname {
-		hostInfos.HostInfos = match.SortHostnamesOn(hostInfos.HostInfos, func(i plugin_gateway.GatewayHostInfo) string {
-			return i.Host.Hostname
-		})
-		hostInfosByHostname[hostname] = hostInfos
-	}
-
-	var listenerHostnames []plugin_gateway.GatewayListenerHostname
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostInfosByHostname)) {
-		listenerHostnames = append(listenerHostnames, hostInfosByHostname[hostname])
-	}
-
-	return listenerHostnames
+	return meshroute.SortByHostname(hostInfosByHostname)
 }
 
 func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {

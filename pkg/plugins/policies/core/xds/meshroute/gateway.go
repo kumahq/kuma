@@ -4,12 +4,15 @@ import (
 	"context"
 	"slices"
 
+	"golang.org/x/exp/maps"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -120,4 +123,45 @@ func CollectListenerInfos(
 	}
 
 	return infos
+}
+
+func AddToListenerByHostname(
+	acc map[string]plugin_gateway.GatewayListenerHostname,
+	listenerProtocol mesh_proto.MeshGateway_Listener_Protocol,
+	listenerHostname string,
+	listenerTls *mesh_proto.MeshGateway_TLS_Conf,
+	hostInfos ...plugin_gateway.GatewayHostInfo,
+) {
+	// This is the key by which we partition route rules, which is only
+	// necessary/possible when using HTTPS + listener hostnames
+	listenerKey := "*"
+	switch listenerProtocol {
+	case mesh_proto.MeshGateway_Listener_HTTPS, mesh_proto.MeshGateway_Listener_TLS:
+		listenerKey = listenerHostname
+	}
+	listenerEntry, ok := acc[listenerKey]
+	if !ok {
+		listenerEntry = plugin_gateway.GatewayListenerHostname{
+			Hostname: listenerKey,
+			TLS:      listenerTls,
+		}
+	}
+	listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfos...)
+	acc[listenerKey] = listenerEntry
+}
+
+func SortByHostname(listenersByHostname map[string]plugin_gateway.GatewayListenerHostname) []plugin_gateway.GatewayListenerHostname {
+	for hostname, hostInfos := range listenersByHostname {
+		hostInfos.HostInfos = match.SortHostnamesOn(hostInfos.HostInfos, func(i plugin_gateway.GatewayHostInfo) string {
+			return i.Host.Hostname
+		})
+		listenersByHostname[hostname] = hostInfos
+	}
+
+	var listenerHostnames []plugin_gateway.GatewayListenerHostname
+	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(listenersByHostname)) {
+		listenerHostnames = append(listenerHostnames, listenersByHostname[hostname])
+	}
+
+	return listenerHostnames
 }

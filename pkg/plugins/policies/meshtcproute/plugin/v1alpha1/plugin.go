@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -184,27 +183,14 @@ func sortRulesToHosts(
 			continue
 		}
 		hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-		// This is the key by which we partition route rules, which is only
-		// necessary/possible when using TLS + listener hostnames
-		hostInfoKey := "*"
-		if listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
-			hostInfoKey = hostnameTag.Hostname
-		}
-
-		listenerEntry, ok := hostInfosByHostname[hostInfoKey]
-		if !ok {
-			listenerEntry = plugin_gateway.GatewayListenerHostname{
-				Hostname: hostnameTag.Hostname,
-				TLS:      hostnameTag.TLS,
-			}
-		}
-		listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfo)
-		hostInfosByHostname[hostInfoKey] = listenerEntry
-	}
-	var listenerHostnames []plugin_gateway.GatewayListenerHostname
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostInfosByHostname)) {
-		listenerHostnames = append(listenerHostnames, hostInfosByHostname[hostname])
+		meshroute.AddToListenerByHostname(
+			hostInfosByHostname,
+			listener.Protocol,
+			hostnameTag.Hostname,
+			listener.Tls,
+			hostInfo,
+		)
 	}
 
-	return listenerHostnames
+	return meshroute.SortByHostname(hostInfosByHostname)
 }
