@@ -83,10 +83,14 @@ type GatewayListenerHostname struct {
 	HostInfos []GatewayHostInfo
 }
 
+func (h GatewayListenerHostname) EnvoyRouteName(envoyListenerName string) string {
+	return envoyListenerName + ":" + h.Hostname
+}
+
 type GatewayListener struct {
-	Port         uint32
-	Protocol     mesh_proto.MeshGateway_Listener_Protocol
-	ResourceName string
+	Port              uint32
+	Protocol          mesh_proto.MeshGateway_Listener_Protocol
+	EnvoyListenerName string
 	// CrossMesh is important because for generation we need to treat such a
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
@@ -332,7 +336,8 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 
 	resources := core_xds.NewResourceSet()
 	for _, hostInfos := range hostInfosByHostname {
-		routeConfig := GenerateRouteConfig(info.Proxy, info.Listener.Protocol, info.Listener.ResourceName+":"+hostInfos.Hostname)
+		routeName := hostInfos.EnvoyRouteName(info.Listener.EnvoyListenerName)
+		routeConfig := GenerateRouteConfig(info.Proxy, info.Listener.Protocol, routeName)
 
 		// Make a pass over the generators for each virtual host.
 		for _, hostInfo := range hostInfos.HostInfos {
@@ -367,7 +372,7 @@ func MakeGatewayListener(
 	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
 		Protocol: listeners[0].GetProtocol(),
-		ResourceName: envoy_names.GetGatewayListenerName(
+		EnvoyListenerName: envoy_names.GetGatewayListenerName(
 			gateway.Meta.GetName(),
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
@@ -434,7 +439,7 @@ func MakeGatewayListener(
 
 		log.V(1).Info("applying merged traffic routes",
 			"listener-port", listener.Port,
-			"listener-name", listener.ResourceName,
+			"listener-name", listener.EnvoyListenerName,
 		)
 
 		var hostInfos []GatewayHostInfo

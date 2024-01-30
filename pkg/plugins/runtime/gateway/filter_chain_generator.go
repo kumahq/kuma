@@ -72,7 +72,12 @@ func (g *HTTPFilterChainGenerator) Generate(
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
 	chain := newHTTPFilterChain(ctx.Mesh, info)
-	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":*"))
+
+	if len(info.ListenerHostnames) != 1 {
+		return nil, nil, errors.New("expected exactly one ListenerHostname with HTTP listener")
+	}
+	routeName := info.ListenerHostnames[0].EnvoyRouteName(info.Listener.EnvoyListenerName)
+	chain.Configure(envoy_listeners.HttpDynamicRoute(routeName))
 	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
 }
 
@@ -80,19 +85,20 @@ func (g *HTTPFilterChainGenerator) Generate(
 type HTTPSFilterChainGenerator struct{}
 
 func newTLSFilterChain(
-	ctx xds_context.Context, info GatewayListenerInfo, hostnames []string, tls *mesh_proto.MeshGateway_TLS_Conf,
+	ctx xds_context.Context, info GatewayListenerInfo, listenerHostname GatewayListenerHostname,
 ) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error) {
-	log.V(1).Info("generating filter chain", "hostnames", hostnames)
+	log.V(1).Info("generating filter chain", "hostname", listenerHostname.Hostname)
 
-	routeConfigSuffix := strings.Join(hostnames, ":")
-	builder := newHTTPFilterChain(ctx.Mesh, info)
-	builder.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":" + routeConfigSuffix))
+	routeName := listenerHostname.EnvoyRouteName(info.Listener.EnvoyListenerName)
+	builder := newHTTPFilterChain(ctx.Mesh, info).Configure(
+		envoy_listeners.HttpDynamicRoute(routeName),
+	)
 
 	hostResources, err := configureTLS(
 		ctx,
 		info,
-		tls,
-		hostnames,
+		listenerHostname.TLS,
+		[]string{listenerHostname.Hostname},
 		builder,
 		[]string{"h2", "http/1.1"},
 	)
@@ -119,7 +125,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 	}
 	// In this case we want a single chain for multiple hostnames
 	for _, listenerHostname := range listenerHostnames {
-		hostResources, builder, err := newTLSFilterChain(ctx, info, []string{listenerHostname.Hostname}, listenerHostname.TLS)
+		hostResources, builder, err := newTLSFilterChain(ctx, info, listenerHostname)
 		if err != nil {
 			return nil, nil, err
 		}
