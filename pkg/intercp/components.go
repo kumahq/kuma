@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -68,7 +67,7 @@ func Setup(rt runtime.Runtime) error {
 		envoyAdminServer := envoyadmin.NewServer(
 			admin.NewKDSEnvoyAdminClient(
 				rt.KDSContext().EnvoyAdminRPCs,
-				rt.Config().Store.Type == store.KubernetesStore,
+				rt.ReadOnlyResourceManager(),
 			),
 			rt.ResourceManager(),
 		)

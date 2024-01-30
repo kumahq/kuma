@@ -444,7 +444,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -522,7 +522,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8081
+              routeConfigName: edge-gateway:HTTP:8081:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -600,7 +600,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8082
+              routeConfigName: edge-gateway:HTTP:8082:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -633,9 +633,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
+    edge-gateway:HTTP:8080:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8080
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -726,9 +726,9 @@ Routes:
               clusters:
               - name: external-http2-httpbin-29c391043cf34cd7
                 weight: 1
-    edge-gateway:HTTP:8081:
+    edge-gateway:HTTP:8081:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8081
+      name: edge-gateway:HTTP:8081:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -895,9 +895,9 @@ Routes:
               clusters:
               - name: external-http2-httpbin-db75d53333554288
                 weight: 1
-    edge-gateway:HTTP:8082:
+    edge-gateway:HTTP:8082:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8082
+      name: edge-gateway:HTTP:8082:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false

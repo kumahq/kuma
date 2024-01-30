@@ -78,18 +78,20 @@ func applyToGateways(
 		if !ok {
 			continue
 		}
-		rules, ok := toRules.ToRules[listenerKey]
+		rules, ok := toRules.ToRules.ByListener[listenerKey]
 		if !ok {
 			continue
 		}
 
-		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
-		if !ok {
-			continue
-		}
+		for _, listenerHostname := range listenerInfo.ListenerHostnames {
+			route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName+":"+listenerHostname.Hostname]
+			if !ok {
+				continue
+			}
 
-		if err := configure(rules, gatewayListener, route); err != nil {
-			return err
+			if err := configure(rules, gatewayListener, route); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

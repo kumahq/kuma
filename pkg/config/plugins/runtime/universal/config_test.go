@@ -24,6 +24,7 @@ var _ = Describe("Config", func() {
 
 		// and
 		Expect(cfg.DataplaneCleanupAge.Duration).To(Equal(5 * time.Hour))
+		Expect(cfg.VIPRefreshInterval.Duration).To(Equal(5 * time.Second))
 	})
 
 	It("should have consistent defaults", func() {
@@ -52,6 +53,6 @@ var _ = Describe("Config", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Invalid configuration: .DataplaneCleanupAge must be positive`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .DataplaneCleanupAge must be positive; .VIPRefreshInterval must be positive`))
 	})
 })

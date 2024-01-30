@@ -90,6 +90,31 @@ func (c *ConfigCatalog) ReplaceLeader(ctx context.Context, leader Instance) erro
 	})
 }
 
+func (c *ConfigCatalog) DropLeader(ctx context.Context, leader Instance) error {
+	return manager.Upsert(ctx, c.resManager, CatalogKey, system.NewConfigResource(), func(resource model.Resource) error {
+		instances := &ConfigInstances{}
+		if cfg := resource.(*system.ConfigResource).Spec.GetConfig(); cfg != "" {
+			if err := json.Unmarshal([]byte(cfg), instances); err != nil {
+				return err
+			}
+		}
+		for i, instance := range instances.Instances {
+			if instance.Id == leader.Id {
+				instance.Leader = false
+			}
+			instances.Instances[i] = instance
+		}
+		bytes, err := json.Marshal(instances)
+		if err != nil {
+			return err
+		}
+		resource.(*system.ConfigResource).Spec = &system_proto.Config{
+			Config: string(bytes),
+		}
+		return nil
+	})
+}
+
 type ConfigCatalogReader struct {
 	resManager manager.ReadOnlyResourceManager
 }

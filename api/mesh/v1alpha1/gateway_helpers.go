@@ -10,3 +10,11 @@ func (g *MeshGateway) IsCrossMesh() bool {
 	}
 	return false
 }
+
+// GetNonEmptyHostname returns "*" if the hostname isn't set.
+func (l *MeshGateway_Listener) GetNonEmptyHostname() string {
+	if h := l.GetHostname(); h != "" {
+		return h
+	}
+	return WildcardHostname
+}

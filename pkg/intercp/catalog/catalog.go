@@ -28,6 +28,7 @@ type Catalog interface {
 	Reader
 	Replace(context.Context, []Instance) (bool, error)
 	ReplaceLeader(context.Context, Instance) error
+	DropLeader(context.Context, Instance) error
 }
 
 var (

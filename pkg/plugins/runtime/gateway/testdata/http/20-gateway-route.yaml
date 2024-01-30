@@ -185,7 +185,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTP:9080
+              routeConfigName: gateway-multihost:HTTP:9080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
@@ -200,9 +200,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    gateway-multihost:HTTP:9080:
+    gateway-multihost:HTTP:9080:*:
       ignorePortInHostMatching: true
-      name: gateway-multihost:HTTP:9080
+      name: gateway-multihost:HTTP:9080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false

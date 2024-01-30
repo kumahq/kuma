@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -56,7 +57,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
 
 	// Only fallback if we have TrafficRoutes & No MeshHTTPRoutes
-	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
 		return nil
 	}
 
@@ -113,7 +114,7 @@ func ApplyToGateway(
 ) error {
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 
-	if len(rawRules.ToRules) == 0 {
+	if len(rawRules.ToRules.ByListenerAndHostname) == 0 {
 		return nil
 	}
 
@@ -129,23 +130,25 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := CollectListenerInfos(
+	listeners := meshroute.CollectListenerInfos(
 		ctx,
 		xdsCtx.Mesh,
 		gateway,
 		proxy,
 		rawRules,
+		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS},
+		sortRulesToHosts,
 	)
 	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, listener := range listeners {
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener, listener.HostInfos)
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener, listener.HostInfos)
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener)
 		if err != nil {
 			return err
 		}
@@ -155,7 +158,7 @@ func ApplyToGateway(
 			limits = append(limits, *limit)
 		}
 
-		rdsResources, err := generateGatewayRoutes(xdsCtx, listener, listener.HostInfos)
+		rdsResources, err := generateGatewayRoutes(xdsCtx, listener)
 		if err != nil {
 			return err
 		}

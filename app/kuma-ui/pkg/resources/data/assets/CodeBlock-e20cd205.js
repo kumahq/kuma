@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/CodeBlock-f1329140.js
+import{af as Y,ag as te,d as ne,z as re,o as Z,c as W,r as K,p as ie,f as se,e as oe,X as le,w as ue,l as de,ah as ce,_ as ge}from"./index-671fe4fd.js";import{u as pe}from"./uniqueId-90cc9b93.js";var V={exports:{}};(function(m){var E=typeof window<"u"?window:typeof WorkerGlobalScope<"u"&&self instanceof WorkerGlobalScope?self:{};/**
+========
 import{af as Y,ag as te,d as ne,B as re,o as Z,c as W,r as K,p as ie,f as se,e as oe,X as le,w as ue,l as de,ah as ce,_ as ge}from"./index-4198b723.js";import{u as pe}from"./uniqueId-90cc9b93.js";var V={exports:{}};(function(m){var E=typeof window<"u"?window:typeof WorkerGlobalScope<"u"&&self instanceof WorkerGlobalScope?self:{};/**
+>>>>>>>> upstream/master:app/kuma-ui/pkg/resources/data/assets/CodeBlock-e20cd205.js
  * Prism: Lightweight, robust, elegant syntax highlighting
  *
  * @license MIT <https://opensource.org/licenses/MIT>

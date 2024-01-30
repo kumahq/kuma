@@ -63,7 +63,7 @@ const (
 type HTTPFilterChainGenerator struct{}
 
 func (g *HTTPFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, _ []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -71,14 +71,40 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	return nil, []*envoy_listeners.FilterChainBuilder{newHTTPFilterChain(ctx.Mesh, info)}, nil
+	chain := newHTTPFilterChain(ctx.Mesh, info)
+	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":*"))
+	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
 type HTTPSFilterChainGenerator struct{}
 
+func newTLSFilterChain(
+	ctx xds_context.Context, info GatewayListenerInfo, hostnames []string, tls *mesh_proto.MeshGateway_TLS_Conf,
+) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error) {
+	log.V(1).Info("generating filter chain", "hostnames", hostnames)
+
+	routeConfigSuffix := strings.Join(hostnames, ":")
+	builder := newHTTPFilterChain(ctx.Mesh, info)
+	builder.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName + ":" + routeConfigSuffix))
+
+	hostResources, err := configureTLS(
+		ctx,
+		info,
+		tls,
+		hostnames,
+		builder,
+		[]string{"h2", "http/1.1"},
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return hostResources, builder, nil
+}
+
 func (g *HTTPSFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -86,23 +112,14 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
+	listenerHostnames := info.ListenerHostnames
 	if info.Listener.CrossMesh {
 		// For cross-mesh, we can only add one listener filter chain as there will not be any (usable) SNI available for filter chain matching
-		hosts = hosts[:1]
+		listenerHostnames = listenerHostnames[:1]
 	}
-	for _, host := range hosts {
-		log.V(1).Info("generating filter chain", "hostname", host.Hostname)
-
-		builder := newHTTPFilterChain(ctx.Mesh, info)
-
-		hostResources, err := configureTLS(
-			ctx,
-			info,
-			host.TLS,
-			[]string{host.Hostname},
-			builder,
-			[]string{"h2", "http/1.1"},
-		)
+	// In this case we want a single chain for multiple hostnames
+	for _, listenerHostname := range listenerHostnames {
+		hostResources, builder, err := newTLSFilterChain(ctx, info, []string{listenerHostname.Hostname}, listenerHostname.TLS)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -185,7 +202,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		// general-purpose gateway.
 		envoy_listeners.HttpConnectionManager(service, false),
 		envoy_listeners.ServerHeader("Kuma Gateway"),
-		envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName),
 	)
 
 	// Add edge proxy recommendations.
@@ -311,11 +327,32 @@ func newSecretError(i int, msg string) error {
 	return err.OrNil()
 }
 
+func newTCPFilterChain(
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+	service string,
+	clusters []envoy_common.Cluster,
+	retryPolicy *core_mesh.RetryResource,
+) *envoy_listeners.FilterChainBuilder {
+	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
+		envoy_listeners.TcpProxyDeprecated(service, clusters...),
+		envoy_listeners.NetworkAccessLog(
+			ctx.Mesh.Resource.Meta.GetName(),
+			envoy.TrafficDirectionInbound,
+			service,                // Source service is the gateway service.
+			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
+			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			proxy,
+		),
+		envoy_listeners.MaxConnectAttempts(retryPolicy),
+	)
+}
+
 // TCPFilterChainGenerator generates a filter chain for a TCP or TLS listener.
 type TCPFilterChainGenerator struct{}
 
 func (g *TCPFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+	ctx xds_context.Context, info GatewayListenerInfo,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -323,25 +360,30 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	resources := core_xds.NewResourceSet()
 
-	var clusters []envoy.Cluster
+	clustersByHostname := map[string][]envoy.Cluster{}
 	var allDests []route.Destination
-	var sniNames []string
 
-	for _, host := range info.HostInfos {
-		dests := routeDestinations(host.Entries())
-		allDests = append(allDests, dests...)
-		sniNames = append(sniNames, host.Host.Hostname)
+	for _, listenerHostnames := range info.ListenerHostnames {
+		for _, host := range listenerHostnames.HostInfos {
+			dests := routeDestinations(host.Entries())
+			allDests = append(allDests, dests...)
 
-		for _, dest := range dests {
-			cluster := envoy.NewCluster(
-				envoy.WithName(dest.Name),
-				envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
-				envoy.WithTags(dest.Destination),
-				envoy.WithWeight(dest.Weight),
-			)
-			clusters = append(clusters, cluster)
+			for _, dest := range dests {
+				cluster := envoy.NewCluster(
+					envoy.WithName(dest.Name),
+					envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
+					envoy.WithTags(dest.Destination),
+					envoy.WithWeight(dest.Weight),
+				)
+				clustersByHostname[host.Host.Hostname] = append(clustersByHostname[host.Host.Hostname], cluster)
+			}
 		}
 	}
+	var allClusters []envoy_common.Cluster
+	for _, clusters := range clustersByHostname {
+		allClusters = append(allClusters, clusters...)
+	}
+	sort.Slice(allClusters, func(i, j int) bool { return allClusters[i].Name() < allClusters[j].Name() })
 
 	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
@@ -351,37 +393,34 @@ func (g *TCPFilterChainGenerator) Generate(
 		retryPolicy = policy.(*core_mesh.RetryResource)
 	}
 
-	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
+	switch info.Listener.Protocol {
+	case mesh_proto.MeshGateway_Listener_TLS:
+		var filterChains []*envoy_listeners.FilterChainBuilder
+		for _, filter := range info.ListenerHostnames {
+			clusters := clustersByHostname[filter.Hostname]
+			sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name() < clusters[j].Name() })
 
-	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion, envoy_common.AnonymousResource).Configure(
-		envoy_listeners.TcpProxyDeprecated(service, clusters...),
-		envoy_listeners.NetworkAccessLog(
-			ctx.Mesh.Resource.Meta.GetName(),
-			envoy.TrafficDirectionInbound,
-			service,                // Source service is the gateway service.
-			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
-			info.Proxy,
-		),
-		envoy_listeners.MaxConnectAttempts(retryPolicy),
-	)
+			builder := newTCPFilterChain(ctx, info.Proxy, service, clusters, retryPolicy)
+			tlsResources, err := configureTLS(
+				ctx,
+				info,
+				filter.TLS,
+				[]string{filter.Hostname},
+				builder,
+				nil,
+			)
+			resources = resources.AddSet(tlsResources)
+			if err != nil {
+				return nil, nil, err
+			}
 
-	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_TLS {
-		tlsResources, err := configureTLS(
-			ctx,
-			info,
-			info.HostInfos[0].Host.TLS,
-			sniNames,
-			builder,
-			nil,
-		)
-		resources = resources.AddSet(tlsResources)
-		if err != nil {
-			return nil, nil, err
+			filterChains = append(filterChains, builder)
 		}
+		return resources, filterChains, nil
+	default:
+		builder := newTCPFilterChain(ctx, info.Proxy, service, allClusters, retryPolicy)
+		return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 	}
-
-	return resources, []*envoy_listeners.FilterChainBuilder{builder}, nil
 }
 
 func configureTLS(

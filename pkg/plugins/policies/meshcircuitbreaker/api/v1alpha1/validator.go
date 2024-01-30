@@ -117,6 +117,13 @@ func validateDetectors(path validators.PathBuilder, detectors *Detectors) valida
 		return verr
 	}
 
+	if detectors.FailurePercentage == nil && detectors.GatewayFailures == nil &&
+		detectors.LocalOriginFailures == nil && detectors.TotalFailures == nil &&
+		detectors.SuccessRate == nil {
+		verr.AddViolationAt(path, validators.MustHaveAtLeastOne("totalFailures", "gatewayFailures", "localOriginFailures", "successRate", "failurePercentage"))
+		return verr
+	}
+
 	verr.Add(validateDetectorTotalFailures(path.Field("totalFailures"), detectors.TotalFailures))
 	verr.Add(validateDetectorGatewayFailures(path.Field("gatewayFailures"), detectors.GatewayFailures))
 	verr.Add(validateDetectorLocalOriginFailures(path.Field("localOriginFailures"), detectors.LocalOriginFailures))
