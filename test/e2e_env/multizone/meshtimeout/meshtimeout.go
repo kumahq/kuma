@@ -121,17 +121,21 @@ spec:
 	})
 
 	It("should apply MeshTimeout policy on Zone CP", func() {
-		// Eventually(func(g Gomega) {
-		// 	start := time.Now()
-		// 	_, err := framework_client.CollectEchoResponse(
-		// 		multizone.KubeZone1, "test-client", "test-server_mutlizone-meshtimeout-ns_svc_80.mesh",
-		// 		framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
-		// 		framework_client.WithHeader("x-set-response-delay-ms", "5000"),
-		// 		framework_client.WithMaxTime(10),
-		// 	)
-		// 	g.Expect(err).ToNot(HaveOccurred())
-		// 	g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
-		// }, "30s", "1s").Should(Succeed())
+		if !Config.KumaLegacyKDS {
+			Skip("applying policies on zone CP is not available for legacy KDS")
+			return
+		}
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", "test-server_mutlizone-meshtimeout-ns_svc_80.mesh",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		}, "30s", "1s").Should(Succeed())
 
 		Expect(YamlK8s(fmt.Sprintf(`
 kind: MeshTimeout
