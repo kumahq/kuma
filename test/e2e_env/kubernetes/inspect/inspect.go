@@ -53,7 +53,7 @@ func Inspect() {
 		Expect(err.Error()).To(ContainSubstring(`Bad Request (invalid format: name "dummy-name" must include namespace after the dot, ex. "name.namespace")`))
 	})
 
-	FIt("should return envoy config_dump", func() {
+	It("should return envoy config_dump", func() {
 		// Synchronize on the dataplanes coming up.
 		Eventually(func(g Gomega) {
 			dataplanes, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("dataplanes", meshName)

@@ -268,7 +268,7 @@ func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPor
 				Networking: &mesh_proto.Dataplane_Networking{
 					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 						RedirectPortOutbound:  15001,
-						RedirectPortInbound:   15006,
+						RedirectPortInbound:   ipv4InboundRedirectPort,
 						RedirectPortInboundV6: ipv6InboundRedirectPort,
 						Ipv6Disabled:          ipv6Disabled,
 					},
