@@ -85,4 +85,5 @@ spec:
 	})
 
 	Context("MeshCircuitBreaker", CircuitBreaker(config))
+	Context("MeshProxyPatch", MeshProxyPatch(config))
 }

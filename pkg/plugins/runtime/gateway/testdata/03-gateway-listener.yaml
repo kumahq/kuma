@@ -55,7 +55,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -79,6 +78,7 @@ Listeners:
                   collectorEndpoint: /api/v2/spans
                   collectorEndpointVersion: HTTP_JSON
                   collectorHostname: jaeger-collector.kuma-tracing:9411
+              spawnUpstreamSpan: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector

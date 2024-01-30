@@ -235,7 +235,13 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		// is a no-op unless we later add a per-route configuration.
 		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionUnspecified, ""),
+		envoy_listeners.Tracing(
+			ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace),
+			service,
+			envoy_common.TrafficDirectionUnspecified,
+			"",
+			true,
+		),
 		// In mesh proxies, the access log is configured on the outbound
 		// listener, which is why we index the Logs slice by destination
 		// service name.  A Gateway listener by definition forwards traffic
@@ -252,8 +258,6 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 			info.Proxy,
 		),
 	)
-
-	builder.AddConfigurer(&envoy_listeners_v3.HTTPRouterStartChildSpanRouter{})
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 
