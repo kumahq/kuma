@@ -13,14 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-0ec9724567ed6087
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -69,14 +61,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-8acee1c4ccf209c2
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -125,14 +109,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-bfae5b64a0fe8b74
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -196,14 +172,6 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-9e3c7c6b9435d9a4
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -255,14 +223,6 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-29c391043cf34cd7
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
@@ -314,14 +274,6 @@ Clusters:
                   kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
       name: external-http2-httpbin-db75d53333554288
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
