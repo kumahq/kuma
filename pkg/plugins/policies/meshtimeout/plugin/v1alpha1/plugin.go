@@ -191,7 +191,7 @@ func applyToGateway(
 
 		conf = getConf(toRules, core_rules.MeshSubset())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName+":"+listenerHostname.Hostname]
+			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
 			if conf != nil && ok {
 				for _, vh := range route.VirtualHosts {

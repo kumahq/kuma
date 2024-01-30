@@ -90,8 +90,11 @@ func generateGatewayRoutes(
 	resources := core_xds.NewResourceSet()
 	// Make a pass over the generators for each virtual host.
 	for _, hostInfos := range listenerHostnames {
-		hostname := hostInfos.Hostname
-		routeConfig := plugin_gateway.GenerateRouteConfig(info.Proxy, info.Listener.Protocol, info.Listener.ResourceName+":"+hostname)
+		routeConfig := plugin_gateway.GenerateRouteConfig(
+			info.Proxy,
+			info.Listener.Protocol,
+			hostInfos.EnvoyRouteName(info.Listener.EnvoyListenerName),
+		)
 		for _, hostInfo := range hostInfos.HostInfos {
 			vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
 			if err != nil {
