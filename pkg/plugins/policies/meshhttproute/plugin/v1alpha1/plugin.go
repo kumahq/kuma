@@ -142,13 +142,13 @@ func ApplyToGateway(
 	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, listener := range listeners {
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener, listener.HostInfos)
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, listener)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener, listener.HostInfos)
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, listener)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func ApplyToGateway(
 			limits = append(limits, *limit)
 		}
 
-		rdsResources, err := generateGatewayRoutes(xdsCtx, listener, listener.HostInfos)
+		rdsResources, err := generateGatewayRoutes(xdsCtx, listener)
 		if err != nil {
 			return err
 		}

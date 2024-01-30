@@ -1,43 +1,13 @@
 resources:
-- name: sample-gateway:HTTP:8080
+- name: sample-gateway:HTTP:8080:*
   resource:
     '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
     ignorePortInHostMatching: true
-    name: sample-gateway:HTTP:8080
+    name: sample-gateway:HTTP:8080:*
     requestHeadersToRemove:
     - x-kuma-tags
     validateClusters: false
     virtualHosts:
-    - domains:
-      - other.dev
-      name: other.dev
-      routes:
-      - match:
-          path: /to-other-dev
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-a285094d9b0d7032
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
-      - match:
-          prefix: /to-other-dev/
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: backend-a285094d9b0d7032
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 100
     - domains:
       - go.dev
       name: go.dev
@@ -68,11 +38,41 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
-- name: sample-gateway:HTTP:8081
+    - domains:
+      - other.dev
+      name: other.dev
+      routes:
+      - match:
+          path: /to-other-dev
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-a285094d9b0d7032
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
+          prefix: /to-other-dev/
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-a285094d9b0d7032
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+- name: sample-gateway:HTTP:8081:*
   resource:
     '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
     ignorePortInHostMatching: true
-    name: sample-gateway:HTTP:8081
+    name: sample-gateway:HTTP:8081:*
     requestHeadersToRemove:
     - x-kuma-tags
     validateClusters: false
@@ -107,11 +107,11 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
-- name: sample-gateway:HTTP:8082
+- name: sample-gateway:HTTP:8082:*
   resource:
     '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
     ignorePortInHostMatching: true
-    name: sample-gateway:HTTP:8082
+    name: sample-gateway:HTTP:8082:*
     requestHeadersToRemove:
     - x-kuma-tags
     validateClusters: false
@@ -202,18 +202,18 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
-- name: sample-gateway:HTTPS:8083
+- name: sample-gateway:HTTPS:8083:*.secure.dev
   resource:
     '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
     ignorePortInHostMatching: true
-    name: sample-gateway:HTTPS:8083
+    name: sample-gateway:HTTPS:8083:*.secure.dev
     requestHeadersToRemove:
     - x-kuma-tags
     validateClusters: false
     virtualHosts:
     - domains:
-      - second-specific.super-secure.dev
-      name: second-specific.super-secure.dev
+      - first-specific.secure.dev
+      name: first-specific.secure.dev
       requireTls: ALL
       responseHeadersToAdd:
       - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
@@ -222,26 +222,26 @@ resources:
           value: max-age=31536000; includeSubDomains
       routes:
       - match:
-          path: /second-specific-super-dev
+          path: /first-specific-dev
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-dda53ef9426194b2
+            - name: backend-348a834721ead661
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
       - match:
-          prefix: /second-specific-super-dev/
+          prefix: /first-specific-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-dda53ef9426194b2
+            - name: backend-348a834721ead661
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
@@ -283,6 +283,15 @@ resources:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
+- name: sample-gateway:HTTPS:8083:*.super-secure.dev
+  resource:
+    '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+    ignorePortInHostMatching: true
+    name: sample-gateway:HTTPS:8083:*.super-secure.dev
+    requestHeadersToRemove:
+    - x-kuma-tags
+    validateClusters: false
+    virtualHosts:
     - domains:
       - first-specific.super-secure.dev
       name: first-specific.super-secure.dev
@@ -320,8 +329,8 @@ resources:
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
     - domains:
-      - first-specific.secure.dev
-      name: first-specific.secure.dev
+      - second-specific.super-secure.dev
+      name: second-specific.super-secure.dev
       requireTls: ALL
       responseHeadersToAdd:
       - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
@@ -330,26 +339,26 @@ resources:
           value: max-age=31536000; includeSubDomains
       routes:
       - match:
-          path: /first-specific-dev
+          path: /second-specific-super-dev
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-348a834721ead661
+            - name: backend-dda53ef9426194b2
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
               weight: 100
       - match:
-          prefix: /first-specific-dev/
+          prefix: /second-specific-super-dev/
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-348a834721ead661
+            - name: backend-dda53ef9426194b2
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags

@@ -1084,6 +1084,58 @@ conf:
 			},
 		),
 
+		Entry("generates isolated SNI routes",
+			"sni-isolation-gateway-route.yaml",
+			`
+# Rewrite the dataplane to attach the "gateway-multihost" Gateway.
+type: Dataplane
+mesh: default
+name: default
+networking:
+  address: 192.168.1.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: gateway-multihost
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-one
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: one.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /one
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-two
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: two.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /two
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
 		Entry("match ratelimit policy",
 			"21-gateway-route.yaml", `
 type: MeshGatewayRoute

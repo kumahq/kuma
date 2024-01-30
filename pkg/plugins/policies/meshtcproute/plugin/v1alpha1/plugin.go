@@ -132,13 +132,13 @@ func ApplyToGateway(
 	plugin_gateway.SetGatewayListeners(proxy, listeners)
 
 	for _, info := range listeners {
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, info.HostInfos)
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info, info.HostInfos) // nolint: contextcheck
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) // nolint: contextcheck
 		if err != nil {
 			return err
 		}
@@ -160,8 +160,8 @@ func sortRulesToHosts(
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
 	sublisteners []meshroute.Sublistener,
-) []plugin_gateway.GatewayHostInfo {
-	var hostInfos []plugin_gateway.GatewayHostInfo
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
 		host := plugin_gateway.GatewayHost{
 			Hostname: hostnameTag.Hostname,
@@ -183,7 +183,14 @@ func sortRulesToHosts(
 			continue
 		}
 		hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-		hostInfos = append(hostInfos, hostInfo)
+		meshroute.AddToListenerByHostname(
+			hostInfosByHostname,
+			listener.Protocol,
+			hostnameTag.Hostname,
+			listener.Tls,
+			hostInfo,
+		)
 	}
-	return hostInfos
+
+	return meshroute.SortByHostname(hostInfosByHostname)
 }

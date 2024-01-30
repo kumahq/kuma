@@ -196,7 +196,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -227,9 +227,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTPS:8080:
+    edge-gateway:HTTPS:8080:echo.example.com:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTPS:8080
+      name: edge-gateway:HTTPS:8080:echo.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false

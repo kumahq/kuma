@@ -58,7 +58,7 @@ filterChains:
         configSource:
           ads: {}
           resourceApiVersion: V3
-        routeConfigName: sample-gateway:HTTP:8080
+        routeConfigName: sample-gateway:HTTP:8080:*
       requestHeadersTimeout: 0.500s
       serverName: Kuma Gateway
       statPrefix: sample-gateway

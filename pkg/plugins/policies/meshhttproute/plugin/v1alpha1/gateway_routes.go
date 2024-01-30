@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"slices"
-	"sort"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -33,8 +32,8 @@ func sortRulesToHosts(
 	address string,
 	listener *mesh_proto.MeshGateway_Listener,
 	sublisteners []meshroute.Sublistener,
-) []plugin_gateway.GatewayHostInfo {
-	var hostInfos []plugin_gateway.GatewayHostInfo
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
 	for _, hostnameTag := range sublisteners {
 		inboundListener := rules.NewInboundListenerHostname(
@@ -123,22 +122,25 @@ func sortRulesToHosts(
 				Host: host,
 			}
 			hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
-			hostInfos = append(hostInfos, hostInfo)
+
+			meshroute.AddToListenerByHostname(
+				hostInfosByHostname,
+				listener.Protocol,
+				hostnameTag.Hostname,
+				listener.Tls,
+				hostInfo,
+			)
 		}
 	}
-	sort.Slice(hostInfos, func(i, j int) bool {
-		return hostInfos[i].Host.Hostname > hostInfos[j].Host.Hostname
-	})
 
-	return hostInfos
+	return meshroute.SortByHostname(hostInfosByHostname)
 }
 
 func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
 	var entries []route.Entry
 
-	sort.Slice(toRules, func(i, j int) bool {
-		return !match.Contains(toRules[i].Hostname, toRules[j].Hostname)
-	})
+	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
+
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
 	exactEntries := map[string][]route.Entry{}

@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    exact-query-match-36212e4e8ec491f1:
+    echo-service-4d89cd662308223d:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: exact-query-match-36212e4e8ec491f1
+      name: echo-service-4d89cd662308223d
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -32,7 +32,7 @@ Clusters:
             maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    regex-query-match-2c070f45017d23a5:
+    echo-service-ff1f8bb571f3bfa4:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -44,7 +44,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: regex-query-match-2c070f45017d23a5
+      name: echo-service-ff1f8bb571f3bfa4
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -66,15 +66,15 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    exact-query-match-36212e4e8ec491f1:
-      clusterName: exact-query-match-36212e4e8ec491f1
+    echo-service-4d89cd662308223d:
+      clusterName: echo-service-4d89cd662308223d
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.8
-                portValue: 20008
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -82,15 +82,15 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    regex-query-match-2c070f45017d23a5:
-      clusterName: regex-query-match-2c070f45017d23a5
+    echo-service-ff1f8bb571f3bfa4:
+      clusterName: echo-service-ff1f8bb571f3bfa4
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.12
-                portValue: 20012
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -100,11 +100,11 @@ Endpoints:
                 kuma.io/protocol: http
 Listeners:
   Resources:
-    edge-gateway:HTTP:8080:
+    gateway-multihost:HTTP:9080:
       address:
         socketAddress:
           address: 192.168.1.1
-          portValue: 8080
+          portValue: 9080
       enableReusePort: true
       filterChains:
       - filters:
@@ -144,43 +144,34 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080:*
+              routeConfigName: gateway-multihost:HTTP:9080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
-            statPrefix: gateway-default
+            statPrefix: gateway-multihost
             streamIdleTimeout: 5s
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-      name: edge-gateway:HTTP:8080
+      name: gateway-multihost:HTTP:9080
       perConnectionBufferLimitBytes: 32768
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:*:
+    gateway-multihost:HTTP:9080:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8080:*
+      name: gateway-multihost:HTTP:9080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
       virtualHosts:
       - domains:
-        - echo.example.com
-        name: echo.example.com
+        - two.example.com
+        name: two.example.com
         routes:
         - match:
-            prefix: /
-            queryParameters:
-            - name: Content-Type
-              stringMatch:
-                safeRegex:
-                  regex: application/.*
-            - name: Language
-              stringMatch:
-                safeRegex:
-                  regex: .*sh
+            path: /two
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -194,18 +185,14 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: regex-query-match-2c070f45017d23a5
+              - name: echo-service-ff1f8bb571f3bfa4
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
         - match:
-            prefix: /
-            queryParameters:
-            - name: Content-Type
-              stringMatch:
-                exact: application/json
+            prefix: /two/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -219,18 +206,50 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: exact-query-match-36212e4e8ec491f1
+              - name: echo-service-ff1f8bb571f3bfa4
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+      - domains:
+        - three.example.com
+        name: three.example.com
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+      - domains:
+        - one.example.com
+        name: one.example.com
+        routes:
+        - match:
+            path: /one
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-4d89cd662308223d
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
         - match:
-            prefix: /
-            queryParameters:
-            - name: Language
-              stringMatch:
-                exact: gibberish
+            prefix: /one/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
@@ -244,11 +263,11 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: exact-query-match-36212e4e8ec491f1
+              - name: echo-service-4d89cd662308223d
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
+                    value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
 Runtimes:
   Resources:
