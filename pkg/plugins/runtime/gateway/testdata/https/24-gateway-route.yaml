@@ -13,14 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: api-service-4508437668c35ed8
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -45,14 +37,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
