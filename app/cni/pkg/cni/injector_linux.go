@@ -121,7 +121,6 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		}
 	}
 	enableIpV6, err := transparentproxy.ShouldEnableIPv6(inboundPortV6)
-
 	if err != nil {
 		return nil, err
 	}

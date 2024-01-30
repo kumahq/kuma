@@ -280,6 +280,10 @@
                     },
                     "type": "array",
                     "description": "List of reachable services (represented by the value of `kuma.io/service`) via transparent proxying. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                },
+                "ipv6_disabled": {
+                    "type": "boolean",
+                    "description": "Set if IPv6 traffic redirection is disabled by the user for the data plane proxy"
                 }
             },
             "additionalProperties": true,
