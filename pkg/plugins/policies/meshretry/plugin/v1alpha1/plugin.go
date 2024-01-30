@@ -115,7 +115,7 @@ func applyToGateway(
 		}
 
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName+":"+listenerHostname.Hostname]
+			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 			if !ok {
 				continue
 			}
