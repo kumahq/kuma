@@ -43,25 +43,16 @@ func (tpg TransparentProxyGenerator) Generate(ctx context.Context, _ *model.Reso
 	}
 	resources.Add(resourcesIPv4.List()...)
 
-	ipv6Disabled := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpv6Disabled()
-	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
-	if ipv6Disabled || redirectPortInboundV6 == 0 {
+	ipv6InboundRedirectPort := GetIPv6InboundRedirectPort(proxy)
+	if ipv6InboundRedirectPort == 0 {
 		return resources, nil
 	}
 
-	actualIpv6Port := redirectPortInbound
-	// if redirectPortInboundV6 is not set, by default we use the same port as ipv4
-	// we support this ipv6 inbound port customization for backward compatibility until the deprecation period ends
-	if redirectPortInboundV6 != defaultInboundPortV6 {
-		actualIpv6Port = redirectPortInboundV6
-	}
-
-	resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, actualIpv6Port)
+	resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, ipv6InboundRedirectPort)
 	if err != nil {
 		return nil, err
 	}
 	resources.Add(resourcesIPv6.List()...)
-
 	return resources, nil
 }
 
@@ -149,4 +140,26 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Resource: inboundPassThroughCluster,
 	})
 	return resources, nil
+}
+
+func GetIPv6InboundRedirectPort(proxy *model.Proxy) uint32 {
+	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
+	ipv6Disabled := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpv6Disabled()
+	if ipv6Disabled {
+		return 0
+	}
+
+	// here when a redirectPortInboundV6 is zero and ipv6Disabled is false simply means this value is not set anywhere
+	// because if redirectPortInboundV6 is set to zero by user, the field Ipv6Disabled will also be set to true by a pre-processing rule at injector.go
+	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
+	if redirectPortInboundV6 == 0 {
+		return redirectPortInbound
+	}
+
+	// we only support this customization when explicitly set by user, this is for backward compatibility until the deprecation period ends
+	if redirectPortInboundV6 != defaultInboundPortV6 && redirectPortInboundV6 != redirectPortInbound {
+		return redirectPortInboundV6
+	}
+
+	return redirectPortInbound
 }

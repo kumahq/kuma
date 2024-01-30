@@ -229,4 +229,52 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			expected: "06.envoy.golden.yaml",
 		}),
 	)
+
+	Describe("TransparentProxyGenerator GetIPv6InboundRedirectPort", func() {
+		It("should use ipv4 redirect port for ipv6", func() {
+			p := createDataplaneProxy(15006, 0, false)
+
+			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
+
+			Expect(ipv6RedirectPort).To(Equal(uint32(15006)))
+		})
+
+		It("should use user customized ipv6 redirect port when ipv6 not disabled", func() {
+			p := createDataplaneProxy(15006, 15088, false)
+
+			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
+
+			Expect(ipv6RedirectPort).To(Equal(uint32(15088)))
+		})
+
+		It("should get ipv6 redirect port as 0 when ipv6 disabled", func() {
+			p := createDataplaneProxy(15006, 15088, true)
+
+			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
+
+			Expect(ipv6RedirectPort).To(Equal(uint32(0)))
+		})
+	})
 })
+
+func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipv6Disabled bool) *model.Proxy {
+	return &model.Proxy{
+		Id: *model.BuildProxyId("", "sidecar"),
+		Dataplane: &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{
+				Version: "v1",
+			},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+						RedirectPortOutbound:  15001,
+						RedirectPortInbound:   15006,
+						RedirectPortInboundV6: ipv6InboundRedirectPort,
+						Ipv6Disabled:          ipv6Disabled,
+					},
+				},
+			},
+		},
+		APIVersion: envoy_common.APIV3,
+	}
+}
