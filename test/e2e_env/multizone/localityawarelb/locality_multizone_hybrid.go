@@ -69,9 +69,9 @@ networking:
 `, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
 	}
 
-	const mesh = "external-service-locality-lb"
-	const meshNoZoneEgress = "external-service-locality-lb-no-egress"
-	const namespace = "external-service-locality-lb"
+	const mesh = "es-locality-lb"
+	const meshNoZoneEgress = "es-locality-lb-no-egress"
+	const namespace = "es-locality-lb"
 
 	BeforeAll(func() {
 		// Global
@@ -109,7 +109,7 @@ networking:
 
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "external-service-in-uni-zone4", "kuma-4"))).
-			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1-zone"))).
+			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1"))).
 			Install(YamlUniversal(externalService(mesh, multizone.UniZone1.GetApp("external-service-in-both-zones").GetIP()))).
 			Install(YamlUniversal(zoneExternalService(meshNoZoneEgress, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "demo-es-in-uni-zone4", "kuma-4"))).
 			Setup(multizone.Global)).ToNot(HaveOccurred())
@@ -135,7 +135,7 @@ networking:
 		}
 	}
 
-	XIt("should route to external-service from universal through k8s", func() {
+	It("should route to external-service from universal through k8s", func() {
 		// given no request on path
 		filterEgress := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
