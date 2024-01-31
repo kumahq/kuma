@@ -8,14 +8,17 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -44,7 +47,7 @@ func (p plugin) Apply(
 
 	policies := proxy.Policies.Dynamic[api.MeshTCPRouteType]
 	// Only fallback if we have TrafficRoutes & No MeshTCPRoutes
-	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(ctx.Mesh.Resources.TrafficRoutes().Items) > 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
 		return nil
 	}
 
@@ -98,44 +101,44 @@ func ApplyToGateway(
 	xdsCtx xds_context.Context,
 	policies core_xds.TypedMatchingPolicies,
 ) error {
-	if len(policies.GatewayRules.ToRules) == 0 {
+	if len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
 		return nil
 	}
 
 	var limits []plugin_gateway.RuntimeResoureLimitListener
 
-	listeners := plugin_gateway.ExtractGatewayListeners(proxy)
-	for listenerIndex, info := range listeners {
-		if info.Listener.Protocol != mesh_proto.MeshGateway_Listener_TCP {
-			continue
-		}
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-		port := info.Listener.Port
-		inboundListener := rules.InboundListener{
-			Address: address,
-			Port:    port,
-		}
-		routes, ok := policies.GatewayRules.ToRules[inboundListener]
-		if !ok {
-			continue
-		}
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
 
-		var hostInfos []plugin_gateway.GatewayHostInfo
-		for _, info := range info.HostInfos {
-			info.AppendEntries(GenerateEnvoyRouteEntries(info.Host, routes))
-			hostInfos = append(hostInfos, info)
-		}
-		info.HostInfos = hostInfos
-		listeners[listenerIndex] = info
-		plugin_gateway.SetGatewayListeners(proxy, listeners)
+	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
 
-		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info, hostInfos)
+	listeners := meshroute.CollectListenerInfos(
+		ctx,
+		xdsCtx.Mesh,
+		gateway,
+		proxy,
+		policies.GatewayRules,
+		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS},
+		sortRulesToHosts,
+	)
+
+	plugin_gateway.SetGatewayListeners(proxy, listeners)
+
+	for _, info := range listeners {
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info)
 		if err != nil {
 			return err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info, hostInfos) // nolint: contextcheck
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) // nolint: contextcheck
 		if err != nil {
 			return err
 		}
@@ -149,4 +152,45 @@ func ApplyToGateway(
 	resources.Add(plugin_gateway.GenerateRTDS(limits))
 
 	return nil
+}
+
+func sortRulesToHosts(
+	meshLocalResources xds_context.ResourceMap,
+	rawRules rules.GatewayRules,
+	address string,
+	listener *mesh_proto.MeshGateway_Listener,
+	sublisteners []meshroute.Sublistener,
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
+	for _, hostnameTag := range sublisteners {
+		host := plugin_gateway.GatewayHost{
+			Hostname: hostnameTag.Hostname,
+			Routes:   nil,
+			Policies: map[model.ResourceType][]match.RankedPolicy{},
+			TLS:      listener.Tls,
+			Tags:     hostnameTag.Tags,
+		}
+		hostInfo := plugin_gateway.GatewayHostInfo{
+			Host: host,
+		}
+		inboundListener := rules.NewInboundListenerHostname(
+			address,
+			listener.GetPort(),
+			hostnameTag.Hostname,
+		)
+		rules, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
+		if !ok {
+			continue
+		}
+		hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
+		meshroute.AddToListenerByHostname(
+			hostInfosByHostname,
+			listener.Protocol,
+			hostnameTag.Hostname,
+			listener.Tls,
+			hostInfo,
+		)
+	}
+
+	return meshroute.SortByHostname(hostInfosByHostname)
 }

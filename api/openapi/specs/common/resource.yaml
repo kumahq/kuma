@@ -3,7 +3,7 @@ components:
     ResourceTypeDescription:
       description: Description of a resource type, this is useful for dynamically generated clients and the gui
       type: object
-      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederationWithPolicies]
+      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation]
       properties:
         name:
           description: the name of the resource type
@@ -20,7 +20,7 @@ components:
           type: string
         pluralDisplayName:
           type: string
-        includeInFederationWithPolicies:
+        includeInFederation:
           description: description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
           type: boolean
         policy:

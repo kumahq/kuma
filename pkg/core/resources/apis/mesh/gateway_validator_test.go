@@ -291,11 +291,14 @@ conf:
       name: https
 `),
 
-		ErrorCase("has an invalid hostname",
-			validators.Violation{
+		ErrorCases("has an invalid hostname",
+			[]validators.Violation{{
 				Field:   "conf.listeners[0].hostname",
 				Message: "invalid hostname",
-			}, `
+			}, {
+				Field:   "conf.listeners[1].hostname",
+				Message: "must be at most 253 characters",
+			}}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -309,6 +312,11 @@ conf:
   - hostname: "foo.example$.com"
     protocol: HTTP
     port: 99
+    tags:
+      name: https
+  - hostname: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.com"
+    protocol: HTTP
+    port: 100
     tags:
       name: https
 `),

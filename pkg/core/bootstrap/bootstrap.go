@@ -138,7 +138,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if cfg.Mode == config_core.Global {
 		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
 			builder.KDSContext().EnvoyAdminRPCs,
-			cfg.Store.Type == store.KubernetesStore,
+			builder.ReadOnlyResourceManager(),
 		)
 		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
 			builder.ReadOnlyResourceManager(),
@@ -313,7 +313,7 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithSecretStore(ss)
+		builder.WithSecretStore(core_store.NewPaginationStore(ss))
 		return nil
 	}
 }

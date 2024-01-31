@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -182,8 +183,13 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 // from names of resources if resources are stored in kubernetes.
 func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		util.TrimSuffixFromName(r, k8sSystemNamespace)
-		return r, nil
+		newObj := r.Descriptor().NewObject()
+		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
+		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
+		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(newName))
+		newObj.SetMeta(newMeta)
+		_ = newObj.SetSpec(r.GetSpec())
+		return newObj, nil
 	}
 }
 

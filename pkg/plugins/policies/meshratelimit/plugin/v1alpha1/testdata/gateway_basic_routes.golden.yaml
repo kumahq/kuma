@@ -1,5 +1,5 @@
 ignorePortInHostMatching: true
-name: sample-gateway:HTTP:8080
+name: sample-gateway:HTTP:8080:*
 requestHeadersToRemove:
 - x-kuma-tags
 validateClusters: false

@@ -27,6 +27,10 @@ usage.
 With `MeshFaultInjection` and `MeshRateLimit`, `spec.to` with `kind:
 MeshGateway` is now required instead of `spec.from` and `kind: MeshService`.
 
+### `MeshGateway`
+
+A new maximum length of 253 characters for listener hostnames has been introduced in order to ensure they are valid DNS names.
+
 ### Unifying Default Connection Timeout Values
 
 To simplify configuration and provide a more consistent user experience, we've unified the default connection timeout values. When no `MeshTimeout` or `Timeout` policy is specified, the connection timeout will now be the same as the default `connectTimeout` values for `MeshTimeout` and `Timeout` policies. This value is now `5s`, which is a decrease from the previous default of `10s`.

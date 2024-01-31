@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/OnboardingWelcomeView-66a89b1d.js
+import{K as v}from"./index-fce48c05.js";import{d as b,a as c,o as r,b as d,w as n,e as a,f as e,m as t,t as l,c as m,F as y,C as V,l as u,D as N,p as O,s as x,v as C,_ as I}from"./index-671fe4fd.js";import{O as k,a as R,b as A}from"./OnboardingPage-51aaae61.js";const _=s=>(x("data-v-6d3e602f"),s=s(),C(),s),S=_(()=>t("strong",null,"few minutes",-1)),W={"data-testid":"kuma-environment"},z=_(()=>t("h2",{class:"text-center"},`
+========
 import{K as v}from"./index-fce48c05.js";import{d as b,a as c,o as r,b as d,w as n,e as a,f as e,m as t,t as l,c as m,F as y,D as V,l as u,E as x,p as N,x as O,y as I,_ as C}from"./index-4198b723.js";import{O as k,a as R,b as A}from"./OnboardingPage-1cede428.js";const _=s=>(O("data-v-6d3e602f"),s=s(),I(),s),E=_(()=>t("strong",null,"few minutes",-1)),S={"data-testid":"kuma-environment"},W=_(()=>t("h2",{class:"text-center"},`
+>>>>>>>> upstream/master:app/kuma-ui/pkg/resources/data/assets/OnboardingWelcomeView-d1c220fd.js
               Let’s get started:
             `,-1)),z={class:"item-status-list-wrapper"},B={class:"item-status-list"},L={class:"circle mr-2"},T=b({__name:"OnboardingWelcomeView",setup(s){return(K,D)=>{const p=c("RouteTitle"),g=c("AppView"),f=c("RouteView");return r(),d(f,{name:"onboarding-welcome-view"},{default:n(({env:h,t:o,can:w})=>[a(p,{title:o("onboarding.routes.welcome.title",{name:o("common.product.name")}),render:!1},null,8,["title"]),e(),a(g,null,{default:n(()=>[t("div",null,[a(k,null,{header:n(()=>[a(R,null,{title:n(()=>[e(`
                 Welcome to `+l(o("common.product.name")),1)]),description:n(()=>[t("p",null,[e(`

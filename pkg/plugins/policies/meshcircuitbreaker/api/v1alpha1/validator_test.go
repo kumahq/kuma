@@ -446,6 +446,24 @@ to:
       name: web-backend
     default:
       outlierDetection:
+        maxEjectionPercent: 100
+        detectors: {}`,
+				expected: `
+violations:
+  - field: spec.to[0].default.outlierDetection.detectors
+    message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`,
+			}),
+			Entry("detector has incorrect values", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      outlierDetection:
         detectors:
           successRate:
             standardDeviationFactor: "xyz"`,

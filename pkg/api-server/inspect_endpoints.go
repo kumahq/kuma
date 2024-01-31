@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -208,12 +209,14 @@ func inspectGatewayRouteDataplanes(
 				return
 			}
 			for _, listener := range gateway.ExtractGatewayListeners(proxy) {
-				for _, host := range listener.HostInfos {
-					for _, entry := range host.Entries() {
-						if entry.Route != gatewayRoute.GetMeta().GetName() {
-							continue
+				for _, listenerHostname := range listener.ListenerHostnames {
+					for _, host := range listenerHostname.HostInfos {
+						for _, entry := range host.Entries() {
+							if entry.Route != gatewayRoute.GetMeta().GetName() {
+								continue
+							}
+							dataplanes[key] = struct{}{}
 						}
-						dataplanes[key] = struct{}{}
 					}
 				}
 			}
@@ -350,11 +353,13 @@ func newGatewayDataplaneInspectResponse(
 ) api_server_types.GatewayDataplaneInspectResult {
 	result := api_server_types.NewGatewayDataplaneInspectResult()
 	gwListeners := gateway.ExtractGatewayListeners(proxy)
-	if len(gwListeners) > 0 {
+	for _, port := range maps.SortedKeys(gwListeners) {
+		meta := gwListeners[port].Gateway.GetMeta()
 		result.Gateway = api_server_types.ResourceKeyEntry{
-			Mesh: gwListeners[0].Gateway.GetMeta().GetMesh(),
-			Name: gwListeners[0].Gateway.GetMeta().GetName(),
+			Mesh: meta.GetMesh(),
+			Name: meta.GetName(),
 		}
+		break
 	}
 
 	for _, info := range gwListeners {
@@ -363,38 +368,40 @@ func newGatewayDataplaneInspectResponse(
 			Protocol: info.Listener.Protocol.String(),
 			Hosts:    []api_server_types.HostInspectEntry{},
 		}
-		for _, info := range info.HostInfos {
-			hostInspectEntry := api_server_types.HostInspectEntry{
-				HostName: info.Host.Hostname,
-				Routes:   []api_server_types.RouteInspectEntry{},
-			}
-			routeMap := map[string][]api_server_types.Destination{}
-			for _, entry := range info.Entries() {
-				destinations := routeMap[entry.Route]
+		for _, listenerHostname := range info.ListenerHostnames {
+			for _, info := range listenerHostname.HostInfos {
+				hostInspectEntry := api_server_types.HostInspectEntry{
+					HostName: info.Host.Hostname,
+					Routes:   []api_server_types.RouteInspectEntry{},
+				}
+				routeMap := map[string][]api_server_types.Destination{}
+				for _, entry := range info.Entries() {
+					destinations := routeMap[entry.Route]
 
-				if entry.Mirror != nil {
-					destinations = append(destinations, routeDestinationToAPIDestination(entry.Mirror.Forward))
-				}
+					if entry.Mirror != nil {
+						destinations = append(destinations, routeDestinationToAPIDestination(entry.Mirror.Forward))
+					}
 
-				for _, forward := range entry.Action.Forward {
-					routeMap[entry.Route] = append(destinations, routeDestinationToAPIDestination(forward))
+					for _, forward := range entry.Action.Forward {
+						routeMap[entry.Route] = append(destinations, routeDestinationToAPIDestination(forward))
+					}
 				}
-			}
-			for name, destinations := range routeMap {
-				if len(destinations) > 0 {
-					sort.SliceStable(destinations, func(i, j int) bool {
-						return destinations[i].Tags.String() < destinations[j].Tags.String()
-					})
-					hostInspectEntry.Routes = append(hostInspectEntry.Routes, api_server_types.RouteInspectEntry{
-						Route:        name,
-						Destinations: destinations,
-					})
+				for name, destinations := range routeMap {
+					if len(destinations) > 0 {
+						sort.SliceStable(destinations, func(i, j int) bool {
+							return destinations[i].Tags.String() < destinations[j].Tags.String()
+						})
+						hostInspectEntry.Routes = append(hostInspectEntry.Routes, api_server_types.RouteInspectEntry{
+							Route:        name,
+							Destinations: destinations,
+						})
+					}
 				}
+				sort.SliceStable(hostInspectEntry.Routes, func(i, j int) bool {
+					return hostInspectEntry.Routes[i].Route < hostInspectEntry.Routes[j].Route
+				})
+				listener.Hosts = append(listener.Hosts, hostInspectEntry)
 			}
-			sort.SliceStable(hostInspectEntry.Routes, func(i, j int) bool {
-				return hostInspectEntry.Routes[i].Route < hostInspectEntry.Routes[j].Route
-			})
-			listener.Hosts = append(listener.Hosts, hostInspectEntry)
 		}
 		sort.SliceStable(listener.Hosts, func(i, j int) bool {
 			return listener.Hosts[i].HostName < listener.Hosts[j].HostName
@@ -450,38 +457,42 @@ func gatewayEntriesByPolicy(
 		Name: dpKey.Name,
 	}
 
+	var gatewayKey api_server_types.ResourceKeyEntry
 	listenersMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
-	for _, info := range gwListeners {
+	for _, port := range maps.SortedKeys(gwListeners) {
+		info := gwListeners[port]
 		hostMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
-		for _, info := range info.HostInfos {
-			routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
-			for _, entry := range info.Entries() {
-				entryMap := map[inspect.PolicyKey][]tags.Tags{}
-				if entry.Mirror != nil {
-					entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)
+		for _, listenerHostname := range info.ListenerHostnames {
+			for _, info := range listenerHostname.HostInfos {
+				routeMap := map[inspect.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
+				for _, entry := range info.Entries() {
+					entryMap := map[inspect.PolicyKey][]tags.Tags{}
+					if entry.Mirror != nil {
+						entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)
+					}
+
+					for _, forward := range entry.Action.Forward {
+						entryMap = routeToPolicyInspect(entryMap, forward)
+					}
+
+					for policy, destinations := range entryMap {
+						routeMap[policy] = append(
+							routeMap[policy],
+							api_server_types.PolicyInspectGatewayRouteEntry{
+								Route:        entry.Route,
+								Destinations: destinations,
+							})
+					}
 				}
 
-				for _, forward := range entry.Action.Forward {
-					entryMap = routeToPolicyInspect(entryMap, forward)
-				}
-
-				for policy, destinations := range entryMap {
-					routeMap[policy] = append(
-						routeMap[policy],
-						api_server_types.PolicyInspectGatewayRouteEntry{
-							Route:        entry.Route,
-							Destinations: destinations,
+				for policy, routes := range routeMap {
+					hostMap[policy] = append(
+						hostMap[policy],
+						api_server_types.PolicyInspectGatewayHostEntry{
+							HostName: info.Host.Hostname,
+							Routes:   routes,
 						})
 				}
-			}
-
-			for policy, routes := range routeMap {
-				hostMap[policy] = append(
-					hostMap[policy],
-					api_server_types.PolicyInspectGatewayHostEntry{
-						HostName: info.Host.Hostname,
-						Routes:   routes,
-					})
 			}
 		}
 
@@ -495,12 +506,10 @@ func gatewayEntriesByPolicy(
 				},
 			)
 		}
+		// This should be identical between all listeners
+		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(info.Gateway.GetMeta()))
 	}
 
-	var gatewayKey api_server_types.ResourceKeyEntry
-	if len(gwListeners) > 0 {
-		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(gwListeners[0].Gateway.GetMeta()))
-	}
 	for policy, listeners := range listenersMap {
 		result := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
 

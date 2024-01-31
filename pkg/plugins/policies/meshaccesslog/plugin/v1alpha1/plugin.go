@@ -191,7 +191,7 @@ func applyToGateway(
 			continue
 		}
 
-		if toListenerRules, ok := rules.ToRules[listenerKey]; ok {
+		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
 			if err := configureOutbound(
 				toListenerRules,
 				proxy.Dataplane,
