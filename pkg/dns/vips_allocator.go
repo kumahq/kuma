@@ -336,7 +336,14 @@ func (d *VIPsAllocator) fetchMeshGatewaysByMesh(ctx context.Context) (map[string
 	return out, nil
 }
 
-func (d *VIPsAllocator) buildVirtualOutboundMeshView(mesh string, virtualOutbounds []*core_mesh.VirtualOutboundResource, dataplanes []*core_mesh.DataplaneResource, zoneIngresses []*core_mesh.ZoneIngressResource, externalServices []*core_mesh.ExternalServiceResource, meshGatewaysByMesh map[string][]*core_mesh.MeshGatewayResource) (*vips.VirtualOutboundMeshView, error) {
+func (d *VIPsAllocator) buildVirtualOutboundMeshView(
+	mesh string,
+	virtualOutbounds []*core_mesh.VirtualOutboundResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	meshGatewaysByMesh map[string][]*core_mesh.MeshGatewayResource,
+) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 
 	var errs error
