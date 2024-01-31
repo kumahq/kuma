@@ -17,6 +17,8 @@ env:
   GH_OWNER: ${{ github.repository_owner }}
   KUMA_DIR: "."
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -159,8 +161,6 @@ jobs:
         id: package-helm
         env:
           HELM_DEV: ${{ !startsWith(github.event.ref, 'refs/tags/') }}
-          GH_USER: "github-actions[bot]"
-          GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
         run: |
           make helm/update-version
 
@@ -195,8 +195,6 @@ jobs:
         env:
           GITHUB_APP: "true"
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
-          GH_USER: "github-actions[bot]"
-          GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
         run: make helm/release
   gen_e2e_matrix:
     runs-on: ubuntu-latest
