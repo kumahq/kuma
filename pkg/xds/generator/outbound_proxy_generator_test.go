@@ -50,6 +50,26 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		},
 	}
 
+	defaultTrafficRoute := &core_mesh.TrafficRouteResourceList{
+		Items: []*core_mesh.TrafficRouteResource{{
+			Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
+			Spec: &mesh_proto.TrafficRoute{
+				Sources: []*mesh_proto.Selector{{
+					Match: mesh_proto.MatchAnyService(),
+				}},
+				Destinations: []*mesh_proto.Selector{{
+					Match: mesh_proto.MatchAnyService(),
+				}},
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					Destination: mesh_proto.MatchAnyService(),
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+					},
+				},
+			},
+		}},
+	}
+
 	timeout := &mesh_proto.Timeout{
 		Conf: &mesh_proto.Timeout_Conf{
 			ConnectTimeout: util_proto.Duration(100 * time.Second),
@@ -76,6 +96,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Logging: logging,
 				},
 			},
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
 		},
 	}
 
@@ -84,6 +109,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
 			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
@@ -107,6 +137,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
 			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
@@ -157,6 +192,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			Resources: xds_context.Resources{
 				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
 					core_mesh.MeshType: &core_mesh.MeshResourceList{
 						Items: []*core_mesh.MeshResource{{
 							Spec: &mesh_proto.Mesh{
@@ -345,9 +381,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 			meshes := []string{given.ctx.Mesh.Resource.Meta.GetName()}
 			if given.ctx.Mesh.Resources.MeshLocalResources != nil {
-				meshResources := given.ctx.Mesh.Resources.MeshLocalResources[core_mesh.MeshType]
-				for _, mesh := range meshResources.GetItems() {
-					meshes = append(meshes, mesh.GetMeta().GetName())
+				if meshResources, ok := given.ctx.Mesh.Resources.MeshLocalResources[core_mesh.MeshType]; ok {
+					for _, mesh := range meshResources.GetItems() {
+						meshes = append(meshes, mesh.GetMeta().GetName())
+					}
 				}
 			}
 
