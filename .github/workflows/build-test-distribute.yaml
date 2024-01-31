@@ -182,7 +182,7 @@ jobs:
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       # Everything from here is only running on releases.
-      # Ideally we'd finish the workflow early but this isn't possible: https://github.com/actions/runner/issues/662
+      # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
@@ -195,6 +195,8 @@ jobs:
         env:
           GITHUB_APP: "true"
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
+          GH_USER: "github-actions[bot]"
+          GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
         run: make helm/release
   gen_e2e_matrix:
     runs-on: ubuntu-latest
