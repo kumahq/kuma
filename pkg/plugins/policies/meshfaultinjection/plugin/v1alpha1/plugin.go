@@ -47,7 +47,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	policies, ok := proxy.Policies.Dynamic[api.MeshFaultInjectionType]
+	policies, ok := proxy.PluginPolicies[api.MeshFaultInjectionType]
 	if !ok {
 		return nil
 	}
@@ -71,9 +71,6 @@ func applyToInbounds(
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
-		if _, exists := proxy.Policies.FaultInjections[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,

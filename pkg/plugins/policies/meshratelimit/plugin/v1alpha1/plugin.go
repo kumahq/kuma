@@ -45,7 +45,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	policies, ok := proxy.Policies.Dynamic[api.MeshRateLimitType]
+	policies, ok := proxy.PluginPolicies[api.MeshRateLimitType]
 	if !ok {
 		return nil
 	}
@@ -104,9 +104,6 @@ func applyToInbounds(
 ) error {
 	for _, inbound := range proxy.Dataplane.Spec.GetNetworking().GetInbound() {
 		iface := proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound)
-		if _, exists := proxy.Policies.RateLimitsInbound[iface]; exists {
-			continue
-		}
 
 		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,

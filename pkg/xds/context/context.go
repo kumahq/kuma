@@ -134,6 +134,10 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 	return tlsReady
 }
 
+func (mc *MeshContext) SkipLegacyPolicies() bool {
+	return len(mc.Resources.TrafficRoutes().GetItems()) == 0
+}
+
 // AggregatedMeshContexts is an aggregate of all MeshContext across all meshes
 type AggregatedMeshContexts struct {
 	Hash               string

@@ -31,7 +31,6 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -131,16 +130,6 @@ var _ = Describe("MeshHealthCheck", func() {
 						),
 				).
 				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
-				WithRouting(
-					xds_builders.Routing().
-						WithOutboundTargets(
-							xds_builders.EndpointMap().
-								AddEndpoint(httpServiceTag, xds_samples.HttpEndpointBuilder()).
-								AddEndpoint(splitHttpServiceTag, xds_samples.HttpEndpointBuilder()).
-								AddEndpoint(grpcServiceTag, xds_samples.GrpcEndpointBuilder()).
-								AddEndpoint(tcpServiceTag, xds_samples.TcpEndpointBuilder()),
-						),
-				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 

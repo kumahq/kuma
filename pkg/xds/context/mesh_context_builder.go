@@ -237,7 +237,33 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 	rmap[core_mesh.MeshType] = mesh.Descriptor().NewList()
 	_ = rmap[core_mesh.MeshType].AddItem(mesh)
 	rmap[core_mesh.MeshType].GetPagination().SetTotal(1)
+	skipPolicies := map[core_model.ResourceType]struct{}{}
+	if _, ok := m.typeSet[core_mesh.TrafficRouteType]; ok { // If there's no trafficRoute old policies have no effect so don't fetch them
+		trafficRoute, err := m.fetchResourceList(ctx, core_mesh.TrafficRouteType, mesh, nil)
+		if len(trafficRoute.GetItems()) == 0 {
+			skipPolicies = map[core_model.ResourceType]struct{}{ // We're no longer adding old policies so this static list is ok
+				core_mesh.TrafficRouteType:      {},
+				core_mesh.CircuitBreakerType:    {},
+				core_mesh.FaultInjectionType:    {},
+				core_mesh.HealthCheckType:       {},
+				core_mesh.RateLimitType:         {},
+				core_mesh.RetryType:             {},
+				core_mesh.TimeoutType:           {},
+				core_mesh.TrafficLogType:        {},
+				core_mesh.TrafficTraceType:      {},
+				core_mesh.TrafficPermissionType: {},
+				core_mesh.VirtualOutboundType:   {},
+				core_mesh.ProxyTemplateType:     {},
+			}
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to retrieve trafficRoutes")
+		}
+	}
 	for t := range m.typeSet {
+		if _, ok := skipPolicies[t]; ok {
+			continue
+		}
 		desc, err := registry.Global().DescriptorFor(t)
 		if err != nil {
 			return nil, err

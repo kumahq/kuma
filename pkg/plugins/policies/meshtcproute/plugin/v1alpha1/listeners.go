@@ -28,7 +28,7 @@ func generateListeners(
 	// the same.
 	clusterCache := map[common_api.TargetRefHash]string{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
-	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
+	toRulesHTTP := proxy.PluginPolicies[meshhttproute_api.MeshHTTPRouteType].
 		ToRules.Rules
 
 	for _, outbound := range networking.GetOutbound() {

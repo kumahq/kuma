@@ -115,7 +115,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		var result api_server_types.DataplaneInspectResponse
 		if !proxy.Dataplane.Spec.IsBuiltinGateway() {
 			inner := api_server_types.NewDataplaneInspectEntryList()
-			inner.Items = append(inner.Items, newDataplaneInspectResponse(&proxy.Policies, proxy.Dataplane)...)
+			inner.Items = append(inner.Items, newDataplaneInspectResponse(proxy.PluginPolicies, &proxy.Policies, proxy.Dataplane)...)
 			inner.Total = uint32(len(inner.Items))
 			result = api_server_types.NewDataplaneInspectResponse(inner)
 		} else {
@@ -277,7 +277,7 @@ func inspectPolicies(
 					}
 				}
 			} else {
-				for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
+				for policy, attachments := range inspect.GroupByPolicy(proxy.PluginPolicies, &proxy.Policies, dp.Spec.Networking) {
 					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
 						attachmentList := []api_server_types.AttachmentEntry{}
 						for _, attachment := range attachments {
@@ -316,8 +316,8 @@ func routeDestinationToAPIDestination(des route.Destination) api_server_types.De
 	}
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := inspect.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+func newDataplaneInspectResponse(policyPlugins core_xds.PluginOriginatedPolicies, matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
+	attachmentMap := inspect.GroupByAttachment(policyPlugins, matchedPolicies, dp.Spec.Networking)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []inspect.Attachment{}
@@ -568,7 +568,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
 			return
 		}
-		rulesAttachments := inspect.BuildRulesAttachments(proxy.Policies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
+		rulesAttachments := inspect.BuildRulesAttachments(proxy.PluginPolicies, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
 		resp := api_server_types.RuleInspectResponse{
 			Items: []api_server_types.RuleInspectEntry{},
 		}

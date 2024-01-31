@@ -1,6 +1,6 @@
 {
  "kind": "SidecarDataplane",
- "total": 7,
+ "total": 10,
  "items": [
   {
    "type": "dataplane",
@@ -58,6 +58,63 @@
       "type": "Timeout",
       "mesh": "default",
       "name": "t-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
+     }
+    ],
+    "TrafficRoute": [
+     {
+      "type": "TrafficRoute",
+      "mesh": "default",
+      "name": "tr-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
+     }
+    ]
+   }
+  },
+  {
+   "type": "outbound",
+   "name": "127.0.0.1:10002",
+   "service": "elastic",
+   "matchedPolicies": {
+    "TrafficRoute": [
+     {
+      "type": "TrafficRoute",
+      "mesh": "default",
+      "name": "tr-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
+     }
+    ]
+   }
+  },
+  {
+   "type": "outbound",
+   "name": "127.0.0.1:10003",
+   "service": "postgres",
+   "matchedPolicies": {
+    "TrafficRoute": [
+     {
+      "type": "TrafficRoute",
+      "mesh": "default",
+      "name": "tr-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
+     }
+    ]
+   }
+  },
+  {
+   "type": "outbound",
+   "name": "127.0.0.1:10004",
+   "service": "web",
+   "matchedPolicies": {
+    "TrafficRoute": [
+     {
+      "type": "TrafficRoute",
+      "mesh": "default",
+      "name": "tr-1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
      }

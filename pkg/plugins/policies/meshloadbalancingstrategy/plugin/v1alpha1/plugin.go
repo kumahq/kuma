@@ -49,7 +49,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return p.configureEgress(rs, proxy)
 	}
 
-	policies, ok := proxy.Policies.Dynamic[api.MeshLoadBalancingStrategyType]
+	policies, ok := proxy.PluginPolicies[api.MeshLoadBalancingStrategyType]
 	if !ok {
 		return nil
 	}

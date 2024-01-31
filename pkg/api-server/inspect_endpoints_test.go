@@ -60,6 +60,22 @@ func serviceSelector(name, protocol string) *mesh_proto.Selector {
 	}
 }
 
+func defaultTrafficRoute(mesh string) *core_mesh.TrafficRouteResource {
+	return &core_mesh.TrafficRouteResource{
+		Meta: &test_model.ResourceMeta{Name: "tr-1", Mesh: mesh},
+		Spec: &mesh_proto.TrafficRoute{
+			Sources:      anyService(),
+			Destinations: anyService(),
+			Conf: &mesh_proto.TrafficRoute_Conf{
+				Destination: mesh_proto.MatchAnyService(),
+				LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+					LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+				},
+			},
+		},
+	}
+}
+
 var _ = Describe("Inspect WS", func() {
 	type testCase struct {
 		path        string
@@ -121,6 +137,7 @@ var _ = Describe("Inspect WS", func() {
 					WithHttpServices("backend").
 					AddOutboundsToServices("redis", "elastic", "postgres", "web").
 					Build(),
+				defaultTrafficRoute("default"),
 				&core_mesh.TrafficPermissionResource{
 					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 					Spec: &mesh_proto.TrafficPermission{
@@ -207,6 +224,7 @@ var _ = Describe("Inspect WS", func() {
 					WithName("gateway-1").
 					WithBuiltInGateway("elastic").
 					Build(),
+				defaultTrafficRoute("default"),
 				&core_mesh.TrafficLogResource{
 					Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "default"},
 					Spec: &mesh_proto.TrafficLog{
@@ -326,6 +344,7 @@ var _ = Describe("Inspect WS", func() {
 					WithServices("redis").
 					AddOutboundsToServices("backend", "elastic").
 					Build(),
+				defaultTrafficRoute("default"),
 				&core_mesh.MeshGatewayResource{
 					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
@@ -363,6 +382,7 @@ var _ = Describe("Inspect WS", func() {
 					WithServices("redis").
 					AddOutboundsToServices("backend", "elastic").
 					Build(),
+				defaultTrafficRoute("default"),
 				&core_mesh.MeshGatewayResource{
 					Meta: &test_model.ResourceMeta{Name: "elastic", Mesh: "default"},
 					Spec: &mesh_proto.MeshGateway{
@@ -418,6 +438,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-permission.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().Build(),
+				defaultTrafficRoute("default"),
 				&core_mesh.TrafficPermissionResource{
 					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 					Spec: &mesh_proto.TrafficPermission{
@@ -453,6 +474,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_fault-injection.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.FaultInjectionResource{
 					Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.FaultInjection{
@@ -477,6 +499,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_rate-limit.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.RateLimitResource{
 					Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.RateLimit{
@@ -510,6 +533,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-log.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.TrafficLogResource{
 					Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.TrafficLog{
@@ -531,6 +555,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_health-check.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.HealthCheckResource{
 					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.HealthCheck{
@@ -552,6 +577,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_circuit-breaker.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.CircuitBreakerResource{
 					Meta: &test_model.ResourceMeta{Name: "cb-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.CircuitBreaker{
@@ -573,6 +599,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_retry.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.MeshGatewayResource{
 					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "mesh-1"},
 					Spec: &mesh_proto.MeshGateway{
@@ -657,6 +684,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_timeout.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.TimeoutResource{
 					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.Timeout{
@@ -696,6 +724,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.TrafficTraceResource{
 					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.TrafficTrace{
@@ -762,6 +791,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_proxytemplate.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.ProxyTemplateResource{
 					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.ProxyTemplate{
@@ -780,6 +810,7 @@ var _ = Describe("Inspect WS", func() {
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_traffic-trace_empty-response.json")),
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
+				defaultTrafficRoute("mesh-1"),
 				&core_mesh.TrafficTraceResource{
 					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.TrafficTrace{
@@ -977,6 +1008,7 @@ var _ = Describe("Inspect WS", func() {
 		// TrafficPermission that selects 2 DPPs
 		initState := []core_model.Resource{
 			builders.Mesh().Build(),
+			defaultTrafficRoute("default"),
 			&core_mesh.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 				Spec: &mesh_proto.TrafficPermission{

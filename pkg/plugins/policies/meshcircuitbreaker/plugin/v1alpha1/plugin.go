@@ -37,7 +37,7 @@ func (p plugin) Apply(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
-	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
+	policies, ok := proxy.PluginPolicies[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
 	}

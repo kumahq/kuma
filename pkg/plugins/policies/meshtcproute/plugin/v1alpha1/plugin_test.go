@@ -294,11 +294,6 @@ var _ = Describe("MeshTCPRoute", func() {
 							AddOutboundToService("other-backend").
 							AddOutboundToService("externalservice"),
 					).
-					WithRouting(
-						xds_builders.Routing().
-							WithOutboundTargets(outboundTargets).
-							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
-					).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -322,13 +317,6 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithPort(8006).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP))
-			externalServiceOutboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("externalservice", xds_builders.Endpoint().
-					WithTarget("192.168.0.7").
-					WithPort(8007).
-					WithWeight(1).
-					WithExternalService(&core_xds.ExternalService{}).
-					WithTags(mesh_proto.ServiceTag, "externalservice", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP2))
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
@@ -340,11 +328,6 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder()).
-					WithRouting(
-						xds_builders.Routing().
-							WithOutboundTargets(outboundTargets).
-							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
-					).
 					Build(),
 			}
 		}()),
@@ -391,7 +374,6 @@ var _ = Describe("MeshTCPRoute", func() {
 						samples.DataplaneWebBuilder().
 							AddOutboundToService("tcp-backend"),
 					).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
 			}
@@ -476,7 +458,6 @@ var _ = Describe("MeshTCPRoute", func() {
 							AddOutboundToService("tcp-backend").
 							AddOutboundToService("http-backend"),
 					).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -565,7 +546,6 @@ var _ = Describe("MeshTCPRoute", func() {
 							AddOutboundToService("tcp-backend").
 							AddOutboundToService("http-backend"),
 					).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, tcpRules).
@@ -622,10 +602,6 @@ var _ = Describe("MeshTCPRoute", func() {
 				proxy: xds_builders.Proxy().
 					WithDataplane(
 						samples.DataplaneWebBuilder(),
-					).
-					WithRouting(
-						xds_builders.Routing().
-							WithOutboundTargets(outboundTargets),
 					).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
@@ -737,7 +713,6 @@ var _ = Describe("MeshTCPRoute", func() {
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.GatewayDataplaneBuilder()).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshTCPRouteType, core_rules.GatewayRules{

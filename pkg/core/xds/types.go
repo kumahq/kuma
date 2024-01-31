@@ -136,12 +136,15 @@ const (
 // Proxy contains required data for generating XDS config that is specific to a data plane proxy.
 // The data that is specific for the whole mesh should go into MeshContext.
 type Proxy struct {
-	Id                  ProxyId
-	APIVersion          APIVersion
-	Dataplane           *core_mesh.DataplaneResource
-	Metadata            *DataplaneMetadata
-	Routing             Routing
+	Id         ProxyId
+	APIVersion APIVersion
+	Dataplane  *core_mesh.DataplaneResource
+	Metadata   *DataplaneMetadata
+	// Deprecated
+	Routing Routing
+	// Deprecated
 	Policies            MatchedPolicies
+	PluginPolicies      PluginOriginatedPolicies
 	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
 	// SecretsTracker allows us to track when a generator references a secret so

@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -143,7 +142,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						}),
 					).
 					Build(),
-				Policies: *xds_builders.MatchedPolicies().
+				PluginPolicies: xds_builders.MatchedPolicies().
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
@@ -197,7 +196,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						},
 					}).
 					Build(),
-				Routing: *paymentsAndBackendRouting().Build(),
 			},
 		}),
 		Entry("egress", testCase{
@@ -443,7 +441,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								mesh_proto.ProtocolTag: "http",
 							}),
 						)).
-				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -626,7 +623,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					)).
-				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -811,7 +807,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					)).
-				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -942,7 +937,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					)).
-				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
@@ -1125,7 +1119,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							mesh_proto.ProtocolTag: "http",
 						}),
 					)).
-				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
@@ -1442,16 +1435,6 @@ func createEndpointBuilderWith(zone string, ip string, extraTags map[string]stri
 		WithTags(mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, mesh_proto.ZoneTag, zone).
 		AddTagsMap(extraTags).
 		WithZone(zone)
-}
-
-// TODO move to routing builder
-func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
-	return xds_builders.Routing().
-		WithOutboundTargets(
-			xds_builders.EndpointMap().
-				AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
-				AddEndpoint("payment", xds_samples.HttpEndpointBuilder()),
-		)
 }
 
 func paymentsListener() envoy_common.NamedResource {

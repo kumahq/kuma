@@ -43,13 +43,14 @@ var (
 var _ = Describe("GroupByAttachment", func() {
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
+		policyPlugins   core_xds.PluginOriginatedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        inspect.AttachmentMap
 	}
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := inspect.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByAttachment(given.policyPlugins, given.matchedPolicies, given.dpNetworking)
 			for k := range actual {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("attachement %+v", k))
 			}
@@ -76,19 +77,19 @@ var _ = Describe("GroupByAttachment", func() {
 						{Meta: meta3},
 					},
 				},
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.CircuitBreakerType: {
-						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
-							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.CircuitBreakerResource{Meta: meta4},
-							},
+			},
+			policyPlugins: core_xds.PluginOriginatedPolicies{
+				core_mesh.CircuitBreakerType: {
+					InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+						inbound("192.168.0.2", 90, 91): {
+							&core_mesh.CircuitBreakerResource{Meta: meta4},
 						},
 					},
-					core_mesh.RateLimitType: {
-						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
-							inbound("192.168.0.2", 90, 91): {
-								&core_mesh.RateLimitResource{Meta: meta5},
-							},
+				},
+				core_mesh.RateLimitType: {
+					InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+						inbound("192.168.0.2", 90, 91): {
+							&core_mesh.RateLimitResource{Meta: meta5},
 						},
 					},
 				},
@@ -212,19 +213,19 @@ var _ = Describe("GroupByAttachment", func() {
 					outbound("192.168.0.2", 90): {Meta: meta3},
 					outbound("192.168.0.4", 90): {Meta: meta5},
 				},
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.CircuitBreakerType: {
-						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
-							outbound("192.168.0.4", 90): {
-								&core_mesh.CircuitBreakerResource{Meta: meta6},
-							},
+			},
+			policyPlugins: core_xds.PluginOriginatedPolicies{
+				core_mesh.CircuitBreakerType: {
+					OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+						outbound("192.168.0.4", 90): {
+							&core_mesh.CircuitBreakerResource{Meta: meta6},
 						},
 					},
-					core_mesh.RateLimitType: {
-						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
-							outbound("192.168.0.4", 90): {
-								&core_mesh.RateLimitResource{Meta: meta6},
-							},
+				},
+				core_mesh.RateLimitType: {
+					OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+						outbound("192.168.0.4", 90): {
+							&core_mesh.RateLimitResource{Meta: meta6},
 						},
 					},
 				},
@@ -301,12 +302,12 @@ var _ = Describe("GroupByAttachment", func() {
 				Retries: core_xds.RetryMap{
 					"backend": &core_mesh.RetryResource{Meta: meta1},
 				},
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.TrafficLogType: {
-						ServicePolicies: map[core_xds.ServiceName][]core_model.Resource{
-							"redis": {
-								&core_mesh.TrafficLogResource{Meta: meta6},
-							},
+			},
+			policyPlugins: core_xds.PluginOriginatedPolicies{
+				core_mesh.TrafficLogType: {
+					ServicePolicies: map[core_xds.ServiceName][]core_model.Resource{
+						"redis": {
+							&core_mesh.TrafficLogResource{Meta: meta6},
 						},
 					},
 				},
@@ -353,11 +354,11 @@ var _ = Describe("GroupByAttachment", func() {
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficTrace:  &core_mesh.TrafficTraceResource{Meta: meta1},
 				ProxyTemplate: &core_mesh.ProxyTemplateResource{Meta: meta2},
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.TrafficTraceType: {
-						DataplanePolicies: []core_model.Resource{
-							&core_mesh.TrafficTraceResource{Meta: meta3},
-						},
+			},
+			policyPlugins: core_xds.PluginOriginatedPolicies{
+				core_mesh.TrafficTraceType: {
+					DataplanePolicies: []core_model.Resource{
+						&core_mesh.TrafficTraceResource{Meta: meta3},
 					},
 				},
 			},
@@ -378,6 +379,7 @@ var _ = Describe("GroupByAttachment", func() {
 
 var _ = Describe("GroupByPolicy", func() {
 	type testCase struct {
+		policyPlugins   core_xds.PluginOriginatedPolicies
 		matchedPolicies *core_xds.MatchedPolicies
 		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        inspect.AttachmentsByPolicy
@@ -385,7 +387,7 @@ var _ = Describe("GroupByPolicy", func() {
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := inspect.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
+			actual := inspect.GroupByPolicy(given.policyPlugins, given.matchedPolicies, given.dpNetworking)
 			for k := range given.expected {
 				Expect(actual[k]).To(Equal(given.expected[k]), fmt.Sprintf("policy %+v", k))
 			}
@@ -705,20 +707,20 @@ var _ = Describe("GroupByPolicy", func() {
 						},
 					},
 				},
-				Dynamic: map[core_model.ResourceType]core_xds.TypedMatchingPolicies{
-					core_mesh.RateLimitType: {
-						InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
-							inbound("192.168.0.1", 80, 81): {
-								&core_mesh.RateLimitResource{
-									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
-								},
+			},
+			policyPlugins: core_xds.PluginOriginatedPolicies{
+				core_mesh.RateLimitType: {
+					InboundPolicies: map[mesh_proto.InboundInterface][]core_model.Resource{
+						inbound("192.168.0.1", 80, 81): {
+							&core_mesh.RateLimitResource{
+								Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 							},
 						},
-						OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
-							outbound("192.168.0.3", 80): {
-								&core_mesh.RateLimitResource{
-									Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
-								},
+					},
+					OutboundPolicies: map[mesh_proto.OutboundInterface][]core_model.Resource{
+						outbound("192.168.0.3", 80): {
+							&core_mesh.RateLimitResource{
+								Meta: &test_model.ResourceMeta{Name: "rl-3", Mesh: "mesh-1"},
 							},
 						},
 					},

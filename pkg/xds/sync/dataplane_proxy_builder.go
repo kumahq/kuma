@@ -34,16 +34,33 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
+	p.resolveVIPOutbounds(meshContext, dp)
 
-	routing, destinations := p.resolveRouting(ctx, meshContext, dp)
+	matchedPolicies := core_xds.MatchedPolicies{}
+	routing := core_xds.Routing{}
+	if !meshContext.SkipLegacyPolicies() {
+		var destinations core_xds.DestinationMap
+		routing, destinations = p.resolveRouting(ctx, meshContext, dp)
 
-	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not match policies")
+		var err error
+		matchedPolicies, err = p.matchPolicies(meshContext, dp, destinations)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not match policies")
+		}
+		matchedPolicies.TrafficRoutes = routing.TrafficRoutes
 	}
 
-	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
-
+	pluginPolicies := core_xds.PluginOriginatedPolicies{}
+	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+		res, err := p.Plugin.MatchedPolicies(dp, meshContext.Resources)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)
+		}
+		if res.Type == "" {
+			return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", p.Name)
+		}
+		pluginPolicies[res.Type] = res
+	}
 	meshName := meshContext.Resource.GetMeta().GetName()
 
 	allMeshNames := []string{meshName}
@@ -57,8 +74,9 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Id:                core_xds.FromResourceKey(key),
 		APIVersion:        p.APIVersion,
 		Dataplane:         dp,
-		Routing:           *routing,
-		Policies:          *matchedPolicies,
+		Routing:           routing,
+		Policies:          matchedPolicies,
+		PluginPolicies:    pluginPolicies,
 		SecretsTracker:    secretsTracker,
 		Metadata:          &core_xds.DataplaneMetadata{},
 		Zone:              p.Zone,
@@ -77,10 +95,8 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
-) (*core_xds.Routing, core_xds.DestinationMap) {
+) (core_xds.Routing, core_xds.DestinationMap) {
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
-
-	p.resolveVIPOutbounds(meshContext, dataplane)
 
 	// pick a single the most specific route for each outbound interface
 	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
@@ -95,7 +111,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
-	routing := &core_xds.Routing{
+	routing := core_xds.Routing{
 		TrafficRoutes:                  routes,
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
@@ -149,16 +165,16 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dataplane.Spec.Networking.Outbound = outbounds
 }
 
-func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors core_xds.DestinationMap) (*core_xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors core_xds.DestinationMap) (core_xds.MatchedPolicies, error) {
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+		return core_xds.MatchedPolicies{}, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 
 	resources := meshContext.Resources
 	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, resources.RateLimits().Items)
-	matchedPolicies := &core_xds.MatchedPolicies{
+	return core_xds.MatchedPolicies{
 		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
 		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
 		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, resources.HealthChecks().Items),
@@ -170,17 +186,5 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
-		Dynamic:            core_xds.PluginOriginatedPolicies{},
-	}
-	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
-		res, err := p.Plugin.MatchedPolicies(dataplane, resources)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)
-		}
-		if res.Type == "" {
-			return nil, errors.Wrapf(err, "matched policy didn't set type for policy plugin %s", p.Name)
-		}
-		matchedPolicies.Dynamic[res.Type] = res
-	}
-	return matchedPolicies, nil
+	}, nil
 }

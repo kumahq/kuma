@@ -65,14 +65,6 @@ var _ = Describe("MeshRetry", func() {
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("http-service", "grpc-service", "tcp-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithRouting(
-				xds_builders.Routing().
-					WithOutboundTargets(xds_builders.EndpointMap().
-						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
-						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
-						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
-					),
-			).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 

@@ -54,7 +54,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	// These policies have already been merged using the custom `GetDefault`
 	// method and therefore are of the
 	// `ToRouteRule` type, where rules have been appended together.
-	policies := proxy.Policies.Dynamic[api.MeshHTTPRouteType]
+	policies := proxy.PluginPolicies[api.MeshHTTPRouteType]
 
 	// Only fallback if we have TrafficRoutes & No MeshHTTPRoutes
 	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) != 0 && len(policies.ToRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {

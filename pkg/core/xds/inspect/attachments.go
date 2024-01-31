@@ -68,7 +68,7 @@ func (a AttachmentList) Len() int           { return len(a) }
 func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
 func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
+func BuildAttachments(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
 	attachments := Attachments{}
 
 	serviceByInbound := map[mesh_proto.InboundInterface]string{}
@@ -76,7 +76,7 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 		serviceByInbound[networking.ToInboundInterface(iface)] = iface.GetService()
 	}
 
-	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
+	for inbound, policies := range getInboundMatchedPolicies(policyPlugins, matchedPolicies) {
 		attachment := Attachment{
 			Type:    Inbound,
 			Name:    inbound.String(),
@@ -90,7 +90,7 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 		serviceByOutbound[networking.ToOutboundInterface(oface)] = oface.GetService()
 	}
 
-	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
+	for outbound, policies := range getOutboundMatchedPolicies(policyPlugins, matchedPolicies) {
 		attachment := Attachment{
 			Type:    Outbound,
 			Name:    outbound.String(),
@@ -99,7 +99,7 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 		attachments[attachment] = append(attachments[attachment], policies...)
 	}
 
-	for service, policies := range getServiceMatchedPolicies(matchedPolicies) {
+	for service, policies := range getServiceMatchedPolicies(policyPlugins, matchedPolicies) {
 		attachment := Attachment{
 			Type:    Service,
 			Name:    service,
@@ -108,15 +108,15 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 		attachments[attachment] = append(attachments[attachment], policies...)
 	}
 
-	attachments[Attachment{Type: Dataplane, Name: ""}] = getDataplaneMatchedPolicies(matchedPolicies)
+	attachments[Attachment{Type: Dataplane, Name: ""}] = getDataplaneMatchedPolicies(policyPlugins, matchedPolicies)
 
 	return attachments
 }
 
-func GroupByAttachment(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
+func GroupByAttachment(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
 	result := AttachmentMap{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+	for attachment, policies := range BuildAttachments(policyPlugins, matchedPolicies, networking) {
 		if len(policies) == 0 {
 			continue
 		}
@@ -132,10 +132,10 @@ func GroupByAttachment(matchedPolicies *xds.MatchedPolicies, networking *mesh_pr
 	return result
 }
 
-func GroupByPolicy(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
+func GroupByPolicy(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
 	result := AttachmentsByPolicy{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+	for attachment, policies := range BuildAttachments(policyPlugins, matchedPolicies, networking) {
 		for _, policy := range policies {
 			key := PolicyKey{
 				Type: policy.Descriptor().Name,
@@ -152,7 +152,7 @@ func GroupByPolicy(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.
 	return result
 }
 
-func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.InboundInterface][]core_model.Resource {
+func getInboundMatchedPolicies(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies) map[mesh_proto.InboundInterface][]core_model.Resource {
 	result := map[mesh_proto.InboundInterface][]core_model.Resource{}
 
 	for inbound, tp := range matchedPolicies.TrafficPermissions {
@@ -168,8 +168,8 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 			result[inbound] = append(result[inbound], rl)
 		}
 	}
-	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
-		for inbound, elts := range matchedPolicies.Dynamic[tpe].InboundPolicies {
+	for _, tpe := range policyPlugins.OrderedDynamicPolicies() {
+		for inbound, elts := range policyPlugins[tpe].InboundPolicies {
 			result[inbound] = append(result[inbound], elts...)
 		}
 	}
@@ -177,7 +177,7 @@ func getInboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_pr
 	return result
 }
 
-func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
+func getOutboundMatchedPolicies(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
 	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
 
 	for outbound, timeout := range matchedPolicies.Timeouts {
@@ -189,8 +189,8 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 	for outbound, tr := range matchedPolicies.TrafficRoutes {
 		result[outbound] = append(result[outbound], tr)
 	}
-	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
-		for outbound, elts := range matchedPolicies.Dynamic[tpe].OutboundPolicies {
+	for _, tpe := range policyPlugins.OrderedDynamicPolicies() {
+		for outbound, elts := range policyPlugins[tpe].OutboundPolicies {
 			result[outbound] = append(result[outbound], elts...)
 		}
 	}
@@ -198,7 +198,7 @@ func getOutboundMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[mesh_p
 	return result
 }
 
-func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
+func getServiceMatchedPolicies(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies) map[xds.ServiceName][]core_model.Resource {
 	result := map[xds.ServiceName][]core_model.Resource{}
 
 	for service, tl := range matchedPolicies.TrafficLogs {
@@ -213,8 +213,8 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 	for service, retry := range matchedPolicies.Retries {
 		result[service] = append(result[service], retry)
 	}
-	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
-		for serviceName, elts := range matchedPolicies.Dynamic[tpe].ServicePolicies {
+	for _, tpe := range policyPlugins.OrderedDynamicPolicies() {
+		for serviceName, elts := range policyPlugins[tpe].ServicePolicies {
 			result[serviceName] = append(result[serviceName], elts...)
 		}
 	}
@@ -222,7 +222,7 @@ func getServiceMatchedPolicies(matchedPolicies *xds.MatchedPolicies) map[xds.Ser
 	return result
 }
 
-func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
+func getDataplaneMatchedPolicies(policyPlugins xds.PluginOriginatedPolicies, matchedPolicies *xds.MatchedPolicies) []core_model.Resource {
 	var resources []core_model.Resource
 	if matchedPolicies.TrafficTrace != nil {
 		resources = append(resources, matchedPolicies.TrafficTrace)
@@ -230,8 +230,8 @@ func getDataplaneMatchedPolicies(matchedPolicies *xds.MatchedPolicies) []core_mo
 	if matchedPolicies.ProxyTemplate != nil {
 		resources = append(resources, matchedPolicies.ProxyTemplate)
 	}
-	for _, tpe := range matchedPolicies.OrderedDynamicPolicies() {
-		resources = append(resources, matchedPolicies.Dynamic[tpe].DataplanePolicies...)
+	for _, tpe := range policyPlugins.OrderedDynamicPolicies() {
+		resources = append(resources, policyPlugins[tpe].DataplanePolicies...)
 	}
 	return resources
 }

@@ -55,7 +55,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
+	mtp := proxy.PluginPolicies[api.MeshTrafficPermissionType]
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != generator.OriginInbound {
 			continue

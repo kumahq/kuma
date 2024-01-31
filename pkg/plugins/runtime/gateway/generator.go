@@ -220,12 +220,12 @@ func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx
 	for _, info := range ExtractGatewayListeners(proxy) {
 		switch info.Listener.Protocol {
 		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
-			httpRoute, ok := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType]
+			httpRoute, ok := proxy.PluginPolicies[meshhttproute_api.MeshHTTPRouteType]
 			if ok && len(httpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
 				continue
 			}
 		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
-			tcpRoute, ok := proxy.Policies.Dynamic[meshtcproute_api.MeshTCPRouteType]
+			tcpRoute, ok := proxy.PluginPolicies[meshtcproute_api.MeshTCPRouteType]
 			if ok && len(tcpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
 				continue
 			}

@@ -1,0 +1,15 @@
+type: CircuitBreaker
+mesh: mesh-1
+name: circuit-breaker-all-default
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  thresholds:
+    maxConnections: 1024
+    maxPendingRequests: 1024
+    maxRetries: 3
+    maxRequests: 1024

@@ -1,0 +1,14 @@
+type: TrafficRoute
+mesh: logging
+name: route-all-default
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: '*'

@@ -27,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -65,15 +64,6 @@ var _ = Describe("MeshTimeout", func() {
 				WithAddress("127.0.0.1").
 				AddOutboundsToServices("other-service", "second-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithRouting(
-				xds_builders.Routing().
-					WithOutboundTargets(
-						xds_builders.EndpointMap().
-							AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()).
-							AddEndpoint("other-service-c72efb5be46fae6b", xds_samples.HttpEndpointBuilder()).
-							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
-					),
-			).
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
 			).
@@ -431,13 +421,6 @@ var _ = Describe("MeshTimeout", func() {
 			Build()
 		proxy := xds_builders.Proxy().
 			WithDataplane(samples.GatewayDataplaneBuilder()).
-			WithRouting(xds_builders.Routing().
-				WithOutboundTargets(
-					xds_builders.EndpointMap().
-						AddEndpoint("backend", xds_samples.HttpEndpointBuilder()).
-						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
-				),
-			).
 			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshTimeoutType, given.rules)).
 			Build()
 

@@ -157,7 +157,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
 			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
+			core_mesh.TrafficRouteType: Equal(2),
 			core_mesh.ZoneIngressType:  Equal(1),
 		}))
 
@@ -167,7 +167,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(1))           // should be the same
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{ // same as above
 			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
+			core_mesh.TrafficRouteType: Equal(2),
 			core_mesh.ZoneIngressType:  Equal(1),
 		}))
 
@@ -188,7 +188,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
 			core_mesh.DataplaneType:    Equal(2),
-			core_mesh.TrafficRouteType: Equal(2),
+			core_mesh.TrafficRouteType: Equal(4),
 			core_mesh.ZoneIngressType:  Equal(2),
 		}))
 	})
@@ -290,7 +290,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
 			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
+			core_mesh.TrafficRouteType: Equal(2),
 			core_mesh.ZoneIngressType:  Equal(1),
 		}))
 
@@ -302,7 +302,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(1))           // same as above
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{ // same as above
 			core_mesh.DataplaneType:    Equal(1),
-			core_mesh.TrafficRouteType: Equal(1),
+			core_mesh.TrafficRouteType: Equal(2),
 			core_mesh.ZoneIngressType:  Equal(1),
 		}))
 	})

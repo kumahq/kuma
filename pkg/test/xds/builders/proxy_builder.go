@@ -18,8 +18,6 @@ func Proxy() *ProxyBuilder {
 			APIVersion:        envoy_common.APIV3,
 			Dataplane:         &core_mesh.DataplaneResource{},
 			Metadata:          &xds.DataplaneMetadata{},
-			Policies:          xds.MatchedPolicies{},
-			Routing:           xds.Routing{},
 			RuntimeExtensions: map[string]interface{}{},
 			Zone:              "test-zone",
 		},
@@ -61,11 +59,6 @@ func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker
 }
 
 func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuilder {
-	p.res.Policies = *policies.Build()
-	return p
-}
-
-func (p *ProxyBuilder) WithRouting(routing *RoutingBuilder) *ProxyBuilder {
-	p.res.Routing = *routing.Build()
+	p.res.PluginPolicies = policies.Build()
 	return p
 }

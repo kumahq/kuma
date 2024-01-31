@@ -47,13 +47,11 @@ type MatchedPolicies struct {
 	TrafficTrace *core_mesh.TrafficTraceResource
 	// Actual Envoy Configuration is generated without taking this ProxyTemplate into account
 	ProxyTemplate *core_mesh.ProxyTemplateResource
-
-	Dynamic PluginOriginatedPolicies
 }
 
-func (m *MatchedPolicies) OrderedDynamicPolicies() []core_model.ResourceType {
+func (m PluginOriginatedPolicies) OrderedDynamicPolicies() []core_model.ResourceType {
 	var all []core_model.ResourceType
-	for k := range m.Dynamic {
+	for k := range m {
 		all = append(all, k)
 	}
 	sort.Slice(all, func(i, j int) bool {

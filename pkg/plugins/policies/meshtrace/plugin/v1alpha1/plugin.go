@@ -37,7 +37,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
-	policies, ok := proxy.Policies.Dynamic[api.MeshTraceType]
+	policies, ok := proxy.PluginPolicies[api.MeshTraceType]
 	if !ok {
 		return nil
 	}
