@@ -30,7 +30,7 @@ const OriginOutbound = "outbound"
 type OutboundProxyGenerator struct{}
 
 func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	if len(proxy.Policies.TrafficRoutes) == 0 {
+	if len(proxy.Routing.TrafficRoutes) == 0 {
 		return nil, nil
 	}
 
