@@ -111,7 +111,7 @@ func CollectListenerInfos(
 			Listener: plugin_gateway.GatewayListener{
 				Port:     port,
 				Protocol: listener.listener.GetProtocol(),
-				ResourceName: envoy_names.GetGatewayListenerName(
+				EnvoyListenerName: envoy_names.GetGatewayListenerName(
 					gateway.Meta.GetName(),
 					listener.listener.GetProtocol().String(),
 					port,
