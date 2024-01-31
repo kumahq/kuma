@@ -12,7 +12,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -31,7 +32,8 @@ const OriginOutbound = "outbound"
 type OutboundProxyGenerator struct{}
 
 func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
+	hasMeshHTTPRoutes := len(proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules.Rules) > 0
+	hasMeshTCPRoutes := len(proxy.Policies.Dynamic[meshtcproute_api.MeshTCPRouteType].ToRules.Rules) > 0
 
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	resources := model.NewResourceSet()
@@ -62,8 +64,12 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 
 		protocol := inferProtocol(xdsCtx.Mesh, clusters)
 		switch protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			if hasMeshRoutes {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+			if hasMeshHTTPRoutes {
+				continue
+			}
+		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP:
+			if hasMeshTCPRoutes {
 				continue
 			}
 		}
