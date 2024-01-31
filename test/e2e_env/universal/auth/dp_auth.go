@@ -99,18 +99,25 @@ data: %s`, base64.StdEncoding.EncodeToString([]byte(claims.ID)))
 			// we need to trigger XDS config change for this DP to disconnect it
 			// this limitation may be lifted in the future
 			yaml = fmt.Sprintf(`
-type: Retry
+type: MeshRetry
 name: retry-policy
 mesh: dp-auth
-sources:
-- match:
-    kuma.io/service: test-server-to-be-revoked
-destinations:
-- match:
-    kuma.io/service: test-server-to-be-revoked
-conf:
-  http:
-    numRetries: %d
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server-to-be-revoked
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server-to-be-revoked
+      default:
+        http:
+          numRetries: %d
+          backOff:
+            baseInterval: 15s
+            maxInterval: 20m
+          retryOn:
+            - "5xx"
 `, rand.Int()%100+1) // #nosec G404 -- this is for tests no need to use secure rand
 			g.Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
