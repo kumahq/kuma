@@ -1,5 +1,7 @@
 package policies
 
+import "golang.org/x/exp/slices"
+
 var DefaultPluginPoliciesEnabled = []string{
 	"meshaccesslogs",
 	"meshcircuitbreakers",
@@ -18,6 +20,7 @@ var DefaultPluginPoliciesEnabled = []string{
 }
 
 func DefaultPoliciesConfig() *Config {
+	slices.Sort(DefaultPluginPoliciesEnabled)
 	return &Config{
 		PluginPoliciesEnabled: DefaultPluginPoliciesEnabled,
 	}

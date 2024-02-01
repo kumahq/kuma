@@ -21,11 +21,14 @@ fi
 
 echo "package policies
 
+import \"golang.org/x/exp/slices\"
+
 var DefaultPluginPoliciesEnabled = []string{
   $policies
 }
 
 func DefaultPoliciesConfig() *Config {
+	slices.Sort(DefaultPluginPoliciesEnabled)
 	return &Config{
 		PluginPoliciesEnabled: DefaultPluginPoliciesEnabled,
 	}
