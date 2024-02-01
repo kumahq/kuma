@@ -203,7 +203,7 @@ destinations:
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
+		// then it's blocked with 503, because TrafficPermission configures L4 RBAC, not L7 RBAC.
 		trafficBlocked(503)
 
 		// when traffic permission with the same "rank" is applied but later, it is preferred to the previous one
