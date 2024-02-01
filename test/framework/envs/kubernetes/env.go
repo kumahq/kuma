@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/json"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -69,4 +70,15 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
+}
+
+func PrintCPLogsOnFailure(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		logs, err := Cluster.GetKumaCPLogs()
+		if err != nil {
+			framework.Logf("could not retrieve cp logs")
+		} else {
+			framework.Logf(logs)
+		}
+	}
 }

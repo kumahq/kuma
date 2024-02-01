@@ -3,6 +3,7 @@ package universal
 import (
 	"encoding/json"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -54,4 +55,15 @@ func RestoreState(bytes []byte) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(Cluster.AddNetworking(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 	Cluster.SetCp(cp)
+}
+
+func PrintCPLogsOnFailure(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		logs, err := Cluster.GetKumaCPLogs()
+		if err != nil {
+			framework.Logf("could not retrieve cp logs")
+		} else {
+			framework.Logf(logs)
+		}
+	}
 }

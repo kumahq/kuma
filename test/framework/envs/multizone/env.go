@@ -270,3 +270,15 @@ func RestoreState(bytes []byte) {
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
 }
+
+func PrintCPLogsOnFailure(report Report) {
+	for _, cluster := range append(Zones(), Global) {
+		Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
+		logs, err := cluster.GetKumaCPLogs()
+		if err != nil {
+			Logf("could not retrieve cp logs")
+		} else {
+			Logf(logs)
+		}
+	}
+}
