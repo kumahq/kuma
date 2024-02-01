@@ -149,7 +149,7 @@ mtls:
 		}).Should(Succeed())
 	})
 	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	DescribeTable("should enforce traffic permissions", FlakeAttempts(3),
+	PDescribeTable("should enforce traffic permissions", FlakeAttempts(3),
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
