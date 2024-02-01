@@ -6,8 +6,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"hash/fnv"
+	"os"
 	"slices"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -20,8 +23,10 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
@@ -31,14 +36,17 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
+	rm                       manager.ReadOnlyResourceManager
+	typeSet                  map[core_model.ResourceType]struct{}
+	ipFunc                   lookup.LookupIPFunc
+	zone                     string
+	vipsPersistence          *vips.Persistence
+	topLevelDomain           string
+	vipPort                  uint32
+	rsGraphBuilder           ReachableServicesGraphBuilder
+	changedTypesByMesh       map[string]map[core_model.ResourceType]struct{}
+	eventBus                 events.EventBus
+	hashCacheBaseMeshContext *cache.Cache
 }
 
 // MeshContextBuilder
@@ -52,12 +60,57 @@ type MeshContextBuilder interface {
 	// BuildBaseMeshContextIfChanged builds BaseMeshContext only if `latest` is nil or hash is different
 	// If hash is the same, the return `latest`
 	BuildBaseMeshContextIfChanged(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error)
+	BuildBaseMeshContextIfChangedV2(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error)
 
 	// BuildIfChanged builds MeshContext only if latestMeshCtx is nil or hash of
 	// latestMeshCtx is different.
 	// If hash is the same, then the function returns the passed latestMeshCtx.
 	// Hash returned in MeshContext can never be empty.
 	BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error)
+
+	Start(stop <-chan struct{}) error
+	NeedLeaderElection() bool
+}
+
+// cleanupTime is the time after which the mesh context is removed from
+// the longer TTL cache.
+// It exists to ensure contexts of deleted Meshes are eventually cleaned up.
+const cleanupTime = 10 * time.Minute
+
+type MeshContextBuilderComponent interface {
+	MeshContextBuilder
+	component.Component
+}
+
+func NewMeshContextBuilderComponent(
+	rm manager.ReadOnlyResourceManager,
+	types []core_model.ResourceType, // types that should be taken into account when MeshContext is built.
+	ipFunc lookup.LookupIPFunc,
+	zone string,
+	vipsPersistence *vips.Persistence,
+	topLevelDomain string,
+	vipPort uint32,
+	rsGraphBuilder ReachableServicesGraphBuilder,
+	eventBus events.EventBus,
+) MeshContextBuilderComponent {
+	typeSet := map[core_model.ResourceType]struct{}{}
+	for _, typ := range types {
+		typeSet[typ] = struct{}{}
+	}
+
+	return &meshContextBuilder{
+		rm:                       rm,
+		typeSet:                  typeSet,
+		ipFunc:                   ipFunc,
+		zone:                     zone,
+		vipsPersistence:          vipsPersistence,
+		topLevelDomain:           topLevelDomain,
+		vipPort:                  vipPort,
+		rsGraphBuilder:           rsGraphBuilder,
+		changedTypesByMesh:       map[string]map[core_model.ResourceType]struct{}{},
+		eventBus:                 eventBus,
+		hashCacheBaseMeshContext: cache.New(cleanupTime, time.Duration(int64(float64(cleanupTime)*0.9))),
+	}
 }
 
 func NewMeshContextBuilder(
@@ -76,15 +129,66 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
+		rm:                       rm,
+		typeSet:                  typeSet,
+		ipFunc:                   ipFunc,
+		zone:                     zone,
+		vipsPersistence:          vipsPersistence,
+		topLevelDomain:           topLevelDomain,
+		vipPort:                  vipPort,
+		rsGraphBuilder:           rsGraphBuilder,
+		changedTypesByMesh:       nil,
+		hashCacheBaseMeshContext: nil,
 	}
+}
+
+func useReactiveBuildBaseMeshContext() bool {
+	return os.Getenv("EXPERIMENTAL_REACTIVE_BASE_MESH_CONTEXT") != ""
+}
+
+func (m *meshContextBuilder) Start(stop <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+	}()
+
+	l := log.AddFieldsFromCtx(logger, ctx, context.Background())
+
+	listener := m.eventBus.Subscribe(func(event events.Event) bool {
+		resChange, ok := event.(events.ResourceChangedEvent)
+		if !ok {
+			return false
+		}
+
+		// if resChange.TenantID != tenantID {
+		// 	return false
+		// }
+
+		_, ok = m.typeSet[resChange.Type]
+		return ok
+	})
+
+	for {
+		select {
+		case <-stop:
+			return nil
+
+		case event := <-listener.Recv():
+			if useReactiveBuildBaseMeshContext() {
+				resChange := event.(events.ResourceChangedEvent)
+				l.Info("Received", "ResourceChangedEvent", resChange)
+				mesh := resChange.Key.Mesh
+				if mesh != "" {
+					l.Info("Type has changed for mesh", "type", resChange.Type, "mesh", mesh)
+					m.setTypeChanged(mesh, resChange.Type)
+				}
+			}
+		}
+	}
+}
+
+func (m *meshContextBuilder) NeedLeaderElection() bool {
+	return false
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
@@ -100,10 +204,32 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	if err != nil {
 		return nil, err
 	}
-	baseMeshContext, err := m.BuildBaseMeshContextIfChanged(ctx, meshName, nil)
-	if err != nil {
-		return nil, err
+
+	// Check hashCache first for an existing mesh latestContext
+	var latestBaseMeshContext *BaseMeshContext
+	if m.hashCacheBaseMeshContext != nil {
+		if cached, ok := m.hashCacheBaseMeshContext.Get(meshName); ok {
+			latestBaseMeshContext = cached.(*BaseMeshContext)
+		}
 	}
+
+	var baseMeshContext *BaseMeshContext
+	if useReactiveBuildBaseMeshContext() {
+		baseMeshContext, err = m.BuildBaseMeshContextIfChangedV2(ctx, meshName, latestBaseMeshContext)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		baseMeshContext, err = m.BuildBaseMeshContextIfChanged(ctx, meshName, latestBaseMeshContext)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// By always setting the mesh context, we refresh the TTL
+	// with the effect that often used contexts remain in the cache while no
+	// longer used contexts are evicted.
+	m.hashCacheBaseMeshContext.SetDefault(meshName, baseMeshContext)
 
 	var managedTypes []core_model.ResourceType // The types not managed by global nor baseMeshContext
 	resources := NewResources()
@@ -227,6 +353,91 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 	}, nil
 }
 
+func (m *meshContextBuilder) BuildBaseMeshContextIfChangedV2(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error) {
+	l := log.AddFieldsFromCtx(logger, ctx, context.Background())
+	if m.changedTypesByMesh == nil || latest == nil {
+		l.Info("no latest base mesh context to use or not using reactive method. Fallabck to default BuildBaseMeshContextIfChanged", "mesh", meshName)
+		m.clearTypeChanged(meshName)
+		return m.BuildBaseMeshContextIfChanged(ctx, meshName, nil)
+	}
+
+	changedTypes, ok := m.changedTypesByMesh[meshName]
+	if !ok || len(changedTypes) == 0 {
+		// No occurence of this mesh in changed types. Let's re-use latest base mesh context
+		l.Info("no resource changed, re-using latest base mesh context to build mesh context", "mesh", meshName)
+		return latest, nil
+	}
+
+	rmap := ResourceMap{}
+
+	// Find mesh, either in last base context if it hasn't changed since or in the store
+	mesh := core_mesh.NewMeshResource()
+	_, meshChanged := changedTypes[core_mesh.MeshType]
+	if !meshChanged && latest != nil {
+		meshList := latest.ResourceMap[core_mesh.MeshType].(*core_mesh.MeshResourceList)
+		mesh = meshList.Items[0]
+	} else {
+		if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
+			return nil, errors.Wrapf(err, "could not fetch mesh %s", meshName)
+		}
+
+	}
+
+	// Add mesh to resource map
+	rmap[core_mesh.MeshType] = mesh.Descriptor().NewList()
+	_ = rmap[core_mesh.MeshType].AddItem(mesh)
+
+	for t := range m.typeSet {
+		desc, err := registry.Global().DescriptorFor(t)
+		if err != nil {
+			return nil, err
+		}
+
+		switch {
+		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
+			rmap[t], err = m.fetchResourceListIfChanged(ctx, latest, t, mesh, nil)
+		case desc.Name == system.ConfigType:
+			rmap[t], err = m.fetchResourceListIfChanged(ctx, latest, t, mesh, func(rs core_model.Resource) bool {
+				return rs.GetMeta().GetName() == vips.ConfigKey(meshName)
+			})
+		default:
+			// Do nothing we're not interested in this type
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to build base mesh context")
+		}
+	}
+
+	// Reset changed types for this mesh
+	m.clearTypeChanged(meshName)
+
+	newHash := rmap.Hash()
+	if latest != nil && bytes.Equal(newHash, latest.hash) {
+		return latest, nil
+	}
+
+	return &BaseMeshContext{
+		hash:        newHash,
+		Mesh:        mesh,
+		ResourceMap: rmap,
+	}, nil
+}
+
+func (m *meshContextBuilder) setTypeChanged(mesh string, t core_model.ResourceType) {
+	_, ok := m.changedTypesByMesh[mesh]
+	if !ok {
+		m.changedTypesByMesh[mesh] = map[core_model.ResourceType]struct{}{}
+	}
+
+	m.changedTypesByMesh[mesh][t] = struct{}{}
+}
+
+func (m *meshContextBuilder) clearTypeChanged(mesh string) {
+	if m.changedTypesByMesh != nil {
+		m.changedTypesByMesh[mesh] = map[core_model.ResourceType]struct{}{}
+	}
+}
+
 func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
@@ -242,7 +453,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		// Only pick the policies, gateways, external services and the vip config map
+
 		switch {
 		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
@@ -269,6 +480,26 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 }
 
 type filterFn = func(rs core_model.Resource) bool
+
+// fetch resource from latest base mesh context if it hasn't changed. Else, pull it from the store
+func (m *meshContextBuilder) fetchResourceListIfChanged(ctx context.Context, latest *BaseMeshContext, resType core_model.ResourceType, mesh *core_mesh.MeshResource, filterFn filterFn) (core_model.ResourceList, error) {
+	if latest == nil {
+		return m.fetchResourceList(ctx, resType, mesh, filterFn)
+	}
+
+	meshName := mesh.GetMeta().GetName()
+	changedTypes, ok := m.changedTypesByMesh[meshName]
+	if !ok {
+		return latest.ResourceMap[core_mesh.MeshType], nil
+	}
+
+	_, hasChanged := changedTypes[resType]
+	if !hasChanged {
+		return latest.ResourceMap[resType], nil
+	}
+
+	return m.fetchResourceList(ctx, resType, mesh, nil)
+}
 
 // fetch all resources of a type with potential filters etc
 func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource, filterFn filterFn) (core_model.ResourceList, error) {
