@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/LoadingBlock.vue_vue_type_script_setup_true_lang-e439d559.js
-import{c as o}from"./index-fce48c05.js";import{d as s,o as t,b as r,w as l,e as n,l as a,a6 as c,f as d,r as i,a5 as _,m as p}from"./index-671fe4fd.js";const m=p("p",null,"Loading data …",-1),h=s({__name:"LoadingBlock",setup(f){return(e,u)=>(t(),r(a(_),{"cta-is-hidden":"","data-testid":"loading-block"},{title:l(()=>[n(a(c),{class:"mb-3",display:"inline-block",color:a(o)},null,8,["color"]),d(),i(e.$slots,"default",{},()=>[m])]),_:3}))}});export{h as _};
-========
-import{c as o}from"./index-fce48c05.js";import{d as s,o as t,b as r,w as l,e as n,l as a,a6 as c,f as d,r as i,a5 as _,m as p}from"./index-4198b723.js";const m=p("p",null,"Loading data …",-1),h=s({__name:"LoadingBlock",setup(f){return(e,u)=>(t(),r(a(_),{"cta-is-hidden":"","data-testid":"loading-block"},{title:l(()=>[n(a(c),{class:"mb-3",display:"inline-block",color:a(o)},null,8,["color"]),d(),i(e.$slots,"default",{},()=>[m])]),_:3}))}});export{h as _};
->>>>>>>> upstream/master:app/kuma-ui/pkg/resources/data/assets/LoadingBlock.vue_vue_type_script_setup_true_lang-86ef811e.js
