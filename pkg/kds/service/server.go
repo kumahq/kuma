@@ -136,21 +136,6 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 	tenantZoneID := TenantZoneClientIDFromCtx(stream.Context(), zone)
 
-	shouldDisconnectStream := events.NewNeverListener()
-
-	md, _ := metadata.FromIncomingContext(stream.Context())
-	features := md.Get(kds.FeaturesMetadataKey)
-
-	if slices.Contains(features, kds.FeatureZonePingHealth) {
-		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
-			disconnectEvent, ok := e.(ZoneWentOffline)
-			return ok && disconnectEvent.TenantID == tenantZoneID.TenantID && disconnectEvent.Zone == zone
-		})
-		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID})
-	}
-
-	defer shouldDisconnectStream.Close()
-
 	logger := log.WithValues("rpc", rpcName, "clientID", tenantZoneID.String())
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
@@ -164,6 +149,19 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 			return err
 		}
 	}
+	shouldDisconnectStream := events.NewNeverListener()
+	md, _ := metadata.FromIncomingContext(stream.Context())
+	features := md.Get(kds.FeaturesMetadataKey)
+
+	if slices.Contains(features, kds.FeatureZonePingHealth) {
+		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
+			disconnectEvent, ok := e.(ZoneWentOffline)
+			return ok && disconnectEvent.TenantID == tenantZoneID.TenantID && disconnectEvent.Zone == zone
+		})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID})
+	}
+	defer shouldDisconnectStream.Close()
+
 	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(tenantZoneID.String(), stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
