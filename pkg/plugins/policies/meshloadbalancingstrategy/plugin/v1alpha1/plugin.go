@@ -182,7 +182,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		rules, ok := rules.ToRules[inboundListener]
+		rules, ok := rules.ToRules.ByListener[inboundListener]
 		if !ok {
 			continue
 		}
@@ -193,29 +193,31 @@ func (p plugin) configureGateway(
 			return err
 		}
 
-		for _, hostInfo := range listenerInfo.HostInfos {
-			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
-			for _, dest := range destinations {
-				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-				if err != nil {
-					continue
-				}
-				cluster, ok := gatewayClusters[clusterName]
-				if !ok {
-					continue
-				}
+		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
+			for _, hostInfo := range listenerHostnames.HostInfos {
+				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
+				for _, dest := range destinations {
+					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
+					if err != nil {
+						continue
+					}
+					cluster, ok := gatewayClusters[clusterName]
+					if !ok {
+						continue
+					}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
-				localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
-				if localityConf == nil {
-					continue
-				}
-				if err := p.configureCluster(cluster, *localityConf); err != nil {
-					return err
-				}
+					serviceName := dest.Destination[mesh_proto.ServiceTag]
+					localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
+					if localityConf == nil {
+						continue
+					}
+					if err := p.configureCluster(cluster, *localityConf); err != nil {
+						return err
+					}
 
-				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
-					return err
+					if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
+						return err
+					}
 				}
 			}
 		}

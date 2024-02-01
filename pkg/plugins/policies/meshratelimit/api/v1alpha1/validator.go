@@ -38,9 +38,6 @@ func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.Val
 		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
 		return verr
 	}
-	if topTargetRef.Kind != common_api.MeshGateway && len(from) == 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), "needs at least one item")
-	}
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		defaultField := path.Field("default")
@@ -59,9 +56,6 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	if !common_api.IncludesGateways(topTargetRef) && len(to) != 0 {
 		verr.AddViolationAt(validators.RootedAt("to"), validators.MustNotBeDefined)
 		return verr
-	}
-	if topTargetRef.Kind == common_api.MeshGateway && len(to) == 0 {
-		verr.AddViolationAt(validators.RootedAt("to"), "needs at least one item")
 	}
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)

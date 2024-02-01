@@ -121,6 +121,10 @@ spec:
 	})
 
 	It("should apply MeshTimeout policy on Zone CP", func() {
+		if Config.KumaLegacyKDS {
+			Skip("applying policies on zone CP is not available for legacy KDS")
+			return
+		}
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := framework_client.CollectEchoResponse(

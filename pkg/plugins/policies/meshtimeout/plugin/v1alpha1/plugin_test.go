@@ -476,18 +476,20 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshSubset(),
-						Conf: api.Conf{
-							ConnectionTimeout: test.ParseDuration("10s"),
-							IdleTimeout:       test.ParseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        test.ParseDuration("5s"),
-								StreamIdleTimeout:     test.ParseDuration("1s"),
-								MaxStreamDuration:     test.ParseDuration("10m"),
-								MaxConnectionDuration: test.ParseDuration("10m"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshSubset(),
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
 							},
 						},
 					},
@@ -496,17 +498,19 @@ var _ = Describe("MeshTimeout", func() {
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshSubset(),
-						Conf: api.Conf{
-							ConnectionTimeout: test.ParseDuration("10s"),
-							IdleTimeout:       test.ParseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        test.ParseDuration("5s"),
-								MaxStreamDuration:     test.ParseDuration("10m"),
-								MaxConnectionDuration: test.ParseDuration("10m"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshSubset(),
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
 							},
 						},
 					},
@@ -522,13 +526,15 @@ var _ = Describe("MeshTimeout", func() {
 				Build(),
 		},
 		rules: core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshService("backend"),
-						Conf: api.Conf{
-							Http: &api.Http{
-								RequestTimeout: test.ParseDuration("24s"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshService("backend"),
+							Conf: api.Conf{
+								Http: &api.Http{
+									RequestTimeout: test.ParseDuration("24s"),
+								},
 							},
 						},
 					},

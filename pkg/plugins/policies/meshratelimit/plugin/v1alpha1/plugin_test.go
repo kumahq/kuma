@@ -630,35 +630,37 @@ var _ = Describe("MeshRateLimit", func() {
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
 		gatewayRules := core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: core_rules.Subset{},
-					Conf: api.Conf{
-						Local: &api.Local{
-							HTTP: &api.LocalHTTP{
-								RequestRate: &api.Rate{
-									Num:      100,
-									Interval: v1.Duration{Duration: 10 * time.Second},
-								},
-								OnRateLimit: &api.OnRateLimit{
-									Status: pointer.To(uint32(444)),
-									Headers: &api.HeaderModifier{
-										Add: []api.HeaderKeyValue{
-											{
-												Name:  "x-kuma-rate-limit-header",
-												Value: "test-value",
-											},
-											{
-												Name:  "x-kuma-rate-limit",
-												Value: "other-value",
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {{
+						Subset: core_rules.Subset{},
+						Conf: api.Conf{
+							Local: &api.Local{
+								HTTP: &api.LocalHTTP{
+									RequestRate: &api.Rate{
+										Num:      100,
+										Interval: v1.Duration{Duration: 10 * time.Second},
+									},
+									OnRateLimit: &api.OnRateLimit{
+										Status: pointer.To(uint32(444)),
+										Headers: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-kuma-rate-limit-header",
+													Value: "test-value",
+												},
+												{
+													Name:  "x-kuma-rate-limit",
+													Value: "other-value",
+												},
 											},
 										},
 									},
 								},
 							},
 						},
-					},
-				}},
+					}},
+				},
 			},
 		}
 

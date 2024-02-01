@@ -13,14 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-4d89cd662308223d
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -43,14 +35,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-11405a82852416ac
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -73,14 +57,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-ff1f8bb571f3bfa4
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -151,7 +127,7 @@ Listeners:
       filterChains:
       - filterChainMatch:
           serverNames:
-          - two.example.com
+          - one.example.com
           transportProtocol: tls
         filters:
         - name: envoy.filters.network.http_connection_manager
@@ -182,7 +158,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -190,7 +165,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
+              routeConfigName: gateway-multihost:HTTPS:9443:one.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
@@ -245,7 +220,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -253,7 +227,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
+              routeConfigName: gateway-multihost:HTTPS:9443:three.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
@@ -277,7 +251,7 @@ Listeners:
             requireClientCertificate: false
       - filterChainMatch:
           serverNames:
-          - one.example.com
+          - two.example.com
           transportProtocol: tls
         filters:
         - name: envoy.filters.network.http_connection_manager
@@ -308,7 +282,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -316,7 +289,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: gateway-multihost:HTTPS:9443
+              routeConfigName: gateway-multihost:HTTPS:9443:two.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-multihost
@@ -347,16 +320,16 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    gateway-multihost:HTTPS:9443:
+    gateway-multihost:HTTPS:9443:one.example.com:
       ignorePortInHostMatching: true
-      name: gateway-multihost:HTTPS:9443
+      name: gateway-multihost:HTTPS:9443:one.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
       virtualHosts:
       - domains:
-        - two.example.com
-        name: two.example.com
+        - one.example.com
+        name: one.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
@@ -376,15 +349,22 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 20s
+            timeout: 10s
             weightedClusters:
               clusters:
-              - name: echo-service-ff1f8bb571f3bfa4
+              - name: echo-service-4d89cd662308223d
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
+    gateway-multihost:HTTPS:9443:three.example.com:
+      ignorePortInHostMatching: true
+      name: gateway-multihost:HTTPS:9443:three.example.com
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
       - domains:
         - three.example.com
         name: three.example.com
@@ -416,9 +396,16 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-multihost&'
                 weight: 1
+    gateway-multihost:HTTPS:9443:two.example.com:
+      ignorePortInHostMatching: true
+      name: gateway-multihost:HTTPS:9443:two.example.com
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
       - domains:
-        - one.example.com
-        name: one.example.com
+        - two.example.com
+        name: two.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
@@ -438,10 +425,10 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 10s
+            timeout: 20s
             weightedClusters:
               clusters:
-              - name: echo-service-4d89cd662308223d
+              - name: echo-service-ff1f8bb571f3bfa4
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

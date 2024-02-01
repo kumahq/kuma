@@ -37,7 +37,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules) == 0 {
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 {
 		return nil
 	}
 
@@ -184,52 +184,56 @@ func applyToGateway(
 			return err
 		}
 
-		toRules, ok := gatewayRules.ToRules[key]
+		toRules, ok := gatewayRules.ToRules.ByListener[key]
 		if !ok {
 			continue
 		}
 
 		conf = getConf(toRules, core_rules.MeshSubset())
-		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
+		for _, listenerHostname := range listenerInfo.ListenerHostnames {
+			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
-		if conf != nil && ok {
-			for _, vh := range route.VirtualHosts {
-				for _, r := range vh.Routes {
-					plugin_xds.ConfigureRouteAction(
-						r.GetRoute(),
-						pointer.Deref(conf.Http).RequestTimeout,
-						pointer.Deref(conf.Http).StreamIdleTimeout,
-					)
+			if conf != nil && ok {
+				for _, vh := range route.VirtualHosts {
+					for _, r := range vh.Routes {
+						plugin_xds.ConfigureRouteAction(
+							r.GetRoute(),
+							pointer.Deref(conf.Http).RequestTimeout,
+							pointer.Deref(conf.Http).StreamIdleTimeout,
+						)
+					}
 				}
 			}
 		}
 
-		for _, hostInfo := range listenerInfo.HostInfos {
-			destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
-			for _, dest := range destinations {
-				clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
-				if err != nil {
-					continue
-				}
-				cluster, ok := gatewayClusters[clusterName]
-				if !ok {
-					continue
-				}
+		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
+			for _, hostInfo := range listenerHostnames.HostInfos {
+				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
+				for _, dest := range destinations {
+					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
+					if err != nil {
+						continue
+					}
+					cluster, ok := gatewayClusters[clusterName]
+					if !ok {
+						continue
+					}
 
-				serviceName := dest.Destination[mesh_proto.ServiceTag]
+					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-				conf := getConf(toRules, core_rules.MeshService(serviceName))
-				if conf == nil {
-					continue
-				}
+					conf := getConf(toRules, core_rules.MeshService(serviceName))
+					if conf == nil {
+						continue
+					}
 
-				if err := applyToClusters(
-					toRules,
-					serviceName,
-					meshCtx.GetServiceProtocol(serviceName),
-					cluster,
-				); err != nil {
-					return err
+					if err := applyToClusters(
+						toRules,
+						serviceName,
+						meshCtx.GetServiceProtocol(serviceName),
+						cluster,
+					); err != nil {
+						return err
+					}
 				}
 			}
 		}

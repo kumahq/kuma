@@ -19,6 +19,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	referencegrants "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
@@ -219,10 +220,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			)
 		}
 
-		listener.Hostname = "*"
-		if l.Hostname != nil {
-			listener.Hostname = string(*l.Hostname)
-		}
+		listener.Hostname = string(pointer.DerefOr(l.Hostname, mesh_proto.WildcardHostname))
 
 		var unresolvableCertRef *certRefCondition
 		if l.TLS != nil {

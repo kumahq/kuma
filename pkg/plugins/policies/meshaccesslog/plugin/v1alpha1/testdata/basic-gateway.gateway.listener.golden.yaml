@@ -50,7 +50,6 @@ filterChains:
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          startChildSpan: true
       mergeSlashes: true
       normalizePath: true
       pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -58,7 +57,7 @@ filterChains:
         configSource:
           ads: {}
           resourceApiVersion: V3
-        routeConfigName: gateway:HTTP:8080
+        routeConfigName: gateway:HTTP:8080:*
       requestHeadersTimeout: 0.500s
       serverName: Kuma Gateway
       statPrefix: gateway

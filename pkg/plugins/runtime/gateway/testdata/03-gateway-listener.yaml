@@ -55,7 +55,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -63,7 +62,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: tracing-gateway:HTTP:8080
+              routeConfigName: tracing-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -79,6 +78,7 @@ Listeners:
                   collectorEndpoint: /api/v2/spans
                   collectorEndpointVersion: HTTP_JSON
                   collectorHostname: jaeger-collector.kuma-tracing:9411
+              spawnUpstreamSpan: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -89,9 +89,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    tracing-gateway:HTTP:8080:
+    tracing-gateway:HTTP:8080:*:
       ignorePortInHostMatching: true
-      name: tracing-gateway:HTTP:8080
+      name: tracing-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
