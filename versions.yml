@@ -78,6 +78,10 @@
   endOfLifeDate: "2024-11-15"
   branch: release-2.5
 - edition: kuma
+  version: 2.6.0
+  release: 2.6.x
+  branch: release-2.6
+- edition: kuma
   version: preview
   release: dev
   branch: master
