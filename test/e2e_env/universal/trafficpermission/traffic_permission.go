@@ -68,7 +68,7 @@ destinations:
 		}).Should(Succeed())
 	}
 
-	trafficBlocked := func() {
+	trafficBlocked := func(statusCode int) {
 		GinkgoHelper()
 
 		Eventually(func(g Gomega) {
@@ -76,7 +76,7 @@ destinations:
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.ResponseCode).To(Equal(statusCode))
 		}, "30s", "1s").Should(Succeed())
 	}
 
@@ -104,13 +104,13 @@ destinations:
 		removeDefaultTrafficPermission()
 
 		// then
-		trafficBlocked()
+		trafficBlocked(403)
 	})
 
 	It("should allow the traffic with traffic permission based on kuma.io/service tag", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when traffic permission on service tag is applied
 		yaml := `
@@ -134,7 +134,7 @@ destinations:
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when
 		yaml := `
@@ -158,7 +158,7 @@ destinations:
 	It("should allow the traffic with traffic permission based on many tags", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when
 		yaml := `
@@ -204,7 +204,7 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		trafficBlocked()
+		trafficBlocked(503)
 
 		// when traffic permission with the same "rank" is applied but later, it is preferred to the previous one
 		yaml = `
