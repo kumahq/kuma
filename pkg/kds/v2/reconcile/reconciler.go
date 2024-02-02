@@ -44,10 +44,7 @@ type reconciler struct {
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
-	id, err := r.hashId(ctx, node)
-	if err != nil {
-		return err
-	}
+	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	snapshot, err := r.cache.GetSnapshot(id)
@@ -72,10 +69,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
-	id, err := r.hashId(ctx, node)
-	if err != nil {
-		return err
-	}
+	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
@@ -150,14 +144,4 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
 		}
 	}
-}
-
-func (r *reconciler) hashId(ctx context.Context, node *envoy_core.Node) (string, error) {
-	// TODO: once https://github.com/envoyproxy/go-control-plane/issues/680 is done write our own hasher
-	tenantID, err := r.tenants.GetID(ctx)
-	if err != nil {
-		return "", err
-	}
-	util_kds_v2.FillTenantMetadata(tenantID, node)
-	return r.hasher.ID(node), nil
 }
