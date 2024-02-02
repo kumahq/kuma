@@ -78,7 +78,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
-	if err := addMeshReconciler(mgr, rt, converter); err != nil {
+	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
 	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
@@ -132,29 +132,18 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if rt.Config().IsFederatedZoneCP() {
 		return nil
 	}
-	reconciler := &k8s_controllers.MeshReconciler{
-		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("Mesh"),
-		Scheme:          mgr.GetScheme(),
-		Converter:       converter,
-		CaManagers:      rt.CaManagers(),
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceManager: rt.ResourceManager(),
-	}
-	if err := reconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup mesh reconciller")
-	}
-	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
+	defaultsReconciller := &k8s_controllers.MeshReconciler{
 		ResourceManager:            rt.ResourceManager(),
 		Log:                        core.Log.WithName("controllers").WithName("mesh-defaults"),
 		Extensions:                 rt.Extensions(),
 		CreateMeshRoutingResources: rt.Config().Defaults.CreateMeshRoutingResources,
 		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
 		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
+		CaManagers:                 rt.CaManagers(),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
