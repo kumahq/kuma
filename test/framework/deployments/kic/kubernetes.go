@@ -71,7 +71,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	return k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(t.ingressNamespace),
 		pods[0].Name,
-		framework.DefaultRetries,
+		framework.DefaultRetries*3, // KIC is fetched from the internet. Increase the timeout to prevent long downloads of images.
 		framework.DefaultTimeout)
 }
 
