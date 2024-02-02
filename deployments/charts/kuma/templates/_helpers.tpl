@@ -187,7 +187,9 @@ returns: formatted image string
 {{- define "kuma.pluginPoliciesEnabled" -}}
 {{- $list := list -}}
 {{- range $k, $v := .Values.plugins.policies -}}
+{{- if $v -}}
 {{- $list = append $list (printf "%s" $k) -}}
+{{- end -}}
 {{- end -}}
 {{ join "," $list }}
 {{- end -}}
@@ -314,6 +316,8 @@ env:
 {{ end }}
 
 env:
+- name: KUMA_PLUGIN_POLICIES_ENABLED
+  value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
 - name: KUMA_GENERAL_WORK_DIR
   value: "/tmp/kuma"
 - name: KUMA_ENVIRONMENT
