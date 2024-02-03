@@ -18,6 +18,14 @@ KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 images/show: ## output all images that are built with the current configuration
 	@echo $(KUMA_IMAGES)
 
+.PHONY: manifests/release/show
+manifests/release/show:
+	@echo $(call build_image,$(IMAGES_RELEASE))
+
+.PHONY: images/release/show
+images/release/show:
+	@echo $(foreach arch,$(ENABLED_GOARCHES), $(patsubst %, %-$(arch), $(call build_image,$(IMAGES_RELEASE))))
+
 # Always use Docker BuildKit, see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
@@ -92,7 +100,7 @@ docker/$(1)/$(2)/push:
 endef
 $(foreach goarch, $(SUPPORTED_GOARCHES),$(foreach image, $(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call DOCKER_TARGETS_BY_ARCH,$(image),$(goarch)))))
 
-# create and push a manifest for each
+# create manifest and push a manifest for each component
 docker/%/manifest:
 	$(call GATE_PUSH,docker manifest create $(call build_image,$*) $(patsubst %,--amend $(call build_image,$*,%),$(ENABLED_GOARCHES)))
 	$(call GATE_PUSH,docker manifest push $(call build_image,$*))
