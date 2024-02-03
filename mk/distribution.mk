@@ -63,6 +63,7 @@ else
 endif
 	shasum -a 256 $$@ > $$@.sha256
 
+
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 	$$(call GATE_PUSH,docker run --rm \
@@ -98,6 +99,10 @@ ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DI
 # Create a main target which will call the tar.gz target for each distribution
 .PHONY: build/distributions ## Build tar.gz for each enabled distribution
 build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
+
+.PHONY: build/distribution-provenance-metadata
+build/artifacts-provenance-metadata: build/distribution
+	cd build/distributions/out; sha256sum *.tar.gz | base64 -w0 > artifact_digest_file.text
 
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions
