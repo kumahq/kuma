@@ -1,9 +1,6 @@
 name: "Helm Charts"
-# This workflow provides two things:
-# On explicit dispatch, it packages, uploads and releases the chart to the
-# charts repo.
-#   It uses the appVersion and version as present in Chart.yaml.
-# This workflow can be tested by any owner with a fork of kumahq/kuma and kumahq/charts
+# This workflow provides ability to release helm charts manually
+# Should be removed when v2.5 is out of support
 on:
   workflow_dispatch:
     inputs:
