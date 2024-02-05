@@ -1,0 +1,82 @@
+name: "Helm Charts"
+# This workflow provides two things:
+# On explicit dispatch, it packages, uploads and releases the chart to the
+# charts repo.
+#   It uses the appVersion and version as present in Chart.yaml.
+# This workflow can be tested by any owner with a fork of kumahq/kuma and kumahq/charts
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Release charts
+        required: false
+        default: false
+        type: boolean
+env:
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+  GH_OWNER: ${{ github.repository_owner }}
+  HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
+  GITHUB_APP: "true"
+  KUMA_DIR: "."
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+jobs:
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    outputs:
+      filename: ${{ steps.package.outputs.filename }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - name: Install dependencies
+        run: |
+          make dev/tools
+      - name: package-helm-chart
+        id: package
+        run: |
+          make helm/update-version
+
+          git config user.name "${GH_USER}"
+          git config user.email "${GH_EMAIL}"
+          git add -u deployments/charts
+          # This commit never ends up in the repo
+          git commit --allow-empty -m "ci(helm): update versions"
+          # To get an idea of what's in the commit to debug
+          git show
+
+          make helm/package
+          PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
+          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
+      - name: Upload packaged chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.filename }}
+          path: .cr-release-packages/${{ steps.package.outputs.filename }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      # Everything from here is only running on releases.
+      # Ideally we'd finish the workflow early but this isn't possible: https://github.com/actions/runner/issues/662
+      - name: Generate GitHub app token
+        id: github-app-token
+        if: github.event.inputs.release == 'true'
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Release chart
+        if: github.event.inputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: make helm/release
