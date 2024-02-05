@@ -7,7 +7,6 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	protov1 "github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -64,34 +63,7 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 		// Do not forget to update this test after updating protobuf `KumaKdsOptions`.
 		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
-			To(HaveLen(len([]protov1.Message{
-				kds_samples.CircuitBreaker,
-				kds_samples.Dataplane,
-				kds_samples.DataplaneInsight,
-				kds_samples.ServiceInsight,
-				kds_samples.ExternalService,
-				kds_samples.FaultInjection,
-				kds_samples.GlobalSecret,
-				kds_samples.HealthCheck,
-				kds_samples.Mesh1,
-				kds_samples.ProxyTemplate,
-				kds_samples.RateLimit,
-				kds_samples.Retry,
-				kds_samples.Secret,
-				kds_samples.Timeout,
-				kds_samples.TrafficLog,
-				kds_samples.TrafficPermission,
-				kds_samples.TrafficRoute,
-				kds_samples.TrafficTrace,
-				kds_samples.ZoneIngress,
-				kds_samples.ZoneIngressInsight,
-				kds_samples.ZoneEgress,
-				kds_samples.ZoneEgressInsight,
-				kds_samples.Config,
-				kds_samples.VirtualOutbound,
-				kds_samples.Gateway,
-				kds_samples.GatewayRoute,
-			})))
+			To(HaveLen(40)) // old policies plus plugins
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

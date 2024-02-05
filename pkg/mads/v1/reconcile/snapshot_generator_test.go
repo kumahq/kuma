@@ -24,8 +24,7 @@ import (
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	"github.com/kumahq/kuma/pkg/metrics"
-	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute" // to match any custom policy resource type you need to register MeshHTTPRoute manually
-	_ "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric"    // to match custom policy resource type like MeshMetric you need to register it manually in tests
+	// to match custom policy resource type like you need to register them manually in tests
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"

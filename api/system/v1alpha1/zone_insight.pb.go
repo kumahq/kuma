@@ -189,7 +189,8 @@ type KDSSubscription struct {
 	Config string `protobuf:"bytes,8,opt,name=config,proto3" json:"config,omitempty"`
 	// Indicates if subscription provided auth token
 	AuthTokenProvided bool `protobuf:"varint,9,opt,name=auth_token_provided,json=authTokenProvided,proto3" json:"auth_token_provided,omitempty"`
-	// Zone CP instance that handled the given subscription (This is the leader at time of connection).
+	// Zone CP instance that handled the given subscription (This is the leader at
+	// time of connection).
 	ZoneInstanceId string `protobuf:"bytes,10,opt,name=zone_instance_id,json=zoneInstanceId,proto3" json:"zone_instance_id,omitempty"`
 }
 

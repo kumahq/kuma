@@ -152,6 +152,8 @@ spec:
               value: "grpcs://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_TYPE
@@ -194,6 +196,8 @@ spec:
               value: "grpcs://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_TYPE

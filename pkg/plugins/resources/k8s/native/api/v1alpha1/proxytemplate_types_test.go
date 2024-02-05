@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha1_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -22,12 +22,14 @@ import (
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ = Describe("ProxyTemplate", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *ProxyTemplate
+		created, fetched *v1alpha1.ProxyTemplate
 	)
 
 	BeforeEach(func() {
@@ -48,7 +50,7 @@ var _ = Describe("ProxyTemplate", func() {
 				Name:      "foo",
 				Namespace: "default",
 			}
-			created = &ProxyTemplate{
+			created = &v1alpha1.ProxyTemplate{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "default",
@@ -58,7 +60,7 @@ var _ = Describe("ProxyTemplate", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &ProxyTemplate{}
+			fetched = &v1alpha1.ProxyTemplate{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 

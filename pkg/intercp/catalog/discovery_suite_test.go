@@ -1,4 +1,4 @@
-package catalog
+package catalog_test
 
 import (
 	"testing"

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha1_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -22,12 +22,14 @@ import (
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ = Describe("Mesh", func() {
 	var (
 		key              types.NamespacedName
-		created, fetched *Mesh
+		created, fetched *v1alpha1.Mesh
 	)
 
 	BeforeEach(func() {
@@ -47,7 +49,7 @@ var _ = Describe("Mesh", func() {
 			key = types.NamespacedName{
 				Name: "foo",
 			}
-			created = &Mesh{
+			created = &v1alpha1.Mesh{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foo",
 				},
@@ -56,7 +58,7 @@ var _ = Describe("Mesh", func() {
 			By("creating an API obj")
 			Expect(k8sClient.Create(context.TODO(), created)).To(Succeed())
 
-			fetched = &Mesh{}
+			fetched = &v1alpha1.Mesh{}
 			Expect(k8sClient.Get(context.TODO(), key, fetched)).To(Succeed())
 			Expect(fetched).To(Equal(created))
 
