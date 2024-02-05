@@ -12,7 +12,6 @@ permissions:
   contents: read
 jobs:
   lifecycle:
-    timeout-minutes: 10
     permissions:
       issues: write
     uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@main

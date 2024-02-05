@@ -259,7 +259,6 @@ jobs:
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
-    timeout-minutes: 60
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
@@ -271,7 +270,6 @@ jobs:
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
   test_e2e_env:
-    timeout-minutes: 60
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
