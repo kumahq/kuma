@@ -131,6 +131,12 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 		ControlPlane: d.EnvoyCpCtx,
 		Mesh:         meshCtx,
 	}
+	if _, found := meshCtx.DataplanesByName[d.key.Name]; !found {
+		d.log.Info("Dataplane object not found. Can't regenerate XDS configuration. It's expected during Kubernetes namespace termination. " +
+			"If it persists it might be an indication of a race condition.")
+		result.Status = SkipStatus
+		return result, nil
+	}
 	proxy, err := d.DataplaneProxyBuilder.Build(ctx, d.key, meshCtx)
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not build dataplane proxy")
