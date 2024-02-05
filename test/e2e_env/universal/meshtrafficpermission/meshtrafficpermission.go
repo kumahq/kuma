@@ -99,7 +99,7 @@ func MeshTrafficPermissionUniversal() {
 
 	It("should allow the traffic with meshtrafficpermission based on MeshService (http)", func() {
 		// given no mesh traffic permissions
-		httpTrafficBlocked(503)
+		httpTrafficBlocked(403)
 
 		// when mesh traffic permission with MeshService
 		yaml := `
@@ -153,7 +153,7 @@ spec:
 
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
 		// given no mesh traffic permission
-		httpTrafficBlocked(503)
+		httpTrafficBlocked(403)
 		tcpTrafficBlocked()
 
 		// when
@@ -183,7 +183,7 @@ spec:
 
 	It("should be able to allow the traffic with permissive mTLS (http)", func() {
 		// given mesh traffic permission with permissive mTLS
-		httpTrafficBlocked(503)
+		httpTrafficBlocked(403)
 		permissive := samples.MeshDefaultBuilder().
 			WithName(meshName).
 			WithEnabledMTLSBackend("ca-1").

@@ -55,11 +55,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 
-	mtp, ok := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
-	if !ok {
-		return nil
-	}
-
+	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 	for _, res := range rs.Resources(envoy_resource.ListenerType) {
 		if res.Origin != generator.OriginInbound {
 			continue
@@ -74,7 +70,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 		rules, ok := mtp.FromRules.Rules[key]
 		if !ok {
-			continue
+			if len(proxy.Policies.TrafficPermissions) == 0 {
+				rules = p.denyRules()
+			} else {
+				continue
+			}
 		}
 
 		configurer := &v3.RBACConfigurer{
@@ -95,6 +95,17 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
+func (p plugin) denyRules() core_rules.Rules {
+	return core_rules.Rules{
+		&core_rules.Rule{
+			Subset: core_rules.MeshSubset(),
+			Conf: api.Conf{
+				Action: api.Deny,
+			},
+		},
+	}
+}
+
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
@@ -109,14 +120,6 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			policies, ok := resource.Dynamic[esName]
-			if !ok {
-				continue
-			}
-			mtp, ok := policies[api.MeshTrafficPermissionType]
-			if !ok {
-				continue
-			}
 			if listeners.Egress == nil {
 				log.V(1).Info("skip applying MeshTrafficPermission, Egress has no listener",
 					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
@@ -125,7 +128,25 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				return nil
 			}
 
-			for _, rule := range mtp.FromRules.Rules {
+			var rules core_rules.FromRules
+			if policies, ok := resource.Dynamic[esName]; ok {
+				if mtp, ok := policies[api.MeshTrafficPermissionType]; ok {
+					rules = mtp.FromRules
+				}
+			}
+			if len(rules.Rules) == 0 {
+				if resource.ExternalServicePermissionMap[esName] == nil {
+					rules = core_rules.FromRules{
+						Rules: map[core_rules.InboundListener]core_rules.Rules{
+							{}: p.denyRules(),
+						},
+					}
+				} else {
+					continue
+				}
+			}
+
+			for _, rule := range rules.Rules {
 				configurer := &v3.RBACConfigurer{
 					StatsName: listeners.Egress.Name,
 					Rules:     rule,
