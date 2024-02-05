@@ -23,6 +23,7 @@ env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   e2e:
+    timeout-minutes: 60
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
     strategy:

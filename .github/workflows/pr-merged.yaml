@@ -12,6 +12,7 @@ permissions:
   contents: read
 jobs:
   notify-about-merged-pr:
+    timeout-minutes: 10
     if: github.event_name != 'pull_request_target' || github.event.pull_request.merged
     name: "Notify about merged PR"
     runs-on: ubuntu-latest

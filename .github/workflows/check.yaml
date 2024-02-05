@@ -20,6 +20,7 @@ jobs:
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
   # for more info. We have "Default to PR title for squash merge commits" enabled.
   commit-lint:
+    timeout-minutes: 10
     name: "Check PR title"
     runs-on: ubuntu-latest
     steps:

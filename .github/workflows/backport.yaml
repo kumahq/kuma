@@ -6,6 +6,7 @@ permissions:
   contents: read
 jobs:
   maybe-backport:
+    timeout-minutes: 10
     uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
     permissions:
       contents: read

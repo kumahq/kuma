@@ -12,6 +12,7 @@ on:
 permissions: read-all
 jobs:
   analysis:
+    timeout-minutes: 10
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
