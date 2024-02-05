@@ -12,6 +12,7 @@ permissions:
   contents: read
 jobs:
   approve-and-auto-merge:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
     permissions:
