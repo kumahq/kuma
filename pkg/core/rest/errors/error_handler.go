@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -87,6 +88,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 					Reason: err.Error(),
 				},
 			},
+		}
+	case errors.Is(err, catalog.ErrInstanceNotFound):
+		kumaErr = &types.Error{
+			Status: 404,
+			Title:  "Dataplane not found",
+			Detail: err.Error(),
 		}
 	case tokens.IsSigningKeyNotFound(err):
 		kumaErr = &types.Error{
