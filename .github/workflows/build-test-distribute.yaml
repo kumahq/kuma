@@ -72,7 +72,7 @@ jobs:
       - run: |
           make test
   distributions:
-    timeout-minutes: 20
+    timeout-minutes: 40
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
     runs-on: ubuntu-latest
