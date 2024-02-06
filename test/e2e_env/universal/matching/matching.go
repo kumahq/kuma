@@ -17,6 +17,8 @@ func Matching() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
+			Install(TrafficRouteUniversal(mesh)).
+			Install(TrafficPermissionUniversal(mesh)).
 			Install(DemoClientUniversal("demo-client-1", mesh, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("demo-client-2", mesh, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", mesh,
