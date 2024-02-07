@@ -145,6 +145,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/adaptive_concurrency/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_request_signing/v3"
+<<<<<<< HEAD
+=======
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/bandwidth_limit/v3"
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
@@ -171,6 +175,11 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
+<<<<<<< HEAD
+=======
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_metadata/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/stateful_session/v3"
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/tap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/wasm/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/http_inspector/v3"
@@ -196,8 +205,31 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/wasm/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/zookeeper_proxy/v3"
+<<<<<<< HEAD
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/health_checkers/redis/v3"
+=======
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/session/http_capsule/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/cel/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/health_check/event_sinks/file/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/health_checkers/redis/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/health_checkers/thrift/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/cache/file_system_http_cache/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/cache/simple_http_cache/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/custom_response/local_response_policy/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/custom_response/redirect_policy/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_validators/envoy_default/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/original_ip_detection/custom_header/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/original_ip_detection/xff/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/cookie/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/http/stateful_session/header/v3"
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/allow_listed_routes/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/previous_routes/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/safe_cross_scheme/v3"
@@ -211,6 +243,11 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/omit_host_metadata/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/previous_hosts/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
+<<<<<<< HEAD
+=======
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/stat_sinks/graphite_statsd/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/stat_sinks/open_telemetry/v3"
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/stat_sinks/wasm/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/alts/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
