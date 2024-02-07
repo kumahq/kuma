@@ -11,6 +11,7 @@ require (
 	github.com/cilium/ebpf v0.12.3
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
 	github.com/containernetworking/cni v1.1.2
+<<<<<<< HEAD
 	github.com/containernetworking/plugins v1.2.0
 	github.com/emicklei/go-restful/v3 v3.10.2
 	github.com/envoyproxy/go-control-plane v0.11.1
@@ -18,6 +19,17 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/go-logr/logr v1.3.0
 	github.com/go-logr/zapr v1.2.3
+=======
+	github.com/containernetworking/plugins v1.4.0
+	github.com/emicklei/go-restful/v3 v3.11.2
+	github.com/envoyproxy/go-control-plane v0.11.2-0.20231010133108-1dfbe83bcebc
+	github.com/envoyproxy/protoc-gen-validate v1.0.4
+	github.com/evanphx/json-patch/v5 v5.9.0
+	github.com/exaring/otelpgx v0.5.3
+	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/zapr v1.3.0
+	github.com/goburrow/cache v0.1.4
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/golang/protobuf v1.5.3
