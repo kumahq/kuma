@@ -172,6 +172,57 @@
 * fix(vips): skip ignored listeners [#8937](https://github.com/kumahq/kuma/pull/8937) @jakubdyszkiewicz
 
 
+## 2.4.5
+> Released on 2024/02/02
+
+* chore(deps): bump the go-opentelemetry-io group with 3 updates  (backport of #8347) [#8352](https://github.com/kumahq/kuma/pull/8352) @kumahq
+* chore(deps): security update [#8672](https://github.com/kumahq/kuma/pull/8672) [#8699](https://github.com/kumahq/kuma/pull/8699) [#9100](https://github.com/kumahq/kuma/pull/9100) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8961](https://github.com/kumahq/kuma/pull/8961) @kumahq
+* chore(deps): update go to 1.21.4 (backport of #8341) [#8345](https://github.com/kumahq/kuma/pull/8345) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8626](https://github.com/kumahq/kuma/pull/8626) @kumahq
+* fix(ZoneIngress): subset routing when tag is present on all subsets (backport of #8443) [#8473](https://github.com/kumahq/kuma/pull/8473) @kumahq
+* fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8307](https://github.com/kumahq/kuma/pull/8307) @kumahq
+* fix(kds): race condition on fill metadata (backport of #8872) [#9000](https://github.com/kumahq/kuma/pull/9000) @kumahq
+
+
+## 2.3.4
+> Released on 2024/02/02
+
+* chore(deps): security update [#8204](https://github.com/kumahq/kuma/pull/8204) [#8674](https://github.com/kumahq/kuma/pull/8674) [#8697](https://github.com/kumahq/kuma/pull/8697) [#9099](https://github.com/kumahq/kuma/pull/9099) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8958](https://github.com/kumahq/kuma/pull/8958) @kumahq
+* chore(deps): update go to 1.21.4 (backport of #8341) [#8343](https://github.com/kumahq/kuma/pull/8343) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8624](https://github.com/kumahq/kuma/pull/8624) @kumahq
+* chore(deps): upgrade envoy to 1.26.6 [#8162](https://github.com/kumahq/kuma/pull/8162) @lukidzi
+* fix(MeshTrafficPermission): support permissive mtls (backport of #8171) [#8175](https://github.com/kumahq/kuma/pull/8175) @kumahq
+* fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8306](https://github.com/kumahq/kuma/pull/8306) @kumahq
+* fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (backport of #8168) [#8196](https://github.com/kumahq/kuma/pull/8196) @kumahq
+* fix(kds): race condition on fill metadata (backport of #8872) [#8997](https://github.com/kumahq/kuma/pull/8997) @kumahq
+
+
+## 2.5.2
+> Released on 2024/02/01
+
+* chore(deps): security update [#8678](https://github.com/kumahq/kuma/pull/8678) [#8694](https://github.com/kumahq/kuma/pull/8694) [#9103](https://github.com/kumahq/kuma/pull/9103) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8962](https://github.com/kumahq/kuma/pull/8962) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8627](https://github.com/kumahq/kuma/pull/8627) @kumahq
+* fix(kds): race condition on fill metadata (backport of #8872) [#8999](https://github.com/kumahq/kuma/pull/8999) @kumahq
+* fix(kuma-cp): assign `extensions` in `ZoneInsightSink` constructor (backport of #8940) [#8956](https://github.com/kumahq/kuma/pull/8956) @kumahq
+* fix(vips): skip ignored listeners (backport of #8937) [#8982](https://github.com/kumahq/kuma/pull/8982) @kumahq
+
+
+## 2.2.6
+> Released on 2024/02/01
+
+* chore(deps): security update [#8202](https://github.com/kumahq/kuma/pull/8202) [#8673](https://github.com/kumahq/kuma/pull/8673) [#8698](https://github.com/kumahq/kuma/pull/8698) [#9105](https://github.com/kumahq/kuma/pull/9105) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8960](https://github.com/kumahq/kuma/pull/8960) @kumahq
+* chore(deps): update go to 1.21.4 (backport of #8341) [#8346](https://github.com/kumahq/kuma/pull/8346) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8623](https://github.com/kumahq/kuma/pull/8623) @kumahq
+* chore(deps): upgrade envoy to 1.25.11 [#8163](https://github.com/kumahq/kuma/pull/8163) @lukidzi
+* fix(MeshTrafficPermission): support permissive mtls (backport of #8171) [#8178](https://github.com/kumahq/kuma/pull/8178) @kumahq
+* fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8305](https://github.com/kumahq/kuma/pull/8305) @kumahq
+* fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (backport of #8168) [#8195](https://github.com/kumahq/kuma/pull/8195) @kumahq
+
+
 ## 2.5.1
 > Released on 2023/12/05
 
