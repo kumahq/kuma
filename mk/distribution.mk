@@ -15,8 +15,6 @@ ifneq (,$(findstring preview,$(BUILD_INFO_VERSION)))
 	PULP_DIST_VERSION=preview
 endif
 DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_NAME)
-
-
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
@@ -101,8 +99,8 @@ ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DI
 build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 
 .PHONY: build/distribution-provenance-metadata
-build/artifacts-provenance-metadata: build/distribution
-	cd build/distributions/out; sha256sum *.tar.gz | base64 -w0 > artifact_digest_file.text
+build/distributions-provenance-metadata:
+	cd build/distributions/out; sha256sum *.tar.gz | base64 -w0 > $(BUILD_DIR)/artifact_digest_file.text
 
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions

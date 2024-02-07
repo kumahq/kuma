@@ -20,6 +20,7 @@ env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
+  NOTARY_REPOSITORY: "${{ github.repository_owner }}/notary"
 jobs:
   check:
     timeout-minutes: 10
@@ -72,23 +73,15 @@ jobs:
           make dev/tools
       - run: |
           make test
-
-  metadata:
-    name: Metadata
-    needs: ["test", "check"]
+  build:
+    needs: ["check"]
     runs-on: ubuntu-latest
-    if: ${{ always() }}
     outputs:
+      IMAGE_TARS: ${{ steps.image_meta.outputs.TARS }}
       ENALED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
       ENABLED_GOOSES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOOSES }}
       ALLOW_PUSH: ${{ steps.artifacts_metadata.outputs.ALLOW_PUSH }}
     steps:
-      - name: "Halt due to previous failures"
-        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
-        run: |
-          exit 1
-          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
-          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
@@ -106,21 +99,6 @@ jobs:
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
         run: |
           echo 'ALLOW_PUSH=true' >> $GITHUB_OUTPUT
-
-  build:
-    needs: ["metadata", "test", "test_e2e", "test_e2e_env"]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    outputs:
-      image-tars: ${{ steps.image_meta.outputs.tars }}
-    env:
-      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
       - name: Free up disk space for the Runner
         run: |
           echo "Disk usage before cleanup"
@@ -171,10 +149,9 @@ jobs:
             ./build/distributions/out/*.tar.gz
       - id: image_meta
         run: |
-          tars=$(ls ./build/docker*/*.tar | jq -R -s -c 'split("\n")[:-1]') # create JSON array out of ls output
-          echo "Image TAR files: ${tars}"
-          echo "tars=${tars}" >> $GITHUB_OUTPUT
-
+          TARS=$(ls ./build/docker*/*.tar | jq -R -s -c 'split("\n")[:-1]') # create JSON array out of ls output
+          echo "Image TAR files: ${TARS}"
+          echo "TARS=${TARS}" >> $GITHUB_OUTPUT
   # Scan each image for every arch and os
   scan-images:
     name: Scan Images
@@ -183,21 +160,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tar: "${{ fromJSON(needs.build.outputs.image-tars) }}"
+        tar: "${{ fromJSON(needs.build.outputs.IMAGE_TARS) }}"
     steps:
       # Download docker tar for every arch-os combination
       - uses: actions/download-artifact@v4
         with:
           path: |
             ${{ matrix.tar }}
-
       - name: Get docker tar name
         id: img_meta
         run: |
           TAR_NAME=$(echo ${{ matrix.tar }} | rev | cut -d "/" -f 1 | rev)
           echo "tar_name=${TAR_NAME%.*}" >> "$GITHUB_OUTPUT"
           echo "${tar_name}"
-
       # SBOM and CVE analysis
       # Unique asset_prefix must be specified to avoid artifact upload conflict
       # Outputs uploaded as workflow assets
@@ -207,17 +182,16 @@ jobs:
         with:
           asset_prefix: ${{ steps.img_meta.outputs.tar_name }}
           image: ${{ matrix.tar }}
-  
   distribute-images:
-    needs: ["metadata", "scan-images"]
+    needs: ["build", "scan-images"]
     if: >
-      github.repository_owner == 'Kong' 
-      && needs.metadata.outputs.ALLOW_PUSH == 'true'
-    runs-on: ubuntu-latest-kong
+      needs.build.outputs.ALLOW_PUSH == 'true'
+
+    runs-on: ubuntu-latest
     env:
-      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
+      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
     outputs:
       published_image_manifests: ${{ steps.published_images.outputs.manifests }}
     steps:
@@ -241,12 +215,12 @@ jobs:
         with:
           path: |
             ./build/docker*
-      # Needed to publish images
-      # Image Digest is needed image signing
-      # TODO: 
-        ## To reduce supply chain surface attack, split image registries for internal and official images
-        ## Images needs to be promoted / copied over instead of rebuilding
-        ## Ideal flow: Publish manifest to internal registry => sign internal manifest using digest => generate internal provenance => promote/copy manifest tag with SAME Digest to production registry => generate official image provenance
+          # Needed to publish images
+          # Image Digest is needed image signing
+          # TODO:
+          #   To reduce supply chain surface attack, split image registries for internal and official images
+          #   Images needs to be promoted / copied over instead of rebuilding
+          #   Ideal flow: Publish manifest to internal registry => sign internal manifest using digest => generate internal provenance => promote/copy manifest tag with SAME Digest to production registry => generate official image provenance
       - name: Publish images
         id: published_images
         env:
@@ -264,7 +238,6 @@ jobs:
           manifests=$(make manifests/release/show | jq -R -c -S 'split("\n")') # Create JSON array for release manifests needed for signing
           echo "$published_manifests=${manifests}"
           echo "manifests=${manifests}" >> "$GITHUB_OUTPUT"
-  
   # Keyless container image signing 
   # This step will sign docker manifest image recursively for all platforms by digest after publishing the image
   # Publishes all signatures to the "kumahq/notary" public registry until TODO above
@@ -280,19 +253,18 @@ jobs:
   sign-image-manifests:
     permissions:
       id-token: write # needed for signing the images with GitHub OIDC Token
-    needs: ["metadata", "distribute-images"]
+    needs: ["build", "distribute-images"]
     if: >
-      github.repository_owner == 'Kong' 
-      && needs.metadata.outputs.ALLOW_PUSH == 'true'
-    runs-on: ubuntu-latest-kong
+      needs.build.outputs.ALLOW_PUSH == 'true'
+
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         image_manifest: "${{ fromJSON(needs.distribute-images.outputs.published_image_manifests) }}"
-    steps:        
+    steps:
       - name: Install regctl
         uses: regclient/actions/regctl-installer@main
-      
       - name: Fetch manifest digest
         id: manifest_meta
         run: |
@@ -304,15 +276,11 @@ jobs:
           make docker/login
       - name: sign image manifest
         id: attest
-        if: 
         uses: Kong/public-shared-actions/security-actions/sign-docker-image@4119b418bba4462593b5238718772356f84f67ee
         with:
           image_digest: ${{ steps.manifest_meta.outputs.digest }}
           tags: ${{ matrix.image_manifest }}
           signature_registry: ${{ env.NOTARY_REPOSITORY }}
-        env:
-          NOTARY_REPOSITORY: kumahq/notary # TODO
-
       # Aggregate the list of image manifest metadata
       #   GHA limiatations doesn't allow aggregated output list:
       #   https://github.com/actions/runner/pull/2477?
@@ -324,15 +292,15 @@ jobs:
           matrix-key: ${{ matrix.image_manifest }}
           outputs: |-
             digest: ${{ steps.manifest_meta.outputs.digest }}
-  
   distributions:
-    needs: ["metadata", "build"]
-    if: ${{ always() }}
-    runs-on: ubuntu-latest-kong
+    needs: ["build"]
+    runs-on: ubuntu-latest
     env:
-      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
+      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
+    outputs:
+      subjects-as-file: ${{ steps.artifact-hashes.outputs.handle }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -354,6 +322,13 @@ jobs:
         with:
           path: |
             ./build/distributions/out/*.tar.gz
+      - name: Create artifacts provenance checksum
+        run: |
+          make -j build/artifacts-provenance-metadata
+      - uses: slsa-framework/slsa-github-generator/actions/generator/generic/create-base64-subjects-from-file@v1.9.0
+        id: artifact-hashes
+        with:
+          path: ./build/artifact_digest_file.text # depends on output generated by build/distributions-provenance-metadata target
       - name: Publish distributions to Pulp
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -361,7 +336,6 @@ jobs:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
         run: |
           make publish/pulp
-          
       - name: package-helm-chart
         id: package-helm
         env:
@@ -380,14 +354,12 @@ jobs:
           make helm/package
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
-
       - name: Upload packaged chart
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
@@ -405,40 +377,32 @@ jobs:
           GITHUB_APP: "true"
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: make helm/release
-
   # The provenance job is reusable workflow that:
   # Cannot be used as a step within other jobs
   # Cannot be used to pass ENV variables
   # GHA limitations don't allow dynamic output keys / expressions
   provenance-metadata:
     name: Provenance metadata
-    needs: [metadata, sign-image-manifests]
-    runs-on: ubuntu-latest-kong
+    needs: ["build", "distributions", "distribute-images", "sign-image-manifests"]
+    runs-on: ubuntu-latest
     if: >
-      github.repository_owner == 'Kong' 
-      && needs.metadata.outputs.ALLOW_PUSH == 'true'
-      && github.event_name != 'pull_request'
+      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+
     outputs:
-      subjects-as-file: ${{ steps.artifact-hashes.outputs.handle }}
+      artifact-provenance-result: ${{ needs.distributions.outputs.subjects-as-file }}
+      artifact-upload-tag-name: ${{ needs.distributions.outputs.subjects-as-file }}
+      artifact-upload-assets: ${{ needs.distributions.outputs.subjects-as-file }}
       image-manifest-provenance-result: ${{ steps.image-manifest-provenance-metadata.outputs.result }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - name: Create artifacts provenance checksum
-        run: |
-          make -j build/artifacts-provenance-metadata
-      - uses: slsa-framework/slsa-github-generator/actions/generator/generic/create-base64-subjects-from-file@v1.9.0
-        id: artifact-hashes
-        with:
-          path: artifact_digest_file.text # depends on output generated by build/distributions-provenance-metadata target
       - uses: cloudposse/github-action-matrix-outputs-read@5690ce6664e0dcdf06e27e4ba27e7a424951da56
         id: image-manifest-provenance-metadata
         with:
           matrix-step-name: sign-image-manifests # Must match the job name where the matrix-outputs-write action is invoked
       - run: |
           echo ${{ steps.image-manifest-provenance-metadata.outputs.result }}
-
   # Provenance job for all images manifests
   # SLSA generator is a reusable workflow
   # pull-request event is [not supported](https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#supported-triggers)
@@ -449,11 +413,10 @@ jobs:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
     name: Images Provenance
-    needs: [metadata, distribute-images, sign-image-manifests, provenance-metadata ]
+    needs: [build, distribute-images, sign-image-manifests, provenance-metadata]
     if: >
-      github.repository_owner == 'Kong'
-      && github.event_name != 'pull_request'
-      && needs.metadata.outputs.ALLOW_PUSH == 'true'
+      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+
     strategy:
       # limit to 3 jobs at a time
       max-parallel: 3
@@ -466,25 +429,26 @@ jobs:
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
-      image:  ${{ matrix.image_manifest }}
+      image: ${{ matrix.image_manifest }}
       digest: "${{ fromJSON(needs.provenance-metadata.outputs.image-manifest-provenance-result)['digest'][matrix.image_manifest] }}"
       #COSIGN_REPOSITORY: kumahq/notary #Issue: https://github.com/slsa-framework/slsa-github-generator/issues/2956
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
       registry-username: ${{ vars.DOCKER_USERNAME }}
-  
   # Provenance job for all binary artifacts
   artifact-provenance:
-    needs: ["build"]
-    if: ${{ always() }}
+    needs: ["build", "distributions", "provenance-metadata"]
+    if: >
+      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+
     permissions:
       actions: read
       id-token: write
       contents: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
-      base64-subjects-as-file: "${{ needs.build.outputs.subjects-as-file }}"
-
+      base64-subjects-as-file: "${{ needs.provenance-metadata.outputs.artifact-provenance-result }}"
+      # TODO: Upload artifacts / provenance to release tag
   gen_e2e_matrix:
     timeout-minutes: 2
     runs-on: ubuntu-latest
@@ -544,7 +508,6 @@ jobs:
           echo "matrix<<EOF" >> $GITHUB_OUTPUT
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-  
   test_e2e:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
@@ -556,7 +519,6 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
     secrets:
       circleCIToken: ${{ secrets.CIRCLECI_TOKEN }}
-  
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env

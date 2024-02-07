@@ -100,7 +100,7 @@ docker/$(1)/$(2)/push:
 endef
 $(foreach goarch, $(SUPPORTED_GOARCHES),$(foreach image, $(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call DOCKER_TARGETS_BY_ARCH,$(image),$(goarch)))))
 
-# create manifest and push a manifest for each component
+# create and push a manifest for each component
 docker/%/manifest:
 	$(call GATE_PUSH,docker manifest create $(call build_image,$*) $(patsubst %,--amend $(call build_image,$*,%),$(ENABLED_GOARCHES)))
 	$(call GATE_PUSH,docker manifest push $(call build_image,$*))
