@@ -168,16 +168,15 @@ jobs:
         with:
           name: artifacts
           path: ./build
-      - name: Inspect build images
+      - name: Inspect build directory
         run: |
           ls -alR ./build
-          ls -alR ./build/docker
       - name: Get docker tar name
         id: img_meta
         run: |
           TAR_NAME=$(echo ${{ matrix.tar }} | rev | cut -d "/" -f 1 | rev)
+          echo "tar_name=${TAR_NAME%.*}"
           echo "tar_name=${TAR_NAME%.*}" >> "$GITHUB_OUTPUT"
-          echo "${tar_name}"
       # SBOM and CVE analysis
       # Unique asset_prefix must be specified to avoid artifact upload conflict
       # Outputs uploaded as workflow assets
@@ -218,10 +217,9 @@ jobs:
           name: artifacts
           path: |
             ./build
-      - name: Inspect build binaries
+      - name: Inspect build directory
         run: |
           ls -alR ./build
-          ls -alR ./build/distributions/out
       - name: Create artifacts provenance checksum
         run: |
           make -j build/distributions-provenance-metadata
@@ -310,10 +308,9 @@ jobs:
         with:
           name: artifacts
           path: ./build
-      - name: Inspect build images
+      - name: Inspect build directory
         run: |
           ls -alR ./build
-          ls -alR ./build/docker
       # Needed to publish images
       # Image Digest is needed image signing
       # TODO:
@@ -326,6 +323,7 @@ jobs:
           DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
           DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
         run: |-
+          make docker/load
           make docker/login
           # ensure we always logout
           function on_exit() {
