@@ -144,12 +144,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         id: build-artifacts
         with:
+          name: artifacts
           path: |
-            ./build/docker*
             ./build/distributions/out/*.tar.gz
+            ./build/docker/*
       - id: image_meta
         run: |
-          TARS=$(ls ./build/docker*/*.tar | jq -R -s -c 'split("\n")[:-1]') # create JSON array out of ls output
+          TARS=$(ls ./build/docker/*.tar | jq -R -s -c 'split("\n")[:-1]') # create JSON array out of ls output
           echo "Image TAR files: ${TARS}"
           echo "TARS=${TARS}" >> $GITHUB_OUTPUT
   # Scan each image for every arch and os
@@ -165,8 +166,12 @@ jobs:
       # Download docker tar for every arch-os combination
       - uses: actions/download-artifact@v4
         with:
-          path: |
-            ${{ matrix.tar }}
+          name: artifacts
+          path: ./build
+      - name: Inspect build images
+        run: |
+          ls -alR ./build
+          ls -alR ./build/docker
       - name: Get docker tar name
         id: img_meta
         run: |
@@ -178,122 +183,12 @@ jobs:
       # Outputs uploaded as workflow assets
       - name: Scan Image
         id: image_sbom
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@4119b418bba4462593b5238718772356f84f67ee
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
         with:
           asset_prefix: ${{ steps.img_meta.outputs.tar_name }}
           image: ${{ matrix.tar }}
-  distribute-images:
-    needs: ["build", "scan-images"]
-    if: >
-      needs.build.outputs.ALLOW_PUSH == 'true'
-
-    runs-on: ubuntu-latest
-    env:
-      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
-    outputs:
-      published_image_manifests: ${{ steps.published_images.outputs.manifests }}
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            .run-full-matrix
-            go.sum
-      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - uses: actions/download-artifact@v4
-        with:
-          path: |
-            ./build/docker*
-          # Needed to publish images
-          # Image Digest is needed image signing
-          # TODO:
-          #   To reduce supply chain surface attack, split image registries for internal and official images
-          #   Images needs to be promoted / copied over instead of rebuilding
-          #   Ideal flow: Publish manifest to internal registry => sign internal manifest using digest => generate internal provenance => promote/copy manifest tag with SAME Digest to production registry => generate official image provenance
-      - name: Publish images
-        id: published_images
-        env:
-          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
-          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
-        run: |-
-          make docker/login
-          # ensure we always logout
-          function on_exit() {
-            make docker/logout
-          }
-          trap on_exit EXIT
-          make docker/push
-          make docker/manifest
-          manifests=$(make manifests/release/show | jq -R -c -S 'split("\n")') # Create JSON array for release manifests needed for signing
-          echo "$published_manifests=${manifests}"
-          echo "manifests=${manifests}" >> "$GITHUB_OUTPUT"
-  # Keyless container image signing 
-  # This step will sign docker manifest image recursively for all platforms by digest after publishing the image
-  # Publishes all signatures to the "kumahq/notary" public registry until TODO above
-  # Record permanent entry to Sigstore Public Rekor - Transparency log
-  # Note:
-  #  For private repos, no good solution is available for transparency requirement for SLSA.
-  #  Hence exposing repo name and workflow details and commit details by leveraging public sigstore instance
-  #  Generate provenance and image signing separately for every image after publishing. 
-  # TODO:
-  #   Split sigining step and notary registries to avoid customers viewing signatures of internal images
-  #     Official image signatures: kumahq/notary
-  #     Internal/Preview image signatures:kumahq/notary-internal
-  sign-image-manifests:
-    permissions:
-      id-token: write # needed for signing the images with GitHub OIDC Token
-    needs: ["build", "distribute-images"]
-    if: >
-      needs.build.outputs.ALLOW_PUSH == 'true'
-
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        image_manifest: "${{ fromJSON(needs.distribute-images.outputs.published_image_manifests) }}"
-    steps:
-      - name: Install regctl
-        uses: regclient/actions/regctl-installer@main
-      - name: Fetch manifest digest
-        id: manifest_meta
-        run: |
-          echo "Fetching image manifest digest for ${matrix.image_manifest}"
-          echo "digest=$(regctl image digest ${{ matrix.image_manifest }})" >> $GITHUB_OUTPUT
-          echo "label=$(echo {{matrix.image_manifest}} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
-          echo "${tar_name}"
-      - run: |
-          make docker/login
-      - name: sign image manifest
-        id: attest
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@4119b418bba4462593b5238718772356f84f67ee
-        with:
-          image_digest: ${{ steps.manifest_meta.outputs.digest }}
-          tags: ${{ matrix.image_manifest }}
-          signature_registry: ${{ env.NOTARY_REPOSITORY }}
-      # Aggregate the list of image manifest metadata
-      #   GHA limiatations doesn't allow aggregated output list:
-      #   https://github.com/actions/runner/pull/2477?
-      #   GHA limiatations doesn't support dynamic output keys for matrix jobs
-      - uses: cloudposse/github-action-matrix-outputs-write@928e2a2d3d6ae4eb94010827489805c17c81181f
-        id: write-provenance-metadata
-        with:
-          matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.image_manifest }}
-          outputs: |-
-            digest: ${{ steps.manifest_meta.outputs.digest }}
   distributions:
-    needs: ["build"]
+    needs: ["build", "scan-images"]
     runs-on: ubuntu-latest
     env:
       ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
@@ -320,11 +215,16 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - uses: actions/download-artifact@v4
         with:
+          name: artifacts
           path: |
-            ./build/distributions/out/*.tar.gz
+            ./build
+      - name: Inspect build binaries
+        run: |
+          ls -alR ./build
+          ls -alR ./build/distributions/out
       - name: Create artifacts provenance checksum
         run: |
-          make -j build/artifacts-provenance-metadata
+          make -j build/distributions-provenance-metadata
       - uses: slsa-framework/slsa-github-generator/actions/generator/generic/create-base64-subjects-from-file@v1.9.0
         id: artifact-hashes
         with:
@@ -377,12 +277,125 @@ jobs:
           GITHUB_APP: "true"
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: make helm/release
+  distribute-images:
+    needs: ["build", "scan-images"]
+    if: >
+      needs.build.outputs.ALLOW_PUSH == 'true'
+
+    runs-on: ubuntu-latest
+    env:
+      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
+    outputs:
+      published_image_manifests: ${{ steps.published_images.outputs.manifests }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifacts
+          path: ./build
+      - name: Inspect build images
+        run: |
+          ls -alR ./build
+          ls -alR ./build/docker
+      # Needed to publish images
+      # Image Digest is needed image signing
+      # TODO:
+      #   To reduce supply chain surface attack, split image registries for internal and official images
+      #   Images needs to be promoted / copied over instead of rebuilding
+      #   Ideal flow: Publish manifest to internal registry => sign internal manifest using digest => generate internal provenance => promote/copy manifest tag with SAME Digest to production registry => generate official image provenance
+      - name: Publish images
+        id: published_images
+        env:
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+        run: |-
+          make docker/login
+          # ensure we always logout
+          function on_exit() {
+            make docker/logout
+          }
+          trap on_exit EXIT
+          make docker/push
+          make docker/manifest
+          manifests=$(make manifests/release/show | jq -R -c -S 'split("\n")') # Create JSON array for release manifests needed for signing
+          echo "$published_manifests=${manifests}"
+          echo "manifests=${manifests}" >> "$GITHUB_OUTPUT"
+  # Keyless container image signing 
+  # This step will sign docker manifest image recursively for all platforms by digest after publishing the image
+  # Publishes all signatures to the "kumahq/notary" public registry until TODO above
+  # Record permanent entry to Sigstore Public Rekor - Transparency log
+  # Note:
+  #  For private repos, no good solution is available for transparency requirement for SLSA.
+  #  Hence exposing repo name and workflow details and commit details by leveraging public sigstore instance
+  #  Generate provenance and image signing separately for every image after publishing. 
+  # TODO:
+  #   Split sigining step and notary registries to avoid customers viewing signatures of internal images
+  #     Official image signatures: kumahq/notary
+  #     Internal/Preview image signatures:kumahq/notary-internal
+  sign-image-manifests:
+    permissions:
+      id-token: write # needed for signing the images with GitHub OIDC Token
+    needs: ["build", "distribute-images"]
+    if: >
+      needs.build.outputs.ALLOW_PUSH == 'true'
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image_manifest: "${{ fromJSON(needs.distribute-images.outputs.published_image_manifests) }}"
+    steps:
+      - name: Install regctl
+        uses: regclient/actions/regctl-installer@main
+      - name: Fetch manifest digest
+        id: manifest_meta
+        run: |
+          echo "Fetching image manifest digest for ${matrix.image_manifest}"
+          echo "digest=$(regctl image digest ${{ matrix.image_manifest }})" >> $GITHUB_OUTPUT
+          echo "label=$(echo {{matrix.image_manifest}} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
+      - run: |
+          make docker/login
+      - name: sign image manifest
+        id: attest
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        with:
+          image_digest: ${{ steps.manifest_meta.outputs.digest }}
+          tags: ${{ matrix.image_manifest }}
+          signature_registry: ${{ env.NOTARY_REPOSITORY }}
+      # Aggregate the list of image manifest metadata
+      #   GHA limiatations doesn't allow aggregated output list:
+      #   https://github.com/actions/runner/pull/2477?
+      #   GHA limiatations doesn't support dynamic output keys for matrix jobs
+      - uses: cloudposse/github-action-matrix-outputs-write@928e2a2d3d6ae4eb94010827489805c17c81181f
+        id: write-provenance-metadata
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.image_manifest }}
+          outputs: |-
+            digest: ${{ steps.manifest_meta.outputs.digest }}
   # The provenance job is reusable workflow that:
   # Cannot be used as a step within other jobs
   # Cannot be used to pass ENV variables
   # GHA limitations don't allow dynamic output keys / expressions
   provenance-metadata:
-    name: Provenance metadata
+    name: provenance metadata
     needs: ["build", "distributions", "distribute-images", "sign-image-manifests"]
     runs-on: ubuntu-latest
     if: >
