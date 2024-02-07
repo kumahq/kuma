@@ -228,6 +228,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/wasm/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/zookeeper_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
+<<<<<<< HEAD
+=======
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/session/http_capsule/v3"
+>>>>>>> 5299ab681 (chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (#9163))
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/udp_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/cel/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/metadata/v3"
