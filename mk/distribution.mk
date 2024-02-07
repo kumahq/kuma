@@ -101,7 +101,7 @@ ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DI
 build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 
 .PHONY: build/distribution-provenance-metadata
-build/artifacts-provenance-metadata: build/distribution
+build/distributions-provenance-metadata:
 	cd build/distributions/out; sha256sum *.tar.gz | base64 -w0 > artifact_digest_file.text
 
 # Create a main target which will publish to pulp each to the tar.gz built
