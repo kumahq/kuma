@@ -121,7 +121,7 @@ func sortRulesToHosts(
 			hostInfo := plugin_gateway.GatewayHostInfo{
 				Host: host,
 			}
-			hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
+			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules))
 
 			meshroute.AddToListenerByHostname(
 				hostInfosByHostname,
@@ -136,7 +136,7 @@ func sortRulesToHosts(
 	return meshroute.SortByHostname(hostInfosByHostname)
 }
 
-func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
+func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
 	var entries []route.Entry
 
 	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
