@@ -133,7 +133,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	}
 	if _, found := meshCtx.DataplanesByName[d.key.Name]; !found {
 		d.log.Info("Dataplane object not found. Can't regenerate XDS configuration. It's expected during Kubernetes namespace termination. " +
-			"If it persists it might be an indication of a race condition.")
+			"If it persists it's a bug.")
 		result.Status = SkipStatus
 		return result, nil
 	}
