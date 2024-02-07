@@ -22,8 +22,6 @@ type k8sDeployment struct {
 
 var _ Deployment = &k8sDeployment{}
 
-var ingressApp = "ingress-kong"
-
 func (t *k8sDeployment) Name() string {
 	return DeploymentName
 }
@@ -49,7 +47,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	for _, app := range []string{fmt.Sprintf("%s-controller", t.name), fmt.Sprintf("%s-gateway", t.name)} {
-		k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
+		err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
@@ -57,6 +55,9 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			1,
 			framework.DefaultRetries,
 			framework.DefaultTimeout)
+		if err != nil {
+			return err
+		}
 
 		pods := k8s.ListPods(cluster.GetTesting(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
@@ -68,11 +69,14 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
 		}
 
-		return k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+		err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
 			cluster.GetKubectlOptions(t.ingressNamespace),
 			pods[0].Name,
 			framework.DefaultRetries*3, // KIC is fetched from the internet. Increase the timeout to prevent long downloads of images.
 			framework.DefaultTimeout)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
