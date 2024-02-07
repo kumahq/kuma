@@ -40,7 +40,7 @@ func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest
 	}
 	configDump, err := s.adminClient.ConfigDump(ctx, resWithAddr)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}){
+		if errors.Is(err, &admin.KDSTransportError{}) {
 			return &mesh_proto.XDSConfigResponse{
 				Result: &mesh_proto.XDSConfigResponse_Error{
 					Error: err.Error(),
@@ -65,7 +65,7 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 	}
 	stats, err := s.adminClient.Stats(ctx, resWithAddr)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}){
+		if errors.Is(err, &admin.KDSTransportError{}) {
 			return &mesh_proto.StatsResponse{
 				Result: &mesh_proto.StatsResponse_Error{
 					Error: err.Error(),
@@ -90,7 +90,7 @@ func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) 
 	}
 	clusters, err := s.adminClient.Clusters(ctx, resWithAddr)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}){
+		if errors.Is(err, &admin.KDSTransportError{}) {
 			return &mesh_proto.ClustersResponse{
 				Result: &mesh_proto.ClustersResponse_Error{
 					Error: err.Error(),
