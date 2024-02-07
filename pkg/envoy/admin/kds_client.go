@@ -58,6 +58,9 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
 	})
 	if err != nil {
+		if errors.Is(err, KDSTransportError{}){
+			return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
+		}
 		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
 	}
 
