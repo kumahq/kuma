@@ -49,8 +49,10 @@ var _ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.Resto
 // Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
-var _ = ReportAfterSuite("cp logs", kubernetes.PrintCPLogsOnFailure)
-var _ = ReportAfterSuite("kube state", kubernetes.PrintKubeState)
+var (
+	_ = ReportAfterSuite("cp logs", kubernetes.PrintCPLogsOnFailure)
+	_ = ReportAfterSuite("kube state", kubernetes.PrintKubeState)
+)
 
 var (
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
