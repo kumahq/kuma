@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"encoding/json"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -79,6 +80,15 @@ func PrintCPLogsOnFailure(report ginkgo.Report) {
 			framework.Logf("could not retrieve cp logs")
 		} else {
 			framework.Logf(logs)
+		}
+	}
+}
+
+func PrintKubeState(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		// just running it, prints the logs
+		if err := k8s.RunKubectlE(Cluster.GetTesting(), Cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
+			framework.Logf("could not retrieve kube pods")
 		}
 	}
 }
