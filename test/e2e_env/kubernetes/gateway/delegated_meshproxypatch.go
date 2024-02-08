@@ -28,8 +28,7 @@ metadata:
     kuma.io/mesh: %s
 spec:
   targetRef:
-    kind: MeshService
-    name: gateway_%s_svc_80
+    kind: Mesh
   default:
     appendModifications:
       - httpFilter:
@@ -45,7 +44,7 @@ spec:
                 function envoy_on_request(request_handle)
                   request_handle:headers():add("X-Header", "test")
                 end
-`, Config.KumaNamespace, config.mesh, config.namespace)
+`, Config.KumaNamespace, config.mesh)
 
 			// when
 			err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))

@@ -43,9 +43,13 @@ func KICKubernetes() {
 			Install(democlient.Install(democlient.WithNamespace(namespaceOutsideMesh))). // this will not be in the mesh
 			Install(kic.KongIngressController(
 				kic.WithNamespace(namespace),
+				kic.WithName("kic"),
 				kic.WithMesh(mesh),
 			)).
-			Install(kic.KongIngressService(kic.WithNamespace(namespace))).
+			Install(kic.KongIngressService(
+				kic.WithNamespace(namespace),
+				kic.WithName("kic"),
+			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
@@ -67,24 +71,48 @@ func KICKubernetes() {
 
 	It("should route to service using Kube DNS", func() {
 		ingress := `
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
 metadata:
-  namespace: kic
-  name: kube-dns-ingress
+  name: kic
   annotations:
-    kubernetes.io/ingress.class: kong
+    konghq.com/gatewayclass-unmanaged: 'true'
 spec:
+  controllerName: konghq.com/kic-gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: kong
+  namespace: kic
+spec:
+  gatewayClassName: kic
+  listeners:
+  - name: proxy
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo
+  namespace: kic
+  annotations:
+    konghq.com/strip-path: 'true'
+spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
   rules:
-  - http:
-      paths:
-      - path: /test-server
-        pathType: Prefix
-        backend:
-          service:
-            name: test-server
-            port:
-              number: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /test-server
+    backendRefs:
+    - name: test-server
+      kind: Service
+      port: 80
 `
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
@@ -100,6 +128,27 @@ spec:
 	It("should route to service using Kuma DNS", func() {
 		const ingressMeshDNS = `
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo
+  namespace: kic
+  annotations:
+    konghq.com/strip-path: 'true'
+spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /test-server
+    backendRefs:
+    - name: test-server
+      kind: Service
+      port: 80
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -109,24 +158,26 @@ spec:
   type: ExternalName
   externalName: test-server.kic.svc.80.mesh
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  namespace: kic
   name: k8s-ingress-dot-mesh
+  namespace: kic
   annotations:
-    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: 'true'
 spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
   rules:
-  - http:
-      paths:
-      - path: /dot-mesh
-        pathType: Prefix
-        backend:
-          service:
-            name: test-server-externalname
-            port:
-              number: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /dot-mesh
+    backendRefs:
+    - name: test-server-externalname
+      kind: Service
+      port: 80
 `
 
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())
