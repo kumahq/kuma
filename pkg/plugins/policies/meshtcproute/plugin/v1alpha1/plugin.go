@@ -178,11 +178,11 @@ func sortRulesToHosts(
 			listener.GetPort(),
 			hostnameTag.Hostname,
 		)
-		rules, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
+		rulesForListener, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
 		if !ok {
 			continue
 		}
-		hostInfo.AppendEntries(GenerateEnvoyRouteEntries(host, rules))
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
 		meshroute.AddToListenerByHostname(
 			hostInfosByHostname,
 			listener.Protocol,

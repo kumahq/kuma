@@ -422,11 +422,13 @@ var _ = Describe("MeshHealthCheck", func() {
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
 							{
 								Subset: core_rules.MeshSubset(),
-								Conf: meshtcproute_api.RuleConf{
-									BackendRefs: []common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
-										Weight:    pointer.To(uint(100)),
-									}},
+								Conf: meshtcproute_api.Rule{
+									Default: meshtcproute_api.RuleConf{
+										BackendRefs: []common_api.BackendRef{{
+											TargetRef: builders.TargetRefService("backend"),
+											Weight:    pointer.To(uint(100)),
+										}},
+									},
 								},
 							},
 						},

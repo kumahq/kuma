@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway/delegated"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
@@ -13,40 +14,45 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-type delegatedE2EConfig struct {
-	namespace            string
-	namespaceOutsideMesh string
-	mesh                 string
-	kicIP                string
-}
-
 func Delegated() {
-	config := &delegatedE2EConfig{
-		namespace:            "delegated-gateway",
-		namespaceOutsideMesh: "delegated-gateway-outside-mesh",
-		mesh:                 "delegated-gateway",
-		kicIP:                "",
+	config := delegated.Config{
+		Namespace:            "delegated-gateway",
+		NamespaceOutsideMesh: "delegated-gateway-outside-mesh",
+		Mesh:                 "delegated-gateway",
+		KicIP:                "",
+		CpNamespace:          Config.KumaNamespace,
 	}
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(config.mesh)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(config.mesh)).
-			Install(NamespaceWithSidecarInjection(config.namespace)).
-			Install(Namespace(config.namespaceOutsideMesh)).
+			Install(MTLSMeshKubernetes(config.Mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
+			Install(NamespaceWithSidecarInjection(config.Namespace)).
+			Install(Namespace(config.NamespaceOutsideMesh)).
 			Install(democlient.Install(
-				democlient.WithNamespace(config.namespaceOutsideMesh),
+				democlient.WithNamespace(config.NamespaceOutsideMesh),
 			)).
 			Install(testserver.Install(
-				testserver.WithMesh(config.mesh),
-				testserver.WithNamespace(config.namespace),
+				testserver.WithMesh(config.Mesh),
+				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
 			)).
 			Install(kic.KongIngressController(
+<<<<<<< HEAD
 				kic.WithNamespace(config.namespace),
 				kic.WithMesh(config.mesh),
 			)).
 			Install(kic.KongIngressService(kic.WithNamespace(config.namespace))).
+=======
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.Namespace),
+				kic.WithMesh(config.Mesh),
+			)).
+			Install(kic.KongIngressService(
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.Namespace),
+			)).
+>>>>>>> 67ee1be51 (fix(MeshGateway): fix MeshTCPRoute on MeshGateway (#9167))
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -66,23 +72,28 @@ spec:
             name: test-server
             port:
               number: 80
-`, config.namespace, config.mesh))).
+`, config.Namespace, config.Mesh))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		kicIP, err := kic.From(kubernetes.Cluster).IP(config.namespace)
-		Expect(err).To(Succeed())
+		kicIP, err := kic.From(kubernetes.Cluster).IP(config.Namespace)
+		Expect(err).ToNot(HaveOccurred())
 
-		config.kicIP = kicIP
+		config.KicIP = kicIP
 	})
 
 	E2EAfterAll(func() {
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.namespace)).
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.Namespace)).
 			To(Succeed())
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.namespaceOutsideMesh)).
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.NamespaceOutsideMesh)).
 			To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(config.mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(config.Mesh)).To(Succeed())
 	})
 
+<<<<<<< HEAD
 	Context("MeshCircuitBreaker", CircuitBreaker(config))
+=======
+	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
+	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
+>>>>>>> 67ee1be51 (fix(MeshGateway): fix MeshTCPRoute on MeshGateway (#9167))
 }

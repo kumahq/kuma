@@ -67,7 +67,7 @@ func generateGatewayClusters(
 	return resources, nil
 }
 
-func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Rules) []route.Entry {
+func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Rules) []route.Entry {
 	var entries []route.Entry
 
 	for _, rule := range toRules {
@@ -76,18 +76,18 @@ func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Ru
 			names = append(names, orig.GetName())
 		}
 		slices.Sort(names)
-		entries = append(entries, makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.RuleConf)))
+		entries = append(entries, makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.Rule)))
 	}
 
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, nil, nil, entries)
 }
 
-func makeTcpRouteEntry(name string, rule api.RuleConf) route.Entry {
+func makeTcpRouteEntry(name string, rule api.Rule) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
-	for _, b := range rule.BackendRefs {
+	for _, b := range rule.Default.BackendRefs {
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation

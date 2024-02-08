@@ -706,32 +706,38 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			rules := core_rules.Rule{
 				Subset: core_rules.MeshSubset(),
-				Conf: api.RuleConf{
-					BackendRefs: []common_api.BackendRef{{
-						TargetRef: builders.TargetRefService("backend"),
-						Weight:    pointer.To(uint(100)),
-					}},
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("backend"),
+							Weight:    pointer.To(uint(100)),
+						}},
+					},
 				},
 			}
 			tlsGoRules := core_rules.Rule{
 				Subset: core_rules.MeshSubset(),
-				Conf: api.RuleConf{
-					BackendRefs: []common_api.BackendRef{{
-						TargetRef: builders.TargetRefService("go-backend-1"),
-						Weight:    pointer.To(uint(50)),
-					}, {
-						TargetRef: builders.TargetRefService("go-backend-2"),
-						Weight:    pointer.To(uint(50)),
-					}},
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("go-backend-1"),
+							Weight:    pointer.To(uint(50)),
+						}, {
+							TargetRef: builders.TargetRefService("go-backend-2"),
+							Weight:    pointer.To(uint(50)),
+						}},
+					},
 				},
 			}
 			tlsOtherRules := core_rules.Rule{
 				Subset: core_rules.MeshSubset(),
-				Conf: api.RuleConf{
-					BackendRefs: []common_api.BackendRef{{
-						TargetRef: builders.TargetRefService("other-backend"),
-						Weight:    pointer.To(uint(100)),
-					}},
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("other-backend"),
+							Weight:    pointer.To(uint(100)),
+						}},
+					},
 				},
 			}
 			return outboundsTestCase{
