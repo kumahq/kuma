@@ -599,6 +599,45 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			routing := core_xds.Routing{OutboundTargets: outboundTargets}
 
+<<<<<<< HEAD
+=======
+			rules := core_rules.Rule{
+				Subset: core_rules.MeshSubset(),
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("backend"),
+							Weight:    pointer.To(uint(100)),
+						}},
+					},
+				},
+			}
+			tlsGoRules := core_rules.Rule{
+				Subset: core_rules.MeshSubset(),
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("go-backend-1"),
+							Weight:    pointer.To(uint(50)),
+						}, {
+							TargetRef: builders.TargetRefService("go-backend-2"),
+							Weight:    pointer.To(uint(50)),
+						}},
+					},
+				},
+			}
+			tlsOtherRules := core_rules.Rule{
+				Subset: core_rules.MeshSubset(),
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: []common_api.BackendRef{{
+							TargetRef: builders.TargetRefService("other-backend"),
+							Weight:    pointer.To(uint(100)),
+						}},
+					},
+				},
+			}
+>>>>>>> 67ee1be51 (fix(MeshGateway): fix MeshTCPRoute on MeshGateway (#9167))
 			return outboundsTestCase{
 				xdsContext: xds_context.Context{
 					ControlPlane: &xds_context.ControlPlaneContext{
