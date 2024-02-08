@@ -385,11 +385,9 @@ jobs:
       - name: Fetch manifest digest
         id: manifest_meta
         run: |
-          echo "Fetching image manifest digest for ${matrix.image_manifest}"
+          echo "Fetching image manifest digest for ${{ matrix.image_manifest }}"
           echo "digest=$(regctl image digest ${{ matrix.image_manifest }})" >> $GITHUB_OUTPUT
-          echo "label=$(echo {{matrix.image_manifest}} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
-      - run: |
-          make docker/login
+          echo "label=$(echo ${{ matrix.image_manifest }} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
       - name: sign image manifest
         id: attest
         uses: Kong/public-shared-actions/security-actions/sign-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
@@ -397,6 +395,8 @@ jobs:
           image_digest: ${{ steps.manifest_meta.outputs.digest }}
           tags: ${{ matrix.image_manifest }}
           signature_registry: ${{ env.NOTARY_REPOSITORY }}
+          registry_username: ${{ vars.DOCKER_USERNAME }}
+          registry_password: ${{ secrets.DOCKER_API_KEY }}
       # Aggregate the list of image manifest metadata
       #   GHA limiatations doesn't allow aggregated output list:
       #   https://github.com/actions/runner/pull/2477?
