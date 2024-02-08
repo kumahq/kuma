@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -16,37 +17,68 @@ import (
 type k8sDeployment struct {
 	ingressNamespace string
 	mesh             string
+	name             string
 }
 
 var _ Deployment = &k8sDeployment{}
-
-var ingressApp = "ingress-kong"
 
 func (t *k8sDeployment) Name() string {
 	return DeploymentName
 }
 
 func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
-	var yaml string
 	var err error
 	if t.ingressNamespace == "" {
 		t.ingressNamespace = framework.Config.DefaultGatewayNamespace
 	}
-	yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose,
-		"install", "gateway", "kong",
+	opts := helm.Options{
+		KubectlOptions: cluster.GetKubectlOptions(t.ingressNamespace),
+	}
+	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
-		"--mesh", t.mesh,
+		"--repo", "https://charts.konghq.com",
+		"--set", "controller.ingressController.ingressClass="+t.name,
+		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
+		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
+		"ingress",
 	)
 	if err != nil {
 		return err
 	}
 
-	err = k8s.KubectlApplyFromStringE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(),
-		yaml)
-	if err != nil {
-		return err
+	for _, app := range []string{fmt.Sprintf("%s-controller", t.name), fmt.Sprintf("%s-gateway", t.name)} {
+		err := k8s.WaitUntilNumPodsCreatedE(cluster.GetTesting(),
+			cluster.GetKubectlOptions(t.ingressNamespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", app),
+			},
+			1,
+			framework.DefaultRetries,
+			framework.DefaultTimeout)
+		if err != nil {
+			return err
+		}
+
+		pods := k8s.ListPods(cluster.GetTesting(),
+			cluster.GetKubectlOptions(t.ingressNamespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", app),
+			},
+		)
+		if len(pods) != 1 {
+			return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
+		}
+
+		err = k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
+			cluster.GetKubectlOptions(t.ingressNamespace),
+			pods[0].Name,
+			framework.DefaultRetries*3, // KIC is fetched from the internet. Increase the timeout to prevent long downloads of images.
+			framework.DefaultTimeout)
+		if err != nil {
+			return err
+		}
 	}
+<<<<<<< HEAD
 
 	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
 		cluster.GetKubectlOptions(t.ingressNamespace),
@@ -72,6 +104,9 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		pods[0].Name,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
+=======
+	return nil
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 }
 
 func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
