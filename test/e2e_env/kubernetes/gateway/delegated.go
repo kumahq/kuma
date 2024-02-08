@@ -13,6 +13,13 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
+type delegatedE2EConfig struct {
+	namespace            string
+	namespaceOutsideMesh string
+	mesh                 string
+	kicIP                string
+}
+
 func Delegated() {
 	config := &delegatedE2EConfig{
 		namespace:            "delegated-gateway",
@@ -64,7 +71,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		kicIP, err := kic.From(kubernetes.Cluster).IP(config.namespace)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(Succeed())
 
 		config.kicIP = kicIP
 	})

@@ -8,38 +8,30 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
-
-type delegatedE2EConfig struct {
-	namespace            string
-	namespaceOutsideMesh string
-	mesh                 string
-	kicIP                string
-}
 
 func CircuitBreaker(config *delegatedE2EConfig) func() {
 	GinkgoHelper()
 
 	return func() {
 		BeforeAll(func() {
-			Expect(framework.DeleteMeshPolicyOrError(
+			Expect(DeleteMeshPolicyOrError(
 				kubernetes.Cluster,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 				fmt.Sprintf("mesh-circuit-breaker-all-%s", config.mesh),
 			)).To(Succeed())
-			Expect(framework.DeleteMeshPolicyOrError(
+			Expect(DeleteMeshPolicyOrError(
 				kubernetes.Cluster,
 				meshretry_api.MeshRetryResourceTypeDescriptor,
 				fmt.Sprintf("mesh-retry-all-%s", config.mesh),
 			)).To(Succeed())
 		})
 
-		framework.E2EAfterEach(func() {
-			Expect(framework.DeleteMeshResources(
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(
 				kubernetes.Cluster,
 				config.mesh,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
@@ -68,7 +60,7 @@ func CircuitBreaker(config *delegatedE2EConfig) func() {
 			))
 
 			// when
-			Expect(kubernetes.Cluster.Install(framework.YamlK8s(yaml))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(yaml))).To(Succeed())
 
 			// then
 			Eventually(func(g Gomega) ([]client.FailureResponse, error) {
