@@ -352,8 +352,8 @@ jobs:
           trap on_exit EXIT
           make docker/push
           make docker/manifest
-          manifests=$(make manifests/release/show | jq -R -c -S 'split("\n")') # Create JSON array for release manifests needed for signing
-          echo "$published_manifests=${manifests}"
+          manifests=$(make manifests/release/show | jq -R -c -S 'split("\\s+";"")[:-1]') # Create JSON array for release manifests needed for signing
+          echo "published_manifests=${manifests}"
           echo "manifests=${manifests}" >> "$GITHUB_OUTPUT"
   # Keyless container image signing 
   # This step will sign docker manifest image recursively for all platforms by digest after publishing the image
@@ -420,14 +420,23 @@ jobs:
       needs.metadata.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
 
     outputs:
-      artifact-provenance-result: ${{ needs.distributions.outputs.subjects-as-file }}
-      artifact-upload-tag-name: ${{ needs.distributions.outputs.subjects-as-file }}
-      artifact-upload-assets: ${{ needs.distributions.outputs.subjects-as-file }}
+      artifact-provenance-result: ${{ steps.artifact-provenance-metadata.outputs.subjects-as-file }}
+      artifact-upload-tag-name: ${{ steps.artifact-provenance-metadata.outputs.upload-ref-name }}
+      artifact-upload-assets: ${{ steps.artifact-provenance-metadata.outputs.upload-assets }}
       image-manifest-provenance-result: ${{ steps.image-manifest-provenance-metadata.outputs.result }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
+      - id: artifact-provenance-metadata
+        run: |
+          echo "upload-ref-name=${GITHUB_REF_NAME}" > $GITHUB_OUTPUT
+          echo "subjects-as-file=${{ needs.distributions.outputs.subjects-as-file }}"
+          if [[ "${GITHUB_REF}" =~ ^"refs/tags/" ]]; then
+            echo "upload-assets=true" > $GITHUB_OUTPUT
+          else
+            echo "upload-assets=false" > $GITHUB_OUTPUT
+          fi
       - uses: cloudposse/github-action-matrix-outputs-read@5690ce6664e0dcdf06e27e4ba27e7a424951da56
         id: image-manifest-provenance-metadata
         with:
@@ -479,7 +488,8 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
       base64-subjects-as-file: "${{ needs.provenance-metadata.outputs.artifact-provenance-result }}"
-      # TODO: Upload artifacts / provenance to release tag
+      upload-assets: "${{ needs.provenance-metadata.outputs.artifact-upload-assets }}"
+      upload-tag-name: "${{ needs.provenance-metadata.outputs.artifact-upload-tag-name }}"
   gen_e2e_matrix:
     timeout-minutes: 2
     runs-on: ubuntu-latest
