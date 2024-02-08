@@ -73,12 +73,11 @@ jobs:
           make dev/tools
       - run: |
           make test
-  build:
+  metadata:
     needs: ["check"]
     runs-on: ubuntu-latest
     outputs:
-      IMAGE_TARS: ${{ steps.image_meta.outputs.TARS }}
-      ENALED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
       ENABLED_GOOSES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOOSES }}
       ALLOW_PUSH: ${{ steps.artifacts_metadata.outputs.ALLOW_PUSH }}
     steps:
@@ -91,14 +90,32 @@ jobs:
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_OUTPUT
           echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_OUTPUT
-      - name: "Add matrix to .run-full-matrix for cache"
-        run: |
-          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
       - name: "Maybe set flag to push build artifacts"
         id: artifacts_metadata
         if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
         run: |
           echo 'ALLOW_PUSH=true' >> $GITHUB_OUTPUT
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        id: ci_tools_cache
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+  build:
+    needs: ["metadata"]
+    runs-on: ubuntu-latest
+    outputs:
+      IMAGE_TARS: ${{ steps.image_meta.outputs.TARS }}
+    env:
+      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
       - name: Free up disk space for the Runner
         run: |
           echo "Disk usage before cleanup"
@@ -112,6 +129,9 @@ jobs:
       - name: Install dependencies for cross builds
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - name: "Add matrix to .run-full-matrix for cache"
+        run: |
+          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
@@ -187,12 +207,12 @@ jobs:
           asset_prefix: ${{ steps.img_meta.outputs.tar_name }}
           image: ${{ matrix.tar }}
   distributions:
-    needs: ["build", "scan-images"]
+    needs: ["metadata", "scan-images"]
     runs-on: ubuntu-latest
     env:
-      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
+      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
     outputs:
       subjects-as-file: ${{ steps.artifact-hashes.outputs.handle }}
     steps:
@@ -276,15 +296,15 @@ jobs:
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: make helm/release
   distribute-images:
-    needs: ["build", "scan-images"]
+    needs: ["metadata", "scan-images"]
     if: >
-      needs.build.outputs.ALLOW_PUSH == 'true'
+      needs.metadata.outputs.ALLOW_PUSH == 'true'
 
     runs-on: ubuntu-latest
     env:
-      ENABLED_GOARCHES: ${{ needs.build.outputs.ENALED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.build.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.build.outputs.ALLOW_PUSH }}
+      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
     outputs:
       published_image_manifests: ${{ steps.published_images.outputs.manifests }}
     steps:
@@ -350,9 +370,9 @@ jobs:
   sign-image-manifests:
     permissions:
       id-token: write # needed for signing the images with GitHub OIDC Token
-    needs: ["build", "distribute-images"]
+    needs: ["metadata", "distribute-images"]
     if: >
-      needs.build.outputs.ALLOW_PUSH == 'true'
+      needs.metadata.outputs.ALLOW_PUSH == 'true'
 
     runs-on: ubuntu-latest
     strategy:
@@ -394,10 +414,10 @@ jobs:
   # GHA limitations don't allow dynamic output keys / expressions
   provenance-metadata:
     name: provenance metadata
-    needs: ["build", "distributions", "distribute-images", "sign-image-manifests"]
+    needs: ["metadata", "distributions", "distribute-images", "sign-image-manifests"]
     runs-on: ubuntu-latest
     if: >
-      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+      needs.metadata.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
 
     outputs:
       artifact-provenance-result: ${{ needs.distributions.outputs.subjects-as-file }}
@@ -424,9 +444,9 @@ jobs:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
     name: Images Provenance
-    needs: [build, distribute-images, sign-image-manifests, provenance-metadata]
+    needs: [metadata, distribute-images, sign-image-manifests, provenance-metadata]
     if: >
-      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+      needs.metadata.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
 
     strategy:
       # limit to 3 jobs at a time
@@ -448,9 +468,9 @@ jobs:
       registry-username: ${{ vars.DOCKER_USERNAME }}
   # Provenance job for all binary artifacts
   artifact-provenance:
-    needs: ["build", "distributions", "provenance-metadata"]
+    needs: ["metadata", "distributions", "provenance-metadata"]
     if: >
-      needs.build.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
+      needs.metadata.outputs.ALLOW_PUSH == 'true' && github.event_name != 'pull_request'
 
     permissions:
       actions: read
