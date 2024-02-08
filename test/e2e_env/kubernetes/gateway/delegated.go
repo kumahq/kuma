@@ -34,6 +34,7 @@ func Delegated() {
 		UseEgress:                   false,
 	}
 
+<<<<<<< HEAD
 	configMs := delegated.Config{
 		Namespace:                   "delegated-gateway-ms",
 		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh-ms",
@@ -111,14 +112,44 @@ spec:
 					Install(YamlK8s(externalNameService("external-service"))).
 					Install(YamlK8s(externalNameService("another-external-service"))).
 					Install(YamlK8s(fmt.Sprintf(`
+=======
+	BeforeAll(func() {
+		err := NewClusterSetup().
+			Install(MTLSMeshKubernetes(config.mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(config.mesh)).
+			Install(NamespaceWithSidecarInjection(config.namespace)).
+			Install(Namespace(config.namespaceOutsideMesh)).
+			Install(democlient.Install(
+				democlient.WithNamespace(config.namespaceOutsideMesh),
+			)).
+			Install(testserver.Install(
+				testserver.WithMesh(config.mesh),
+				testserver.WithNamespace(config.namespace),
+				testserver.WithName("test-server"),
+			)).
+			Install(kic.KongIngressController(
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.namespace),
+				kic.WithMesh(config.mesh),
+			)).
+			Install(kic.KongIngressService(
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.namespace),
+			)).
+			Install(YamlK8s(fmt.Sprintf(`
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   namespace: %s
   name: %s-ingress
   annotations:
+<<<<<<< HEAD
     kubernetes.io/ingress.class: %s
     konghq.com/strip-path: 'true'
+=======
+    kubernetes.io/ingress.class: delegated
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 spec:
   rules:
   - http:

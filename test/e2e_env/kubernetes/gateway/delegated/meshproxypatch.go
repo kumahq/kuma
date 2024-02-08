@@ -53,7 +53,11 @@ spec:
                 function envoy_on_request(request_handle)
                   request_handle:headers():add("X-Header", "test")
                 end
+<<<<<<< HEAD:test/e2e_env/kubernetes/gateway/delegated/meshproxypatch.go
 `, config.CpNamespace, config.Mesh)
+=======
+`, Config.KumaNamespace, config.mesh)
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157)):test/e2e_env/kubernetes/gateway/delegated_meshproxypatch.go
 
 			// when
 			err := kubernetes.Cluster.Install(framework.YamlK8s(meshProxyPatch))
