@@ -1,4 +1,4 @@
-package gateway
+package delegated
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 	"github.com/kumahq/kuma/test/server/types"
 )
 
-func MeshProxyPatch(config *delegatedE2EConfig) func() {
+func MeshProxyPatch(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
@@ -44,10 +44,10 @@ spec:
                 function envoy_on_request(request_handle)
                   request_handle:headers():add("X-Header", "test")
                 end
-`, Config.KumaNamespace, config.mesh)
+`, config.CpNamespace, config.Mesh)
 
 			// when
-			err := kubernetes.Cluster.Install(YamlK8s(meshProxyPatch))
+			err := kubernetes.Cluster.Install(framework.YamlK8s(meshProxyPatch))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -55,8 +55,8 @@ spec:
 				return client.CollectResponses(
 					kubernetes.Cluster,
 					"demo-client",
-					fmt.Sprintf("http://%s/test-server", config.kicIP),
-					client.FromKubernetesPod(config.namespaceOutsideMesh, "demo-client"),
+					fmt.Sprintf("http://%s/test-server", config.KicIP),
+					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
 				)
 			}, "30s", "1s").Should(ContainElement(HaveField(
 				`Received.Headers`,
