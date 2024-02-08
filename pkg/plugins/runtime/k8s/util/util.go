@@ -163,6 +163,7 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 		return mesh
 	}
 
+	// Label wasn't found on the object, let's look on the namespace instead
 	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
 		return mesh
 	}

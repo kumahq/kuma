@@ -101,7 +101,7 @@ kind: MeshGatewayInstance
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   replicas: 1
