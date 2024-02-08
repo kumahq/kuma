@@ -1,4 +1,4 @@
-package delegated
+package gateway
 
 import (
 	"fmt"
@@ -9,11 +9,19 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-func CircuitBreaker(config *Config) func() {
+type delegatedE2EConfig struct {
+	namespace            string
+	namespaceOutsideMesh string
+	mesh                 string
+	kicIP                string
+}
+
+func CircuitBreaker(config *delegatedE2EConfig) func() {
 	GinkgoHelper()
 
 	return func() {
@@ -21,19 +29,19 @@ func CircuitBreaker(config *Config) func() {
 			Expect(framework.DeleteMeshPolicyOrError(
 				kubernetes.Cluster,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
-				fmt.Sprintf("mesh-circuit-breaker-all-%s", config.Mesh),
+				fmt.Sprintf("mesh-circuit-breaker-all-%s", config.mesh),
 			)).To(Succeed())
 			Expect(framework.DeleteMeshPolicyOrError(
 				kubernetes.Cluster,
 				meshretry_api.MeshRetryResourceTypeDescriptor,
-				fmt.Sprintf("mesh-retry-all-%s", config.Mesh),
+				fmt.Sprintf("mesh-retry-all-%s", config.mesh),
 			)).To(Succeed())
 		})
 
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
-				config.Mesh,
+				config.mesh,
 				v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 			)).To(Succeed())
 		})
@@ -42,7 +50,7 @@ func CircuitBreaker(config *Config) func() {
 			" detectors for connections", func(yaml string) {
 			// given no MeshCircuitBreaker
 			mcbs, err := kubernetes.Cluster.GetKumactlOptions().
-				KumactlList("meshcircuitbreakers", config.Mesh)
+				KumactlList("meshcircuitbreakers", config.mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(mcbs).To(BeEmpty())
 
@@ -50,8 +58,8 @@ func CircuitBreaker(config *Config) func() {
 				return client.CollectResponsesAndFailures(
 					kubernetes.Cluster,
 					"demo-client",
-					fmt.Sprintf("http://%s/test-server", config.KicIP),
-					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+					fmt.Sprintf("http://%s/test-server", config.kicIP),
+					client.FromKubernetesPod(config.namespaceOutsideMesh, "demo-client"),
 					client.WithNumberOfRequests(10),
 				)
 			}, "30s", "1s").Should(And(
@@ -67,8 +75,8 @@ func CircuitBreaker(config *Config) func() {
 				return client.CollectResponsesAndFailures(
 					kubernetes.Cluster,
 					"demo-client",
-					fmt.Sprintf("http://%s/test-server", config.KicIP),
-					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+					fmt.Sprintf("http://%s/test-server", config.kicIP),
+					client.FromKubernetesPod(config.namespaceOutsideMesh, "demo-client"),
 					client.WithNumberOfRequests(10),
 					// increase processing time of a request to increase
 					// a probability of triggering maxPendingRequest limit
@@ -101,7 +109,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, config.CpNamespace, config.Mesh)),
+`, Config.KumaNamespace, config.mesh)),
 			Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
@@ -123,7 +131,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
-`, config.CpNamespace, config.Mesh)),
+`, Config.KumaNamespace, config.mesh)),
 		)
 	}
 }
