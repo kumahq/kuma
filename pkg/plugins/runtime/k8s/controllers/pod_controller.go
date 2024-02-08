@@ -105,6 +105,16 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 }
 
 func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.Pod, log logr.Logger) error {
+	ns := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
+		return errors.Wrap(err, "unable to get Namespace for Pod")
+	}
+
+	if ns.Status.Phase == kube_core.NamespaceTerminating {
+		r.Log.V(1).Info("namespace is terminating. Ignoring reconciliation")
+		return nil
+	}
+
 	dp := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{Name: pod.Name, Namespace: pod.Namespace},
 	}
@@ -117,11 +127,6 @@ func (r *PodReconciler) reconcileDataplane(ctx context.Context, pod *kube_core.P
 	}
 	if pod.Status.Reason == "Evicted" {
 		return r.deleteObjectIfExist(ctx, dp, "pod was evicted", log)
-	}
-
-	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
-		return errors.Wrap(err, "unable to get Namespace for Pod")
 	}
 
 	services, err := r.findMatchingServices(ctx, pod)

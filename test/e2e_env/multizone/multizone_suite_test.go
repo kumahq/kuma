@@ -43,6 +43,7 @@ var (
 		}
 	})
 	_ = ReportAfterSuite("cp logs", multizone.PrintCPLogsOnFailure)
+	_ = ReportAfterSuite("kube state", multizone.PrintKubeState)
 )
 
 var (
