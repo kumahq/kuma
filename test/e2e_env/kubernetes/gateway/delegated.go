@@ -62,6 +62,7 @@ func Delegated() {
 			)).
 			Install(kic.KongIngressController(
 				kic.WithName("delegated"),
+<<<<<<< HEAD
 				kic.WithNamespace(config.Namespace),
 				kic.WithMesh(config.Mesh),
 			)).
@@ -69,6 +70,15 @@ func Delegated() {
 				kic.WithName("delegated"),
 				kic.WithNamespace(config.Namespace),
 			)).
+=======
+				kic.WithNamespace(config.namespace),
+				kic.WithMesh(config.mesh),
+			)).
+			Install(kic.KongIngressService(
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.namespace),
+			)).
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -77,7 +87,10 @@ metadata:
   name: %s-ingress
   annotations:
     kubernetes.io/ingress.class: delegated
+<<<<<<< HEAD
     konghq.com/strip-path: 'true'
+=======
+>>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 spec:
   rules:
   - http:
