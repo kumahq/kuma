@@ -5,8 +5,6 @@ import (
 	"io"
 	"path"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
