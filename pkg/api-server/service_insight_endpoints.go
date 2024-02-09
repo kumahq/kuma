@@ -33,10 +33,14 @@ func (s *serviceInsightEndpoints) addFindEndpoint(ws *restful.WebService, pathPr
 
 func (s *serviceInsightEndpoints) findResource(request *restful.Request, response *restful.Response) {
 	service := request.PathParameter("service")
-	meshName := s.meshFromRequest(request)
+	meshName, err := s.meshFromRequest(request)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		return
+	}
 
 	serviceInsight := mesh.NewServiceInsightResource()
-	err := s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
+	err = s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 	} else {
@@ -67,10 +71,14 @@ func (s *serviceInsightEndpoints) addListEndpoint(ws *restful.WebService, pathPr
 }
 
 func (s *serviceInsightEndpoints) listResources(request *restful.Request, response *restful.Response) {
-	meshName := s.meshFromRequest(request)
+	meshName, err := s.meshFromRequest(request)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		return
+	}
 
 	serviceInsightList := &mesh.ServiceInsightResourceList{}
-	err := s.resManager.List(request.Request.Context(), serviceInsightList, store.ListByMesh(meshName))
+	err = s.resManager.List(request.Request.Context(), serviceInsightList, store.ListByMesh(meshName))
 	if err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 		return

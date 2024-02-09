@@ -808,7 +808,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/meshes/invalid$/traffic-routes",
+				path:    "/meshes/default/traffic-routes",
 			}
 			response := client.putJson("invalid@", []byte(json))
 
@@ -821,45 +821,6 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_name-mesh.golden.json")))
-		})
-
-		It("should return 400 when mesh does not exist", func() {
-			// setup
-			err := resourceStore.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			// given
-			res := &unversioned.Resource{
-				Meta: rest_v1alpha1.ResourceMeta{
-					Name: "new-resource",
-					Mesh: "default",
-					Type: string(core_mesh.TrafficRouteType),
-				},
-				Spec: &mesh_proto.TrafficRoute{
-					Sources: []*mesh_proto.Selector{{Match: map[string]string{
-						mesh_proto.ServiceTag: "*",
-					}}},
-					Destinations: []*mesh_proto.Selector{{Match: map[string]string{
-						mesh_proto.ServiceTag: "*",
-					}}},
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Destination: map[string]string{
-							mesh_proto.ServiceTag: "*",
-							"path":                "/sample-path",
-						},
-					},
-				},
-			}
-
-			// when
-			response := client.put(res)
-
-			// when
-			bytes, err := io.ReadAll(response.Body)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_mesh-not-found.golden.json")))
 		})
 
 		It("should return 400 when json is invalid", func() {
@@ -1095,15 +1056,20 @@ var _ = Describe("Resource Endpoints", func() {
 
 	DescribeTable("inspect for policies /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/policies/_resources/dataplanes"))
+	}, test.EntriesForFolder("resources/inspect/policies/_resources/dataplanes"))
 
 	DescribeTable("inspect dataplane rules /meshes/{mesh}/dataplanes/{dpName}/_rules", func(inputFile string) {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/dataplanes/_rules"))
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_rules"))
 
 	DescribeTable("inspect meshgateway rules /meshes/{mesh}/meshgateways/{gwName}/_rules", func(inputFile string) {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/meshgateways/_rules"))
+	}, test.EntriesForFolder("resources/inspect/meshgateways/_rules"))
+
+	DescribeTable("resources CRUD", func(inputFile string) {
+		format.MaxLength = 0
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/crud"))
 })
