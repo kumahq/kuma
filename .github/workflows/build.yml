@@ -1,0 +1,138 @@
+name: Build
+on:
+  workflow_call:
+    outputs:
+      ENABLED_GOARCHES: 
+        value: ${{ jobs.metadata.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: 
+        value: ${{ jobs.metadata.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: 
+        value: ${{ jobs.metadata.outputs.ALLOW_PUSH }}
+      IMAGES: 
+        value: ${{ jobs.build.outputs.IMAGES }}
+      ARTIFACT_ID: 
+        value: ${{ jobs.build.outputs.ARTIFACT_ID }}
+      ARTIFACT_URL: 
+        value: ${{ jobs.build.outputs.ARTIFACT_URL }}
+      IMAGE_ARTIFACTS_NAME:
+        value: ${{ jobs.build.outputs.IMAGE_ARTIFACTS_NAME }}
+      BINARY_ARTIFACTS_NAME:
+        value: ${{ jobs.build.outputs.BINARY_ARTIFACTS_NAME }}  
+      
+permissions:
+  contents: read
+
+env:
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      ENABLED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ steps.artifacts_metadata.outputs.ALLOW_PUSH }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+      - name: "Maybe set full matrix"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        id: set-full-matrix-switches
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_OUTPUT
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_OUTPUT
+      - name: "Maybe set flag to push build artifacts"
+        id: artifacts_metadata
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
+        run: |
+          echo 'ALLOW_PUSH=true' >> $GITHUB_OUTPUT
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        id: ci_tools_cache
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+  build:
+    needs: ["metadata"]
+    runs-on: ubuntu-latest
+    outputs:
+      IMAGES: ${{ steps.image_meta.outputs.tars }}
+      ARTIFACT_ID: ${{ steps.build-artifacts.outputs.artifact-id }}
+      ARTIFACT_URL: ${{ steps.build-artifacts.outputs.artifact-url }}
+      IMAGE_ARTIFACTS_NAME: ${{ env.IMAGE_ARTIFACTS_NAME }}
+      BINARY_ARTIFACTS_NAME: ${{ env.BINARY_ARTIFACTS_NAME }}
+    env:
+      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACTS_NAME: image_artifacts
+      BINARY_ARTIFACTS_NAME: binary_artifacts
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - name: "Add matrix to .run-full-matrix for cache"
+        run: |
+          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            .run-full-matrix
+            go.sum
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        id: ci_tools_cache
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - run: |
+          make -j images
+      - run: |
+          make -j docker/save
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure
+      - name: Inspect created tars
+        run: |
+          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+      - uses: actions/upload-artifact@v4
+        id: artifacts
+        with:
+          name: ${{ env.BUILD_ARTIFACTS_NAME }}
+          path: |
+            ./**/distributions/out/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        id: image-artifacts
+        with:
+          name: ${{ env.IMAGE_ARTIFACTS_NAME }}
+          path: |
+            ./**/docker/*.tar
+      - id: image_meta
+        run: |
+          TARS=$(ls ./build/docker/*.tar | jq -R -s -c 'split("\n")[:-1]') # create JSON array out of ls output
+          echo "Image TAR files: ${TARS}"
+          echo "tars=${TARS}" >> $GITHUB_OUTPUT

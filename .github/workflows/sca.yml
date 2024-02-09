@@ -1,0 +1,71 @@
+name: SCA
+on:
+  workflow_call:
+    inputs:
+      dir:
+        required: false
+        type: string
+        description: # comma delimited list of project relative folders to inspect
+        default: '.'
+      images:
+        required: true
+        type: string
+        description: The JSON array of docker images / tar files to be analyzed. Must be present on disk
+      artifact_name:
+        required: false
+        type: string
+        description: The artifact name to download docker image TAR files
+permissions:
+  contents: read
+jobs:
+  # SBOM and CVE scan for project package managers + dependent project boms
+  # Any dependent SBOMs are detected (Ex: gui) using SBOM cataloger
+  # Refer Syft [Configuration](https://github.com/anchore/syft?tab=readme-ov-file#configuration) is picked from .syft.yaml
+  scan-project:
+    name: Scan Project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan Project Dirs
+        id: sca
+        uses: Kong/public-shared-actions/security-actions/sca@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        with:
+          asset_prefix: ${{ github.repository }} # Unique asset_prefix must be specified to avoid artifact upload conflict
+          dir: ${{ inputs.dir }}
+
+  # SBOM and CVE scan for binaries analyzing the docker images
+  scan-images:
+    name: Scan Images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.artifact_name != '' }}
+        id: download-image-artifacts
+        with:
+          name: ${{ inputs.artifact_name }}
+      - name: Inspect build directory
+        if: ${{ inputs.artifact_name != '' }}
+        run: |
+          ls -alR ${{ steps.download-image-artifacts.outputs.download-path }}
+      - name: Get Asset Prefix
+        id: img_meta
+        env:
+          ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        run: |
+          if [[ -n "${ARTIFACT_NAME}" ]]; then
+            asset=$(echo ${{ matrix.image }} | rev | cut -d "/" -f 1 | rev)
+            echo "asset_prefix=${asset%.*}"
+            echo "asset_prefix=${asset%.*}" >> "$GITHUB_OUTPUT"
+          else
+            asset=$(echo ${{ matrix.image }} | cut -d ":" -f 1)
+            echo "asset_prefix=${asset}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Scan Image
+        id: sca
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        with:
+          asset_prefix: ${{ steps.img_meta.outputs.asset_prefix }} # Unique asset_prefix must be specified to avoid artifact upload conflict
+          image: ${{ matrix.image }}
