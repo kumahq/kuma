@@ -31,6 +31,11 @@ func NewMeshValidator(caManagers core_ca.Managers, store core_store.ResourceStor
 }
 
 func (m *meshValidator) ValidateCreate(ctx context.Context, name string, resource *core_mesh.MeshResource) error {
+	if len(name) > 63 {
+		var verr validators.ValidationError
+		verr.AddViolation("name", "cannot be longer than 63 characters")
+		return verr.OrNil()
+	}
 	if err := ValidateMTLSBackends(ctx, m.CaManagers, name, resource); err != nil {
 		return err
 	}
