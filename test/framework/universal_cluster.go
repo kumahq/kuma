@@ -216,7 +216,7 @@ func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
-	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
+	return c.controlplane.kumactl.RunKumactl("get", "meshes")
 }
 
 func (c *UniversalCluster) DeleteKuma() error {
