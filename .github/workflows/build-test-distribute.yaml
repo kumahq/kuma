@@ -54,12 +54,14 @@ jobs:
   build:
     needs: ["check"]
     uses: ./.github/workflows/build.yml
-  # Scan each image for every arch and os
+  # Scan repository directory and images for every arch and os
+  # Custom configuration can be specified in repo at:
+  #   - .syft.yaml
+  #   - .grype.yaml
   scan:
     needs: ["build"]
     uses: ./.github/workflows/sca.yml
     with:
-      dir: .
       images: "${{ needs.build.outputs.IMAGES }}"
       artifact_name: ${{ needs.build.outputs.IMAGE_ARTIFACTS_NAME }}
   sign-and-publish:

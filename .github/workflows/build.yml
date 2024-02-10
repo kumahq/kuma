@@ -10,10 +10,6 @@ on:
         value: ${{ jobs.metadata.outputs.ALLOW_PUSH }}
       IMAGES: 
         value: ${{ jobs.build.outputs.IMAGES }}
-      ARTIFACT_ID: 
-        value: ${{ jobs.build.outputs.ARTIFACT_ID }}
-      ARTIFACT_URL: 
-        value: ${{ jobs.build.outputs.ARTIFACT_URL }}
       IMAGE_ARTIFACTS_NAME:
         value: ${{ jobs.build.outputs.IMAGE_ARTIFACTS_NAME }}
       BINARY_ARTIFACTS_NAME:
@@ -60,8 +56,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       IMAGES: ${{ steps.image_meta.outputs.tars }}
-      ARTIFACT_ID: ${{ steps.build-artifacts.outputs.artifact-id }}
-      ARTIFACT_URL: ${{ steps.build-artifacts.outputs.artifact-url }}
       IMAGE_ARTIFACTS_NAME: ${{ env.IMAGE_ARTIFACTS_NAME }}
       BINARY_ARTIFACTS_NAME: ${{ env.BINARY_ARTIFACTS_NAME }}
     env:
@@ -120,9 +114,9 @@ jobs:
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
       - uses: actions/upload-artifact@v4
-        id: artifacts
+        id: binary-artifacts
         with:
-          name: ${{ env.BUILD_ARTIFACTS_NAME }}
+          name: ${{ env.BINARY_ARTIFACTS_NAME }}
           path: |
             ./**/distributions/out/*.tar.gz
       - uses: actions/upload-artifact@v4

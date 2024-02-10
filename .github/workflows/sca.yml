@@ -2,11 +2,6 @@ name: SCA
 on:
   workflow_call:
     inputs:
-      dir:
-        required: false
-        type: string
-        description: # comma delimited list of project relative folders to inspect
-        default: '.'
       images:
         required: true
         type: string
@@ -25,12 +20,17 @@ jobs:
     name: Scan Project
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          path: ${{ github.repository }}
+
       - name: Scan Project Dirs
         id: sca
         uses: Kong/public-shared-actions/security-actions/sca@17456e74cf062b1d29d751331d8e2f5ac5baedd4
         with:
           asset_prefix: ${{ github.repository }} # Unique asset_prefix must be specified to avoid artifact upload conflict
-          dir: ${{ inputs.dir }}
+          dir: ${{ github.repository }}
 
   # SBOM and CVE scan for binaries analyzing the docker images
   scan-images:
