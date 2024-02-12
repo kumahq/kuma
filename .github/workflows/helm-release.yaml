@@ -31,7 +31,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
