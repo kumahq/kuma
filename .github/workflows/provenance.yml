@@ -18,12 +18,6 @@ on:
         required: true
       DOCKER_API_KEY:
         required: true
-permissions:
-  contents: write
-  id-token: write # needed for signing the images
-  actions: read # For getting workflow run info to build provenance
-  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
-
 jobs:
   # The provenance job is reusable workflow that:
   # Cannot be used as a step within other jobs
@@ -62,7 +56,8 @@ jobs:
   artifact-provenance:
     needs: ["provenance-metadata"]
     if: >
-      ${{ inputs.allow_push == 'true' && github.event_name != 'pull_request' }}
+      inputs.allow_push == 'true' 
+      && github.event_name != 'pull_request'
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
       base64-subjects-as-file: "${{ needs.provenance-metadata.outputs.artifact-provenance-result }}"
@@ -79,25 +74,20 @@ jobs:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
     name: Images Provenance
-    needs: [provenance-metadata]
+    needs: ["provenance-metadata"]
     if: >
-      ${{ inputs.allow_push == 'true' && github.event_name != 'pull_request' }}
-
+      inputs.allow_push == 'true' 
+      && github.event_name != 'pull_request'
     strategy:
       # limit to 3 jobs at a time
       max-parallel: 3
       fail-fast: false
       matrix:
         IMAGE: "${{ fromJSON(inputs.images) }}"
-    permissions:
-      id-token: write # needed for signing the images
-      actions: read # For getting workflow run info to build provenance
-      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.9.0
     with:
       image: ${{ matrix.IMAGE }}
       digest: "${{ fromJSON(needs.provenance-metadata.outputs.image-manifest-provenance-result)['digest'][matrix.IMAGE] }}"
-      #COSIGN_REPOSITORY: kumahq/notary #Issue: https://github.com/slsa-framework/slsa-github-generator/issues/2956
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
       registry-username: ${{ secrets.DOCKER_USERNAME }}

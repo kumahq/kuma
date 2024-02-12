@@ -10,12 +10,10 @@ on:
         required: false
         type: string
         description: The artifact name to download docker image TAR files
-permissions:
-  contents: read
 jobs:
   # SBOM and CVE scan for project package managers + dependent project boms
   # Any dependent SBOMs are detected (Ex: gui) using SBOM cataloger
-  # Refer Syft [Configuration](https://github.com/anchore/syft?tab=readme-ov-file#configuration) is picked from .syft.yaml
+  # Refer Syft [Configuration](https://github.com/anchore/syft?tab=readme-ov-file#configuration) is picked from .syft/config.yaml
   scan-project:
     name: Scan Project
     runs-on: ubuntu-latest
@@ -27,10 +25,11 @@ jobs:
 
       - name: Scan Project Dirs
         id: sca
-        uses: Kong/public-shared-actions/security-actions/sca@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
         with:
           asset_prefix: ${{ github.repository }} # Unique asset_prefix must be specified to avoid artifact upload conflict
           dir: ${{ github.repository }}
+          config: ${{ github.repository }}/.syft/config.yaml
 
   # SBOM and CVE scan for binaries analyzing the docker images
   scan-images:
@@ -65,7 +64,7 @@ jobs:
           fi
       - name: Scan Image
         id: sca
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
         with:
           asset_prefix: ${{ steps.img_meta.outputs.asset_prefix }} # Unique asset_prefix must be specified to avoid artifact upload conflict
           image: ${{ matrix.image }}

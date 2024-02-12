@@ -13,10 +13,7 @@ on:
       IMAGE_ARTIFACTS_NAME:
         value: ${{ jobs.build.outputs.IMAGE_ARTIFACTS_NAME }}
       BINARY_ARTIFACTS_NAME:
-        value: ${{ jobs.build.outputs.BINARY_ARTIFACTS_NAME }}  
-      
-permissions:
-  contents: read
+        value: ${{ jobs.build.outputs.BINARY_ARTIFACTS_NAME }}
 
 env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools

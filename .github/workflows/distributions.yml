@@ -32,17 +32,17 @@ on:
         required: true
     outputs:
       BINARY_ARTIFACTS_HASHES_AS_FILE: 
-        value: ${{ jobs.publish-packages.outputs.COMPRESSED_BINARY_ARTIFACTS_HASHES_AS_FILE }}  
-permissions:
-  contents: read
-  id-token: write # needed for signing the images with GitHub OIDC Token
-
+        value: ${{ jobs.publish-packages.outputs.COMPRESSED_BINARY_ARTIFACTS_HASHES_AS_FILE }}
+      IMAGE_MANIFESTS:
+        value: ${{ jobs.publish-images.outputs.IMAGE_MANIFESTS }}
 env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
   ENABLED_GOARCHES: ${{ inputs.enabled_goarches }}
   ENABLED_GOOSES: ${{ inputs.enabled_gooses }}
   ALLOW_PUSH: ${{ inputs.allow_push }}
   NOTARY_REPOSITORY: "${{ github.repository_owner }}/notary"
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 
 jobs:
   publish-packages:
@@ -94,8 +94,8 @@ jobs:
         run: |
           make helm/update-version
 
-          git config user.name "${GH_USER}"
-          git config user.email "${GH_EMAIL}"
+          git config user.name "${{ env.GH_USER }}"
+          git config user.email "${{ env.GH_EMAIL }}"
           git add -u deployments/charts
           # This commit never ends up in the repo
           git commit --allow-empty -m "ci(helm): update versions"
@@ -188,7 +188,7 @@ jobs:
           echo "label=$(echo ${{ matrix.IMAGE_MANIFEST }} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
       - name: sign image manifest
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@17456e74cf062b1d29d751331d8e2f5ac5baedd4
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
         with:
           image_digest: ${{ steps.manifest_meta.outputs.digest }}
           tags: ${{ matrix.IMAGE_MANIFEST }}

@@ -53,6 +53,8 @@ jobs:
           make check
   build:
     needs: ["check"]
+    permissions:
+      contents: read
     uses: ./.github/workflows/build.yml
   # Scan repository directory and images for every arch and os
   # Custom configuration can be specified in repo at:
@@ -64,7 +66,7 @@ jobs:
     with:
       images: "${{ needs.build.outputs.IMAGES }}"
       artifact_name: ${{ needs.build.outputs.IMAGE_ARTIFACTS_NAME }}
-  sign-and-publish:
+  release:
     permissions:
       contents: read
       id-token: write # needed for signing the images
@@ -88,12 +90,12 @@ jobs:
       id-token: write # needed for signing the images
       actions: read # For getting workflow run info to build provenance
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
-    needs: ["build", "sign-and-publish"]
+    needs: ["build", "release"]
     uses: ./.github/workflows/provenance.yml
     with:
       allow_push: ${{ needs.build.outputs.ALLOW_PUSH }}
-      images: "${{ needs.build.outputs.IMAGES }}"
-      binary_artifacts_hashes_as_file: ${{ needs.sign-and-publish.outputs.BINARY_ARTIFACTS_HASHES_AS_FILE }}
+      images: "${{ needs.release.outputs.IMAGE_MANIFESTS }}"
+      binary_artifacts_hashes_as_file: ${{ needs.release.outputs.BINARY_ARTIFACTS_HASHES_AS_FILE }}
     secrets:
       DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
       DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
