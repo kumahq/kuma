@@ -3,7 +3,7 @@ FROM ubuntu:jammy@sha256:ec050c32e4a6085b423d36ecd025c0d3ff00c38ab93a3d71a460ff1
 ARG ARCH
 
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu5.1 iproute2=5.15.0-1ubuntu2 && \
+    apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu5.2 iproute2=5.15.0-1ubuntu2 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
