@@ -1,0 +1,20 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "ServiceInsight",
+   "mesh": "mesh-1",
+   "name": "backend",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "status": "partially_degraded",
+   "dataplanes": {
+    "total": 20,
+    "online": 19,
+    "offline": 1
+   },
+   "addressPort": "backend.mesh:80"
+  }
+ ],
+ "next": "http://{{address}}/meshes/mesh-1/service-insights?name=end&offset=1&size=1"
+}

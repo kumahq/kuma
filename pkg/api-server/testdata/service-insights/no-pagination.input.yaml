@@ -1,0 +1,18 @@
+#/meshes/mesh-2/service-insights 200
+type: Mesh
+name: mesh-2
+---
+type: ServiceInsight
+mesh: mesh-2
+name: all-services-mesh-2
+services:
+  db:
+    status: partially_degraded
+    dataplanes:
+      online: 9
+      offline: 1
+  redis:
+    status: partially_degraded
+    dataplanes:
+      online: 19
+      offline: 3

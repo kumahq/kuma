@@ -1,0 +1,34 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "ServiceInsight",
+   "mesh": "mesh-2",
+   "name": "db",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "status": "partially_degraded",
+   "dataplanes": {
+    "total": 10,
+    "online": 9,
+    "offline": 1
+   },
+   "addressPort": "db.mesh:80"
+  },
+  {
+   "type": "ServiceInsight",
+   "mesh": "mesh-2",
+   "name": "redis",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "status": "partially_degraded",
+   "dataplanes": {
+    "total": 22,
+    "online": 19,
+    "offline": 3
+   },
+   "addressPort": "redis.mesh:80"
+  }
+ ],
+ "next": null
+}

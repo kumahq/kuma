@@ -1,0 +1,14 @@
+{
+ "type": "ServiceInsight",
+ "mesh": "mesh-1",
+ "name": "backend",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "status": "partially_degraded",
+ "dataplanes": {
+  "total": 100,
+  "online": 70,
+  "offline": 30
+ },
+ "addressPort": "backend.mesh:80"
+}
