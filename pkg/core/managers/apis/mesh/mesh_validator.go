@@ -30,13 +30,15 @@ func NewMeshValidator(caManagers core_ca.Managers, store core_store.ResourceStor
 }
 
 func (m *meshValidator) ValidateCreate(ctx context.Context, name string, resource *core_mesh.MeshResource) error {
-	if err := ValidateMTLSBackends(ctx, m.CaManagers, name, resource); err != nil {
-		return err
+	var verr validators.ValidationError
+	if len(name) > 63 {
+		verr.AddViolation("name", "cannot be longer than 63 characters")
 	}
-	return nil
+	verr.Add(ValidateMTLSBackends(ctx, m.CaManagers, name, resource))
+	return verr.OrNil()
 }
 
-func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name string, resource *core_mesh.MeshResource) error {
+func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name string, resource *core_mesh.MeshResource) validators.ValidationError {
 	verr := validators.ValidationError{}
 	path := validators.RootedAt("mtls").Field("backends")
 
@@ -44,6 +46,7 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 		caManager, exist := caManagers[backend.Type]
 		if !exist {
 			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
+<<<<<<< HEAD
 			return verr.OrNil()
 		} else if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
 			if configErr, ok := err.(*validators.ValidationError); ok {
@@ -55,16 +58,27 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 		}
 	}
 	return verr.OrNil()
+=======
+			return verr
+		} else if !resource.Spec.GetMtls().GetSkipValidation() {
+			if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
+				if configErr, ok := err.(*validators.ValidationError); ok {
+					verr.AddErrorAt(path.Index(idx).Field("conf"), *configErr)
+				} else {
+					verr.AddViolationAt(path, err.Error())
+				}
+			}
+		}
+	}
+	return verr
+>>>>>>> 50570469c (fix(kuma-cp): prevent violating kubernetes label limit (#9191))
 }
 
 func (m *meshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
-	if err := m.validateMTLSBackendChange(previousMesh, newMesh); err != nil {
-		return err
-	}
-	if err := ValidateMTLSBackends(ctx, m.CaManagers, newMesh.Meta.GetName(), newMesh); err != nil {
-		return err
-	}
-	return nil
+	var verr validators.ValidationError
+	verr.Add(m.validateMTLSBackendChange(previousMesh, newMesh))
+	verr.Add(ValidateMTLSBackends(ctx, m.CaManagers, newMesh.Meta.GetName(), newMesh))
+	return verr.OrNil()
 }
 
 func (m *meshValidator) ValidateDelete(ctx context.Context, name string) error {
@@ -87,10 +101,10 @@ func ValidateNoActiveDP(ctx context.Context, name string, store core_store.Resou
 	return nil
 }
 
-func (m *meshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
+func (m *meshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) validators.ValidationError {
 	verr := validators.ValidationError{}
 	if previousMesh.MTLSEnabled() && newMesh.MTLSEnabled() && previousMesh.Spec.GetMtls().GetEnabledBackend() != newMesh.Spec.GetMtls().GetEnabledBackend() {
 		verr.AddViolation("mtls.enabledBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
 	}
-	return verr.OrNil()
+	return verr
 }
