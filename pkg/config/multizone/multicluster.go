@@ -80,6 +80,9 @@ func (r *ZoneConfig) Validate() error {
 	if !govalidator.IsDNSName(r.Name) {
 		return errors.Errorf("Zone name %s has to be a valid DNS name", r.Name)
 	}
+	if len(r.Name) > 63 {
+		return errors.New("Zone name cannot be longer than 63 characters")
+	}
 	if r.GlobalAddress != "" {
 		u, err := url.Parse(r.GlobalAddress)
 		if err != nil {
