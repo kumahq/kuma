@@ -88,7 +88,6 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	if err := snapshot.Consistent(); err != nil {
-		log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 		return false, errors.Wrap(err, "inconsistent snapshot")
 	}
 	log.Info("config has changed", "versions", changed)
@@ -167,7 +166,6 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx
 
 	rs, err := gen.Generate(ctx, xdsCtx, proxy)
 	if err != nil {
-		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
 	for _, hook := range s.ResourceSetHooks {
