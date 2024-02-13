@@ -80,6 +80,7 @@ func (r *ZoneConfig) Validate() error {
 	if r.GlobalAddress == "" {
 		return errors.Errorf("GlobalAddress is mandatory in Zone mode")
 	}
+<<<<<<< HEAD
 	u, err := url.Parse(r.GlobalAddress)
 	if err != nil {
 		return errors.Wrapf(err, "unable to parse zone GlobalAddress.")
@@ -97,6 +98,30 @@ func (r *ZoneConfig) Validate() error {
 			ok := roots.AppendCertsFromPEM(caCert)
 			if !ok {
 				return errors.New("failed to parse root certificate")
+=======
+	if len(r.Name) > 63 {
+		return errors.New("Zone name cannot be longer than 63 characters")
+	}
+	if r.GlobalAddress != "" {
+		u, err := url.Parse(r.GlobalAddress)
+		if err != nil {
+			return errors.Wrapf(err, "unable to parse zone GlobalAddress.")
+		}
+		switch u.Scheme {
+		case "grpc":
+		case "grpcs":
+			rootCaFile := r.KDS.RootCAFile
+			if rootCaFile != "" {
+				roots := x509.NewCertPool()
+				caCert, err := os.ReadFile(rootCaFile)
+				if err != nil {
+					return errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+				}
+				ok := roots.AppendCertsFromPEM(caCert)
+				if !ok {
+					return errors.New("failed to parse root certificate")
+				}
+>>>>>>> 50570469c (fix(kuma-cp): prevent violating kubernetes label limit (#9191))
 			}
 		}
 	default:

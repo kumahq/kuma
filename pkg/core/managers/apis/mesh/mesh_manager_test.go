@@ -202,6 +202,17 @@ var _ = Describe("Mesh Manager", func() {
 			// then
 			Expect(err).To(MatchError("mtls.backends[0].conf.cert: has to be defined; mtls.backends[0].conf.key: has to be defined"))
 		})
+
+		It("should not create mesh with name longer than 64 chars", func() {
+			name := ""
+			for i := 0; i < 64; i++ {
+				name += "x"
+			}
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(name, model.NoMesh))
+
+			// then
+			Expect(err).To(MatchError("name: cannot be longer than 63 characters"))
+		})
 	})
 
 	Describe("Delete()", func() {
