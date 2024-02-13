@@ -1,0 +1,18 @@
+#/meshes/mesh-1/service-insights/backend 200
+type: Mesh
+name: mesh-1
+---
+type: ServiceInsight
+mesh: mesh-1
+name: all-services-mesh-1
+services:
+  backend:
+    status: partially_degraded
+    dataplanes:
+      online: 70
+      offline: 30
+  frontend:
+    status: partially_degraded
+    dataplanes:
+      online: 19
+      offline: 1

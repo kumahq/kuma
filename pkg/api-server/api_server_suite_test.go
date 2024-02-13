@@ -349,7 +349,9 @@ func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resource
 
 	// then
 	b, err := io.ReadAll(response.Body)
+	result := strings.ReplaceAll(string(b), apiServer.Address(), "{{address}}")
 	Expect(err).ToNot(HaveOccurred())
 	goldenFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".golden.json")
-	Expect(b).To(matchers.MatchGoldenJSON(goldenFile))
+
+	Expect(result).To(matchers.MatchGoldenJSON(goldenFile))
 }

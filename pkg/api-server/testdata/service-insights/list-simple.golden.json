@@ -1,0 +1,34 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "ServiceInsight",
+   "mesh": "mesh-1",
+   "name": "backend",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "status": "partially_degraded",
+   "dataplanes": {
+    "total": 20,
+    "online": 19,
+    "offline": 1
+   },
+   "addressPort": "backend.mesh:80"
+  },
+  {
+   "type": "ServiceInsight",
+   "mesh": "mesh-1",
+   "name": "frontend",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "status": "partially_degraded",
+   "dataplanes": {
+    "total": 100,
+    "online": 70,
+    "offline": 30
+   },
+   "addressPort": "frontend.mesh:80"
+  }
+ ],
+ "next": null
+}

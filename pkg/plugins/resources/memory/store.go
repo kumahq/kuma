@@ -98,6 +98,13 @@ func NewStore() store.ResourceStore {
 	return &memoryStore{}
 }
 
+func ClearStore(resourceStore store.ResourceStore) {
+	c := resourceStore.(*memoryStore)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.records = memoryStoreRecords{}
+}
+
 func (c *memoryStore) SetEventWriter(writer events.Emitter) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
