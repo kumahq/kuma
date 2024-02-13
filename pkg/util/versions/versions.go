@@ -9,7 +9,7 @@ import (
 
 const previewVersion = "preview"
 
-func Supported(path string) ([]*semver.Version, error) {
+func ParseFromFile(path string) ([]*semver.Version, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

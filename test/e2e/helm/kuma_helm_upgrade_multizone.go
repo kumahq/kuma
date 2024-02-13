@@ -11,8 +11,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/util/versions"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/api"
 )
 
 func UpgradingWithHelmChartMultizone() {
@@ -23,7 +25,7 @@ func UpgradingWithHelmChartMultizone() {
 	var oldestSupportedVersion string
 
 	BeforeAll(func() {
-		vers, err := versions.Supported(Config.VersionsYamlPath)
+		vers, err := versions.ParseFromFile(Config.VersionsYamlPath)
 		Expect(err).ToNot(HaveOccurred())
 		oldestSupportedVersion = versions.OldestUpgradableToLatest(vers)
 	})
@@ -138,17 +140,29 @@ spec:
 		)
 		Expect(err).ToNot(HaveOccurred())
 
+		Eventually(func(g Gomega) {
+			result := &system.ZoneInsightResource{}
+			api.FetchResource(g, global, result, "", "kuma-2")
+			g.Expect(len(result.Spec.Subscriptions)).To(BeNumerically(">", 1))
+			newZoneConnected := false
+			for _, sub := range result.Spec.Subscriptions {
+				if sub.Version.KumaCp.Version != oldestSupportedVersion {
+					newZoneConnected = true
+					break
+				}
+			}
+			g.Expect(newZoneConnected).To(BeTrue())
+		}, "30s", "100ms").Should(Succeed())
+
 		// then
-		Consistently(func(g Gomega) int {
-			n, err := numberOfPolicies(global)
+		Consistently(func(g Gomega) {
+			nGlobal, err := numberOfPolicies(global)
 			g.Expect(err).ToNot(HaveOccurred())
-			return n
-		}, "10s", "100ms").Should(Equal(1))
-		// and
-		Consistently(func(g Gomega) int {
-			n, err := numberOfPolicies(zone)
+
+			nZone, err := numberOfPolicies(zone)
 			g.Expect(err).ToNot(HaveOccurred())
-			return n
-		}, "10s", "100ms").Should(Equal(1))
+
+			g.Expect(nGlobal).To(And(Equal(nZone), Equal(1)))
+		}, "5s", "100ms").Should(Succeed())
 	})
 }
