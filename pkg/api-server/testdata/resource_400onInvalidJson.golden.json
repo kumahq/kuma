@@ -1,7 +1,0 @@
-{
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "invalid TrafficRoute object: \"invalid character '}' looking for beginning of value\"",
- "details": "invalid TrafficRoute object: \"invalid character '}' looking for beginning of value\""
-}

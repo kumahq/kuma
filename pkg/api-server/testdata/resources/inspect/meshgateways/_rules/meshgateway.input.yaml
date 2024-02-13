@@ -1,4 +1,7 @@
 #/meshes/default/meshgateways/the-gateway/_rules 200
+type: Mesh
+name: default
+---
 type: MeshGateway
 name: the-gateway
 mesh: default

@@ -1,0 +1,11 @@
+{
+  "type": "MeshTrafficPermission",
+  "name": "sample",
+  "spec": {
+    "targetRef": {
+      "kind": "MeshService",
+      "name": 2
+    },
+    "from": [{"targetRef":{"kind":"Mesh"}}]
+  }
+}
