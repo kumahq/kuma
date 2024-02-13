@@ -112,6 +112,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	var selectors []*mesh_proto.Selector
 
+	var kumaRefs []gatewayapi.ParentReference
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
@@ -140,6 +141,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NoMatchingParent:
 				reason = string(gatewayapi.RouteReasonNoMatchingParent)
 			}
+<<<<<<< HEAD
 
 			if !kube_apimeta.IsStatusConditionFalse(routeConditions, string(gatewayapi.RouteConditionAccepted)) {
 				kube_apimeta.SetStatusCondition(&routeConditions, kube_meta.Condition{
@@ -148,6 +150,26 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					Reason: reason,
 				})
 			}
+=======
+			notAcceptedConditions[ref] = reason
+		}
+
+		kumaRefs = append(kumaRefs, ref)
+	}
+
+	meshRoutes, meshRouteConditions, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	for _, ref := range kumaRefs {
+		var refConditions []kube_meta.Condition
+		switch {
+		case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
+			refConditions = slices.Clone(routeConditions)
+		case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
+			refConditions = slices.Clone(meshRouteConditions)
+>>>>>>> 4d1b28013 (fix(gatewayapi): don't add HTTPRoute status if Kuma isn't the controller (#9228))
 		}
 
 		conditions[ref] = routeConditions
