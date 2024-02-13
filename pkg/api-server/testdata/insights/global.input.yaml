@@ -1,0 +1,37 @@
+#/global-insights 200
+type: Mesh
+name: mesh-1
+---
+type: Mesh
+name: mesh-2
+---
+type: Mesh
+name: mesh-3
+---
+type: Zone
+name: zone-1
+---
+type: Zone
+name: zone-2
+---
+type: ZoneIngress
+name: zone-ingress-1
+networking:
+  address: 10.2.3.4
+  advertisedAddress: 10.3.4.5
+  port: 1000
+  advertisedPort: 1000
+---
+type: ZoneIngress
+name: zone-ingress-2
+networking:
+  address: 10.2.3.4
+  advertisedAddress: 10.3.4.5
+  port: 1000
+  advertisedPort: 1000
+---
+type: ZoneEgress
+name: zone-egress-1
+networking:
+  address: 10.2.3.4
+  port: 1000

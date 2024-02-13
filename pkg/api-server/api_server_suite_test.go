@@ -3,7 +3,6 @@ package api_server_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,16 +10,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
@@ -28,10 +27,8 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -52,105 +49,6 @@ import (
 
 func TestWs(t *testing.T) {
 	test.RunSpecs(t, "API Server")
-}
-
-type resourceApiClient struct {
-	address string
-	path    string
-}
-
-type TestMeta struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Mesh string `json:"mesh"`
-}
-
-type TestListResponse struct {
-	Total int        `json:"total"`
-	Next  string     `json:"next"`
-	Items []TestMeta `json:"items"`
-}
-
-func MatchListResponse(r TestListResponse) types.GomegaMatcher {
-	return And(
-		HaveHTTPStatus(http.StatusOK),
-		WithTransform(func(response *http.Response) (TestListResponse, error) {
-			res := TestListResponse{}
-			body, err := io.ReadAll(response.Body)
-			if err != nil {
-				return res, nil
-			}
-			if err := json.Unmarshal(body, &res); err != nil {
-				return res, err
-			}
-			return res, nil
-		}, Equal(r)),
-	)
-}
-
-func (r *resourceApiClient) fullAddress() string {
-	return "http://" + r.address + r.path
-}
-
-func (r *resourceApiClient) get(name string) *http.Response {
-	response, err := http.Get(r.fullAddress() + "/" + name)
-	Expect(err).NotTo(HaveOccurred())
-	return response
-}
-
-func (r *resourceApiClient) list() *http.Response {
-	response, err := http.Get(r.fullAddress())
-	Expect(err).NotTo(HaveOccurred())
-	return response
-}
-
-func (r *resourceApiClient) delete(name string) *http.Response {
-	request, err := http.NewRequest(
-		"DELETE",
-		r.fullAddress()+"/"+name,
-		nil,
-	)
-	Expect(err).ToNot(HaveOccurred())
-	response, err := http.DefaultClient.Do(request)
-	Expect(err).ToNot(HaveOccurred())
-	return response
-}
-
-func (r *resourceApiClient) put(res rest.Resource) *http.Response {
-	jsonBytes, err := json.Marshal(res)
-	Expect(err).ToNot(HaveOccurred())
-	return r.putJson(res.GetMeta().Name, jsonBytes)
-}
-
-func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
-	request, err := http.NewRequest(
-		"PUT",
-		r.fullAddress()+"/"+name,
-		bytes.NewBuffer(json),
-	)
-	Expect(err).ToNot(HaveOccurred())
-	request.Header.Add("content-type", "application/json")
-	response, err := http.DefaultClient.Do(request)
-	Expect(err).ToNot(HaveOccurred())
-	return response
-}
-
-func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string, keyAndValue ...string) {
-	resource := core_mesh.TrafficRouteResource{
-		Spec: &mesh_proto.TrafficRoute{
-			Conf: &mesh_proto.TrafficRoute_Conf{
-				Destination: map[string]string{
-					"path": "/sample-path",
-				},
-			},
-		},
-	}
-	labels := map[string]string{}
-	for i := 0; i < len(keyAndValue); i += 2 {
-		labels[keyAndValue[i]] = keyAndValue[i+1]
-	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh), store.CreateWithLabels(labels))
-	Expect(err).NotTo(HaveOccurred())
 }
 
 type testApiServerConfigurer struct {
@@ -329,36 +227,109 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	}
 }
 
+type action struct {
+	path   string
+	status int
+	method string
+}
+
+func (a action) String() string {
+	return fmt.Sprintf("#%s %d method=%s", a.path, a.status, a.method)
+}
+
+func parseAction(in string) (action, error) {
+	out := action{
+		method: http.MethodGet,
+	}
+	actions := strings.Split(strings.Trim(in, "# "), " ")
+	for i := range actions {
+		switch i {
+		case 0:
+			out.path = actions[i]
+		case 1:
+			s, err := strconv.Atoi(actions[i])
+			if err != nil {
+				return out, errors.New("status code is not a number")
+			}
+			out.status = s
+		default:
+			opts := strings.Split(actions[i], "=")
+			switch opts[0] {
+			case "method":
+				out.method = opts[1]
+			default:
+				return out, errors.New("unknown option: " + actions[i])
+			}
+		}
+	}
+
+	return out, nil
+}
+
 // apiTest takes an `<testName>.input.yaml` which contains as first line a comment #<urlToRun> <statusCode> and then a set of yaml to preload in the resourceStore.
 // It will then run against the apiServer check that the status code matches and that the output matches `<testName>.golden.json`
 // Combined with `test.EntriesForFolder` and `ginkgo.DescribeTable` is a way to create a lot of api tests by only creating the input files.
 func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resourceStore store.ResourceStore) {
+	memory.ClearStore(resourceStore)
 	inputs, err := os.ReadFile(inputResourceFile)
 	Expect(err).NotTo(HaveOccurred())
-	parts := strings.SplitN(string(inputs), "\n", 2)
-	Expect(parts[0]).To(HavePrefix("#"), "the first line of the input is not a comment with the url path")
-	actions := strings.Split(strings.Trim(parts[0], "# "), " ")
-	Expect(actions).To(HaveLen(2), "the first line of the input should be: # <path> <statusCode>")
-	url := fmt.Sprintf("http://%s%s", apiServer.Address(), actions[0])
-	Expect(url).ToNot(BeEmpty())
-	status, err := strconv.Atoi(actions[1])
-	Expect(err).NotTo(HaveOccurred(), "status is not an int")
-
+	parts := strings.Split(string(inputs), "\n")
+	actions := []action{}
+	for i, p := range parts {
+		if strings.HasPrefix(p, "#") {
+			if !strings.HasPrefix(p, "#/") {
+				continue
+			}
+		} else {
+			break
+		}
+		actionEntry, err := parseAction(p)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed parsing action, line:%d cmd:%s", i, p))
+		actions = append(actions, actionEntry)
+	}
 	Expect(test_store.LoadResources(context.Background(), resourceStore, string(inputs))).To(Succeed())
 
-	req, err := http.NewRequest("GET", url, nil)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(actions).ToNot(BeEmpty(), "You need at least one action")
+	for i, act := range actions {
+		ginkgo.By(fmt.Sprintf("when calling: %d %s", i, act))
+		// Given
+		url := fmt.Sprintf("http://%s%s", apiServer.Address(), act.path)
+		var body io.Reader = nil
+		if act.method == http.MethodPut || act.method == http.MethodPost {
+			requestFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".request.json")
+			if len(actions) > 1 {
+				requestFile = strings.ReplaceAll(requestFile, ".request.json", fmt.Sprintf("_%02d.request.json", i))
+			}
+			b, err := os.ReadFile(requestFile)
+			Expect(err).NotTo(HaveOccurred())
+			body = bytes.NewBuffer(b)
+		}
+		req, err := http.NewRequest(act.method, url, body)
+		Expect(err).NotTo(HaveOccurred())
+		if body != nil {
+			req.Header.Add("content-type", "application/json")
+		}
 
-	response, err := http.DefaultClient.Do(req)
-	Expect(err).NotTo(HaveOccurred())
-	defer response.Body.Close()
-	Expect(response).To(HaveHTTPStatus(status))
+		// When
+		response, err := http.DefaultClient.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		defer response.Body.Close()
+		Expect(response).To(HaveHTTPStatus(act.status))
 
-	// then
-	b, err := io.ReadAll(response.Body)
-	result := strings.ReplaceAll(string(b), apiServer.Address(), "{{address}}")
-	Expect(err).ToNot(HaveOccurred())
-	goldenFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".golden.json")
-
-	Expect(result).To(matchers.MatchGoldenJSON(goldenFile))
+		// then
+		b, err := io.ReadAll(response.Body)
+		result := strings.ReplaceAll(string(b), apiServer.Address(), "{{address}}")
+		// Cleanup times
+		result = regexp.MustCompile("[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9][^\"]+").ReplaceAllString(result, "0001-01-01T00:00:00Z")
+		Expect(err).ToNot(HaveOccurred())
+		goldenFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".golden.json")
+		if len(actions) > 1 {
+			goldenFile = strings.ReplaceAll(goldenFile, ".golden.json", fmt.Sprintf("_%02d.golden.json", i))
+		}
+		if result == "" {
+			Expect(goldenFile).ToNot(BeAnExistingFile(), "golden file exists when result is empty")
+		} else {
+			Expect(result).To(matchers.MatchGoldenJSON(goldenFile))
+		}
+	}
 }

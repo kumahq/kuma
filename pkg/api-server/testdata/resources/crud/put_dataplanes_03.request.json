@@ -1,0 +1,16 @@
+{
+  "type": "MeshTrafficPermission",
+  "mesh": "default",
+  "name": "dp-3",
+  "networking": {
+    "address": "10.1.2.1",
+    "inbound": [
+      {
+        "port": 1234,
+        "tags": {
+          "kuma.io/service": "my-svc"
+        }
+      }
+    ]
+  }
+}

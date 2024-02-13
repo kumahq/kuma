@@ -1,5 +1,8 @@
 #/meshes/default/meshgateways/the-gateway/_rules 200
 # This test is likely to evolve as meshgateway support for meshhttproute is not currently fully supported
+type: Mesh
+name: default
+---
 type: MeshTimeout
 name: on-route
 mesh: default

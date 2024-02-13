@@ -1,7 +1,0 @@
-{
- "type": "/std-errors",
- "status": 400,
- "title": "Bad Request",
- "detail": "invalid TrafficRoute object: \"json: cannot unmarshal number into Go struct field ResourceMeta.name of type string\"",
- "details": "invalid TrafficRoute object: \"json: cannot unmarshal number into Go struct field ResourceMeta.name of type string\""
-}

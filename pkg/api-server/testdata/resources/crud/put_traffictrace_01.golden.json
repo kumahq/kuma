@@ -1,0 +1,21 @@
+{
+ "type": "TrafficTrace",
+ "mesh": "default",
+ "name": "backends-eu",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/origin": "zone"
+ },
+ "selectors": [
+  {
+   "match": {
+    "region": "eu",
+    "service": "backend"
+   }
+  }
+ ],
+ "conf": {
+  "backend": "zipkin-eu"
+ }
+}

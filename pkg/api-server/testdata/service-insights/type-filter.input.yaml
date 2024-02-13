@@ -1,4 +1,5 @@
 #/meshes/mesh-1/service-insights?type=gateway_builtin,internal 200
+#/meshes/mesh-1/service-insights?type=random-type 400
 type: Mesh
 name: mesh-1
 ---

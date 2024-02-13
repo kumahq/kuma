@@ -1,0 +1,27 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "name",
+   "reason": "name from the URL has to be the same as in body"
+  },
+  {
+   "field": "name",
+   "reason": "value length must less or equal 253"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "name",
+   "message": "name from the URL has to be the same as in body"
+  },
+  {
+   "field": "name",
+   "message": "value length must less or equal 253"
+  }
+ ]
+}

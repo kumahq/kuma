@@ -1,0 +1,22 @@
+{
+ "type": "MeshTrafficPermission",
+ "mesh": "default",
+ "name": "mtp-1",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "spec": {
+  "targetRef": {
+   "kind": "Mesh"
+  },
+  "from": [
+   {
+    "targetRef": {
+     "kind": "Mesh"
+    },
+    "default": {
+     "action": "Allow"
+    }
+   }
+  ]
+ }
+}

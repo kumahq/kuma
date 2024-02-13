@@ -1,0 +1,48 @@
+{
+  "type": "CircuitBreaker",
+  "name": "web-to-backend",
+  "mesh": "default",
+  "creationTime": "2018-07-17T16:05:36.995Z",
+  "modificationTime": "2018-07-17T16:05:36.995Z",
+  "sources": [
+    {
+      "match": {
+        "kuma.io/service": "web",
+        "kuma.io/protocol": "http"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "kuma.io/service": "backend"
+      }
+    }
+  ],
+  "conf": {
+    "baseEjectionTime": "5s",
+    "detectors": {
+      "gatewayErrors": {
+        "consecutive": 10
+      },
+      "localErrors": {
+        "consecutive": 5
+      },
+      "totalErrors": {
+        "consecutive": 20
+      },
+      "failure": {
+        "minimumHosts": 3,
+        "requestVolume": 20,
+        "threshold": 85
+      },
+      "standardDeviation": {
+        "factor": 1.9,
+        "minimumHosts": 3,
+        "requestVolume": 20
+      }
+    },
+    "interval": "5s",
+    "maxEjectionPercent": 50
+  }
+}

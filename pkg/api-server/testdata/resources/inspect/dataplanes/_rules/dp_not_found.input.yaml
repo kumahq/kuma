@@ -1,4 +1,7 @@
 #/meshes/default/dataplanes/dp-1/_rules 404
+type: Mesh
+name: default
+---
 type: Dataplane
 name: dp-2
 mesh: default

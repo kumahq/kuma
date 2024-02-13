@@ -1,0 +1,18 @@
+# Invalid spec
+#/meshes/default/meshtrafficpermissions/sample 400 method=PUT
+# Invalid meta
+#/meshes/default/meshtrafficpermissions/sample 400 method=PUT
+# Invalid labels
+#/meshes/default/meshtrafficpermissions/sample 400 method=PUT
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc

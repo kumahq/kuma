@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 404,
+ "title": "Could not delete a resource",
+ "detail": "Not found",
+ "details": "Not found"
+}
