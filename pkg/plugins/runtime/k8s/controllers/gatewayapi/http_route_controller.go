@@ -136,6 +136,12 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
 
+<<<<<<< HEAD
+=======
+	notAcceptedConditions := map[gatewayapi.ParentReference]string{}
+
+	var kumaRefs []gatewayapi.ParentReference
+>>>>>>> 4d1b28013 (fix(gatewayapi): don't add HTTPRoute status if Kuma isn't the controller (#9228))
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
@@ -183,6 +189,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.NoMatchingParent:
 				reason = string(gatewayapi.RouteReasonNoMatchingParent)
 			}
+<<<<<<< HEAD
 
 			if !kube_apimeta.IsStatusConditionFalse(refConditions, string(gatewayapi.RouteConditionAccepted)) {
 				kube_apimeta.SetStatusCondition(&refConditions, kube_meta.Condition{
@@ -191,6 +198,34 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 					Reason: reason,
 				})
 			}
+=======
+			notAcceptedConditions[ref] = reason
+		}
+
+		kumaRefs = append(kumaRefs, ref)
+	}
+
+	meshRoutes, meshRouteConditions, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	for _, ref := range kumaRefs {
+		var refConditions []kube_meta.Condition
+		switch {
+		case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
+			refConditions = slices.Clone(routeConditions)
+		case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
+			refConditions = slices.Clone(meshRouteConditions)
+		}
+
+		if reason, notAccepted := notAcceptedConditions[ref]; notAccepted && !kube_apimeta.IsStatusConditionFalse(refConditions, string(gatewayapi.RouteConditionAccepted)) {
+			kube_apimeta.SetStatusCondition(&refConditions, kube_meta.Condition{
+				Type:   string(gatewayapi.RouteConditionAccepted),
+				Status: kube_meta.ConditionFalse,
+				Reason: reason,
+			})
+>>>>>>> 4d1b28013 (fix(gatewayapi): don't add HTTPRoute status if Kuma isn't the controller (#9228))
 		}
 
 		conditions[ref] = refConditions
