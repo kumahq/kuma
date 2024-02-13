@@ -82,8 +82,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -163,8 +163,8 @@
             1,
             1
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 20.5
         },
         {
@@ -244,8 +244,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -325,8 +325,8 @@
             4,
             4
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 27.65
         },
         {
@@ -406,8 +406,8 @@
             4,
             4
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 30.65
         },
         {
@@ -487,8 +487,8 @@
             4,
             4
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 27.65
         },
         {
@@ -568,8 +568,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -649,8 +649,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -730,8 +730,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -811,8 +811,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -892,8 +892,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         },
         {
@@ -973,8 +973,8 @@
             0,
             0
           ],
-          "Min": {},
-          "Max": {},
+          "Min": null,
+          "Max": null,
           "Sum": 0
         }
       ],
