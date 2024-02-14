@@ -1121,7 +1121,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
-
 	})
 
 	It("should set origin label automatically when origin validation is disabled", func() {
