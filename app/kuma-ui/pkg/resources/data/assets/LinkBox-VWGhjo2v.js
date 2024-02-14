@@ -1,1 +1,0 @@
-import{_ as o,o as s,c as n,r as t}from"./index-H9kuPi5I.js";const c={},r={class:"link-box"};function a(e,_){return s(),n("div",r,[t(e.$slots,"default",{},void 0,!0)])}const i=o(c,[["render",a],["__scopeId","data-v-85e9aea0"]]);export{i as L};
