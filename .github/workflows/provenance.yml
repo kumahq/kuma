@@ -2,9 +2,6 @@ name: Generate Provenance
 on:
   workflow_call:
     inputs:
-      allow_push:
-        required: true
-        type: string
       images:
         required: true
         type: string
@@ -25,8 +22,6 @@ jobs:
   # GHA limitations don't allow dynamic output keys / expressions
   provenance-metadata:
     runs-on: ubuntu-latest
-    if: >
-      ${{ inputs.allow_push == 'true' && github.event_name != 'pull_request' }}
     outputs:
       artifact-provenance-result: ${{ steps.artifact-provenance-metadata.outputs.subjects-as-file }}
       artifact-upload-tag-name: ${{ steps.artifact-provenance-metadata.outputs.upload-ref-name }}
@@ -55,9 +50,6 @@ jobs:
   # Provenance job for all compressed binary artifacts
   artifact-provenance:
     needs: ["provenance-metadata"]
-    if: >
-      inputs.allow_push == 'true' 
-      && github.event_name != 'pull_request'
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
     with:
       base64-subjects-as-file: "${{ needs.provenance-metadata.outputs.artifact-provenance-result }}"
@@ -75,9 +67,6 @@ jobs:
   images-provenance:
     name: Images Provenance
     needs: ["provenance-metadata"]
-    if: >
-      inputs.allow_push == 'true' 
-      && github.event_name != 'pull_request'
     strategy:
       # limit to 3 jobs at a time
       max-parallel: 3

@@ -1,13 +1,17 @@
 name: Build
 on:
   workflow_call:
+    inputs:
+      enabled_goarches:
+        required: true
+        type: string
+      enabled_gooses:
+        required: true
+        type: string
+      allow_push:
+        required: true
+        type: string
     outputs:
-      ENABLED_GOARCHES: 
-        value: ${{ jobs.metadata.outputs.ENABLED_GOARCHES }}
-      ENABLED_GOOSES: 
-        value: ${{ jobs.metadata.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: 
-        value: ${{ jobs.metadata.outputs.ALLOW_PUSH }}
       IMAGES: 
         value: ${{ jobs.build.outputs.IMAGES }}
       IMAGE_ARTIFACTS_NAME:
@@ -17,48 +21,18 @@ on:
 
 env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  ENABLED_GOARCHES: ${{ inputs.enabled_goarches }}
+  ENABLED_GOOSES: ${{ inputs.enabled_gooses }}
+  ALLOW_PUSH: ${{ inputs.allow_push }}
 
 jobs:
-  metadata:
-    runs-on: ubuntu-latest
-    outputs:
-      ENABLED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
-      ENABLED_GOOSES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ steps.artifacts_metadata.outputs.ALLOW_PUSH }}
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
-      - name: "Maybe set full matrix"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        id: set-full-matrix-switches
-        run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_OUTPUT
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_OUTPUT
-      - name: "Maybe set flag to push build artifacts"
-        id: artifacts_metadata
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
-        run: |
-          echo 'ALLOW_PUSH=true' >> $GITHUB_OUTPUT
-      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
-        id: ci_tools_cache
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
   build:
-    needs: ["metadata"]
     runs-on: ubuntu-latest
     outputs:
       IMAGES: ${{ steps.image_meta.outputs.tars }}
       IMAGE_ARTIFACTS_NAME: ${{ env.IMAGE_ARTIFACTS_NAME }}
       BINARY_ARTIFACTS_NAME: ${{ env.BINARY_ARTIFACTS_NAME }}
     env:
-      ENABLED_GOARCHES: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
-      ENABLED_GOOSES: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
-      ALLOW_PUSH: ${{ needs.metadata.outputs.ALLOW_PUSH }}
       IMAGE_ARTIFACTS_NAME: image_artifacts
       BINARY_ARTIFACTS_NAME: binary_artifacts
     steps:

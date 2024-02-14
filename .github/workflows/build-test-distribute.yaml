@@ -51,11 +51,36 @@ jobs:
           make clean
       - run: |
           make check
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      ENABLED_GOARCHES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOARCHES }}
+      ENABLED_GOOSES: ${{ steps.set-full-matrix-switches.outputs.ENABLED_GOOSES }}
+      ALLOW_PUSH: ${{ steps.artifacts_metadata.outputs.ALLOW_PUSH }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+      - name: "Maybe set full matrix"
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        id: set-full-matrix-switches
+        run: |
+          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_OUTPUT
+          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_OUTPUT
+      - name: "Maybe set flag to push build artifacts"
+        id: artifacts_metadata
+        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
+        run: |
+          echo 'ALLOW_PUSH=true' >> $GITHUB_OUTPUT
   build:
-    needs: ["check"]
+    needs: ["metadata", "check"]
     permissions:
       contents: read
     uses: ./.github/workflows/build.yml
+    with:
+      enabled_goarches: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      enabled_gooses: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      allow_push: ${{ needs.metadata.outputs.ALLOW_PUSH }}
   # Scan repository directory and images for every arch and os
   # Custom configuration can be specified in repo at:
   #   - .syft.yaml
@@ -70,14 +95,14 @@ jobs:
     permissions:
       contents: read
       id-token: write # needed for signing the images
-    needs: ["build", "scan"]
+    needs: ["metadata", "build", "scan", "test", "test_e2e", "test_e2e_env"]
     uses: ./.github/workflows/distributions.yml
     with:
       binary_artifacts_name: ${{ needs.build.outputs.BINARY_ARTIFACTS_NAME }}
       image_artifacts_name: ${{ needs.build.outputs.IMAGE_ARTIFACTS_NAME }}
-      enabled_goarches: ${{ needs.build.outputs.ENABLED_GOARCHES }}
-      enabled_gooses: ${{ needs.build.outputs.ENABLED_GOOSES }}
-      allow_push: ${{ needs.build.outputs.ALLOW_PUSH }}
+      enabled_goarches: ${{ needs.metadata.outputs.ENABLED_GOARCHES }}
+      enabled_gooses: ${{ needs.metadata.outputs.ENABLED_GOOSES }}
+      allow_push: ${{ needs.metadata.outputs.ALLOW_PUSH }}
     secrets:
       PULP_USERNAME: ${{ vars.PULP_USERNAME }}
       PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
@@ -90,10 +115,12 @@ jobs:
       id-token: write # needed for signing the images
       actions: read # For getting workflow run info to build provenance
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
-    needs: ["build", "release"]
+    needs: ["metadata", "build", "release"]
     uses: ./.github/workflows/provenance.yml
+    if: >
+      needs.metadata.outputs.ALLOW_PUSH == 'true'   && github.event_name != 'pull_request'
+
     with:
-      allow_push: ${{ needs.build.outputs.ALLOW_PUSH }}
       images: "${{ needs.release.outputs.IMAGE_MANIFESTS }}"
       binary_artifacts_hashes_as_file: ${{ needs.release.outputs.BINARY_ARTIFACTS_HASHES_AS_FILE }}
     secrets:
