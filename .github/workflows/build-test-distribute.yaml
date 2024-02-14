@@ -19,6 +19,7 @@ env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+  GH_REPO: "charts"
 jobs:
   check:
     timeout-minutes: 10
@@ -189,10 +190,12 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@f4c6bf6752984b3a29fcc135a5e70eb792c40c6b # v1.8.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.GH_REPO }}
       - name: Release chart
         if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
         env:

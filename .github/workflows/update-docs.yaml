@@ -12,7 +12,7 @@ on:
   schedule:
     - cron: 0 8 * * *
 env:
-  DOCS_REPO: kumahq/kuma-website
+  DOCS_REPO: kuma-website
   OUTPUT_PATH: app/assets
   VERSION_FILE: app/_data/versions.yml
   EDITION: kuma
@@ -51,7 +51,7 @@ jobs:
           done
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          repository: ${{ env.DOCS_REPO }}
+          repository: ${{ github.repository_owner }}/${{ env.DOCS_REPO }}
           path: docs
       - name: "update versions"
         run: |
@@ -61,10 +61,12 @@ jobs:
           rm ${{ env.OUTPUT_PATH }}/raw/versions.yml
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@f4c6bf6752984b3a29fcc135a5e70eb792c40c6b # v1.8.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.DOCS_REPO }}
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50 # v6.0.0
         with:
