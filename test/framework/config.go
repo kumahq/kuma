@@ -55,21 +55,21 @@ type E2eConfig struct {
 	KumaCpConfig                  KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
+<<<<<<< HEAD
+=======
+	KumaLegacyKDS                 bool              `json:"kumaLegacyKDS,omitempty" envconfig:"KUMA_LEGACY_KDS"`
+	VersionsYamlPath              string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
+>>>>>>> d7d19f40c (test(e2e): multizone upgrade (#9201))
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
 
 type SuiteConfig struct {
 	Compatibility CompatibilitySuiteConfig `json:"compatibility,omitempty"`
-	Helm          HelmSuiteConfig          `json:"helm,omitempty"`
 }
 
 type CompatibilitySuiteConfig struct {
 	HelmVersion string `json:"helmVersion,omitempty"`
-}
-
-type HelmSuiteConfig struct {
-	Versions []string `json:"versions,omitempty"`
 }
 
 type KumaCpConfig struct {
@@ -185,6 +185,7 @@ func (c E2eConfig) GetUniversalImage() string {
 var defaultConf = E2eConfig{
 	HelmChartName:                 "kuma/kuma",
 	HelmChartPath:                 "../../../deployments/charts/kuma",
+	VersionsYamlPath:              "../../../versions.yml",
 	HelmRepoUrl:                   "https://kumahq.github.io/charts",
 	HelmSubChartPrefix:            "",
 	KumaNamespace:                 "kuma-system",
@@ -208,11 +209,14 @@ var defaultConf = E2eConfig{
 	KumaK8sCtlFlags:      map[string]string{},
 	KumaZoneK8sCtlFlags:  map[string]string{},
 	SuiteConfig: SuiteConfig{
+<<<<<<< HEAD
 		Helm: HelmSuiteConfig{
 			Versions: []string{
 				"2.0.1",
 			},
 		},
+=======
+>>>>>>> d7d19f40c (test(e2e): multizone upgrade (#9201))
 		Compatibility: CompatibilitySuiteConfig{
 			HelmVersion: "1.6.0",
 		},
