@@ -9,10 +9,13 @@ on:
         required: false
         default: false
         type: boolean
+permissions:
+  contents: read
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_OWNER: ${{ github.repository_owner }}
+  GH_REPO: "charts"
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
@@ -24,14 +27,14 @@ jobs:
     outputs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@v4
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -58,7 +61,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
@@ -68,10 +71,12 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: github.event.inputs.release == 'true'
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@f4c6bf6752984b3a29fcc135a5e70eb792c40c6b # v1.8.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.GH_REPO }}
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:
