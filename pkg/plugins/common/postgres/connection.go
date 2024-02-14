@@ -41,7 +41,7 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 // ref. https://github.com/DataDog/dd-trace-go/blob/3d97fcec9f8b21fdd821af526d27d4335b26da66/contrib/database/sql/conn.go#L290
 var spanTypeSQLAttribute = attribute.String("span.type", "sql")
 
-func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers ...pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
+func ConnectToDbPgx(ctx context.Context, postgresStoreConfig config.PostgresStoreConfig, customizers ...pgx_config.PgxConfigCustomization) (*pgxpool.Pool, error) {
 	connectionString, err := postgresStoreConfig.ConnectionString()
 	if err != nil {
 		return nil, err
@@ -69,5 +69,13 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 		return nil, err
 	}
 
-	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	p, err := pgxpool.NewWithConfig(ctx, pgxConfig)
+	if err != nil {
+		return nil, err
+	}
+	err = p.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }

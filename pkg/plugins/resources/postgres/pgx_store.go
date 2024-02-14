@@ -45,7 +45,8 @@ type TransactionableResourceStore interface {
 }
 
 func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (TransactionableResourceStore, error) {
-	pool, err := postgres.ConnectToDbPgx(config, customizer)
+	ctx := context.Background()
+	pool, err := postgres.ConnectToDbPgx(ctx, config, customizer)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +55,7 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 		roConfig := config
 		roConfig.Host = config.ReadReplica.Host
 		roConfig.Port = int(config.ReadReplica.Port)
-		roPool, err = postgres.ConnectToDbPgx(roConfig, customizer)
+		roPool, err = postgres.ConnectToDbPgx(ctx, roConfig, customizer)
 		if err != nil {
 			return nil, err
 		}

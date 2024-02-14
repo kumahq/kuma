@@ -34,7 +34,7 @@ var _ Listener = (*PgxListener)(nil)
 // NewPgxListener will create and initialize a PgxListener which will automatically connect and listen to the provided channel.
 func NewPgxListener(config postgres.PostgresStoreConfig, logger logr.Logger) (Listener, error) {
 	ctx := context.Background()
-	db, err := ConnectToDbPgx(config)
+	db, err := ConnectToDbPgx(ctx, config)
 	if err != nil {
 		return nil, err
 	}
