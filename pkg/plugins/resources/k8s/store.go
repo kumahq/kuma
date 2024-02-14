@@ -240,6 +240,9 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 func splitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
 	if v, ok := labels[v1alpha1.DisplayName]; ok {
 		annotations[v1alpha1.DisplayName] = v
 		delete(labels, v1alpha1.DisplayName)
