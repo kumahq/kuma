@@ -1,10 +1,13 @@
 package versions
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 const previewVersion = "preview"
@@ -38,6 +41,21 @@ func ParseFromFile(path string) []*semver.Version {
 	return versions
 }
 
-func OldestUpgradableToLatest(version []*semver.Version) string {
-	return version[len(version)-1-2].String()
+func OldestUpgradableToBuildVersion(versions []*semver.Version) string {
+	currentVersion := *semver.MustParse(version.Build.Version)
+	return OldestUpgradableToVersion(versions, currentVersion)
+}
+
+func OldestUpgradableToVersion(versions []*semver.Version, currentVersion semver.Version) string {
+	if currentVersion.Major() == 0 && currentVersion.Minor() == 0 && currentVersion.Patch() == 0 {
+		// Assume we are minor+1 of the last version in versions
+		currentVersion = versions[len(versions)-1].IncMinor()
+	}
+
+	for _, version := range versions {
+		if version.Major() == currentVersion.Major() && version.Minor() == currentVersion.Minor()-2 {
+			return version.String()
+		}
+	}
+	panic(fmt.Sprintf("couldn't find version 2 minors behind current: %s", currentVersion))
 }

@@ -16,7 +16,7 @@ func UniversalCompatibility() {
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), "kuma-compat", Silent)
 
-		oldestUpgradble := versions.OldestUpgradableToLatest(Config.SupportedVersions())
+		oldestUpgradble := versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone)).
 			Install(TestServerUniversal("test-server", "default",

@@ -26,7 +26,7 @@ func UpgradingWithHelmChartMultizone() {
 	var oldestSupportedVersion string
 
 	BeforeAll(func() {
-		oldestSupportedVersion = versions.OldestUpgradableToLatest(Config.SupportedVersions())
+		oldestSupportedVersion = versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
 	})
 
 	BeforeAll(func() {
