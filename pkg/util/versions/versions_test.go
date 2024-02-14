@@ -8,8 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/versions"
 )
 
-var _ = Describe("OldestUpgradableToLatest", func() {
-	It("should return the oldest version that can be upgraded to the latest", func() {
+var _ = Describe("versions", func() {
+	DescribeTable("should return the oldest version that can be upgraded to the latest", func(currentStr string, expectedVersion string) {
 		// given
 		vers := []*semver.Version{
 			semver.MustParse("1.2.3"),
@@ -18,8 +18,13 @@ var _ = Describe("OldestUpgradableToLatest", func() {
 			semver.MustParse("1.5.8"),
 		}
 		// when
-		oldest := versions.OldestUpgradableToLatest(vers)
+		current := semver.MustParse(currentStr)
+		oldest := versions.OldestUpgradableToVersion(vers, *current)
 		// then
-		Expect(oldest).To(Equal("1.3.1"))
-	})
+		Expect(oldest).To(Equal(expectedVersion))
+	},
+		Entry("preview", "0.0.0-preview.v123456789", "1.4.2"),
+		Entry("new version before being added to list", "1.6.0", "1.4.2"),
+		Entry("version in list", "1.5.8", "1.3.1"),
+	)
 })
