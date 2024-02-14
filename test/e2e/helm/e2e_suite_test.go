@@ -18,5 +18,6 @@ var (
 	_ = Describe("Test Zone and Global universal mode with Helm chart", Label("job-0"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
 	_ = Describe("Test Global and Zone universal mode with Helm chart", Label("job-0"), helm.GlobalAndZoneInUniversalModeWithHelmChart, Ordered)
 	_ = Describe("Test App deployment with Helm chart", Label("job-2"), helm.AppDeploymentWithHelmChart)
-	_ = Describe("Test upgrading with Helm chart", Label("job-2"), helm.UpgradingWithHelmChart)
+	_ = Describe("Test upgrading Standalone with Helm chart", Label("job-2"), helm.UpgradingWithHelmChartStandalone, Ordered)
+	_ = Describe("Test upgrading Multizone with Helm chart", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Ordered)
 )
