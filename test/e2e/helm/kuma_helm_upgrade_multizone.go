@@ -15,10 +15,11 @@ import (
 	"github.com/kumahq/kuma/pkg/util/versions"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/api"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func UpgradingWithHelmChartMultizone() {
-	var global, zone Cluster
+	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
 	releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
@@ -34,14 +35,17 @@ func UpgradingWithHelmChartMultizone() {
 		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-		zone = NewK8sCluster(NewTestingT(), Kuma2, Silent).
+		zoneK8s = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
+		zoneUniversal = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	})
 
 	E2EAfterAll(func() {
-		Expect(zone.DeleteKuma()).To(Succeed())
-		Expect(zone.DismissCluster()).To(Succeed())
+		Expect(zoneUniversal.DismissCluster()).To(Succeed())
+		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(zoneK8s.DeleteKuma()).To(Succeed())
+		Expect(zoneK8s.DismissCluster()).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 	})
@@ -73,12 +77,12 @@ func UpgradingWithHelmChartMultizone() {
 				WithHelmOpt("ingress.enabled", "true"),
 				WithoutHelmOpt("global.image.tag"),
 			)).
-			Setup(zone)
+			Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	numberOfPolicies := func(c Cluster) (int, error) {
-		output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtimeouts", "-m", "default", "-o", "json")
+	numberOfResources := func(c Cluster, resource string) (int, error) {
+		output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", resource, "-o", "json")
 		if err != nil {
 			return 0, err
 		}
@@ -89,6 +93,18 @@ func UpgradingWithHelmChartMultizone() {
 			return 0, err
 		}
 		return t.Total, nil
+	}
+
+	numberOfPolicies := func(c Cluster) (int, error) {
+		return numberOfResources(c, "meshtimeouts")
+	}
+
+	numberOfDPPs := func(c Cluster) (int, error) {
+		return numberOfResources(c, "dataplanes")
+	}
+
+	numberOfZoneIngresses := func(c Cluster) (int, error) {
+		return numberOfResources(c, "zone-ingresses")
 	}
 
 	It("should sync policies from Global to Zone", func() {
@@ -115,7 +131,22 @@ spec:
 
 		// then the policy is synced to Zone
 		Eventually(func(g Gomega) int {
-			n, err := numberOfPolicies(zone)
+			n, err := numberOfPolicies(zoneK8s)
+			g.Expect(err).ToNot(HaveOccurred())
+			return n
+		}, "30s", "1s").Should(Equal(1))
+	})
+
+	It("should sync DPPs from Zone to Global", func() {
+		// when start test server on Zone
+		err := NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(testserver.Install()).Setup(zoneK8s)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the DPP is synced to Global
+		Eventually(func(g Gomega) int {
+			n, err := numberOfDPPs(global)
 			g.Expect(err).ToNot(HaveOccurred())
 			return n
 		}, "30s", "1s").Should(Equal(1))
@@ -130,10 +161,23 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	// Disabled due to https://github.com/kumahq/kuma/issues/9184
+	It("should deploy a universal zone with the latest Kuma", func() {
+		err := NewClusterSetup().
+			Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
+			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
+			Setup(zoneUniversal)
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func(g Gomega) int {
+			n, err := numberOfZoneIngresses(zoneK8s)
+			g.Expect(err).ToNot(HaveOccurred())
+			return n
+		}, "30s", "1s").Should(Equal(2))
+	})
+
 	It("should upgrade Kuma on Zone", func() {
 		// when
-		err := zone.(*K8sCluster).UpgradeKuma(core.Zone,
+		err := zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
 			WithHelmReleaseName(releaseName),
 			WithHelmChartPath(Config.HelmChartPath),
 			ClearNoHelmOpts(),
@@ -156,13 +200,25 @@ spec:
 
 		// then
 		Consistently(func(g Gomega) {
-			nGlobal, err := numberOfPolicies(global)
+			policiesGlobal, err := numberOfPolicies(global)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			nZone, err := numberOfPolicies(zone)
+			policiesZone, err := numberOfPolicies(zoneK8s)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(nGlobal).To(And(Equal(nZone), Equal(1)))
+			g.Expect(policiesGlobal).To(And(Equal(policiesZone), Equal(1)))
+
+			dppsGlobal, err := numberOfDPPs(global)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			dppsZone, err := numberOfDPPs(zoneK8s)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(dppsGlobal).To(And(Equal(dppsZone), Equal(1)))
+
+			zoneIngressesGlobal, err := numberOfZoneIngresses(global)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(zoneIngressesGlobal).To(Equal(2))
 		}, "5s", "100ms").Should(Succeed())
 	})
 }
