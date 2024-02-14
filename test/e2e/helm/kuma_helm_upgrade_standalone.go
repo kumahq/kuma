@@ -26,9 +26,7 @@ func UpgradingWithHelmChartStandalone() {
 	var oldestSupportedVersion string
 
 	BeforeAll(func() {
-		vers, err := versions.ParseFromFile(Config.VersionsYamlPath)
-		Expect(err).ToNot(HaveOccurred())
-		oldestSupportedVersion = versions.OldestUpgradableToLatest(vers)
+		oldestSupportedVersion = versions.OldestUpgradableToLatest(Config.SupportedVersions())
 	})
 
 	It("should successfully upgrade Kuma via Helm", func() {

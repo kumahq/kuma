@@ -7,9 +7,11 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/util/versions"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -63,6 +65,10 @@ type E2eConfig struct {
 	VersionsYamlPath              string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
+}
+
+func (c E2eConfig) SupportedVersions() []*semver.Version {
+	return versions.ParseFromFile(c.VersionsYamlPath)
 }
 
 type SuiteConfig struct {

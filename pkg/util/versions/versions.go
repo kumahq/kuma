@@ -9,17 +9,17 @@ import (
 
 const previewVersion = "preview"
 
-func ParseFromFile(path string) ([]*semver.Version, error) {
+func ParseFromFile(path string) []*semver.Version {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	plainVersions := []struct {
 		Version string `json:"version"`
 	}{}
 	if err := yaml.Unmarshal(content, &plainVersions); err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	var versions []*semver.Version
@@ -30,12 +30,12 @@ func ParseFromFile(path string) ([]*semver.Version, error) {
 
 		ver, err := semver.NewVersion(v.Version)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		versions = append(versions, ver)
 	}
 
-	return versions, nil
+	return versions
 }
 
 func OldestUpgradableToLatest(version []*semver.Version) string {
