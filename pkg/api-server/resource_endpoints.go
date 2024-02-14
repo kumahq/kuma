@@ -360,6 +360,13 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
+	if r.federatedZone && r.descriptor.IsPluginOriginated {
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
+	}
+
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {

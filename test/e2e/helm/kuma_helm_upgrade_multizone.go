@@ -131,7 +131,7 @@ spec:
 	})
 
 	// Disabled due to https://github.com/kumahq/kuma/issues/9184
-	PIt("should upgrade Kuma on Zone", func() {
+	It("should upgrade Kuma on Zone", func() {
 		// when
 		err := zone.(*K8sCluster).UpgradeKuma(core.Zone,
 			WithHelmReleaseName(releaseName),
