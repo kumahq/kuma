@@ -40,7 +40,6 @@ env:
   ENABLED_GOARCHES: ${{ inputs.enabled_goarches }}
   ENABLED_GOOSES: ${{ inputs.enabled_gooses }}
   ALLOW_PUSH: ${{ inputs.allow_push }}
-  NOTARY_REPOSITORY: "${{ github.repository_owner }}/notary"
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 
@@ -186,13 +185,19 @@ jobs:
           echo "Fetching image manifest digest for ${{ matrix.IMAGE_MANIFEST }}"
           echo "digest=$(regctl image digest ${{ matrix.IMAGE_MANIFEST }})" >> $GITHUB_OUTPUT
           echo "label=$(echo ${{ matrix.IMAGE_MANIFEST }} | rev | cut -d "/" -f 1 | rev | cut -d ":" -f1)" >> "$GITHUB_OUTPUT"
+          image_tag=$(echo -n "${{ matrix.IMAGE_MANIFEST }}" | awk -F ":" '{print $2}')
+          if [[ "$image_tag" =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$ ]]; then
+            echo "notary_repository=${{ github.repository_owner }}/notary" >> $GITHUB_OUTPUT
+          else
+            echo "notary_repository=${{ github.repository_owner }}/notary-internal" >> $GITHUB_OUTPUT
+          fi
       - name: sign image manifest
         id: sign
         uses: Kong/public-shared-actions/security-actions/sign-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
         with:
           image_digest: ${{ steps.manifest_meta.outputs.digest }}
           tags: ${{ matrix.IMAGE_MANIFEST }}
-          signature_registry: ${{ env.NOTARY_REPOSITORY }}
+          signature_registry: ${{ steps.manifest_meta.outputs.notary_repository }}
           registry_username: ${{ secrets.DOCKER_USERNAME }}
           registry_password: ${{ secrets.DOCKER_API_KEY }}
       # Aggregate the list of image manifest metadata
