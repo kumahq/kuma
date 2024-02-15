@@ -36,25 +36,22 @@ var _ = Describe("Defaulter", func() {
 
 	allowedUsers := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
 
-	globalChecker := ResourceAdmissionChecker{
-		AllowedUsers:                 allowedUsers,
-		Mode:                         core.Global,
-		FederatedZone:                false,
-		DisableOriginLabelValidation: false,
+	globalChecker := func() ResourceAdmissionChecker {
+		return ResourceAdmissionChecker{
+			AllowedUsers:                 allowedUsers,
+			Mode:                         core.Global,
+			FederatedZone:                false,
+			DisableOriginLabelValidation: false,
+		}
 	}
 
-	zoneCheckerWithOriginValidation := ResourceAdmissionChecker{
-		AllowedUsers:                 allowedUsers,
-		Mode:                         core.Zone,
-		FederatedZone:                true,
-		DisableOriginLabelValidation: false,
-	}
-
-	zoneCheckerWithoutOriginValidation := ResourceAdmissionChecker{
-		AllowedUsers:                 allowedUsers,
-		Mode:                         core.Zone,
-		FederatedZone:                true,
-		DisableOriginLabelValidation: true,
+	zoneChecker := func(federatedZone, originValidation bool) ResourceAdmissionChecker {
+		return ResourceAdmissionChecker{
+			AllowedUsers:                 allowedUsers,
+			Mode:                         core.Zone,
+			FederatedZone:                federatedZone,
+			DisableOriginLabelValidation: !originValidation,
+		}
 	}
 
 	DescribeTable("should apply defaults on a target object",
@@ -94,7 +91,7 @@ var _ = Describe("Defaulter", func() {
 			Expect(actual).To(MatchJSON(given.expected))
 		},
 		Entry("should apply defaults to empty conf", testCase{
-			checker: globalChecker,
+			checker: globalChecker(),
 			kind:    string(mesh.MeshType),
 			inputObject: `
             {
@@ -144,7 +141,7 @@ var _ = Describe("Defaulter", func() {
 `,
 		}),
 		Entry("should not override non-empty spec fields", testCase{
-			checker: globalChecker,
+			checker: globalChecker(),
 			kind:    string(mesh.MeshType),
 			inputObject: `
             {
@@ -197,7 +194,7 @@ var _ = Describe("Defaulter", func() {
 `,
 		}),
 		Entry("should not override mesh label if it's already set", testCase{
-			checker: globalChecker,
+			checker: globalChecker(),
 			kind:    string(mesh.TrafficRouteType),
 			inputObject: `
             {
@@ -231,7 +228,7 @@ var _ = Describe("Defaulter", func() {
 `,
 		}),
 		Entry("should set mesh label when apply new policy on Zone", testCase{
-			checker: zoneCheckerWithOriginValidation,
+			checker: zoneChecker(true, true),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
             {
@@ -269,8 +266,8 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
-		Entry("should set mesh and origin label when origin validation is disabled", testCase{
-			checker: zoneCheckerWithoutOriginValidation,
+		Entry("should set mesh and origin label when origin validation is disabled, federated zone", testCase{
+			checker: zoneChecker(true, false),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
             {
@@ -305,8 +302,100 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
+		Entry("should set mesh and origin label when origin validation is disabled, non-federated zone", testCase{
+			checker: zoneChecker(false, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "zone",
+                  "kuma.io/mesh": "default"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
+		Entry("should set mesh and origin label on DPP", testCase{
+			checker: zoneChecker(true, true),
+			kind:    string(mesh.DataplaneType),
+			inputObject: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"Dataplane",
+              "mesh":"demo",
+              "metadata":{
+                "namespace":"example",
+                "name":"empty",
+                "creationTimestamp":null
+              },
+              "spec":{
+                "networking": {
+                  "address": "127.0.0.1",
+                  "inbound": [
+                    {
+                      "port": 11011,
+                      "tags": {
+                        "kuma.io/service": "backend"
+                      }
+                    }
+                  ]
+                }
+              }
+            }`,
+			expected: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"Dataplane",
+              "mesh":"demo",
+              "metadata":{
+                "namespace":"example",
+                "name":"empty",
+                "creationTimestamp":null,
+                "labels": {
+                  "kuma.io/origin": "zone",
+                  "kuma.io/mesh": "default"
+                }
+              },
+              "spec":{
+                "networking": {
+                  "address": "127.0.0.1",
+                  "inbound": [
+                    {
+                      "port": 11011,
+                      "tags": {
+                        "kuma.io/service": "backend"
+                      }
+                    }
+                  ]
+                }
+              }
+            }`,
+		}),
 		Entry("should not add origin label on Global", testCase{
-			checker: globalChecker,
+			checker: globalChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
             {

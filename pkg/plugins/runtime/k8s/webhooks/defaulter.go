@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -83,7 +84,7 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 		}
 	}
 
-	if resource.Descriptor().IsPluginOriginated && h.FederatedZone {
+	if h.Mode == core.Zone {
 		labels := obj.GetLabels()
 		if _, ok := core_model.ResourceOrigin(resource.GetMeta()); !ok {
 			if len(labels) == 0 {

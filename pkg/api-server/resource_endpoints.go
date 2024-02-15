@@ -360,7 +360,7 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	if r.federatedZone && r.descriptor.IsPluginOriginated {
+	if r.mode == config_core.Zone {
 		if labels == nil {
 			labels = map[string]string{}
 		}
