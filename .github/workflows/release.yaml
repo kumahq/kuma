@@ -25,6 +25,7 @@ env:
   CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
   MIN_VERSION: "1.2.0"
+  USE_LABEL_IN_VERSION: "false"
 permissions:
   contents: read
 jobs:
@@ -87,7 +88,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --use-label-for-dev=${{ env.USE_LABEL_IN_VERSION }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
