@@ -51,6 +51,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 	E2EAfterAll(func() {
 		Expect(zone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone.DeleteKuma()).To(Succeed())
+		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 		Expect(zone.DismissCluster()).To(Succeed())
 	})
