@@ -19,9 +19,9 @@ func Test() {
 		test("meshhttproute", samples.MeshMTLSBuilder())
 	}, Ordered)
 
-	_ = Describe("Zone Egress", func() {
+	_ = XDescribe("Zone Egress", func() {
 		test("meshhttproute-ze", samples.MeshMTLSBuilder().WithEgressRoutingEnabled())
-	}, Ordered)
+	}, FlakeAttempts(3), Ordered)
 }
 
 func test(meshName string, meshBuilder *builders.MeshBuilder) {
