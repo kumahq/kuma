@@ -13,15 +13,15 @@ When using trial versions of hosted metrics users run out of free credits pretty
 
 To make it more digestible for the users and cheaper we should introduce profiles that only contain subsets of all Envoy metrics.
 
-## Decision Drivers <!-- optional -->
+## Decision Drivers
 
-* {driver 1, e.g., a force, facing concern, …}
-* {driver 2, e.g., a force, facing concern, …}
-* … <!-- numbers of drivers can vary -->
+* no loss of quality while minimizing number of metrics the most (ideally we want to reduce the number of metrics while still providing access to the ones that are the most valuable)
 
 ## Considered Options
 
 ### Base profiles on expert knowledge, external dashboards and our grafana dashboards
+
+#### Where to get data from?
 
 We built the dashboards to show what is important to look at, we could extract the list of metrics from these dashboards like this:
 
@@ -70,7 +70,9 @@ We can build automation on top of this, so when we update dashboards or Envoy ch
 As you can see there is no easy way to track everything (Envoy does not by default print all possible metrics)
 so I strongly suggest adding a feature to dynamically (by regex for example) add/remove metrics to/from existing profiles.
 
-#### Profiles selected:
+#### Profiles suggested:
+
+Suggestions to the merge / split and naming are welcomed.
 
 ##### All
 
@@ -79,6 +81,12 @@ Nothing is removed, everything included in Envoy, people can manually remove stu
 ##### Extensive
 
 - All available dashboards + [Charly's demo regexes](https://github.com/lahabana/demo-scene/blob/a48ec6e0079601d340f79613549e1b2a4ea715a1/mesh-localityaware/k8s/otel-collectors.yaml#L174)
+  - `envoy_cluster_upstream_cx_.*`
+  - `envoy_cluster_upstream_rq_.*`
+  - `envoy_cluster_circuit_breakers_.*`
+  - `envoy_http_downstream_.*`
+  - `envoy_listener_downstream_.*`
+  - `envoy_listener_http_.*`
 
 ##### Comprehensive
 
@@ -125,7 +133,7 @@ Only golden 4 (by regex / or exact):
   - `.*cx_active.*` (active connection)
   - `.*_rq` (upstream/downstream requests broken by specific codes e.g. 200/201)
   - `.*bytes*` (bytes sent/received/not send)
-- Errors
+- Errors (just went over combined stats from all dashboards and picked the ones that had anything to do with errors)
   - we get 5xx from `*_rq`
   - `.*timeout.*`
   - `.*health_check.*`
@@ -184,42 +192,33 @@ sidecar:
 Just like we [mutate responses for metrics hijacker](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/server.go#L348)
 we can add a filter mutator to reduce the number of metrics (same thing for [OTEL](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/metrics_producer.go#L106)).
 
+#### Validation
+
+After all profiles are compiled from regexes make sure that they include the ones on the lower levels (all includes default, default includes minimal etc.)
+Make sure that with `default` profile (or the profile chosen for dashboards) all dashboards are populated.
+
+Can we somehow track if users are happy with the defined profiles?
+
+#### Additional work
+
+We could adjust our dashboards to reflect which graphs are going to be populated in which profile.
+
 ## Decision Outcome
 
-Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
+Chosen option: "Base profiles on expert knowledge, external dashboards and our grafana dashboards", because it provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
 
-### Positive Consequences <!-- optional -->
+### Positive Consequences
 
-* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
-* …
+* should cover all typical scenarios
+* non-typical scenarios can be handled by include/exclude
+* allows us to build some automation to make it more resilient to changes
 
-### Negative Consequences <!-- optional -->
+### Negative Consequences
 
-* {e.g., compromising quality attribute, follow-up decisions required, …}
-* …
+* some processing power needed to filter metrics
 
-## Pros and Cons of the Options
+## Links
 
-
-### {option 2}
-
-{example | description | pointer to more information | …} <!-- optional -->
-
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
-
-### {option 3}
-
-{example | description | pointer to more information | …} <!-- optional -->
-
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
-
-## Links <!-- optional -->
-
-* {Link type} {Link to ADR} <!-- example: Refined by [ADR-0005](0005-example.md) -->
-* … <!-- numbers of links can vary -->
+* https://github.com/lahabana/demo-scene/blob/a48ec6e0079601d340f79613549e1b2a4ea715a1/mesh-localityaware/k8s/otel-collectors.yaml#L174
+* https://docs.datadoghq.com/integrations/envoy
+* https://docs.datadoghq.com/integrations/istio
