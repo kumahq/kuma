@@ -22,7 +22,6 @@ To make it more digestible for the users and cheaper we should introduce profile
 ## Considered Options
 
 * Base profiles on expert knowledge and current grafana dashboards
-* Base profiles on stats popularity
 
 ## Decision Outcome
 
@@ -178,7 +177,30 @@ Only golden 4 (by regex / or exact):
 
 #### Schema
 
+I suggest changing the current schema of
 
+```yaml
+sidecar:
+  usedOnly: true # true or false
+  profile: minimal # one of minimal, default, full
+  regex: http2_act.* # only profile or regex can be defined
+```
+
+to
+
+```yaml
+sidecar:
+  usedOnly: true # true or false
+  profile:
+    name: default # one of `nothing`, `minimal`, `default`, `comprehensive`, `all`
+    exclude: regex2.* # first exclude
+    include: regex1.* # then include (include takes over)
+```
+
+#### Implementation
+
+Just like we [mutate responses for metrics hijacker](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/server.go#L348)
+we can add a filter mutator to reduce the number of metrics (same thing for [OTEL](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/metrics_producer.go#L106)).
 
 ### {option 2}
 
