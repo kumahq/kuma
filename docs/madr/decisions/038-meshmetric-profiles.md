@@ -40,14 +40,29 @@ Chosen option: "{option 1}", because {justification. e.g., only option, which me
 
 ## Pros and Cons of the Options
 
-### Base profiles on expert knowledge and current grafana dashboards
+### Base profiles on expert knowledge, external dashboards and our grafana dashboards
 
-We built the dashboards to showcase what is important to look at, we could 
+We built the dashboards to show what is important to look at, we could extract the list of metrics from these dashboards like this:
 
 ```bash
-cat kuma-dataplane.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+cat app/kumactl/data/install/k8s/metrics/grafana/kuma-dataplane.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
 ```
 
+and put this in a profile.
+
+We can do similar thing for other dashboards, like official Envoy Datadog dashboard:
+
+```bash
+cat docs/madr/decisions/assets/038/envoy-datadog-dashboard.json | jq 'try .widgets[] | try .definition | try .widgets[] | try .definition | try .requests[] | try .queries[] | .query' | grep -E -o '\benvoy[\._a-zA-Z0-9]+{' | tr -d '{'
+```
+
+Or for Consul Grafana dashboards:
+
+```bash
+cat docs/madr/decisions/assets/038/consul-grafana.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+```
+
+All of these metrics combined result in 96 metrics. 
 
 ### {option 2}
 
