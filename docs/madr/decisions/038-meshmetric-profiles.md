@@ -21,24 +21,6 @@ To make it more digestible for the users and cheaper we should introduce profile
 
 ## Considered Options
 
-* Base profiles on expert knowledge and current grafana dashboards
-
-## Decision Outcome
-
-Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
-
-### Positive Consequences <!-- optional -->
-
-* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
-* …
-
-### Negative Consequences <!-- optional -->
-
-* {e.g., compromising quality attribute, follow-up decisions required, …}
-* …
-
-## Pros and Cons of the Options
-
 ### Base profiles on expert knowledge, external dashboards and our grafana dashboards
 
 We built the dashboards to show what is important to look at, we could extract the list of metrics from these dashboards like this:
@@ -201,6 +183,23 @@ sidecar:
 
 Just like we [mutate responses for metrics hijacker](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/server.go#L348)
 we can add a filter mutator to reduce the number of metrics (same thing for [OTEL](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/metrics_producer.go#L106)).
+
+## Decision Outcome
+
+Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
+
+### Positive Consequences <!-- optional -->
+
+* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
+* …
+
+### Negative Consequences <!-- optional -->
+
+* {e.g., compromising quality attribute, follow-up decisions required, …}
+* …
+
+## Pros and Cons of the Options
+
 
 ### {option 2}
 
