@@ -112,11 +112,12 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 }
 
 type testApiServerConfigurer struct {
-	store   store.ResourceStore
-	config  *config_api_server.ApiServerConfig
-	metrics func() core_metrics.Metrics
-	zone    string
-	global  bool
+	store                        store.ResourceStore
+	config                       *config_api_server.ApiServerConfig
+	metrics                      func() core_metrics.Metrics
+	zone                         string
+	global                       bool
+	disableOriginLabelValidation bool
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
@@ -152,6 +153,11 @@ func (t *testApiServerConfigurer) WithStandalone() *testApiServerConfigurer {
 
 func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *testApiServerConfigurer {
 	t.store = resourceStore
+	return t
+}
+
+func (t *testApiServerConfigurer) WithDisableOriginLabelValidation(disable bool) *testApiServerConfigurer {
+	t.disableOriginLabelValidation = disable
 	return t
 }
 
@@ -213,6 +219,8 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	} else if t.global {
 		cfg.Mode = config_core.Global
 	}
+
+	cfg.Multizone.Zone.DisableOriginLabelValidation = t.disableOriginLabelValidation
 
 	resManager := manager.NewResourceManager(t.store)
 	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
