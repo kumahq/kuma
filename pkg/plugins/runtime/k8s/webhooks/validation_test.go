@@ -41,8 +41,18 @@ var _ = Describe("Validation", func() {
 	DescribeTable("Validation",
 		func(given testCase) {
 			// given
+<<<<<<< HEAD
 			allowedUsers := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
 			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, allowedUsers)
+=======
+			checker := webhooks.ResourceAdmissionChecker{
+				AllowedUsers:                 []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"},
+				Mode:                         given.mode,
+				FederatedZone:                given.federatedZone,
+				DisableOriginLabelValidation: false,
+			}
+			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), checker)
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 			handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 			webhook := &kube_admission.Webhook{
 				Handler: handler,
