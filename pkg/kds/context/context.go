@@ -14,7 +14,11 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+=======
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -188,6 +192,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 	}
 }
 
+<<<<<<< HEAD
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
 // that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
@@ -206,4 +211,16 @@ func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 			return false
 		}
 	}
+=======
+func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r core_model.Resource) bool {
+	if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
+		// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
+		// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
+		// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
+		// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
+		// todo: remove in 2 releases after 2.6.x
+		return !zi.IsRemoteIngress(localZone)
+	}
+	return core_model.IsLocallyOriginated(config_core.Zone, r) || r.Descriptor().KDSFlags == core_model.ZoneToGlobalFlag
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 }

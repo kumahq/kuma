@@ -169,6 +169,13 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 		return
 	}
 
+	if r.mode == config_core.Zone {
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
+	}
+
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {

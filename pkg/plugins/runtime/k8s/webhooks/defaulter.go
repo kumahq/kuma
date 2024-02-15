@@ -7,6 +7,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -18,15 +20,26 @@ type Defaulter interface {
 	Default() error
 }
 
+<<<<<<< HEAD
 func DefaultingWebhookFor(converter k8s_common.Converter) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &defaultingHandler{
 			converter: converter,
+=======
+func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter, checker ResourceAdmissionChecker) *admission.Webhook {
+	return &admission.Webhook{
+		Handler: &defaultingHandler{
+			converter:                converter,
+			decoder:                  admission.NewDecoder(scheme),
+			ResourceAdmissionChecker: checker,
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 		},
 	}
 }
 
 type defaultingHandler struct {
+	ResourceAdmissionChecker
+
 	converter k8s_common.Converter
 	decoder   *admission.Decoder
 }
@@ -69,6 +82,10 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
+	if resp := h.IsOperationAllowed(req.UserInfo, resource); !resp.Allowed {
+		return resp
+	}
+
 	if resource.Descriptor().Scope == core_model.ScopeMesh {
 		labels := obj.GetLabels()
 		if _, ok := labels[metadata.KumaMeshLabel]; !ok {
@@ -76,6 +93,17 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 				labels = map[string]string{}
 			}
 			labels[metadata.KumaMeshLabel] = core_model.DefaultMesh
+			obj.SetLabels(labels)
+		}
+	}
+
+	if h.Mode == core.Zone {
+		labels := obj.GetLabels()
+		if _, ok := core_model.ResourceOrigin(resource.GetMeta()); !ok {
+			if len(labels) == 0 {
+				labels = map[string]string{}
+			}
+			labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
 			obj.SetLabels(labels)
 		}
 	}

@@ -2,18 +2,18 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
-	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/admission/v1"
-	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/config/core"
+=======
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,9 +22,9 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/version"
 )
 
+<<<<<<< HEAD
 func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, allowedUsers []string) k8s_common.AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry: coreRegistry,
@@ -32,16 +32,37 @@ func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_regi
 		converter:    converter,
 		mode:         mode,
 		allowedUsers: allowedUsers,
+=======
+func NewValidatingWebhook(
+	converter k8s_common.Converter,
+	coreRegistry core_registry.TypeRegistry,
+	k8sRegistry k8s_registry.TypeRegistry,
+	checker ResourceAdmissionChecker,
+) k8s_common.AdmissionValidator {
+	return &validatingHandler{
+		coreRegistry:             coreRegistry,
+		k8sRegistry:              k8sRegistry,
+		converter:                converter,
+		ResourceAdmissionChecker: checker,
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 	}
 }
 
 type validatingHandler struct {
+<<<<<<< HEAD
+=======
+	ResourceAdmissionChecker
+
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 	coreRegistry core_registry.TypeRegistry
 	k8sRegistry  k8s_registry.TypeRegistry
 	converter    k8s_common.Converter
 	decoder      *admission.Decoder
+<<<<<<< HEAD
 	mode         core.CpMode
 	allowedUsers []string
+=======
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
@@ -58,7 +79,16 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Allowed("")
 	}
 
+<<<<<<< HEAD
 	if resp := h.isOperationAllowed(resType, req.UserInfo); !resp.Allowed {
+=======
+	coreRes, k8sObj, err := h.decode(req)
+	if err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if resp := h.IsOperationAllowed(req.UserInfo, coreRes); !resp.Allowed {
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 		return resp
 	}
 
@@ -109,6 +139,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	return coreRes, k8sObj, nil
 }
 
+<<<<<<< HEAD
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
 func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
 	if slices.Contains(h.allowedUsers, userInfo.Username) {
@@ -176,6 +207,16 @@ func (h *validatingHandler) validateResourceLocation(resType core_model.Resource
 		}
 	}
 	return admission.Allowed("")
+=======
+func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+	var verr validators.ValidationError
+	if origin, ok := core_model.ResourceOrigin(rm); ok {
+		if err := origin.IsValid(); err != nil {
+			verr.AddViolationAt(validators.Root().Field("labels").Key(mesh_proto.ResourceOriginLabel), err.Error())
+		}
+	}
+	return verr
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 }
 
 func (h *validatingHandler) Supports(admission.Request) bool {
