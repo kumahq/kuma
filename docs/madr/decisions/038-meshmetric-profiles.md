@@ -46,6 +46,10 @@ We built the dashboards to show what is important to look at, we could extract t
 
 ```bash
 cat app/kumactl/data/install/k8s/metrics/grafana/kuma-dataplane.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+cat app/kumactl/data/install/k8s/metrics/grafana/kuma-gateway.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+cat app/kumactl/data/install/k8s/metrics/grafana/kuma-service-to-service.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+cat app/kumactl/data/install/k8s/metrics/grafana/kuma-mesh.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
+cat app/kumactl/data/install/k8s/metrics/grafana/kuma-service.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
 ```
 
 and put this in a profile.
@@ -62,7 +66,29 @@ Or for Consul Grafana dashboards:
 cat docs/madr/decisions/assets/038/consul-grafana.json | jq 'try .panels[] | try .targets[] | try .expr' | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq
 ```
 
-All of these metrics combined result in 96 metrics. 
+All of these metrics combined result in 100 metrics.
+
+By default, Envoy starts with 378 metrics (unfortunately it's not a complete list):
+
+```bash
+docker run --rm -it -p 9901:9901 -p 10000:10000 envoyproxy/envoy:v1.29.1
+curl -s localhost:10000 > /dev/null
+curl -s localhost:9901/stats/prometheus | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' | sort | uniq | wc -l
+# 378
+```
+
+And datadog lists 990 metrics in total https://github.com/DataDog/integrations-core/blob/master/envoy/metadata.csv and 329 non-legacy ones
+
+```bash
+curl -s https://raw.githubusercontent.com/DataDog/integrations-core/master/envoy/metadata.csv | grep -v Legacy | wc -l                                                                                                                                         -- INSERT --
+```
+
+We can build automation on top of this, so when we update dashboards or Envoy changes metrics it emits we know about this and can adjust accordingly
+(just like now official Envoy dashboards - `envoy_cluster_upstream_rq_time_99percentile` have metrics that no longer exist).
+
+As you can see there is no easy way to track everything (Envoy does not by default print all possible metrics)
+so I strongly suggest adding a feature to dynamically (by regex for example) add metrics to existing profiles.
+
 
 ### {option 2}
 
