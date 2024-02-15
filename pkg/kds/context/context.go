@@ -18,6 +18,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -257,6 +258,14 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 	}
 }
 
-func ZoneProvidedFilter(_ context.Context, _ string, _ kds.Features, r core_model.Resource) bool {
-	return core_model.IsLocallyOriginated(config_core.Zone, r)
+func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r core_model.Resource) bool {
+	if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
+		// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
+		// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
+		// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
+		// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
+		// todo: remove in 2 releases after 2.6.x
+		return !zi.IsRemoteIngress(localZone)
+	}
+	return core_model.IsLocallyOriginated(config_core.Zone, r) || r.Descriptor().KDSFlags == core_model.ZoneToGlobalFlag
 }
