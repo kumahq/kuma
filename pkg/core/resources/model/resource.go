@@ -249,6 +249,76 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+<<<<<<< HEAD
+=======
+	GetLabels() map[string]string
+}
+
+// IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`
+// This is required because in multi-zone policies may have names different from the name they are defined with.
+func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMeta) bool {
+	if refMeta.GetMesh() != resourceMeta.GetMesh() {
+		return false
+	}
+
+	if len(refMeta.GetNameExtensions()) == 0 {
+		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
+	}
+
+	nsRef := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	nsRes := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	if nsRef == "" || nsRef != nsRes {
+		return false
+	}
+
+	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
+}
+
+func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+	switch mode {
+	case config_core.Global:
+		origin, ok := ResourceOrigin(r.GetMeta())
+		return !ok || origin == mesh_proto.GlobalResourceOrigin
+	case config_core.Zone:
+		origin, _ := ResourceOrigin(r.GetMeta())
+		return origin == mesh_proto.ZoneResourceOrigin
+	default:
+		return true
+	}
+}
+
+func GetDisplayName(r Resource) string {
+	// prefer display name as it's more predictable, because
+	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
+	// * When policies are synced to Zone, hash suffix also breaks sorting
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+		return labels[mesh_proto.DisplayName]
+	}
+	return r.GetMeta().GetName()
+}
+
+func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
+	}
+	return "", false
+}
+
+// ZoneOfResource returns zone from which the resource was synced to Global CP
+// There is no information in the resource itself whether the resource is synced or created on the CP.
+// Therefore, it's a caller responsibility to make use it only on synced resources.
+func ZoneOfResource(res Resource) string {
+	if labels := res.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
+		return labels[mesh_proto.ZoneTag]
+	}
+	parts := strings.Split(res.GetMeta().GetName(), ".")
+	return parts[0]
+}
+
+func equalNames(mesh, n1, n2 string) bool {
+	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
+	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
+>>>>>>> 6353c954e (fix(kuma-cp): kds sync on upgrade doubles the number of policies (#9259))
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
