@@ -830,7 +830,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should return 400 when mesh does not exist", func() {
 			// setup
-			err := resourceStore.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
+			err := resourceStore.Delete(context.Background(), core_mesh.NewMeshResource(), core_store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
