@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunE2ESpecs(t, "Bootstrap Suite")
 }
 
-var _ = Describe("Corefile Template", Label("job-1"), bootstrap.CorefileTemplate, Ordered)
+var _ = Describe("Corefile Template", Label("job-0"), bootstrap.CorefileTemplate, Ordered)
