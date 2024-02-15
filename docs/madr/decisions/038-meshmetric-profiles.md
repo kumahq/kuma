@@ -87,7 +87,97 @@ We can build automation on top of this, so when we update dashboards or Envoy ch
 (just like now official Envoy dashboards - `envoy_cluster_upstream_rq_time_99percentile` have metrics that no longer exist).
 
 As you can see there is no easy way to track everything (Envoy does not by default print all possible metrics)
-so I strongly suggest adding a feature to dynamically (by regex for example) add metrics to existing profiles.
+so I strongly suggest adding a feature to dynamically (by regex for example) add/remove metrics to/from existing profiles.
+
+#### Profiles selected:
+
+##### All
+
+Nothing is removed, everything included in Envoy, people can manually remove stuff.
+
+##### Extensive
+
+- All available dashboards + [Charly's demo regexes](https://github.com/lahabana/demo-scene/blob/a48ec6e0079601d340f79613549e1b2a4ea715a1/mesh-localityaware/k8s/otel-collectors.yaml#L174)
+
+##### Comprehensive
+
+- All available dashboards
+
+##### Default
+
+- Our dashboards
+
+##### Minimal
+
+Only golden 4 (by regex / or exact):
+- Latency
+  - `.*_rq_time_.*` which is:
+    - envoy_cluster_internal_upstream_rq_time_bucket
+    - envoy_cluster_internal_upstream_rq_time_count
+    - envoy_cluster_internal_upstream_rq_time_sum
+    - envoy_cluster_external_upstream_rq_time_bucket
+    - envoy_cluster_external_upstream_rq_time_count
+    - envoy_cluster_external_upstream_rq_time_sum
+    - envoy_cluster_upstream_rq_time_bucket
+    - envoy_cluster_upstream_rq_time_count
+    - envoy_cluster_upstream_rq_time_sum
+    - envoy_http_downstream_rq_time_bucket
+    - envoy_http_downstream_rq_time_count
+    - envoy_http_downstream_rq_time_sum
+  - or just `envoy_cluster_upstream_rq_time` and `envoy_http_downstream_rq_time`
+  - `.*cx_length_ms.*`
+    - envoy_cluster_upstream_cx_length_ms_bucket
+    - envoy_cluster_upstream_cx_length_ms_count
+    - envoy_cluster_upstream_cx_length_ms_sum
+    - envoy_http_downstream_cx_length_ms_bucket
+    - envoy_http_downstream_cx_length_ms_count
+    - envoy_http_downstream_cx_length_ms_sum
+    - envoy_listener_admin_downstream_cx_length_ms_bucket
+    - envoy_listener_admin_downstream_cx_length_ms_count
+    - envoy_listener_admin_downstream_cx_length_ms_sum
+    - envoy_listener_downstream_cx_length_ms_bucket
+    - envoy_listener_downstream_cx_length_ms_count
+    - envoy_listener_downstream_cx_length_ms_sum
+  - or just `envoy_cluster_upstream_cx_length_ms`
+- Traffic
+  - `.*cx_count.*` (connections total)
+  - `.*cx_active.*` (active connection)
+  - `.*_rq` (upstream/downstream requests broken by specific codes e.g. 200/201)
+  - `.*bytes*` (bytes sent/received/not send)
+- Errors
+  - we get 5xx from `*_rq`
+  - `.*timeout.*`
+  - `.*health_check.*`
+  - `.*lb_healthy_panic.*`
+  - `.*cx_destroy.*`
+  - `envoy_cluster_membership_degraded`
+  - `envoy_cluster_membership_healthy`
+  - `envoy_cluster_ssl_connection_error`
+  - `.*error.*`
+  - `.*fail.*` (has also envoy_cluster_ssl_fail envoy_cluster_update_failure)
+  - `.*reset.*`
+  - `.*outlier_detection_ejections.*`
+  - `envoy_cluster_upstream_cx_pool_overflow_count`
+  - `protocol_error`
+  - `envoy_cluster_upstream_rq_cancelled`
+  - `envoy_cluster_upstream_rq_max_duration_reached`
+  - `envoy_cluster_upstream_rq_pending_failure_eject`
+  - `.*overflow.*`
+  - `.*no_cluster.*`
+  - `.*no_route.*`
+  - `.*reject.*`
+  - `envoy_listener_no_filter_chain_match`
+  - `.*denied.*` (envoy_rbac_denied, envoy_rbac_shadow_denied)
+  - `envoy_server_days_until_first_cert_expiring`
+- Saturation
+  - `.*memory.*` (allocated, heap, physical)
+
+##### Nothing
+
+- Just an empty profile and people manually can add things to this.
+
+#### Schema
+
 
 
 ### {option 2}
