@@ -19,6 +19,10 @@ To make it more digestible for the users and cheaper we should introduce profile
 
 ## Considered Options
 
+### Use AI to generate Profiles
+
+Useless, after a couple of metrics just prints "envoy_cluster_manager_warming_clusters_total" indefinitely.
+
 ### Base profiles on expert knowledge, external dashboards and our grafana dashboards
 
 #### Where to get data from?

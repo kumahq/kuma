@@ -326,4 +326,3 @@ envoy_watchdog_mega_miss_count
 envoy_watchdog_miss_count
 envoy_workers_watchdog_mega_miss_count
 envoy_workers_watchdog_miss_count
-metric_name
