@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/go-logr/logr"
@@ -122,8 +123,8 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_co
 	return 0, nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
 }
 
-func FindContainerStatus(pod *kube_core.Pod, containerName string) *kube_core.ContainerStatus {
-	for _, cs := range pod.Status.ContainerStatuses {
+func FindContainerStatus(containerName string, status []kube_core.ContainerStatus, otherStatuses ...[]kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	for _, cs := range append(status, slices.Concat(otherStatuses...)...) {
 		if cs.Name == containerName {
 			return &cs
 		}

@@ -46,14 +46,14 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		// to figure out which container implements which service. Since we know container we can check its status
 		// and map it to the Dataplane health
 		if container != nil {
-			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
+			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
 				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 				health.Ready = false
 			}
 		}
 
 		// also we're checking whether kuma-sidecar container is ready
-		if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
+		if cs := util_k8s.FindContainerStatus(util_k8s.KumaSidecarContainerName, pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses); cs != nil && !cs.Ready {
 			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			health.Ready = false
 		}
@@ -98,7 +98,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 
 	for _, container := range pod.Spec.Containers {
 		if container.Name != util_k8s.KumaSidecarContainerName {
-			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil && !cs.Ready {
+			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
 				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 				health.Ready = false
 			}
@@ -106,7 +106,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	}
 
 	// also we're checking whether kuma-sidecar container is ready
-	if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil && !cs.Ready {
+	if cs := util_k8s.FindContainerStatus(util_k8s.KumaSidecarContainerName, pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses); cs != nil && !cs.Ready {
 		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 		health.Ready = false
 	}

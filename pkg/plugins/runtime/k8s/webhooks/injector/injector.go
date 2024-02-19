@@ -40,6 +40,7 @@ func New(
 	cfg runtime_k8s.Injector,
 	controlPlaneURL string,
 	client kube_client.Client,
+	sidecarContainersEnabled bool,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	systemNamespace string,
@@ -53,10 +54,11 @@ func New(
 		caCert = string(bytes)
 	}
 	return &KumaInjector{
-		cfg:              cfg,
-		client:           client,
-		converter:        converter,
-		defaultAdminPort: envoyAdminPort,
+		cfg:                      cfg,
+		client:                   client,
+		sidecarContainersEnabled: sidecarContainersEnabled,
+		converter:                converter,
+		defaultAdminPort:         envoyAdminPort,
 		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
 			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady),
 		systemNamespace: systemNamespace,
@@ -64,12 +66,13 @@ func New(
 }
 
 type KumaInjector struct {
-	cfg              runtime_k8s.Injector
-	client           kube_client.Client
-	converter        k8s_common.Converter
-	proxyFactory     *containers.DataplaneProxyFactory
-	defaultAdminPort uint32
-	systemNamespace  string
+	cfg                      runtime_k8s.Injector
+	client                   kube_client.Client
+	sidecarContainersEnabled bool
+	converter                k8s_common.Converter
+	proxyFactory             *containers.DataplaneProxyFactory
+	defaultAdminPort         uint32
+	systemNamespace          string
 }
 
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
@@ -121,9 +124,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
 	}
 
-	// inject sidecar as first container
-	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
-
 	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not generate annotations for pod")
@@ -170,6 +170,15 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		} else {
 			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 		}
+	}
+
+	if i.sidecarContainersEnabled {
+		// inject sidecar after init
+		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+	} else {
+		// inject sidecar as first container
+		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {

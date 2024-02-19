@@ -32,10 +32,11 @@ var _ = Describe("Injector", func() {
 	)
 
 	type testCase struct {
-		num       string
-		mesh      string
-		cfgFile   string
-		namespace string
+		num                      string
+		mesh                     string
+		cfgFile                  string
+		namespace                string
+		sidecarContainersEnabled bool
 	}
 
 	BeforeAll(func() {
@@ -85,7 +86,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, given.sidecarContainersEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -682,7 +683,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, given.sidecarContainersEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -788,7 +789,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, given.sidecarContainersEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
