@@ -85,5 +85,6 @@
   branch: release-2.6
 - edition: kuma
   version: preview
-  release: dev
+  release: 2.7.0
   branch: master
+  label: dev
