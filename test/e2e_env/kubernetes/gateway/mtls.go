@@ -330,6 +330,70 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(status.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
+
+			Expect(DeleteMeshPolicyOrError(
+				kubernetes.Cluster,
+				v1alpha1.MeshTrafficPermissionResourceTypeDescriptor,
+				"tp-non-accessible-echo-server.kuma-system",
+			)).To(Succeed())
+		})
+
+		It("should access a service when we have mesh traffic permission using MeshGateway", func() {
+			// when no MeshTrafficPermission
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
+
+			// then cannot reach service
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client",
+					"http://mtls-edge-gateway.gateway-mtls:8080/",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.NoFail(),
+					client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(403))
+			}, "30s", "1s").Should(Succeed())
+
+			tp := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: kuma-system
+  name: access-echo-server.kuma-system
+  labels:
+    kuma.io/mesh: gateway-mtls
+spec:
+  targetRef:
+    kind: MeshService
+    name: echo-server_gateway-mtls_svc_80
+  from:
+    - targetRef:
+        kind: MeshGateway
+        name: mtls-edge-gateway
+      default:
+        action: Allow`
+			Expect(kubernetes.Cluster.Install(YamlK8s(tp))).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://mtls-edge-gateway.gateway-mtls:8080/",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("kubernetes"))
+			}, "30s", "1s").Should(Succeed())
+
+			Expect(DeleteMeshPolicyOrError(
+				kubernetes.Cluster,
+				v1alpha1.MeshTrafficPermissionResourceTypeDescriptor,
+				"access-echo-server.kuma-system",
+			)).To(Succeed())
 		})
 	})
 
