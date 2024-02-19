@@ -402,8 +402,8 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 		origin, ok := ResourceOrigin(r.GetMeta())
 		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, ok := ResourceOrigin(r.GetMeta())
-		return !ok || origin == mesh_proto.ZoneResourceOrigin
+		origin, _ := ResourceOrigin(r.GetMeta())
+		return origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
 	}

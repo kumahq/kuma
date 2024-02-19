@@ -232,8 +232,13 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("could not find composite validator in the extensions context")
 	}
 
-	allowedUsers := append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector")
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().IsFederatedZoneCP(), allowedUsers, rt.Config().Multizone.Zone.DisableOriginLabelValidation)
+	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
+		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		Mode:                         rt.Config().Mode,
+		FederatedZone:                rt.Config().IsFederatedZoneCP(),
+		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+	}
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), resourceAdmissionChecker)
 	composite.AddValidator(handler)
 
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)
@@ -320,7 +325,13 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
-	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter)
+	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
+		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		Mode:                         rt.Config().Mode,
+		FederatedZone:                rt.Config().IsFederatedZoneCP(),
+		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+	}
+	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter, resourceAdmissionChecker)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)
 	return nil
 }

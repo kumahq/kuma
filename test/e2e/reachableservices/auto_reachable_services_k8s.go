@@ -39,6 +39,7 @@ var _ = E2EBeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	E2EDeferCleanup(func() {
+		Expect(k8sCluster.DeleteNamespace(esNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
