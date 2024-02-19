@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '3' && '[0, 1, 2]') || '[0]') }}
+        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
     steps:
       - name: "Print parameters"
         id: eval-params
