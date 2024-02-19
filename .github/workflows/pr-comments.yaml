@@ -43,8 +43,7 @@ jobs:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+          token: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
