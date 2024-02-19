@@ -65,7 +65,7 @@ curl -s localhost:9901/stats/prometheus | grep -E -o '\benvoy_[a-zA-Z0-9_]+\b' |
 And datadog lists 990 metrics in total https://github.com/DataDog/integrations-core/blob/master/envoy/metadata.csv and 329 non-legacy ones
 
 ```bash
-curl -s https://raw.githubusercontent.com/DataDog/integrations-core/master/envoy/metadata.csv | grep -v Legacy | wc -l                                                                                                                                         -- INSERT --
+curl -s https://raw.githubusercontent.com/DataDog/integrations-core/master/envoy/metadata.csv | grep -v Legacy | wc -l
 ```
 
 We can build automation on top of this, so when we update dashboards or Envoy changes metrics it emits we know about this and can adjust accordingly
