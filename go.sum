@@ -107,8 +107,8 @@ github.com/evanphx/json-patch v5.7.0+incompatible h1:vgGkfT/9f8zE6tvSCe74nfpAVDQ
 github.com/evanphx/json-patch v5.7.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.9.0 h1:kcBlZQbplgElYIlo/n1hJbls2z/1awpXxpRi0/FOJfg=
 github.com/evanphx/json-patch/v5 v5.9.0/go.mod h1:VNkHZ/282BpEyt/tObQO8s5CMPmYYq14uClGH4abBuQ=
-github.com/exaring/otelpgx v0.5.3 h1:BnM/i9Xt1H9RU5SWcDdbT6fQFu8kHncFKNtLqfg9Qvc=
-github.com/exaring/otelpgx v0.5.3/go.mod h1:4dBiAqwzDNmpj3TwX5Syti1/Nw2bIoDQItdLvWTklQU=
+github.com/exaring/otelpgx v0.5.4 h1:uytSs8A9/8tpnJ4J8jsusbRtNgP6Cn5npnffCxE2Unk=
+github.com/exaring/otelpgx v0.5.4/go.mod h1:DuRveXIeRNz6VJrMTj2uCBFqiocMx4msCN1mIMmbZUI=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
