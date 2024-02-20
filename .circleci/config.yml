@@ -11,7 +11,7 @@ parameters:
     default: "v1.23.17-k3s1"
   last_k8s_version:
     type: string
-    default: "v1.28.1-k3s1"
+    default: "v1.29.1-k3s2"
   ubuntu_image:
     type: string
     default: "ubuntu-2204:2022.10.2"
