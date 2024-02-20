@@ -19,6 +19,15 @@
 * fix(kuma-cp): prevent violating kubernetes label limit (backport of #9191) [#9233](https://github.com/kumahq/kuma/pull/9233) @kumahq
 
 
+## 2.5.3
+> Released on 2024/02/20
+
+* chore(deps): security update [#9287](https://github.com/kumahq/kuma/pull/9287) @kumahq
+* chore(deps): update iptables version (backport of #9200) [#9215](https://github.com/kumahq/kuma/pull/9215) @kumahq
+* chore(deps): upgrade envoy to v1.28.1 [#9219](https://github.com/kumahq/kuma/pull/9219) @lukidzi
+* fix(gatewayapi): don't add HTTPRoute status if Kuma isn't the controller (backport of #9228) [#9235](https://github.com/kumahq/kuma/pull/9235) @kumahq
+
+
 ## 2.4.5
 > Released on 2024/02/02
 
