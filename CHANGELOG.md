@@ -35,6 +35,20 @@
 * chore(deps): upgrade envoy to v1.27.3 [#9220](https://github.com/kumahq/kuma/pull/9220) @lukidzi
 
 
+## 2.3.5
+> Released on 2024/02/20
+
+* chore(deps): update iptables version (backport of #9200) [#9213](https://github.com/kumahq/kuma/pull/9213) @kumahq
+* chore(deps): upgrade envoy to v1.26.7 [#9221](https://github.com/kumahq/kuma/pull/9221) @lukidzi
+
+
+## 2.2.7
+> Released on 2024/02/20
+
+* chore(deps): update iptables version (backport of #9200) [#9217](https://github.com/kumahq/kuma/pull/9217) @kumahq
+* chore(deps): upgrade envoy to v1.26.7 [#9294](https://github.com/kumahq/kuma/pull/9294) @lukidzi
+
+
 ## 2.4.5
 > Released on 2024/02/02
 
