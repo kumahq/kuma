@@ -141,14 +141,13 @@ Routes:
         routes:
         - match:
             path: /
-          responseHeadersToAdd:
-          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-            header:
-              key: X-Kuma-Test
-              value: value
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            regexRewrite:
+              pattern:
+                regex: .*
+              substitution: /a/b
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -167,14 +166,10 @@ Routes:
                 weight: 1
         - match:
             prefix: /
-          responseHeadersToAdd:
-          - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-            header:
-              key: X-Kuma-Test
-              value: value
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            prefixRewrite: /a/b/
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s

@@ -1,7 +1,47 @@
 Clusters:
-  Resources: {}
+  Resources:
+    echo-service-9f149ed9e14091ca:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-9f149ed9e14091ca
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
-  Resources: {}
+  Resources:
+    echo-service-9f149ed9e14091ca:
+      clusterName: echo-service-9f149ed9e14091ca
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
@@ -78,6 +118,10 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            regexRewrite:
+              pattern:
+                regex: .*
+              substitution: /a/b
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -88,7 +132,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: kuma.io/unresolved-backend
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
@@ -99,6 +143,7 @@ Routes:
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
             idleTimeout: 5s
+            prefixRewrite: /a/b/
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -109,7 +154,7 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: kuma.io/unresolved-backend
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags
