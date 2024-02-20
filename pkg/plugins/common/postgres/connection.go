@@ -73,8 +73,7 @@ func ConnectToDbPgx(ctx context.Context, postgresStoreConfig config.PostgresStor
 	if err != nil {
 		return nil, err
 	}
-	err = p.Ping(ctx)
-	if err != nil {
+	if err := p.Ping(ctx); err != nil {
 		return nil, err
 	}
 	return p, nil
