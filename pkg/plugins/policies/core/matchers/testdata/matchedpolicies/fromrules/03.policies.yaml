@@ -1,0 +1,82 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v1
+  from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        action: AllowWithShadowDeny
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: web
+    tags:
+      version: v3
+  from:
+    - targetRef:
+        kind: MeshGateway
+        name: gateway-1
+      default:
+        action: Deny
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+---
+type: MeshGateway
+mesh: mesh-1
+name: gateway-1
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+  - match:
+      kuma.io/service: other-gateway
+      kuma.io/version: v2
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      tags:
+        listener: one
+    - port: 8081
+      protocol: HTTP
+      tags:
+        listener: two
+    - port: 8082
+      protocol: HTTP
+      tags:
+        listener: three
+    - port: 8083
+      protocol: HTTP
+      hostname: four-hostname-1
+      tags:
+        listener: four-hostname-1
+    - port: 8083
+      protocol: HTTP
+      hostname: four-hostname-2
+      tags:
+        listener: four-hostname-2

@@ -7,6 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -35,16 +36,16 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 
 	var fr core_rules.FromRules
 	var err error
-
+	gateways := resources.Gateways().Items
 	// in case the policy support
 	switch {
 	case isFrom && isTo:
 		// we needed a strategy to choose what rules to apply on zone egress when a policy supports both "to" and "from".
 		// Picking "from" rules works for us today, because there is only MeshFaultInjection policy that has both "to"
 		// and "from" and is applied on zone egress. In the future, we might want to move the strategy down to the policy plugins.
-		fr, err = processFromRules(tags, policies)
+		fr, err = processFromRules(tags, policies, gateways)
 	case isFrom:
-		fr, err = processFromRules(tags, policies)
+		fr, err = processFromRules(tags, policies, gateways)
 	case isTo:
 		fr, err = processToRules(tags, policies)
 	}
@@ -62,6 +63,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 func processFromRules(
 	tags map[string]string,
 	rl core_model.ResourceList,
+	gateways []*core_mesh.MeshGatewayResource,
 ) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
@@ -77,7 +79,7 @@ func processFromRules(
 
 	return core_rules.BuildFromRules(map[core_rules.InboundListener][]core_model.Resource{
 		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
-	})
+	}, gateways)
 }
 
 // It's not natural for zone egress to have 'to' policies. It doesn't make sense to target
@@ -117,7 +119,10 @@ func processFromRules(
 //	        disabled: true
 //
 // that's why processToRules() method produces FromRules for the Egress.
-func processToRules(tags map[string]string, rl core_model.ResourceList) (core_rules.FromRules, error) {
+func processToRules(
+	tags map[string]string,
+	rl core_model.ResourceList,
+) (core_rules.FromRules, error) {
 	var matchedPolicies []core_model.Resource
 
 	for _, policy := range rl.GetItems() {
@@ -152,8 +157,8 @@ func processToRules(tags map[string]string, rl core_model.ResourceList) (core_ru
 				policy.GetMeta())...)
 		}
 	}
-
-	rules, err := core_rules.BuildRules(toList)
+	// MeshGateway as a To doesn't make sense so we can pass empty list
+	rules, err := core_rules.BuildRules(toList, []*core_mesh.MeshGatewayResource{})
 	if err != nil {
 		return core_rules.FromRules{}, err
 	}

@@ -39,6 +39,7 @@ func validateFrom(from []From) validators.ValidationError {
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.MeshGateway,
 			},
 		}))
 
