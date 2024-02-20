@@ -28,6 +28,13 @@
 * fix(gatewayapi): don't add HTTPRoute status if Kuma isn't the controller (backport of #9228) [#9235](https://github.com/kumahq/kuma/pull/9235) @kumahq
 
 
+## 2.4.6
+> Released on 2024/02/20
+
+* chore(deps): update iptables version (backport of #9200) [#9214](https://github.com/kumahq/kuma/pull/9214) @kumahq
+* chore(deps): upgrade envoy to v1.27.3 [#9220](https://github.com/kumahq/kuma/pull/9220) @lukidzi
+
+
 ## 2.4.5
 > Released on 2024/02/02
 
