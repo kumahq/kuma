@@ -1,4 +1,4 @@
 controlPlane:
-  serviceAccountAnnotations: 
+  serviceAccountAnnotations:
     foo: '{"bar": "taz"}'
     ping: "pong"

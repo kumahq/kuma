@@ -736,3 +736,6 @@ plugins:
     meshtimeouts: true
     meshtraces: true
     meshtrafficpermissions: true
+
+# @ignored for helm-docs
+testOnly: false

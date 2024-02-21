@@ -414,7 +414,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 6f2a777e2b8ab1121f65749920773354b2bc2b367f6280dcdd48272803e8445e
+        checksum/tls-secrets: 8c29998f8f414efbcf448b6b30c864054d6db5321be2ebcccfffc5577551fdc5
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -553,7 +553,7 @@ spec:
       volumes:
         - name: general-tls-cert
           secret:
-            secretName: general-tls-secret
+            secretName: my-certs
         - name: general-tls-cert-ca
           secret:
             secretName: my-custom-ca-name
@@ -842,7 +842,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -881,7 +881,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -938,7 +938,7 @@ webhooks:
           operator: In
           values: ["enabled", "true"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -965,7 +965,7 @@ webhooks:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -1000,7 +1000,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -1060,7 +1060,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -1083,7 +1083,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -1109,7 +1109,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: FakeReadFromK8S
       service:
         namespace: kuma-system
         name: kuma-control-plane
