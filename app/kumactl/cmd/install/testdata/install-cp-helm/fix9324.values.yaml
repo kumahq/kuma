@@ -1,0 +1,5 @@
+controlPlane:
+  tls:
+    general:
+      secretName: my-custom-ca-name
+      caBundle: XYZ
