@@ -285,7 +285,7 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
-              # - {equal: [true, << parameters.sidecarContainers >>]}
+              - {equal: [true, << parameters.sidecarContainers >>]}
               - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
