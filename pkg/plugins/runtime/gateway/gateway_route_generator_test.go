@@ -413,6 +413,30 @@ conf:
 `,
 		),
 
+		Entry("should rewrite root prefix without trailing slash",
+			"rewrite-prefix-root-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+        - rewrite:
+            replacePrefixMatch: "/a/b"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
 		Entry("should be able to drop a prefix",
 			"drop-prefix-gateway-route.yaml", `
 type: MeshGatewayRoute

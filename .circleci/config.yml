@@ -5,13 +5,13 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.21.6"
+    default: "1.22.0"
   first_k8s_version:
     type: string
     default: "v1.23.17-k3s1"
   last_k8s_version:
     type: string
-    default: "v1.28.1-k3s1"
+    default: "v1.29.1-k3s2"
   ubuntu_image:
     type: string
     default: "ubuntu-2204:2022.10.2"
@@ -36,9 +36,6 @@ parameters:
   e2e_param_cniNetworkPlugin:
     type: string
     default: flannel
-  e2e_param_legacyKDS:
-    type: boolean
-    default: false
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -265,10 +262,6 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      legacyKDS:
-        description: if should run tests with new implementation of KDS
-        type: boolean
-        default: false
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -285,7 +278,6 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
-              - {equal: [true, << parameters.legacyKDS >>]}
               - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
@@ -362,10 +354,6 @@ jobs:
               export MAKE_PARAMETERS="-j2"
             fi
 
-            if [[ "<< parameters.legacyKDS >>" == true ]]; then
-              export KUMA_LEGACY_KDS=true
-            fi
-
             if [[ "<< parameters.target >>" == "" ]]; then
               export GINKGO_E2E_LABEL_FILTERS="job-$CIRCLE_NODE_INDEX"
             fi
@@ -403,9 +391,6 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      legacyKDS:
-        description: if should run tests with new implementation of KDS
-        type: boolean
     executor:
       name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
@@ -469,10 +454,6 @@ jobs:
               export MAKE_PARAMETERS="-j1"
             else
               export MAKE_PARAMETERS="-j2"
-            fi
-
-            if [[ "<< parameters.legacyKDS >>" == true ]]; then
-              export KUMA_LEGACY_KDS=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then
@@ -625,16 +606,6 @@ workflows:
               arch: [amd64, arm64]
           requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-legacy-kds
-          matrix:
-            alias: legacy-kds
-            parameters:
-              k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [multizone]
-              arch: [amd64]
-              legacyKDS: [true]
-          requires: [build, go_cache-amd64]
-      - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
           matrix:
             alias: calico
@@ -661,6 +632,5 @@ workflows:
           k8sVersion: << pipeline.parameters.e2e_param_k8sVersion >>
           target: << pipeline.parameters.e2e_param_target >>
           arch: << pipeline.parameters.e2e_param_arch >>
-          legacyKDS: << pipeline.parameters.e2e_param_legacyKDS >>
           cniNetworkPlugin: << pipeline.parameters.e2e_param_cniNetworkPlugin >>
           parallelism: << pipeline.parameters.e2e_param_parallelism >>

@@ -123,18 +123,15 @@ func HandlePrefixMatchesAndPopulatePolicies(host GatewayHost, exactEntries, pref
 			}
 			entries = append(entries, e)
 
-			// If the prefix is '/', it matches everything anyway,
-			// so we don't need to install an exact match.
-			if e.Match.PrefixPath == "/" {
-				continue
-			}
-
 			// Duplicate the route to an exact match only if there
 			// isn't already an exact match for this path.
 			if !hasExactMatch {
 				exactMatch := e
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath
+				if exactPath == "" {
+					exactMatch.Match.ExactPath = "/"
+				}
 
 				// We need to make sure this prefix replacement
 				// does _not_ get a trailing slash (unless it is "/")

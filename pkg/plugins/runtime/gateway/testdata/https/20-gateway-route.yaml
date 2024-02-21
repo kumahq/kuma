@@ -338,6 +338,27 @@ Routes:
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 10s
+            weightedClusters:
+              clusters:
+              - name: echo-service-4d89cd662308223d
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+        - match:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -376,6 +397,27 @@ Routes:
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 30s
+            weightedClusters:
+              clusters:
+              - name: echo-service-11405a82852416ac
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+        - match:
             prefix: /
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
@@ -413,6 +455,27 @@ Routes:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
         routes:
+        - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 20s
+            weightedClusters:
+              clusters:
+              - name: echo-service-ff1f8bb571f3bfa4
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
         - match:
             prefix: /
           route:
