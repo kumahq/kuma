@@ -1,0 +1,10 @@
+# user=cli-user,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: Zone
+mesh: default
+metadata:
+  name: zone-1
+  creationTimestamp: null
+spec:
+  ingress:
+    address: 192.168.0.1:10001

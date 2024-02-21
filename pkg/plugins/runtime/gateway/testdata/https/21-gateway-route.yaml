@@ -257,6 +257,48 @@ Routes:
                 maxTokens: 1
                 tokensPerFill: 1
         - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            requestMirrorPolicies:
+            - cluster: echo-mirror-3dd740a2de879d4c
+              runtimeFraction:
+                defaultValue:
+                  numerator: 1
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 10s
+                maxTokens: 1
+                tokensPerFill: 1
+        - match:
             prefix: /api/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
