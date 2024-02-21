@@ -36,9 +36,9 @@ parameters:
   e2e_param_cniNetworkPlugin:
     type: string
     default: flannel
-  e2e_param_legacyKDS:
-    type: boolean
-    default: false
+  e2e_param_sidecarContainers:
+    type: string
+    default: ""
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
   install_build_tools:
@@ -265,8 +265,8 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      legacyKDS:
-        description: if should run tests with new implementation of KDS
+      sidecarContainers:
+        description: if should run tests with sidecar containers
         type: boolean
         default: false
     executor:
@@ -285,7 +285,7 @@ jobs:
               - {equal: [calico, << parameters.cniNetworkPlugin >>]}
               - {equal: [kindIpv6, << parameters.k8sVersion >>]}
               - {equal: [arm64, << parameters.arch >>]}
-              - {equal: [true, << parameters.legacyKDS >>]}
+              # - {equal: [true, << parameters.sidecarContainers >>]}
               - {equal: [<< pipeline.parameters.first_k8s_version >>, << parameters.k8sVersion >>]}
           steps:
             - halt_non_priority_job
@@ -362,8 +362,8 @@ jobs:
               export MAKE_PARAMETERS="-j2"
             fi
 
-            if [[ "<< parameters.legacyKDS >>" == true ]]; then
-              export KUMA_LEGACY_KDS=true
+            if [[ "<< parameters.sidecarContainers >>" == true ]]; then
+              export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then
@@ -403,8 +403,8 @@ jobs:
         description: The CNI networking plugin to use [flannel | calico]
         type: string
         default: flannel
-      legacyKDS:
-        description: if should run tests with new implementation of KDS
+      sidecarContainers:
+        description: if should run tests with sidecar containers
         type: boolean
     executor:
       name: vm-<< parameters.arch >>
@@ -471,8 +471,8 @@ jobs:
               export MAKE_PARAMETERS="-j2"
             fi
 
-            if [[ "<< parameters.legacyKDS >>" == true ]]; then
-              export KUMA_LEGACY_KDS=true
+            if [[ "<< parameters.sidecarContainers >>" == true ]]; then
+              export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
             fi
 
             if [[ "<< parameters.target >>" == "" ]]; then
@@ -625,14 +625,14 @@ workflows:
               arch: [amd64, arm64]
           requires: [build, go_cache-<< matrix.arch >>]
       - e2e:
-          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-legacy-kds
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-sidecar-containers
           matrix:
-            alias: legacy-kds
+            alias: sidecar-containers
             parameters:
               k8sVersion: [<< pipeline.parameters.last_k8s_version >>]
-              target: [multizone]
+              target: [kubernetes]
               arch: [amd64]
-              legacyKDS: [true]
+              sidecarContainers: [true]
           requires: [build, go_cache-amd64]
       - e2e:
           name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>-calico
@@ -661,6 +661,6 @@ workflows:
           k8sVersion: << pipeline.parameters.e2e_param_k8sVersion >>
           target: << pipeline.parameters.e2e_param_target >>
           arch: << pipeline.parameters.e2e_param_arch >>
-          legacyKDS: << pipeline.parameters.e2e_param_legacyKDS >>
+          sidecarContainers: {not: {equal: [<< pipeline.parameters.e2e_param_sidecarContainers >>, ""]}}
           cniNetworkPlugin: << pipeline.parameters.e2e_param_cniNetworkPlugin >>
           parallelism: << pipeline.parameters.e2e_param_parallelism >>
