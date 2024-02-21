@@ -1,0 +1,16 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: mesh
+      message: cannot be empty
+      reason: FieldValueInvalid
+    kind: TrafficRoute
+    name: empty
+  message: 'mesh: cannot be empty'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"
