@@ -10,12 +10,6 @@ KIND_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/kind-$(KIND_CLUSTER_NAME)-config
 # Ensure Kubernetes tooling only gets the config we explicitly specify.
 unexport KUBECONFIG
 
-ifdef IPV6
-KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster-ipv6.yaml
-else
-KIND_CONFIG ?= $(KUMA_DIR)/test/kind/cluster.yaml
-endif
-
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
