@@ -319,7 +319,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		if v, err := semver.NewVersion(
 			fmt.Sprintf("%s.%s.0", k8sVersion.Major, k8sVersion.Minor),
 		); err == nil && !v.LessThan(sidecarContainerVersion) {
-			sidecarContainersEnabled = true
+			sidecarContainersEnabled = rt.Config().Experimental.SidecarContainers
 		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,

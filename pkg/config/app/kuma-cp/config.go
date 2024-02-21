@@ -268,6 +268,7 @@ var DefaultConfig = func() Config {
 				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
 				DelayFullResync:    false,
 			},
+			SidecarContainers: false,
 		},
 		Proxy:    xds.DefaultProxyConfig(),
 		InterCp:  intercp.DefaultInterCpConfig(),
@@ -424,6 +425,9 @@ type ExperimentalConfig struct {
 	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
 	// Lack of MeshTrafficPermission is treated as Deny the traffic.
 	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
+	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
+	// environment.
+	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
