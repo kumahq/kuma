@@ -17,7 +17,6 @@ env:
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
-  E2E_PARAM_LEGACY_KDS: ${{ fromJSON(inputs.matrix).legacyKDS }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
@@ -122,10 +121,6 @@ jobs:
             export MAKE_PARAMETERS="-j1"
           else
             export MAKE_PARAMETERS="-j2"
-          fi
-
-          if [[ "${{ env.E2E_PARAM_LEGACY_KDS }}" == "true" ]]; then
-            export KUMA_LEGACY_KDS=true
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
