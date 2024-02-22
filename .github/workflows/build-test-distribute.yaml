@@ -17,6 +17,8 @@ env:
   GH_OWNER: ${{ github.repository_owner }}
   KUMA_DIR: "."
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  FULL_MATRIX: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+  ALLOW_PUSH: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
@@ -87,19 +89,9 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - name: "Maybe set full matrix"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
-        id: set-full-matrix-switches
+      - name: "Add matrix to .build/info to cache"
         run: |
-          echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
-          echo 'ENABLED_GOOSES=linux darwin' >> $GITHUB_ENV
-      - name: "Add matrix to .run-full-matrix for cache"
-        run: |
-          echo '${ENABLED_GOARCHES}|${ENABLED_GOOSES}' > .run-full-matrix
-      - name: "Maybe set flag to push build artifacts"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish')
-        run: |
-          echo 'ALLOW_PUSH=true' >> $GITHUB_ENV
+          make build/info/short > .build-info
       - name: Install dependencies for cross builds
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
@@ -107,7 +99,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: |
-            .run-full-matrix
+            .build-info
             go.sum
       - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:

@@ -14,10 +14,6 @@ IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
 IMAGES_TEST += kuma-universal
 KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 
-.PHONY: images/show
-images/show: ## output all images that are built with the current configuration
-	@echo $(KUMA_IMAGES)
-
 # Always use Docker BuildKit, see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
@@ -92,7 +88,7 @@ docker/$(1)/$(2)/push:
 endef
 $(foreach goarch, $(SUPPORTED_GOARCHES),$(foreach image, $(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call DOCKER_TARGETS_BY_ARCH,$(image),$(goarch)))))
 
-# create and push a manifest for each
+# create and push a manifest that groups all arches
 docker/%/manifest:
 	$(call GATE_PUSH,docker manifest create $(call build_image,$*) $(patsubst %,--amend $(call build_image,$*,%),$(ENABLED_GOARCHES)))
 	$(call GATE_PUSH,docker manifest push $(call build_image,$*))
@@ -120,6 +116,11 @@ images: images/release images/test ## Dev: Rebuild release and test Docker image
 images/release: $(addprefix image/,$(ALL_RELEASE_WITH_ARCH)) ## Dev: Rebuild release Docker images
 .PHONY: images/test
 images/test: $(addprefix image/,$(ALL_TEST_WITH_ARCH)) ## Dev: Rebuild test Docker images
+
+.PHONY: manifests/json/release
+manifests/json/release: ## output all release manifests in a json array
+	# The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
+	@echo $(call build_image,$(IMAGES_RELEASE)) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
 
 .PHONY: docker/purge
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
