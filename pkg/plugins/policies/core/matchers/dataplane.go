@@ -71,7 +71,7 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 		sort.Sort(ByTargetRef(ps))
 	}
 
-	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound, resources.Gateways().Items)
+	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create From rules: %s", err.Error()))
 	}
