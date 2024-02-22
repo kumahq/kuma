@@ -376,7 +376,7 @@ var _ = Describe("MeshTimeout", func() {
 							},
 							{
 								Key:   core_rules.RuleMatchesHashTag,
-								Value: "qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
+								Value: "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
 							},
 						},
 						Conf: api.Conf{
@@ -394,7 +394,7 @@ var _ = Describe("MeshTimeout", func() {
 							},
 							{
 								Key:   core_rules.RuleMatchesHashTag,
-								Value: "Lv6cpFf/JzQZSvl97nnZZFjFcZQbqoejHncFutEisJQ=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
+								Value: "U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
 							},
 						},
 						Conf: api.Conf{
