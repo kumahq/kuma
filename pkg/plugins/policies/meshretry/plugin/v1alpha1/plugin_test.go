@@ -88,7 +88,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: httpListener(10001),
+				Resource: httpListenerWithSimpleRoute(10001),
 			}},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
@@ -181,7 +181,7 @@ var _ = Describe("MeshRetry", func() {
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
 				Origin:   generator.OriginOutbound,
-				Resource: httpListener(10002),
+				Resource: httpListenerWithSimpleRoute(10002),
 			}},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
@@ -244,6 +244,174 @@ var _ = Describe("MeshRetry", func() {
 				},
 			},
 			goldenFilePrefix: "tcp",
+		}),
+		Entry("retry per http route", testCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpListenerWithSeveralRoutes(10001),
+				},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "http-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
+							},
+						},
+						Conf: api.Conf{
+							HTTP: &api.HTTP{
+								NumRetries:    pointer.To[uint32](1),
+								PerTryTimeout: test.ParseDuration("2s"),
+								BackOff: &api.BackOff{
+									BaseInterval: test.ParseDuration("3s"),
+									MaxInterval:  test.ParseDuration("4s"),
+								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("5s"),
+									ResetHeaders: &[]api.ResetHeader{
+										{
+											Name:   "retry-after-http",
+											Format: "Seconds",
+										},
+										{
+											Name:   "x-retry-after-http",
+											Format: "UnixTimestamp",
+										},
+									},
+								},
+								RetryOn: &[]api.HTTPRetryOn{
+									api.All5xx,
+									api.GatewayError,
+									api.Reset,
+									api.Retriable4xx,
+									api.ConnectFailure,
+									api.EnvoyRatelimited,
+									api.RefusedStream,
+									api.Http3PostConnectFailure,
+									api.HttpMethodConnect,
+									api.HttpMethodDelete,
+									api.HttpMethodGet,
+									api.HttpMethodHead,
+									api.HttpMethodOptions,
+									api.HttpMethodPatch,
+									api.HttpMethodPost,
+									api.HttpMethodPut,
+									api.HttpMethodTrace,
+									"429",
+								},
+								RetriableResponseHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+										Name:  "x-retry-regex",
+										Value: ".*",
+									},
+									{
+										Type:  pointer.To(common_api.HeaderMatchExact),
+										Name:  "x-retry-exact",
+										Value: "exact-value",
+									},
+								},
+								RetriableRequestHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchPrefix),
+										Name:  "x-retry-prefix",
+										Value: "prefix-",
+									},
+								},
+								HostSelection: &[]api.Predicate{
+									{
+										PredicateType: "OmitPreviousHosts",
+									},
+									{
+										PredicateType:   "OmitPreviousPriorities",
+										UpdateFrequency: 2,
+									},
+									{
+										PredicateType: "OmitHostsWithTags",
+										Tags: map[string]string{
+											"test": "test",
+										},
+									},
+								},
+								HostSelectionMaxAttempts: pointer.To(int64(2)),
+							},
+						},
+					},
+					{
+						Subset: core_rules.Subset{
+							{
+								Key:   mesh_proto.ServiceTag,
+								Value: "http-service",
+							},
+							{
+								Key:   core_rules.RuleMatchesHashTag,
+								Value: "U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
+							},
+						},
+						Conf: api.Conf{
+							HTTP: &api.HTTP{
+								NumRetries:    pointer.To[uint32](6),
+								PerTryTimeout: test.ParseDuration("77s"),
+								BackOff: &api.BackOff{
+									BaseInterval: test.ParseDuration("88s"),
+									MaxInterval:  test.ParseDuration("999s"),
+								},
+								RateLimitedBackOff: &api.RateLimitedBackOff{
+									MaxInterval: test.ParseDuration("11s"),
+									ResetHeaders: &[]api.ResetHeader{
+										{
+											Name:   "x-retry-after-http",
+											Format: "UnixTimestamp",
+										},
+									},
+								},
+								RetryOn: &[]api.HTTPRetryOn{
+									"499",
+								},
+								RetriableResponseHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+										Name:  "x-retry-regex",
+										Value: ".*",
+									},
+								},
+								RetriableRequestHeaders: &[]common_api.HeaderMatch{
+									{
+										Type:  pointer.To(common_api.HeaderMatchPrefix),
+										Name:  "x-retry-prefix",
+										Value: "prefix-another",
+									},
+								},
+								HostSelection: &[]api.Predicate{
+									{
+										PredicateType: "OmitPreviousHosts",
+									},
+									{
+										PredicateType:   "OmitPreviousPriorities",
+										UpdateFrequency: 5,
+									},
+									{
+										PredicateType: "OmitHostsWithTags",
+										Tags: map[string]string{
+											"another-test": "another-test",
+										},
+									},
+								},
+								HostSelectionMaxAttempts: pointer.To(int64(99)),
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "retry_per_http_route",
 		}),
 	)
 
@@ -455,24 +623,19 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 	return actualListener
 }
 
-func httpListener(port uint32) envoy_common.NamedResource {
+func httpListenerWithSeveralRoutes(port uint32) envoy_common.NamedResource {
+	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSeveralRoutes("http-service")))
+}
+
+func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
+	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSingleRoute("backend")))
+}
+
+func httpListener(port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", port, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 			Configure(HttpConnectionManager(fmt.Sprintf("outbound:127.0.0.1:%d", port), false)).
-			Configure(HttpOutboundRoute(
-				"backend",
-				envoy_common.Routes{{
-					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-						envoy_common.WithService("backend"),
-						envoy_common.WithWeight(100),
-					)},
-				}},
-				map[string]map[string]bool{
-					"kuma.io/service": {
-						"web": true,
-					},
-				},
-			)))).
+			Configure(route))).
 		MustBuild()
 }
 
