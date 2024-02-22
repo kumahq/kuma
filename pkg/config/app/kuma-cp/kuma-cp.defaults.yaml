@@ -736,6 +736,9 @@ experimental:
   # If true then control plane computes reachable services automatically based on MeshTrafficPermission.
   # Lack of MeshTrafficPermission is treated as Deny the traffic.
   autoReachableServices: false # ENV: KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES
+  # Enables sidecar containers in Kubernetes if supported by the Kubernetes
+  # environment.
+  sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

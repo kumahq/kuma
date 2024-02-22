@@ -26,7 +26,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 		type testCase struct {
 			proxy    *model.Proxy
 			template *mesh_proto.ProxyTemplate
-			err      interface{}
+			err      string
 		}
 
 		DescribeTable("Avoid producing invalid Envoy xDS resources",

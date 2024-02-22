@@ -48,7 +48,7 @@ var _ = Describe("xDS", func() {
 		Context("invalid input", func() {
 			type testCase struct {
 				nodeID      string
-				expectedErr interface{}
+				expectedErr string
 			}
 
 			DescribeTable("should fail to parse",

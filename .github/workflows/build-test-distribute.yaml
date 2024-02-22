@@ -13,7 +13,7 @@ permissions:
 env:
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
-  K8S_MAX_VERSION: v1.28.1-k3s1
+  K8S_MAX_VERSION: v1.29.1-k3s2
   GH_OWNER: ${{ github.repository_owner }}
   KUMA_DIR: "."
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
@@ -44,7 +44,7 @@ jobs:
       - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
         with:
           args: --fix=false --verbose
-          version: v1.55.2
+          version: v1.56.1
           skip-pkg-cache: true
       - run: |
           make clean
@@ -221,7 +221,7 @@ jobs:
                 "arch": ["amd64"],
                 "parallelism": [4],
                 "cniNetworkPlugin": ["flannel"],
-                "legacyKDS": [false]
+                "sidecarContainers": [""]
               },
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
@@ -229,7 +229,7 @@ jobs:
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
-                "legacyKDS": [false],
+                "sidecarContainers": [""],
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
@@ -237,7 +237,7 @@ jobs:
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
-                  {"legacyKDS": true, "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "universal", "arch": "arm64"},

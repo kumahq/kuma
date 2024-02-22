@@ -101,12 +101,12 @@ spec:
     resources:
       limits:
         cpu: 1100m
-        memory: 1512Mi
         ephemeral-storage: 1G
+        memory: 1512Mi
       requests:
         cpu: 150m
-        memory: 164Mi
         ephemeral-storage: 50M
+        memory: 164Mi
     securityContext:
       privileged: false
       readOnlyRootFilesystem: true

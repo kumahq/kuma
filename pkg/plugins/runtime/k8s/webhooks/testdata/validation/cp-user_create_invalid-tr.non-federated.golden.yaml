@@ -1,0 +1,23 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: spec.sources
+      message: must have at least one element
+      reason: FieldValueInvalid
+    - field: spec.destinations
+      message: must have at least one element
+      reason: FieldValueInvalid
+    - field: spec.conf
+      message: cannot be empty
+      reason: FieldValueInvalid
+    kind: TrafficRoute
+    name: empty
+  message: 'spec.sources: must have at least one element; spec.destinations: must
+    have at least one element; spec.conf: cannot be empty'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

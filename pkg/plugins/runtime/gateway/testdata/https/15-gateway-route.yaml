@@ -235,6 +235,32 @@ Routes:
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
         - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            requestMirrorPolicies:
+            - cluster: echo-mirror-3dd740a2de879d4c
+              runtimeFraction:
+                defaultValue:
+                  numerator: 1
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 10s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
             prefix: /api/
           route:
             clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

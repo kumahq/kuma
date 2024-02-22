@@ -1,0 +1,250 @@
+Clusters:
+  Resources:
+    echo-service-9f149ed9e14091ca:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-9f149ed9e14091ca
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+Endpoints:
+  Resources:
+    echo-service-9f149ed9e14091ca:
+      clusterName: echo-service-9f149ed9e14091ca
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+Listeners:
+  Resources:
+    edge-gateway:HTTPS:8080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+      enableReusePort: true
+      filterChains:
+      - filterChainMatch:
+          serverNames:
+          - echo.example.com
+          transportProtocol: tls
+        filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            useRemoteAddress: true
+        transportSocket:
+          name: envoy.transport_sockets.tls
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+            commonTlsContext:
+              alpnProtocols:
+              - h2
+              - http/1.1
+              tlsCertificateSdsSecretConfigs:
+              - name: cert.rsa:secret:echo-example-com-server-cert
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+              tlsParams:
+                tlsMinimumProtocolVersion: TLSv1_2
+            requireClientCertificate: false
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: edge-gateway:HTTPS:8080
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources:
+    edge-gateway:HTTPS:8080:echo.example.com:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTPS:8080:echo.example.com
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
+      - domains:
+        - echo.example.com
+        name: echo.example.com
+        requireTls: ALL
+        responseHeadersToAdd:
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+          header:
+            key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains
+        routes:
+        - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            regexRewrite:
+              pattern:
+                regex: .*
+              substitution: /a/b
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            prefix: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            prefixRewrite: /a/b/
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+Runtimes:
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
+Secrets:
+  Resources:
+    cert.rsa:secret:echo-example-com-server-cert:
+      name: cert.rsa:secret:echo-example-com-server-cert
+      tlsCertificate:
+        certificateChain:
+          inlineString: |+
+            -----BEGIN CERTIFICATE-----
+            MIIDNTCCAh2gAwIBAgIRAK2DKOd4qR4eTfFpTHCY0KAwDQYJKoZIhvcNAQELBQAw
+            GzEZMBcGA1UEAxMQZWNoby5leGFtcGxlLmNvbTAeFw0yMTExMDEwNDMzNDhaFw0z
+            MTEwMzAwNDMzNDhaMBsxGTAXBgNVBAMTEGVjaG8uZXhhbXBsZS5jb20wggEiMA0G
+            CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCoSGP5dLyqCbeto+s/nni5cOI+/Sen
+            aULHXAkXgqLAUYkwBXyoe6X/SlxQJfvjaKuwBXf1/qwzK1eVGkx8EBsk3JkO6rHf
+            qzTIyiUzGyoyNQeYj5dbvOuPXECQ8uMH6SKt6iFeTJcRIHLdBtxoBb5+1l0UNw0c
+            Ltr1bx5JnMIHlHRJvVJgysyryBesNsH318tvYbnCwZer3FbWDq7tOpbLlMC9iQSs
+            x9d+zHcFy8k88Boji9uE+nTfgpWW5wHeHlBIQMXUAhXsDyvWbcj/IdFmrK+GDoOn
+            hlOBnDVKHtDBiwmvr+GQhVoGOr6BP4jqg8E6dWtzlbc3987zJqVoB2+zAgMBAAGj
+            dDByMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMB
+            Af8EBTADAQH/MB0GA1UdDgQWBBS+iZdWqEBq5IT4b9Dcdx09MTUuCzAbBgNVHREE
+            FDASghBlY2hvLmV4YW1wbGUuY29tMA0GCSqGSIb3DQEBCwUAA4IBAQBRUD8uWq0s
+            IM3sW+MCAtBQq5ppNstlAeH24w3yO+4v64FqjDUwRLq7uMJza9iNdbYDQZW/NRrv
+            30Om9PSn02WzlANa2Knm/EoCwgPyA4ED1UD77uWnxOUxfEWeqdOYDElJpIRb+7RO
+            tW9zD7ZJ89ipvEjL2zGuvKCQKkdYaIm7W2aljDz1olsMgQolHpbTEPjN+RMWiyNs
+            tDaan+pwBI0OoXzuWPpB8o9jfL7I8YeOQXOmNy/qpvELV8ji3vdPH1xu1NSt1EGV
+            rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
+            7G3tiTJPwFKA
+            -----END CERTIFICATE-----
+
+        privateKey:
+          inlineString: |
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEpAIBAAKCAQEAqEhj+XS8qgm3raPrP554uXDiPv0np2lCx1wJF4KiwFGJMAV8
+            qHul/0pcUCX742irsAV39f6sMytXlRpMfBAbJNyZDuqx36s0yMolMxsqMjUHmI+X
+            W7zrj1xAkPLjB+kireohXkyXESBy3QbcaAW+ftZdFDcNHC7a9W8eSZzCB5R0Sb1S
+            YMrMq8gXrDbB99fLb2G5wsGXq9xW1g6u7TqWy5TAvYkErMfXfsx3BcvJPPAaI4vb
+            hPp034KVlucB3h5QSEDF1AIV7A8r1m3I/yHRZqyvhg6Dp4ZTgZw1Sh7QwYsJr6/h
+            kIVaBjq+gT+I6oPBOnVrc5W3N/fO8yalaAdvswIDAQABAoIBAQCS8ywCMRNy9Ktl
+            wQdz9aF8Zfvbf1t6UGvVBSSXWCdhA5Jl0dTKl7ccGEZGYvTz33pVamEX+j1LLaT8
+            eguiJrpdVRl/MikDpVChqgwT9bvCPhaU/YbxwCZ/eNKVANSKGuaCsjpTS1R7yzci
+            lZQwbhusTOrY9T3Ih44C1va+11mEHY7rAy96r2MgTdpDdWAqhGKxQ88IyNCTvp6u
+            1I/oWXYDm7QW7HCEWcw2PyFfcfLy4LCPYG7BMX6n1DMSSu6U2PeV1fm6wleawCCN
+            KxuKQSBHARM9B0pcPpAhGuXO9fHBllz3Tmw0yJYCUopIxPK/r+yMufpsto6KRJOz
+            had7o4XJAoGBAMSdr1eRG2TBwfQtGS9WxMUrYiCdNCDMFnXsFrKp5kF7ebRyX0lY
+            41O/KS3SPRmqn6F8t77+VjAvIcCtVWPgTLGo4QyOV09UAcPOrv4qBHRkT8tNyM1n
+            q15DGd7ICE0LFuK1zjWu1HBz/64hNqJJxC8tcJ1HgQ7sO9Vl0FMHeXcNAoGBANsb
+            /QqyRixj0UMhST4MoZzxwV+3Y+//mpEL4R1kcFa0K1BrIq80xCzJzK7jrU7XtaeG
+            0WZpksYqexzN6kXvuJy3w5rC4LC2/+MHspYKvdkUMjctB1XIAPF2FtdrSfMDjweS
+            ItJ1QqALcc83XzAMkrrCUUeL45SGWxRp3yLljtG/AoGAcPAWwRkEADtf+q9RESUp
+            QAysgAls4Q36NOBZJWV8cs7HWQR9gXdClV9v+vcRy8V7jlpCfb5AqcrY+4FVVFqK
+            E17rbrfwpQufO+dkE3D1QBpCz4gtuPc8s5edq5+BTSf6jF1cRu/W7YVkL5S6ejwf
+            Ke5TCrUBCB5gPDMQmDDp750CgYAHMdwVRdVYD88HTUiCaRfFd4rKAdOeRd5ldOZn
+            eKzXrALgGSSCbFEkx1uZQpCmTh8A6URnAIB5UVvJjllrAnwlaUNbCZsnMlsksVQD
+            6UZiom8jsK7U+kRNqXsGh9ddy3ge34WVM5SEfNu32jGd+ku3JjpVBxrp/Z9wBCn3
+            k2IlMQKBgQCWsVuAoLcEvtKYSBb4KZZY3+pHkLLxe+K7Cpq5fK7RnueaH9+o1g+8
+            AdY6vX/j9yVHqfF6DI2tyq0qMcuNkjDirlY3yosZEQOXjW8SIGk3YaHwd4JMqVL6
+            vBGM7k3/smF7hEG97wUeaMe3IDkP7G4SNZOWbLUy1IjLw8BBK+2FVQ==
+            -----END RSA PRIVATE KEY-----

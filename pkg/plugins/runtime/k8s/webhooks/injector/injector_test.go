@@ -76,57 +76,77 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	DescribeTable("should inject Kuma into a Pod",
+	DescribeTableSubtree("should inject Kuma into a Pod",
 		func(given testCase) {
 			// setup
 			inputFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.input.yaml", given.num))
-			goldenFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
 
-			var cfg conf.Injector
-			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
-			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
-			Expect(err).ToNot(HaveOccurred())
+			run := func(sidecarsEnabled bool) {
+				var goldenFile string
+				if sidecarsEnabled {
+					goldenFile = filepath.Join("testdata", fmt.Sprintf("inject.sidecar-feature.%s.golden.yaml", given.num))
+				} else {
+					goldenFile = filepath.Join("testdata", fmt.Sprintf("inject.%s.golden.yaml", given.num))
+				}
 
-			// and create mesh
-			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
-			obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
-			Expect(errMesh).ToNot(HaveOccurred())
-			errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
-			Expect(errCreate).ToNot(HaveOccurred())
-			ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
-			Expect(errNs).ToNot(HaveOccurred())
-			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
-			Expect(errUpd).ToNot(HaveOccurred())
+				var cfg conf.Injector
+				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
+				cfg.CaCertFile = caCertPath
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, systemNamespace)
+				Expect(err).ToNot(HaveOccurred())
 
-			// given
-			pod := &kube_core.Pod{}
+				// and create mesh
+				decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+				obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
+				Expect(errMesh).ToNot(HaveOccurred())
+				errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
+				Expect(errCreate).ToNot(HaveOccurred())
+				ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
+				Expect(errNs).ToNot(HaveOccurred())
+				errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
+				Expect(errUpd).ToNot(HaveOccurred())
 
-			By("loading input Pod")
-			// when
-			input, err := os.ReadFile(inputFile)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// when
-			err = yaml.Unmarshal(input, pod)
-			// then
-			Expect(err).ToNot(HaveOccurred())
+				// given
+				pod := &kube_core.Pod{}
 
-			By("injecting Kuma")
-			// when
-			err = injector.InjectKuma(context.Background(), pod)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
+				By("loading input Pod")
+				// when
+				input, err := os.ReadFile(inputFile)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// when
+				err = yaml.Unmarshal(input, pod)
+				// then
+				Expect(err).ToNot(HaveOccurred())
 
-			By("loading golden Pod")
-			// when
-			actual, err := yaml.Marshal(pod)
-			// then
-			Expect(err).ToNot(HaveOccurred())
+				By("injecting Kuma")
+				// when
+				err = injector.InjectKuma(context.Background(), pod)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				if !sidecarsEnabled {
+					Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
+				} else {
+					Expect(pod.Spec.InitContainers).To(ContainElement(
+						WithTransform(func(c kube_core.Container) string { return c.Name }, Equal(k8s_util.KumaSidecarContainerName))),
+					)
+				}
 
-			By("comparing actual against golden")
-			Expect(actual).To(matchers.MatchGoldenYAML(goldenFile))
+				By("loading golden Pod")
+				// when
+				actual, err := yaml.Marshal(pod)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				By("comparing actual against golden")
+				Expect(actual).To(matchers.MatchGoldenYAML(goldenFile))
+			}
+			It("injects as traditional sidecar container", func() {
+				run(false)
+			})
+			It("injects with sidecar containers feature", func() {
+				run(true)
+			})
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
@@ -682,7 +702,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -788,7 +808,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh

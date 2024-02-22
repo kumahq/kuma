@@ -1,0 +1,8 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+mesh: demo
+metadata:
+  name: empty
+  creationTimestamp: null
+spec: {}
