@@ -170,6 +170,19 @@ to:
           - 500
           - 409
 `),
+			Entry("target MeshHTTPRoute", `
+targetRef:
+  kind: MeshHTTPRoute
+  name: route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      http:
+        retryOn: 
+          - 500
+          - 409
+`),
 		)
 
 		type testCase struct {
