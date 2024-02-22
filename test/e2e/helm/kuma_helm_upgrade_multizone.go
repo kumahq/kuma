@@ -12,10 +12,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/util/versions"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/api"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UpgradingWithHelmChartMultizone() {

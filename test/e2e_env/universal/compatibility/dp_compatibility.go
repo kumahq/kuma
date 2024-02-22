@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/util/versions"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UniversalCompatibility() {
