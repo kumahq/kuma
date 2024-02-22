@@ -124,6 +124,7 @@ spec:
       containers:
         - name: pre-upgrade-job
           image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+          imagePullPolicy: "{{ .Values.kubectl.image.pullPolicy }}"
           securityContext:
           {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:

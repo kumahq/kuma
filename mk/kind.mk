@@ -64,6 +64,10 @@ kind/stop/all:
 kind/load/images:
 	for image in ${KUMA_IMAGES}; do $(KIND) load docker-image $$image --name=$(KIND_CLUSTER_NAME); done
 
+.PHONY: kind/load/external-test-images
+kind/load/external-test-images:
+	for image in ${EXTERNAL_TEST_IMAGES}; do docker pull $$image && $(KIND) load docker-image $$image --name=$(KIND_CLUSTER_NAME); done
+
 .PHONY: kind/load
 kind/load: images docker/tag kind/load/images
 

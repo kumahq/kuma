@@ -23,6 +23,11 @@ E2E_UNIVERSAL_BIN_DEPS+= build/kumactl
 E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
 endif
 
+# List of images that we pull from the Internet in the E2E tests.
+# This list is a best effort, so we can pull and preload images to Kube clusters. In case of network error, we can fail fast.
+# In the future, we can cache those images so we won't pull this from external sources every single time.
+EXTERNAL_TEST_IMAGES = bitnami/kubectl:1.27.5 mendhak/http-https-echo:23 otel/opentelemetry-collector-contrib:0.92.0
+
 # We don't use `go list` here because Ginkgo requires disk path names,
 # not Go packages names.
 TEST_NAMES = $(shell ls -1 ./test/e2e)
@@ -70,6 +75,9 @@ test/e2e/k8s/start/cluster/$1:
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
 	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+ifdef CI
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/external-test-images
+endif
 
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:

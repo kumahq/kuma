@@ -140,6 +140,12 @@ k3d/load:
 	$(MAKE) docker/tag
 	$(MAKE) k3d/load/images
 
+.PHONY: k3d/load/external-test-images
+k3d/load/external-test-images:
+	for i in ${EXTERNAL_TEST_IMAGES}; do docker pull $$i; done
+	# https://github.com/k3d-io/k3d/issues/900 can cause failures that simple retry will fix
+	for i in 1 2 3 4 5; do $(K3D_BIN) image import --mode=direct $(EXTERNAL_TEST_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose && s=0 && break || s=$$? && echo "Image import failed. Retrying..."; done; (exit $$s)
+
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  $(KUBECTL) apply -f -
