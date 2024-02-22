@@ -335,8 +335,6 @@ jobs:
                   }
                   EOF
                   sudo service docker restart
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
       - run:
           name: "Run E2E tests"
           command: |

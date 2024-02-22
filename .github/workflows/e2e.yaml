@@ -105,6 +105,8 @@ jobs:
           }
           EOF
           sudo service docker restart
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: "GitHub Actions: run E2E tests"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
