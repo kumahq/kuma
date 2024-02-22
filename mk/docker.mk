@@ -120,6 +120,7 @@ images/test: $(addprefix image/,$(ALL_TEST_WITH_ARCH)) ## Dev: Rebuild test Dock
 .PHONY: manifests/json/release
 manifests/json/release: ## output all release manifests in a json array
 	# The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
+	# This outputs something like: ["docker.io/kumahq/kuma-cp:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build","docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-init:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"]
 	@echo $(call build_image,$(IMAGES_RELEASE)) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
 
 .PHONY: docker/purge
