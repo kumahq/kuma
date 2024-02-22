@@ -60,7 +60,8 @@ func applyToOutbounds(
 		serviceName := outbound.GetService()
 
 		configurer := plugin_xds.Configurer{
-			Retry:    core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)),
+			Subset:   core_rules.MeshService(serviceName),
+			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
 
@@ -106,8 +107,9 @@ func applyToGateway(
 			protocol = core_mesh.ProtocolTCP
 		}
 		configurer := plugin_xds.Configurer{
-			Retry:    core_rules.ComputeConf[api.Conf](toRules, core_rules.MeshSubset()),
+			Rules:    toRules,
 			Protocol: protocol,
+			Subset:   core_rules.MeshSubset(),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {

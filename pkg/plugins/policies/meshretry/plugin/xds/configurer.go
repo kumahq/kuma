@@ -17,6 +17,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -33,19 +34,18 @@ const (
 )
 
 type Configurer struct {
-	Retry    *api.Conf
+	Subset   core_rules.Subset
+	Rules    core_rules.Rules
 	Protocol core_mesh.Protocol
 }
 
 func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
-	if c.Retry == nil {
-		return nil
-	}
+	conf := c.getConf(c.Subset)
 
 	for _, fc := range ln.FilterChains {
-		if c.Protocol == core_mesh.ProtocolTCP && c.Retry.TCP != nil && c.Retry.TCP.MaxConnectAttempt != nil {
+		if c.Protocol == core_mesh.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
 			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
-				proxy.MaxConnectAttempts = util_proto.UInt32(*c.Retry.TCP.MaxConnectAttempt)
+				proxy.MaxConnectAttempts = util_proto.UInt32(*conf.TCP.MaxConnectAttempt)
 				return nil
 			})
 		} else {
@@ -59,27 +59,28 @@ func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
 }
 
 func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	if c.Retry == nil || route == nil {
+	conf := c.getConf(c.Subset)
+	if route == nil {
 		return nil
 	}
 
-	var policy *envoy_route.RetryPolicy
-	var err error
-
-	switch c.Protocol {
-	case "http":
-		policy, err = genHttpRetryPolicy(c.Retry.HTTP)
-		if err != nil {
-			return err
-		}
-	case "grpc":
-		policy = genGrpcRetryPolicy(c.Retry.GRPC)
-	default:
-		return nil
+	defaultPolicy, err := c.getRouteRetryConfig(conf)
+	if err != nil {
+		return err
 	}
-
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
+			routeConfig := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, route.Name, false))
+			policy, err := c.getRouteRetryConfig(routeConfig)
+			if err != nil {
+				return err
+			}
+			if policy == nil && defaultPolicy == nil {
+				continue
+			}
+			if policy == nil {
+				policy = defaultPolicy
+			}
 			switch a := route.GetAction().(type) {
 			case *envoy_route.Route_Route:
 				a.Route.RetryPolicy = policy
@@ -88,6 +89,24 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	}
 
 	return nil
+}
+
+func (c *Configurer) getRouteRetryConfig(conf *api.Conf) (*envoy_route.RetryPolicy, error) {
+	if conf == nil {
+		return nil, nil
+	}
+	switch c.Protocol {
+	case "http":
+		policy, err := genHttpRetryPolicy(conf.HTTP)
+		if err != nil {
+			return nil, err
+		}
+		return policy, nil
+	case "grpc":
+		return genGrpcRetryPolicy(conf.GRPC), nil
+	default:
+		return nil, nil
+	}
 }
 
 func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
@@ -397,4 +416,11 @@ func ensureRetriableStatusCodes(policyRetryOn string) string {
 	}
 	policyRetryOn = strings.Join(policyRetrySplit, ",")
 	return policyRetryOn
+}
+
+func (c *Configurer) getConf(subset core_rules.Subset) *api.Conf {
+	if c.Rules == nil {
+		return nil
+	}
+	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
 }
