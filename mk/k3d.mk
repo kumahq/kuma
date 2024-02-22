@@ -101,7 +101,7 @@ endif
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=90s --for=condition=Ready -n metallb-system --all pods
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n metallb-system --all pods
 	@# Construct a valid address space from the docker network and the template IPAddressPool
 	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
 		IFS=/ read -r _byte prefix <<< "$${NETWORK_ADDR_SPACE[3]}"; \
