@@ -53,7 +53,11 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		}
 
 		// also we're checking whether kuma-sidecar container is ready
-		if cs := util_k8s.FindContainerStatus(util_k8s.KumaSidecarContainerName, pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses); cs != nil && !cs.Ready {
+		if cs := util_k8s.FindContainerOrInitContainerStatus(
+			util_k8s.KumaSidecarContainerName,
+			pod.Status.ContainerStatuses,
+			pod.Status.InitContainerStatuses,
+		); cs != nil && !cs.Ready {
 			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			health.Ready = false
 		}
@@ -106,7 +110,11 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	}
 
 	// also we're checking whether kuma-sidecar container is ready
-	if cs := util_k8s.FindContainerStatus(util_k8s.KumaSidecarContainerName, pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses); cs != nil && !cs.Ready {
+	if cs := util_k8s.FindContainerOrInitContainerStatus(
+		util_k8s.KumaSidecarContainerName,
+		pod.Status.ContainerStatuses,
+		pod.Status.InitContainerStatuses,
+	); cs != nil && !cs.Ready {
 		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 		health.Ready = false
 	}
