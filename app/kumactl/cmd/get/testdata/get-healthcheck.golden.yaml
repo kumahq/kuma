@@ -1,16 +1,16 @@
-creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: healthcheck-1
 type: HealthCheck
-conf:
-  healthyThreshold: 1
-  interval: 10s
-  timeout: 2s
-  unhealthyThreshold: 3
-destinations:
-- match:
-    kuma.io/service: backend
+mesh: default
+name: healthcheck-1
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 sources:
 - match:
     kuma.io/service: web
+destinations:
+- match:
+    kuma.io/service: backend
+conf:
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1

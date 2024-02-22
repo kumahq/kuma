@@ -1,8 +1,10 @@
+total: 2
 items:
-- creationTime: "0001-01-01T00:00:00Z"
+- type: Dataplane
   mesh: default
-  modificationTime: "0001-01-01T00:00:00Z"
   name: experiment
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
   networking:
     address: 127.0.0.1
     inbound:
@@ -16,11 +18,11 @@ items:
       tags:
         kuma.io/service: metrics
         version: v1
-  type: Dataplane
-- creationTime: "0001-01-01T00:00:00Z"
+- type: Dataplane
   mesh: default
-  modificationTime: "0001-01-01T00:00:00Z"
   name: example
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
   networking:
     address: 127.0.0.2
     inbound:
@@ -29,6 +31,4 @@ items:
       tags:
         kuma.io/service: web
         version: v2
-  type: Dataplane
 next: null
-total: 2
