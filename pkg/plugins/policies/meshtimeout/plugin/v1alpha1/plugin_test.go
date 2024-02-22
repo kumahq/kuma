@@ -15,9 +15,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -28,7 +25,6 @@ import (
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -553,69 +549,13 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
-			Service: "backend",
-			Routes: []meshhttproute_xds.OutboundRoute{{
-				Split: []envoy_common.Split{
-					plugins_xds.NewSplitBuilder().WithClusterName("backend").WithWeight(100).Build(),
-				},
-				Matches: []meshhttproute_api.Match{
-					{
-						Path: &meshhttproute_api.PathMatch{
-							Type:  meshhttproute_api.PathPrefix,
-							Value: "/",
-						},
-					},
-				},
-			}},
-			DpTags: map[string]map[string]bool{
-				"kuma.io/service": {
-					"web": true,
-				},
-			},
-		}))
+		AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSingleRoute("backend")))
 }
 
 func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
-			Service: "other-service",
-			Routes: []meshhttproute_xds.OutboundRoute{
-				{
-					Split: []envoy_common.Split{
-						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
-					},
-					Matches: []meshhttproute_api.Match{
-						{
-							Path: &meshhttproute_api.PathMatch{
-								Type:  meshhttproute_api.Exact,
-								Value: "/another-backend",
-							},
-							Method: pointer.To[meshhttproute_api.Method]("GET"),
-						},
-					},
-				},
-				{
-					Split: []envoy_common.Split{
-						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
-					},
-					Matches: []meshhttproute_api.Match{
-						{
-							Path: &meshhttproute_api.PathMatch{
-								Type:  meshhttproute_api.PathPrefix,
-								Value: "/",
-							},
-						},
-					},
-				},
-			},
-			DpTags: map[string]map[string]bool{
-				"kuma.io/service": {
-					"web": true,
-				},
-			},
-		}))
+		AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSeveralRoutes("other-service")))
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {
