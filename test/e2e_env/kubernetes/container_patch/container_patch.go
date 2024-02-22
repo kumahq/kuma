@@ -6,6 +6,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
 
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	. "github.com/kumahq/kuma/test/framework"
@@ -78,14 +79,26 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(pod.Spec.InitContainers).To(HaveLen(1))
-		Expect(pod.Spec.Containers).To(HaveLen(2))
-		// and kuma-sidecar is the first container
-		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
+		Expect(pod.Spec.InitContainers).To(
+			Or(HaveLen(1), HaveLen(2)),
+		)
 		// should have default value *int64 = 0
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(Equal(new(int64)))
-		// kuma-sidecar container have Nil value
-		Expect(pod.Spec.Containers[0].SecurityContext.Privileged).To(BeNil())
+		Expect(pod.Spec.Containers).To(
+			Or(HaveLen(2), HaveLen(1)),
+		)
+		beSidecarWithoutPrivileged := And(
+			WithTransform(func(c kube_core.Container) string { return c.Name }, BeEquivalentTo(k8s_util.KumaSidecarContainerName)),
+			WithTransform(func(c kube_core.Container) *bool { return c.SecurityContext.Privileged }, BeNil()),
+		)
+		if len(pod.Spec.Containers) == 2 {
+			// kuma-sidecar is the first container
+			Expect(pod.Spec.Containers[0]).To(beSidecarWithoutPrivileged)
+		} else {
+			Expect(pod.Spec.InitContainers).To(HaveLen(2))
+			// kuma-sidecar is the second init container
+			Expect(pod.Spec.InitContainers[1]).To(beSidecarWithoutPrivileged)
+		}
 
 		// when
 		// pod with patch
@@ -97,14 +110,26 @@ spec:
 		// then
 		pointerTrue := new(bool)
 		*pointerTrue = true
-		Expect(pod.Spec.InitContainers).To(HaveLen(1))
-		Expect(pod.Spec.Containers).To(HaveLen(2))
-		// and kuma-sidecar is the first container
-		Expect(pod.Spec.Containers[0].Name).To(BeEquivalentTo(k8s_util.KumaSidecarContainerName))
+		Expect(pod.Spec.InitContainers).To(
+			Or(HaveLen(1), HaveLen(2)),
+		)
 		// should doesn't have defined RunAsUser
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(BeNil())
-		// kuma-sidecar container should have value *true
-		Expect(pod.Spec.Containers[0].SecurityContext.Privileged).To(Equal(pointerTrue))
+		Expect(pod.Spec.Containers).To(
+			Or(HaveLen(2), HaveLen(1)),
+		)
+		beSidecarWithPrivileged := And(
+			WithTransform(func(c kube_core.Container) string { return c.Name }, BeEquivalentTo(k8s_util.KumaSidecarContainerName)),
+			WithTransform(func(c kube_core.Container) *bool { return c.SecurityContext.Privileged }, Equal(pointerTrue)),
+		)
+		if len(pod.Spec.Containers) == 2 {
+			// kuma-sidecar is the first container
+			Expect(pod.Spec.Containers[0]).To(beSidecarWithPrivileged)
+		} else {
+			Expect(pod.Spec.InitContainers).To(HaveLen(2))
+			// kuma-sidecar is the second init container
+			Expect(pod.Spec.InitContainers[1]).To(beSidecarWithPrivileged)
+		}
 	})
 
 	It("should reject ContainerPatch in non-system namespace", func() {

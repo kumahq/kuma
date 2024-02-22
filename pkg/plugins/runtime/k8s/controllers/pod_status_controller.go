@@ -24,6 +24,7 @@ import (
 )
 
 // PodStatusReconciler tracks pods status changes and signals kuma-dp when it has to complete
+// but only when Kuma isn't using the SidecarContainer feature
 type PodStatusReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder

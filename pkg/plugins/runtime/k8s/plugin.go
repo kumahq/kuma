@@ -3,7 +3,9 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,9 +31,11 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 )
 
-var log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-
-var _ core_plugins.RuntimePlugin = &plugin{}
+var (
+	log                                                = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
+	sidecarContainerVersion                            = semver.New(1, 29, 0, "", "")
+	_                       core_plugins.RuntimePlugin = &plugin{}
+)
 
 type plugin struct{}
 
@@ -302,10 +306,28 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
 		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
+		kubeConfig := mgr.GetConfig()
+		discClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+		if err != nil {
+			return err
+		}
+		k8sVersion, err := discClient.ServerVersion()
+		if err != nil {
+			return err
+		}
+		var sidecarContainersEnabled bool
+		if v, err := semver.NewVersion(
+			fmt.Sprintf("%s.%s.0", k8sVersion.Major, k8sVersion.Minor),
+		); err == nil && !v.LessThan(sidecarContainerVersion) {
+			sidecarContainersEnabled = rt.Config().Experimental.SidecarContainers
+		} else if rt.Config().Experimental.SidecarContainers {
+			log.Info("WARNING: sidecarContainers feature is enabled but Kubernetes server does not support it")
+		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			address,
 			mgr.GetClient(),
+			sidecarContainersEnabled,
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
 			rt.Config().Store.Kubernetes.SystemNamespace,

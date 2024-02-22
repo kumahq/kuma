@@ -23,13 +23,18 @@ func SetupAndGetState() []byte {
 		framework.GatewayAPICRDs,
 	)).To(Succeed())
 
-	kumaOptions := append([]framework.KumaDeploymentOption{
-		framework.WithCtlOpts(map[string]string{
-			"--experimental-gatewayapi": "true",
-		}),
-		framework.WithEgress(),
-	},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+	kumaOptions := append(
+		[]framework.KumaDeploymentOption{
+			framework.WithCtlOpts(map[string]string{
+				"--experimental-gatewayapi": "true",
+			}),
+			framework.WithEgress(),
+		},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
+	)
+	if framework.Config.KumaExperimentalSidecarContainers {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
+	}
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
