@@ -21,6 +21,7 @@ env:
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  E2E_RUN_NAME: ${{ fromJSON(inputs.matrix).target }}-${{ fromJSON(inputs.matrix).k8sVersion }}-${{ fromJSON(inputs.matrix).cniNetworkPlugin }}-${{ fromJSON(inputs.matrix).arch }}-${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
     timeout-minutes: 60
@@ -138,6 +139,12 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
+      - name: "Archive production artifacts"
+        if: ${{ always() }}
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: test-e2e-${{ env.E2E_RUN_NAME }}-${{ (github.event.pull_request.head.sha||github.sha) }}-${{ github.run_id }}
+          path: build/reports/results.xml
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params
