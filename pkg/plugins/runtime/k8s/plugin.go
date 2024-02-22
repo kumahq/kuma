@@ -320,6 +320,8 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			fmt.Sprintf("%s.%s.0", k8sVersion.Major, k8sVersion.Minor),
 		); err == nil && !v.LessThan(sidecarContainerVersion) {
 			sidecarContainersEnabled = rt.Config().Experimental.SidecarContainers
+		} else if rt.Config().Experimental.SidecarContainers {
+			log.Info("WARNING: sidecarContainers feature is enabled but Kubernetes server does not support it")
 		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
