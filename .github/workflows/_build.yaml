@@ -16,7 +16,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci-tools"
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
 jobs:
   build:
