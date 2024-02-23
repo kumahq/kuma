@@ -74,9 +74,65 @@ We can build automation on top of this, so when we update dashboards or Envoy ch
 As you can see there is no easy way to track everything (Envoy does not by default print all possible metrics)
 so I strongly suggest adding a feature to dynamically (by regex for example) add/remove metrics to/from existing profiles.
 
+#### Behaviour
+
+Profiles can be either static or additive.
+A static profile means you get X metrics with profile Y and you can't combine that with other profiles.
+Additive profiles allow you to mix and match which metrics you need depending on current circumstances (e.g. debugging HDS issue)
+and specifics of the underlying application (e.g. `tcp` app does not need `http` metrics).
+
+#### User defined profiles
+
+We could allow people to define their custom profiles and reference them in `MeshMetric`.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetricsProfile
+metadata:
+  name: my-profile
+  namespace: kuma-system
+spec:
+  default:
+    appendMetricExact:
+      - envoy_cluster_upstream_rq_xx
+      - envoy_http_downstream_rq_xx
+    appendMetricRegex:
+      - .*error.*
+```
+
+##### Static
+
+```yaml
+sidecar:
+  usedOnly: true # true or false
+  profile:
+    ref: my-profile
+```
+
+```yaml
+sidecar:
+  usedOnly: true # true or false
+  profile:
+    ref: default # our predefined profile
+```
+
+##### Additive
+
+```yaml
+sidecar:
+  usedOnly: true # true or false
+  appendProfiles:
+    - ref: my-profile
+    - ref: default # our predefined profile
+```
+
+The question here is: do we want our builtin profiles to be defined like that (this possibly means a user can edit them a bit like default policies)
+or should they be hidden from the user (and only referencable)?
+
 #### Profiles suggested:
 
 Suggestions to the merge / split and naming are welcomed.
+The first ones are granularity based the last ones are feature focused (see [additive profiles](#behaviour)).
 
 ##### All
 
@@ -168,6 +224,74 @@ Only golden 4 (by regex / or exact):
 ##### Nothing
 
 - Just an empty profile and people manually can add things to this.
+
+##### ADS / XDS / Management server
+
+All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/mgmt_server#subscription-statistics
+divided into CDS/LDS/RDS/SDS/VHDS by `listener_manager.[cds, lds, rds, sds, vhds]`.
+
+This would enable ADS (aggregated xDS) stats, might be helpful when debugging DP-CP communication on various resources (HDS, LDS, SDS).
+On the other hand we would have to parse labels as well because these metrics are under normal metrics like `envoy.cluster.upstream_rq_timeout.count`,
+but are published with `envoy_cluster:ads_cluster` label.
+
+##### HTTPApp
+
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#general (HTTP related)
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#dynamic-http-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/stats.html#http-1-codec-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/stats.html#http-2-codec-statistics 
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/stats.html#http-3-codec-statistics
+
+##### GRPCApp
+
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#general (HTTP related)
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#dynamic-http-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/stats.html#http-2-codec-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_stats_filter.html#grpc-statistics
+
+##### TCPApp
+
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#general (TCP related)
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#tcp-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/stats.html#tcp-statistics
+
+##### TLS
+
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#tls-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listener_filters/tls_inspector.html#statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/stats.html#tls-statistics
+
+##### Fault injection
+
+All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/fault_filter.html#statistics
+
+##### RBAC
+
+All stats from:
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rbac_filter.html#statistics 
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/rbac_filter.html#statistics
+
+##### EnvoyServer
+
+All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/statistics.html#statistics
+
+##### AccessLog
+
+All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/stats.html#statistics
+
+##### LoadBalancer
+
+All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#load-balancer-statistics
+
+##### CircuitBreaker
+
+For circuit breaker we use both circuit breaker and outlier detection so we could combine these:
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#circuit-breakers-statistics
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/upstream/cluster_manager/cluster_stats.html#outlier-detection-statistics
+
+##### Tracing
+
+- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/stats.html#tracing-statistics
 
 #### Schema
 
