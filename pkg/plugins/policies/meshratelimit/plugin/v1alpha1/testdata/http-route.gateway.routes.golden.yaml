@@ -26,6 +26,31 @@ virtualHosts:
               key: x-kuma-tags
               value: '&kuma.io/service=sample-gateway&'
           weight: 100
+    typedPerFilterConfig:
+      envoy.filters.http.local_ratelimit:
+        '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+        filterEnabled:
+          defaultValue:
+            numerator: 100
+          runtimeKey: local_rate_limit_enabled
+        filterEnforced:
+          defaultValue:
+            numerator: 100
+          runtimeKey: local_rate_limit_enforced
+        responseHeadersToAdd:
+        - header:
+            key: x-kuma-rate-limit-header
+            value: test-value
+        - header:
+            key: x-kuma-rate-limit
+            value: other-value
+        statPrefix: rate_limit
+        status:
+          code: 444
+        tokenBucket:
+          fillInterval: 10s
+          maxTokens: 100
+          tokensPerFill: 100
   - match:
       path: /
     name: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
