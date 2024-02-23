@@ -1,0 +1,32 @@
+name: flake-analyzer
+on:
+#  schedule:
+#    - cron: '0 1 * * *' # daily
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: "name of the test suite"
+        required: false
+        type: string
+        default: test_e2e_kubernetes_v1.29.1-k3s2_flannel_amd64_1
+jobs:
+  generate-flake-analysis-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Periodic Flake Report
+        env:
+          OWNER: kumahq
+          REPO: kuma
+          TEST_SUITE: ${{ inputs.release || 'test_e2e_kubernetes_v1.29.1-k3s2_flannel_amd64_1' }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone -b v0.1.1 https://github.com/operator-framework/flake-analyzer.git
+          cd ./flake-analyzer
+          make report-today  OUTPUT_FILE=./report/artifacts/flake-report-today-$(date +"%m-%d-%Y").yaml
+          make report-last-7-days OUTPUT_FILE=./report/artifacts/flake-report-last-7-days-$(date +"%m-%d-%Y").yaml
+          make report-prev-7-days OUTPUT_FILE=./report/artifacts/flake-report-prev-7-days-$(date +"%m-%d-%Y").yaml
+      - name: Archive Reoport artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: flake-report-${{ github.run_id }}
+          path: ${{ github.workspace }}/flake-analyzer/report/artifacts/*
