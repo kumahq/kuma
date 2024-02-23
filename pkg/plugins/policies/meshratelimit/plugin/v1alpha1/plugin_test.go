@@ -712,11 +712,11 @@ var _ = Describe("MeshRateLimit", func() {
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// then
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s_basic_routes.golden.yaml", given.name))))
-			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s_basic_listener.golden.yaml", given.name))))
+			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.RouteType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.routes.golden.yaml", given.name))))
+			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", given.name))))
 		},
 		Entry("basic", gatewayTestCase{
-			name:          "gateway",
+			name: "basic",
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
