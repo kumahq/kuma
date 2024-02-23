@@ -31,7 +31,7 @@ GOARCH := $(shell go env GOARCH)
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
 define GATE_PUSH
-$(if $(ALLOW_PUSH),$(1), # $(1))
+$(if $(filter $(ALLOW_PUSH),true),$(1), # $(1))
 endef
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,

@@ -52,7 +52,7 @@ ifeq ($(1),windows)
 endif
 
 build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/distributions/$(1)-$(2)/$(DISTRIBUTION_TARGET_NAME)
-	mkdir -p build/distributions/out
+	mkdir -p $$(@D)
 	# Create a tar with group and owner 0 and mtime of 0 (this makes builds reproducible).
 	# Have the tar be just the `kuma-version` folder and nothing else at root
 	# tar is different between darwin and Linux so executre different commands
@@ -61,7 +61,7 @@ ifeq ($(shell uname),Darwin)
 else
 	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ $$(notdir $$<)
 endif
-	shasum -a 256 $$@ > $$@.sha256
+	cd $$(@D) && shasum -a 256 $$(notdir $$@) > $$(notdir $$@).sha256
 
 .PHONY: publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2)
 publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
@@ -97,7 +97,15 @@ ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DI
 
 # Create a main target which will call the tar.gz target for each distribution
 .PHONY: build/distributions ## Build tar.gz for each enabled distribution
-build/distributions: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
+build/distributions: build/distributions/out
+ifeq ($(shell uname),Darwin)
+	cat $</$(DISTRIBUTION_TARGET_NAME).sha256 | base64 > $@/artifact_digest_file.text
+else
+	cat $</$(DISTRIBUTION_TARGET_NAME).sha256 | base64 -w0 > $@/artifact_digest_file.text
+endif
+
+build/distributions/out: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
+	cd $@; sha256sum *.tar.gz > $(DISTRIBUTION_TARGET_NAME).sha256
 
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions
