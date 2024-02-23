@@ -41,7 +41,6 @@ filterChains:
                 - name: x-retry-regex
                   stringMatch:
                     safeRegex:
-                      googleRe2: {}
                       regex: .*
                 - name: x-retry-exact
                   stringMatch:

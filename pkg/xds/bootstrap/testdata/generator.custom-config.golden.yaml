@@ -8,6 +8,10 @@ admin:
     socketAddress:
       address: 192.168.0.1
       portValue: 1234
+defaultRegexEngine:
+  name: envoy.regex_engines.google_re2
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.regex_engines.v3.GoogleRE2
 dynamicResources:
   adsConfig:
     apiType: GRPC

@@ -11,8 +11,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/util/versions"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UpgradingWithHelmChartStandalone() {
@@ -26,9 +26,7 @@ func UpgradingWithHelmChartStandalone() {
 	var oldestSupportedVersion string
 
 	BeforeAll(func() {
-		vers, err := versions.ParseFromFile(Config.VersionsYamlPath)
-		Expect(err).ToNot(HaveOccurred())
-		oldestSupportedVersion = versions.OldestUpgradableToLatest(vers)
+		oldestSupportedVersion = versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
 	})
 
 	It("should successfully upgrade Kuma via Helm", func() {

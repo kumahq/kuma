@@ -15,6 +15,7 @@ import (
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
 	envoy_overload_v3 "github.com/envoyproxy/go-control-plane/envoy/config/overload/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	regex_engines "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
 	resource_monitors_fixed_heap "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/fixed_heap/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -189,6 +190,10 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 				},
 			},
 			Clusters: staticClusters,
+		},
+		DefaultRegexEngine: &envoy_core_v3.TypedExtensionConfig{
+			Name:        "envoy.regex_engines.google_re2",
+			TypedConfig: util_proto.MustMarshalAny(&regex_engines.GoogleRE2{}),
 		},
 	}
 	for _, r := range res.StaticResources.Clusters {

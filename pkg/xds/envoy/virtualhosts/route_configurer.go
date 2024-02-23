@@ -43,9 +43,6 @@ func (c VirtualHostRouteConfigurer) Configure(virtualHost *envoy_config_route_v3
 			Route: &envoy_config_route_v3.RouteAction{
 				RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 					Pattern: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: `.*`,
 					},
 					Substitution: c.NewPath,
