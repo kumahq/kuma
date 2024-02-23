@@ -4,10 +4,10 @@ on:
       FULL_MATRIX:
         required: true
         type: string
-      BINARY_ARTIFACTS_NAME:
+      BINARY_ARTIFACT_NAME:
         required: true
         type: string
-      IMAGE_ARTIFACTS_NAME:
+      IMAGE_ARTIFACT_NAME:
         required: true
         type: string
     outputs:
@@ -24,6 +24,10 @@ jobs:
     outputs:
       IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
     steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
       - name: "Add matrix to .build/info to cache"
         run: |
           make build/info/short > .build-info
@@ -71,15 +75,16 @@ jobs:
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         id: binary-artifacts
         with:
-          name: ${{ inputs.BINARY_ARTIFACTS_NAME }}
+          name: ${{ inputs.BINARY_ARTIFACT_NAME }}
           path: |
-            ./**/distributions/out/*.tar.gz
+            ./build/distributions/out/*.tar.gz
+            ./build/distributions/out/artifact_digest_file.text
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         id: image-artifacts
         with:
-          name: ${{ inputs.IMAGE_ARTIFACTS_NAME }}
+          name: ${{ inputs.IMAGE_ARTIFACT_NAME }}
           path: |
-            ./**/docker/*.tar
+            ./build/docker/*.tar
       - id: image_manifests
         run: |
           MANIFESTS=$(make manifests/json/release)

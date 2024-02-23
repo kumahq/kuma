@@ -12,10 +12,6 @@ permissions:
   contents: read
 env:
   KUMA_DIR: "."
-  GH_OWNER: ${{ github.repository_owner }}
-  GH_USER: "github-actions[bot]"
-  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-  GH_REPO: "charts"
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 jobs:
   check:
@@ -62,12 +58,21 @@ jobs:
     uses: ./.github/workflows/_build.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      IMAGE_ARTIFACTS_NAME: "image_artifacts"
-      BINARY_ARTIFACTS_NAME: "binary_artifacts"
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
+    secrets: inherit
+  publish:
+    needs: ["check", "build", "test"]
+    uses: ./.github/workflows/_publish.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
     secrets: inherit
   distributions:
-    timeout-minutes: 40
-    needs: ["check", "build", "test"]
+    needs: ["publish"]
+    timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -77,67 +82,3 @@ jobs:
           exit 1
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
-      - name: Publish distributions to Pulp
-        env:
-          PULP_USERNAME: ${{ vars.PULP_USERNAME }}
-          PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-        run: |
-          make publish/pulp
-      - name: Publish images
-        env:
-          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
-          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
-        run: |-
-          make docker/login
-          # ensure we always logout
-          function on_exit() {
-            make docker/logout
-          }
-          trap on_exit EXIT
-          make docker/push
-          make docker/manifest
-      - name: package-helm-chart
-        id: package-helm
-        env:
-          HELM_DEV: ${{ !startsWith(github.event.ref, 'refs/tags/') }}
-        run: |
-          make helm/update-version
-
-          git config user.name "${GH_USER}"
-          git config user.email "${GH_EMAIL}"
-          git add -u deployments/charts
-          # This commit never ends up in the repo
-          git commit --allow-empty -m "ci(helm): update versions"
-          # To get an idea of what's in the commit to debug
-          git show
-
-          make helm/package
-          PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
-          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
-      - name: Upload packaged chart
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        with:
-          name: ${{ steps.package-helm.outputs.filename }}
-          path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      # Everything from here is only running on releases.
-      # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
-      - name: Generate GitHub app token
-        id: github-app-token
-        if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
-        uses: actions/create-github-app-token@f4c6bf6752984b3a29fcc135a5e70eb792c40c6b # v1.8.0
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ env.GH_REPO }}
-      - name: Release chart
-        if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
-        env:
-          GITHUB_APP: "true"
-          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
-        run: make helm/release
