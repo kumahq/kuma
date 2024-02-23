@@ -18,6 +18,8 @@ on:
         required: false
 permissions:
   contents: read
+env:
+  CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
 jobs:
   test:
     timeout-minutes: 20
@@ -32,7 +34,7 @@ jobs:
       - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: |
-            ${{ inputs.CI_TOOLS_DIR }}
+            ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
