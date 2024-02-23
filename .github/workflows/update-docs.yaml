@@ -6,8 +6,13 @@ on:
       - versions.yml
       - UPGRADE.md
       - docs/generated/raw/**
+<<<<<<< HEAD
     branches-ignore:
       - release-*
+=======
+    branches: ["master"]
+    tags: ["*"]
+>>>>>>> 16d9c36bb (ci(github): only run update-docs action on master branch (#9381))
   workflow_dispatch: {}
   schedule:
     - cron: 0 8 * * *
