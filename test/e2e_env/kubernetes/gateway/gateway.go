@@ -522,6 +522,125 @@ spec:
 		})
 	})
 
+	Context("MeshRateLimit per route", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/rate-limited"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		httpRoute2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/non-rate-limited"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		mrl := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshRateLimit
+metadata:
+  name: mesh-rate-limit-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 1
+              interval: 10s
+            onRateLimit:
+              status: 428
+              headers:
+                add:
+                - name: "x-kuma-rate-limited"
+                  value: "true"`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute, httpRoute2)).
+				Install(YamlK8s(mrl)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(mrl)).
+				Install(DeleteYamlK8s(httpRoute, httpRoute2)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should rate limit only specific path", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/rate-limited",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.NoFail(),
+					client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(428))
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			Consistently(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/non-rate-limited",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
 	Context("TCPRoute", func() {
 		routes := []string{
 			fmt.Sprintf(`
