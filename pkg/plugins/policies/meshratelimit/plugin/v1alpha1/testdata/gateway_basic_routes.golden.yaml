@@ -15,7 +15,7 @@ virtualHosts:
       idleTimeout: 5s
       weightedClusters:
         clusters:
-        - name: backend-26cb64fa4e85e7b7
+        - name: backend-89287678764ce0c5
           requestHeadersToAdd:
           - header:
               key: x-kuma-tags
