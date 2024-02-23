@@ -11,9 +11,6 @@ on:
       CI_TOOLS_DIR:
         required: true
         type: string
-    secrets:
-      CIRCLECI_TOKEN:
-        required: false
 permissions:
   contents: read
 env:

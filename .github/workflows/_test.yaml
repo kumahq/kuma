@@ -13,9 +13,6 @@ on:
       K8S_MAX_VERSION:
         required: true
         type: string
-    secrets:
-      CIRCLECI_TOKEN:
-        required: false
 permissions:
   contents: read
 env:
@@ -110,8 +107,7 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
-    secrets:
-      CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN }}
+    secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
@@ -122,5 +118,4 @@ jobs:
     with:
       matrix: ${{ toJSON(matrix) }}
       CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
-    secrets:
-      CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN || '' }}
+    secrets: inherit

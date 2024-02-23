@@ -1,10 +1,10 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
-    tags: ["*"]
+    branches: [ "master", "release-*", "!*-merge-master" ]
+    tags: [ "*" ]
   pull_request:
-    branches: ["master", "release-*"]
+    branches: [ "master", "release-*" ]
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -25,11 +25,11 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     outputs:
-        CI_TOOLS_DIR: ${{ env.CI_TOOLS_DIR }}
-        FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
-        ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-        K8S_MIN_VERSION: ${{ env.K8S_MIN_VERSION }}
-        K8S_MAX_VERSION: ${{ env.K8S_MAX_VERSION }}
+      CI_TOOLS_DIR: ${{ env.CI_TOOLS_DIR }}
+      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      K8S_MIN_VERSION: ${{ env.K8S_MIN_VERSION }}
+      K8S_MAX_VERSION: ${{ env.K8S_MAX_VERSION }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -57,7 +57,7 @@ jobs:
       - run: |
           make check
   test:
-    needs: ["check"]
+    needs: [ "check" ]
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     uses: ./.github/workflows/_test.yaml
     with:
@@ -65,19 +65,19 @@ jobs:
       CI_TOOLS_DIR: ${{ needs.check.outputs.CI_TOOLS_DIR }}
       K8S_MIN_VERSION: ${{ needs.check.outputs.K8S_MIN_VERSION }}
       K8S_MAX_VERSION: ${{ needs.check.outputs.K8S_MAX_VERSION }}
-    secrets:
-      CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN }}
+    secrets: inherit
   build:
-    needs: ["check"]
+    needs: [ "check" ]
     uses: ./.github/workflows/_build.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       CI_TOOLS_DIR: ${{ needs.check.outputs.CI_TOOLS_DIR }}
       IMAGE_ARTIFACTS_NAME: "image_artifacts"
       BINARY_ARTIFACTS_NAME: "binary_artifacts"
+    secrets: inherit
   distributions:
     timeout-minutes: 40
-    needs: ["check", "build", "test"]
+    needs: [ "check", "build", "test" ]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
