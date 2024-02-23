@@ -5,7 +5,13 @@ on:
       - edited
       - opened
       - reopened
+<<<<<<< HEAD
       - synchronized
+=======
+      - synchronize
+permissions:
+  contents: read
+>>>>>>> 3c7a170e8 (ci(gh-action/check): increase check job timeout to 15 minutes (#9370))
 jobs:
   # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
