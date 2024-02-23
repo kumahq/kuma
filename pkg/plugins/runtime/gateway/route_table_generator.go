@@ -61,7 +61,7 @@ func GenerateVirtualHost(
 	sort.Sort(route.Sorter(routes))
 
 	for _, e := range routes {
-		routeBuilder := envoy_routes.NewRouteBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+		routeBuilder := envoy_routes.NewRouteBuilder(envoy_common.APIV3, e.Name).
 			Configure(
 				envoy_routes.RouteMatchExactPath(e.Match.ExactPath),
 				envoy_routes.RouteMatchPrefixPath(e.Match.PrefixPath),

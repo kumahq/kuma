@@ -129,6 +129,23 @@ to:
           connectionRate:
             num: 100
             interval: 100ms`),
+			Entry("gateway example and targeting MeshHTTPRoute", `
+targetRef:
+  kind: MeshHTTPRoute
+  name: http-route-1
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 		)
 		type testCase struct {
 			inputYaml string
@@ -329,6 +346,29 @@ violations:
 targetRef:
   kind: MeshGateway
   name: edge
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.from
+    message: 'must not be defined'`,
+			}),
+			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: http-route-1
 from:
   - targetRef:
       kind: Mesh

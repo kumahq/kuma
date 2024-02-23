@@ -27,6 +27,7 @@ type Table struct {
 // additional processing.
 type Entry struct {
 	Route  string
+	Name   string
 	Match  Match
 	Action Action
 

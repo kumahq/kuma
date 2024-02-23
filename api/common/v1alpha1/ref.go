@@ -79,8 +79,9 @@ func IncludesGateways(ref TargetRef) bool {
 	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
 	isGatewayInProxyTypes := len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, Gateway)
 	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
+	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
 
-	return isGateway || isGatewayCompatible
+	return isGateway || isGatewayCompatible || isMeshHTTPRoute
 }
 
 // BackendRef defines where to forward traffic.

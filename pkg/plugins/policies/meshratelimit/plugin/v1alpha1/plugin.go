@@ -51,6 +51,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	listeners := xds.GatherListeners(rs)
 	routes := xds.GatherRoutes(rs)
+	core.Log.Info("TEST", "policies", policies, "listeners", listeners)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -154,15 +155,15 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			for _, rule := range mrl.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						var conf api.Conf
-						if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
-							conf = computed.Conf.(api.Conf)
-						} else {
-							continue
-						}
+						// var conf api.Conf
+						// if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
+						// 	conf = computed.Conf.(api.Conf)
+						// } else {
+						// 	continue
+						// }
 						configurer := plugin_xds.Configurer{
-							Http: conf.Local.HTTP,
-							Tcp:  conf.Local.TCP,
+							Rules: rule,
+							Subset: core_rules.MeshSubset(),
 						}
 						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
 							return err
@@ -180,17 +181,10 @@ func configure(
 	listener *envoy_listener.Listener,
 	route *envoy_route.RouteConfiguration,
 ) error {
-	var conf api.Conf
-	// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
-	if computed := fromRules.Compute(core_rules.MeshSubset()); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
-		return nil
-	}
-
 	configurer := plugin_xds.Configurer{
-		Http: conf.Local.HTTP,
-		Tcp:  conf.Local.TCP,
+		Rules: fromRules,
+		// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
+		Subset: core_rules.MeshSubset(),
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -199,6 +193,28 @@ func configure(
 		}
 	}
 	if err := configurer.ConfigureRoute(route); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func configureGateway(
+	fromRules core_rules.Rules,
+	listener *envoy_listener.Listener,
+	route *envoy_route.RouteConfiguration,
+) error {
+	configurer := plugin_xds.Configurer{
+		Rules: fromRules,
+		Subset: core_rules.MeshSubset(),
+	}
+
+	for _, chain := range listener.FilterChains {
+		if err := configurer.ConfigureFilterChain(chain); err != nil {
+			return err
+		}
+	}
+	if err := configurer.ConfigureGatewayRoute(route); err != nil {
 		return err
 	}
 

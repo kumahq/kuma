@@ -13,9 +13,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -478,7 +478,7 @@ var _ = Describe("MeshRateLimit", func() {
 		proxy := &core_xds.Proxy{
 			APIVersion: envoy_common.APIV3,
 			ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-				ZoneEgressResource: &mesh.ZoneEgressResource{
+				ZoneEgressResource: &core_mesh.ZoneEgressResource{
 					Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.ZoneEgress{
 						Networking: &mesh_proto.ZoneEgress_Networking{
@@ -487,11 +487,11 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					},
 				},
-				ZoneIngresses: []*mesh.ZoneIngressResource{},
+				ZoneIngresses: []*core_mesh.ZoneIngressResource{},
 				MeshResourcesList: []*core_xds.MeshResources{
 					{
 						Mesh: builders.Mesh().WithName("mesh-1").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
-						ExternalServices: []*mesh.ExternalServiceResource{
+						ExternalServices: []*core_mesh.ExternalServiceResource{
 							{
 								Meta: &test_model.ResourceMeta{
 									Mesh: "mesh-1",
@@ -535,7 +535,7 @@ var _ = Describe("MeshRateLimit", func() {
 					},
 					{
 						Mesh: builders.Mesh().WithName("mesh-2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
-						ExternalServices: []*mesh.ExternalServiceResource{
+						ExternalServices: []*core_mesh.ExternalServiceResource{
 							{
 								Meta: &test_model.ResourceMeta{
 									Mesh: "mesh-2",
@@ -716,7 +716,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Expect(util_proto.ToYAML(generatedResources.ListOf(envoy_resource.ListenerType)[0].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway.listener.golden.yaml", given.name))))
 		},
 		Entry("basic", gatewayTestCase{
-			name: "basic",
+			name:          "basic",
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
@@ -749,6 +749,95 @@ var _ = Describe("MeshRateLimit", func() {
 								},
 							},
 						}},
+					},
+				},
+			},
+		}),
+		Entry("with MeshHTTPRoute targeting", gatewayTestCase{
+			name:          "http-route",
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			meshhttproutes: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							{
+								Subset: core_rules.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{
+										{
+											Matches: []meshhttproute_api.Match{{
+												Path: &meshhttproute_api.PathMatch{
+													Type:  meshhttproute_api.Exact,
+													Value: "/",
+												},
+											}},
+											Default: meshhttproute_api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										},
+										{
+											Matches: []meshhttproute_api.Match{{
+												Path: &meshhttproute_api.PathMatch{
+													Type:  meshhttproute_api.Exact,
+													Value: "/another-route",
+												},
+												Method: pointer.To[meshhttproute_api.Method]("GET"),
+											}},
+											Default: meshhttproute_api.RuleConf{
+												BackendRefs: &[]common_api.BackendRef{{
+													TargetRef: builders.TargetRefService("backend"),
+													Weight:    pointer.To(uint(100)),
+												}},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			rules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							{
+								Subset: core_rules.Subset{
+									{
+										Key:   core_rules.RuleMatchesHashTag,
+										Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
+									},
+								},
+								Conf: api.Conf{
+									Local: &api.Local{
+										HTTP: &api.LocalHTTP{
+											RequestRate: &api.Rate{
+												Num:      100,
+												Interval: v1.Duration{Duration: 10 * time.Second},
+											},
+											OnRateLimit: &api.OnRateLimit{
+												Status: pointer.To(uint32(444)),
+												Headers: &api.HeaderModifier{
+													Add: []api.HeaderKeyValue{
+														{
+															Name:  "x-kuma-rate-limit-header",
+															Value: "test-value",
+														},
+														{
+															Name:  "x-kuma-rate-limit",
+															Value: "other-value",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
