@@ -27,6 +27,8 @@ jobs:
         CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
         FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
         ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+        K8S_MIN_VERSION: ${{ env.K8S_MIN_VERSION }}
+        K8S_MAX_VERSION: ${{ env.K8S_MAX_VERSION }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -60,6 +62,10 @@ jobs:
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       CI_TOOLS_DIR: ${{ needs.check.outputs.CI_TOOLS_DIR }}
+      K8S_MIN_VERSION: ${{ needs.check.outputs.K8S_MIN_VERSION }}
+      K8S_MAX_VERSION: ${{ needs.check.outputs.K8S_MAX_VERSION }}
+    secrets:
+      CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN }}
   build:
     needs: ["check"]
     uses: ./.github/workflows/_build.yaml

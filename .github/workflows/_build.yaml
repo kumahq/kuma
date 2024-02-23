@@ -13,9 +13,6 @@ on:
       IMAGE_ARTIFACTS_NAME:
         required: true
         type: string
-    secrets:
-      circleCIToken:
-        required: true
     outputs:
       IMAGE_MANIFESTS:
         value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}

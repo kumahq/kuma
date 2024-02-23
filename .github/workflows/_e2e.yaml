@@ -12,7 +12,8 @@ on:
         required: true
         type: string
     secrets:
-      inherit: true
+      CIRCLECI_TOKEN:
+        required: false
 permissions:
   contents: read
 env:
