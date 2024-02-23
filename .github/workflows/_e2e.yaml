@@ -8,13 +8,10 @@ on:
         type: string
         required: false
         default: '{"amd64": "ubuntu-latest", "arm64": "circleci"}'
-      CI_TOOLS_DIR:
-        required: true
-        type: string
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci-tools"
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}

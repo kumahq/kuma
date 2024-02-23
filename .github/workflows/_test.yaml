@@ -4,9 +4,6 @@ on:
       FULL_MATRIX:
         required: true
         type: string
-      CI_TOOLS_DIR:
-        required: true
-        type: string
       K8S_MIN_VERSION:
         required: true
         type: string
@@ -16,7 +13,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci-tools"
 jobs:
   test:
     timeout-minutes: 20
@@ -106,7 +103,6 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -117,5 +113,4 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
     secrets: inherit
