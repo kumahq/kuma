@@ -366,15 +366,27 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 		for _, mhrRule := range mhrRules.Rules {
 			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
-				rv = append(rv, &artificialPolicyItem{
-					targetRef: common_api.TargetRef{
+				var targetRef common_api.TargetRef
+				switch mhrRules.TargetRef.Kind {
+				case common_api.Mesh, common_api.MeshSubset:
+					targetRef = common_api.TargetRef{
+						Kind: common_api.MeshSubset,
+						Tags: map[string]string{
+							RuleMatchesHashTag: matchesHash,
+						},
+					}
+				default:
+					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshServiceSubset,
 						Name: mhrRules.TargetRef.Name,
 						Tags: map[string]string{
 							RuleMatchesHashTag: matchesHash,
 						},
-					},
-					conf: to.GetDefault(),
+					}
+				}
+				rv = append(rv, &artificialPolicyItem{
+					targetRef: targetRef,
+					conf:      to.GetDefault(),
 				})
 			}
 		}
