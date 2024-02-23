@@ -52,11 +52,6 @@ from:
         version: v1
     default:
       action: Deny
-  - targetRef:
-      kind: MeshGateway
-      name: edge-gateway
-    default:
-      action: Deny
 `),
 			Entry("allow MeshSubset at top-level targetRef", `
 targetRef:
