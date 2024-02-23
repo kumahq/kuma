@@ -21,6 +21,10 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 jobs:
   check:
+<<<<<<< HEAD
+=======
+    timeout-minutes: 15
+>>>>>>> 3c7a170e8 (ci(gh-action/check): increase check job timeout to 15 minutes (#9370))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
