@@ -4,9 +4,6 @@ on:
       FULL_MATRIX:
         required: true
         type: string
-      CI_TOOLS_DIR:
-        required: true
-        type: string
       BINARY_ARTIFACTS_NAME:
         required: true
         type: string
