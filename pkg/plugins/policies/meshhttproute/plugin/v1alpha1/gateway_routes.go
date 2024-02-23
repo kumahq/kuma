@@ -155,6 +155,7 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 			slices.Sort(names)
 			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
 
+			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
 			// semantics). That means that we have to duplicate the route table
 			// entry for each repeated match so that the rule can match any of
@@ -162,6 +163,7 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 			for _, m := range rule.Matches {
 				routeEntry := entry // Shallow copy.
 				routeEntry.Match = makeRouteMatch(m)
+				routeEntry.Name = hashedMatches
 
 				switch {
 				case routeEntry.Match.ExactPath != "":
