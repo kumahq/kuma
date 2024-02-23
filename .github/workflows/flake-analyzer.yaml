@@ -2,6 +2,9 @@ name: flake-analyzer
 on:
 #  schedule:
 #    - cron: '0 1 * * *' # daily
+  # just for tests
+  pull_request:
+    branches: ["master"]
   workflow_dispatch:
     inputs:
       test_suite:
