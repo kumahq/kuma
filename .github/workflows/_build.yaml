@@ -1,0 +1,93 @@
+on:
+  workflow_call:
+    inputs:
+      FULL_MATRIX:
+        required: true
+        type: string
+      CI_TOOLS_DIR:
+        required: true
+        type: string
+      BINARY_ARTIFACTS_NAME:
+        required: true
+        type: string
+      IMAGE_ARTIFACTS_NAME:
+        required: true
+        type: string
+    secrets:
+      circleCIToken:
+        required: true
+    outputs:
+      IMAGE_MANIFESTS:
+        value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
+permissions:
+  contents: read
+env:
+  CI_TOOLS_DIR: ${{ inputs.CI_TOOLS_DIR }}
+  FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
+    steps:
+      - name: "Add matrix to .build/info to cache"
+        run: |
+          make build/info/short > .build-info
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            .build-info
+            go.sum
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - run: |
+          make -j images
+      - run: |
+          make -j docker/save
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure
+      - name: Inspect created tars
+        run: |
+          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        id: binary-artifacts
+        with:
+          name: ${{ inputs.BINARY_ARTIFACTS_NAME }}
+          path: |
+            ./**/distributions/out/*.tar.gz
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        id: image-artifacts
+        with:
+          name: ${{ inputs.IMAGE_ARTIFACTS_NAME }}
+          path: |
+            ./**/docker/*.tar
+      - id: image_manifests
+        run: |
+          MANIFESTS=$(make manifests/json/release)
+          echo "Image manifests: ${MANIFESTS}"
+          echo "manifests=${MANIFESTS}" >> $GITHUB_OUTPUT

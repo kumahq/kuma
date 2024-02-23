@@ -8,9 +8,11 @@ on:
         type: string
         required: false
         default: '{"amd64": "ubuntu-latest", "arm64": "circleci"}'
-    secrets:
-      circleCIToken:
+      CI_TOOLS_DIR:
         required: true
+        type: string
+    secrets:
+      inherit: true
 permissions:
   contents: read
 env:
@@ -20,7 +22,7 @@ env:
   E2E_PARAM_SIDECAR_CONTAINERS: ${{ fromJSON(inputs.matrix).sidecarContainers }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
-  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  E2E_RUN_NAME: ${{ fromJSON(inputs.matrix).target }}_${{ fromJSON(inputs.matrix).k8sVersion }}_${{ fromJSON(inputs.matrix).cniNetworkPlugin }}_${{ fromJSON(inputs.matrix).arch }}_${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
     timeout-minutes: 60
@@ -58,7 +60,7 @@ jobs:
         uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: |
-            ${{ env.CI_TOOLS_DIR }}
+            ${{ inputs.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
@@ -179,7 +181,7 @@ jobs:
             URL: $CIRCLE_CI_API_PATH
             BODY: ${{ steps.circleci-gen-params.outputs.result }}"
 
-          if [ "${{ secrets.circleCIToken }}" == "" ]; then
+          if [ "${{ secrets.CIRCLECI_TOKEN }}" == "" ]; then
             echo "Skipping request CircleCI because secret 'CIRCLECI_TOKEN' not set."
             exit 0
           fi
