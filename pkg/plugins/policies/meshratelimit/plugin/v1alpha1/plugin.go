@@ -51,7 +51,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	listeners := xds.GatherListeners(rs)
 	routes := xds.GatherRoutes(rs)
-	core.Log.Info("TEST", "policies", policies, "listeners", listeners)
 
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy); err != nil {
 		return err
@@ -90,7 +89,7 @@ func applyToGateways(
 				continue
 			}
 
-			if err := configure(rules, gatewayListener, route); err != nil {
+			if err := configureGateway(rules, gatewayListener, route); err != nil {
 				return err
 			}
 		}
@@ -162,7 +161,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 						// 	continue
 						// }
 						configurer := plugin_xds.Configurer{
-							Rules: rule,
+							Rules:  rule,
 							Subset: core_rules.MeshSubset(),
 						}
 						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
@@ -205,7 +204,7 @@ func configureGateway(
 	route *envoy_route.RouteConfiguration,
 ) error {
 	configurer := plugin_xds.Configurer{
-		Rules: fromRules,
+		Rules:  fromRules,
 		Subset: core_rules.MeshSubset(),
 	}
 
