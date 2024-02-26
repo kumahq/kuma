@@ -80,7 +80,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications)
+			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
 			err = cf.configureOpenTelemetryExporter(newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 			if err != nil {
@@ -197,7 +197,7 @@ func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
 	return prometheusBackends
 }
 
-func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application) []metrics.ApplicationToScrape {
+func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
 	for _, application := range applications {
@@ -222,7 +222,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Address:       cf.envoyAdminAddress,
 		Port:          cf.envoyAdminPort,
 		IsIPv6:        false,
-		QueryModifier: metrics.AddPrometheusFormat,
+		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddUsedOnlyParameter(sidecar)),
 		Mutator:       metrics.MergeClusters,
 		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})

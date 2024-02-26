@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -102,7 +103,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			StatsPath:       "/" + envoyMetricsFilter(conf),
+			StatsPath:       "/" + EnvoyMetricsFilter(conf.Sidecar).Encode(),
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
@@ -183,25 +184,19 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 	return nil
 }
 
-// TODO this most likely won't work with OpenTelemetry. Issue: https://github.com/kumahq/kuma/issues/8926
-func envoyMetricsFilter(conf api.Conf) string {
-	if conf.Sidecar == nil {
-		return "?usedonly" // as the default for IncludeUnused is false
+func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
+	values := url.Values{}
+	if sidecar == nil {
+		values.Set("usedonly", "")
+		return values
 	}
-	var query string
-	if pointer.Deref(conf.Sidecar.Regex) != "" {
-		query += "filter=" + pointer.Deref(conf.Sidecar.Regex)
+	if pointer.Deref(sidecar.Regex) != "" {
+		values.Set("filter", pointer.Deref(sidecar.Regex))
 	}
-	if query != "" {
-		query += "&"
+	if !pointer.Deref(sidecar.IncludeUnused) {
+		values.Set("usedonly", "")
 	}
-	if !pointer.Deref(conf.Sidecar.IncludeUnused) {
-		query += "usedonly"
-	}
-	if query != "" {
-		return "?" + query
-	}
-	return ""
+	return values
 }
 
 func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) plugin_xds.MeshMetricDpConfig {
@@ -235,6 +230,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 			Metrics: plugin_xds.Metrics{
 				Applications: applications,
 				Backends:     backends,
+				Sidecar:      conf.Sidecar,
 			},
 		},
 	}

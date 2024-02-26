@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"io"
 	"math"
 	"mime"
@@ -58,16 +60,36 @@ type (
 	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
 )
 
-type QueryParametersModifier func(queryParameters url.Values) string
+type QueryParametersModifier func(queryParameters url.Values) url.Values
 
-func RemoveQueryParameters(_ url.Values) string {
-	return ""
+func RemoveQueryParameters(_ url.Values) url.Values {
+	return url.Values{}
 }
 
-func AddPrometheusFormat(queryParameters url.Values) string {
+func AddPrometheusFormat(queryParameters url.Values) url.Values {
 	queryParameters.Add("format", "prometheus")
 	queryParameters.Add("text_readouts", "")
-	return queryParameters.Encode()
+	return queryParameters
+}
+
+func AddUsedOnlyParameter(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
+	values := v1alpha1.EnvoyMetricsFilter(sidecar)
+
+	return func (queryParameters url.Values) url.Values {
+		queryParameters.Set("filter", values.Get("filter"))
+		queryParameters.Set("usedonly", values.Get("usedonly"))
+		return queryParameters
+	}
+}
+
+func AggregatedQueryParametersModifier(modifiers... QueryParametersModifier) QueryParametersModifier {
+	return func(queryParameters url.Values) url.Values {
+		q := queryParameters
+		for _, m := range modifiers {
+			q = m(q)
+		}
+		return q
+	}
 }
 
 type ApplicationToScrape struct {
@@ -177,7 +199,7 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 		Scheme:   "http",
 		Host:     net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)),
 		Path:     path,
-		RawQuery: queryModifier(in.Query()),
+		RawQuery: queryModifier(in.Query()).Encode(),
 	}
 	return u.String()
 }

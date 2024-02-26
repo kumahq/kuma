@@ -2,8 +2,8 @@ package xds
 
 import (
 	"encoding/json"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -44,8 +44,9 @@ type Observability struct {
 }
 
 type Metrics struct {
-	Applications []Application `json:"applications"`
-	Backends     []Backend     `json:"backends"`
+	Applications []Application     `json:"applications"`
+	Backends     []Backend         `json:"backends"`
+	Sidecar      *v1alpha1.Sidecar `json:"sidecar,omitempty"`
 }
 
 type Application struct {
