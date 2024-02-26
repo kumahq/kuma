@@ -154,12 +154,6 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 			for _, rule := range mrl.FromRules.Rules {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
-						// var conf api.Conf
-						// if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
-						// 	conf = computed.Conf.(api.Conf)
-						// } else {
-						// 	continue
-						// }
 						configurer := plugin_xds.Configurer{
 							Rules:  rule,
 							Subset: core_rules.MeshSubset(),
