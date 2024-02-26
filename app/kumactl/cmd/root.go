@@ -23,6 +23,7 @@ import (
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/policies"
@@ -115,6 +116,6 @@ func Execute() {
 }
 
 func init() {
-	core_apis.InitAllPolicies()
-	policies.InitAllPolicies()
+	plugins.InitAll(core_apis.NameToModule)
+	plugins.InitAll(policies.NameToModule)
 }
