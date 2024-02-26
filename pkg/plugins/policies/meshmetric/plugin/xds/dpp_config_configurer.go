@@ -2,6 +2,7 @@ package xds
 
 import (
 	"encoding/json"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"

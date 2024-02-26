@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,10 +10,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/expfmt"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-var regex = "abc"
-var includeUnused = true
+var (
+	regex         = "abc"
+	includeUnused = true
+)
 
 var _ = Describe("Rewriting the metrics URL", func() {
 	type testCase struct {
@@ -52,10 +55,10 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			queryModifier: RemoveQueryParameters,
 		}),
 		Entry("add usedonly and filter parameters", testCase{
-			address:       "127.0.0.1",
-			input:         "http://foo/bar?one=two&three=four",
-			adminPort:     80,
-			expected:      "http://127.0.0.1:80/stats?filter=abc&one=two&three=four&usedonly=",
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&three=four",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?filter=abc&one=two&three=four&usedonly=",
 			queryModifier: AddUsedOnlyParameter(&v1alpha1.Sidecar{
 				Regex:         &regex,
 				IncludeUnused: &includeUnused,

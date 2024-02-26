@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"io"
 	"math"
 	"mime"
@@ -24,6 +22,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 )
 
 var (
@@ -75,14 +75,14 @@ func AddPrometheusFormat(queryParameters url.Values) url.Values {
 func AddUsedOnlyParameter(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
 	values := v1alpha1.EnvoyMetricsFilter(sidecar)
 
-	return func (queryParameters url.Values) url.Values {
+	return func(queryParameters url.Values) url.Values {
 		queryParameters.Set("filter", values.Get("filter"))
 		queryParameters.Set("usedonly", values.Get("usedonly"))
 		return queryParameters
 	}
 }
 
-func AggregatedQueryParametersModifier(modifiers... QueryParametersModifier) QueryParametersModifier {
+func AggregatedQueryParametersModifier(modifiers ...QueryParametersModifier) QueryParametersModifier {
 	return func(queryParameters url.Values) url.Values {
 		q := queryParameters
 		for _, m := range modifiers {

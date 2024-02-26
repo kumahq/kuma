@@ -492,7 +492,7 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_client_ssl_socket_factory_upstream_context_secrets_not_ready"))) // unused
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket")) // used
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))                                  // used
 		}, "2m", "3s").Should(Succeed())
 	})
 
