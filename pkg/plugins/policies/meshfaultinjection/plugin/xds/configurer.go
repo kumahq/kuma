@@ -86,8 +86,7 @@ func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
-						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
-						Regex:      tags.MatchingRegex(tagSet),
+						Regex: tags.MatchingRegex(tagSet),
 					},
 				},
 			},

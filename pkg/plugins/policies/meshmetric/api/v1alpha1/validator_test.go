@@ -20,7 +20,7 @@ targetRef:
 default:
   sidecar:
     regex: "http2_.*"
-    usedOnly: true
+    includeUnused: true
   applications:
     - path: "metrics/prometheus"
       port: 8888
@@ -107,7 +107,7 @@ targetRef:
 default:
   sidecar:
     regex: "())(!("
-    usedOnly: true
+    includeUnused: true
 `),
 		ErrorCase(
 			"invalid url",

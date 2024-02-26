@@ -7,10 +7,12 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 var _ config.Config = E2eConfig{}
@@ -63,6 +65,10 @@ type E2eConfig struct {
 	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
+}
+
+func (c E2eConfig) SupportedVersions() []*semver.Version {
+	return versions.ParseFromFile(c.VersionsYamlPath)
 }
 
 type SuiteConfig struct {

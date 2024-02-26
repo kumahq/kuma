@@ -237,7 +237,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                             name: x-custom-header-b
                           - name: x-custom-header-c
                             safeRegexMatch:
-                              googleRe2: {}
                               regex: ^regex$
                           - stringMatch:
                               exact: GET

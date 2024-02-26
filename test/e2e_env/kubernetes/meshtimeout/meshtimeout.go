@@ -44,20 +44,22 @@ func MeshTimeout() {
 		)).To(Succeed())
 	})
 
-	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(kubernetes.Cluster, mesh, v1alpha1.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
-	})
-
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	DescribeTable("should add timeouts for outbound connections", FlakeAttempts(3), func(timeoutConfig string) {
+	DescribeTable("should add timeouts", FlakeAttempts(3), func(timeoutConfig string) {
 		// given no MeshTimeout
 		mts, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", mesh)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mts).To(BeEmpty())
+		Expect(mts).To(
+			Or(
+				HaveExactElements(Equal("mesh-gateways-timeout-all-meshtimeout.kuma-system")),
+				BeEmpty(),
+			),
+		)
+
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := client.CollectEchoResponse(
@@ -84,6 +86,8 @@ func MeshTimeout() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+		Expect(DeleteYamlK8s(timeoutConfig)(kubernetes.Cluster)).To(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1

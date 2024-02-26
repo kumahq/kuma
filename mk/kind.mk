@@ -72,14 +72,9 @@ kind/deploy/kuma: build/kumactl kind/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
-	@TIMES_TRIED=0; \
-	MAX_ALLOWED_TRIES=30; \
-	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
-    	echo "Waiting for the cluster to come up" && sleep 1; \
-  		TIMES_TRIED=$$((TIMES_TRIED+1)); \
-  		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
-    done
+	until \
+		KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get mesh default ; \
+	do echo "Waiting for default mesh to be present" && sleep 1; done
 
 .PHONY: kind/deploy/helm
 kind/deploy/helm: kind/load
