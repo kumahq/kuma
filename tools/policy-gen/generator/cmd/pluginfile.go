@@ -51,14 +51,14 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				Versions    []string
 				Name        string
 				GoModule    string
-				ResourcePkg string
+				ResourceDir string
 				IsPolicy    bool
 			}{
 				Package:     strings.ToLower(pconfig.Name),
 				Name:        pconfig.Name,
 				Versions:    versions,
 				GoModule:    rootArgs.goModule,
-				ResourcePkg: rootArgs.pluginDir,
+				ResourceDir: rootArgs.pluginDir,
 				IsPolicy:    pconfig.IsPolicy,
 			}, outPath)
 		},
