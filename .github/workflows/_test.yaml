@@ -12,7 +12,7 @@ env:
   K8S_MIN_VERSION: v1.23.17-k3s1
   K8S_MAX_VERSION: v1.29.1-k3s2
 jobs:
-  test:
+  test_unit:
     timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:

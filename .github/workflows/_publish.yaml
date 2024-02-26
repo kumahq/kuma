@@ -19,13 +19,50 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
 jobs:
-  publish:
+  publish-binaries:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
+      - name: "Add matrix to .build/info to cache"
+        run: |
+          make build/info/short > .build-info
+      - name: Install dependencies for cross builds
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            .build-info
+            go.sum
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - name: Free up disk space for the Runner
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Removing images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - run: |
+          make -j images
+      - run: |
+          make -j docker/save
       - name: Publish distributions to Pulp
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -74,7 +111,7 @@ jobs:
       # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
         id: github-app-token
-        if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
+        if: ${{ github.ref_type == 'tag' }}
         uses: actions/create-github-app-token@f4c6bf6752984b3a29fcc135a5e70eb792c40c6b # v1.8.0
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -82,7 +119,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ env.GH_REPO }}
       - name: Release chart
-        if: ${{ startsWith(github.event.ref, 'refs/tags/') }}
+        if: ${{ github.ref_type == 'tag' }}
         env:
           GITHUB_APP: "true"
           GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
