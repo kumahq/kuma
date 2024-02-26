@@ -549,7 +549,7 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 func httpOutboundListener() envoy_common.NamedResource {
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSingleRoute("backend")))
+		AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
 }
 
 func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {

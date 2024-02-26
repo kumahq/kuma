@@ -48,7 +48,7 @@ func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.Ht
 	}
 }
 
-func MeshHttpOutboundRouteWithSingleRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
+func MeshHttpOutboudWithSingleRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
 		Service: serviceName,
 		Routes: []meshhttproute_xds.OutboundRoute{

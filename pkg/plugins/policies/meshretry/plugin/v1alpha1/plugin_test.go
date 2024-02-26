@@ -628,7 +628,7 @@ func httpListenerWithSeveralRoutes(port uint32) envoy_common.NamedResource {
 }
 
 func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSingleRoute("backend")))
+	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboudWithSingleRoute("backend")))
 }
 
 func httpListener(port uint32, route FilterChainBuilderOpt) envoy_common.NamedResource {

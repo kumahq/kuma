@@ -93,10 +93,14 @@ spec:
 
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
+			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
-			g.Expect(err).To(HaveOccurred())
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
 		}, "10s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
@@ -184,10 +188,14 @@ spec:
 
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
+			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
-			g.Expect(err).To(HaveOccurred())
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
 		}, "10s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
