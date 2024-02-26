@@ -15,11 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/core"
+	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/plugins/policies"
 )
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
 func RunSpecs(t *testing.T, description string) {
+	core_apis.InitAllPolicies()
 	policies.InitAllPolicies()
 	format.TruncatedDiff = false
 	if strings.HasPrefix(description, "E2E") {
@@ -29,6 +31,7 @@ func RunSpecs(t *testing.T, description string) {
 }
 
 func RunE2ESpecs(t *testing.T, description string) {
+	core_apis.InitAllPolicies()
 	policies.InitAllPolicies()
 	gomega.SetDefaultConsistentlyDuration(time.Second * 5)
 	gomega.SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)

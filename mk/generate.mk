@@ -46,11 +46,17 @@ resources/type: $(RESOURCE_GEN)
 clean/resources:
 	find pkg -name 'zz_generated.*.go' -delete
 
-POLICIES_DIR := pkg/plugins/policies
+POLICIES_DIR ?= pkg/plugins/policies
 COMMON_DIR := api/common
 
-policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
 kuma_policies = $(foreach dir,$(shell find $(KUMA_DIR)/pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
+
+generate/resources: POLICIES_DIR=pkg/core/resources/apis
+generate/resources:
+	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
+	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-import
+	POLICIES_DIR=$(POLICIES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
 
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
@@ -72,11 +78,11 @@ generate/policy/%: generate/schema/%
 
 generate/schema/%: generate/controller-gen/%
 	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/crd-extract-openapi.sh $* $$version $(TOOLS_DIR) ; \
+		PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/crd-extract-openapi.sh $* $$version $(TOOLS_DIR) $(POLICIES_DIR); \
 	done
 
 generate/policy-import:
-	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
+	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
 
 generate/policy-config:
 	./tools/policy-gen/generate-policy-config.sh $(policies)
@@ -85,7 +91,7 @@ generate/policy-defaults:
 	./tools/policy-gen/generate-policy-defaults.sh $(KUMA_DIR) $(kuma_policies) $(policies)
 
 generate/policy-helm:
-	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(policies)
+	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
 	# touch is a fix for controller-gen complaining that there is no schema.yaml file
