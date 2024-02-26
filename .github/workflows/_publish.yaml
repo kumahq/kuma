@@ -19,7 +19,7 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
 jobs:
-  publish-binaries:
+  publish:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -45,6 +45,8 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
       - name: Free up disk space for the Runner
         run: |
           echo "Disk usage before cleanup"
