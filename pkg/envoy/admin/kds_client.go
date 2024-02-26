@@ -7,6 +7,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"go.opentelemetry.io/otel/trace"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -25,15 +30,20 @@ import (
 	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
+const reverseUnaryRPCService = "kuma.mesh.v1alpha1.KDSZoneEnvoyAdminService"
+
 type kdsEnvoyAdminClient struct {
 	rpcs       service.EnvoyAdminRPCs
 	resManager manager.ReadOnlyResourceManager
+	tracer     trace.Tracer
 }
 
 func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceManager) EnvoyAdminClient {
+	tracer := otel.GetTracerProvider().Tracer(otelgrpc.ScopeName)
 	return &kdsEnvoyAdminClient{
 		rpcs:       rpcs,
 		resManager: resManager,
+		tracer:     tracer,
 	}
 }
 
@@ -48,8 +58,24 @@ type message interface {
 	GetError() string
 }
 
+func startTrace(ctx context.Context, tracer trace.Tracer, name string) context.Context {
+	ctx, _ = tracer.Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindClient),
+		// We fake attributes for the reverse unary gRPC service
+		trace.WithAttributes(
+			semconv.RPCSystemGRPC,
+			semconv.RPCService(reverseUnaryRPCService),
+			semconv.RPCMethod(name),
+		),
+	)
+	return ctx
+}
+
 func doRequest[T message]( // nolint:nonamedreturns
 	ctx context.Context,
+	tracer trace.Tracer,
 	resManager manager.ReadOnlyResourceManager,
 	proxy core_model.ResourceWithAddress,
 	requestType string,
@@ -57,6 +83,17 @@ func doRequest[T message]( // nolint:nonamedreturns
 	mkMsg func(id, typ, name, mesh string) grpc.ReverseUnaryMessage,
 ) (resp T, retErr error) {
 	var t T
+	ctx = startTrace(ctx, tracer, requestType)
+	span := trace.SpanFromContext(ctx)
+	defer func() {
+		if retErr != nil {
+			span.SetStatus(codes.Error, retErr.Error())
+		} else {
+			span.SetStatus(codes.Ok, "")
+		}
+		span.End()
+	}()
+
 	zone := core_model.ZoneOfResource(proxy)
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
@@ -108,7 +145,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			ResourceMesh: mesh,
 		}
 	}
-	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)
+	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +162,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 			ResourceMesh: mesh,
 		}
 	}
-	resp, err := doRequest[*mesh_proto.XDSConfigResponse](ctx, k.resManager, proxy, requestType, k.rpcs.XDSConfigDump, mkMsg)
+	resp, err := doRequest[*mesh_proto.XDSConfigResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.XDSConfigDump, mkMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +179,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 			ResourceMesh: mesh,
 		}
 	}
-	resp, err := doRequest[*mesh_proto.ClustersResponse](ctx, k.resManager, proxy, requestType, k.rpcs.Clusters, mkMsg)
+	resp, err := doRequest[*mesh_proto.ClustersResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Clusters, mkMsg)
 	if err != nil {
 		return nil, err
 	}
