@@ -25,6 +25,8 @@ func Test() {
 }
 
 func test(meshName string, meshBuilder *builders.MeshBuilder) {
+	GinkgoHelper()
+
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
@@ -87,7 +89,8 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	It("should use MeshHTTPRoute for cross-zone communication", func() {
+	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9346
+	XIt("should use MeshHTTPRoute for cross-zone communication", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
 name: route-1
@@ -127,7 +130,8 @@ spec:
 		}, "30s", "500ms").Should(Succeed())
 	})
 
-	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
+	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9346
+	XIt("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
 name: route-1
