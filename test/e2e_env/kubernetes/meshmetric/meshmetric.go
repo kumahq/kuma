@@ -173,6 +173,30 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func MeshMetricWithOpenTelemetryAndIncludeUnused(mesh, openTelemetryEndpoint string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: otel-metrics
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    sidecar:
+      regex: .*upstream.*
+      includeUnused: false
+    backends:
+      - type: OpenTelemetry
+        openTelemetry:
+          endpoint: %s
+`, Config.KumaNamespace, mesh, openTelemetryEndpoint)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetricWithOpenTelemetryAndPrometheusBackend(mesh, openTelemetryEndpoint string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -451,6 +475,24 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
+		}, "2m", "3s").Should(Succeed())
+	})
+
+	It("MeshMetric with OpenTelemetry and usedonly/filter", func() {
+		// given
+		openTelemetryCollector := otelcollector.From(kubernetes.Cluster)
+		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndIncludeUnused(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
+				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
+				client.WithVerbose(),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_client_ssl_socket_factory_upstream_context_secrets_not_ready"))) // unused
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket")) // used
 		}, "2m", "3s").Should(Succeed())
 	})
 
