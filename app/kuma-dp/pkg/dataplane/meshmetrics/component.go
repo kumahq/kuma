@@ -222,7 +222,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Address:       cf.envoyAdminAddress,
 		Port:          cf.envoyAdminPort,
 		IsIPv6:        false,
-		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddUsedOnlyParameter(sidecar)),
+		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		Mutator:       metrics.MergeClusters,
 		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})

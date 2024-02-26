@@ -59,7 +59,7 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			input:     "http://foo/bar?one=two&three=four",
 			adminPort: 80,
 			expected:  "http://127.0.0.1:80/stats?filter=abc&one=two&three=four&usedonly=",
-			queryModifier: AddUsedOnlyParameter(&v1alpha1.Sidecar{
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
 				Regex:         &regex,
 				IncludeUnused: &includeUnused,
 			}),
@@ -69,7 +69,7 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			input:         "http://foo/bar?one=two&three=four",
 			adminPort:     80,
 			expected:      "http://127.0.0.1:80/stats?filter=&one=two&three=four&usedonly=",
-			queryModifier: AddUsedOnlyParameter(nil),
+			queryModifier: AddSidecarParameters(nil),
 		}),
 	)
 })

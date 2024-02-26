@@ -72,7 +72,7 @@ func AddPrometheusFormat(queryParameters url.Values) url.Values {
 	return queryParameters
 }
 
-func AddUsedOnlyParameter(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
+func AddSidecarParameters(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
 	values := v1alpha1.EnvoyMetricsFilter(sidecar)
 
 	return func(queryParameters url.Values) url.Values {
