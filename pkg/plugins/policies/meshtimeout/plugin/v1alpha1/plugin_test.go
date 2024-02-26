@@ -555,7 +555,7 @@ func httpOutboundListener() envoy_common.NamedResource {
 func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
-		AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSeveralRoutes("other-service")))
+		AddFilterChainConfigurer(samples.MeshHttpOutboundWithSeveralRoutes("other-service")))
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {

@@ -2,7 +2,6 @@ package meshretry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -87,23 +86,18 @@ spec:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		By("Adding a MeshFaultInjection for test-server")
 		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
 
 		By("Check some errors happen")
-		var errs []error
-		for i := 0; i < 50; i++ {
-			time.Sleep(time.Millisecond * 100)
+		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-		Expect(errs).ToNot(BeEmpty())
+			g.Expect(err).To(HaveOccurred())
+		}, "10s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -145,8 +139,7 @@ spec:
     name: http-route-1
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server
+        kind: Mesh
       default:
         http:
           numRetries: 5
@@ -184,23 +177,18 @@ spec:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		By("Adding a MeshFaultInjection for test-server")
 		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
 
 		By("Check some errors happen")
-		var errs []error
-		for i := 0; i < 50; i++ {
-			time.Sleep(time.Millisecond * 100)
+		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-		Expect(errs).ToNot(BeEmpty())
+			g.Expect(err).To(HaveOccurred())
+		}, "10s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())

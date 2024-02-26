@@ -512,6 +512,24 @@ violations:
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
 			}),
+			Entry("top-level targetRef MeshHTTPRoute", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshHTTPRoute
+  name: route-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      http:
+        retryOn:
+        - 5xx`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.kind
+    message: value is not supported`,
+			}),
 		)
 	})
 })

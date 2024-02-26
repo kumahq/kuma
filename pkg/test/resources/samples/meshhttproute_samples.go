@@ -8,7 +8,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func MeshHttpOutboundRouteWithSeveralRoutes(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
+func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.HttpOutboundRouteConfigurer {
 	return &meshhttproute_xds.HttpOutboundRouteConfigurer{
 		Service: serviceName,
 		Routes: []meshhttproute_xds.OutboundRoute{

@@ -624,7 +624,7 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 }
 
 func httpListenerWithSeveralRoutes(port uint32) envoy_common.NamedResource {
-	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundRouteWithSeveralRoutes("http-service")))
+	return httpListener(port, AddFilterChainConfigurer(samples.MeshHttpOutboundWithSeveralRoutes("http-service")))
 }
 
 func httpListenerWithSimpleRoute(port uint32) envoy_common.NamedResource {
