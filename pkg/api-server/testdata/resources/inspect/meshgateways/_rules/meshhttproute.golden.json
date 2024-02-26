@@ -122,13 +122,18 @@
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": ""
+       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [
       {
        "mesh": "default",
        "name": "on-route",
+       "type": "MeshTimeout"
+      },
+      {
+       "mesh": "default",
+       "name": "on-service",
        "type": "MeshTimeout"
       }
      ]
@@ -141,6 +146,11 @@
      },
      "matchers": [
       {
+       "key": "__rule-matches-hash__",
+       "not": true,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
        "key": "kuma.io/service",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
@@ -150,6 +160,32 @@
       {
        "mesh": "default",
        "name": "on-service",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "15s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": false,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": true,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "on-route",
        "type": "MeshTimeout"
       }
      ]
