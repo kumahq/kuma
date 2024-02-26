@@ -32,7 +32,6 @@ resources:
               - name: x-kuma-tags
                 stringMatch:
                   safeRegex:
-                    googleRe2: {}
                     regex: .*&kuma.io/service=[^&]*frontend[,&].*
               responseRateLimit:
                 fixedLimit:

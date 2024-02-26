@@ -6,7 +6,7 @@ on:
       - versions.yml
       - UPGRADE.md
       - docs/generated/raw/**
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["master"]
     tags: ["*"]
   workflow_dispatch: {}
   schedule:

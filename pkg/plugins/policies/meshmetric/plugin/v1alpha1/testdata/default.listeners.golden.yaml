@@ -56,7 +56,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /?usedonly
+                  prefixRewrite: /usedonly=
           statPrefix: _kuma_metrics_prometheus_default-backend
     name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

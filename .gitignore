@@ -8,6 +8,7 @@
 
 .tool-versions
 .run-full-matrix
+.build-info
 
 # CI
 build/

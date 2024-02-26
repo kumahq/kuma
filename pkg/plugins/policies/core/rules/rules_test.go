@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -16,7 +15,6 @@ import (
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	test_samples "github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
@@ -342,13 +340,8 @@ var _ = Describe("Rules", func() {
 					policiesByInbound := map[core_rules.InboundListener][]core_model.Resource{
 						listener: policies,
 					}
-
-					gateways := []*core_mesh.MeshGatewayResource{
-						test_samples.GatewayResource(),
-					}
-
 					// when
-					return core_rules.BuildFromRules(policiesByInbound, gateways)
+					return core_rules.BuildFromRules(policiesByInbound)
 				})
 			},
 			test.EntriesForFolder("rules/from"),
