@@ -16,7 +16,8 @@ func MeshProxyPatch(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
-		It("should add a header using Lua filter", func() {
+		// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9348
+		XIt("should add a header using Lua filter", func() {
 			// given
 			meshProxyPatch := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1 
