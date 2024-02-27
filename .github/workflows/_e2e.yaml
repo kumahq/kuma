@@ -198,7 +198,7 @@ jobs:
               STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
                 --header "content-type: application/json" --header "accept: application/json" \
                 --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
-                --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+                --header "Circle-Token: ${{ secrets.CIRCLECI_TOKEN }}" $DATA )
 
               if [[ "$STATUS_CODE" == "429" ]]; then
                 STATUS_CODE=
@@ -254,7 +254,7 @@ jobs:
             STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
               --header "content-type: application/json" --header "accept: application/json" \
               --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
-              --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+              --header "Circle-Token: ${{ secrets.CIRCLECI_TOKEN }}" $DATA )
 
             if [ "$STATUS_CODE" == "429" ]; then
               # we are exceeding rate limit, try again later
@@ -317,7 +317,7 @@ jobs:
             STATUS_CODE=$(curl -o $OUTPUT_FILE -sL -w "%{http_code}" -X $METHOD $URL \
               --header "content-type: application/json" --header "accept: application/json" \
               --header "x-attribution-login: ${{ github.actor }}" --header "x-attribution-actor-id: ${{ github.actor }}" \
-              --header "Circle-Token: ${{ secrets.circleCIToken }}" $DATA )
+              --header "Circle-Token: ${{ secrets.CIRCLECI_TOKEN }}" $DATA )
 
             cat $OUTPUT_FILE
             rm $OUTPUT_FILE
