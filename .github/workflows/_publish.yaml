@@ -18,6 +18,8 @@ env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
+  FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
+  ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
 jobs:
   publish:
     runs-on: ubuntu-latest
