@@ -54,6 +54,7 @@ metadata:
   name: %s-ingress
   annotations:
     kubernetes.io/ingress.class: delegated
+    konghq.com/strip-path: 'true'
 spec:
   rules:
   - http:
@@ -85,4 +86,5 @@ spec:
 
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
+	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 }
