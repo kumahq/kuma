@@ -44,7 +44,7 @@ spec:
 			)).To(Succeed())
 		})
 
-		It("should retry on HTTP connection failure", func() {
+		It("should retry on HTTP 503", func() {
 			// Given no MeshRetry policies
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
