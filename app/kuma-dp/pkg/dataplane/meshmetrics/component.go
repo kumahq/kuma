@@ -145,37 +145,45 @@ func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []m
 }
 
 func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
-	for k, backend := range openTelemetryBackends {
+	for backendName, backend := range openTelemetryBackends {
 		// backend already running, in the future we can reconfigure it here
-		if cf.runningBackends[k] != nil {
+		if cf.runningBackends[backendName] != nil {
 			continue
 		}
-		exporter, err := startExporter(backend, cf.openTelemetryProducer, k)
+		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
 		if err != nil {
 			return err
 		}
-		cf.runningBackends[k] = exporter
+		cf.runningBackends[backendName] = exporter
 	}
 	return nil
 }
 
 func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
 	var backendsToRemove []string
-	for k, backend := range cf.runningBackends {
+	for backendName, _ := range cf.runningBackends {
 		// backend still configured in policy
-		if openTelemetryBackends[k] != nil {
+		if openTelemetryBackends[backendName] != nil {
 			continue
 		}
-		logger.Info("Shutting down OpenTelemetry exporter", "backend", k)
-		err := backend.exporter.Shutdown(context.Background())
+		backendsToRemove = append(backendsToRemove, backendName)
+	}
+	for _, backendName := range backendsToRemove {
+		logger.Info("Shutting down OpenTelemetry exporter", "backend", backendName)
+		err := cf.shutdownBackend(backendName)
 		if err != nil {
 			return err
 		}
-		backendsToRemove = append(backendsToRemove, k)
 	}
-	for _, b := range backendsToRemove {
-		delete(cf.runningBackends, b)
+	return nil
+}
+
+func (cf *ConfigFetcher) shutdownBackend(backendName string) error {
+	err := cf.runningBackends[backendName].exporter.Shutdown(context.Background())
+	if err != nil {
+		return err
 	}
+	delete(cf.runningBackends, backendName)
 	return nil
 }
 
