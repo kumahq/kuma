@@ -13,6 +13,8 @@ on:
     outputs:
       IMAGE_MANIFESTS:
         value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
+      BINARY_ARTIFACT_DIGEST_BASE64:
+        value: ${{ jobs.build.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
 permissions:
   contents: read
 env:
@@ -23,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
+      BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -60,6 +63,18 @@ jobs:
           make build
       - run: |
           make -j build/distributions
+      - id: inspect-binary-output
+        run: |
+          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text) > $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        id: binary-artifacts
+        with:
+          name: ${{ inputs.BINARY_ARTIFACT_NAME }}
+          path: |
+            ./build/distributions/out/*.tar.gz
+            ./build/distributions/out/*.sha256
+            !./build/distributions/out/*.tar.gz.sha256
       - run: |
           make -j images
       - run: |
@@ -68,16 +83,6 @@ jobs:
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
           make test/container-structure
-      - name: Inspect created tars
-        run: |
-          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        id: binary-artifacts
-        with:
-          name: ${{ inputs.BINARY_ARTIFACT_NAME }}
-          path: |
-            ./build/distributions/out/*.tar.gz
-            ./build/distributions/out/artifact_digest_file.text
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         id: image-artifacts
         with:
