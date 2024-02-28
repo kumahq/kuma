@@ -13,6 +13,8 @@ on:
       BINARY_ARTIFACT_NAME:
         required: true
         type: string
+permissions:
+  contents: read
 env:
   GH_OWNER: ${{ github.repository_owner }}
   GH_USER: "github-actions[bot]"

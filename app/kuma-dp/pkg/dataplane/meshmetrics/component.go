@@ -127,7 +127,7 @@ func (cf *ConfigFetcher) configurePrometheus(applicationsToScrape []metrics.Appl
 	if len(prometheusBackends) == 0 {
 		return
 	}
-	cf.hijacker.SetApplicationsToScrape(applicationsToScrape)
+	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
 }
 
 func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends []xds.Backend) error {

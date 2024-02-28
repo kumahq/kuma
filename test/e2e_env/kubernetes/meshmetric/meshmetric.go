@@ -125,7 +125,7 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
-func MeshMetricWithApplicationForMesh(policyName, mesh, path string) InstallFunc {
+func MeshMetricWithApplicationForMesh(policyName, mesh, appName, path string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
@@ -139,7 +139,8 @@ spec:
     kind: Mesh
   default:
     applications:
-      - path: "%s"
+      - name: "%s"
+        path: "%s"
         port: 80
     backends:
       - type: Prometheus
@@ -148,7 +149,7 @@ spec:
           path: /metrics
           tls:
             mode: Disabled
-`, policyName, Config.KumaNamespace, mesh, path)
+`, policyName, Config.KumaNamespace, mesh, appName, path)
 	return YamlK8s(meshMetric)
 }
 
@@ -332,7 +333,7 @@ func MeshMetric() {
 
 	It("MeshMetric policy with dynamic configuration and application aggregation correctly exposes aggregated metrics", func() {
 		// given
-		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/path-stats"))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "origin-app", "/metrics"))).To(Succeed())
 		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -347,11 +348,11 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-			g.Expect(stdout).To(ContainSubstring("path-stats"))
+			g.Expect(stdout).To(ContainSubstring("origin-app"))
 		}, "1m", "1s").Should(Succeed())
 
 		// update policy config and check if changes was applied on DPP
-		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "/app-stats"))).To(Succeed())
+		Expect(kubernetes.Cluster.Install(MeshMetricWithApplicationForMesh("dynamic-config", mainMesh, "updated-app", "/metrics"))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
@@ -364,8 +365,8 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
-			g.Expect(stdout).To(ContainSubstring("app-stats"))
+			g.Expect(stdout).ToNot(ContainSubstring("origin-app"))
+			g.Expect(stdout).To(ContainSubstring("updated-app"))
 		}, "1m", "1s").Should(Succeed())
 	})
 

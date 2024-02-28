@@ -344,18 +344,18 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		),
 	)
 
-	metricsServer := metrics.New(
-		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
-		baseApplicationsToScrape,
-		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
-	)
-
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
 		cfg.Dataplane.Mesh,
 		cfg.Dataplane.Name,
 		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
 		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+	)
+	metricsServer := metrics.New(
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		baseApplicationsToScrape,
+		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+		openTelemetryProducer,
 	)
 
 	meshMetricsConfigFetcher := component.NewResilientComponent(

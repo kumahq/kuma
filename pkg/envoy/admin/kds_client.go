@@ -7,6 +7,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"go.opentelemetry.io/otel/trace"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -20,19 +25,25 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/service"
+	"github.com/kumahq/kuma/pkg/util/grpc"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
+const reverseUnaryRPCService = "kuma.mesh.v1alpha1.KDSZoneEnvoyAdminService"
+
 type kdsEnvoyAdminClient struct {
 	rpcs       service.EnvoyAdminRPCs
 	resManager manager.ReadOnlyResourceManager
+	tracer     trace.Tracer
 }
 
 func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceManager) EnvoyAdminClient {
+	tracer := otel.GetTracerProvider().Tracer(otelgrpc.ScopeName)
 	return &kdsEnvoyAdminClient{
 		rpcs:       rpcs,
 		resManager: resManager,
+		tracer:     tracer,
 	}
 }
 
@@ -42,124 +53,135 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 	panic("not implemented")
 }
 
-func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+type message interface {
+	grpc.ReverseUnaryMessage
+	GetError() string
+}
+
+func startTrace(ctx context.Context, tracer trace.Tracer, name string) (context.Context, trace.Span) {
+	ctx, span := tracer.Start(
+		ctx,
+		name,
+		trace.WithSpanKind(trace.SpanKindClient),
+		// We make up attributes for the reverse unary gRPC service
+		trace.WithAttributes(
+			semconv.RPCService(reverseUnaryRPCService),
+			semconv.RPCMethod(name),
+		),
+	)
+	return ctx, span
+}
+
+func doRequest[T message]( // nolint:nonamedreturns
+	ctx context.Context,
+	tracer trace.Tracer,
+	resManager manager.ReadOnlyResourceManager,
+	proxy core_model.ResourceWithAddress,
+	requestType string,
+	rpcs grpc.ReverseUnaryRPCs,
+	mkMsg func(id, typ, name, mesh string) grpc.ReverseUnaryMessage,
+) (resp T, retErr error) {
+	var t T
+	ctx, span := startTrace(ctx, tracer, requestType)
+	defer func() {
+		if retErr != nil {
+			span.SetStatus(codes.Error, retErr.Error())
+		} else {
+			span.SetStatus(codes.Ok, "")
+		}
+		span.End()
+	}()
+
 	zone := core_model.ZoneOfResource(proxy)
-	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
-	if err != nil {
-		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
-	}
-	reqId := core.NewUUID()
 	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
 
-	err = k.rpcs.XDSConfigDump.Send(tenantZoneID.String(), &mesh_proto.XDSConfigRequest{
-		RequestId:    reqId,
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: nameInZone,                // send the name which without the added prefix
-		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
-	})
+	reqId := core.NewUUID()
+	nameInZone, err := resNameInZone(ctx, resManager, proxy)
 	if err != nil {
-		return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: err.Error()}
+		return t, &KDSTransportError{requestType: requestType, reason: err.Error()}
+	}
+	msg := mkMsg(
+		reqId,
+		string(proxy.Descriptor().Name),
+		nameInZone,                // send the name which without the added prefix
+		proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
+	)
+
+	if err = rpcs.Send(tenantZoneID.String(), msg); err != nil {
+		return t, &KDSTransportError{requestType: requestType, reason: err.Error()}
 	}
 
-	defer k.rpcs.XDSConfigDump.DeleteWatch(tenantZoneID.String(), reqId)
+	defer rpcs.DeleteWatch(tenantZoneID.String(), reqId)
 	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.XDSConfigDump.WatchResponse(tenantZoneID.String(), reqId, ch); err != nil {
-		return nil, errors.Wrapf(err, "could not watch the response")
+	if err := rpcs.WatchResponse(tenantZoneID.String(), reqId, ch); err != nil {
+		return t, errors.Wrapf(err, "could not watch the response")
 	}
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return t, ctx.Err()
 	case resp := <-ch:
-		configResp, ok := resp.(*mesh_proto.XDSConfigResponse)
+		var t T
+		tResp, ok := resp.(T)
 		if !ok {
-			return nil, errors.New("invalid request type")
+			return t, errors.New("invalid request type")
 		}
-		if configResp.GetError() != "" {
-			return nil, &KDSTransportError{requestType: "XDSConfigRequest", reason: configResp.GetError()}
+		if tResp.GetError() != "" {
+			return t, &KDSTransportError{requestType: requestType, reason: tResp.GetError()}
 		}
-		return configResp.GetConfig(), nil
+		return tResp, nil
 	}
 }
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone := core_model.ZoneOfResource(proxy)
-	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
-	if err != nil {
-		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
-	}
-	reqId := core.NewUUID()
-	tenantZoneId := service.TenantZoneClientIDFromCtx(ctx, zone)
-
-	err = k.rpcs.Stats.Send(tenantZoneId.String(), &mesh_proto.StatsRequest{
-		RequestId:    reqId,
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: nameInZone,                // send the name which without the added prefix
-		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
-	})
-	if err != nil {
-		return nil, &KDSTransportError{requestType: "StatsRequest", reason: err.Error()}
-	}
-
-	defer k.rpcs.Stats.DeleteWatch(tenantZoneId.String(), reqId)
-	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Stats.WatchResponse(tenantZoneId.String(), reqId, ch); err != nil {
-		return nil, errors.Wrapf(err, "could not watch the response")
-	}
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp := <-ch:
-		statsResp, ok := resp.(*mesh_proto.StatsResponse)
-		if !ok {
-			return nil, errors.New("invalid request type")
+	requestType := "StatsRequest"
+	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+		return &mesh_proto.StatsRequest{
+			RequestId:    reqId,
+			ResourceType: typ,
+			ResourceName: name,
+			ResourceMesh: mesh,
 		}
-		if statsResp.GetError() != "" {
-			return nil, &KDSTransportError{requestType: "StatsRequest", reason: statsResp.GetError()}
-		}
-		return statsResp.GetStats(), nil
 	}
+	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetStats(), nil
+}
+
+func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+	requestType := "XDSConfigRequest"
+	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+		return &mesh_proto.XDSConfigRequest{
+			RequestId:    reqId,
+			ResourceType: typ,
+			ResourceName: name,
+			ResourceMesh: mesh,
+		}
+	}
+	resp, err := doRequest[*mesh_proto.XDSConfigResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.XDSConfigDump, mkMsg)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetConfig(), nil
 }
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone := core_model.ZoneOfResource(proxy)
-	nameInZone, err := resNameInZone(ctx, k.resManager, proxy)
-	if err != nil {
-		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
-	}
-	reqId := core.NewUUID()
-	tenantZoneID := service.TenantZoneClientIDFromCtx(ctx, zone)
-
-	err = k.rpcs.Clusters.Send(tenantZoneID.String(), &mesh_proto.ClustersRequest{
-		RequestId:    reqId,
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: nameInZone,                // send the name which without the added prefix
-		ResourceMesh: proxy.GetMeta().GetMesh(), // should be empty for ZoneIngress/ZoneEgress
-	})
-	if err != nil {
-		return nil, &KDSTransportError{requestType: "ClustersRequest", reason: err.Error()}
-	}
-
-	defer k.rpcs.Clusters.DeleteWatch(tenantZoneID.String(), reqId)
-	ch := make(chan util_grpc.ReverseUnaryMessage)
-	if err := k.rpcs.Clusters.WatchResponse(tenantZoneID.String(), reqId, ch); err != nil {
-		return nil, errors.Wrapf(err, "could not watch the response")
-	}
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp := <-ch:
-		clustersResp, ok := resp.(*mesh_proto.ClustersResponse)
-		if !ok {
-			return nil, errors.New("invalid request type")
+	requestType := "ClustersRequest"
+	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+		return &mesh_proto.ClustersRequest{
+			RequestId:    reqId,
+			ResourceType: typ,
+			ResourceName: name,
+			ResourceMesh: mesh,
 		}
-		if clustersResp.GetError() != "" {
-			return nil, &KDSTransportError{requestType: "ClustersRequest", reason: clustersResp.GetError()}
-		}
-		return clustersResp.GetClusters(), nil
 	}
+	resp, err := doRequest[*mesh_proto.ClustersResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Clusters, mkMsg)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetClusters(), nil
 }
 
 func resNameInZone(
