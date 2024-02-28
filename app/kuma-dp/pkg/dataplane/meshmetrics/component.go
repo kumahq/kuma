@@ -162,7 +162,7 @@ func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*x
 
 func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
 	var backendsToRemove []string
-	for backendName, _ := range cf.runningBackends {
+	for backendName := range cf.runningBackends {
 		// backend still configured in policy
 		if openTelemetryBackends[backendName] != nil {
 			continue
