@@ -221,7 +221,7 @@ Only golden 4 (by regex / or exact):
 
 - Just an empty profile and people manually can add things to this.
 
-##### ADS / XDS / Management server
+##### Internal cluster stats
 
 All stats from: https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/mgmt_server#subscription-statistics
 divided into CDS/LDS/RDS/SDS/VHDS by `listener_manager.[cds, lds, rds, sds, vhds]`.
@@ -320,9 +320,8 @@ we can add a filter mutator to reduce the number of metrics (same thing for [OTE
 
 ##### In Envoy
 
-We can implement this directly in Envoy using [stats_matcher](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#envoy-v3-api-msg-config-metrics-v3-statssink).
-This will probably be faster, more memory efficient, and we can always switch to the other implementation if at some point in time we would need more flexibility (at the expense of performance).
-
+We could implement this directly in Envoy using [stats_matcher](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#envoy-v3-api-msg-config-metrics-v3-statssink).
+This would probably be faster, more memory efficient, but it's in boostrap config, so we couldn't change it without restarting Envoy.
 
 #### Validation
 
@@ -339,7 +338,7 @@ We could adjust our dashboards to reflect which graphs are going to be populated
 ## Decision Outcome
 
 Chosen option: "Base profiles on expert knowledge, external dashboards and our grafana dashboards" with:
-- implementation in Envoy by using stats_matcher
+- implementation in kuma-dp because it's dynamically configurable
 - profiles being additive
 - manual escape hatches using include/exclude
 - start with 2 profiles all, golden (+dashboards) and extend if needed
