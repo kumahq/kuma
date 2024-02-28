@@ -118,6 +118,5 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, config.CpNamespace, config.Mesh)),
 		)
-
 	}
 }
