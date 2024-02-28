@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -17,6 +18,7 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
@@ -411,8 +413,9 @@ var _ = Describe("MeshTimeout", func() {
 	)
 
 	type gatewayTestCase struct {
-		rules  core_rules.GatewayRules
-		routes []*core_mesh.MeshGatewayRouteResource
+		rules          core_rules.GatewayRules
+		meshhttproutes core_rules.GatewayRules
+		routes         []*core_mesh.MeshGatewayRouteResource
 	}
 	DescribeTable("should generate proper Envoy config", func(given gatewayTestCase) {
 		resources := xds_context.NewResources()
@@ -438,13 +441,18 @@ var _ = Describe("MeshTimeout", func() {
 						AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()),
 				),
 			).
-			WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshTimeoutType, given.rules)).
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithGatewayPolicy(api.MeshTimeoutType, given.rules).
+				WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes)).
 			Build()
 
 		Expect(gateway_plugin.NewPlugin().(core_plugins.ProxyPlugin).Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed())
 		gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 		generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 		Expect(err).NotTo(HaveOccurred())
+
+		httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 		// when
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
@@ -534,6 +542,73 @@ var _ = Describe("MeshTimeout", func() {
 							Conf: api.Conf{
 								Http: &api.Http{
 									RequestTimeout: test.ParseDuration("24s"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}), Entry("route-level-timeouts", gatewayTestCase{
+		meshhttproutes: core_rules.GatewayRules{
+			ToRules: core_rules.GatewayToRules{
+				ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+						{
+							Subset: core_rules.MeshSubset(),
+							Conf: meshhttproute_api.PolicyDefault{
+								Rules: []meshhttproute_api.Rule{
+									{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									},
+									{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/another-route",
+											},
+											Method: pointer.To[meshhttproute_api.Method]("GET"),
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		rules: core_rules.GatewayRules{
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{
+								{
+									Key:   core_rules.RuleMatchesHashTag,
+									Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
+								},
+							},
+							Conf: api.Conf{
+								Http: &api.Http{
+									RequestTimeout:    test.ParseDuration("24s"),
+									StreamIdleTimeout: test.ParseDuration("99s"),
 								},
 							},
 						},
