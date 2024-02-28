@@ -342,6 +342,7 @@ Chosen option: "Base profiles on expert knowledge, external dashboards and our g
 - profiles being additive
 - manual escape hatches using include/exclude
 - start with 2 profiles all, golden (+dashboards) and extend if needed
+- start with profiles embedded in MeshMetric, we can move them out in the future
 
 It provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
 
@@ -350,11 +351,11 @@ It provides a good mix of inputs (our recommended metrics, others recommended me
 * should cover all typical scenarios
 * non-typical scenarios can be handled by include/exclude
 * allows us to build some automation to make it more resilient to changes
-* should be faster when done in Envoy as supposed to in kuma-dp
+* more flexible than implementing in Envoy
 
 ### Negative Consequences
 
-* implementation in Envoy might be less flexible
+* more processing power needed to filter metrics in kuma-dp
 
 ## Links
 
