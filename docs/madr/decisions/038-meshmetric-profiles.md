@@ -365,3 +365,4 @@ It provides a good mix of inputs (our recommended metrics, others recommended me
 * https://docs.datadoghq.com/integrations/envoy
 * https://docs.datadoghq.com/integrations/istio
 * https://gist.github.com/slonka/f8fd490b8918cf027bbeba1df8ae2419
+* https://docs.google.com/document/d/1CnyeIi5hMBqXZRKm-0_yW3yy69HM80BHg-EGwkJb-qw/edit
