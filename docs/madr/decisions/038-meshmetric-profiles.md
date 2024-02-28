@@ -156,7 +156,7 @@ Nothing is removed, everything included in Envoy, people can manually remove stu
 
 - Our dashboards
 
-##### Minimal
+##### Golden
 
 Only golden 4 (by regex / or exact):
 - Latency
@@ -300,7 +300,7 @@ I suggest changing the current schema of
 ```yaml
 sidecar:
   usedOnly: true # true or false
-  profile: minimal # one of minimal, default, full
+  profile: golden # one of golden, default, full
   regex: http2_act.* # only profile or regex can be defined
 ```
 
@@ -310,7 +310,7 @@ to
 sidecar:
   usedOnly: true # true or false
   profile:
-    name: default # one of `nothing`, `minimal`, `default`, `comprehensive`, `all`
+    name: default # one of `nothing`, `golden`, `default`, `comprehensive`, `all`
     exclude: regex2.* # first exclude
     include: regex1.* # then include (include takes over)
 ```
@@ -322,7 +322,7 @@ we can add a filter mutator to reduce the number of metrics (same thing for [OTE
 
 #### Validation
 
-After all profiles are compiled from regexes make sure that they include the ones on the lower levels (all includes default, default includes minimal etc.)
+After all profiles are compiled from regexes make sure that they include the ones on the lower levels (all includes default, default includes golden etc.)
 Make sure that with `default` profile (or the profile chosen for dashboards) all dashboards are populated.
 
 Can we somehow track if users are happy with the defined profiles?
