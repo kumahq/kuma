@@ -81,7 +81,7 @@ A static profile means you get X metrics with profile Y and you can't combine th
 Additive profiles allow you to mix and match which metrics you need depending on current circumstances (e.g. debugging HDS issue)
 and specifics of the underlying application (e.g. `tcp` app does not need `http` metrics).
 
-#### User defined profiles
+##### User defined profiles
 
 We could allow people to define their custom profiles and reference them in `MeshMetric`.
 
@@ -138,7 +138,7 @@ The first ones are granularity based the last ones are feature focused (see [add
 
 Nothing is removed, everything included in Envoy, people can manually remove stuff.
 
-##### Extensive
+##### Comprehensive
 
 - All available dashboards + [Charly's demo regexes](https://github.com/lahabana/demo-scene/blob/a48ec6e0079601d340f79613549e1b2a4ea715a1/mesh-localityaware/k8s/otel-collectors.yaml#L174)
   - `envoy_cluster_upstream_cx_.*`
@@ -147,10 +147,6 @@ Nothing is removed, everything included in Envoy, people can manually remove stu
   - `envoy_http_downstream_.*`
   - `envoy_listener_downstream_.*`
   - `envoy_listener_http_.*`
-
-##### Comprehensive
-
-- All available dashboards
 
 ##### Default
 
@@ -317,8 +313,16 @@ sidecar:
 
 #### Implementation
 
+##### In kuma-dp
+
 Just like we [mutate responses for metrics hijacker](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/server.go#L348)
 we can add a filter mutator to reduce the number of metrics (same thing for [OTEL](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/metrics_producer.go#L106)).
+
+##### In Envoy
+
+We can implement this directly in Envoy using [stats_matcher](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#envoy-v3-api-msg-config-metrics-v3-statssink).
+This will probably be faster, more memory efficient, and we can always switch to the other implementation if at some point in time we would need more flexibility (at the expense of performance).
+
 
 #### Validation
 
@@ -326,6 +330,7 @@ After all profiles are compiled from regexes make sure that they include the one
 Make sure that with `default` profile (or the profile chosen for dashboards) all dashboards are populated.
 
 Can we somehow track if users are happy with the defined profiles?
+It does not seem like it's feasible, but we will leave our options open to be able to quickly react to feedback.
 
 #### Additional work
 
@@ -333,17 +338,24 @@ We could adjust our dashboards to reflect which graphs are going to be populated
 
 ## Decision Outcome
 
-Chosen option: "Base profiles on expert knowledge, external dashboards and our grafana dashboards", because it provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
+Chosen option: "Base profiles on expert knowledge, external dashboards and our grafana dashboards" with:
+- implementation in Envoy by using stats_matcher
+- profiles being additive
+- manual escape hatches using include/exclude
+- start with 2 profiles all, golden (+dashboards) and extend if needed
+
+It provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
 
 ### Positive Consequences
 
 * should cover all typical scenarios
 * non-typical scenarios can be handled by include/exclude
 * allows us to build some automation to make it more resilient to changes
+* should be faster when done in Envoy as supposed to in kuma-dp
 
 ### Negative Consequences
 
-* some processing power needed to filter metrics
+* implementation in Envoy might be less flexible
 
 ## Links
 
