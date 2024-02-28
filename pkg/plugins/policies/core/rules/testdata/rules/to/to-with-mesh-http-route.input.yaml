@@ -1,0 +1,34 @@
+# MeshTimeout targeting MeshHTTPRoute and MeshHTTPRoute shouldn't have empty kuma.io/service
+type: MeshTimeout
+name: override
+mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 15s
+---
+type: MeshHTTPRoute
+mesh: default
+name: http-route-1
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: sample-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-service

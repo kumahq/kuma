@@ -266,7 +266,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           headers:
                           - name: x-kuma-tags
                             safeRegexMatch:
-                              googleRe2: {}
                               regex: .*&service=[^&]*web1[,&].*&version=[^&]*1\.0[,&].*
                           prefix: /
                         route:
