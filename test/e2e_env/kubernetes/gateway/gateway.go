@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -574,6 +575,121 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(HavePrefix("test-tcp-server"))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshRateLimit per route", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/timeout"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		httpRoute2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/no-timeout"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		mt := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mesh-timeout-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+          streamIdleTimeout: 10s`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute, httpRoute2)).
+				Install(YamlK8s(mt)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(mt)).
+				Install(DeleteYamlK8s(httpRoute, httpRoute2)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should timeout only on one route", func() {
+			// timeout on specific route
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/timeout",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("host", "example.kuma.io"),
+					client.WithHeader("x-set-response-delay-ms", "3000"),
+					client.WithMaxTime(10),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(504))
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+			// no timeout on another route
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/no-timeout",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("host", "example.kuma.io"),
+					client.WithHeader("x-set-response-delay-ms", "3000"),
+					client.WithMaxTime(10), // we don't want 'curl' to return early
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(time.Since(start)).To(BeNumerically(">", 3*time.Second))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
