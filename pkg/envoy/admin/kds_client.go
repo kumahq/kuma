@@ -58,19 +58,18 @@ type message interface {
 	GetError() string
 }
 
-func startTrace(ctx context.Context, tracer trace.Tracer, name string) context.Context {
-	ctx, _ = tracer.Start(
+func startTrace(ctx context.Context, tracer trace.Tracer, name string) (context.Context, trace.Span) {
+	ctx, span := tracer.Start(
 		ctx,
 		name,
 		trace.WithSpanKind(trace.SpanKindClient),
-		// We fake attributes for the reverse unary gRPC service
+		// We make up attributes for the reverse unary gRPC service
 		trace.WithAttributes(
-			semconv.RPCSystemGRPC,
 			semconv.RPCService(reverseUnaryRPCService),
 			semconv.RPCMethod(name),
 		),
 	)
-	return ctx
+	return ctx, span
 }
 
 func doRequest[T message]( // nolint:nonamedreturns
@@ -83,8 +82,7 @@ func doRequest[T message]( // nolint:nonamedreturns
 	mkMsg func(id, typ, name, mesh string) grpc.ReverseUnaryMessage,
 ) (resp T, retErr error) {
 	var t T
-	ctx = startTrace(ctx, tracer, requestType)
-	span := trace.SpanFromContext(ctx)
+	ctx, span := startTrace(ctx, tracer, requestType)
 	defer func() {
 		if retErr != nil {
 			span.SetStatus(codes.Error, retErr.Error())
