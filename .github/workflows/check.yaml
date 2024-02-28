@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
+      - run: npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
       - name: "Check PR title"
         # Inject as env variable to escape properly
         env:
