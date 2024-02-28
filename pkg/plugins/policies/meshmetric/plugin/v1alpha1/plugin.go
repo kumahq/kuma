@@ -285,5 +285,5 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 }
 
 func backendNameFrom(endpoint string) string {
-	return strings.Split(endpoint, ":")[0]
+	return strings.ReplaceAll(endpoint, ":", "")
 }
