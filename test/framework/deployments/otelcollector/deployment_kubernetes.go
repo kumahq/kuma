@@ -14,6 +14,7 @@ import (
 )
 
 type K8SDeployment struct {
+	name               string
 	namespace          string
 	image              string
 	waitingToBeReady   bool
@@ -24,7 +25,7 @@ type K8SDeployment struct {
 var _ Deployment = &K8SDeployment{}
 
 func (k *K8SDeployment) Name() string {
-	return DeploymentName
+	return k.name
 }
 
 func (k *K8SDeployment) Deploy(cluster framework.Cluster) error {
@@ -57,6 +58,11 @@ func (k *K8SDeployment) ExporterEndpoint() string {
 
 func newK8sDeployment() *K8SDeployment {
 	return &K8SDeployment{}
+}
+
+func (k *K8SDeployment) WithName(name string) *K8SDeployment {
+	k.name = name
+	return k
 }
 
 func (k *K8SDeployment) WithNamespace(namespace string) *K8SDeployment {
