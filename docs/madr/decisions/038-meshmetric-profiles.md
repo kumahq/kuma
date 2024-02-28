@@ -350,3 +350,4 @@ Chosen option: "Base profiles on expert knowledge, external dashboards and our g
 * https://github.com/lahabana/demo-scene/blob/a48ec6e0079601d340f79613549e1b2a4ea715a1/mesh-localityaware/k8s/otel-collectors.yaml#L174
 * https://docs.datadoghq.com/integrations/envoy
 * https://docs.datadoghq.com/integrations/istio
+* https://gist.github.com/slonka/f8fd490b8918cf027bbeba1df8ae2419
