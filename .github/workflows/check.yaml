@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v3
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
+      - run: npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
       - name: "Check PR title"
         # Inject as env variable to escape properly
         env:
