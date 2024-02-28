@@ -89,8 +89,3 @@ jobs:
           MANIFESTS=$(make manifests/json/release)
           echo "Image manifests: ${MANIFESTS}"
           echo "manifests=${MANIFESTS}" >> $GITHUB_OUTPUT
-      - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
-        with:
-          dir: .
-          config: .syft.yaml
