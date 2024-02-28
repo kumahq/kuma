@@ -128,6 +128,8 @@ sidecar:
 
 The question here is: do we want our builtin profiles to be defined like that (this possibly means a user can edit them a bit like default policies)
 or should they be hidden from the user (and only referencable)?
+Since we're starting without this it can be skipped for now but in the future this needs reconsideration.
+We probably don't want to have a another "default policies" situation because that causes problems.
 
 #### Profiles suggested:
 
