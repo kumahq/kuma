@@ -80,6 +80,7 @@ Profiles can be either static or additive.
 A static profile means you get X metrics with profile Y and you can't combine that with other profiles.
 Additive profiles allow you to mix and match which metrics you need depending on current circumstances (e.g. debugging HDS issue)
 and specifics of the underlying application (e.g. `tcp` app does not need `http` metrics).
+On top of that you can manually include / exclude metrics from there.
 
 ##### User defined profiles
 
@@ -152,11 +153,8 @@ Nothing is removed, everything included in Envoy, people can manually remove stu
 
 ##### Default
 
-- Our dashboards
+- Our dashboards stats plus [golden 4 signals](https://sre.google/sre-book/monitoring-distributed-systems/) (by regex / or exact):
 
-##### Golden
-
-Only golden 4 (by regex / or exact):
 - Latency
   - `.*_rq_time_.*` which is:
     - envoy_cluster_internal_upstream_rq_time_bucket
@@ -307,8 +305,10 @@ to
 ```yaml
 sidecar:
   usedOnly: true # true or false
-  profile:
-    name: default # one of `nothing`, `golden`, `default`, `comprehensive`, `all`
+  profiles:
+    appendProfiles:
+      - name: default
+      - name: internal_cluster_stats # not available now, in the future
     exclude: regex2.* # first exclude
     include: regex1.* # then include (include takes over)
 ```
@@ -343,7 +343,7 @@ Chosen option: "Base profiles on expert knowledge, external dashboards and our g
 - implementation in kuma-dp because it's dynamically configurable
 - profiles being additive
 - manual escape hatches using include/exclude
-- start with 2 profiles all, golden (+dashboards) and extend if needed
+- start with 3 profiles all, default (golden+dashboards), none and extend if needed
 - start with profiles embedded in MeshMetric, we can move them out in the future
 
 It provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
@@ -366,3 +366,4 @@ It provides a good mix of inputs (our recommended metrics, others recommended me
 * https://docs.datadoghq.com/integrations/istio
 * https://gist.github.com/slonka/f8fd490b8918cf027bbeba1df8ae2419
 * https://docs.google.com/document/d/1CnyeIi5hMBqXZRKm-0_yW3yy69HM80BHg-EGwkJb-qw/edit
+* https://sre.google/sre-book/monitoring-distributed-systems/
