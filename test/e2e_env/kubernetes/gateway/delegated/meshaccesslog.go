@@ -90,8 +90,8 @@ spec:
 
 			Expect(framework.YamlK8s(meshAccessLog)(kubernetes.Cluster)).To(Succeed())
 
-			// when
 			Eventually(func(g Gomega) {
+				// when
 				_, err := client.CollectEchoResponse(
 					kubernetes.Cluster,
 					"demo-client",
@@ -99,10 +99,8 @@ spec:
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s").Should(Succeed())
 
-			// then
-			Eventually(func(g Gomega) {
+				// then
 				demoClientPod, err := framework.PodOfApp(
 					kubernetes.Cluster,
 					"demo-client",
