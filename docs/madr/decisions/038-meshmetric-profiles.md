@@ -309,9 +309,9 @@ sidecar:
     appendProfiles:
       - name: default
       - name: internal_cluster_stats # not available now, in the future
-    exclude:
+    excludeRegex:
       - regex2.* # first exclude
-    include:
+    includeRegex:
       - regex1.* # then include (include takes over)
 ```
 
