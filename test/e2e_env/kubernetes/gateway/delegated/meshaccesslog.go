@@ -20,6 +20,34 @@ func MeshAccessLog(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
+		type log struct {
+			Source      string
+			Destination string
+			Start       string
+		}
+
+		parseTimestamp := func(value string) (time.Time, error) {
+			timestamp, err := strconv.Atoi(value)
+			if err != nil {
+				return time.Time{}, err
+			}
+			return time.Unix(int64(timestamp), 0), nil
+		}
+
+		parseLogs := func(stdout string) []log {
+			var logs []log
+
+			for _, line := range strings.Split(stdout, "\n") {
+				var l log
+				if err := json.Unmarshal([]byte(strings.TrimSpace(line)), &l); err != nil {
+					continue
+				}
+				logs = append(logs, l)
+			}
+
+			return logs
+		}
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
@@ -86,7 +114,7 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(parseLogs(logs)).To(ContainElement(
 					And(
-						HaveField("Start", BeTemporally("~", time.Now(), time.Hour)),
+						HaveField("Start", WithTransform(parseTimestamp, BeTemporally("~", time.Now(), time.Hour))),
 						HaveField("Source", fmt.Sprintf("delegated-gateway-admin_%s_svc_8444", config.Namespace)),
 						HaveField("Destination", fmt.Sprintf("test-server_%s_svc_80", config.Namespace)),
 					),
@@ -94,48 +122,4 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		})
 	}
-}
-
-type log struct {
-	Source      string
-	Destination string
-	Start       time.Time
-}
-
-func (u *log) UnmarshalJSON(b []byte) error {
-	var raw map[string]string
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return err
-	}
-
-	if raw["Source"] == "" || raw["Destination"] == "" || raw["Start"] == "" {
-		return fmt.Errorf("missing expected fields")
-	}
-
-	timestamp, err := strconv.Atoi(raw["Start"])
-	if err != nil {
-		return err
-	}
-
-	u.Source = raw["Source"]
-	u.Destination = raw["Destination"]
-	u.Start = time.Unix(int64(timestamp), 0)
-
-	return nil
-}
-
-func parseLogs(stdout string) []log {
-	GinkgoHelper()
-
-	var logs []log
-
-	for _, line := range strings.Split(stdout, "\n") {
-		var l log
-		if err := json.Unmarshal([]byte(strings.TrimSpace(line)), &l); err != nil {
-			continue
-		}
-		logs = append(logs, l)
-	}
-
-	return logs
 }
