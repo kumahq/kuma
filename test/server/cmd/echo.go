@@ -11,7 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/kumahq/kuma/test/server/types"
 )
@@ -33,6 +36,13 @@ func newEchoHTTPCmd() *cobra.Command {
 		Short: "Run Test Server with generic echo response",
 		Long:  `Run Test Server with generic echo response.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			promExporter, err := prometheus.New(prometheus.WithoutCounterSuffixes())
+			if err != nil {
+				return err
+			}
+			sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
+			promHandler := promhttp.Handler()
+
 			http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 				headers := request.Header
 				handleDelay(headers)
@@ -64,6 +74,9 @@ func newEchoHTTPCmd() *cobra.Command {
 				if _, err := writer.Write(respBody); err != nil {
 					panic(err)
 				}
+			})
+			http.HandleFunc("/metrics", func(writer http.ResponseWriter, request *http.Request) {
+				promHandler.ServeHTTP(writer, request)
 			})
 			if args.probes {
 				http.HandleFunc("/probes", func(writer http.ResponseWriter, request *http.Request) {

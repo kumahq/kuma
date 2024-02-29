@@ -87,5 +87,6 @@ spec:
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
+	Context("MeshRetry", delegated.MeshRetry(&config))
 	Context("MeshTimeout", delegated.MeshTimeout(&config))
 }

@@ -3,7 +3,6 @@ package injector
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -88,7 +87,7 @@ func (i *KumaInjector) needToInject(pod *kube_core.Pod, ns *kube_core.Namespace)
 		return false, nil
 	}
 
-	for _, container := range slices.Concat(pod.Spec.Containers, pod.Spec.InitContainers) {
+	for _, container := range append(append([]kube_core.Container{}, pod.Spec.Containers...), pod.Spec.InitContainers...) {
 		if container.Name == k8s_util.KumaSidecarContainerName {
 			log.V(1).Info("pod already has Kuma sidecar")
 			return false, nil

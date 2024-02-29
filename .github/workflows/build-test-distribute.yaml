@@ -46,6 +46,11 @@ jobs:
           make clean
       - run: |
           make check
+      - id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
+        with:
+          dir: .
+          config: .syft.yaml
   test:
     needs: ["check"]
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}

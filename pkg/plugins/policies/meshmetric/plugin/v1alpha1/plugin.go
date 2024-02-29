@@ -30,12 +30,13 @@ var (
 )
 
 const (
-	OriginOpenTelemetry       = "open-telemetry"
-	OriginDynamicConfig       = "dynamic-config"
-	PrometheusListenerName    = "_kuma:metrics:prometheus"
-	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
-	DefaultBackendName        = "default-backend"
-	OpenTelemetryGrpcPort     = 4317
+	OriginOpenTelemetry          = "open-telemetry"
+	OriginDynamicConfig          = "dynamic-config"
+	PrometheusListenerName       = "_kuma:metrics:prometheus"
+	DynamicConfigListenerName    = "_kuma:dynamicconfig:observability"
+	DefaultBackendName           = "default-backend"
+	PrometheusDataplaneStatsPath = "/meshmetric"
+	OpenTelemetryGrpcPort        = 4317
 )
 
 type plugin struct{}
@@ -68,7 +69,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	// TODO multiple backends of the same type support. Issue: https://github.com/kumahq/kuma/issues/8942
 	openTelemetryBackend := firstOpenTelemetryBackend(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackends, conf)
+	err := configurePrometheus(rs, proxy, prometheusBackends)
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, conf api.Conf) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
@@ -103,7 +104,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			StatsPath:       "/" + EnvoyMetricsFilter(conf.Sidecar).Encode(),
+			StatsPath:       PrometheusDataplaneStatsPath,
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
