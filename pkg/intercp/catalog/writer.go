@@ -53,9 +53,10 @@ func NewWriter(
 }
 
 func (r *catalogWriter) Start(stop <-chan struct{}) error {
-	heartbeatLog.Info("starting catalog writer")
+	writerLog.Info("starting catalog writer")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
+	ctx, cancelFn := context.WithCancel(ctx)
 	writerLog.Info("replacing a leader in the catalog")
 	if err := r.catalog.ReplaceLeader(ctx, r.instance); err != nil {
 		writerLog.Error(err, "could not replace leader") // continue, it will be replaced in ticker anyways
@@ -79,6 +80,12 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 			}
 			r.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
+			cancelFn()
+			if err := r.catalog.DropLeader(context.WithoutCancel(ctx), r.instance); err != nil {
+				writerLog.Error(err, "could not drop leader. It will be replaced by the next leader")
+			} else {
+				writerLog.Info("leader dropped")
+			}
 			return nil
 		}
 	}

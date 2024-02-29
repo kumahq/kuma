@@ -22,16 +22,16 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.23.17-k3s1
-K8S_MAX_VERSION = v1.28.1-k3s1
+K8S_MAX_VERSION = v1.29.1-k3s2
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.55.2
+export GOLANGCI_LINT_VERSION=v1.56.1
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
 define GATE_PUSH
-$(if $(ALLOW_PUSH),$(1), # $(1))
+$(if $(filter $(ALLOW_PUSH),true),$(1), # $(1))
 endef
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,

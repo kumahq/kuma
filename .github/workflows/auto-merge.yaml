@@ -12,6 +12,7 @@ permissions:
   contents: read
 jobs:
   approve-and-auto-merge:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
     permissions:
@@ -19,10 +20,10 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a
+        uses: actions/create-github-app-token@e8e39f73bb84fdf315a015fa3104f314c0a258b4 # v1.8.1
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Approve PR
         run: gh pr review ${{ github.event.pull_request.number }} -a -R ${{ github.repository }}
         env:

@@ -56,7 +56,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: logging-gateway:HTTP:8080
+              routeConfigName: logging-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -71,9 +71,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    logging-gateway:HTTP:8080:
+    logging-gateway:HTTP:8080:*:
       ignorePortInHostMatching: true
-      name: logging-gateway:HTTP:8080
+      name: logging-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false

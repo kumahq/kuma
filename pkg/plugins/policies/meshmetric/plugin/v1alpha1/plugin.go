@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -29,12 +30,13 @@ var (
 )
 
 const (
-	OriginOpenTelemetry       = "open-telemetry"
-	OriginDynamicConfig       = "dynamic-config"
-	PrometheusListenerName    = "_kuma:metrics:prometheus"
-	DynamicConfigListenerName = "_kuma:dynamicconfig:observability"
-	DefaultBackendName        = "default-backend"
-	OpenTelemetryGrpcPort     = 4317
+	OriginOpenTelemetry          = "open-telemetry"
+	OriginDynamicConfig          = "dynamic-config"
+	PrometheusListenerName       = "_kuma:metrics:prometheus"
+	DynamicConfigListenerName    = "_kuma:dynamicconfig:observability"
+	DefaultBackendName           = "default-backend"
+	PrometheusDataplaneStatsPath = "/meshmetric"
+	OpenTelemetryGrpcPort        = 4317
 )
 
 type plugin struct{}
@@ -67,7 +69,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	// TODO multiple backends of the same type support. Issue: https://github.com/kumahq/kuma/issues/8942
 	openTelemetryBackend := firstOpenTelemetryBackend(conf.Backends)
 
-	err := configurePrometheus(rs, proxy, prometheusBackends, conf)
+	err := configurePrometheus(rs, proxy, prometheusBackends)
 	if err != nil {
 		return err
 	}
@@ -91,7 +93,7 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, conf api.Conf) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
@@ -102,7 +104,7 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 			ListenerName:    fmt.Sprintf("%s:%s", PrometheusListenerName, pointer.DerefOr(backend.ClientId, DefaultBackendName)),
 			EndpointAddress: proxy.Dataplane.Spec.GetNetworking().GetAddress(),
 			ClusterName:     fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
-			StatsPath:       "/" + envoyMetricsFilter(conf),
+			StatsPath:       PrometheusDataplaneStatsPath,
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
@@ -183,25 +185,19 @@ func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, 
 	return nil
 }
 
-// TODO this most likely won't work with OpenTelemetry. Issue: https://github.com/kumahq/kuma/issues/8926
-func envoyMetricsFilter(conf api.Conf) string {
-	if conf.Sidecar == nil {
-		return "?usedonly" // as the default for IncludeUnused is false
+func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
+	values := url.Values{}
+	if sidecar == nil {
+		values.Set("usedonly", "")
+		return values
 	}
-	var query string
-	if pointer.Deref(conf.Sidecar.Regex) != "" {
-		query += "filter=" + pointer.Deref(conf.Sidecar.Regex)
+	if pointer.Deref(sidecar.Regex) != "" {
+		values.Set("filter", pointer.Deref(sidecar.Regex))
 	}
-	if query != "" {
-		query += "&"
+	if !pointer.Deref(sidecar.IncludeUnused) {
+		values.Set("usedonly", "")
 	}
-	if !pointer.Deref(conf.Sidecar.IncludeUnused) {
-		query += "usedonly"
-	}
-	if query != "" {
-		return "?" + query
-	}
-	return ""
+	return values
 }
 
 func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend *api.OpenTelemetryBackend) plugin_xds.MeshMetricDpConfig {
@@ -235,6 +231,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 			Metrics: plugin_xds.Metrics{
 				Applications: applications,
 				Backends:     backends,
+				Sidecar:      conf.Sidecar,
 			},
 		},
 	}

@@ -441,28 +441,32 @@ var _ = Describe("MeshFaultInjection", func() {
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {
 		// given
 		rules := core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {{
-					Subset: core_rules.Subset{},
-					Conf: api.Conf{
-						Http: &[]api.FaultInjectionConf{
-							{
-								Abort: &api.AbortConf{
-									HttpStatus: int32(444),
-									Percentage: intstr.FromInt(12),
-								},
-								Delay: &api.DelayConf{
-									Value:      *test.ParseDuration("55s"),
-									Percentage: intstr.FromString("55"),
-								},
-								ResponseBandwidth: &api.ResponseBandwidthConf{
-									Limit:      "111Mbps",
-									Percentage: intstr.FromString("62.9"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.Subset{},
+							Conf: api.Conf{
+								Http: &[]api.FaultInjectionConf{
+									{
+										Abort: &api.AbortConf{
+											HttpStatus: int32(444),
+											Percentage: intstr.FromInt(12),
+										},
+										Delay: &api.DelayConf{
+											Value:      *test.ParseDuration("55s"),
+											Percentage: intstr.FromString("55"),
+										},
+										ResponseBandwidth: &api.ResponseBandwidthConf{
+											Limit:      "111Mbps",
+											Percentage: intstr.FromString("62.9"),
+										},
+									},
 								},
 							},
 						},
 					},
-				}},
+				},
 			},
 		}
 

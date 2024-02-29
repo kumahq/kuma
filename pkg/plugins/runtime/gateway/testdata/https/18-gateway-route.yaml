@@ -26,14 +26,6 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/protocol: http
       name: external-httpbin-8490df2e58a77ae0
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: STRICT_DNS
       typedExtensionProtocolOptions:
@@ -96,7 +88,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -127,9 +119,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTPS:8080:
+    edge-gateway:HTTPS:8080:echo.example.com:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTPS:8080
+      name: edge-gateway:HTTPS:8080:echo.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -144,6 +136,23 @@ Routes:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
         routes:
+        - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: external-httpbin-8490df2e58a77ae0
+                weight: 1
         - match:
             prefix: /
           route:

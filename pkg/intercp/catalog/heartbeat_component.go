@@ -89,7 +89,11 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	)
 	if h.leader == nil {
 		if err := h.connectToLeader(ctx); err != nil {
-			heartbeatLog.Error(err, "could not connect to leader")
+			if err == ErrNoLeader {
+				heartbeatLog.Info("leader is not yet present in the cluster. No heartbeat to send")
+			} else {
+				heartbeatLog.Error(err, "could not connect to leader")
+			}
 			return false
 		}
 	}
@@ -110,7 +114,7 @@ func (h *heartbeatComponent) heartbeat(ctx context.Context, ready bool) bool {
 	}
 	resp, err := client.Ping(ctx, h.request)
 	if err != nil {
-		heartbeatLog.Error(err, "could not send a heartbeat to a leader")
+		heartbeatLog.Info("could not send a heartbeat to a leader. It's likely due to leader change", "cause", err)
 		h.leader = nil
 		return false
 	}

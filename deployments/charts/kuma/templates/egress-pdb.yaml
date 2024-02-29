@@ -16,5 +16,5 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-egress
+      app: {{ include "kuma.name" . }}-egress
 {{ end }}

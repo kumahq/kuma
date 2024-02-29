@@ -151,16 +151,6 @@ to:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from'", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-`,
-				expected: `
-violations:
-  - field: spec.from
-    message: needs at least one item`,
-			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
@@ -355,9 +345,7 @@ from:
 				expected: `
 violations:
   - field: spec.from
-    message: 'must not be defined'
-  - field: spec.to
-    message: needs at least one item`,
+    message: 'must not be defined'`,
 			}),
 		)
 	})

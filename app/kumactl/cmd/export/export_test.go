@@ -16,9 +16,9 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/api-server/mappers"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
@@ -36,7 +36,8 @@ var _ = Describe("kumactl export", func() {
 
 	BeforeEach(func() {
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
-		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.MeshResourceTypeDescriptor, system.SecretResourceTypeDescriptor, system.GlobalSecretResourceTypeDescriptor)
+		defs := registry.Global().ObjectDescriptors()
+		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, defs...)
 		Expect(err).ToNot(HaveOccurred())
 		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
 			return fileBasedKubernetesResourcesClient{}
@@ -58,6 +59,8 @@ var _ = Describe("kumactl export", func() {
 			samples.SampleSigningKeySecret(),
 			samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
 			samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
+			samples.ServiceInsight().WithMesh("another-mesh").Build(),
+			samples.SampleGlobalSecretAdminCa(),
 		}
 		for _, res := range resources {
 			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
@@ -84,6 +87,8 @@ var _ = Describe("kumactl export", func() {
 		resources := []model.Resource{
 			samples.MeshDefault(),
 			samples.SampleSigningKeyGlobalSecret(),
+			samples.MeshAccessLogWithFileBackend(),
+			samples.Retry(),
 		}
 		for _, res := range resources {
 			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
@@ -95,6 +100,7 @@ var _ = Describe("kumactl export", func() {
 			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 			"export",
 			"--format=kubernetes",
+			"--profile", "all",
 		}
 		rootCmd.SetArgs(args)
 
@@ -159,5 +165,6 @@ type staticResourcesListClient struct{}
 var _ client.ResourcesListClient = &staticResourcesListClient{}
 
 func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
-	return api_types.ResourceTypeDescriptionList{}, nil
+	defs := registry.Global().ObjectDescriptors()
+	return mappers.MapResourceTypeDescription(defs, false, true), nil
 }

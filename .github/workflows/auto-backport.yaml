@@ -10,6 +10,7 @@ permissions:
   contents: read
 jobs:
   backport_label:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
       issues: write

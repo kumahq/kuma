@@ -85,6 +85,9 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	if err != nil {
 		return nil, err
 	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	}
 	return resp.GetConfig(), nil
 }
 
@@ -111,6 +114,9 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 	if err != nil {
 		return nil, err
 	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	}
 	return resp.GetStats(), nil
 }
 
@@ -136,6 +142,9 @@ func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core
 	resp, err := client.Clusters(ctx, req)
 	if err != nil {
 		return nil, err
+	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
 	}
 	return resp.GetClusters(), nil
 }
@@ -194,5 +203,17 @@ func (e *StreamNotConnectedError) Error() string {
 }
 
 func (e *StreamNotConnectedError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
+}
+
+type ForwardKDSRequestError struct {
+	reason string
+}
+
+func (e *ForwardKDSRequestError) Error() string {
+	return e.reason
+}
+
+func (e *ForwardKDSRequestError) Is(err error) bool {
 	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }

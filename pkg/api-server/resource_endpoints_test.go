@@ -18,24 +18,26 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
 
 var _ = Describe("Resource Endpoints Zone", func() {
 	var apiServer *api_server.ApiServer
-	var resourceStore store.ResourceStore
+	var resourceStore core_store.ResourceStore
 	var client resourceApiClient
 	stop := func() {}
 
 	const mesh = "default"
 
 	BeforeEach(func() {
-		resourceStore = store.NewPaginationStore(memory.NewStore())
+		resourceStore = core_store.NewPaginationStore(memory.NewStore())
 		apiServer, _, stop = StartApiServer(
 			NewTestApiServerConfigurer().
 				WithStore(resourceStore).
@@ -53,7 +55,7 @@ var _ = Describe("Resource Endpoints Zone", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -134,7 +136,7 @@ var _ = Describe("Resource Endpoints Zone", func() {
 
 var _ = Describe("Resource Endpoints", func() {
 	var apiServer *api_server.ApiServer
-	var resourceStore store.ResourceStore
+	var resourceStore core_store.ResourceStore
 	var client resourceApiClient
 	stop := func() {}
 	var metrics core_metrics.Metrics
@@ -142,7 +144,7 @@ var _ = Describe("Resource Endpoints", func() {
 	const mesh = "default"
 
 	BeforeEach(func() {
-		resourceStore = store.NewPaginationStore(memory.NewStore())
+		resourceStore = core_store.NewPaginationStore(memory.NewStore())
 		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithMetrics(func() core_metrics.Metrics {
 			m, _ := core_metrics.NewMetrics("Zone")
 			metrics = m
@@ -160,7 +162,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -316,10 +318,10 @@ var _ = Describe("Resource Endpoints", func() {
 			}
 			// given three resources
 			for i := 0; i < 3; i++ {
-				err := resourceStore.Create(context.Background(), esWithTags("my-svc"), store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
+				err := resourceStore.Create(context.Background(), esWithTags("my-svc"), core_store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
 				Expect(err).NotTo(HaveOccurred())
 			}
-			err := resourceStore.Create(context.Background(), esWithTags("other-svc"), store.CreateByKey("dp-not-good", mesh))
+			err := resourceStore.Create(context.Background(), esWithTags("other-svc"), core_store.CreateByKey("dp-not-good", mesh))
 			Expect(err).NotTo(HaveOccurred())
 
 			// when ask for dataplanes with "my-svc" filter
@@ -367,10 +369,10 @@ var _ = Describe("Resource Endpoints", func() {
 			}
 			// given three resources
 			for i := 0; i < 3; i++ {
-				err := resourceStore.Create(context.Background(), dpWithService("my-svc"), store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
+				err := resourceStore.Create(context.Background(), dpWithService("my-svc"), core_store.CreateByKey(fmt.Sprintf("dp-%02d", i), mesh))
 				Expect(err).NotTo(HaveOccurred())
 			}
-			err := resourceStore.Create(context.Background(), dpWithService("other-svc"), store.CreateByKey("dp-not-good", mesh))
+			err := resourceStore.Create(context.Background(), dpWithService("other-svc"), core_store.CreateByKey("dp-not-good", mesh))
 			Expect(err).NotTo(HaveOccurred())
 
 			// when ask for dataplanes with "my-svc" filter
@@ -570,10 +572,13 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// and then
 			resource := core_mesh.NewTrafficRouteResource()
-			err := resourceStore.Get(context.Background(), resource, store.GetByKey("new-resource", mesh))
+			err := resourceStore.Get(context.Background(), resource, core_store.GetByKey("new-resource", mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Conf.Destination["path"]).To(Equal("/sample-path"))
-			Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "bar"}))
+			Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{
+				"foo":            "bar",
+				"kuma.io/origin": "zone",
+			}))
 		})
 
 		It("should update a resource when one already exist", func() {
@@ -612,7 +617,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// then
 			resource := core_mesh.NewTrafficRouteResource()
-			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
+			err := resourceStore.Get(context.Background(), resource, core_store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Conf.Destination["path"]).To(Equal("/update-sample-path"))
 			Expect(resource.Meta.GetLabels()).To(Equal(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
@@ -808,7 +813,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// when
 			client = resourceApiClient{
 				address: apiServer.Address(),
-				path:    "/meshes/invalid$/traffic-routes",
+				path:    "/meshes/default/traffic-routes",
 			}
 			response := client.putJson("invalid@", []byte(json))
 
@@ -821,45 +826,6 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_name-mesh.golden.json")))
-		})
-
-		It("should return 400 when mesh does not exist", func() {
-			// setup
-			err := resourceStore.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			// given
-			res := &unversioned.Resource{
-				Meta: rest_v1alpha1.ResourceMeta{
-					Name: "new-resource",
-					Mesh: "default",
-					Type: string(core_mesh.TrafficRouteType),
-				},
-				Spec: &mesh_proto.TrafficRoute{
-					Sources: []*mesh_proto.Selector{{Match: map[string]string{
-						mesh_proto.ServiceTag: "*",
-					}}},
-					Destinations: []*mesh_proto.Selector{{Match: map[string]string{
-						mesh_proto.ServiceTag: "*",
-					}}},
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Destination: map[string]string{
-							mesh_proto.ServiceTag: "*",
-							"path":                "/sample-path",
-						},
-					},
-				},
-			}
-
-			// when
-			response := client.put(res)
-
-			// when
-			bytes, err := io.ReadAll(response.Body)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_mesh-not-found.golden.json")))
 		})
 
 		It("should return 400 when json is invalid", func() {
@@ -1041,8 +1007,8 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// and
 			resource := core_mesh.NewTrafficRouteResource()
-			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
+			err := resourceStore.Get(context.Background(), resource, core_store.GetByKey(name, mesh))
+			Expect(err).To(Equal(core_store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should delete non-existing resource", func() {
@@ -1095,15 +1061,139 @@ var _ = Describe("Resource Endpoints", func() {
 
 	DescribeTable("inspect for policies /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes", func(inputFile string) {
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/policies/_resources/dataplanes"))
+	}, test.EntriesForFolder("resources/inspect/policies/_resources/dataplanes"))
 
 	DescribeTable("inspect dataplane rules /meshes/{mesh}/dataplanes/{dpName}/_rules", func(inputFile string) {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/dataplanes/_rules"))
+	}, test.EntriesForFolder("resources/inspect/dataplanes/_rules"))
 
 	DescribeTable("inspect meshgateway rules /meshes/{mesh}/meshgateways/{gwName}/_rules", func(inputFile string) {
 		format.MaxLength = 0
 		apiTest(inputFile, apiServer, resourceStore)
-	}, test.EntriesForFolder("inspect/meshgateways/_rules"))
+	}, test.EntriesForFolder("resources/inspect/meshgateways/_rules"))
+
+	DescribeTable("resources CRUD", func(inputFile string) {
+		format.MaxLength = 0
+		apiTest(inputFile, apiServer, resourceStore)
+	}, test.EntriesForFolder("resources/crud"))
+})
+
+var _ = Describe("Resource Endpoints on Zone, label origin", func() {
+	createServer := func(federatedZone, validateOriginLabel bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
+		store := core_store.NewPaginationStore(memory.NewStore())
+		zone := ""
+		if federatedZone {
+			zone = "zone-1"
+		}
+		apiServer, _, stop := StartApiServer(
+			NewTestApiServerConfigurer().
+				WithStore(store).
+				WithDisableOriginLabelValidation(!validateOriginLabel).
+				WithZone(zone),
+		)
+		return apiServer, store, stop
+	}
+
+	createMesh := func(s core_store.ResourceStore, mesh string) {
+		// create default mesh
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+	}
+
+	It("should return 400 when origin validation is enabled and origin label is not set", func() {
+		// given
+		apiServer, store, stop := createServer(true, true)
+		defer stop()
+		createMesh(store, "mesh-1")
+		client := resourceApiClient{address: apiServer.Address(), path: "/meshes/mesh-1/meshtrafficpermissions"}
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-1",
+				Mesh: "mesh-1",
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp := client.put(res)
+
+		// then
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		// and then
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
+	})
+
+	DescribeTable("should set origin label automatically when origin validation is disabled",
+		func(federatedZone bool) {
+			// given
+			apiServer, store, stop := createServer(federatedZone, false)
+			defer stop()
+			createMesh(store, "mesh-1")
+			client := resourceApiClient{address: apiServer.Address(), path: "/meshes/mesh-1/meshtrafficpermissions"}
+
+			// when
+			res := &rest_v1alpha1.Resource{
+				ResourceMeta: rest_v1alpha1.ResourceMeta{
+					Name: "mtp-1",
+					Mesh: "mesh-1",
+					Type: string(v1alpha1.MeshTrafficPermissionType),
+				},
+				Spec: builders.MeshTrafficPermission().
+					WithTargetRef(builders.TargetRefMesh()).
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					Build().Spec,
+			}
+			resp := client.put(res)
+
+			// then
+			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+			// and then
+			actualMtp := v1alpha1.NewMeshTrafficPermissionResource()
+			Expect(store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", "mesh-1"))).To(Succeed())
+			Expect(actualMtp.Meta.GetLabels()).To(Equal(map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			}))
+		},
+		Entry("non-federated zone", false),
+		Entry("federated zone", true),
+	)
+
+	It("should set origin label automatically for DPPs", func() {
+		// given
+		apiServer, store, stop := createServer(false, false)
+		defer stop()
+		createMesh(store, "mesh-1")
+		client := resourceApiClient{address: apiServer.Address(), path: "/meshes/mesh-1/dataplanes"}
+
+		// when
+		res := &unversioned.Resource{
+			Meta: rest_v1alpha1.ResourceMeta{
+				Name: "dpp-1",
+				Mesh: "mesh-1",
+				Type: string(core_mesh.DataplaneType),
+			},
+			Spec: builders.Dataplane().
+				WithName("backend-1").
+				WithHttpServices("backend").
+				AddOutboundsToServices("redis", "elastic", "postgres").
+				Build().Spec,
+		}
+		resp := client.put(res)
+
+		// then
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		// and then
+		actualDpp := core_mesh.NewDataplaneResource()
+		Expect(store.Get(context.Background(), actualDpp, core_store.GetByKey("dpp-1", "mesh-1"))).To(Succeed())
+		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+		}))
+	})
 })

@@ -202,11 +202,6 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -214,6 +209,10 @@ resources:
             idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

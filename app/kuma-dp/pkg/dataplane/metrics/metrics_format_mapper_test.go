@@ -29,7 +29,7 @@ var _ = Describe("Metrics format mapper", func() {
 		sort.SliceStable(openTelemetryMetrics, func(i, j int) bool {
 			return openTelemetryMetrics[i].Name < openTelemetryMetrics[j].Name
 		})
-		marshal, err := json.Marshal(openTelemetryMetrics)
+		marshal, err := json.MarshalIndent(openTelemetryMetrics, "", "  ")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(marshal).To(matchers.MatchGoldenJSON(path.Join("testdata", "otel", name+".golden.json")))
 	},

@@ -170,7 +170,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return prepareResult(conf, logger)
 	}
 
-	if containerCount < 2 {
+	if _, sidecarInInitContainers := initContainersMap[util.KumaSidecarContainerName]; containerCount < 2 && !sidecarInInitContainers {
 		logger.Info("pod excluded - not enough containers in pod. Kuma-sidecar container required")
 		return prepareResult(conf, logger)
 	}

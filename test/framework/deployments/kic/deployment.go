@@ -22,6 +22,7 @@ type Deployment interface {
 type deployOptions struct {
 	namespace string
 	mesh      string
+	name      string
 }
 
 type deployOptionsFunc func(*deployOptions)
@@ -47,6 +48,7 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 			deployment = &k8sDeployment{
 				ingressNamespace: opts.namespace,
 				mesh:             opts.mesh,
+				name:             opts.name,
 			}
 		default:
 			return errors.New("invalid cluster")
@@ -64,6 +66,12 @@ func WithNamespace(namespace string) deployOptionsFunc {
 func WithMesh(mesh string) deployOptionsFunc {
 	return func(o *deployOptions) {
 		o.mesh = mesh
+	}
+}
+
+func WithName(name string) deployOptionsFunc {
+	return func(o *deployOptions) {
+		o.name = name
 	}
 }
 
@@ -85,7 +93,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: ingress-kong
+    app: %s-gateway
   ports:
     - name: proxy
       targetPort: 8000
@@ -94,5 +102,5 @@ spec:
       targetPort: 8443
       port: 443
 `
-	return framework.YamlK8s(fmt.Sprintf(svc, opts.namespace))
+	return framework.YamlK8s(fmt.Sprintf(svc, opts.namespace, opts.name))
 }

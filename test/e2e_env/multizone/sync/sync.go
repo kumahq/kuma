@@ -57,19 +57,15 @@ func Sync() {
 			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
 			globalSub := result.Spec.Subscriptions[0]
 			g.Expect(globalSub.GlobalInstanceId).ToNot(BeEmpty())
-			if !Config.KumaLegacyKDS {
-				g.Expect(globalSub.ZoneInstanceId).ToNot(BeEmpty())
-			}
+			g.Expect(globalSub.ZoneInstanceId).ToNot(BeEmpty())
 
 			zoneResult := &system.ZoneInsightResource{}
 			api.FetchResource(g, multizone.KubeZone1, zoneResult, "", multizone.KubeZone1.ZoneName())
 			g.Expect(zoneResult.Spec.Subscriptions).ToNot(BeEmpty())
 			zoneSub := zoneResult.Spec.Subscriptions[0]
-			if !Config.KumaLegacyKDS {
-				// Check that this is the other side of the connection
-				g.Expect(zoneSub.GlobalInstanceId).To(Equal(globalSub.GlobalInstanceId))
-				g.Expect(zoneSub.ZoneInstanceId).To(Equal(globalSub.ZoneInstanceId))
-			}
+			// Check that this is the other side of the connection
+			g.Expect(zoneSub.GlobalInstanceId).To(Equal(globalSub.GlobalInstanceId))
+			g.Expect(zoneSub.ZoneInstanceId).To(Equal(globalSub.ZoneInstanceId))
 		}, "1m", "1s").Should(Succeed())
 	})
 
@@ -216,6 +212,25 @@ spec:
 				err := multizone.UniZone1.GetKumactlOptions().RunKumactl("delete", "traffic-route", name, "-m", meshName)
 				Expect(err).To(HaveOccurred())
 			})
+		})
+
+		It("should sync policy with a long name and store it as display name", func() {
+			// given
+			name := ""
+			for i := 0; i < 253; i++ {
+				name += "x"
+			}
+
+			// when
+			Expect(multizone.Global.Install(YamlUniversal(universalPolicyNamed(name, 100)))).To(Succeed())
+
+			// then
+			hashedName := hash.HashedName(meshName, name)
+			for _, cluster := range multizone.Zones() {
+				Eventually(func() (string, error) {
+					return cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-route", hashedName, "-m", meshName, "-o", "yaml")
+				}, "30s", "1s").Should(ContainSubstring(`kuma.io/display-name: ` + name))
+			}
 		})
 	})
 }

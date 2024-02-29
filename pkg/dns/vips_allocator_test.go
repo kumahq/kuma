@@ -18,7 +18,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
@@ -65,6 +67,8 @@ var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
 	var allocator *dns.VIPsAllocator
+	var metrics core_metrics.Metrics
+	var err error
 
 	NoModifications := func(view *vips.VirtualOutboundMeshView) error {
 		return nil
@@ -75,7 +79,10 @@ var _ = Describe("VIP Allocator", func() {
 		rm = manager.NewResourceManager(s)
 		cm = config_manager.NewConfigManager(s)
 
-		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		metrics, err = core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-2", model.NoMesh))
@@ -90,7 +97,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
+		allocator, err = dns.NewVIPsAllocator(rm, cm, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "", metrics)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -111,6 +118,16 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(vipList.HostnameEntries()).To(HaveLen(1))
+	})
+
+	It("should record a summary metric in case of success", func() {
+		// when
+		ctx := context.Background()
+		err := allocator.CreateOrUpdateVIPConfigs(ctx)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(test_metrics.FindMetric(metrics, "vip_generation").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
@@ -152,7 +169,10 @@ var _ = Describe("VIP Allocator", func() {
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
 		ctx := context.Background()
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "", metrics)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
@@ -168,7 +188,10 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "")
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, testConfig, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, "", metrics)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
@@ -183,6 +206,8 @@ var _ = Describe("VIP Allocator", func() {
 		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
+
+		Expect(test_metrics.FindMetric(metrics, "vip_generation_errors").GetCounter().GetValue()).To(Equal(1.0))
 	})
 
 	It("will allocate the same VIPs for different services in multiple meshes", func() {
@@ -243,8 +268,11 @@ var _ = DescribeTable("outboundView",
 			CIDR:              "240.0.0.0/24",
 			ServiceVipEnabled: !tc.whenSkipServiceVips,
 		}
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
 		// When
-		allocator, err := dns.NewVIPsAllocator(rm, nil, cfg, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, tc.whenZone)
+		allocator, err := dns.NewVIPsAllocator(rm, nil, cfg, config.ExperimentalConfig{UseTagFirstVirtualOutboundModel: false}, tc.whenZone, metrics)
 		Expect(err).NotTo(HaveOccurred())
 		serviceSet, err := allocator.BuildVirtualOutboundMeshView(ctx, tc.whenMesh)
 

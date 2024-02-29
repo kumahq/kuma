@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"encoding/json"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -21,13 +23,18 @@ func SetupAndGetState() []byte {
 		framework.GatewayAPICRDs,
 	)).To(Succeed())
 
-	kumaOptions := append([]framework.KumaDeploymentOption{
-		framework.WithCtlOpts(map[string]string{
-			"--experimental-gatewayapi": "true",
-		}),
-		framework.WithEgress(),
-	},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+	kumaOptions := append(
+		[]framework.KumaDeploymentOption{
+			framework.WithCtlOpts(map[string]string{
+				"--experimental-gatewayapi": "true",
+			}),
+			framework.WithEgress(),
+		},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
+	)
+	if framework.Config.KumaExperimentalSidecarContainers {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
+	}
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
@@ -69,4 +76,24 @@ func RestoreState(bytes []byte) {
 	)
 	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
 	Cluster.SetCP(cp)
+}
+
+func PrintCPLogsOnFailure(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		logs, err := Cluster.GetKumaCPLogs()
+		if err != nil {
+			framework.Logf("could not retrieve cp logs")
+		} else {
+			framework.Logf(logs)
+		}
+	}
+}
+
+func PrintKubeState(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		// just running it, prints the logs
+		if err := k8s.RunKubectlE(Cluster.GetTesting(), Cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
+			framework.Logf("could not retrieve kube pods")
+		}
+	}
 }

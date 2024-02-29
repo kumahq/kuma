@@ -57,6 +57,8 @@ var _ = Describe("TrafficTrace Endpoints", func() {
         mesh: default
         creationTime: "2018-07-17T16:05:36.995Z"
         modificationTime: "2018-07-17T16:05:36.995Z"
+        labels:
+          kuma.io/origin: zone
         selectors:
         - match:
             service: backend

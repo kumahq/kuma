@@ -1,6 +1,7 @@
 package api_server_test
 
 import (
+	"context"
 	"io"
 	"path"
 
@@ -11,6 +12,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -36,6 +38,9 @@ var _ = Describe("Read only Resource Endpoints", func() {
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/traffic-routes",
 		}
+		// create default mesh
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
 		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
 	})
 

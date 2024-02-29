@@ -54,16 +54,25 @@ func (p *plugin) Apply(ctx context.Context, meshContext xds_context.MeshContext,
 	return nil
 }
 
-func ExtractGatewayListeners(proxy *core_xds.Proxy) []GatewayListenerInfo {
+func ExtractGatewayListeners(proxy *core_xds.Proxy) map[uint32]GatewayListenerInfo {
 	ext := proxy.RuntimeExtensions[metadata.PluginName]
 	if ext == nil {
 		return nil
 	}
-	return ext.([]GatewayListenerInfo)
+	return ext.(map[uint32]GatewayListenerInfo)
 }
 
-func SetGatewayListeners(proxy *core_xds.Proxy, infos []GatewayListenerInfo) {
-	proxy.RuntimeExtensions[metadata.PluginName] = infos
+// SetGatewayListeners assumes that exactly one plugin has authority over a
+// single port.
+func SetGatewayListeners(proxy *core_xds.Proxy, listenerInfoPerPort map[uint32]GatewayListenerInfo) {
+	existingListeners := map[uint32]GatewayListenerInfo{}
+	if ext := proxy.RuntimeExtensions[metadata.PluginName]; ext != nil {
+		existingListeners = ext.(map[uint32]GatewayListenerInfo)
+	}
+	for port, info := range listenerInfoPerPort {
+		existingListeners[port] = info
+	}
+	proxy.RuntimeExtensions[metadata.PluginName] = existingListeners
 }
 
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {

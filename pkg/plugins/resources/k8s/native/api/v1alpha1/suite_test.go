@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"path/filepath"
@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/test"
 )
@@ -50,7 +51,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 		},
 	}
 
-	err := SchemeBuilder.AddToScheme(scheme.Scheme)
+	err := v1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	cfg, err = testEnv.Start()

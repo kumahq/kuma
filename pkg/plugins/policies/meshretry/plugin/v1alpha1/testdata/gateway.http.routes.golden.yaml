@@ -1,5 +1,5 @@
 ignorePortInHostMatching: true
-name: sample-gateway:HTTP:8080
+name: sample-gateway:HTTP:8080:*
 requestHeadersToRemove:
 - x-kuma-tags
 validateClusters: false
@@ -27,7 +27,6 @@ virtualHosts:
         - name: x-retry-regex
           stringMatch:
             safeRegex:
-              googleRe2: {}
               regex: .*
         - name: x-retry-exact
           stringMatch:

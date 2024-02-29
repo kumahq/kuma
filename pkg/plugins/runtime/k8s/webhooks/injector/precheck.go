@@ -87,7 +87,7 @@ func (i *KumaInjector) needToInject(pod *kube_core.Pod, ns *kube_core.Namespace)
 		return false, nil
 	}
 
-	for _, container := range pod.Spec.Containers {
+	for _, container := range append(append([]kube_core.Container{}, pod.Spec.Containers...), pod.Spec.InitContainers...) {
 		if container.Name == k8s_util.KumaSidecarContainerName {
 			log.V(1).Info("pod already has Kuma sidecar")
 			return false, nil

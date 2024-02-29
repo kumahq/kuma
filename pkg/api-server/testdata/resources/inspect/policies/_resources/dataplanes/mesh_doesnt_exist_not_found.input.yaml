@@ -1,0 +1,57 @@
+#/meshes/not-a-mesh/meshtimeouts/bar/_resources/dataplanes 404
+type: MeshTimeout
+name: foo
+mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: the-http-route
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 15s
+---
+type: MeshHTTPRoute
+name: the-http-route
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: svc-1
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend_kuma-demo_svc_3001
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /api
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: "1.0"
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-1
+---
+type: Dataplane
+name: dp-3
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-2

@@ -5,7 +5,7 @@ on:
       - edited
       - opened
       - reopened
-      - synchronized
+      - synchronize
 permissions:
   contents: read
 jobs:
@@ -20,6 +20,7 @@ jobs:
   # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
   # for more info. We have "Default to PR title for squash merge commits" enabled.
   commit-lint:
+    timeout-minutes: 10
     name: "Check PR title"
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
+      - run: npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
       - name: "Check PR title"
         # Inject as env variable to escape properly
         env:

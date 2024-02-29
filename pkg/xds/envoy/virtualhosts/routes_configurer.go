@@ -127,9 +127,6 @@ func (c RoutesConfigurer) headerMatcher(name string, matcher *mesh_proto.Traffic
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex:
 		headerMatcher.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: &envoy_type_matcher_v3.RegexMatcher{
-				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: matcher.GetRegex(),
 			},
 		}
@@ -153,9 +150,6 @@ func (c RoutesConfigurer) setPathMatcher(
 	case *mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex:
 		routeMatch.PathSpecifier = &envoy_config_route_v3.RouteMatch_SafeRegex{
 			SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-				},
 				Regex: matcher.GetRegex(),
 			},
 		}
@@ -215,9 +209,6 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 		case *mesh_proto.TrafficRoute_Http_Modify_Path_Regex:
 			routeAction.RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
-					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-					},
 					Regex: modify.GetPath().GetRegex().GetPattern(),
 				},
 				Substitution: modify.GetPath().GetRegex().GetSubstitution(),
@@ -235,9 +226,6 @@ func (c RoutesConfigurer) setModifications(routeAction *envoy_config_route_v3.Ro
 			routeAction.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewritePathRegex{
 				HostRewritePathRegex: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 					Pattern: &envoy_type_matcher_v3.RegexMatcher{
-						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-						},
 						Regex: modify.GetHost().GetFromPath().GetPattern(),
 					},
 					Substitution: modify.GetHost().GetFromPath().GetSubstitution(),

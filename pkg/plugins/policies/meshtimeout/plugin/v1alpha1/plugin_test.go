@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"context"
@@ -19,6 +19,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -79,7 +80,7 @@ var _ = Describe("MeshTimeout", func() {
 			Build()
 
 		// when
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 		// then
@@ -375,7 +376,7 @@ var _ = Describe("MeshTimeout", func() {
 							},
 							{
 								Key:   core_rules.RuleMatchesHashTag,
-								Value: "qiQ6EM62EfIBogYTOW3r8RUBRaRsY8B+t8G7DE5BNB8=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
+								Value: "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=", // '[{"path":{"value":"/","type":"PathPrefix"}}]'
 							},
 						},
 						Conf: api.Conf{
@@ -393,7 +394,7 @@ var _ = Describe("MeshTimeout", func() {
 							},
 							{
 								Key:   core_rules.RuleMatchesHashTag,
-								Value: "Lv6cpFf/JzQZSvl97nnZZFjFcZQbqoejHncFutEisJQ=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
+								Value: "U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=", // '[{"path":{"value":"/another-backend","type":"Exact"}},{"method":"GET"}]'
 							},
 						},
 						Conf: api.Conf{
@@ -446,7 +447,7 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// when
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 		Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 		nameSplit := strings.Split(GinkgoT().Name(), " ")
@@ -475,18 +476,20 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshSubset(),
-						Conf: api.Conf{
-							ConnectionTimeout: test.ParseDuration("10s"),
-							IdleTimeout:       test.ParseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        test.ParseDuration("5s"),
-								StreamIdleTimeout:     test.ParseDuration("1s"),
-								MaxStreamDuration:     test.ParseDuration("10m"),
-								MaxConnectionDuration: test.ParseDuration("10m"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshSubset(),
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
 							},
 						},
 					},
@@ -495,17 +498,19 @@ var _ = Describe("MeshTimeout", func() {
 		},
 	}), Entry("no-default-idle-timeout", gatewayTestCase{
 		rules: core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshSubset(),
-						Conf: api.Conf{
-							ConnectionTimeout: test.ParseDuration("10s"),
-							IdleTimeout:       test.ParseDuration("1h"),
-							Http: &api.Http{
-								RequestTimeout:        test.ParseDuration("5s"),
-								MaxStreamDuration:     test.ParseDuration("10m"),
-								MaxConnectionDuration: test.ParseDuration("10m"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshSubset(),
+							Conf: api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
 							},
 						},
 					},
@@ -521,13 +526,15 @@ var _ = Describe("MeshTimeout", func() {
 				Build(),
 		},
 		rules: core_rules.GatewayRules{
-			ToRules: map[core_rules.InboundListener]core_rules.Rules{
-				{Address: "192.168.0.1", Port: 8080}: {
-					{
-						Subset: core_rules.MeshService("backend"),
-						Conf: api.Conf{
-							Http: &api.Http{
-								RequestTimeout: test.ParseDuration("24s"),
+			ToRules: core_rules.GatewayToRules{
+				ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					{Address: "192.168.0.1", Port: 8080}: {
+						{
+							Subset: core_rules.MeshService("backend"),
+							Conf: api.Conf{
+								Http: &api.Http{
+									RequestTimeout: test.ParseDuration("24s"),
+								},
 							},
 						},
 					},

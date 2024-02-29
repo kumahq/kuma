@@ -1555,7 +1555,7 @@ components:
         - path
         - singularDisplayName
         - pluralDisplayName
-        - includeInFederationWithPolicies
+        - includeInFederation
       properties:
         name:
           description: the name of the resource type
@@ -1576,7 +1576,7 @@ components:
           type: string
         pluralDisplayName:
           type: string
-        includeInFederationWithPolicies:
+        includeInFederation:
           description: >-
             description resources of this type should be included in
             federetion-with-policies export profile (especially useful for

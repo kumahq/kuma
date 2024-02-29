@@ -13,14 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: absent-header-match-327fbb6df03159bd
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -45,14 +37,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: exact-header-match-d7c910a2e5559eda
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -77,14 +61,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: present-header-match-b3e34381a1779ec6
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -109,14 +85,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: regex-header-match-70561bb2da83c870
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -239,7 +207,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -254,9 +222,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
+    edge-gateway:HTTP:8080:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8080
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -265,6 +233,134 @@ Routes:
         - echo.example.com
         name: echo.example.com
         routes:
+        - match:
+            headers:
+            - name: Content-Type
+              stringMatch:
+                safeRegex:
+                  regex: application/.*
+            - name: Language
+              stringMatch:
+                safeRegex:
+                  regex: .*sh
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: regex-header-match-70561bb2da83c870
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            headers:
+            - name: Content-Type
+              stringMatch:
+                exact: application/json
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: exact-header-match-d7c910a2e5559eda
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            headers:
+            - name: Language
+              stringMatch:
+                exact: gibberish
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: exact-header-match-d7c910a2e5559eda
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            headers:
+            - name: X-I-AM-PRESENT
+              presentMatch: true
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: present-header-match-b3e34381a1779ec6
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            headers:
+            - name: X-I-AM-ABSENT
+              presentMatch: false
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: absent-header-match-327fbb6df03159bd
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
         - match:
             headers:
             - name: Content-Type

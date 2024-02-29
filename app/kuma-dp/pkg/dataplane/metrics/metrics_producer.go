@@ -85,7 +85,9 @@ func (ap *AggregatedProducer) Produce(ctx context.Context) ([]metricdata.ScopeMe
 func combineMetrics(metrics <-chan *metricdata.ScopeMetrics) []metricdata.ScopeMetrics {
 	var combinedMetrics []metricdata.ScopeMetrics
 	for metric := range metrics {
-		combinedMetrics = append(combinedMetrics, *metric)
+		if metric != nil {
+			combinedMetrics = append(combinedMetrics, *metric)
+		}
 	}
 	return combinedMetrics
 }

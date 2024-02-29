@@ -2,6 +2,8 @@ package webhooks_test
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -9,949 +11,148 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-var _ = Describe("Validation", func() {
-	var converter k8s_common.Converter
+var _ = Describe("Validating Webhook", func() {
+	DescribeTableSubtree("Handle",
+		func(inputFile string) {
+			It("should validate requests on Global", func() {
+				// given
+				wh := newValidatingWebhook(core.Global, false)
+				req := webhookRequest(inputFile)
+				// when
+				resp := wh.Handle(context.Background(), req)
+				// then
+				bytes, err := yaml.Marshal(resp)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes).To(matchers.MatchGoldenYAML(strings.ReplaceAll(inputFile, ".input.yaml", ".global.golden.yaml")))
+			})
 
-	BeforeEach(func() {
-		converter = k8s_resources.NewSimpleConverter()
-	})
+			It("should validate requests on federated zone", func() {
+				// given
+				wh := newValidatingWebhook(core.Zone, true)
+				req := webhookRequest(inputFile)
+				// when
+				resp := wh.Handle(context.Background(), req)
+				// then
+				bytes, err := yaml.Marshal(resp)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes).To(matchers.MatchGoldenYAML(strings.ReplaceAll(inputFile, ".input.yaml", ".federated.golden.yaml")))
+			})
 
-	type testCase struct {
-		objTemplate   core_model.ResourceSpec
-		obj           string
-		oldObj        string
-		mode          core.CpMode
-		federatedZone bool
-		resp          kube_admission.Response
-		username      string
-		operation     admissionv1.Operation
-	}
-	DescribeTable("Validation",
-		func(given testCase) {
-			// given
-			allowedUsers := []string{"system:serviceaccount:kube-system:generic-garbage-collector", "system:serviceaccount:kuma-system:kuma-control-plane"}
-			handler := webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, given.federatedZone, allowedUsers, false)
-			handler.InjectDecoder(kube_admission.NewDecoder(scheme))
-			webhook := &kube_admission.Webhook{
-				Handler: handler,
-			}
-
-			obj, err := k8s_registry.Global().NewObject(given.objTemplate)
-			Expect(err).ToNot(HaveOccurred())
-			req := kube_admission.Request{
-				AdmissionRequest: admissionv1.AdmissionRequest{
-					UID: kube_types.UID("12345"),
-					Object: kube_runtime.RawExtension{
-						Raw: []byte(given.obj),
-					},
-					OldObject: kube_runtime.RawExtension{
-						Raw: []byte(given.oldObj),
-					},
-					Kind: kube_meta.GroupVersionKind{
-						Group:   obj.GetObjectKind().GroupVersionKind().Group,
-						Version: obj.GetObjectKind().GroupVersionKind().Version,
-						Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
-					},
-					UserInfo: authenticationv1.UserInfo{
-						Username: given.username,
-					},
-					Operation: given.operation,
-				},
-			}
-
-			// when
-			resp := webhook.Handle(context.Background(), req)
-
-			// then
-			Expect(resp).To(Equal(given.resp))
+			It("should validate requests on non-federated zone", func() {
+				// given
+				wh := newValidatingWebhook(core.Zone, false)
+				req := webhookRequest(inputFile)
+				// when
+				resp := wh.Handle(context.Background(), req)
+				// then
+				bytes, err := yaml.Marshal(resp)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes).To(matchers.MatchGoldenYAML(strings.ReplaceAll(inputFile, ".input.yaml", ".non-federated.golden.yaml")))
+			})
 		},
-		Entry("should pass validation", testCase{
-			mode:          core.Zone,
-			federatedZone: false,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			username:      "cli-user",
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "mesh":"demo",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation for synced policy from Global to Zone", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "mesh":"demo",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation for synced policy from Zone to Global", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.Dataplane{},
-			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"Dataplane",
-              "mesh":"demo",
-              "metadata":{
-                "namespace":"example",
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "networking": {
-                  "address": "127.0.0.1",
-                  "inbound": [
-                    {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
-                    }
-                  ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation for not synced Dataplane in Zone", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.Dataplane{},
-			username:      "cli-user",
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"Dataplane",
-              "mesh":"demo",
-              "metadata":{
-                "namespace":"example",
-                "name":"empty",
-                "creationTimestamp":null
-              },
-              "spec":{
-                "networking": {
-                  "address": "127.0.0.1",
-                  "inbound": [
-                    {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
-                    }
-                  ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation due to invalid spec", testCase{
-			mode:        core.Global,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "TrafficRoute",
-			  "mesh": "demo",
-			  "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
-			  },
-			  "spec": {
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: cannot be empty",
-						Reason:  "Invalid",
-						Details: &kube_meta.StatusDetails{
-							Name: "empty",
-							Kind: "TrafficRoute",
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
-									Field:   "spec.sources",
-								},
-								{
-									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
-									Field:   "spec.destinations",
-								},
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "spec.conf",
-								},
-							},
-						},
-						Code: 422,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation due to applying policy manually on Zone CP", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			username:      "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "TrafficRoute",
-			  "mesh": "demo",
-			  "metadata": {
-				"name": "empty",
-				"creationTimestamp": null
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
-						Reason:  "Forbidden",
-						Details: &kube_meta.StatusDetails{
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "metadata.annotations[kuma.io/synced]",
-								},
-							},
-						},
-						Code: 403,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation due to applying Dataplane manually on Global CP", testCase{
-			mode:        core.Global,
-			objTemplate: &mesh_proto.Dataplane{},
-			username:    "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Dataplane",
-			  "mesh": "demo",
-			  "metadata": {
-				"namespace": "example",
-				"name": "empty",
-				"creationTimestamp": null
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Operation not allowed. Kuma resources like Dataplane can be updated or deleted only from the ZONE control plane and not from a GLOBAL control plane.",
-						Reason:  "Forbidden",
-						Details: &kube_meta.StatusDetails{
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "metadata.annotations[kuma.io/synced]",
-								},
-							},
-						},
-						Code: 403,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation due to applying Zone on Global CP", testCase{
-			mode:        core.Global,
-			objTemplate: &system_proto.Zone{},
-			username:    "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Zone",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null
-			  },
-			  "spec": {
-			    "ingress": {
-			      "address": "192.168.0.1:10001"
-			    }
-			  }			
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation due to applying Zone on Zone CP", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &system_proto.Zone{},
-			username:      "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Zone",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null
-			  },
-			  "spec": {
-			    "ingress": {
-			      "address": "192.168.0.1:10001"
-			    }
-			  }			
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation on Zone CP when user is not privileged and origin label is set", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &v1alpha1.MeshTimeout{},
-			username:      "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "MeshTimeout",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null,
-				"labels": {
-				  "kuma.io/origin": "zone"
-				}
-			  },
-			  "spec": {
-			    "targetRef": {
-			      "kind": "Mesh"
-			    },
-			    "to": [
-			      {
-			        "targetRef": {
-			          "kind": "Mesh"
-			        },
-			        "default": {
-			          "idleTimeout": "21s",
-			          "connectionTimeout": "21s",
-			          "http": {
-			            "requestTimeout": "21s"
-			          }
-			        }
-			      }
-			    ]
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation on Zone CP when user is not privileged and origin label is not set", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &v1alpha1.MeshTimeout{},
-			username:      "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "MeshTimeout",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null
-			  },
-			  "spec": {
-			    "targetRef": {
-			      "kind": "Mesh"
-			    },
-			    "to": [
-			      {
-			        "targetRef": {
-			          "kind": "Mesh"
-			        },
-			        "default": {
-			          "idleTimeout": "21s",
-			          "connectionTimeout": "21s",
-			          "http": {
-			            "requestTimeout": "21s"
-			          }
-			        }
-			      }
-			    ]
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Operation not allowed. Applying policies on Zone CP requires 'kuma.io/origin' label to be set to 'zone'.",
-						Reason:  "Forbidden",
-						Code:    403,
-						Details: &kube_meta.StatusDetails{
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "metadata.labels[kuma.io/origin]",
-								},
-							},
-						},
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should pass validation due to applying Zone on non federated Zone CP", testCase{
-			mode:        core.Zone,
-			objTemplate: &system_proto.Zone{},
-			username:    "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "Zone",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null
-			  },
-			  "spec": {
-			    "ingress": {
-			      "address": "192.168.0.1:10001"
-			    }
-			  }			
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation on missing mesh object", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			username:      "system:serviceaccount:kuma-system:kuma-control-plane",
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "mesh: cannot be empty",
-						Reason:  "Invalid",
-						Code:    422,
-						Details: &kube_meta.StatusDetails{
-							Name: "empty",
-							Kind: "TrafficRoute",
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "mesh",
-								},
-							},
-						},
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
-		Entry("should fail validation on DELETE in Zone CP", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			oldObj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
-						Reason:  "Forbidden",
-						Details: &kube_meta.StatusDetails{
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "metadata.annotations[kuma.io/synced]",
-								},
-							},
-						},
-						Code: 403,
-					},
-				},
-			},
-			operation: admissionv1.Delete,
-		}),
-		Entry("should fail validation on UPDATE in Zone CP", testCase{
-			mode:          core.Zone,
-			federatedZone: true,
-			objTemplate:   &mesh_proto.TrafficRoute{},
-			obj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "mesh":"demo",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Status:  "Failure",
-						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
-						Reason:  "Forbidden",
-						Details: &kube_meta.StatusDetails{
-							Causes: []kube_meta.StatusCause{
-								{
-									Type:    "FieldValueInvalid",
-									Message: "cannot be empty",
-									Field:   "metadata.annotations[kuma.io/synced]",
-								},
-							},
-						},
-						Code: 403,
-					},
-				},
-			},
-			operation: admissionv1.Update,
-		}),
-		Entry("should pass validation on DELETE in Global CP", testCase{
-			mode:        core.Global,
-			objTemplate: &mesh_proto.TrafficRoute{},
-			oldObj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"TrafficRoute",
-              "metadata":{
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "sources":[
-                  {
-                    "match":{
-                      "kuma.io/service":"web"
-                    }
-                  }
-                ],
-                "destinations":[
-                  {
-                    "match":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ],
-                "conf":{
-                 "split":[
-                  {
-                    "weight":100,
-                    "destination":{
-                      "kuma.io/service":"backend"
-                    }
-                  }
-                ]
-                }
-              }
-            }`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Delete,
-		}),
-		Entry("should pass validation on DELETE in Global CP by GC", testCase{
-			mode:        core.Global,
-			objTemplate: &mesh_proto.Dataplane{},
-			oldObj: `
-            {
-              "apiVersion":"kuma.io/v1alpha1",
-              "kind":"Dataplane",
-              "mesh":"demo",
-              "metadata":{
-                "namespace":"example",
-                "name":"empty",
-                "creationTimestamp":null,
-                "annotations": {
-                  "k8s.kuma.io/synced": "true"
-                }
-              },
-              "spec":{
-                "networking": {
-                  "address": "127.0.0.1",
-                  "inbound": [
-                    {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
-                    }
-                  ]
-                }
-              }
-            }`,
-			username: "system:serviceaccount:kube-system:generic-garbage-collector",
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: true,
-					Result: &kube_meta.Status{
-						Code: 200,
-					},
-				},
-			},
-			operation: admissionv1.Delete,
-		}),
-		Entry("should fail validation on CREATE in Zone CP when origin label has unknown value", testCase{
-			mode:        core.Zone,
-			objTemplate: &v1alpha1.MeshTimeout{},
-			username:    "cli-user",
-			obj: `
-			{
-			  "apiVersion": "kuma.io/v1alpha1",
-			  "kind": "MeshTimeout",
-			  "mesh": "default",
-			  "metadata": {
-				"name": "zone-1",
-				"creationTimestamp": null,
-			    "labels": {
-			      "kuma.io/origin": "some_unknown_origin"
-			    }
-			  },
-			  "spec": {
-			    "targetRef": {
-			      "kind": "Mesh"
-			    },
-			    "to": [
-			      {
-			        "targetRef": {
-			          "kind": "Mesh"
-			        },
-			        "default": {
-			          "idleTimeout": "21s",
-			          "connectionTimeout": "21s",
-			          "http": {
-			            "requestTimeout": "21s"
-			          }
-			        }
-			      }
-			    ]
-			  }
-			}
-			`,
-			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1.AdmissionResponse{
-					UID:     "12345",
-					Allowed: false,
-					Result: &kube_meta.Status{
-						Code:    422,
-						Status:  "Failure",
-						Reason:  "Invalid",
-						Message: "labels[\"kuma.io/origin\"]: unknown resource origin \"some_unknown_origin\"",
-						Details: &kube_meta.StatusDetails{
-							Name:  "zone-1",
-							Group: "",
-							Kind:  "MeshTimeout",
-							UID:   "",
-							Causes: []kube_meta.StatusCause{{
-								Type:    "FieldValueInvalid",
-								Message: "unknown resource origin \"some_unknown_origin\"",
-								Field:   "labels[\"kuma.io/origin\"]",
-							}},
-						},
-					},
-				},
-			},
-			operation: admissionv1.Create,
-		}),
+		test.EntriesForFolder("validation"),
 	)
 })
+
+func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.Webhook {
+	checker := webhooks.ResourceAdmissionChecker{
+		AllowedUsers: []string{
+			"system:serviceaccount:kube-system:generic-garbage-collector",
+			"system:serviceaccount:kuma-system:kuma-control-plane",
+		},
+		Mode:                         mode,
+		FederatedZone:                federatedZone,
+		DisableOriginLabelValidation: false,
+	}
+	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter(), core_registry.Global(), k8s_registry.Global(), checker)
+	handler.InjectDecoder(kube_admission.NewDecoder(scheme))
+	return &kube_admission.Webhook{
+		Handler: handler,
+	}
+}
+
+func webhookRequest(inputFile string) kube_admission.Request {
+	input, err := os.ReadFile(inputFile)
+	Expect(err).NotTo(HaveOccurred())
+
+	lines := strings.Split(string(input), "\n")
+
+	var user string
+	var op string
+	for _, l := range lines {
+		if strings.HasPrefix(l, "#") {
+			l = strings.Trim(l, "# ")
+			keyValuePairs := strings.Split(l, ",")
+			for _, kv := range keyValuePairs {
+				pair := strings.Split(kv, "=")
+				switch pair[0] {
+				case "user":
+					user = pair[1]
+				case "operation":
+					op = pair[1]
+				}
+			}
+		} else {
+			break
+		}
+	}
+
+	resources := strings.Split(string(input), "---")
+	var obj, oldObj []byte
+	switch op {
+	case "UPDATE":
+		Expect(resources).To(HaveLen(2))
+		obj, oldObj = []byte(resources[0]), []byte(resources[1])
+	case "DELETE":
+		Expect(resources).To(HaveLen(1))
+		oldObj = []byte(resources[0])
+	default:
+		Expect(resources).To(HaveLen(1))
+		obj = []byte(resources[0])
+	}
+
+	gvk := struct {
+		ApiVersion string `json:"apiVersion"`
+		Kind       string `json:"kind"`
+	}{}
+	Expect(yaml.Unmarshal([]byte(resources[0]), &gvk)).To(Succeed())
+	gv, err := schema.ParseGroupVersion(gvk.ApiVersion)
+	Expect(err).ToNot(HaveOccurred())
+
+	req := kube_admission.Request{
+		AdmissionRequest: admissionv1.AdmissionRequest{
+			UID: kube_types.UID("12345"),
+			Object: kube_runtime.RawExtension{
+				Raw: obj,
+			},
+			OldObject: kube_runtime.RawExtension{
+				Raw: oldObj,
+			},
+			Kind: kube_meta.GroupVersionKind{
+				Group:   gv.Group,
+				Version: gv.Version,
+				Kind:    gvk.Kind,
+			},
+			UserInfo: authenticationv1.UserInfo{
+				Username: user,
+			},
+			Operation: admissionv1.Operation(op),
+		},
+	}
+
+	return req
+}

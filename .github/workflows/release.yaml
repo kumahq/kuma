@@ -1,4 +1,7 @@
 name: "release"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 on:
   release: {}
   schedule:
@@ -25,10 +28,12 @@ env:
   CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
   MIN_VERSION: "1.2.0"
+  USE_LABEL_IN_VERSION: "false"
 permissions:
   contents: read
 jobs:
   release:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -43,10 +48,10 @@ jobs:
           go install github.com/kumahq/ci-tools/cmd/release-tool@latest
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@e8e39f73bb84fdf315a015fa3104f314c0a258b4 # v1.8.1
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: create-release
         if: env.RELEASE != '0.0.0'
         env:
@@ -86,14 +91,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --use-label-for-dev=${{ env.USE_LABEL_IN_VERSION }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
           release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50 # v6.0.0
         with:
           commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true

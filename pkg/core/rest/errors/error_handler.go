@@ -146,7 +146,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &admin.KDSTransportError{}):
+	case errors.Is(err, &admin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,

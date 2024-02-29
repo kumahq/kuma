@@ -35,7 +35,6 @@ resources:
                   cluster: backend
                   regexRewrite:
                     pattern:
-                      googleRe2: {}
                       regex: .*
                     substitution: /v2
                   timeout: 0s

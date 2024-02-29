@@ -10,15 +10,16 @@ permissions:
   contents: read
 jobs:
   pr_comments:
+    timeout-minutes: 30
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@e8e39f73bb84fdf315a015fa3104f314c0a258b4 # v1.8.1
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
         run: |
           # Ensure the commenter is a maintainer
@@ -42,8 +43,7 @@ jobs:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+          token: ${{ steps.github-app-token.outputs.token }}
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod

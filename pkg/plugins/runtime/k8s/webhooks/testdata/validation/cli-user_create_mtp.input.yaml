@@ -1,0 +1,18 @@
+# user=cli-user,operation=CREATE
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: mtp-es
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  from:
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      default:
+        action: Allow

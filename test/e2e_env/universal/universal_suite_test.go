@@ -56,6 +56,7 @@ var (
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
 		}
 	})
+	_ = ReportAfterSuite("cp logs", universal.PrintCPLogsOnFailure)
 )
 
 var (

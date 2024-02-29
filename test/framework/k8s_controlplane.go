@@ -134,10 +134,7 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 		return errors.Errorf("API port not forwarded")
 	}
 
-	output, err := c.kumactl.RunKumactlAndGetOutputV(c.verbose, "get", "dataplanes")
-	fmt.Println(output)
-
-	return err
+	return c.kumactl.RunKumactl("get", "meshes")
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {

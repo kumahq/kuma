@@ -160,6 +160,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
@@ -202,6 +204,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH

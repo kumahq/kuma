@@ -2,18 +2,19 @@ package gateway
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
-func GenerateRouteConfig(info GatewayListenerInfo) *envoy_routes.RouteConfigurationBuilder {
-	switch info.Listener.Protocol {
+func GenerateRouteConfig(proxy *xds.Proxy, protocol mesh_proto.MeshGateway_Listener_Protocol, name string) *envoy_routes.RouteConfigurationBuilder {
+	switch protocol {
 	case mesh_proto.MeshGateway_Listener_HTTPS,
 		mesh_proto.MeshGateway_Listener_HTTP:
 	default:
 		return nil
 	}
 
-	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion, info.Listener.ResourceName).
+	return envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, name).
 		Configure(
 			envoy_routes.CommonRouteConfiguration(),
 			envoy_routes.IgnorePortInHostMatching(),
