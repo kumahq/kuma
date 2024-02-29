@@ -2,10 +2,12 @@ package v1alpha1_test
 
 import (
 	"path/filepath"
+	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -182,7 +184,8 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "otel-collector.observability.svc:4317",
+												Endpoint:        "otel-collector.observability.svc:4317",
+												RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 											},
 										},
 									},
