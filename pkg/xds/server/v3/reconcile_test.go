@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -25,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 func hcmForRoute(routeName string) *anypb.Any {
@@ -140,6 +142,7 @@ var _ = Describe("Reconcile", func() {
 				}),
 				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 				statsCallbacks,
+				callbacks.NewDeliveryTrackerCallbacks(1 * time.Millisecond),
 			}
 
 			// given

@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 )
@@ -26,9 +27,10 @@ var reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 
 type reconciler struct {
-	generator      snapshotGenerator
-	cacher         snapshotCacher
-	statsCallbacks util_xds.StatsCallbacks
+	generator       snapshotGenerator
+	cacher          snapshotCacher
+	statsCallbacks  util_xds.StatsCallbacks
+	deliveryTracker *xds_callbacks.DeliveryTrackerCallbacks
 }
 
 func (r *reconciler) Clear(proxyId *model.ProxyId) error {
@@ -50,6 +52,21 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 }
 
+var (
+	OrderedTypes = []envoy_types.ResponseType{
+		envoy_types.Cluster,
+		envoy_types.Endpoint,
+		envoy_types.Listener,
+		envoy_types.Route,
+	}
+	ReverseOrderedTypes = []envoy_types.ResponseType{
+		envoy_types.Listener,
+		envoy_types.Route,
+		envoy_types.Cluster,
+		envoy_types.Endpoint,
+	}
+)
+
 func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (bool, error) {
 	node := &envoy_core.Node{Id: proxy.Id.String()}
 	snapshot, err := r.generator.GenerateSnapshot(ctx, xdsCtx, proxy)
@@ -62,7 +79,9 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	// fallback to UUID otherwise
 	previous, err := r.cacher.Get(node)
 	if err != nil {
-		previous = &envoy_cache.Snapshot{}
+		previous = &envoy_cache.Snapshot{
+			Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
+		}
 	}
 
 	snapshot, changed := autoVersion(previous, snapshot)
@@ -92,14 +111,66 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 	log.Info("config has changed", "versions", changed)
 
-	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
-		return false, errors.Wrap(err, "failed to store snapshot")
+	if snapshot.Resources[envoy_types.Cluster].Version != previous.Resources[envoy_types.Cluster].Version {
+		snapshot.Resources[envoy_types.Endpoint].Version = core.NewUUID()
+	}
+
+	types := orderedTypes(previous, snapshot)
+	if len(types) > 0 {
+		resToChange := [envoy_types.UnknownType]envoy_cache.Resources{}
+		for _, typ := range types {
+			resToChange[typ] = snapshot.Resources[typ]
+			snapshot.Resources[typ] = previous.Resources[typ]
+		}
+
+		for _, typ := range types {
+			if resToChange[typ].Version == previous.Resources[typ].Version {
+				continue // nothing to wait for
+			}
+			snapshot.Resources[typ] = resToChange[typ]
+
+			if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
+				return false, errors.Wrap(err, "failed to store snapshot")
+			}
+			if err := r.deliveryTracker.WaitForResponse(ctx, snapshot.Resources[typ].Version); err != nil {
+				log.Error(err, "could not wait for a response", "typ", typ, "version", snapshot.Resources[typ].Version)
+			}
+		}
+	} else {
+		if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
+			return false, errors.Wrap(err, "failed to store snapshot")
+		}
 	}
 
 	for _, version := range changed {
 		r.statsCallbacks.ConfigReadyForDelivery(version)
 	}
 	return true, nil
+}
+
+// https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#eventual-consistency-considerations
+func orderedTypes(previous, snapshot *envoy_cache.Snapshot) []envoy_types.ResponseType {
+	if len(snapshot.Resources[envoy_types.Cluster].Items) < len(previous.Resources[envoy_types.Cluster].Items) &&
+		existingResourcesUnchanged(previous.GetResources(envoy_resource.ClusterType), snapshot.GetResources(envoy_resource.ClusterType)) {
+		return ReverseOrderedTypes
+	}
+	if snapshot.Resources[envoy_types.Cluster].Version != previous.Resources[envoy_types.Cluster].Version {
+		return OrderedTypes
+	}
+	return nil
+}
+
+func existingResourcesUnchanged(newRes, oldRes map[string]envoy_types.Resource) bool {
+	for name, res := range newRes {
+		oldRes, ok := oldRes[name]
+		if !ok {
+			continue
+		}
+		if !proto.Equal(oldRes, res) {
+			return false
+		}
+	}
+	return true
 }
 
 func validateResource(r envoy_types.Resource) error {

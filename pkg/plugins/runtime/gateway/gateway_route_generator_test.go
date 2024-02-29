@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"path"
+	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
@@ -41,7 +43,7 @@ var _ = Describe("Gateway Route", func() {
 		if err != nil {
 			return nil, err
 		}
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks, callbacks.NewDeliveryTrackerCallbacks(1*time.Millisecond))
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.
