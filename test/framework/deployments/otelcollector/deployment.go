@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DeploymentName         = "otel-collector"
+	DefaultDeploymentName  = "otel-collector"
 	GRPCPort               = 4317
 	HTTPPort               = 4318
 	MetricsPort            = 8888
@@ -25,6 +25,7 @@ type Deployment interface {
 }
 
 type DeploymentOpts struct {
+	name               string
 	namespace          string
 	image              string
 	networks           []string
@@ -36,6 +37,7 @@ type DeploymentOpts struct {
 
 func DefaultOpts() DeploymentOpts {
 	return DeploymentOpts{
+		name:               DefaultDeploymentName,
 		image:              "otel/opentelemetry-collector-contrib:0.92.0",
 		networks:           []string{"kind"},
 		logLevel:           "info",
@@ -45,6 +47,12 @@ func DefaultOpts() DeploymentOpts {
 }
 
 type DeploymentOpt = func(opts *DeploymentOpts)
+
+func WithName(name string) DeploymentOpt {
+	return func(opts *DeploymentOpts) {
+		opts.name = name
+	}
+}
 
 func WithNamespace(namespace string) DeploymentOpt {
 	return func(opts *DeploymentOpts) {
@@ -82,8 +90,8 @@ func WithIPv6(isIPv6 bool) DeploymentOpt {
 	}
 }
 
-func From(cluster framework.Cluster) OpenTelemetryCollector {
-	return cluster.Deployment(DeploymentName).(OpenTelemetryCollector)
+func From(cluster framework.Cluster, deploymentName string) OpenTelemetryCollector {
+	return cluster.Deployment(deploymentName).(OpenTelemetryCollector)
 }
 
 func Install(fs ...DeploymentOpt) framework.InstallFunc {
@@ -98,6 +106,7 @@ func Install(fs ...DeploymentOpt) framework.InstallFunc {
 		switch cluster.(type) {
 		case *framework.K8sCluster:
 			deployment = newK8sDeployment().
+				WithName(opts.name).
 				WithImage(opts.image).
 				WithNamespace(opts.namespace).
 				WithWaitingToBeReady(opts.waitingToBeReady).

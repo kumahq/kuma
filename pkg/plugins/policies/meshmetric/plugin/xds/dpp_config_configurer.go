@@ -59,6 +59,7 @@ type Application struct {
 
 type Backend struct {
 	Type          string                `json:"type"`
+	Name          *string               `json:"name"`
 	OpenTelemetry *OpenTelemetryBackend `json:"openTelemetry,omitempty"`
 }
 
