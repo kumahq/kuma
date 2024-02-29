@@ -35,8 +35,8 @@ func (m *metrics) RegisterGRPC(server *grpc.Server) {
 
 func (m *metrics) GRPCServerInterceptors() []grpc.ServerOption {
 	return []grpc.ServerOption{
-		grpc.StreamInterceptor(m.grpcServerMetrics.StreamServerInterceptor()),
-		grpc.UnaryInterceptor(m.grpcServerMetrics.UnaryServerInterceptor()),
+		grpc.ChainStreamInterceptor(m.grpcServerMetrics.StreamServerInterceptor()),
+		grpc.ChainUnaryInterceptor(m.grpcServerMetrics.UnaryServerInterceptor()),
 	}
 }
 

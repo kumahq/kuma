@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -75,7 +76,10 @@ func New(
 
 	grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
-	grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
+	grpcOptions = append(
+		grpcOptions,
+		grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor(otelgrpc.WithInterceptorFilter(filters.Not(filters.MethodName("Ping"))))), // nolint:staticcheck
+	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	return &InterCpServer{

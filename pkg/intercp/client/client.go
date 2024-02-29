@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -48,6 +49,9 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
-	dialOpts = append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	dialOpts = append(
+		dialOpts,
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor(otelgrpc.WithInterceptorFilter(filters.Not(filters.MethodName("Ping"))))), // nolint:staticcheck
+	)
 	return grpc.Dial(url.Host, dialOpts...)
 }
