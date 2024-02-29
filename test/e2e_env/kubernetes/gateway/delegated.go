@@ -93,4 +93,5 @@ spec:
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 	Context("MeshRetry", delegated.MeshRetry(&config))
 	Context("MeshHTTPRoute", delegated.MeshHTTPRoute(&config))
+	Context("MeshTimeout", delegated.MeshTimeout(&config))
 }
