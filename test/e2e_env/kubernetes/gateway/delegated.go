@@ -10,6 +10,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
@@ -36,6 +37,10 @@ func Delegated() {
 				testserver.WithMesh(config.Mesh),
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
+			)).
+			Install(otelcollector.Install(
+				otelcollector.WithNamespace(config.NamespaceOutsideMesh),
+				otelcollector.WithIPv6(Config.IPV6),
 			)).
 			Install(kic.KongIngressController(
 				kic.WithName("delegated"),
@@ -88,4 +93,5 @@ spec:
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 	Context("MeshRetry", delegated.MeshRetry(&config))
+	Context("MeshMetric", delegated.MeshMetric(&config))
 }
