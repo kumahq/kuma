@@ -28,7 +28,7 @@ resources:
                   prefix: /
           statPrefix: _kuma_dynamicconfig_observability
     name: _kuma:dynamicconfig:observability
-- name: _kuma:metrics:opentelemetry:listener:otel-collector.observability.svc4317
+- name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -52,14 +52,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:opentelemetry:listener:otel-collector.observability.svc4317
+              name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: _kuma:metrics:opentelemetry:cluster:otel-collector.observability.svc4317
-          statPrefix: _kuma_metrics_opentelemetry_listener_otel-collector_observability_svc4317
-    name: _kuma:metrics:opentelemetry:listener:otel-collector.observability.svc4317
+                  cluster: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
+          statPrefix: _kuma_metrics_opentelemetry_otel-collector_observability_svc4317
+    name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
 - name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
