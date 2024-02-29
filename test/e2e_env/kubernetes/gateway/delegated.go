@@ -31,6 +31,7 @@ func Delegated() {
 			Install(Namespace(config.NamespaceOutsideMesh)).
 			Install(democlient.Install(
 				democlient.WithNamespace(config.NamespaceOutsideMesh),
+				democlient.WithService(true),
 			)).
 			Install(testserver.Install(
 				testserver.WithMesh(config.Mesh),
@@ -87,4 +88,5 @@ spec:
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
+	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
 }
