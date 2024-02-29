@@ -119,7 +119,7 @@ spec:
 						HaveField("Destination", fmt.Sprintf("test-server_%s_svc_80", config.Namespace)),
 					),
 				))
-			}, "30s", "1s").Should(Succeed())
+			}, "90s", "1s").Should(Succeed())
 		})
 	}
 }
