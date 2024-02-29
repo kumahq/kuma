@@ -66,11 +66,11 @@ func GetMetricsHijackerClusterName() string {
 }
 
 func GetOpenTelemetryListenerName(backendName string) string {
-	return Join("_kuma", "metrics", "opentelemetry", "listener", backendName)
+	return Join("_kuma", "metrics", "opentelemetry", backendName)
 }
 
 func GetOpenTelemetryClusterName(backendName string) string {
-	return Join("_kuma", "metrics", "opentelemetry", "cluster", backendName)
+	return Join("_kuma", "metrics", "opentelemetry", backendName)
 }
 
 func GetPrometheusListenerName() string {
