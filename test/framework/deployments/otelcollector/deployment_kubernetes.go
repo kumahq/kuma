@@ -297,14 +297,14 @@ processors:
     send_batch_size: 4096
     send_batch_max_size: 8192
   memory_limiter:
-    limit_mib: 1500
-    spike_limit_mib: 512
+    limit_mib: 500
+    spike_limit_mib: 400
     check_interval: 5s
 extensions:
   zpages: {}
   memory_ballast:
     # Memory Ballast size should be max 1/3 to 1/2 of memory.
-    size_mib: 683
+    size_mib: 256
 exporters:
   debug:
     verbosity: basic

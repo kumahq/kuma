@@ -5,10 +5,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -38,6 +40,8 @@ const (
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	OpenTelemetryGrpcPort        = 4317
 )
+
+var DefaultRefreshInterval = k8s.Duration{Duration: time.Minute}
 
 type plugin struct{}
 
@@ -235,7 +239,8 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, prometheusBackend
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,
 			OpenTelemetry: &plugin_xds.OpenTelemetryBackend{
-				Endpoint: core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
+				Endpoint:        core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
+				RefreshInterval: pointer.DerefOr(backend.RefreshInterval, DefaultRefreshInterval),
 			},
 		})
 	}

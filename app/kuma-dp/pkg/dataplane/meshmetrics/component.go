@@ -148,7 +148,10 @@ func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*x
 	for backendName, backend := range openTelemetryBackends {
 		// backend already running, in the future we can reconfigure it here
 		if cf.runningBackends[backendName] != nil {
-			continue
+			err := cf.reconfigureBackendIfNeeded(backendName, backend)
+			if err != nil {
+				return err
+			}
 		}
 		// start backend as it is not running yet
 		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
@@ -206,11 +209,11 @@ func startExporter(backend *xds.OpenTelemetryBackend, producer *metrics.Aggregat
 		exporter: sdkmetric.NewMeterProvider(
 			sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
 				exporter,
-				// TODO probably can be configured from policy. Issue: https://github.com/kumahq/kuma/issues/8925
-				sdkmetric.WithInterval(30*time.Second),
+				sdkmetric.WithInterval(backend.RefreshInterval.Duration),
 				sdkmetric.WithProducer(producer),
 			)),
 		),
+		appliedConfig: *backend,
 	}, nil
 }
 
@@ -267,6 +270,25 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 	return applicationsToScrape
 }
 
+func (cf *ConfigFetcher) reconfigureBackendIfNeeded(backendName string, backend *xds.OpenTelemetryBackend) error {
+	if configChanged(cf.runningBackends[backendName].appliedConfig, backend) {
+		err := cf.shutdownBackend(backendName)
+		if err != nil {
+			return err
+		}
+		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
+		if err != nil {
+			return err
+		}
+		cf.runningBackends[backendName] = exporter
+	}
+	return nil
+}
+
+func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
+	return appliedConfig.RefreshInterval.Duration != newConfig.RefreshInterval.Duration
+}
+
 func dialOptions() []grpc.DialOption {
 	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
 		var d net.Dialer
@@ -278,5 +300,6 @@ func dialOptions() []grpc.DialOption {
 }
 
 type runningBackend struct {
-	exporter *sdkmetric.MeterProvider
+	exporter      *sdkmetric.MeterProvider
+	appliedConfig xds.OpenTelemetryBackend
 }
