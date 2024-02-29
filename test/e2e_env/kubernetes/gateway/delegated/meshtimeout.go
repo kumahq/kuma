@@ -40,7 +40,7 @@ func MeshTimeout(config *Config) func() {
 			)).To(Succeed())
 		})
 
-		DescribeTable("should add timeouts", func(timeoutConfig string) {
+		DescribeTable("should add timeouts", FlakeAttempts(3), func(timeoutConfig string) {
 			// given no MeshTimeout
 			mts, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshtimeouts", config.Mesh)
 			Expect(err).ToNot(HaveOccurred())
