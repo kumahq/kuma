@@ -71,7 +71,8 @@ func generateListeners(
 				}
 			}
 			routes = append(routes, xds.OutboundRoute{
-				Matches:                 route.Matches,
+				Hash:                    route.Hash,
+				Match:                   route.Match,
 				Filters:                 route.Filters,
 				Split:                   split,
 				BackendRefToClusterName: clusterCache,
@@ -117,7 +118,7 @@ func prepareRoutes(
 	serviceName string,
 	protocol core_mesh.Protocol,
 	tags map[string]string,
-) []Route {
+) []api.Route {
 	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(serviceName))
 
 	var apiRules []api.Rule
@@ -133,45 +134,37 @@ func prepareRoutes(
 		}
 	}
 
+	// sort rules before we add default prefix matches etc
+	routes := api.SortRules(apiRules)
+
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
-	catchAllMatch := []api.Match{
-		{Path: pointer.To(catchAllPathMatch)},
+	catchAllMatch := api.Match{
+		Path: pointer.To(catchAllPathMatch),
 	}
 
-	noCatchAll := slices.IndexFunc(apiRules, func(rule api.Rule) bool {
-		return reflect.DeepEqual(rule.Matches, catchAllMatch)
+	noCatchAll := slices.IndexFunc(routes, func(route api.Route) bool {
+		return reflect.DeepEqual(route.Match, catchAllMatch)
 	}) == -1
 
 	if noCatchAll {
-		apiRules = append(apiRules, api.Rule{
-			Matches: catchAllMatch,
+		routes = append(routes, api.Route{
+			Match: catchAllMatch,
+			Hash:  api.HashMatches([]api.Match{catchAllMatch}),
 		})
 	}
 
-	var routes []Route
-	for _, rule := range apiRules {
-		var matches []api.Match
-
-		for _, match := range rule.Matches {
-			if match.Path == nil {
-				// According to Envoy docs, match must have precisely one of
-				// prefix, path, safe_regex, connect_matcher,
-				// path_separated_prefix, path_match_policy set, so when policy
-				// doesn't specify explicit type of matching, we are assuming
-				// "catch all" path (any path starting with "/").
-				match.Path = pointer.To(catchAllPathMatch)
-			}
-
-			matches = append(matches, match)
+	for i := range routes {
+		route := &routes[i]
+		if route.Match.Path == nil {
+			// According to Envoy docs, match must have precisely one of
+			// prefix, path, safe_regex, connect_matcher,
+			// path_separated_prefix, path_match_policy set, so when policy
+			// doesn't specify explicit type of matching, we are assuming
+			// "catch all" path (any path starting with "/").
+			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		route := Route{
-			Matches: matches,
-		}
-
-		if rule.Default.BackendRefs != nil {
-			route.BackendRefs = *rule.Default.BackendRefs
-		} else {
+		if len(route.BackendRefs) == 0 {
 			route.BackendRefs = []common_api.BackendRef{
 				{
 					TargetRef: common_api.TargetRef{
@@ -183,10 +176,6 @@ func prepareRoutes(
 				},
 			}
 		}
-		if rule.Default.Filters != nil {
-			route.Filters = *rule.Default.Filters
-		}
-		routes = append(routes, route)
 	}
 
 	return routes

@@ -551,22 +551,22 @@ func getResourceYaml(list core_xds.ResourceList) []byte {
 }
 
 func httpOutboundListener() envoy_common.NamedResource {
+	rootPrefix := meshhttproute_api.Match{
+		Path: &meshhttproute_api.PathMatch{
+			Type:  meshhttproute_api.PathPrefix,
+			Value: "/",
+		},
+	}
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
 		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
 			Service: "backend",
 			Routes: []meshhttproute_xds.OutboundRoute{{
+				Hash: meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefix}),
 				Split: []envoy_common.Split{
 					plugins_xds.NewSplitBuilder().WithClusterName("backend").WithWeight(100).Build(),
 				},
-				Matches: []meshhttproute_api.Match{
-					{
-						Path: &meshhttproute_api.PathMatch{
-							Type:  meshhttproute_api.PathPrefix,
-							Value: "/",
-						},
-					},
-				},
+				Match: rootPrefix,
 			}},
 			DpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -577,6 +577,19 @@ func httpOutboundListener() envoy_common.NamedResource {
 }
 
 func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
+	anotherBackendPath := meshhttproute_api.Match{
+		Path: &meshhttproute_api.PathMatch{
+			Type:  meshhttproute_api.Exact,
+			Value: "/another-backend",
+		},
+		Method: pointer.To[meshhttproute_api.Method]("GET"),
+	}
+	rootPrefix := meshhttproute_api.Match{
+		Path: &meshhttproute_api.PathMatch{
+			Type:  meshhttproute_api.PathPrefix,
+			Value: "/",
+		},
+	}
 	return createListener(
 		NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10001, core_xds.SocketAddressProtocolTCP),
 		AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{
@@ -586,28 +599,15 @@ func httpOutboundListenerWithSeveralRoutes() envoy_common.NamedResource {
 					Split: []envoy_common.Split{
 						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
 					},
-					Matches: []meshhttproute_api.Match{
-						{
-							Path: &meshhttproute_api.PathMatch{
-								Type:  meshhttproute_api.Exact,
-								Value: "/another-backend",
-							},
-							Method: pointer.To[meshhttproute_api.Method]("GET"),
-						},
-					},
+					Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{anotherBackendPath}),
+					Match: anotherBackendPath,
 				},
 				{
 					Split: []envoy_common.Split{
 						plugins_xds.NewSplitBuilder().WithClusterName("other-service").WithWeight(100).Build(),
 					},
-					Matches: []meshhttproute_api.Match{
-						{
-							Path: &meshhttproute_api.PathMatch{
-								Type:  meshhttproute_api.PathPrefix,
-								Value: "/",
-							},
-						},
-					},
+					Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefix}),
+					Match: rootPrefix,
 				},
 			},
 			DpTags: map[string]map[string]bool{
