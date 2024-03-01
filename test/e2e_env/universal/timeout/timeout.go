@@ -76,6 +76,6 @@ conf:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
-		}, MustPassRepeatedly(3), "30s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }
