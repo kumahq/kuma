@@ -37,6 +37,10 @@ func Delegated() {
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
 			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(config.NamespaceOutsideMesh),
+				testserver.WithName("external-service"),
+			)).
 			Install(kic.KongIngressController(
 				kic.WithName("delegated"),
 				kic.WithNamespace(config.Namespace),
@@ -87,4 +91,7 @@ spec:
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
+	Context("MeshRetry", delegated.MeshRetry(&config))
+	Context("MeshHTTPRoute", delegated.MeshHTTPRoute(&config))
+	Context("MeshTimeout", delegated.MeshTimeout(&config))
 }
