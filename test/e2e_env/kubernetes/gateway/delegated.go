@@ -37,6 +37,8 @@ func Delegated() {
 				testserver.WithMesh(config.Mesh),
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
+				testserver.WithStatefulSet(true),
+				testserver.WithReplicas(3),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(config.NamespaceOutsideMesh),
@@ -100,4 +102,5 @@ spec:
 	Context("MeshHTTPRoute", delegated.MeshHTTPRoute(&config))
 	Context("MeshTimeout", delegated.MeshTimeout(&config))
 	Context("MeshMetric", delegated.MeshMetric(&config))
+	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
 }
