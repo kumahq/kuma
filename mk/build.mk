@@ -60,6 +60,10 @@ build/info/short:
 	@echo enabled arch-os:$(ENABLED_ARCH_OS)
 	$(EXTRA_BUILD_INFO)
 
+.PHONY: build/info/version
+build/info/version:
+	@echo $(BUILD_INFO_VERSION)
+
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
 
