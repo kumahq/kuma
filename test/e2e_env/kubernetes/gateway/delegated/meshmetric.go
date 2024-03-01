@@ -48,7 +48,7 @@ spec:
 
 		It("MeshMetric with OpenTelemetry enabled", func() {
 			// given
-			collector := otelcollector.From(kubernetes.Cluster)
+			collector := otelcollector.From(kubernetes.Cluster, otelcollector.DefaultDeploymentName)
 			Expect(kubernetes.Cluster.Install(meshMetric(collector.CollectorEndpoint()))).To(Succeed())
 
 			// then
