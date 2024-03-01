@@ -11,7 +11,7 @@ $(foreach goarch,$(SUPPORTED_GOARCHES),$(foreach image,$(IMAGES_RELEASE),$(eval 
 
 define TEST_CONTAINER_STRUCTURES
 .PHONY: test/container-structure/$(1)
-test/container-structure/$(1): $(foreach goarch,$(SUPPORTED_GOARCHES),test/container-structure/$(1)/$(goarch))
+test/container-structure/$(1): $(foreach goarch,$(ENABLED_GOARCHES),test/container-structure/$(1)/$(goarch))
 endef
 $(foreach image,$(IMAGES_RELEASE),$(eval $(call TEST_CONTAINER_STRUCTURES,$(image))))
 
