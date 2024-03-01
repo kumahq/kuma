@@ -18,9 +18,6 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 
 	var instanceId string
 	var clusterId string
-	if err != nil {
-		return err
-	}
 	ws.Route(ws.GET("/").
 		Metadata(authn.MetadataAuthKey, authn.MetadataAuthSkip).
 		To(func(req *restful.Request, resp *restful.Response) {

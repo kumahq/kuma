@@ -11,22 +11,24 @@ type OpenTelemetryConfigurer struct {
 	Endpoint     *core_xds.Endpoint
 	ListenerName string
 	ClusterName  string
+	SocketName   string
+	ApiVersion   core_xds.APIVersion
 }
 
-func (oc *OpenTelemetryConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
-	return envoy_clusters.NewClusterBuilder(proxy.APIVersion, oc.ClusterName).
+func (oc *OpenTelemetryConfigurer) ConfigureCluster(isIPv6 bool) (envoy_common.NamedResource, error) {
+	return envoy_clusters.NewClusterBuilder(oc.ApiVersion, oc.ClusterName).
 		Configure(envoy_clusters.Http2()).
-		Configure(envoy_clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), *oc.Endpoint)).
+		Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, *oc.Endpoint)).
 		Configure(envoy_clusters.ClientSideTLS([]core_xds.Endpoint{*oc.Endpoint})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 }
 
-func (oc *OpenTelemetryConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
-	return envoy_listeners.NewListenerBuilder(proxy.APIVersion, oc.ListenerName).
-		Configure(envoy_listeners.PipeListener(core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir))).
+func (oc *OpenTelemetryConfigurer) ConfigureListener() (envoy_common.NamedResource, error) {
+	return envoy_listeners.NewListenerBuilder(oc.ApiVersion, oc.ListenerName).
+		Configure(envoy_listeners.PipeListener(oc.SocketName)).
 		Configure(envoy_listeners.FilterChain(
-			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			envoy_listeners.NewFilterChainBuilder(oc.ApiVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(oc.ListenerName, []*envoy_common.StaticEndpointPath{
 					{
 						ClusterName: oc.ClusterName,
