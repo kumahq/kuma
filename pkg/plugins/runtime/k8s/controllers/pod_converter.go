@@ -110,7 +110,7 @@ func (p *PodConverter) dataplaneFor(
 		}
 
 		inboundPortV6, _, _ := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
-		ipv6Disabled, _, _ := annotations.GetBooleanWithDefault(false, false, metadata.KumaTransparentProxyingDisableIPv6)
+		ipv6Enabled, _, _ := annotations.GetEnabledWithDefault(true, metadata.KumaTransparentProxyingIPv6Enabled)
 
 		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 		if err != nil {
@@ -123,7 +123,7 @@ func (p *PodConverter) dataplaneFor(
 			RedirectPortInbound:   inboundPort,
 			RedirectPortOutbound:  outboundPort,
 			RedirectPortInboundV6: inboundPortV6,
-			Ipv6Disabled:          ipv6Disabled,
+			Ipv6Enabled:           ipv6Enabled,
 		}
 
 		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {

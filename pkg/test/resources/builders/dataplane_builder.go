@@ -161,11 +161,11 @@ func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *Dataplane
 	return d
 }
 
-func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32, ipv6Disabled bool) *DataplaneBuilder {
+func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32, ipv6Enabled bool) *DataplaneBuilder {
 	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
 		RedirectPortInbound:  redirectPortInbound,
 		RedirectPortOutbound: redirectPortOutbound,
-		Ipv6Disabled:         ipv6Disabled,
+		Ipv6Enabled:          ipv6Enabled,
 	}
 	return d
 }

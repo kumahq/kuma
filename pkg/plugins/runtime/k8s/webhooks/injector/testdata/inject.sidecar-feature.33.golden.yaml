@@ -2,9 +2,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    docs: Documentation
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/envoy-admin-port: "9901"
+    kuma.io/ipv6-enabled: "false"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
@@ -48,6 +48,8 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ipv6-enabled
+    - "false"
     command:
     - /usr/bin/kumactl
     - install

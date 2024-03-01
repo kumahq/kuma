@@ -144,13 +144,13 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 
 func GetIPv6InboundRedirectPort(proxy *model.Proxy) uint32 {
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	ipv6Disabled := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpv6Disabled()
-	if ipv6Disabled {
+	ipv6Enabled := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpv6Enabled()
+	if !ipv6Enabled {
 		return 0
 	}
 
-	// here when a redirectPortInboundV6 is zero and ipv6Disabled is false simply means this value is not set anywhere
-	// because if redirectPortInboundV6 is set to zero by user, the field Ipv6Disabled will also be set to true by a pre-processing rule at injector.go
+	// here when a redirectPortInboundV6 is zero and ipv6Enabled is false simply means this value is not set anywhere
+	// because if redirectPortInboundV6 is set to zero by user, the field Ipv6Enabled will also be set to false by a pre-processing rule at injector.go
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
 	if redirectPortInboundV6 == 0 {
 		return redirectPortInbound

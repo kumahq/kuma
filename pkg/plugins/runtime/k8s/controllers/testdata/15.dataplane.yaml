@@ -21,3 +21,4 @@ spec:
       redirectPortInbound: 15006
       redirectPortInboundV6: 15099
       redirectPortOutbound: 15001
+      ipv6Enabled: true
