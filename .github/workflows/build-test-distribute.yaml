@@ -20,6 +20,7 @@ jobs:
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -28,6 +29,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        with:
+          args: --fix=false --verbose
+          version: v1.56.1
+          skip-pkg-cache: true
       - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: |
@@ -37,11 +43,6 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
-      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
-        with:
-          args: --fix=false --verbose
-          version: v1.56.1
-          skip-pkg-cache: true
       - run: |
           make clean
       - run: |
@@ -51,6 +52,9 @@ jobs:
         with:
           dir: .
           config: .syft.yaml
+      - id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
   test:
     needs: ["check"]
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
@@ -58,25 +62,18 @@ jobs:
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
     secrets: inherit
-  build:
-    needs: ["check"]
-    uses: ./.github/workflows/_build.yaml
-    with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      IMAGE_ARTIFACT_NAME: "image_artifacts"
-      BINARY_ARTIFACT_NAME: "binary_artifacts"
-    secrets: inherit
-  publish:
-    needs: ["check", "build", "test"]
-    uses: ./.github/workflows/_publish.yaml
+  build_publish:
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
       IMAGE_ARTIFACT_NAME: "image_artifacts"
       BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
     secrets: inherit
   distributions:
-    needs: ["publish", "check", "build", "test"]
+    needs: ["build_publish", "check", "test"]
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest

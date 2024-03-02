@@ -5,6 +5,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgo_kube "k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,6 +72,7 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
 	g.Expect(gatewayapi_v1.AddToScheme(client.Scheme())).To(Succeed())
+	g.Expect(apiextensionsv1.AddToScheme(client.Scheme())).To(Succeed())
 
 	clientset, err := clientgo_kube.NewForConfig(clientConfig)
 	g.Expect(err).ToNot(HaveOccurred())
