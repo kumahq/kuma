@@ -458,8 +458,8 @@ github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFA
 github.com/tklauser/go-sysconf v0.3.12/go.mod h1:Ho14jnntGE1fpdOqQEEaiKRpvIavV0hSfmBq8nJbHYI=
 github.com/tklauser/numcpus v0.6.1 h1:ng9scYS7az0Bk4OZLvrNXNSAO2Pxr1XXRAPyjhIx+Fk=
 github.com/tklauser/numcpus v0.6.1/go.mod h1:1XfjsgE2zo8GVw7POkMbHENHzVg3GzmoZ9fESEdAacY=
-github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.1 h1:DHbC1ebTll9L15xkkaGjGu64JYenuGaRUoLgH6kZkNY=
-github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.1/go.mod h1:iJG7NJCRiIuZDcIZt8rgCOmN1CplbAXpcB6XWcnfn6U=
+github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2 h1:bxExjBM1sDqaQQWNJfQbl1zlLzXbLltA3PyfpHx3DQ4=
+github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2/go.mod h1:Ckyq4LTJ9KNGprCJMiLRY0kBd6ELPnA5kjJ4BQsype8=
 github.com/urfave/cli v1.22.2/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli v1.22.14 h1:ebbhrRiGK2i4naQJr+1Xj92HXZCrK7MsyTS/ob3HnAk=
 github.com/urfave/cli v1.22.14/go.mod h1:X0eDS6pD6Exaclxm99NJ3FiCDRED7vIHpx2mDOHLvkA=
