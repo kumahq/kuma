@@ -188,7 +188,7 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("500m"),
-							"memory": resource.MustParse("1000Mi"),
+							"memory": resource.MustParse("500Mi"),
 						},
 					},
 					Ports: []corev1.ContainerPort{
@@ -297,8 +297,8 @@ processors:
     send_batch_size: 4096
     send_batch_max_size: 8192
   memory_limiter:
-    limit_mib: 950
-    spike_limit_mib: 300
+    limit_mib: 500
+    spike_limit_mib: 400
     check_interval: 5s
 extensions:
   zpages: {}
