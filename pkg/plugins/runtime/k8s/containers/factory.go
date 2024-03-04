@@ -183,11 +183,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 					},
 				},
 			},
-			InitialDelaySeconds: i.ContainerConfig.ReadinessProbe.InitialDelaySeconds,
-			TimeoutSeconds:      i.ContainerConfig.ReadinessProbe.TimeoutSeconds,
-			PeriodSeconds:       i.ContainerConfig.ReadinessProbe.PeriodSeconds,
+			InitialDelaySeconds: i.ContainerConfig.StartupProbe.InitialDelaySeconds,
+			TimeoutSeconds:      i.ContainerConfig.StartupProbe.TimeoutSeconds,
+			PeriodSeconds:       i.ContainerConfig.StartupProbe.PeriodSeconds,
 			SuccessThreshold:    1,
-			FailureThreshold:    i.ContainerConfig.ReadinessProbe.FailureThreshold,
+			FailureThreshold:    i.ContainerConfig.StartupProbe.FailureThreshold,
 		}
 	}
 	if waitForDataplaneReady {
