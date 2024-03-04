@@ -114,7 +114,7 @@ sidecar:
 sidecar:
   usedOnly: true # true or false
   profile:
-    ref: default # our predefined profile
+    ref: basic # our predefined profile
 ```
 
 ##### Additive
@@ -124,13 +124,14 @@ sidecar:
   usedOnly: true # true or false
   appendProfiles:
     - ref: my-profile
-    - ref: default # our predefined profile
+    - ref: basic # our predefined profile
 ```
 
 The question here is: do we want our builtin profiles to be defined like that (this possibly means a user can edit them a bit like default policies)
 or should they be hidden from the user (and only referencable)?
 Since we're starting without this it can be skipped for now but in the future this needs reconsideration.
-We probably don't want to have a another "default policies" situation because that causes problems.
+We probably don't want to have "default policies" situation because that causes problems
+(e.g. someone manually editing a default profile, and then we need to modify it / synchronize somewhere etc.).
 
 #### Profiles suggested:
 
@@ -151,9 +152,9 @@ Nothing is removed, everything included in Envoy, people can manually remove stu
   - `envoy_listener_downstream_.*`
   - `envoy_listener_http_.*`
 
-##### Default
+##### Basic
 
-- Our dashboards stats plus [golden 4 signals](https://sre.google/sre-book/monitoring-distributed-systems/) (by regex / or exact):
+- Our dashboards stats plus [golden 4 signals](https://sre.google/sre-book/monitoring-distributed-systems/) (by regex / or exact) minus internal clusters:
 
 - Latency
   - `.*_rq_time_.*` which is:
@@ -296,7 +297,7 @@ I suggest changing the current schema of
 ```yaml
 sidecar:
   usedOnly: true # true or false
-  profile: golden # one of golden, default, full
+  profile: golden # one of golden, basic, full
   regex: http2_act.* # only profile or regex can be defined
 ```
 
@@ -307,20 +308,22 @@ sidecar:
   usedOnly: true # true or false
   profiles:
     appendProfiles:
-      - name: default
+      - name: basic
       - name: internal_cluster_stats # not available now, in the future
-    excludeRegex:
-      - regex2.* # first exclude
-    includeRegex:
-      - regex1.* # then include (include takes over)
+    exclude:
+      - type: regex # prefix|regex|exact
+        match: "my_match.*"
+    include:
+      - type: prefix # include takes precedence over exclude
+        match: "my_match"
 ```
 
 #### Implementation
 
 ##### In kuma-dp
 
-Just like we [mutate responses for metrics hijacker](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/server.go#L348)
-we can add a filter mutator to reduce the number of metrics (same thing for [OTEL](https://github.com/kumahq/kuma/blob/d6c9ce64ac5e7ba1f5dbb9fb410e7d9410b67815/app/kuma-dp/pkg/dataplane/metrics/metrics_producer.go#L106)).
+Now that we use OTEL everywhere filtering will be done using OTEL libs, so it's solid, efficient and less to maintain on our side.
+OTEL docs for filter processor: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#filter-processor
 
 ##### In Envoy
 
@@ -329,8 +332,8 @@ This would probably be faster, more memory efficient, but it's in boostrap confi
 
 #### Validation
 
-After all profiles are compiled from regexes make sure that they include the ones on the lower levels (all includes default, default includes golden etc.)
-Make sure that with `default` profile (or the profile chosen for dashboards) all dashboards are populated.
+After all profiles are compiled make sure that they include the ones on the lower levels (all includes basic, basic includes golden etc.)
+Make sure that with `basic` profile (or the profile chosen for dashboards) all dashboards are populated.
 
 Can we somehow track if users are happy with the defined profiles?
 It does not seem like it's feasible, but we will leave our options open to be able to quickly react to feedback.
@@ -344,8 +347,9 @@ We could adjust our dashboards to reflect which graphs are going to be populated
 Chosen option: "Base profiles on expert knowledge, external dashboards and our grafana dashboards" with:
 - implementation in kuma-dp because it's dynamically configurable
 - profiles being additive
+- user defined profiles not implemented now (we push this to the future if needed)
 - manual escape hatches using include/exclude
-- start with 3 profiles all, default (golden+dashboards), none and extend if needed
+- start with 3 profiles all, basic (golden+dashboards), none and extend if needed with `basic` being the default profile
 - start with profiles embedded in MeshMetric, we can move them out in the future
 
 It provides a good mix of inputs (our recommended metrics, others recommended metrics, expert knowledge).
