@@ -59,12 +59,11 @@ func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
 }
 
 func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	conf := c.getConf(c.Subset)
 	if route == nil {
 		return nil
 	}
 
-	defaultPolicy, err := c.getRouteRetryConfig(conf)
+	defaultPolicy, err := c.getRouteRetryConfig(c.getConf(c.Subset))
 	if err != nil {
 		return err
 	}
@@ -75,10 +74,10 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 			if err != nil {
 				return err
 			}
-			if policy == nil && defaultPolicy == nil {
-				continue
-			}
 			if policy == nil {
+				if defaultPolicy == nil {
+					continue
+				}
 				policy = defaultPolicy
 			}
 			switch a := route.GetAction().(type) {
