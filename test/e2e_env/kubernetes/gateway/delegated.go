@@ -34,6 +34,7 @@ func Delegated() {
 			Install(Namespace(config.NamespaceOutsideMesh)).
 			Install(democlient.Install(
 				democlient.WithNamespace(config.NamespaceOutsideMesh),
+				democlient.WithService(true),
 			)).
 			Install(testserver.Install(
 				testserver.WithMesh(config.Mesh),
@@ -113,4 +114,5 @@ spec:
 	Context("MeshMetric", delegated.MeshMetric(&config))
 	Context("MeshTrace", delegated.MeshTrace(&config))
 	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
+	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
 }
