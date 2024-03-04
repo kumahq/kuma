@@ -45,7 +45,7 @@ jobs:
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@latest
+          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.10.1
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@e8e39f73bb84fdf315a015fa3104f314c0a258b4 # v1.8.1
