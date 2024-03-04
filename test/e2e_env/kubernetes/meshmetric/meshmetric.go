@@ -316,6 +316,8 @@ func MeshMetric() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(observabilityNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(secondaryOpenTelemetryCollectorNamespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mainMesh)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(secondaryMesh)).To(Succeed())
 	})
