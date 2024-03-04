@@ -82,7 +82,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
-	return cluster.DeleteNamespace(t.ingressNamespace)
+	return cluster.(*framework.K8sCluster).TriggerDeleteNamespace(t.ingressNamespace)
 }
 
 func (t *k8sDeployment) IP(namespace string) (string, error) {
