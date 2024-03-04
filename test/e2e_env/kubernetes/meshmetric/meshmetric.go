@@ -170,7 +170,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 20s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -195,7 +195,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 20s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -217,7 +217,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 20s
       - type: Prometheus
         prometheus: 
           port: 8080
@@ -245,11 +245,11 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 20s
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 20s
 `, Config.KumaNamespace, mesh, primaryOpenTelemetryEndpoint, secondaryOpenTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }

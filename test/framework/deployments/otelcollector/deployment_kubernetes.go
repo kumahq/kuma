@@ -188,7 +188,7 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("500m"),
-							"memory": resource.MustParse("500Mi"),
+							"memory": resource.MustParse("1000Mi"),
 						},
 					},
 					Ports: []corev1.ContainerPort{
@@ -297,21 +297,18 @@ processors:
     send_batch_size: 4096
     send_batch_max_size: 8192
   memory_limiter:
-    limit_mib: 500
-    spike_limit_mib: 400
+    limit_mib: 950
+    spike_limit_mib: 300
     check_interval: 5s
 extensions:
   zpages: {}
-  memory_ballast:
-    # Memory Ballast size should be max 1/3 to 1/2 of memory.
-    size_mib: 256
 exporters:
   debug:
     verbosity: basic
   prometheus:
     endpoint: "%s:%d"
 service:
-  extensions: [zpages, memory_ballast]
+  extensions: [zpages]
   pipelines:
     traces/1:
       receivers: [otlp]
