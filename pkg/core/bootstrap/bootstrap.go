@@ -181,6 +181,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	initializeTokenIssuers(builder)
 
+	initializeMeshContextBuilderComponent(builder)
 	if err := initializeMeshCache(builder); err != nil {
 		return nil, err
 	}
@@ -196,6 +197,10 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 
 	if err := rt.Add(leaderInfoComponent); err != nil {
+		return nil, err
+	}
+
+	if err := rt.Add(builder.MeshContextBuilderComponent()); err != nil {
 		return nil, err
 	}
 
@@ -494,24 +499,10 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
-	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
-	if builder.Config().Experimental.AutoReachableServices {
-		rsGraphBuilder = graph.Builder
-	}
-	meshContextBuilder := xds_context.NewMeshContextBuilder(
-		builder.ReadOnlyResourceManager(),
-		xds_server.MeshResourceTypes(),
-		builder.LookupIP(),
-		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
-		builder.Config().DNSServer.Domain,
-		builder.Config().DNSServer.ServiceVipPort,
-		rsGraphBuilder,
-	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
 		builder.Config().Store.Cache.ExpirationTime.Duration,
-		meshContextBuilder,
+		builder.MeshContextBuilderComponent(),
 		builder.Metrics(),
 	)
 	if err != nil {
@@ -537,4 +528,25 @@ func initializeTokenIssuers(builder *core_runtime.Builder) {
 		issuers.ZoneToken = zone2.DisabledIssuer{}
 	}
 	builder.WithTokenIssuers(issuers)
+}
+
+func initializeMeshContextBuilderComponent(builder *core_runtime.Builder) {
+	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
+	if builder.Config().Experimental.AutoReachableServices {
+		rsGraphBuilder = graph.Builder
+	}
+
+	meshContextBuilderComponent := xds_context.NewMeshContextBuilderComponent(
+		builder.ReadOnlyResourceManager(),
+		xds_server.MeshResourceTypes(),
+		builder.LookupIP(),
+		builder.Config().Multizone.Zone.Name,
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
+		builder.Config().DNSServer.Domain,
+		builder.Config().DNSServer.ServiceVipPort,
+		rsGraphBuilder,
+		builder.EventBus(),
+	)
+
+	builder.WithMeshContextBuilderComponent(meshContextBuilderComponent)
 }
