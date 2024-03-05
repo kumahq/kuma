@@ -35,6 +35,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
+          refreshInterval: 30s
 `, config.CpNamespace, config.Mesh, otelEndpoint))
 		}
 
