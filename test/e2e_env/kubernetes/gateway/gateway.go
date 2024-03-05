@@ -28,7 +28,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     listeners:
     - port: 8080
@@ -110,7 +110,7 @@ type: system.kuma.io/secret
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(MkGatewayInstance("simple-gateway", namespace, meshName))).
+			Install(YamlK8s(MkGatewayInstanceNoServiceTag("simple-gateway", namespace, meshName))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -144,7 +144,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       rules:
@@ -175,7 +175,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       hostnames:
@@ -213,7 +213,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
       hostname: otherexample.kuma.io
   conf:
     http:
@@ -474,7 +474,7 @@ mesh: simple-gateway
 spec:
   sources:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   destinations:
   - match:
       kuma.io/service: rt-echo-server_simple-gateway_svc_80
@@ -670,7 +670,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       rules:
