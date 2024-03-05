@@ -12,16 +12,22 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 )
 
 var (
@@ -35,10 +41,10 @@ var (
 
 	// holds prometheus content types in order of priority.
 	prometheusPriorityContentType = []expfmt.Format{
-		expfmt.FmtOpenMetrics_1_0_0,
-		expfmt.FmtOpenMetrics_0_0_1,
-		expfmt.FmtText,
-		expfmt.FmtUnknown,
+		FmtOpenMetrics_1_0_0,
+		FmtOpenMetrics_0_0_1,
+		expfmt.NewFormat(expfmt.TypeTextPlain),
+		expfmt.NewFormat(expfmt.TypeUnknown),
 	}
 
 	// Reverse mapping of prometheusPriorityContentType for faster lookup.
@@ -58,16 +64,36 @@ type (
 	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
 )
 
-type QueryParametersModifier func(queryParameters url.Values) string
+type QueryParametersModifier func(queryParameters url.Values) url.Values
 
-func RemoveQueryParameters(_ url.Values) string {
-	return ""
+func RemoveQueryParameters(_ url.Values) url.Values {
+	return url.Values{}
 }
 
-func AddPrometheusFormat(queryParameters url.Values) string {
+func AddPrometheusFormat(queryParameters url.Values) url.Values {
 	queryParameters.Add("format", "prometheus")
 	queryParameters.Add("text_readouts", "")
-	return queryParameters.Encode()
+	return queryParameters
+}
+
+func AddSidecarParameters(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
+	values := v1alpha1.EnvoyMetricsFilter(sidecar)
+
+	return func(queryParameters url.Values) url.Values {
+		queryParameters.Set("filter", values.Get("filter"))
+		queryParameters.Set("usedonly", values.Get("usedonly"))
+		return queryParameters
+	}
+}
+
+func AggregatedQueryParametersModifier(modifiers ...QueryParametersModifier) QueryParametersModifier {
+	return func(queryParameters url.Values) url.Values {
+		q := queryParameters
+		for _, m := range modifiers {
+			q = m(q)
+		}
+		return q
+	}
 }
 
 type ApplicationToScrape struct {
@@ -82,11 +108,12 @@ type ApplicationToScrape struct {
 }
 
 type Hijacker struct {
-	socketPath                string
-	httpClientIPv4            http.Client
-	httpClientIPv6            http.Client
-	applicationsToScrape      []ApplicationToScrape
-	applicationsToScrapeMutex *sync.Mutex
+	socketPath           string
+	httpClientIPv4       http.Client
+	httpClientIPv6       http.Client
+	applicationsToScrape []ApplicationToScrape
+	producer             *AggregatedProducer
+	prometheusHandler    http.Handler
 }
 
 func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) http.Client {
@@ -104,20 +131,14 @@ func createHttpClient(isUsingTransparentProxy bool, sourceAddress *net.TCPAddr) 
 	return http.Client{}
 }
 
-func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool) *Hijacker {
+func New(socketPath string, applicationsToScrape []ApplicationToScrape, isUsingTransparentProxy bool, producer *AggregatedProducer) *Hijacker {
 	return &Hijacker{
-		socketPath:                socketPath,
-		httpClientIPv4:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
-		httpClientIPv6:            createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
-		applicationsToScrape:      applicationsToScrape,
-		applicationsToScrapeMutex: &sync.Mutex{},
+		socketPath:           socketPath,
+		httpClientIPv4:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv4),
+		httpClientIPv6:       createHttpClient(isUsingTransparentProxy, inPassThroughIPv6),
+		applicationsToScrape: applicationsToScrape,
+		producer:             producer,
 	}
-}
-
-func (s *Hijacker) SetApplicationsToScrape(applicationsToScrape []ApplicationToScrape) {
-	s.applicationsToScrapeMutex.Lock()
-	defer s.applicationsToScrapeMutex.Unlock()
-	s.applicationsToScrape = applicationsToScrape
 }
 
 func (s *Hijacker) Start(stop <-chan struct{}) error {
@@ -154,6 +175,13 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
+	promExporter, err := prometheus.New(prometheus.WithProducer(s.producer), prometheus.WithoutCounterSuffixes())
+	if err != nil {
+		return err
+	}
+	sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
+	s.prometheusHandler = promhttp.Handler()
+
 	errCh := make(chan error)
 	go func() {
 		if err := server.Serve(lis); err != nil {
@@ -177,23 +205,23 @@ func rewriteMetricsURL(address string, port uint32, path string, queryModifier Q
 		Scheme:   "http",
 		Host:     net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)),
 		Path:     path,
-		RawQuery: queryModifier(in.Query()),
+		RawQuery: queryModifier(in.Query()).Encode(),
 	}
 	return u.String()
 }
 
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	s.applicationsToScrapeMutex.Lock()
-	var appsToScrape []ApplicationToScrape
-	appsToScrape = append(appsToScrape, s.applicationsToScrape...)
-	s.applicationsToScrapeMutex.Unlock()
+	if strings.HasPrefix(req.URL.Path, v1alpha1.PrometheusDataplaneStatsPath) {
+		s.prometheusHandler.ServeHTTP(writer, req)
+		return
+	}
 
 	ctx := req.Context()
-	out := make(chan []byte, len(appsToScrape))
-	contentTypes := make(chan expfmt.Format, len(appsToScrape))
+	out := make(chan []byte, len(s.applicationsToScrape))
+	contentTypes := make(chan expfmt.Format, len(s.applicationsToScrape))
 	var wg sync.WaitGroup
 	done := make(chan []byte)
-	wg.Add(len(appsToScrape))
+	wg.Add(len(s.applicationsToScrape))
 	go func() {
 		wg.Wait()
 		close(out)
@@ -201,7 +229,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		close(done)
 	}()
 
-	for _, app := range appsToScrape {
+	for _, app := range s.applicationsToScrape {
 		go func(app ApplicationToScrape) {
 			defer wg.Done()
 			content, contentType := s.getStats(ctx, req, app)
@@ -246,7 +274,7 @@ func processMetrics(contents <-chan []byte, contentType expfmt.Format) []byte {
 	buf.Reset()
 	buf.Write(processedMetrics)
 
-	if contentType == expfmt.FmtOpenMetrics_1_0_0 || contentType == expfmt.FmtOpenMetrics_0_0_1 {
+	if contentType == FmtOpenMetrics_1_0_0 || contentType == FmtOpenMetrics_0_0_1 {
 		// make metrics OpenMetrics compliant
 		buf.Write([]byte("# EOF\n"))
 	}
@@ -293,7 +321,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 	// So it's better to choose the highest negotiated content type between the
 	// target apps and the scraper.
 	var ctPriority int32 = math.MaxInt32
-	ct := expfmt.FmtUnknown
+	ct := expfmt.NewFormat(expfmt.TypeUnknown)
 	for contentType := range contentTypes {
 		priority, valid := prometheusPriorityContentTypeLookup[contentType]
 		if !valid {
@@ -307,7 +335,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 
 	// If no valid content type is returned by the target applications,
 	// negotitate content type based on Accept header of the scraper.
-	if ct == expfmt.FmtUnknown {
+	if ct == expfmt.NewFormat(expfmt.TypeUnknown) {
 		ct = expfmt.Negotiate(reqHeader)
 	}
 
@@ -387,7 +415,7 @@ func responseFormat(h http.Header) expfmt.Format {
 
 	mediatype, params, err := mime.ParseMediaType(ct)
 	if err != nil {
-		return expfmt.FmtUnknown
+		return expfmt.NewFormat(expfmt.TypeUnknown)
 	}
 
 	version := params["version"]
@@ -398,25 +426,25 @@ func responseFormat(h http.Header) expfmt.Format {
 		e := params["encoding"]
 		// only delimited encoding is supported by prometheus scraper
 		if p == expfmt.ProtoProtocol && e == "delimited" {
-			return expfmt.FmtProtoDelim
+			return expfmt.NewFormat(expfmt.TypeProtoDelim)
 		}
 
 	// if mediatype is `text/plain`, return Prometheus text format
 	// without checking the version, as there are few exporters
 	// which don't set the version param in the content-type header. ex: Envoy
 	case textType:
-		return expfmt.FmtText
+		return expfmt.NewFormat(expfmt.TypeTextPlain)
 
-	// if mediatype is OpenMetricsType, return FmtUnknown for any version
+	// if mediatype is OpenMetricsType, return expfmt.NewFormat(expfmt.TypeUnknown) for any version
 	// other than "0.0.1", "1.0.0" and "".
 	case expfmt.OpenMetricsType:
 		if version == expfmt.OpenMetricsVersion_0_0_1 || version == "" {
-			return expfmt.FmtOpenMetrics_0_0_1
+			return FmtOpenMetrics_0_0_1
 		}
 		if version == expfmt.OpenMetricsVersion_1_0_0 {
-			return expfmt.FmtOpenMetrics_1_0_0
+			return FmtOpenMetrics_1_0_0
 		}
 	}
 
-	return expfmt.FmtUnknown
+	return expfmt.NewFormat(expfmt.TypeUnknown)
 }

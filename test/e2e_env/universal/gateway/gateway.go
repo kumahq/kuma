@@ -427,7 +427,7 @@ conf:
 			status, err := client.CollectFailure(universal.Cluster, "gateway-client", target, client.WithHeader("Host", host))
 
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(status.ResponseCode).To(Equal(503))
+			g.Expect(status.ResponseCode).To(Equal(403))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

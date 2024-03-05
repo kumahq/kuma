@@ -122,13 +122,21 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_co
 	return 0, nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
 }
 
-func FindContainerStatus(pod *kube_core.Pod, containerName string) *kube_core.ContainerStatus {
-	for _, cs := range pod.Status.ContainerStatuses {
+func findContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	for _, cs := range append(status, initStatus...) {
 		if cs.Name == containerName {
 			return &cs
 		}
 	}
 	return nil
+}
+
+func FindContainerStatus(containerName string, status []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	return findContainerStatus(containerName, status, nil)
+}
+
+func FindContainerOrInitContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	return findContainerStatus(containerName, status, initStatus)
 }
 
 func CopyStringMap(in map[string]string) map[string]string {
@@ -167,6 +175,7 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 		return mesh
 	}
 
+	// Label wasn't found on the object, let's look on the namespace instead
 	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
 		return mesh
 	}

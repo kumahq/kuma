@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -33,6 +34,11 @@ func MeshProxyPatch() {
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	E2EAfterEach(func() {
+		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshProxyPatchResourceTypeDescriptor)).To(Succeed())
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())

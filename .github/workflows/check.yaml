@@ -1,36 +1,44 @@
-name: "Lint PRs"
+name: "PR health"
 on:
   pull_request:
     types:
       - edited
       - opened
       - reopened
-      - synchronized
+      - synchronize
 permissions:
   contents: read
+  pull-requests: write
 jobs:
-  # This job checks the PR title using
-  # https://github.com/conventional-changelog/commitlint
-  # for the conventional commit format at
-  # https://www.conventionalcommits.org/en/v1.0.0/
-  # See also /.github/commitlint.config.js for more details
-  # We only need to check the PR title because it will end up being the
-  # (default) commit title when doing squash merges with Github.
-  # See
-  # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
-  # for more info. We have "Default to PR title for squash merge commits" enabled.
   commit-lint:
-    name: "Check PR title"
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-      - run: npm install -g @commitlint/cli @commitlint/config-conventional
-      - name: "Check PR title"
+      - name: Check PR title
+        # This job checks the PR title using
+        # https://github.com/conventional-changelog/commitlint
+        # for the conventional commit format at
+        # https://www.conventionalcommits.org/en/v1.0.0/
+        # See also /.github/commitlint.config.js for more details
+        # We only need to check the PR title because it will end up being the
+        # (default) commit title when doing squash merges with Github.
+        # See
+        # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
+        # for more info. We have "Default to PR title for squash merge commits" enabled.
+        if: github.event.action != 'synchronize'
         # Inject as env variable to escape properly
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
+          npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
           commitlint --config .github/commitlint.config.js --edit=<(echo "${TITLE}")
+      - name: Maybe add backport label
+        if: github.event.action == 'synchronize' && false # disable until https://github.com/kumahq/kuma/issues/9482
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PREDEFINED_GLOBS: ".github/**/*,.circleci/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
+          LABEL_TO_ADD: backport
+          NO_BACKPORT_AUTOLABEL: no-backport-autolabel
+        run: |
+          tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"

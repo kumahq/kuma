@@ -13,6 +13,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -24,12 +25,13 @@ func (a EnvVarsByName) Less(i, j int) bool {
 }
 
 type DataplaneProxyFactory struct {
-	ControlPlaneURL    string
-	ControlPlaneCACert string
-	DefaultAdminPort   uint32
-	ContainerConfig    runtime_k8s.DataplaneContainer
-	BuiltinDNS         runtime_k8s.BuiltinDNS
-	WaitForDataplane   bool
+	ControlPlaneURL          string
+	ControlPlaneCACert       string
+	DefaultAdminPort         uint32
+	ContainerConfig          runtime_k8s.DataplaneContainer
+	BuiltinDNS               runtime_k8s.BuiltinDNS
+	WaitForDataplane         bool
+	sidecarContainersEnabled bool
 }
 
 func NewDataplaneProxyFactory(
@@ -39,14 +41,16 @@ func NewDataplaneProxyFactory(
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
+	sidecarContainersEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
-		ControlPlaneURL:    controlPlaneURL,
-		ControlPlaneCACert: controlPlaneCACert,
-		DefaultAdminPort:   defaultAdminPort,
-		ContainerConfig:    containerConfig,
-		BuiltinDNS:         builtinDNS,
-		WaitForDataplane:   waitForDataplane,
+		ControlPlaneURL:          controlPlaneURL,
+		ControlPlaneCACert:       controlPlaneCACert,
+		DefaultAdminPort:         defaultAdminPort,
+		ContainerConfig:          containerConfig,
+		BuiltinDNS:               builtinDNS,
+		WaitForDataplane:         waitForDataplane,
+		sidecarContainersEnabled: sidecarContainersEnabled,
 	}
 }
 
@@ -158,14 +162,33 @@ func (i *DataplaneProxyFactory) NewContainer(
 		},
 		Resources: kube_core.ResourceRequirements{
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
 			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
 			},
 		},
+	}
+	if i.sidecarContainersEnabled {
+		container.StartupProbe = &kube_core.Probe{
+			ProbeHandler: kube_core.ProbeHandler{
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(adminPort),
+					},
+				},
+			},
+			InitialDelaySeconds: i.ContainerConfig.StartupProbe.InitialDelaySeconds,
+			TimeoutSeconds:      i.ContainerConfig.StartupProbe.TimeoutSeconds,
+			PeriodSeconds:       i.ContainerConfig.StartupProbe.PeriodSeconds,
+			SuccessThreshold:    1,
+			FailureThreshold:    i.ContainerConfig.StartupProbe.FailureThreshold,
+		}
 	}
 	if waitForDataplaneReady {
 		container.Lifecycle = &kube_core.Lifecycle{

@@ -50,8 +50,9 @@ POLICIES_DIR := pkg/plugins/policies
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
+kuma_policies = $(foreach dir,$(shell find $(KUMA_DIR)/pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
 
-generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-helm ## Generate all policies written as plugins
+generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
 .PHONY: clean/policies
 clean/policies: $(addprefix clean/policy/,$(policies))
@@ -75,7 +76,13 @@ generate/schema/%: generate/controller-gen/%
 	done
 
 generate/policy-import:
-	$(TOOLS_DIR)/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
+	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(policies)
+
+generate/policy-config:
+	./tools/policy-gen/generate-policy-config.sh $(policies)
+
+generate/policy-defaults:
+	./tools/policy-gen/generate-policy-defaults.sh $(KUMA_DIR) $(kuma_policies) $(policies)
 
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(policies)

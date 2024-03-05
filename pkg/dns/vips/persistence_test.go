@@ -139,6 +139,50 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(Equal(expected))
 		})
+
+		It("should return vips for all meshes", func() {
+			actual, err := meshedPersistence.Get(context.Background(), []string{"mesh-1", "mesh-2", "mesh-3", "mesh-4"})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(HaveLen(4))
+
+			// mesh-1
+			expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_1"}, Origin: ""}}},
+				vips.NewServiceEntry("frontend"): {Address: "240.0.0.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: ""}}},
+				vips.NewServiceEntry("redis"):    {Address: "240.0.0.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "redis"}, Origin: ""}}},
+				vips.NewServiceEntry("postgres"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres"}, Origin: ""}}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual["mesh-1"]).To(Equal(expected))
+
+			// mesh-2
+			expected, err = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}, Origin: ""}}},
+				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: ""}}},
+				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres_2"}, Origin: ""}}},
+				vips.NewServiceEntry("redis_2"):    {Address: "240.0.1.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "redis_2"}, Origin: ""}}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual["mesh-2"]).To(Equal(expected))
+
+			// mesh-3
+			expected, err = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("backend_3"):  {Address: "240.0.2.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_3"}, Origin: ""}}},
+				vips.NewServiceEntry("frontend_3"): {Address: "240.0.2.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_3"}, Origin: ""}}},
+				vips.NewHostEntry("host.com"):      {Address: "240.0.1.4", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}, Origin: ""}}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual["mesh-3"]).To(Equal(expected))
+
+			// mesh-4
+			expected, err = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}, Origin: "service"}}},
+				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: "service"}}},
+				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres_2"}, Origin: "service"}}},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual["mesh-4"]).To(Equal(expected))
+		})
 	})
 
 	Context("Set", func() {

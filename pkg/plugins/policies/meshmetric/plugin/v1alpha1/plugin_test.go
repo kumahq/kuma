@@ -1,17 +1,20 @@
-package v1alpha1
+package v1alpha1_test
 
 import (
 	"path/filepath"
+	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
@@ -38,7 +41,7 @@ var _ = Describe("MeshMetric", func() {
 
 	DescribeTable("Apply to sidecar Dataplane", func(given testCase) {
 		resources := core_xds.NewResourceSet()
-		plugin := NewPlugin().(core_plugins.PolicyPlugin)
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 
@@ -181,7 +184,8 @@ var _ = Describe("MeshMetric", func() {
 										{
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
-												Endpoint: "otel-collector.observability.svc:4317",
+												Endpoint:        "otel-collector.observability.svc:4317",
+												RefreshInterval: &k8s.Duration{Duration: 10 * time.Second},
 											},
 										},
 									},
@@ -257,6 +261,47 @@ var _ = Describe("MeshMetric", func() {
 											Type: api.OpenTelemetryBackendType,
 											OpenTelemetry: &api.OpenTelemetryBackend{
 												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+									},
+								},
+							},
+						},
+					}),
+				).
+				Build(),
+		}),
+		Entry("multiple_otel", testCase{
+			proxy: xds_builders.Proxy().
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
+						Rules: []*core_rules.Rule{
+							{
+								Subset: []core_rules.Tag{},
+								Conf: api.Conf{
+									Sidecar: &api.Sidecar{
+										Regex:         pointer.To("http.*"),
+										IncludeUnused: pointer.To(false),
+									},
+									Applications: &[]api.Application{
+										{
+											Path: pointer.To("/metrics"),
+											Port: 8080,
+										},
+									},
+									Backends: &[]api.Backend{
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "otel-collector.observability.svc:4317",
+											},
+										},
+										{
+											Type: api.OpenTelemetryBackendType,
+											OpenTelemetry: &api.OpenTelemetryBackend{
+												Endpoint: "second-collector.observability.svc:4317",
 											},
 										},
 									},

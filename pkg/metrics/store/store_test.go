@@ -89,7 +89,7 @@ var _ = Describe("Metered Store", func() {
 		err = store.Update(context.Background(), anotherMesh)
 
 		// then
-		Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
+		Expect(err).To(MatchError(core_store.ErrorResourceConflict(core_mesh.MeshType, model.DefaultMesh, model.NoMesh)))
 		Expect(test_metrics.FindMetric(metrics, "store_conflicts", "resource_type", "Mesh").GetCounter().GetValue()).To(Equal(1.0))
 	})
 
@@ -98,7 +98,7 @@ var _ = Describe("Metered Store", func() {
 		err := store.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
-		Expect(err).To(MatchError(&core_store.ResourceConflictError{}))
+		Expect(err).To(MatchError(core_store.ErrorResourceConflict(core_mesh.MeshType, model.DefaultMesh, model.NoMesh)))
 		Expect(test_metrics.FindMetric(metrics, "store_conflicts", "resource_type", "Mesh").GetCounter().GetValue()).To(Equal(1.0))
 	})
 })

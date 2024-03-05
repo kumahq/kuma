@@ -208,6 +208,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.InitialDelaySeconds).To(Equal(int32(11)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.PeriodSeconds).To(Equal(int32(9)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.FailureThreshold).To(Equal(int32(32)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.TimeoutSeconds).To(Equal(int32(52)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
@@ -225,6 +229,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
+			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -267,7 +272,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
-			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeFalse())
+			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -357,6 +362,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
+			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -462,6 +468,7 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
+    vipRefreshInterval: 10s
   kubernetes:
     serviceAccountName: custom-sa
     allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
@@ -515,6 +522,11 @@ runtime:
           periodSeconds: 18
           failureThreshold: 22
           timeoutSeconds: 24
+        startupProbe:
+          initialDelaySeconds: 11
+          periodSeconds: 9
+          failureThreshold: 32
+          timeoutSeconds: 52
         envVars:
           a: b
           c: d
@@ -587,6 +599,7 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       tlsSkipVerify: true
+    disableOriginLabelValidation: true
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -595,7 +608,7 @@ dnsServer:
 defaults:
   skipMeshCreation: true
   skipTenantResources: true
-  createMeshRoutingResources: false
+  createMeshRoutingResources: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -706,11 +719,16 @@ experimental:
     fullResyncInterval: 15s
     delayFullResync: true
   autoReachableServices: true
+  sidecarContainers: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+policies:
+  pluginPoliciesEnabled:
+    - meshaccesslog
+    - meshcircuitbreaker
 tracing:
   openTelemetry:
     enabled: true
@@ -833,6 +851,10 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_INITIAL_DELAY_SECONDS":   "11",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_PERIOD_SECONDS":          "9",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_FAILURE_THRESHOLD":       "32",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_TIMEOUT_SECONDS":         "52",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
@@ -853,6 +875,7 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
+				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
@@ -890,11 +913,12 @@ tracing:
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
 				"KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF":                                                 "2s",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
+				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
-				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "false",
+				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
@@ -974,10 +998,12 @@ tracing:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
+				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
+				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 			},
 			yamlFileConfig: "",
 		}),

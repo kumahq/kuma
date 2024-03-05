@@ -12,8 +12,9 @@ does not have any particular instructions.
 
 #### Sorting
 
-Policy merging now gives precedence to policies lexicographically before
-other policies.
+This change relates only to the new targetRef policies. When 2 policies have a tie on the targetRef kind we compare their names lexicographically.
+Policy merging now gives precedence to policies that lexicographically "less" than other policies, i.e. policy "aaa" takes precedence over "bbb" because "aaa" < "bbb".
+Previously, before 2.6.0 the order was the opposite.
 
 #### `targetRef.kind: MeshGateway`
 
@@ -26,6 +27,10 @@ usage.
 
 With `MeshFaultInjection` and `MeshRateLimit`, `spec.to` with `kind:
 MeshGateway` is now required instead of `spec.from` and `kind: MeshService`.
+
+### `MeshGateway`
+
+A new maximum length of 253 characters for listener hostnames has been introduced in order to ensure they are valid DNS names.
 
 ### Unifying Default Connection Timeout Values
 

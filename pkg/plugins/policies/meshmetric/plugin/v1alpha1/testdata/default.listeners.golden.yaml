@@ -22,7 +22,7 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus"}]}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}]}}}'
                   status: 200
                 match:
                   prefix: /
@@ -56,7 +56,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /?usedonly
+                  prefixRewrite: /meshmetric
           statPrefix: _kuma_metrics_prometheus_default-backend
     name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

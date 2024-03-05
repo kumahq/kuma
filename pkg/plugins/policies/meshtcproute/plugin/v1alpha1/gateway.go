@@ -21,19 +21,13 @@ import (
 func generateGatewayListeners(
 	ctx xds_context.Context,
 	info plugin_gateway.GatewayListenerInfo,
-	hostInfos []plugin_gateway.GatewayHostInfo,
 ) (*core_xds.ResourceSet, *plugin_gateway.RuntimeResoureLimitListener, error) {
 	resources := core_xds.NewResourceSet()
 
 	listenerBuilder, limit := plugin_gateway.GenerateListener(info)
 
-	var gatewayHosts []plugin_gateway.GatewayHost
-	for _, hostInfo := range hostInfos {
-		gatewayHosts = append(gatewayHosts, hostInfo.Host)
-	}
-
 	generator := &plugin_gateway.TCPFilterChainGenerator{}
-	res, filterChainBuilders, err := generator.Generate(ctx, info, gatewayHosts)
+	res, filterChainBuilders, err := generator.Generate(ctx, info)
 	if err != nil {
 		return nil, limit, err
 	}
@@ -56,23 +50,24 @@ func generateGatewayClusters(
 	ctx context.Context,
 	xdsCtx xds_context.Context,
 	info plugin_gateway.GatewayListenerInfo,
-	hostInfos []plugin_gateway.GatewayHostInfo,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	gen := plugin_gateway.ClusterGenerator{Zone: xdsCtx.ControlPlane.Zone}
-	for _, hostInfo := range hostInfos {
-		clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries, hostInfo.Host.Tags)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+	for _, listenerHostname := range info.ListenerHostnames {
+		for _, hostInfo := range listenerHostname.HostInfos {
+			clusterRes, err := gen.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries(), hostInfo.Host.Tags)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+			}
+			resources.AddSet(clusterRes)
 		}
-		resources.AddSet(clusterRes)
 	}
 
 	return resources, nil
 }
 
-func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Rules) []route.Entry {
+func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Rules) []route.Entry {
 	var entries []route.Entry
 
 	for _, rule := range toRules {
@@ -81,18 +76,18 @@ func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Ru
 			names = append(names, orig.GetName())
 		}
 		slices.Sort(names)
-		entries = append(entries, makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.RuleConf)))
+		entries = append(entries, makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.Rule)))
 	}
 
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, nil, nil, entries)
 }
 
-func makeTcpRouteEntry(name string, rule api.RuleConf) route.Entry {
+func makeTcpRouteEntry(name string, rule api.Rule) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
-	for _, b := range rule.BackendRefs {
+	for _, b := range rule.Default.BackendRefs {
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation

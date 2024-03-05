@@ -288,10 +288,8 @@ Once the PR is approved and merged the action `backport.yaml` will open a new PR
 You can indicate that you are reviewing a PR by using the `eyes` emoji on the PR description.
 If you give up on doing so please remove the emoji.
 
-### Contributor T-shirt
+### Contributor Badge
 
-If your Pull Request to [kumahq/kuma](https://github.com/kumahq/kuma) was
-accepted, and it fixes a bug, adds functionality, or makes it significantly
-easier to use or understand Kuma, congratulations! You are eligible to
-receive the very special Contributor T-shirt! Go ahead and fill out the
-[Contributors Submissions form](https://goo.gl/forms/5w6mxLaE4tz2YM0L2).
+If your Pull Request to [kumahq/kuma](https://github.com/kumahq/kuma) was accepted, and it fixes a bug, adds functionality, or makes it significantly easier to use or understand Kuma, congratulations! You are eligible to receive a digital Contributor Badge! Go ahead and fill out the [Contributor Submissions form](https://goo.gl/forms/5w6mxLaE4tz2YM0L2).
+
+*Badges expire after 1 year, at which point you may submit a new contribution to renew the badge.* 

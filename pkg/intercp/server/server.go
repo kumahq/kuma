@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -74,6 +75,7 @@ func New(
 
 	grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
+	grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	return &InterCpServer{

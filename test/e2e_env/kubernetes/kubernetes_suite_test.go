@@ -50,13 +50,18 @@ var _ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.Resto
 var _ = SynchronizedAfterSuite(func() {}, func() {})
 
 var (
+	_ = ReportAfterSuite("cp logs", kubernetes.PrintCPLogsOnFailure)
+	_ = ReportAfterSuite("kube state", kubernetes.PrintKubeState)
+)
+
+var (
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 	_ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
 	_ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
-	_ = Describe("Delegated Gateway", Label("kind-not-supported", "ipv6-not-supported", "arm-not-supported"), gateway.Delegated, Ordered)
+	_ = Describe("Delegated Gateway", Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
 	_ = Describe("Graceful", graceful.Graceful, Ordered)
 	_ = Describe("Eviction", graceful.Eviction, Ordered)
 	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
@@ -75,7 +80,7 @@ var (
 	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
-	_ = Describe("Kong Ingress Controller", Label("arm-not-supported"), kic.KICKubernetes, Ordered)
+	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
 	_ = Describe("MeshTrafficPermission API", meshtrafficpermission.API, Ordered)
 	_ = Describe("MeshRateLimit API", meshratelimit.API, Ordered)
 	_ = Describe("MeshTimeout API", meshtimeout.MeshTimeout, Ordered)

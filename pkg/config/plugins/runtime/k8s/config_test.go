@@ -49,6 +49,11 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.PeriodSeconds).To(Equal(int32(25)))
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.FailureThreshold).To(Equal(int32(212)))
 		// and
+		Expect(cfg.Injector.SidecarContainer.StartupProbe.InitialDelaySeconds).To(Equal(int32(261)))
+		Expect(cfg.Injector.SidecarContainer.StartupProbe.TimeoutSeconds).To(Equal(int32(24)))
+		Expect(cfg.Injector.SidecarContainer.StartupProbe.PeriodSeconds).To(Equal(int32(26)))
+		Expect(cfg.Injector.SidecarContainer.StartupProbe.FailureThreshold).To(Equal(int32(213)))
+		// and
 		Expect(cfg.Injector.SidecarContainer.Resources.Requests.CPU).To(Equal("150m"))
 		Expect(cfg.Injector.SidecarContainer.Resources.Requests.Memory).To(Equal("164Mi"))
 		Expect(cfg.Injector.SidecarContainer.Resources.Limits.CPU).To(Equal("1100m"))

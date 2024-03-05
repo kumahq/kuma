@@ -543,8 +543,6 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        apiVersion: kuma.io/v1alpha1
-        kind: Dataplane
         mesh: poc
         metadata:
           creationTimestamp: null

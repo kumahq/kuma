@@ -22,6 +22,15 @@ import (
 )
 
 func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
+	pod, err := PodOfApp(cluster, name, namespace)
+	if err != nil {
+		return "", err
+	}
+
+	return pod.Name, nil
+}
+
+func PodOfApp(cluster Cluster, name string, namespace string) (v1.Pod, error) {
 	pods, err := k8s.ListPodsE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(namespace),
@@ -30,12 +39,12 @@ func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error
 		},
 	)
 	if err != nil {
-		return "", err
+		return v1.Pod{}, err
 	}
 	if len(pods) != 1 {
-		return "", errors.Errorf("expected %d pods, got %d", 1, len(pods))
+		return v1.Pod{}, errors.Errorf("expected %d pods, got %d", 1, len(pods))
 	}
-	return pods[0].Name, nil
+	return pods[0], nil
 }
 
 func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) {
@@ -114,7 +123,6 @@ func UpdateKubeObject(
 		}
 		return "", nil
 	})
-
 	if err != nil {
 		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}

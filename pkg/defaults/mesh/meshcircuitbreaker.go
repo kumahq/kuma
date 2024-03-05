@@ -25,10 +25,6 @@ var defaultMeshCircuitBreakerResource = func() model.Resource {
 							MaxRequests:        pointer.To[uint32](1024),
 							MaxRetries:         pointer.To[uint32](3),
 						},
-						OutlierDetection: &v1alpha1.OutlierDetection{
-							Disabled:  pointer.To[bool](false),
-							Detectors: &v1alpha1.Detectors{},
-						},
 					},
 				},
 			},

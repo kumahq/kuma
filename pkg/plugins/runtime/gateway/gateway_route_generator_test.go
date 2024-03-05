@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -408,6 +407,30 @@ conf:
       filters:
         - rewrite:
             replacePrefixMatch: "/a"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
+		Entry("should rewrite root prefix without trailing slash",
+			"rewrite-prefix-root-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+        - rewrite:
+            replacePrefixMatch: "/a/b"
       backends:
       - destination:
           kuma.io/service: echo-service
@@ -1085,6 +1108,58 @@ conf:
 			},
 		),
 
+		Entry("generates isolated SNI routes",
+			"sni-isolation-gateway-route.yaml",
+			`
+# Rewrite the dataplane to attach the "gateway-multihost" Gateway.
+type: Dataplane
+mesh: default
+name: default
+networking:
+  address: 192.168.1.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: gateway-multihost
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-one
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: one.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /one
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-two
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: two.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /two
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
 		Entry("match ratelimit policy",
 			"21-gateway-route.yaml", `
 type: MeshGatewayRoute
@@ -1435,7 +1510,7 @@ conf:
 `,
 		),
 
-		Entry("external service works without default traffic permission policy",
+		Entry("external service works without traffic permission policy",
 			"external-service-without-default-traffic-permission.yaml", `
 type: ExternalService
 mesh: default
@@ -1462,13 +1537,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: external-httpbin
-`, []WithoutResource{
-				{
-					Resource: core_mesh.TrafficPermissionType,
-					Mesh:     "default",
-					Name:     "allow-all-default",
-				},
-			},
+`,
 		),
 
 		Entry("generates cross mesh gateway listeners",

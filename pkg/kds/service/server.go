@@ -93,8 +93,8 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	clientID := ClientID(ctx, zone)
-	log := log.WithValues("clientID", clientID)
+	tenantZoneID := TenantZoneClientIDFromCtx(ctx, zone)
+	log := log.WithValues("clientID", tenantZoneID.String())
 
 	insight := system.NewZoneInsightResource()
 	if err := manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone, Mesh: model.NoMesh}, insight, func(resource model.Resource) error {
@@ -134,25 +134,9 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
-	clientID := ClientID(stream.Context(), zone)
-	tenantID, _ := multitenant.TenantFromCtx(stream.Context())
+	tenantZoneID := TenantZoneClientIDFromCtx(stream.Context(), zone)
 
-	shouldDisconnectStream := events.NewNeverListener()
-
-	md, _ := metadata.FromIncomingContext(stream.Context())
-	features := md.Get(kds.FeaturesMetadataKey)
-
-	if slices.Contains(features, kds.FeatureZonePingHealth) {
-		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
-			disconnectEvent, ok := e.(ZoneWentOffline)
-			return ok && disconnectEvent.TenantID == tenantID && disconnectEvent.Zone == zone
-		})
-		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantID})
-	}
-
-	defer shouldDisconnectStream.Close()
-
-	logger := log.WithValues("rpc", rpcName, "clientID", clientID)
+	logger := log.WithValues("rpc", rpcName, "clientID", tenantZoneID.String())
 	logger = kuma_log.AddFieldsFromCtx(logger, stream.Context(), g.extensions)
 	for _, filter := range g.filters {
 		if err := filter.InterceptServerStream(stream); err != nil {
@@ -165,8 +149,21 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 			return err
 		}
 	}
+	shouldDisconnectStream := events.NewNeverListener()
+	md, _ := metadata.FromIncomingContext(stream.Context())
+	features := md.Get(kds.FeaturesMetadataKey)
+
+	if slices.Contains(features, kds.FeatureZonePingHealth) {
+		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
+			disconnectEvent, ok := e.(ZoneWentOffline)
+			return ok && disconnectEvent.TenantID == tenantZoneID.TenantID && disconnectEvent.Zone == zone
+		})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID})
+	}
+	defer shouldDisconnectStream.Close()
+
 	logger.Info("Envoy Admin RPC stream started")
-	rpc.ClientConnected(clientID, stream)
+	rpc.ClientConnected(tenantZoneID.String(), stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return status.Error(codes.Canceled, "stream was cancelled")
@@ -195,7 +192,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 				return
 			}
 			logger.V(1).Info("Envoy Admin RPC response received", "requestId", resp.GetRequestId())
-			if err := rpc.ResponseReceived(clientID, resp); err != nil {
+			if err := rpc.ResponseReceived(tenantZoneID.String(), resp); err != nil {
 				logger.Error(err, "could not mark the response as received")
 				streamResult <- status.Error(codes.InvalidArgument, "could not mark the response as received")
 				return
@@ -253,10 +250,25 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
 }
 
-func ClientID(ctx context.Context, zone string) string {
-	tenantID, ok := multitenant.TenantFromCtx(ctx)
-	if !ok {
-		return zone
+type TenantZoneClientID struct {
+	TenantID string
+	Zone     string
+}
+
+func (id TenantZoneClientID) String() string {
+	if id.TenantID == "" {
+		return id.Zone
 	}
-	return fmt.Sprintf("%s:%s", zone, tenantID)
+	return fmt.Sprintf("%s:%s", id.Zone, id.TenantID)
+}
+
+func TenantZoneClientIDFromCtx(ctx context.Context, zone string) TenantZoneClientID {
+	id := TenantZoneClientID{
+		Zone: zone,
+	}
+	tenantID, ok := multitenant.TenantFromCtx(ctx)
+	if ok {
+		id.TenantID = tenantID
+	}
+	return id
 }

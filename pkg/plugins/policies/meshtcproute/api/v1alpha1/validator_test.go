@@ -112,13 +112,15 @@ to:
     kind: MeshService
     name: backend
 `),
-		Entry("accepts MeshGateway targeted route", `
+		Entry("accepts MeshGateway with listener tags targeted route", `
 type: MeshTCPRoute
 mesh: mesh-1
 name: route-1
 targetRef:
   kind: MeshGateway
   name: edge
+  tags:
+    port: 6000
 to:
 - targetRef:
     kind: Mesh

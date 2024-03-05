@@ -22,7 +22,7 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus"}]}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}]}}}'
                   status: 200
                 match:
                   prefix: /
@@ -58,7 +58,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /?usedonly
+                  prefixRewrite: /meshmetric
           statPrefix: _kuma_metrics_prometheus_default-backend
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -79,7 +79,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /?usedonly
+                  prefixRewrite: /meshmetric
           statPrefix: _kuma_metrics_prometheus_default-backend
       transportSocket:
         name: envoy.transport_sockets.tls

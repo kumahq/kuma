@@ -80,7 +80,7 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshSubset,
+				Kind: common_api.Mesh,
 				ProxyTypes: []common_api.TargetRefProxyType{
 					common_api.Gateway,
 				},

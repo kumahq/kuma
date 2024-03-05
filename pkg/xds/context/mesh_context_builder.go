@@ -230,7 +230,7 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
-		return nil, errors.Wrapf(err, "could not fetch mesh %s", meshName)
+		return nil, err
 	}
 	rmap := ResourceMap{}
 	// Add the mesh to the resourceMap

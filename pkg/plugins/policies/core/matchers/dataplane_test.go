@@ -14,7 +14,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"

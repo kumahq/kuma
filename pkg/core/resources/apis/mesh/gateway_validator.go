@@ -80,10 +80,7 @@ func validateListenerCollapsibility(path validators.PathBuilder, listeners []*me
 		protocols[listener.GetProtocol().String()] = append(protocols[listener.GetProtocol().String()], i)
 
 		// An empty hostname is the same as "*", i.e. matches all hosts.
-		hostname := listener.GetHostname()
-		if hostname == "" {
-			hostname = mesh_proto.WildcardHostname
-		}
+		hostname := listener.GetNonEmptyHostname()
 
 		hostnames[hostname] = append(hostnames[hostname], i)
 

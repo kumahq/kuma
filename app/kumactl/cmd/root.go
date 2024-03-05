@@ -24,7 +24,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	// Register gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
@@ -111,4 +111,8 @@ func Execute() {
 	if err := DefaultRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	policies.InitAllPolicies()
 }

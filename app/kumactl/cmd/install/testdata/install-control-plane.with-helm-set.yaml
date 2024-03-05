@@ -2642,6 +2642,10 @@ spec:
                             endpoint:
                               description: Endpoint for OpenTelemetry collector
                               type: string
+                            refreshInterval:
+                              description: RefreshInterval defines how frequent metrics
+                                should be pushed to collector
+                              type: string
                           required:
                           - endpoint
                           type: object
@@ -7926,6 +7930,8 @@ spec:
               value: "grpcs://foo.com"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT

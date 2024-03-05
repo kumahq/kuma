@@ -722,17 +722,17 @@ postgres:
 # @ignored for helm-docs
 plugins:
   policies:
-    meshaccesslogs: {}
-    meshcircuitbreakers: {}
-    meshfaultinjections: {}
-    meshhealthchecks: {}
-    meshhttproutes: {}
-    meshloadbalancingstrategies: {}
-    meshmetrics: {}
-    meshproxypatches: {}
-    meshratelimits: {}
-    meshretries: {}
-    meshtcproutes: {}
-    meshtimeouts: {}
-    meshtraces: {}
-    meshtrafficpermissions: {}
+    meshaccesslogs: true
+    meshcircuitbreakers: true
+    meshfaultinjections: true
+    meshhealthchecks: true
+    meshhttproutes: true
+    meshloadbalancingstrategies: true
+    meshmetrics: true
+    meshproxypatches: true
+    meshratelimits: true
+    meshretries: true
+    meshtcproutes: true
+    meshtimeouts: true
+    meshtraces: true
+    meshtrafficpermissions: true

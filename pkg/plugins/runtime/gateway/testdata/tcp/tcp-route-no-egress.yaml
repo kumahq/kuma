@@ -62,14 +62,6 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-no-protocol-httpbin-4
       name: external-no-protocol-httpbin-6a3325e78573377c
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingFailurePercentageLocalOrigin: 0
-        enforcingLocalOriginSuccessRate: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:

@@ -6,6 +6,7 @@ on:
 permissions: read-all
 jobs:
   build-matrix:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
@@ -18,6 +19,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
   update-insecure-dependencies:
+    timeout-minutes: 10
     needs:
       - build-matrix
     strategy:
@@ -59,12 +61,12 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # v6.0.1
         with:
           commit-message: "chore(deps): security update"
           signoff: true

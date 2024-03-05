@@ -140,6 +140,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	notAcceptedConditions := map[gatewayapi.ParentReference]string{}
 
+	var kumaRefs []gatewayapi.ParentReference
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
 		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, route.Spec.Hostnames, &routeNs, ref)
@@ -187,6 +188,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			}
 			notAcceptedConditions[ref] = reason
 		}
+
+		kumaRefs = append(kumaRefs, ref)
 	}
 
 	meshRoutes, meshRouteConditions, err := r.gapiToMeshRouteSpecs(ctx, mesh, route, services)
@@ -194,7 +197,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		return nil, nil, nil, err
 	}
 
-	for _, ref := range route.Spec.ParentRefs {
+	for _, ref := range kumaRefs {
 		var refConditions []kube_meta.Condition
 		switch {
 		case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:

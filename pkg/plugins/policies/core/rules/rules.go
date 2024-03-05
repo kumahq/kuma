@@ -46,8 +46,51 @@ type ToRules struct {
 	Rules Rules
 }
 
+type InboundListenerHostname struct {
+	Address  string
+	Port     uint32
+	hostname string
+}
+
+var _ encoding.TextMarshaler = InboundListenerHostname{}
+
+func (i InboundListenerHostname) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
+func (i InboundListenerHostname) String() string {
+	return fmt.Sprintf("%s:%d:%s", i.Address, i.Port, i.hostname)
+}
+
+func NewInboundListenerHostname(address string, port uint32, hostname string) InboundListenerHostname {
+	if hostname == "" {
+		hostname = mesh_proto.WildcardHostname
+	}
+	return InboundListenerHostname{
+		Address:  address,
+		Port:     port,
+		hostname: hostname,
+	}
+}
+
+func InboundListenerHostnameFromGatewayListener(
+	l *mesh_proto.MeshGateway_Listener,
+	address string,
+) InboundListenerHostname {
+	return NewInboundListenerHostname(
+		address,
+		l.GetPort(),
+		l.GetNonEmptyHostname(),
+	)
+}
+
+type GatewayToRules struct {
+	ByListenerAndHostname map[InboundListenerHostname]Rules
+	ByListener            map[InboundListener]Rules
+}
+
 type GatewayRules struct {
-	ToRules   map[InboundListener]Rules
+	ToRules   GatewayToRules
 	FromRules map[InboundListener]Rules
 }
 
@@ -236,7 +279,9 @@ func BuildFromRules(
 		}
 		rulesByInbound[inbound] = rules
 	}
-	return FromRules{Rules: rulesByInbound}, nil
+	return FromRules{
+		Rules: rulesByInbound,
+	}, nil
 }
 
 func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
@@ -259,15 +304,20 @@ func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model
 
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
+	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
 	httpRoutes []core_model.Resource,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]Rules{}
-	for inbound, policies := range matchedPoliciesByInbound {
+	toRulesByListenerHostname := map[InboundListenerHostname]Rules{}
+	for listener, policies := range matchedPoliciesByListener {
 		toRules, err := BuildToRules(policies, httpRoutes)
 		if err != nil {
 			return GatewayRules{}, err
 		}
-		toRulesByInbound[inbound] = toRules.Rules
+		toRulesByListenerHostname[listener] = toRules.Rules
+	}
+	for inbound, policies := range matchedPoliciesByInbound {
+		toRules, err := BuildToRules(policies, httpRoutes)
 		if err != nil {
 			return GatewayRules{}, err
 		}
@@ -280,7 +330,10 @@ func BuildGatewayRules(
 	}
 
 	return GatewayRules{
-		ToRules:   toRulesByInbound,
+		ToRules: GatewayToRules{
+			ByListenerAndHostname: toRulesByListenerHostname,
+			ByListener:            toRulesByInbound,
+		},
 		FromRules: fromRules.Rules,
 	}, nil
 }
@@ -313,15 +366,27 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 		for _, mhrRule := range mhrRules.Rules {
 			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
-				rv = append(rv, &artificialPolicyItem{
-					targetRef: common_api.TargetRef{
+				var targetRef common_api.TargetRef
+				switch mhrRules.TargetRef.Kind {
+				case common_api.Mesh, common_api.MeshSubset:
+					targetRef = common_api.TargetRef{
+						Kind: common_api.MeshSubset,
+						Tags: map[string]string{
+							RuleMatchesHashTag: matchesHash,
+						},
+					}
+				default:
+					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshServiceSubset,
 						Name: mhrRules.TargetRef.Name,
 						Tags: map[string]string{
 							RuleMatchesHashTag: matchesHash,
 						},
-					},
-					conf: to.GetDefault(),
+					}
+				}
+				rv = append(rv, &artificialPolicyItem{
+					targetRef: targetRef,
+					conf:      to.GetDefault(),
 				})
 			}
 		}

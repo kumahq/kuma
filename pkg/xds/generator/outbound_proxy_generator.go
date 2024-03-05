@@ -12,7 +12,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -31,7 +30,9 @@ const OriginOutbound = "outbound"
 type OutboundProxyGenerator struct{}
 
 func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	hasMeshRoutes := len(proxy.Policies.Dynamic[v1alpha1.MeshHTTPRouteType].ToRules.Rules) > 0
+	if len(xdsCtx.Mesh.Resources.TrafficRoutes().Items) == 0 {
+		return nil, nil
+	}
 
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	resources := model.NewResourceSet()
@@ -61,12 +62,6 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		clusters := routes.Clusters()
 
 		protocol := inferProtocol(xdsCtx.Mesh, clusters)
-		switch protocol {
-		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-			if hasMeshRoutes {
-				continue
-			}
-		}
 
 		servicesAcc.Add(clusters...)
 
@@ -120,7 +115,13 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService, envoy_common.TrafficDirectionOutbound, serviceName)).
+				Configure(envoy_listeners.Tracing(
+					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
+					sourceService,
+					envoy_common.TrafficDirectionOutbound,
+					serviceName,
+					false,
+				)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
@@ -131,7 +132,13 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService, envoy_common.TrafficDirectionOutbound, serviceName)).
+				Configure(envoy_listeners.Tracing(
+					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
+					sourceService,
+					envoy_common.TrafficDirectionOutbound,
+					serviceName,
+					false,
+				)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
 				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(

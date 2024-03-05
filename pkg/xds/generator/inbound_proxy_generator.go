@@ -101,7 +101,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
+					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
@@ -109,7 +109,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "")).
+					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolKafka:
 				filterChainBuilder.

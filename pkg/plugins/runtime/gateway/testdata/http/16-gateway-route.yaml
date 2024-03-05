@@ -175,7 +175,6 @@ Listeners:
             - name: envoy.filters.http.router
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                startChildSpan: true
             mergeSlashes: true
             normalizePath: true
             pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
@@ -183,7 +182,7 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
@@ -198,9 +197,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
+    edge-gateway:HTTP:8080:*:
       ignorePortInHostMatching: true
-      name: edge-gateway:HTTP:8080
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -225,6 +224,32 @@ Routes:
             weightedClusters:
               clusters:
               - name: api-service-4508437668c35ed8
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            path: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            requestMirrorPolicies:
+            - cluster: echo-mirror-3dd740a2de879d4c
+              runtimeFraction:
+                defaultValue:
+                  numerator: 1
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
                 requestHeadersToAdd:
                 - header:
                     key: x-kuma-tags

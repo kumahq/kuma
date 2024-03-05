@@ -46,12 +46,13 @@ func addDNS(rt core_runtime.Runtime) error {
 		*rt.Config().DNSServer,
 		rt.Config().Experimental,
 		zone,
+		rt.Metrics(),
 	)
 	if err != nil {
 		return err
 	}
 	return rt.Add(component.LeaderComponentFunc(func(stop <-chan struct{}) error {
-		ticker := time.NewTicker(time.Millisecond * 500)
+		ticker := time.NewTicker(rt.Config().Runtime.Universal.VIPRefreshInterval.Duration)
 		defer ticker.Stop()
 
 		dns.Log.Info("starting the DNS VIPs allocator")

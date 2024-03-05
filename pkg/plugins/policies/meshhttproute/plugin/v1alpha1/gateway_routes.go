@@ -7,16 +7,139 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRouteRule) []route.Entry {
+type ruleByHostname struct {
+	Rule     ToRouteRule
+	Hostname string
+}
+
+func sortRulesToHosts(
+	meshLocalResources xds_context.ResourceMap,
+	rawRules rules.GatewayRules,
+	address string,
+	listener *mesh_proto.MeshGateway_Listener,
+	sublisteners []meshroute.Sublistener,
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
+
+	for _, hostnameTag := range sublisteners {
+		inboundListener := rules.NewInboundListenerHostname(
+			address,
+			listener.GetPort(),
+			hostnameTag.Hostname,
+		)
+		rawRules, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
+		if !ok {
+			continue
+		}
+		var ruleHostnames []string
+		rulesByHostname := map[string][]ruleByHostname{}
+		for _, rawRule := range rawRules {
+			conf := rawRule.Conf.(api.PolicyDefault)
+			rule := ToRouteRule{
+				Subset:    rawRule.Subset,
+				Rules:     conf.Rules,
+				Hostnames: conf.Hostnames,
+				Origin:    rawRule.Origin,
+			}
+			hostnames := rule.Hostnames
+			if len(rule.Hostnames) == 0 {
+				hostnames = []string{"*"}
+			}
+			for _, hostname := range hostnames {
+				accRule, ok := rulesByHostname[hostname]
+				if !ok {
+					ruleHostnames = append(ruleHostnames, hostname)
+				}
+				rulesByHostname[hostname] = append(accRule, ruleByHostname{
+					Rule:     rule,
+					Hostname: hostname,
+				})
+			}
+		}
+
+		// We need to find the set of hostnames that are contained by the given
+		// listener hostname
+		var listenerSpecificHostnameMatches []string
+		listenerSpecificHostnameMatchSet := map[string]struct{}{}
+		for _, ruleHostname := range ruleHostnames {
+			if !match.Hostnames(hostnameTag.Hostname, ruleHostname) {
+				continue
+			}
+			hostnameMatch := ruleHostname
+			if match.Contains(ruleHostname, hostnameTag.Hostname) {
+				hostnameMatch = hostnameTag.Hostname
+			}
+			if _, ok := listenerSpecificHostnameMatchSet[hostnameMatch]; !ok {
+				listenerSpecificHostnameMatches = append(listenerSpecificHostnameMatches, hostnameMatch)
+				listenerSpecificHostnameMatchSet[hostnameMatch] = struct{}{}
+			}
+		}
+
+		for _, hostnameMatch := range listenerSpecificHostnameMatches {
+			// Find all rules that match this hostname
+			var rules []ruleByHostname
+			for ruleHostname, hostnameRules := range rulesByHostname {
+				if !match.Hostnames(hostnameMatch, ruleHostname) {
+					continue
+				}
+				// If the rules hostname is more specific than the hostname
+				// match, they already have their own match
+				if _, ok := listenerSpecificHostnameMatchSet[ruleHostname]; ok && !match.Contains(ruleHostname, hostnameMatch) {
+					continue
+				}
+				rules = append(rules, hostnameRules...)
+			}
+			// Create an info for every hostname match
+			// We may end up duplicating info more than once so we copy it here
+			host := plugin_gateway.GatewayHost{
+				Hostname: hostnameMatch,
+				Routes:   nil,
+				Policies: map[model.ResourceType][]match.RankedPolicy{},
+				TLS:      listener.Tls,
+				Tags:     hostnameTag.Tags,
+			}
+			for _, t := range plugin_gateway.ConnectionPolicyTypes {
+				matches := match.ConnectionPoliciesBySource(
+					host.Tags,
+					match.ToConnectionPolicies(meshLocalResources[t]))
+				host.Policies[t] = matches
+			}
+			hostInfo := plugin_gateway.GatewayHostInfo{
+				Host: host,
+			}
+			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules))
+
+			meshroute.AddToListenerByHostname(
+				hostInfosByHostname,
+				listener.Protocol,
+				hostnameTag.Hostname,
+				listener.Tls,
+				hostInfo,
+			)
+		}
+	}
+
+	return meshroute.SortByHostname(hostInfosByHostname)
+}
+
+func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
 	var entries []route.Entry
+
+	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
 
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
@@ -24,14 +147,15 @@ func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRout
 	prefixEntries := map[string][]route.Entry{}
 
 	for _, rules := range toRules {
-		for _, rule := range rules.Rules {
+		for _, rule := range rules.Rule.Rules {
 			var names []string
-			for _, orig := range rules.Origin {
+			for _, orig := range rules.Rule.Origin {
 				names = append(names, orig.GetName())
 			}
 			slices.Sort(names)
 			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
 
+			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
 			// semantics). That means that we have to duplicate the route table
 			// entry for each repeated match so that the rule can match any of
@@ -39,6 +163,7 @@ func GenerateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ToRout
 			for _, m := range rule.Matches {
 				routeEntry := entry // Shallow copy.
 				routeEntry.Match = makeRouteMatch(m)
+				routeEntry.Name = hashedMatches
 
 				switch {
 				case routeEntry.Match.ExactPath != "":

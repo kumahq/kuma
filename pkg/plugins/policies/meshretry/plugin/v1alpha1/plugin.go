@@ -93,7 +93,7 @@ func applyToGateway(
 			continue
 		}
 
-		toRules := rules.ToRules[listenerKey]
+		toRules := rules.ToRules.ByListener[listenerKey]
 		if !ok {
 			continue
 		}
@@ -114,13 +114,15 @@ func applyToGateway(
 			return err
 		}
 
-		route, ok := gatewayRoutes[listenerInfo.Listener.ResourceName]
-		if !ok {
-			continue
-		}
+		for _, listenerHostname := range listenerInfo.ListenerHostnames {
+			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
+			if !ok {
+				continue
+			}
 
-		if err := configurer.ConfigureRoute(route); err != nil {
-			return err
+			if err := configurer.ConfigureRoute(route); err != nil {
+				return err
+			}
 		}
 	}
 

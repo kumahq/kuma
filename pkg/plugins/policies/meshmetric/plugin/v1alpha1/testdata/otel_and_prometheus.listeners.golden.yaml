@@ -22,18 +22,18 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus"},{"type":"OpenTelemetry","openTelemetry":{"endpoint":"/tmp/kuma-open-telemetry.sock"}}]}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"regex":"http.*","includeUnused":false}}}}'
                   status: 200
                 match:
                   prefix: /
           statPrefix: _kuma_dynamicconfig_observability
     name: _kuma:dynamicconfig:observability
-- name: _kuma:metrics:opentelemetry
+- name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       pipe:
-        path: /tmp/kuma-open-telemetry.sock
+        path: /tmp/kuma-otel-otel-collector.observability.svc4317.sock
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -52,14 +52,14 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:metrics:opentelemetry
+              name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: _kuma:metrics:opentelemetry:collector
-          statPrefix: _kuma_metrics_opentelemetry
-    name: _kuma:metrics:opentelemetry
+                  cluster: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
+          statPrefix: _kuma_metrics_opentelemetry_otel-collector_observability_svc4317
+    name: _kuma:metrics:opentelemetry:otel-collector.observability.svc4317
 - name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -88,7 +88,7 @@ resources:
                   prefix: /metrics
                 route:
                   cluster: _kuma:metrics:hijacker
-                  prefixRewrite: /?filter=http.*&usedonly
+                  prefixRewrite: /meshmetric
           statPrefix: _kuma_metrics_prometheus_default-backend
     name: _kuma:metrics:prometheus:default-backend
     trafficDirection: INBOUND

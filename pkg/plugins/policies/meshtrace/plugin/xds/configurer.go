@@ -50,7 +50,9 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	}
 
 	return v3.UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{}
+		hcm.Tracing = &envoy_hcm.HttpConnectionManager_Tracing{
+			SpawnUpstreamSpan: wrapperspb.Bool(c.IsGateway),
+		}
 
 		if c.Conf.Sampling != nil {
 			if overall := c.Conf.Sampling.Overall; overall != nil {

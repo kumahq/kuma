@@ -1,0 +1,60 @@
+header:
+  schema-version: '1.0.0'
+  expiration-date: '2025-01-24T01:00:00.000Z'
+  last-updated: '2024-01-24'
+  last-reviewed: '2024-01-24'
+  project-url: https://github.com/kumahq/kuma
+  changelog: https://github.com/kumahq/kuma/blob/master/CHANGELOG.md
+  license: https://github.com/kumahq/kuma/blob/master/LICENSE
+project-lifecycle:
+  status: active
+  bug-fixes-only: false
+  roadmap: https://github.com/kumahq/kuma/milestones
+  core-maintainers:
+    - github:Automaat
+    - github:bartsmykla
+    - github:lahabana
+    - github:jakubdyszkiewicz
+    - github:lobkovilya
+    - github:lukidzi
+    - github:michaelbeaumont
+    - github:slonka
+contribution-policy:
+  accepts-pull-requests: true
+  accepts-automated-pull-requests: true
+  automated-tools-list:
+    - automated-tool: dependabot
+      action: allowed
+      path:
+        - /
+  code-of-conduct: https://github.com/kumahq/kuma/blob/master/CODE_OF_CONDUCT.md
+dependencies:
+  third-party-packages: true
+  dependencies-lists:
+    - https://github.com/kumahq/kuma/blob/master/go.mod
+distribution-points:
+  - https://github.com/kumahq/kuma/releases
+  - https://download.konghq.com/kuma-binaries-release/
+documentation:
+  - https://kuma.io/docs/
+security-contacts:
+  - type: url
+    value: https://github.com/kumahq/kuma/security/advisories
+security-testing:
+- tool-type: sca
+  tool-name: Dependabot
+  tool-version: latest
+  integration:
+    ad-hoc: false
+    ci: true
+    before-release: true
+- tool-type: sast
+  tool-name: CodeQL
+  tool-version: '3.23.1'
+  integration:
+    ad-hoc: false
+    ci: true
+    before-release: true
+vulnerability-reporting:
+  accepts-vulnerability-reports: true
+  security-policy: https://github.com/kumahq/kuma/security/policy

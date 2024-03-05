@@ -57,6 +57,8 @@ var _ = Describe("Secret Endpoints", func() {
         mesh: default
         creationTime: "2018-07-17T16:05:36.995Z"
         modificationTime: "2018-07-17T16:05:36.995Z"
+        labels:
+          kuma.io/origin: zone
         data: "dGVzdAo="
 `
 		It("GET should return data saved by PUT", func() {

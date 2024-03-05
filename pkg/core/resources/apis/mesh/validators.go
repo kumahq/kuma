@@ -205,11 +205,15 @@ func ValidatePort(path validators.PathBuilder, port uint32) validators.Validatio
 //   - '*.domain.name'
 //   - 'domain.name'
 func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
-	if hostname == "*" {
+	if hostname == mesh_proto.WildcardHostname {
 		return validators.ValidationError{}
 	}
 
 	err := validators.ValidationError{}
+
+	if len(hostname) > 253 {
+		err.AddViolationAt(path, "must be at most 253 characters")
+	}
 
 	if strings.HasPrefix(hostname, "*.") {
 		if !domainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {

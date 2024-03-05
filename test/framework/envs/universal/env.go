@@ -3,6 +3,7 @@ package universal
 import (
 	"encoding/json"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -19,7 +20,6 @@ func SetupAndGetState() []byte {
 		[]framework.KumaDeploymentOption{
 			framework.WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
 			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"),         // we have only 1 Kuma CP instance so there is no risk setting this to 0
-			framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "false"),  // remove when default is to not create default policies
 		}, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Universal)...)
 	Expect(Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))).To(Succeed())
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {
@@ -55,4 +55,15 @@ func RestoreState(bytes []byte) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(Cluster.AddNetworking(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 	Cluster.SetCp(cp)
+}
+
+func PrintCPLogsOnFailure(report ginkgo.Report) {
+	if !report.SuiteSucceeded {
+		logs, err := Cluster.GetKumaCPLogs()
+		if err != nil {
+			framework.Logf("could not retrieve cp logs")
+		} else {
+			framework.Logf(logs)
+		}
+	}
 }

@@ -25,6 +25,11 @@ injector:
       timeoutSeconds:      23
       periodSeconds:       25
       failureThreshold:    212
+    startupProbe:
+      initialDelaySeconds: 261
+      timeoutSeconds:      24
+      periodSeconds:       26
+      failureThreshold:    213
     resources:
       requests:
         cpu: 150m

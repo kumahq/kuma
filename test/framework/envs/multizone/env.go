@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -54,9 +55,7 @@ type State struct {
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
-	globalOptions := append([]framework.KumaDeploymentOption{
-		framework.WithEnv("KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES", "false"),
-	},
+	globalOptions := append([]framework.KumaDeploymentOption{},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
@@ -271,4 +270,30 @@ func RestoreState(bytes []byte) {
 	UniZone2.SetCp(cp)
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+}
+
+func PrintCPLogsOnFailure(report Report) {
+	if !report.SuiteSucceeded {
+		for _, cluster := range append(Zones(), Global) {
+			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
+			logs, err := cluster.GetKumaCPLogs()
+			if err != nil {
+				Logf("could not retrieve cp logs")
+			} else {
+				Logf(logs)
+			}
+		}
+	}
+}
+
+func PrintKubeState(report Report) {
+	if !report.SuiteSucceeded {
+		for _, cluster := range []Cluster{KubeZone1, KubeZone2} {
+			Logf("Kube state of cluster: " + cluster.Name())
+			// just running it, prints the logs
+			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
+				framework.Logf("could not retrieve kube pods")
+			}
+		}
+	}
 }

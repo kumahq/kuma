@@ -140,6 +140,7 @@ metadata:
   name: mt-on-zone
   namespace: %s
   labels:
+    kuma.io/origin: zone
     kuma.io/mesh: %s
 spec:
   targetRef:

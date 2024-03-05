@@ -42,6 +42,8 @@ var (
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
 		}
 	})
+	_ = ReportAfterSuite("cp logs", multizone.PrintCPLogsOnFailure)
+	_ = ReportAfterSuite("kube state", multizone.PrintKubeState)
 )
 
 var (

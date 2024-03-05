@@ -135,6 +135,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
+                      spawnUpstreamSpan: false
                       clientSampling:
                           value: 20
                       customTags:
@@ -179,6 +180,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
+                      spawnUpstreamSpan: false
                       clientSampling:
                           value: 20
                       customTags:
@@ -272,6 +274,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
+                      spawnUpstreamSpan: false
                       clientSampling:
                           value: 20
                       customTags:
@@ -314,6 +317,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
+                      spawnUpstreamSpan: false
                       clientSampling:
                           value: 20
                       customTags:
@@ -405,6 +409,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_17777"
                   tracing:
+                      spawnUpstreamSpan: false
                       provider:
                           name: envoy.tracers.datadog
                           typedConfig:
@@ -430,6 +435,7 @@ var _ = Describe("MeshTrace", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: "127_0_0_1_27777"
                   tracing:
+                      spawnUpstreamSpan: false
                       provider:
                           name: envoy.tracers.datadog
                           typedConfig:
@@ -496,6 +502,7 @@ var _ = Describe("MeshTrace", func() {
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                         statPrefix: "127_0_0_1_17777"
                         tracing:
+                            spawnUpstreamSpan: false
                             provider:
                                 name: envoy.tracers.zipkin
                                 typedConfig:
@@ -524,6 +531,7 @@ var _ = Describe("MeshTrace", func() {
                                 '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                         statPrefix: "127_0_0_1_27777"
                         tracing:
+                            spawnUpstreamSpan: false
                             provider:
                                 name: envoy.tracers.zipkin
                                 typedConfig:

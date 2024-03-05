@@ -142,7 +142,6 @@ resources:
               headers:
               - name: x-kuma-tags
                 safeRegexMatch:
-                  googleRe2: {}
                   regex: .*&kuma.io/service=[^&]*frontend[,&].*
           - name: envoy.filters.http.local_ratelimit
             typedConfig:
@@ -165,7 +164,6 @@ resources:
                   headers:
                   - name: x-kuma-tags
                     safeRegexMatch:
-                      googleRe2: {}
                       regex: .*&kuma.io/service=[^&]*frontend[,&].*
                   prefix: /
                 route:
@@ -191,7 +189,6 @@ resources:
                   headers:
                   - name: x-kuma-tags
                     safeRegexMatch:
-                      googleRe2: {}
                       regex: .*&kuma.io/service=.*
                   prefix: /
                 route:
