@@ -300,6 +300,16 @@ runtime:
           periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_PERIOD_SECONDS
           # Minimum consecutive failures for the probe to be considered failed after having succeeded.
           failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_FAILURE_THRESHOLD
+        # Startup probe (if sidecar containers feature is enabled).
+        startupProbe:
+          # Number of seconds after the container has started before startup probes are initiated.
+          initialDelaySeconds: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_INITIAL_DELAY_SECONDS
+          # Number of seconds after which the probe times out.
+          timeoutSeconds: 3 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_TIMEOUT_SECONDS
+          # How often (in seconds) to perform the probe.
+          periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_PERIOD_SECONDS
+          # Minimum consecutive failures for the probe to be considered failed after having succeeded.
+          failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_FAILURE_THRESHOLD
         # Compute resource requirements.
         resources:
           # Minimum amount of compute resources required.
