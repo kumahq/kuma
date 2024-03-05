@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -33,9 +33,8 @@ type MeshValidator struct {
 	unsafeDelete bool
 }
 
-func (h *MeshValidator) InjectDecoder(d *admission.Decoder) error {
+func (h *MeshValidator) InjectDecoder(d *admission.Decoder) {
 	h.decoder = d
-	return nil
 }
 
 func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -70,7 +69,7 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 	}
 	if err := h.validator.ValidateCreate(ctx, req.Name, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}
@@ -98,7 +97,7 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 
 	if err := h.validator.ValidateUpdate(ctx, oldCoreRes, coreRes); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
-			return convertSpecValidationError(kumaErr, k8sRes)
+			return convertSpecValidationError(kumaErr, false, k8sRes)
 		}
 		return admission.Denied(err.Error())
 	}

@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/StatsRequest",
+    "definitions": {
+        "StatsRequest": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID of a request so we can correlate requests with response on one stream."
+                },
+                "resource_type": {
+                    "type": "string",
+                    "description": "Type of resource (Dataplane, ZoneIngress, ZoneEgress)"
+                },
+                "resource_name": {
+                    "type": "string",
+                    "description": "Name of the resource on which we execute kuma-dp stats request."
+                },
+                "resource_mesh": {
+                    "type": "string",
+                    "description": "Mesh of the resource on which we execute kuma-dp stats request. Should be empty for ZoneIngress, ZoneEgress."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Stats Request",
+            "description": "StatsRequest is a request for kuma-dp stats that is executed on Zone CP."
+        }
+    }
+}

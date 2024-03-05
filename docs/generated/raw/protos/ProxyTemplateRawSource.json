@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ProxyTemplateRawSource",
+    "definitions": {
+        "ProxyTemplateRawSource": {
+            "properties": {
+                "resources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.ProxyTemplateRawResource"
+                    },
+                    "type": "array",
+                    "description": "List of raw xDS resources. +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Raw Source"
+        },
+        "kuma.mesh.v1alpha1.ProxyTemplateRawResource": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The resource's name, to distinguish it from others of the same type of resource."
+                },
+                "version": {
+                    "type": "string",
+                    "description": "The resource level version. It allows xDS to track the state of individual resources."
+                },
+                "resource": {
+                    "type": "string",
+                    "description": "xDS resource."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Proxy Template Raw Resource"
+        }
+    }
+}

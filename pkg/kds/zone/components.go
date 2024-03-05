@@ -5,7 +5,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -20,8 +19,8 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	kds_cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
+	kds_server_v2 "github.com/kumahq/kuma/pkg/kds/v2/server"
 	kds_sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -35,7 +34,7 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	if rt.Config().Mode != config_core.Zone {
+	if !rt.Config().IsFederatedZoneCP() {
 		// Only run on zone
 		return nil
 	}
@@ -45,19 +44,35 @@ func Setup(rt core_runtime.Runtime) error {
 	kdsServer, err := kds_server.New(
 		kdsZoneLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
+		reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
 		zone,
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
-		false,
+		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
+	)
+	if err != nil {
+		return err
+	}
+
+	kdsServerV2, err := kds_server_v2.New(
+		kdsZoneLog,
+		rt,
+		reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
+		zone,
+		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
+		kdsCtx.ZoneProvidedFilter,
+		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
 	)
 	if err != nil {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
-	resourceSyncerV2 := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore())
+	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
+	if err != nil {
+		return err
+	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
 	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
@@ -73,10 +88,12 @@ func Setup(rt core_runtime.Runtime) error {
 		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
-				log.Error(err, "StreamKumaResources finished with an error")
+				session.SetError(errors.Wrap(err, "StreamKumaResources finished with an error"))
+			} else {
+				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
 			Callbacks(
 				rt.KDSContext().Configs,
 				resourceSyncer,
@@ -88,16 +105,22 @@ func Setup(rt core_runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				log.Error(err, "KDSSink finished with an error")
+				session.SetError(errors.Wrap(err, "KDSSink finished with an error"))
+			} else {
+				log.V(1).Info("KDSSink finished gracefully")
 			}
 		}()
 		return nil
 	})
 
-	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState kds_cache_v2.ResourceVersionMap) error {
+	onGlobalToZoneSyncStarted := mux.OnGlobalToZoneSyncStartedFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errChan chan error) {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
-		syncClient := kds_client_v2.NewKDSSyncClient(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client_v2.NewDeltaKDSStream(stream, zone, string(cfgJson), deltaInitState),
+		syncClient := kds_client_v2.NewKDSSyncClient(
+			log,
+			reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
+			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, string(cfgJson)),
 			kds_sync_store_v2.ZoneSyncCallback(
+				stream.Context(),
 				rt.KDSContext().Configs,
 				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
@@ -105,13 +128,28 @@ func Setup(rt core_runtime.Runtime) error {
 				kubeFactory,
 				rt.Config().Store.Kubernetes.SystemNamespace,
 			),
+			rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
 			if err := syncClient.Receive(); err != nil {
-				log.Error(err, "KDSSyncClient finished with an error")
+				errChan <- errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
+			} else {
+				log.V(1).Info("GlobalToZoneSyncClient finished gracefully")
 			}
 		}()
-		return nil
+	})
+
+	onZoneToGlobalSyncStarted := mux.OnZoneToGlobalSyncStartedFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errChan chan error) {
+		log := kdsDeltaZoneLog.WithValues("kds-version", "v2", "peer-id", "global")
+		log.Info("ZoneToGlobalSync new session created")
+		session := kds_server_v2.NewServerStream(stream)
+		go func() {
+			if err := kdsServerV2.ZoneToGlobal(session); err != nil {
+				errChan <- errors.Wrap(err, "ZoneToGlobalSync finished with an error")
+			} else {
+				log.V(1).Info("ZoneToGlobalSync finished gracefully")
+			}
+		}()
 	})
 
 	muxClient := mux.NewClient(
@@ -120,6 +158,7 @@ func Setup(rt core_runtime.Runtime) error {
 		zone,
 		onSessionStarted,
 		onGlobalToZoneSyncStarted,
+		onZoneToGlobalSyncStarted,
 		*rt.Config().Multizone.Zone.KDS,
 		rt.Config().Experimental,
 		rt.Metrics(),

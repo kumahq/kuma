@@ -4,7 +4,7 @@ import "fmt"
 
 func GatewayProxyUniversal(mesh, name string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := cluster.GetKuma().GenerateDpToken(mesh, "edge-gateway")
+		token, err := cluster.GetKuma().GenerateDpToken(mesh, name)
 		if err != nil {
 			return err
 		}
@@ -18,10 +18,9 @@ networking:
   gateway:
     type: BUILTIN
     tags:
-      kuma.io/service: edge-gateway
-`, mesh)
+      kuma.io/service: %s
+`, mesh, name)
 		return cluster.DeployApp(
-			WithKumactlFlow(),
 			WithName(name),
 			WithMesh(mesh),
 			WithToken(token),

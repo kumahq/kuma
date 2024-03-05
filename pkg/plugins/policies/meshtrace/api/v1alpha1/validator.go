@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"math"
 	net_url "net/url"
 	"strconv"
@@ -10,8 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -24,14 +25,15 @@ func (r *MeshTraceResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
-			common_api.MeshGatewayRoute,
 		},
+		GatewayListenerTagsAllowed: false,
 	})
 	return targetRefErr
 }
@@ -84,23 +86,14 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 	backend := pointer.Deref(conf.Backends)[0]
 	firstBackendPath := backendsPath.Index(0)
 
-	var defined int
-	if backend.Datadog != nil {
-		defined++
-	}
-	if backend.Zipkin != nil {
-		defined++
-	}
-	if backend.OpenTelemetry != nil {
-		defined++
-	}
-	if defined != 1 {
-		verr.AddViolationAt(firstBackendPath, validators.MustHaveOnlyOne("backend", "datadog", "zipkin", "openTelemetry"))
-	}
-
-	if backend.Datadog != nil {
-		datadogBackend := backend.Datadog
+	switch backend.Type {
+	case DatadogBackendType:
 		datadogPath := firstBackendPath.Field("datadog")
+		datadogBackend := backend.Datadog
+		if datadogBackend == nil {
+			verr.AddViolationAt(datadogPath, validators.MustBeDefined)
+			break
+		}
 
 		url, err := net_url.ParseRequestURI(datadogBackend.Url)
 		if err != nil {
@@ -139,17 +132,28 @@ func validateBackend(conf Conf, backendsPath validators.PathBuilder) validators.
 				verr.AddViolationAt(datadogPath.Field("url"), nonEmptyField+" "+validators.MustNotBeDefined)
 			}
 		}
-	}
-
-	if backend.Zipkin != nil {
-		zipkinBackend := backend.Zipkin
+	case ZipkinBackendType:
 		zipkinPath := firstBackendPath.Field("zipkin")
+		zipkinBackend := backend.Zipkin
+		if zipkinBackend == nil {
+			verr.AddViolationAt(zipkinPath, validators.MustBeDefined)
+			break
+		}
 
 		if zipkinBackend.Url == "" {
 			verr.AddViolationAt(zipkinPath.Field("url"), validators.MustNotBeEmpty)
 		} else if !govalidator.IsURL(zipkinBackend.Url) {
 			verr.AddViolationAt(zipkinPath.Field("url"), "must be a valid url")
 		}
+	case OpenTelemetryBackendType:
+		otelPath := firstBackendPath.Field("openTelemetry")
+		otelBackend := backend.OpenTelemetry
+		if otelBackend == nil {
+			verr.AddViolationAt(otelPath, validators.MustBeDefined)
+			break
+		}
+	default:
+		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr

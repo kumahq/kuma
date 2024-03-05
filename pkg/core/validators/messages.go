@@ -7,17 +7,26 @@ import (
 
 const (
 	HasToBeGreaterThan                = "must be greater than"
+	HasToBeLessThan                   = "must be less than"
+	HasToBeGreaterOrEqualThen         = "must be greater or equal then"
 	HasToBeGreaterThanZero            = "must be greater than 0"
 	MustNotBeEmpty                    = "must not be empty"
 	MustBeDefined                     = "must be defined"
+	MustBeSet                         = "must be set"
+	MustNotBeSet                      = "must not be set"
 	MustNotBeDefined                  = "must not be defined"
 	MustBeDefinedAndGreaterThanZero   = "must be defined and greater than zero"
 	WhenDefinedHasToBeNonNegative     = "must not be negative when defined"
 	WhenDefinedHasToBeGreaterThanZero = "must be greater than zero when defined"
-	HasToBeInPercentageRange          = "has to be in [0.0 - 100.0] range"
-	HasToBeInUintPercentageRange      = "has to be in [0 - 100] range"
-	WhenDefinedHasToBeValidPath       = "has to be a valid path when defined"
-	StringHasToBeValidNumber          = "string has to be a valid number"
+	HasToBeInRangeFormat              = "must be in inclusive range [%v, %v]"
+	WhenDefinedHasToBeValidPath       = "must be a valid path when defined"
+	StringHasToBeValidNumber          = "string must be a valid number"
+	MustHaveBPSUnit                   = "must be in kbps/Mbps/Gbps units"
+)
+
+var (
+	HasToBeInPercentageRange     = fmt.Sprintf(HasToBeInRangeFormat, "0.0", "100.0")
+	HasToBeInUintPercentageRange = fmt.Sprintf(HasToBeInRangeFormat, 0, 100)
 )
 
 func MustHaveOnlyOne(entity string, allowedValues ...string) string {

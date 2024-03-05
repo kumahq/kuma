@@ -84,12 +84,13 @@ var _ = Describe("Proxy Builder", func() {
 	})
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), false),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
+		xds_context.AnyToAnyReachableServicesGraphBuilder,
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())
@@ -102,18 +103,16 @@ var _ = Describe("Proxy Builder", func() {
 	initializeStore(ctx, rt.ResourceManager(), "default_resources.yaml")
 
 	Describe("Build() zone egress", func() {
-		egressProxyBuilder := sync.DefaultEgressProxyBuilder(
-			ctx,
-			rt,
-			envoy_common.APIV3,
-		)
+		egressProxyBuilder := sync.DefaultEgressProxyBuilder(rt, envoy_common.APIV3)
 
 		It("should build proxy object for egress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-egress-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := egressProxyBuilder.Build(ctx, rk)
+			proxy, err := egressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -193,45 +192,24 @@ var _ = Describe("Proxy Builder", func() {
 		It("should build proxy object for ingress", func() {
 			// given
 			rk := core_model.ResourceKey{Name: "zone-ingress-zone-1"}
+			meshContexts, err := xds_context.AggregateMeshContexts(ctx, rt.ReadOnlyResourceManager(), meshCache.GetMeshContext)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(ctx, rk)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			routes := proxy.ZoneIngressProxy.PolicyResources[core_mesh.TrafficRouteType].GetItems()
-			Expect(routes[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "*",
-						},
-					},
-				},
-				Destinations: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							mesh_proto.ServiceTag: "*",
-						},
-					},
-				},
-				Conf: &mesh_proto.TrafficRoute_Conf{
-					Destination: mesh_proto.MatchAnyService(),
-					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
-						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
-					},
-				},
-			}))
-			Expect(proxy.Routing.OutboundTargets).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
+			Expect(proxy.ZoneIngressProxy.MeshResourceList).To(HaveLen(1))
+			Expect(proxy.ZoneIngressProxy.MeshResourceList[0].EndpointMap).To(HaveKeyWithValue("cross-mesh-gateway", []core_xds.Endpoint{{
 				Target: "192.168.0.3",
 				Port:   8080,
 				Tags: map[string]string{
 					"kuma.io/service": "cross-mesh-gateway",
-					"mesh":            "default",
 				},
 				Weight: 1,
 			}}))
-			Expect(proxy.ZoneIngress.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
+			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
 				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 					{
 						Tags: map[string]string{

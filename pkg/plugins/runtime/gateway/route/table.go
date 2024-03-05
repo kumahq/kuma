@@ -27,6 +27,7 @@ type Table struct {
 // additional processing.
 type Entry struct {
 	Route  string
+	Name   string
 	Match  Match
 	Action Action
 
@@ -72,9 +73,18 @@ type Match struct {
 	RegexHeader   []KeyValue // name -> regex
 	AbsentHeader  []string
 	PresentHeader []string
+	PrefixHeader  []KeyValue
 
 	ExactQuery []KeyValue // param -> value
 	RegexQuery []KeyValue // param -> regex
+}
+
+func (m Match) numHeaderMatches() int {
+	return len(m.ExactHeader) + len(m.RegexHeader) + len(m.AbsentHeader) + len(m.PresentHeader)
+}
+
+func (m Match) numQueryParamMatches() int {
+	return len(m.ExactQuery) + len(m.RegexQuery)
 }
 
 // Action describes how a HTTP request should be dispatched.
@@ -87,10 +97,11 @@ type Action struct {
 // Redirection is an action that responds to a HTTP request with a HTTP
 // redirect response.
 type Redirection struct {
-	Status uint32 // HTTP status code.
-	Scheme string // URL scheme (optional).
-	Host   string // URL host (optional).
-	Port   uint32 // URL port (optional).
+	Status      uint32 // HTTP status code.
+	Scheme      string // URL scheme (optional).
+	Host        string // URL host (optional).
+	Port        uint32 // URL port (optional).
+	PathRewrite *Rewrite
 
 	StripQuery bool // Whether to strip the query string.
 }
@@ -126,6 +137,13 @@ type Rewrite struct {
 	ReplaceFullPath *string
 
 	ReplacePrefixMatch *string
+
+	// HostToBackendHostname indicates that during forwarding, the host header
+	// should be swapped with the hostname of the upstream host chosen by the
+	// Envoy's cluster manager.
+	HostToBackendHostname bool
+
+	ReplaceHostname *string
 }
 
 // Mirror specifies a traffic mirroring operation.

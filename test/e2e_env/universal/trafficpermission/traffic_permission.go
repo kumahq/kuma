@@ -9,12 +9,13 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
-func TrafficPermissionUniversal() {
+func TrafficPermission() {
 	meshName := "trafficpermission"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
@@ -57,6 +58,8 @@ destinations:
 	})
 
 	trafficAllowed := func() {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
@@ -65,23 +68,34 @@ destinations:
 		}).Should(Succeed())
 	}
 
-	trafficBlocked := func() {
+	trafficBlocked := func(statusCode int) {
+		GinkgoHelper()
+
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
+			g.Expect(response.ResponseCode).To(Equal(statusCode))
 		}, "30s", "1s").Should(Succeed())
 	}
 
 	removeDefaultTrafficPermission := func() {
+		GinkgoHelper()
+
 		err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-"+meshName, meshName)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	addAllowAllTrafficPermission := func() {
+		GinkgoHelper()
+
+		Expect(NewClusterSetup().Install(TrafficPermissionUniversal(meshName)).Setup(universal.Cluster)).ToNot(HaveOccurred())
+	}
+
 	It("should allow the traffic with default traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
 
 		// then
 		trafficAllowed()
@@ -90,13 +104,13 @@ destinations:
 		removeDefaultTrafficPermission()
 
 		// then
-		trafficBlocked()
+		trafficBlocked(403)
 	})
 
 	It("should allow the traffic with traffic permission based on kuma.io/service tag", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when traffic permission on service tag is applied
 		yaml := `
@@ -120,7 +134,7 @@ destinations:
 	It("should allow the traffic with traffic permission based on non standard tag", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when
 		yaml := `
@@ -144,7 +158,7 @@ destinations:
 	It("should allow the traffic with traffic permission based on many tags", func() {
 		// given no default traffic permission
 		removeDefaultTrafficPermission()
-		trafficBlocked()
+		trafficBlocked(403)
 
 		// when
 		yaml := `
@@ -168,7 +182,10 @@ destinations:
 	})
 
 	It("should use most specific traffic permission", func() {
-		// given default traffic permission
+		// given allow-all traffic permission
+		addAllowAllTrafficPermission()
+
+		// then
 		trafficAllowed()
 
 		// when more specific traffic permission on service tag is applied
@@ -186,8 +203,8 @@ destinations:
 		err := YamlUniversal(yaml)(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
-		trafficBlocked()
+		// then it's blocked with 503, because TrafficPermission configures L4 RBAC, not L7 RBAC.
+		trafficBlocked(503)
 
 		// when traffic permission with the same "rank" is applied but later, it is preferred to the previous one
 		yaml = `

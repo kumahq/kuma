@@ -27,10 +27,6 @@ func GetLocalClusterName(port uint32) string {
 	return Join("localhost", formatPort(port))
 }
 
-func GetSplitClusterName(service string, idx int) string {
-	return fmt.Sprintf("%s-_%d_", service, idx)
-}
-
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
 	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {
@@ -67,6 +63,14 @@ func GetEnvoyAdminClusterName() string {
 
 func GetMetricsHijackerClusterName() string {
 	return Join("kuma", "metrics", "hijacker")
+}
+
+func GetOpenTelemetryListenerName(backendName string) string {
+	return Join("_kuma", "metrics", "opentelemetry", backendName)
+}
+
+func GetOpenTelemetryClusterName(backendName string) string {
+	return Join("_kuma", "metrics", "opentelemetry", backendName)
 }
 
 func GetPrometheusListenerName() string {
@@ -109,4 +113,8 @@ func GetMeshClusterName(meshName string, serviceName string) string {
 // identifier is a name that should be unique within a category and scope.
 func GetSecretName(category string, scope string, identifier string) string {
 	return Join(category, scope, identifier)
+}
+
+func GetEgressFilterChainName(serviceName string, meshName string) string {
+	return fmt.Sprintf("%s_%s", serviceName, meshName)
 }

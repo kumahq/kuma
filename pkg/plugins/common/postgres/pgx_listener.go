@@ -15,7 +15,7 @@ import (
 // PgxListener will listen for NOTIFY commands on a channel.
 type PgxListener struct {
 	notificationsCh chan *Notification
-	err             error
+	err             chan error
 	mu              sync.Mutex
 
 	logger logr.Logger
@@ -25,9 +25,7 @@ type PgxListener struct {
 	stopFn func()
 }
 
-func (l *PgxListener) Error() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+func (l *PgxListener) Error() <-chan error {
 	return l.err
 }
 
@@ -36,16 +34,13 @@ var _ Listener = (*PgxListener)(nil)
 // NewPgxListener will create and initialize a PgxListener which will automatically connect and listen to the provided channel.
 func NewPgxListener(config postgres.PostgresStoreConfig, logger logr.Logger) (Listener, error) {
 	ctx := context.Background()
-	connectionString, err := config.ConnectionString()
-	if err != nil {
-		return nil, err
-	}
-	db, err := pgxpool.New(context.Background(), connectionString)
+	db, err := ConnectToDbPgx(config)
 	if err != nil {
 		return nil, err
 	}
 	l := &PgxListener{
 		notificationsCh: make(chan *Notification, 32),
+		err:             make(chan error),
 		logger:          logger,
 		db:              db,
 	}
@@ -73,8 +68,8 @@ func (l *PgxListener) run(ctx context.Context) {
 	if err != nil {
 		l.mu.Lock()
 		defer l.mu.Unlock()
-		l.err = err
 		close(l.notificationsCh)
+		l.err <- err
 	}
 }
 

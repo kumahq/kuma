@@ -8,17 +8,13 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_labels "k8s.io/apimachinery/pkg/labels"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-)
-
-const (
-	KubeNamespaceTag = "k8s.kuma.io/namespace"
-	KubeServiceTag   = "k8s.kuma.io/service-name"
-	KubePortTag      = "k8s.kuma.io/service-port"
 )
 
 type InboundConverter struct {
@@ -41,40 +37,46 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 		}
 
 		tags := InboundTagsForService(zone, pod, service, &svcPort)
-		var health *mesh_proto.Dataplane_Networking_Inbound_Health
+		state := mesh_proto.Dataplane_Networking_Inbound_Ready
+		health := mesh_proto.Dataplane_Networking_Inbound_Health{
+			Ready: true,
+		}
 
 		// if container is not equal nil then port is explicitly defined as containerPort so we're able
 		// to figure out which container implements which service. Since we know container we can check its status
 		// and map it to the Dataplane health
 		if container != nil {
-			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil {
-				health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-					Ready: cs.Ready,
-				}
+			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+				health.Ready = false
 			}
 		}
 
 		// also we're checking whether kuma-sidecar container is ready
-		if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil {
-			if health != nil {
-				health.Ready = health.Ready && cs.Ready
-			} else {
-				health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-					Ready: cs.Ready,
-				}
-			}
+		if cs := util_k8s.FindContainerOrInitContainerStatus(
+			util_k8s.KumaSidecarContainerName,
+			pod.Status.ContainerStatuses,
+			pod.Status.InitContainerStatuses,
+		); cs != nil && !cs.Ready {
+			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+			health.Ready = false
 		}
 
 		if pod.DeletionTimestamp != nil { // pod is in Termination state
-			health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-				Ready: false,
-			}
+			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+			health.Ready = false
+		}
+
+		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
+			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
+			health.Ready = false
 		}
 
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
 			Tags:   tags,
-			Health: health,
+			State:  state,
+			Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
 		})
 	}
 
@@ -93,41 +95,50 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	// including GUI and CLI changes
 
 	tags := InboundTagsForPod(zone, pod, name)
-	var health *mesh_proto.Dataplane_Networking_Inbound_Health
+	state := mesh_proto.Dataplane_Networking_Inbound_Ready
+	health := mesh_proto.Dataplane_Networking_Inbound_Health{
+		Ready: true,
+	}
 
 	for _, container := range pod.Spec.Containers {
 		if container.Name != util_k8s.KumaSidecarContainerName {
-			if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil {
-				health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-					Ready: cs.Ready,
-				}
+			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
+				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+				health.Ready = false
 			}
 		}
 	}
 
 	// also we're checking whether kuma-sidecar container is ready
-	if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil {
-		if health != nil {
-			health.Ready = health.Ready && cs.Ready
-		} else {
-			health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-				Ready: cs.Ready,
-			}
-		}
+	if cs := util_k8s.FindContainerOrInitContainerStatus(
+		util_k8s.KumaSidecarContainerName,
+		pod.Status.ContainerStatuses,
+		pod.Status.InitContainerStatuses,
+	); cs != nil && !cs.Ready {
+		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
+		health.Ready = false
 	}
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
 		Port:   mesh_proto.TCPPortReserved,
 		Tags:   tags,
-		Health: health,
+		State:  state,
+		Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
 	}
 }
 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	ifaces := []*mesh_proto.Dataplane_Networking_Inbound{}
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
-		svcIfaces := inboundForService(zone, pod, svc)
-		ifaces = append(ifaces, svcIfaces...)
+		// Services of ExternalName type should not have any selectors.
+		// Kubernetes does not validate this, so in rare cases, a service of
+		// ExternalName type could point to a workload inside the mesh. If this
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
+		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
+			ifaces = append(ifaces, inboundForService(zone, pod, svc)...)
+		}
 	}
 
 	if len(ifaces) == 0 {
@@ -161,10 +172,10 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if len(ignoredLabels) > 0 {
 		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
-	tags[KubeServiceTag] = svc.Name
-	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
-	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, &svcPort.Port)
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeServiceTag] = svc.Name
+	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
+	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
@@ -188,8 +199,15 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 
 	if svcPort.AppProtocol != nil {
 		protocolValue = *svcPort.AppProtocol
-	} else {
-		protocolValue = svc.Annotations[protocolAnnotation]
+		// `appProtocol` can be any protocol and if we don't explicitly support
+		// it, let the default below take effect
+		if core_mesh.ParseProtocol(protocolValue) == core_mesh.ProtocolUnknown {
+			protocolValue = ""
+		}
+	}
+
+	if explicitKumaProtocol, ok := svc.Annotations[protocolAnnotation]; ok && protocolValue == "" {
+		protocolValue = explicitKumaProtocol
 	}
 
 	if protocolValue == "" {
@@ -197,9 +215,10 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
 		protocolValue = core_mesh.ProtocolTCP
 	}
-	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
+
+	// if `<port>.service.kuma.io/protocol` field is present but has an invalid value
 	// we still want Dataplane to have a `protocol: <lowercase value>` tag in order to make it clear
-	// to a user that at least `appProtocol` or `<port>.service.kuma.io/protocol` has an effect
+	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
 	return strings.ToLower(protocolValue)
 }
 
@@ -213,7 +232,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags[KubeNamespaceTag] = pod.Namespace
+	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", name, pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone

@@ -4,18 +4,16 @@ import (
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path.Field("from"), "needs at least one item")
-	}
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateFrom(r.Spec.TargetRef, r.Spec.From))
+	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
 	return verr.OrNil()
 }
 
@@ -23,26 +21,51 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 	supportedKinds := []common_api.TargetRefKind{
 		common_api.Mesh,
 		common_api.MeshSubset,
+		common_api.MeshGateway,
 		common_api.MeshService,
 		common_api.MeshServiceSubset,
 	}
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: supportedKinds,
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		SupportedKinds:             supportedKinds,
+		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
 
-func validateFrom(from []From) validators.ValidationError {
+func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
+	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
+		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		return verr
+	}
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
 		defaultField := path.Field("default")
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 			},
 		}))
 		verr.Add(validateDefault(defaultField, fromItem.Default))
+	}
+	return verr
+}
+
+func validateTo(topTargetRef common_api.TargetRef, to []To) validators.ValidationError {
+	var verr validators.ValidationError
+	if !common_api.IncludesGateways(topTargetRef) && len(to) != 0 {
+		verr.AddViolationAt(validators.RootedAt("to"), validators.MustNotBeDefined)
+		return verr
+	}
+	for idx, toItem := range to {
+		path := validators.RootedAt("to").Index(idx)
+		defaultField := path.Field("default")
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		}))
+		verr.Add(validateDefault(defaultField, toItem.Default))
 	}
 	return verr
 }

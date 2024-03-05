@@ -8,6 +8,7 @@ build_info_fields = \
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
+
 EXTRA_GOENV ?=
 GOENV=CGO_ENABLED=0 $(EXTRA_GOENV)
 GOFLAGS := -trimpath $(EXTRA_GOFLAGS)
@@ -20,12 +21,12 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
 # An optional extension to the coredns packages
 COREDNS_EXT ?=
-COREDNS_VERSION = v1.10.1
+COREDNS_VERSION = v1.11.1
 
 # List of binaries that we have build/release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl coredns kuma-cni install-cni envoy
 # List of binaries that we have build/test build roles for.
-BUILD_TEST_BINARIES := test-server
+BUILD_TEST_BINARIES += test-server
 
 # This is a list of all architecture supported, this means we'll define targets for all these architectures
 SUPPORTED_GOARCHES ?= amd64 arm64
@@ -36,7 +37,14 @@ SUPPORTED_GOOSES ?= linux darwin
 ENABLED_GOARCHES ?= $(GOARCH)
 # This is a list of all osses enabled, this means generic targets like `make build/distributions` will build for each of these arches
 ENABLED_GOOSES ?= $(GOOS)
-ENABLED_ARCH_OS = $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch)))
+
+ifeq ($(FULL_MATRIX), true)
+ENABLED_GOARCHES = $(SUPPORTED_GOARCHES)
+ENABLED_GOOSES = $(SUPPORTED_GOOSES)
+endif
+# We can remove some specific combination that may be invalid with this
+IGNORED_ARCH_OS ?=
+ENABLED_ARCH_OS = $(filter-out $(IGNORED_ARCH_OS), $(foreach os,$(ENABLED_GOOSES),$(foreach arch,$(ENABLED_GOARCHES),$(os)-$(arch))))
 
 .PHONY: build/info
 build/info: ## Dev: Show build info
@@ -44,6 +52,17 @@ build/info: ## Dev: Show build info
 	@echo tools-dir: $(CI_TOOLS_DIR)
 	@echo arch: supported=$(SUPPORTED_GOARCHES), enabled=$(ENABLED_GOARCHES)
 	@echo os: supported=$(SUPPORTED_GOOSES), enabled=$(ENABLED_GOOSES)
+	@echo arch-os ignored=$(IGNORED_ARCH_OS), enabled=$(ENABLED_ARCH_OS)
+	$(EXTRA_BUILD_INFO)
+
+.PHONY: build/info/short
+build/info/short:
+	@echo enabled arch-os:$(ENABLED_ARCH_OS)
+	$(EXTRA_BUILD_INFO)
+
+.PHONY: build/info/version
+build/info/version:
+	@echo $(BUILD_INFO_VERSION)
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
@@ -94,14 +113,18 @@ build/artifacts-$(1)-$(2)/coredns:
 	[ -f $$(@)/coredns ] || \
 	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
+.PHONY: build/artifacts-$(1)-$(2)/envoy
+build/artifacts-$(1)-$(2)/envoy:
+	mkdir -p $$(@) && \
+	[ -f $$(@)/envoy ] || \
+	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-$(2)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
+
 .PHONY: build/artifacts-$(1)-$(2)/test-server
 build/artifacts-$(1)-$(2)/test-server:
 	$(Build_Go_Application) ./test/server
+
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
-
-.PHONY: clean
-clean: clean/build ## Dev: Clean
 
 .PHONY: clean/build
 clean/build: clean/ebpf ## Dev: Remove build/ dir

@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -30,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -43,12 +41,17 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -71,13 +74,16 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	if err := initializeMetrics(builder); err != nil {
-		return nil, err
-	}
+	policies.InitPolicies(cfg.Policies.PluginPoliciesEnabled)
+	builder.WithMultitenancy(multitenant.SingleTenant)
+	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if err := plugin.BeforeBootstrap(builder, cfg); err != nil {
 			return nil, errors.Wrapf(err, "failed to run beforeBootstrap plugin:'%s'", plugin.Name())
 		}
+	}
+	if err := initializeMetrics(builder); err != nil {
+		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
 		return nil, err
@@ -88,12 +94,13 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeConfigStore(cfg, builder); err != nil {
 		return nil, err
 	}
+
+	initializeGlobalInsightService(cfg, builder)
+
 	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
-	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType:       builder.SecretStore(),
-		system.GlobalSecretType: builder.SecretStore(),
-		system.ConfigType:       builder.ConfigStore(),
-	}))
+	builder.ResourceStore().Customize(system.SecretType, builder.SecretStore())
+	builder.ResourceStore().Customize(system.GlobalSecretType, builder.SecretStore())
+	builder.ResourceStore().Customize(system.ConfigType, builder.ConfigStore())
 
 	initializeConfigManager(builder)
 
@@ -102,7 +109,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
 	})
 
-	if err := initializeResourceManager(cfg, builder); err != nil {
+	if err := initializeResourceManager(cfg, builder); err != nil { //nolint:contextcheck
 		return nil, err
 	}
 
@@ -125,17 +132,19 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	}))
-	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	resourceManager := builder.ResourceManager()
+	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
+	builder.WithKDSContext(kdsContext)
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
 		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
 			builder.KDSContext().EnvoyAdminRPCs,
-			cfg.Store.Type == store.KubernetesStore,
+			builder.ReadOnlyResourceManager(),
 		)
 		forwardingClient := envoyadmin.NewForwardingEnvoyAdminClient(
 			builder.ReadOnlyResourceManager(),
-			catalog.NewConfigCatalog(builder.ResourceManager()),
+			catalog.NewConfigCatalog(resourceManager),
 			builder.GetInstanceId(),
 			intercp.PooledEnvoyAdminClientFn(builder.InterCPClientPool()),
 			kdsEnvoyAdminClient,
@@ -143,20 +152,17 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		builder.WithEnvoyAdminClient(forwardingClient)
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
-			builder.ResourceManager(),
+			resourceManager,
 			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))
 	}
 
-	xdsCtx, err := xds_runtime.Default(builder) //nolint:contextcheck
+	xdsCtx, err := xds_runtime.WithDefaults(builder) //nolint:contextcheck
 	if err != nil {
 		return nil, err
 	}
 	builder.WithXDS(xdsCtx)
-
-	// The setting should be removed, and there is no easy way to set it without breaking most of the code
-	mesh_proto.EnableLocalhostInboundClusters = builder.Config().Defaults.EnableLocalhostInboundClusters
 
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
@@ -211,15 +217,11 @@ func logWarnings(config kuma_cp.Config) {
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
-	zoneName := ""
-	switch builder.Config().Mode {
-	case config_core.Zone:
-		zoneName = builder.Config().Multizone.Zone.Name
-	case config_core.Global:
-		zoneName = "Global"
-	case config_core.Standalone:
-		zoneName = "Standalone"
+	if builder.Metrics() != nil {
+		// do not configure if it was already configured in BeforeBootstrap
+		return nil
 	}
+	zoneName := metrics.ZoneNameOrMode(builder.Config().Mode, builder.Config().Multizone.Zone.Name)
 	metrics, err := metrics.NewMetrics(zoneName)
 	if err != nil {
 		return err
@@ -270,16 +272,20 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
 
-	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	rs, transactions, err := plugin.NewResourceStore(builder, pluginConfig)
 	if err != nil {
 		return err
 	}
-	builder.WithResourceStore(rs)
-	eventBus := events.NewEventBus()
+	builder.WithResourceStore(core_store.NewCustomizableResourceStore(rs))
+	builder.WithTransactions(transactions)
+	eventBus, err := events.NewEventBus(cfg.EventBus.BufferSize, builder.Metrics())
+	if err != nil {
+		return err
+	}
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}
-	builder.WithEventReaderFactory(eventBus)
+	builder.WithEventBus(eventBus)
 
 	paginationStore := core_store.NewPaginationStore(rs)
 	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
@@ -287,7 +293,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return err
 	}
 
-	builder.WithResourceStore(meteredStore)
+	builder.WithResourceStore(core_store.NewCustomizableResourceStore(meteredStore))
 	return nil
 }
 
@@ -309,7 +315,7 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	if ss, err := plugin.NewSecretStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithSecretStore(ss)
+		builder.WithSecretStore(core_store.NewPaginationStore(ss))
 		return nil
 	}
 }
@@ -335,6 +341,19 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
+}
+
+func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Builder) {
+	globalInsightService := globalinsight.NewDefaultGlobalInsightService(builder.ResourceStore())
+	if cfg.Store.Cache.Enabled {
+		globalInsightService = globalinsight.NewCachedGlobalInsightService(
+			globalInsightService,
+			builder.Tenants(),
+			cfg.Store.Cache.ExpirationTime.Duration,
+		)
+	}
+
+	builder.WithGlobalInsightService(globalInsightService)
 }
 
 func initializeCaManagers(builder *core_runtime.Builder) error {
@@ -374,7 +393,8 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 			builder.CaManagers(),
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
-			cfg.Store.UnsafeDelete,
+			builder.Extensions(),
+			cfg,
 		),
 	)
 
@@ -434,10 +454,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
-	switch cfg.Mode {
-	case config_core.Zone:
+	if cfg.IsFederatedZoneCP() {
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
-	default:
+	} else {
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}
 
@@ -454,7 +473,12 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime.Duration, builder.Metrics())
+		cachedManager, err := core_manager.NewCachedManager(
+			customizableManager,
+			builder.Config().Store.Cache.ExpirationTime.Duration,
+			builder.Metrics(),
+			builder.Tenants(),
+		)
 		if err != nil {
 			return err
 		}
@@ -470,14 +494,19 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
+	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
+	if builder.Config().Experimental.AutoReachableServices {
+		rsGraphBuilder = graph.Builder
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
-		xds_server.MeshResourceTypes(xds_server.HashMeshExcludedResources),
+		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager()),
+		vips.NewPersistence(builder.ReadOnlyResourceManager(), builder.ConfigManager(), builder.Config().Experimental.UseTagFirstVirtualOutboundModel),
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
+		rsGraphBuilder,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

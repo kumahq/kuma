@@ -28,10 +28,15 @@ func DataplaneWeb() *mesh.DataplaneResource {
 	return DataplaneWebBuilder().Build()
 }
 
-func GatewayDataplane() *mesh.DataplaneResource {
+func GatewayDataplaneBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("sample-gateway").
 		WithAddress("192.168.0.1").
-		WithBuiltInGateway("sample-gateway").
-		Build()
+		WithBuiltInGateway("sample-gateway")
+}
+
+func IgnoredDataplaneBackendBuilder() *builders.DataplaneBuilder {
+	return DataplaneBackendBuilder().With(func(resource *mesh.DataplaneResource) {
+		resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_Ignored
+	})
 }

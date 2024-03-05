@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 type DefaultsComponent struct {
@@ -22,7 +23,9 @@ type DefaultsComponent struct {
 var _ component.Component = &DefaultsComponent{}
 
 func (e *DefaultsComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
+	ctx, cancelFn := context.WithCancel(ctx)
 	go func() {
 		<-stop
 		cancelFn()
@@ -43,19 +46,19 @@ func (e DefaultsComponent) NeedLeaderElection() bool {
 func (e *DefaultsComponent) ensureInterCpCaExist(ctx context.Context) error {
 	_, err := LoadCA(ctx, e.ResManager)
 	if err == nil {
-		e.Log.V(1).Info("Inter CP CA already exists. Skip creating Envoy Admin CA.")
+		e.Log.V(1).Info("Inter CP CA already exists. Skip creating inter-cp CA.")
 		return nil
 	}
 	if !store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "error while loading admin client certificate")
+		return errors.Wrap(err, "error while loading inter-cp CA")
 	}
 	e.Log.V(1).Info("trying to create Inter CP CA")
 	pair, err := GenerateCA()
 	if err != nil {
-		return errors.Wrap(err, "could not generate admin client certificate")
+		return errors.Wrap(err, "could not generate inter-cp CA")
 	}
 	if err := CreateCA(ctx, *pair, e.ResManager); err != nil {
-		return errors.Wrap(err, "could not create admin client certificate")
+		return errors.Wrap(err, "could not create inter-cp CA")
 	}
 	e.Log.Info("Inter CP CA created")
 	return nil

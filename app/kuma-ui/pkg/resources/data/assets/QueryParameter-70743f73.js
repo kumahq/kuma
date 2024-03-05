@@ -1,1 +1,0 @@
-const t={get(r){const e=new URL(window.location.href).searchParams.get(r);return e!==null?e.replaceAll("+"," "):null},set(r,s){const e=new URL(window.location.href);s!=null?e.searchParams.set(r,String(s).replace(/\s/g,"+")):e.searchParams.has(r)&&e.searchParams.delete(r),window.history.replaceState({path:e.href},"",e.href)}};export{t as Q};

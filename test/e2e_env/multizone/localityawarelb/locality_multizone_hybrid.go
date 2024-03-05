@@ -44,20 +44,6 @@ networking:
 `, mesh, net.JoinHostPort(ip, "8080"))
 }
 
-func zoneExternalService(mesh string, ip string, name string, zone string) string {
-	return fmt.Sprintf(`
-type: ExternalService
-mesh: "%s"
-name: "%s"
-tags:
-  kuma.io/service: "%s"
-  kuma.io/protocol: http
-  kuma.io/zone: "%s"
-networking:
-  address: "%s"
-`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
-}
-
 func InstallExternalService(name string) InstallFunc {
 	return func(cluster Cluster) error {
 		return cluster.DeployApp(
@@ -69,15 +55,31 @@ func InstallExternalService(name string) InstallFunc {
 }
 
 func ExternalServicesWithLocalityAwareLb() {
-	const mesh = "external-service-locality-lb"
-	const meshNoZoneEgress = "external-service-locality-lb-no-egress"
-	const namespace = "external-service-locality-lb"
+	zoneExternalService := func(mesh string, ip string, name string, zone string) string {
+		return fmt.Sprintf(`
+type: ExternalService
+mesh: "%s"
+name: "%s"
+tags:
+  kuma.io/service: "%s"
+  kuma.io/protocol: http
+  kuma.io/zone: "%s"
+networking:
+  address: "%s"
+`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
+	}
+
+	const mesh = "es-locality-lb"
+	const meshNoZoneEgress = "es-locality-lb-no-egress"
+	const namespace = "es-locality-lb"
 
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(mesh, "true"))).
 			Install(YamlUniversal(MeshMTLSOnAndZoneEgressAndNoPassthrough(meshNoZoneEgress, "false"))).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshNoZoneEgress)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
@@ -107,7 +109,7 @@ func ExternalServicesWithLocalityAwareLb() {
 
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "external-service-in-uni-zone4", "kuma-4"))).
-			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1-zone"))).
+			Install(YamlUniversal(zoneExternalService(mesh, multizone.UniZone1.GetApp("external-service-in-kube-zone1").GetIP(), "external-service-in-kube-zone1", "kuma-1"))).
 			Install(YamlUniversal(externalService(mesh, multizone.UniZone1.GetApp("external-service-in-both-zones").GetIP()))).
 			Install(YamlUniversal(zoneExternalService(meshNoZoneEgress, multizone.UniZone1.GetApp("external-service-in-uni-zone4").GetIP(), "demo-es-in-uni-zone4", "kuma-4"))).
 			Setup(multizone.Global)).ToNot(HaveOccurred())
@@ -140,7 +142,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			mesh,
 			"external-service-in-kube-zone1",
 		)
-		filterIngress := "cluster.external-service-in-kube-zone1.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-kube-zone1.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.UniZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.KubeZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -167,7 +169,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			mesh,
 			"external-service-in-uni-zone4",
 		)
-		filterIngress := "cluster.external-service-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_external-service-in-uni-zone4.upstream_rq_total", mesh)
 
 		Eventually(EgressStats(multizone.KubeZone1, filterEgress), "30s", "1s").Should(stats.BeEqualZero())
 		Eventually(IngressStats(multizone.UniZone1, filterIngress), "30s", "1s").Should(stats.BeEqualZero())
@@ -196,7 +198,7 @@ func ExternalServicesWithLocalityAwareLb() {
 			meshNoZoneEgress,
 			"demo-es-in-uni-zone4",
 		)
-		filterIngress := "cluster.demo-es-in-uni-zone4.upstream_rq_total"
+		filterIngress := fmt.Sprintf("cluster.%s_demo-es-in-uni-zone4.upstream_rq_total", meshNoZoneEgress)
 
 		// and there is no stat because external service is not exposed through ingress
 		Eventually(func(g Gomega) {

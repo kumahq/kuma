@@ -1,0 +1,6 @@
+Type        Mesh      Name
+Dataplane   default   foo
+Dataplane   default   bar
+Dataplane   default   baz
+
+Total: 3

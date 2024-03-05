@@ -1,11 +1,12 @@
 name: "Update insecure dependencies"
-
 on:
-  workflow_dispatch: { }
+  workflow_dispatch: {}
   schedule:
-    - cron: 0 8 * * *
+    - cron: 0 3 * * *
+permissions: read-all
 jobs:
   build-matrix:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
@@ -17,8 +18,8 @@ jobs:
           echo "branches=${ACTIVE_BRANCHES}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
   update-insecure-dependencies:
+    timeout-minutes: 10
     needs:
       - build-matrix
     strategy:
@@ -27,22 +28,19 @@ jobs:
         branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Generate GitHub app token
-        id: github-app-token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-      - name: "Clone Kuma"
-        uses: actions/checkout@v3
+          swap-size-gb: 10
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ matrix.branch }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "~1.20.2"
+          go-version-file: go.mod
       - name: "Install tools"
         run: |
-          go install github.com/google/osv-scanner/cmd/osv-scanner@v1
+          go install github.com/google/osv-scanner/cmd/osv-scanner@060799ca816dfa40afa05e48c895c0c9fd79b90b
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
@@ -61,8 +59,14 @@ jobs:
           echo "SCAN_OUTPUT_AFTER<<EOF" >> $GITHUB_ENV
           echo "$SCAN_OUTPUT_AFTER" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+      - name: Generate GitHub app token
+        id: github-app-token
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # v6.0.1
         with:
           commit-message: "chore(deps): security update"
           signoff: true

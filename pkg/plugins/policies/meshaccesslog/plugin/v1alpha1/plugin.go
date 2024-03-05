@@ -9,10 +9,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -42,19 +44,19 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := policies_xds.GatherListeners(rs)
 
-	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints); err != nil {
+	if err := applyToInbounds(policies.FromRules, listeners.Inbound, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, endpoints); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints); err != nil {
+	if err := applyToTransparentProxyListeners(policies, listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints); err != nil {
+	if err := applyToDirectAccess(policies.ToRules, listeners.DirectAccess, proxy.Dataplane, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
-	if err := applyToGateway(policies.ToRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane, endpoints); err != nil {
+	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, proxy.Metadata.AccessLogSocketPath); err != nil {
 		return err
 	}
 
@@ -65,14 +67,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
-func applyToInbounds(
-	rules xds.FromRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator,
-) error {
+func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 
-		listenerKey := xds.InboundListener{
+		listenerKey := core_rules.InboundListener{
 			Address: iface.DataplaneIP,
 			Port:    iface.DataplanePort,
 		}
@@ -81,17 +80,14 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends); err != nil {
+		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends, path); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func applyToOutbounds(
-	rules xds.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator,
-) error {
+func applyToOutbounds(rules core_rules.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -100,9 +96,9 @@ func applyToOutbounds(
 			continue
 		}
 
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 
-		if err := configureOutbound(rules, dataplane, xds.MeshService(serviceName), serviceName, listener, backends); err != nil {
+		if err := configureOutbound(rules.Rules, dataplane, core_rules.MeshService(serviceName), serviceName, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -112,16 +108,17 @@ func applyToOutbounds(
 
 func applyToTransparentProxyListeners(
 	policies xds.TypedMatchingPolicies, ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator,
+	backends *plugin_xds.EndpointAccumulator, path string,
 ) error {
 	if ipv4 != nil {
 		if err := configureOutbound(
-			policies.ToRules,
+			policies.ToRules.Rules,
 			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshService(core_mesh.PassThroughService),
 			"external",
 			ipv4,
 			backends,
+			path,
 		); err != nil {
 			return err
 		}
@@ -129,12 +126,13 @@ func applyToTransparentProxyListeners(
 
 	if ipv6 != nil {
 		return configureOutbound(
-			policies.ToRules,
+			policies.ToRules.Rules,
 			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshService(core_mesh.PassThroughService),
 			"external",
 			ipv6,
 			backends,
+			path,
 		)
 	}
 
@@ -142,18 +140,19 @@ func applyToTransparentProxyListeners(
 }
 
 func applyToDirectAccess(
-	rules xds.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
-	backends *plugin_xds.EndpointAccumulator,
+	rules core_rules.ToRules, directAccess map[generator.Endpoint]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource,
+	backends *plugin_xds.EndpointAccumulator, path string,
 ) error {
 	for endpoint, listener := range directAccess {
 		name := generator.DirectAccessEndpointName(endpoint)
 		return configureOutbound(
-			rules,
+			rules.Rules,
 			dataplane,
-			xds.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshService(core_mesh.PassThroughService),
 			name,
 			listener,
 			backends,
+			path,
 		)
 	}
 
@@ -161,8 +160,12 @@ func applyToDirectAccess(
 }
 
 func applyToGateway(
-	rules xds.ToRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	rules core_rules.GatewayRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	resources xds_context.ResourceMap,
+	proxy *core_xds.Proxy,
 	backends *plugin_xds.EndpointAccumulator,
+	path string,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -171,31 +174,41 @@ func applyToGateway(
 		return nil
 	}
 
-	gateway := xds_topology.SelectGateway(gateways.Items, dataplane.Spec.Matches)
+	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
 	if gateway == nil {
 		return nil
 	}
 
-	for _, listener := range gateway.Spec.GetConf().GetListeners() {
-		address := dataplane.Spec.GetNetworking().Address
-		port := listener.GetPort()
-		listener, ok := gatewayListeners[xds.InboundListener{
+	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
+		address := proxy.Dataplane.Spec.GetNetworking().Address
+		port := listenerInfo.Listener.Port
+		listenerKey := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
-		}]
+		}
+		listener, ok := gatewayListeners[listenerKey]
 		if !ok {
 			continue
 		}
 
-		if err := configureOutbound(
-			rules,
-			dataplane,
-			xds.Subset{},
-			mesh_proto.MatchAllTag,
-			listener,
-			backends,
-		); err != nil {
-			return err
+		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
+			if err := configureOutbound(
+				toListenerRules,
+				proxy.Dataplane,
+				core_rules.Subset{},
+				mesh_proto.MatchAllTag,
+				listener,
+				backends,
+				path,
+			); err != nil {
+				return err
+			}
+		}
+
+		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
+			if err := configureInbound(fromListenerRules, proxy.Dataplane, listener, backends, path); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -203,29 +216,29 @@ func applyToGateway(
 }
 
 func configureInbound(
-	fromRules xds.Rules,
+	fromRules core_rules.Rules,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
+	accessLogSocketPath string,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
-	var conf api.Conf
 	// `from` section of MeshAccessLog only allows Mesh targetRef
-	if computed := fromRules.Compute(core_xds.MeshSubset()); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
+	conf := core_rules.ComputeConf[api.Conf](fromRules, core_rules.MeshSubset())
+	if conf == nil {
 		return nil
 	}
 
 	for _, backend := range pointer.Deref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
-			Mesh:               dataplane.GetMeta().GetMesh(),
-			TrafficDirection:   envoy.TrafficDirectionInbound,
-			SourceService:      mesh_proto.ServiceUnknown,
-			DestinationService: serviceName,
-			Backend:            backend,
-			Dataplane:          dataplane,
+			Mesh:                dataplane.GetMeta().GetMesh(),
+			TrafficDirection:    envoy.TrafficDirectionInbound,
+			SourceService:       mesh_proto.ServiceUnknown,
+			DestinationService:  serviceName,
+			Backend:             backend,
+			Dataplane:           dataplane,
+			AccessLogSocketPath: accessLogSocketPath,
 		}
 
 		for _, chain := range listener.FilterChains {
@@ -239,30 +252,30 @@ func configureInbound(
 }
 
 func configureOutbound(
-	toRules xds.ToRules,
+	toRules core_rules.Rules,
 	dataplane *core_mesh.DataplaneResource,
-	subset xds.Subset,
+	subset core_rules.Subset,
 	destinationServiceName string,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
+	path string,
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	var conf api.Conf
-	if computed := toRules.Rules.Compute(subset); computed != nil {
-		conf = computed.Conf.(api.Conf)
-	} else {
+	conf := core_rules.ComputeConf[api.Conf](toRules, subset)
+	if conf == nil {
 		return nil
 	}
 
 	for _, backend := range pointer.Deref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
-			Mesh:               dataplane.GetMeta().GetMesh(),
-			TrafficDirection:   envoy.TrafficDirectionOutbound,
-			SourceService:      sourceService,
-			DestinationService: destinationServiceName,
-			Backend:            backend,
-			Dataplane:          dataplane,
+			Mesh:                dataplane.GetMeta().GetMesh(),
+			TrafficDirection:    envoy.TrafficDirectionOutbound,
+			SourceService:       sourceService,
+			DestinationService:  destinationServiceName,
+			Backend:             backend,
+			Dataplane:           dataplane,
+			AccessLogSocketPath: path,
 		}
 
 		for _, chain := range listener.FilterChains {

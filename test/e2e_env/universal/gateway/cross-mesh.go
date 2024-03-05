@@ -71,7 +71,9 @@ func CrossMeshGatewayOnUniversal() {
 			Install(YamlUniversal(crossMeshGatewayYaml)).
 			Install(YamlUniversal(edgeGatewayYaml)).
 			Install(crossMeshGatewayDataplane).
-			Install(edgeGatewayDataplane)
+			Install(edgeGatewayDataplane).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh))
 
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})

@@ -8,6 +8,7 @@
    "conf": {
     "backends": [
      {
+      "type": "Zipkin",
       "zipkin": {
        "url": "http://jaeger-collector.mesh-observability:9411/api/v2/spans"
       }
@@ -37,6 +38,7 @@
    "conf": {
     "backends": [
      {
+      "type": "File",
       "file": {
        "path": "/tmp/access.logs"
       }
@@ -66,6 +68,7 @@
    "conf": {
     "backends": [
      {
+      "type": "File",
       "file": {
        "path": "/tmp/access.logs"
       }
@@ -95,6 +98,7 @@
    "conf": {
     "backends": [
      {
+      "type": "File",
       "file": {
        "path": "/tmp/access.logs"
       }
@@ -126,7 +130,7 @@
     "version": "2"
    },
    "conf": {
-    "action": "ALLOW"
+    "action": "Allow"
    },
    "origins": [
     {
@@ -157,12 +161,12 @@
     "version": "!2"
    },
    "conf": {
-    "action": "DENY"
+    "action": "Deny"
    },
    "origins": [
     {
      "mesh": "default",
-     "name": "mtp-1"
+     "name": "mtp-2"
     }
    ]
   }

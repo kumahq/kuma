@@ -19,6 +19,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
+const UnresolvedBackendServiceTag = "kuma.io/unresolved-backend"
+
 // ClusterGenerator generates Envoy clusters and their corresponding
 // load assignments for both mesh services and external services.
 type ClusterGenerator struct {
@@ -26,7 +28,7 @@ type ClusterGenerator struct {
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_context.Context, info GatewayListenerInfo, hostInfo GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_context.Context, info GatewayListenerInfo, hostEntries []route.Entry, hostTags map[string]string) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	// If there is a service name conflict between external services
@@ -37,20 +39,28 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range RouteDestinationsMutable(hostInfo.Entries) {
+	for _, dest := range RouteDestinationsMutable(hostEntries) {
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		firstEndpointExternalService := route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
+		if service == UnresolvedBackendServiceTag {
+			dest.Name = UnresolvedBackendServiceTag
+			continue
+		}
+
+		isExternalService := xdsCtx.Mesh.IsExternalService(service)
+		if len(xdsCtx.Mesh.Resources.TrafficPermissions().Items) > 0 {
+			isExternalService = route.HasExternalServiceEndpoint(xdsCtx.Mesh.Resource, info.OutboundEndpoints, *dest)
+		}
 
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 
 		// If there is Mesh property ZoneEgress enabled we want always to
 		// direct the traffic through them. The condition is, the mesh must
 		// have mTLS enabled and traffic through zoneEgress is enabled.
-		isDirectExternalService := firstEndpointExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isDirectExternalService := isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		isExternalCluster := isDirectExternalService && len(matched) > 0
 
-		isExternalServiceThroughZoneEgress := firstEndpointExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
+		isExternalServiceThroughZoneEgress := isExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 
 		var r *core_xds.Resource
 		var err error
@@ -60,7 +70,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				"service", service,
 			)
 
-			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostInfo.Host.Tags)
+			r, err = c.generateExternalCluster(ctx, xdsCtx.Mesh, info, matched, dest, hostTags)
 		} else {
 			log.V(1).Info("generating mesh cluster resource",
 				"service", service,
@@ -71,7 +81,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				upstreamServiceName = mesh_proto.ZoneEgressServiceName
 			}
 
-			r, err = c.generateMeshCluster(xdsCtx.Mesh.Resource, info, dest, upstreamServiceName, hostInfo.Host.Tags)
+			r, err = c.generateMeshCluster(xdsCtx.Mesh, info, dest, upstreamServiceName, hostTags)
 		}
 
 		if err != nil {
@@ -116,20 +126,19 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
-	mesh *core_mesh.MeshResource,
+	meshCtx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
-		Tags: dest.Destination,
-	}}, dest.RouteProtocol)
+	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
+	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
 
-	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
+	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
+		clusters.EdsCluster(),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, mesh, upstreamServiceName, true, []tags.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(info.Proxy.SecretsTracker, meshCtx.Resource, upstreamServiceName, true, []tags.Tags{dest.Destination}),
 		clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 	)
 
@@ -160,13 +169,13 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 		endpoints = append(endpoints, *ep)
 	}
-
-	protocol := route.InferServiceProtocol(endpoints, dest.RouteProtocol)
+	serviceName := dest.Destination[mesh_proto.ServiceTag]
+	protocol := route.InferServiceProtocol(meshCtx.GetServiceProtocol(serviceName), dest.RouteProtocol)
 
 	return buildClusterResource(
 		dest,
-		newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-			clusters.ProvidedEndpointCluster(dest.Destination[mesh_proto.ServiceTag], info.Proxy.Dataplane.IsIPv6(), endpoints...),
+		newClusterBuilder(info.Proxy.APIVersion, serviceName, protocol, dest).Configure(
+			clusters.ProvidedEndpointCluster(info.Proxy.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
 		),
@@ -176,6 +185,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 
 func newClusterBuilder(
 	version core_xds.APIVersion,
+	name string,
 	protocol core_mesh.Protocol,
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
@@ -184,7 +194,7 @@ func newClusterBuilder(
 		timeout = timeoutResource.Spec.GetConf()
 	}
 
-	builder := clusters.NewClusterBuilder(version).Configure(
+	builder := clusters.NewClusterBuilder(version, name).Configure(
 		clusters.Timeout(timeout, protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),

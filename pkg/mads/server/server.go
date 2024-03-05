@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -154,6 +155,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	httpS := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           s.createHttpServicesHandler(),
+		ErrorLog:          adapter.ToStd(log),
 	}
 	errChanHttp := make(chan error)
 	go func() {
@@ -217,7 +219,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	if config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
-		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1))
+		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1), rt.MeshCache())
 		grpcServices = append(grpcServices, svc)
 		httpServices = append(httpServices, svc)
 	}

@@ -3,11 +3,15 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	externalservice "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
@@ -27,9 +31,11 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 )
 
-var log = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
-
-var _ core_plugins.RuntimePlugin = &plugin{}
+var (
+	log                                                = core.Log.WithName("plugin").WithName("runtime").WithName("k8s")
+	sidecarContainerVersion                            = semver.New(1, 29, 0, "", "")
+	_                       core_plugins.RuntimePlugin = &plugin{}
+)
 
 type plugin struct{}
 
@@ -76,7 +82,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
-	if err := addMeshReconciler(mgr, rt, converter); err != nil {
+	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
 	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
@@ -92,8 +98,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 		return err
 	}
 
-	if rt.Config().Runtime.Kubernetes.NodeTaintController.Enabled {
-		if err := addCniNodeTaintReconciler(mgr, rt.Config().Runtime.Kubernetes.NodeTaintController.CniApp); err != nil {
+	nodeTaintController := rt.Config().Runtime.Kubernetes.NodeTaintController
+	if nodeTaintController.Enabled {
+		if err := addCniNodeTaintReconciler(mgr, nodeTaintController.CniApp, nodeTaintController.CniNamespace); err != nil {
 			return err
 		}
 	}
@@ -101,11 +108,12 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	return nil
 }
 
-func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string) error {
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, cniApp string, cniNamespace string) error {
 	reconciler := &k8s_controllers.CniNodeTaintReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("NodeTaint"),
-		CniApp: cniApp,
+		Client:       mgr.GetClient(),
+		Log:          core.Log.WithName("controllers").WithName("NodeTaint"),
+		CniApp:       cniApp,
+		CniNamespace: cniNamespace,
 	}
 
 	return reconciler.SetupWithManager(mgr)
@@ -128,25 +136,18 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if rt.Config().Mode == config_core.Zone {
+func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	if rt.Config().IsFederatedZoneCP() {
 		return nil
 	}
-	reconciler := &k8s_controllers.MeshReconciler{
-		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("Mesh"),
-		Scheme:          mgr.GetScheme(),
-		Converter:       converter,
-		CaManagers:      rt.CaManagers(),
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceManager: rt.ResourceManager(),
-	}
-	if err := reconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup mesh reconciller")
-	}
-	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
-		ResourceManager: rt.ResourceManager(),
-		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
+	defaultsReconciller := &k8s_controllers.MeshReconciler{
+		ResourceManager:            rt.ResourceManager(),
+		Log:                        core.Log.WithName("controllers").WithName("mesh-defaults"),
+		Extensions:                 rt.Extensions(),
+		CreateMeshRoutingResources: rt.Config().Defaults.CreateMeshRoutingResources,
+		K8sStore:                   rt.Config().Store.Type == store.KubernetesStore,
+		SystemNamespace:            rt.Config().Store.Kubernetes.SystemNamespace,
+		CaManagers:                 rt.CaManagers(),
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -173,11 +174,12 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
-		ResourceConverter: converter,
-		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter:            converter,
+		Persistence:                  vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), rt.Config().Experimental.UseTagFirstVirtualOutboundModel),
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		IgnoredServiceSelectorLabels: rt.Config().Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels,
 	}
-	return reconciler.SetupWithManager(mgr)
+	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
@@ -204,7 +206,9 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		rt.ResourceManager(),
 		rt.ConfigManager(),
 		*rt.Config().DNSServer,
+		rt.Config().Experimental,
 		zone,
+		rt.Metrics(),
 	)
 	if err != nil {
 		return err
@@ -232,7 +236,13 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("could not find composite validator in the extensions context")
 	}
 
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Runtime.Kubernetes.ServiceAccountName)
+	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
+		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		Mode:                         rt.Config().Mode,
+		FederatedZone:                rt.Config().IsFederatedZoneCP(),
+		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+	}
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), resourceAdmissionChecker)
 	composite.AddValidator(handler)
 
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)
@@ -266,14 +276,19 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	},
 	)
 
-	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.WebHook())
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
+	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	})
+
+	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.IntoWebhook(mgr.GetScheme()))
+	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{Decoder: kube_admission.NewDecoder(mgr.GetScheme())}})
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
+		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
@@ -281,13 +296,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
 	if gatewayAPICRDsPresent(mgr) {
-		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode)
+		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().IsNonFederatedZoneCP(), mgr.GetScheme())
 		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
 	}
-
-	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-	})
 
 	return nil
 }
@@ -295,10 +306,28 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
 		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
+		kubeConfig := mgr.GetConfig()
+		discClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+		if err != nil {
+			return err
+		}
+		k8sVersion, err := discClient.ServerVersion()
+		if err != nil {
+			return err
+		}
+		var sidecarContainersEnabled bool
+		if v, err := semver.NewVersion(
+			fmt.Sprintf("%s.%s.0", k8sVersion.Major, k8sVersion.Minor),
+		); err == nil && !v.LessThan(sidecarContainerVersion) {
+			sidecarContainersEnabled = rt.Config().Experimental.SidecarContainers
+		} else if rt.Config().Experimental.SidecarContainers {
+			log.Info("WARNING: sidecarContainers feature is enabled but Kubernetes server does not support it")
+		}
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			address,
 			mgr.GetClient(),
+			sidecarContainersEnabled,
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
 			rt.Config().Store.Kubernetes.SystemNamespace,
@@ -314,10 +343,17 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		CoreRegistry: core_registry.Global(),
 		K8sRegistry:  k8s_registry.Global(),
 		Scheme:       mgr.GetScheme(),
+		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
-	defaultMutator := k8s_webhooks.DefaultingWebhookFor(converter)
+	resourceAdmissionChecker := k8s_webhooks.ResourceAdmissionChecker{
+		AllowedUsers:                 append(rt.Config().Runtime.Kubernetes.AllowedUsers, rt.Config().Runtime.Kubernetes.ServiceAccountName, "system:serviceaccount:kube-system:generic-garbage-collector"),
+		Mode:                         rt.Config().Mode,
+		FederatedZone:                rt.Config().IsFederatedZoneCP(),
+		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+	}
+	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter, resourceAdmissionChecker)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)
 	return nil
 }

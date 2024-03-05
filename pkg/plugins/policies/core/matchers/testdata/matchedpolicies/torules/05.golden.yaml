@@ -1,0 +1,16 @@
+Rules:
+- Conf:
+    http:
+      requestTimeout: 7s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-3
+    type: MeshTimeout
+  Subset: []

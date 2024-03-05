@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -43,11 +42,11 @@ func NewCache(
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
-		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(cleanupTime)*0.9))),
 	}, nil
 }
 
-func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
+func (c *Cache) GetMeshContext(ctx context.Context, mesh string) (xds_context.MeshContext, error) {
 	// Check our short TTL cache for a context, ignoring whether there have been
 	// changes since it was generated.
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {

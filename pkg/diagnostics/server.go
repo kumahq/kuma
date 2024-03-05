@@ -8,6 +8,7 @@ import (
 	pprof "net/http/pprof"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -51,7 +52,12 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	}
 
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.config.ServerPort), Handler: mux, ReadHeaderTimeout: time.Second}
+	httpServer := &http.Server{
+		Addr:              fmt.Sprintf(":%d", s.config.ServerPort),
+		Handler:           mux,
+		ReadHeaderTimeout: time.Second,
+		ErrorLog:          adapter.ToStd(diagnosticsServerLog),
+	}
 
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)

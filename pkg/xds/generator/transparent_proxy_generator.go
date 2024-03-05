@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,15 +20,15 @@ const (
 	OutboundNameIPv6  = "outbound:passthrough:ipv6"
 	InboundNameIPv4   = "inbound:passthrough:ipv4"
 	InboundNameIPv6   = "inbound:passthrough:ipv6"
+	InPassThroughIPv4 = "127.0.0.6"
+	InPassThroughIPv6 = "::6"
 	allIPv4           = "0.0.0.0"
 	allIPv6           = "::"
-	inPassThroughIPv4 = "127.0.0.6"
-	inPassThroughIPv6 = "::6"
 )
 
 type TransparentProxyGenerator struct{}
 
-func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (tpg TransparentProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
 	if redirectPortOutbound == 0 {
@@ -34,7 +36,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	resourcesIPv4, err := tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+	resourcesIPv4, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mo
 
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
 	if redirectPortInboundV6 != 0 {
-		resourcesIPv6, err := tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+		resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
 		if err != nil {
 			return nil, err
 		}
@@ -66,8 +68,8 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	var err error
 
 	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.PassThroughCluster(outboundName)).
+		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion, outboundName).
+			Configure(envoy_clusters.PassThroughCluster()).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
@@ -75,10 +77,10 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		}
 	}
 
-	outboundListener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundName, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
+	outboundListener, err = envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP).
+		WithOverwriteName(outboundName).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.TcpProxyDeprecated(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
 			Configure(envoy_listeners.NetworkAccessLog(
 				meshName,
 				envoy_common.TrafficDirectionUnspecified,
@@ -93,8 +95,8 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
 
-	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.PassThroughCluster(inboundName)).
+	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, inboundName).
+		Configure(envoy_clusters.PassThroughCluster()).
 		Configure(envoy_clusters.UpstreamBindConfig(inPassThroughIP, 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
@@ -102,10 +104,10 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
 	}
 
-	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(inboundName, allIP, redirectPortInbound, model.SocketAddressProtocolTCP)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))))).
+	inboundListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, redirectPortInbound, model.SocketAddressProtocolTCP).
+		WithOverwriteName(inboundName).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.TcpProxyDeprecated(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

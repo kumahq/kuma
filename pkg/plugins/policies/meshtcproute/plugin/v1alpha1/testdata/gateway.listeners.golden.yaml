@@ -1,0 +1,95 @@
+resources:
+- name: sample-gateway:TCP:9080
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 9080
+    enableReusePort: true
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          statPrefix: sample-gateway
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              weight: 100
+            - name: other-backend-d14e06e801b3b5d6
+              weight: 100
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: sample-gateway:TCP:9080
+    perConnectionBufferLimitBytes: 32768
+    trafficDirection: INBOUND
+- name: sample-gateway:TLS:9081
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 9081
+    enableReusePort: true
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - go.dev
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          statPrefix: sample-gateway
+          weightedClusters:
+            clusters:
+            - name: go-backend-1-a3e0f78d6b8a9607
+              weight: 50
+            - name: go-backend-2-3568c8790af04ca0
+              weight: 50
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificateSdsSecretConfigs:
+            - name: cert.rsa:inline:go.dev
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            tlsParams:
+              tlsMinimumProtocolVersion: TLSv1_2
+          requireClientCertificate: false
+    - filterChainMatch:
+        serverNames:
+        - other.dev
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: other-backend-d14e06e801b3b5d6
+          statPrefix: sample-gateway
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificateSdsSecretConfigs:
+            - name: cert.rsa:inline:other.dev
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            tlsParams:
+              tlsMinimumProtocolVersion: TLSv1_2
+          requireClientCertificate: false
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: sample-gateway:TLS:9081
+    perConnectionBufferLimitBytes: 32768
+    trafficDirection: INBOUND

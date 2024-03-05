@@ -1,0 +1,65 @@
+{
+  "apiVersion": "kuma.io/v1alpha1",
+  "kind": "MeshAccessLog",
+  "metadata": {
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kuma.io/v1alpha1\",\"kind\":\"MeshAccessLog\",\"metadata\":{\"annotations\":{},\"labels\":{\"kuma.io/mesh\":\"default\"},\"name\":\"default\",\"namespace\":\"kuma-system\"},\"spec\":{\"from\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}],\"targetRef\":{\"kind\":\"Mesh\"},\"to\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}]}}\n"
+    },
+    "creationTimestamp": "2024-01-24T09:52:46Z",
+    "generation": 1,
+    "labels": {
+      "kuma.io/mesh": "default"
+    },
+    "name": "default",
+    "namespace": "kuma-system",
+    "ownerReferences": [
+      {
+        "apiVersion": "kuma.io/v1alpha1",
+        "kind": "Mesh",
+        "name": "default",
+        "uid": "9fe5aae8-97c3-481f-b4a1-9e2149f18f55"
+      }
+    ],
+    "resourceVersion": "6146",
+    "uid": "cfe6c5c8-8036-400b-ba64-87ebc691d2fd"
+  },
+  "spec": {
+    "from": [
+      {
+        "default": {
+          "backends": [
+            {
+              "file": {
+                "path": "/tmp/access.logs"
+              },
+              "type": "File"
+            }
+          ]
+        },
+        "targetRef": {
+          "kind": "Mesh"
+        }
+      }
+    ],
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "to": [
+      {
+        "default": {
+          "backends": [
+            {
+              "file": {
+                "path": "/tmp/access.logs"
+              },
+              "type": "File"
+            }
+          ]
+        },
+        "targetRef": {
+          "kind": "Mesh"
+        }
+      }
+    ]
+  }
+}

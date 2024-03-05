@@ -23,7 +23,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -35,6 +34,7 @@ import (
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -71,7 +71,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
 	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
-	svc, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
+	svc, gateway, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
 	}
@@ -84,7 +84,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		}
 	}
 
-	updateStatus(gatewayInstance, mesh, svc, deployment)
+	updateStatus(gatewayInstance, gateway, mesh, svc, deployment)
 
 	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -106,10 +106,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	mesh string,
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
-) (*kube_core.Service, error) {
+) (*kube_core.Service, *core_mesh.MeshGatewayResource, error) {
 	gatewayList := &core_mesh.MeshGatewayResourceList{}
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
@@ -118,14 +118,31 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
-			// If we don't have a gateway, we don't want our Service anymore
+			// If we don't have a gateway, we don't change anything. If the Service was already created, we keep it.
+			// If there is no Service, we don't create one. We don't want to break the traffic if MeshGateway is absent
+			// for a short period of time (i.e. due to renaming).
 			if gateway == nil {
-				return nil, nil
+				return obj, nil
 			}
 
 			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
+			svcLabels := map[string]string{}
+
+			if obj != nil {
+				for k, v := range obj.GetAnnotations() {
+					svcAnnotations[k] = v
+				}
+				for k, v := range obj.GetLabels() {
+					svcLabels[k] = v
+				}
+			}
+
 			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Annotations {
 				svcAnnotations[k] = v
+			}
+
+			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Labels {
+				svcLabels[k] = v
 			}
 
 			service := &kube_core.Service{
@@ -139,6 +156,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			}
 
 			service.Annotations = svcAnnotations
+			service.Labels = svcLabels
 
 			var ports []kube_core.ServicePort
 			seenPorts := map[uint32]struct{}{}
@@ -179,35 +197,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return nil, gateway, err
 	}
 
 	if obj == nil {
-		return nil, nil
+		return nil, gateway, nil
 	}
 
-	return obj.(*kube_core.Service), nil
-}
-
-func isUnprivilegedPortStartSysctlSupported(v kube_version.Info) (bool, error) {
-	major, err := strconv.Atoi(v.Major)
-	if err != nil {
-		return false, err
-	}
-
-	minor, err := strconv.Atoi(v.Minor)
-	if err != nil {
-		return false, err
-	}
-
-	switch {
-	case major > 1:
-		return true, nil
-	case major == 1:
-		return minor >= 22, nil
-	default:
-		return false, nil
-	}
+	return obj.(*kube_core.Service), gateway, nil
 }
 
 // createOrUpdateDeployment can either return an error, a created Deployment or
@@ -252,30 +249,41 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				},
 			)
 
-			unprivilegedPortStartSupported, err := isUnprivilegedPortStartSysctlSupported(*r.K8sVersion)
-			if err != nil {
-				r.Log.Info("couldn't determine Sysctl `net.ipv4.ip_unprivileged_port_start` support", "error", err)
+			container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
+
+			securityContext := &kube_core.PodSecurityContext{
+				Sysctls: []kube_core.Sysctl{{
+					Name:  "net.ipv4.ip_unprivileged_port_start",
+					Value: "0",
+				}},
 			}
 
-			var securityContext *kube_core.PodSecurityContext
-			if unprivilegedPortStartSupported {
-				securityContext = &kube_core.PodSecurityContext{
-					Sysctls: []kube_core.Sysctl{{
-						Name:  "net.ipv4.ip_unprivileged_port_start",
-						Value: "0",
-					}},
-				}
-			} else {
-				secContext := container.SecurityContext
-				if secContext.Capabilities == nil {
-					secContext.Capabilities = &kube_core.Capabilities{}
-				}
-				secContext.Capabilities.Add = append(secContext.Capabilities.Add, "NET_BIND_SERVICE")
+			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != nil {
+				securityContext.FSGroup = fsGroup
+			}
+
+			container.SecurityContext.ReadOnlyRootFilesystem = gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem
+
+			container.VolumeMounts = []kube_core.VolumeMount{
+				{
+					Name:      "tmp",
+					MountPath: "/tmp",
+				},
 			}
 
 			podSpec := kube_core.PodSpec{
 				SecurityContext: securityContext,
 				Containers:      []kube_core.Container{container},
+			}
+			podSpec.ServiceAccountName = gatewayInstance.Spec.PodTemplate.Spec.ServiceAccountName
+
+			podSpec.Volumes = []kube_core.Volume{
+				{
+					Name: "tmp",
+					VolumeSource: kube_core.VolumeSource{
+						EmptyDir: &kube_core.EmptyDirVolumeSource{},
+					},
+				},
 			}
 
 			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
@@ -283,14 +291,22 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
 			}
 
-			annotations := map[string]string{
+			podAnnotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 				metadata.KumaTagsAnnotation:    string(jsonTags),
 				metadata.KumaMeshAnnotation:    mesh,
 			}
 
-			labels := k8sSelector(gatewayInstance.Name)
-			labels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
+			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Annotations {
+				podAnnotations[k] = v
+			}
+
+			podLabels := k8sSelector(gatewayInstance.Name)
+			podLabels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
+
+			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Labels {
+				podLabels[k] = v
+			}
 
 			deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
 			deployment.Spec.Selector = &kube_meta.LabelSelector{
@@ -298,8 +314,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 			deployment.Spec.Template = kube_core.PodTemplateSpec{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      labels,
-					Annotations: annotations,
+					Labels:      podLabels,
+					Annotations: podAnnotations,
 				},
 				Spec: podSpec,
 			}
@@ -346,12 +362,18 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
 }
 
-func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, mesh string, svc *kube_core.Service, deployment *kube_apps.Deployment) {
+func updateStatus(
+	gatewayInstance *mesh_k8s.MeshGatewayInstance,
+	gateway *core_mesh.MeshGatewayResource,
+	mesh string,
+	svc *kube_core.Service,
+	deployment *kube_apps.Deployment,
+) {
 	var status kube_meta.ConditionStatus
 	var reason string
 	var message string
 
-	if svc == nil {
+	if gateway == nil {
 		status, reason, message = kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceNoGatewayMatched, fmt.Sprintf("No Gateway matched by tags in mesh: '%s'", mesh)
 	} else {
 		status, reason = getCombinedReadiness(svc, deployment)
@@ -381,7 +403,7 @@ const serviceKey string = ".metadata.service"
 func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("gateway-to-gateway-instance-mapper")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
 		l = l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
 
@@ -401,7 +423,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 		for _, serviceName := range serviceNames {
 			instances := &mesh_k8s.MeshGatewayInstanceList{}
 			if err := client.List(
-				context.Background(), instances, kube_client.MatchingFields{serviceKey: serviceName},
+				ctx, instances, kube_client.MatchingFields{serviceKey: serviceName},
 			); err != nil {
 				l.Error(err, "failed to fetch GatewayInstances")
 			}
@@ -450,6 +472,6 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		// before the event as well as the object after. In the case of
 		// unbinding a Gateway from one Instance to another, we end up
 		// reconciling both Instances.
-		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
+		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }

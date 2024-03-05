@@ -24,8 +24,8 @@ func HandleClusters(backendEndpoints EndpointAccumulator, rs *core_xds.ResourceS
 		endpoint := xdsEndpoint(backendEndpoint)
 
 		clusterName := backendEndpoints.clusterForEndpoint(backendEndpoint)
-		res, err := clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(clusters.ProvidedEndpointCluster(string(clusterName), proxy.Dataplane.IsIPv6(), endpoint)).
+		res, err := clusters.NewClusterBuilder(proxy.APIVersion, string(clusterName)).
+			Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), endpoint)).
 			Configure(clusters.ClientSideTLS([]core_xds.Endpoint{endpoint})).
 			Configure(clusters.DefaultTimeout()).
 			Configure(clusters.Http2()).

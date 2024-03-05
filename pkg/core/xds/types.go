@@ -53,17 +53,20 @@ type TagSelectorSet []mesh_proto.TagSelector
 type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
-	TLSEnabled         bool
-	CaCert             []byte
-	ClientCert         []byte
-	ClientKey          []byte
-	AllowRenegotiation bool
-	ServerName         string
+	TLSEnabled               bool
+	CaCert                   []byte
+	ClientCert               []byte
+	ClientKey                []byte
+	AllowRenegotiation       bool
+	SkipHostnameVerification bool
+	ServerName               string
 }
 
 type Locality struct {
 	Zone     string
+	SubZone  string
 	Priority uint32
+	Weight   uint32
 }
 
 // Endpoint holds routing-related information about a single endpoint.
@@ -75,6 +78,10 @@ type Endpoint struct {
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService
+}
+
+func (e Endpoint) Address() string {
+	return fmt.Sprintf("%s:%d", e.Target, e.Port)
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -132,7 +139,6 @@ type Proxy struct {
 	Id                  ProxyId
 	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
-	ZoneIngress         *core_mesh.ZoneIngressResource
 	Metadata            *DataplaneMetadata
 	Routing             Routing
 	Policies            MatchedPolicies
@@ -146,11 +152,20 @@ type Proxy struct {
 	ZoneEgressProxy *ZoneEgressProxy
 	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
 	ZoneIngressProxy *ZoneIngressProxy
+	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
+	RuntimeExtensions map[string]interface{}
+	// Zone the zone the proxy is in
+	Zone string
 }
 
 type ServerSideMTLSCerts struct {
 	CaPEM      []byte
 	ServerPair util_tls.KeyPair
+}
+
+type ServerSideTLSCertPaths struct {
+	CertPath string
+	KeyPath  string
 }
 
 type IdentityCertRequest interface {
@@ -178,13 +193,15 @@ type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type MeshResources struct {
 	Mesh                           *core_mesh.MeshResource
-	TrafficRoutes                  []*core_mesh.TrafficRouteResource
 	ExternalServices               []*core_mesh.ExternalServiceResource
 	ExternalServicePermissionMap   ExternalServicePermissionMap
 	EndpointMap                    EndpointMap
 	ExternalServiceFaultInjections ExternalServiceFaultInjectionMap
 	ExternalServiceRateLimits      ExternalServiceRateLimitMap
-	Dynamic                        ExternalServiceDynamicPolicies
+
+	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
+	Dynamic   ExternalServiceDynamicPolicies
+	Resources map[core_model.ResourceType]core_model.ResourceList
 }
 
 type ZoneEgressProxy struct {
@@ -193,10 +210,15 @@ type ZoneEgressProxy struct {
 	MeshResourcesList  []*MeshResources
 }
 
+type MeshIngressResources struct {
+	Mesh        *core_mesh.MeshResource
+	EndpointMap EndpointMap
+	Resources   map[core_model.ResourceType]core_model.ResourceList
+}
+
 type ZoneIngressProxy struct {
-	GatewayRoutes   *core_mesh.MeshGatewayRouteResourceList
-	MeshGateways    *core_mesh.MeshGatewayResourceList
-	PolicyResources map[core_model.ResourceType]core_model.ResourceList
+	ZoneIngressResource *core_mesh.ZoneIngressResource
+	MeshResourceList    []*MeshIngressResources
 }
 
 type VIPDomains struct {
@@ -248,7 +270,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return e.Locality.Zone
+	return fmt.Sprintf("%s:%s", e.Locality.Zone, e.Locality.SubZone)
 }
 
 func (e Endpoint) HasLocality() bool {

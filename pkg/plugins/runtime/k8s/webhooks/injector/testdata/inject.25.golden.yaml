@@ -5,6 +5,7 @@ metadata:
     docs: Documentation
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/builtin-dns: enabled
+    kuma.io/builtin-dns-logging: "false"
     kuma.io/builtin-dns-port: "25053"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
@@ -29,16 +30,6 @@ spec:
     - --log-level=info
     - --concurrency=8
     env:
-    - name: POD_NAME
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.name
-    - name: POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          apiVersion: v1
-          fieldPath: metadata.namespace
     - name: INSTANCE_IP
       valueFrom:
         fieldRef:
@@ -72,8 +63,6 @@ spec:
       value: 5s
     - name: KUMA_DATAPLANE_MESH
       value: default
-    - name: KUMA_DATAPLANE_NAME
-      value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_CORE_DNS_BINARY_PATH
@@ -84,10 +73,22 @@ spec:
       value: "25053"
     - name: KUMA_DNS_ENABLED
       value: "true"
+    - name: KUMA_DNS_ENABLE_LOGGING
+      value: "false"
     - name: KUMA_DNS_ENVOY_DNS_PORT
       value: "25055"
     - name: NEW_ENV_VAR
       value: "123"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -112,17 +113,22 @@ spec:
     resources:
       limits:
         cpu: 8500m
+        ephemeral-storage: 1G
         memory: 1512Mi
       requests:
         cpu: 150m
+        ephemeral-storage: 50M
         memory: 164Mi
     securityContext:
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
   - image: busybox
     name: busybox
     resources: {}
@@ -131,6 +137,13 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -146,7 +159,6 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
-    - --skip-resolv-conf
     - --redirect-all-dns-traffic
     - --redirect-dns-port
     - "25053"
@@ -171,15 +183,11 @@ spec:
         - NET_RAW
       runAsGroup: 0
       runAsUser: 0
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:
       secretName: default-token-w7dxf
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-sidecar-tmp
 status: {}

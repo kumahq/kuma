@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"net/http"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -19,11 +21,12 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-admin", false)
+		kumactl := NewKumactlOptionsE2E(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-admin", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-admin",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
+			nil,
 		)
 
 		// then the new admin can access secrets
@@ -41,11 +44,12 @@ func UserAuth() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		kumactl := NewKumactlOptions(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-user", false)
+		kumactl := NewKumactlOptionsE2E(universal.Cluster.GetTesting(), universal.Cluster.GetKuma().GetName()+"test-user", false)
 		err = kumactl.KumactlConfigControlPlanesAdd(
 			"test-user",
 			universal.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
+			nil,
 		)
 
 		// then the new member can access dataplanes but not secrets because they are not admin
@@ -53,4 +57,23 @@ func UserAuth() {
 		Expect(kumactl.RunKumactl("get", "dataplanes")).To(Succeed())
 		Expect(kumactl.RunKumactl("get", "secrets")).ToNot(Succeed())
 	})
+
+	DescribeTable("should ignore auth data on unauthorized endpoints",
+		func(endpoint string) {
+			// given
+			req, err := http.NewRequest("GET", universal.Cluster.GetKuma().GetAPIServerAddress()+endpoint, nil)
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Add("authorization", "Bearer invliddata")
+
+			// when
+			resp, err := http.DefaultClient.Do(req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
+			Expect(resp.StatusCode).To(Equal(200))
+		},
+		Entry("index", "/"),
+		Entry("gui", "/gui/"),
+	)
 }

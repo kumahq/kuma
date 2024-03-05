@@ -18,16 +18,17 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
+func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, core_store.Transactions, error) {
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
+		return nil, nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	converter, ok := k8s_runtime.FromResourceConverterContext(pc.Extensions())
 	if !ok {
-		return nil, errors.Errorf("k8s resource converter hasn't been configured")
+		return nil, nil, errors.Errorf("k8s resource converter hasn't been configured")
 	}
-	return NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
+	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
+	return store, core_store.NoTransactions{}, err
 }
 
 func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {

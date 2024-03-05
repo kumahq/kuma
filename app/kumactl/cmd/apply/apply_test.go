@@ -75,7 +75,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
 		// nolint:staticcheck
-		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
+		Expect(resource.Spec.Networking.Outbound[0].GetService()).To(Equal("postgres"))
 	}
 
 	It("should require -f arg", func() {
@@ -505,7 +505,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: `YAML contains invalid resource: invalid Dataplane object "dp-1"`,
+			err: `YAML contains invalid resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []json.RawMessage"`,
 		}),
 		Entry("no resource", testCase{
 			resource: ``,

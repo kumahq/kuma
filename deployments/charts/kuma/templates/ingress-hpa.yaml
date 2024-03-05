@@ -1,6 +1,6 @@
 {{- if .Values.ingress.autoscaling.enabled }}
-{{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
-apiVersion: "autoscaling/v2beta2"
+{{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
+apiVersion: "autoscaling/v2"
 {{ else }}
 apiVersion: "autoscaling/v1"
 {{ end }}
@@ -16,7 +16,7 @@ spec:
     name: {{ include "kuma.name" . }}-ingress
   minReplicas: {{ .Values.ingress.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.ingress.autoscaling.maxReplicas }}
-  {{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
+  {{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
   metrics: {{- toYaml .Values.ingress.autoscaling.metrics | nindent 4 }}
   {{ else }}
   targetCPUUtilizationPercentage: {{ .Values.ingress.autoscaling.targetCPUUtilizationPercentage }}

@@ -65,6 +65,7 @@ type MeshAccessLogConfBuilder struct {
 func (m *MeshAccessLogConfBuilder) AddFileBackend(fileBackend *meshaccesslog_proto.FileBackend) *MeshAccessLogConfBuilder {
 	m.res.Backends = pointer.To(append(pointer.Deref(m.res.Backends), meshaccesslog_proto.Backend{
 		File: fileBackend,
+		Type: meshaccesslog_proto.FileBackendType,
 	}))
 	return m
 }

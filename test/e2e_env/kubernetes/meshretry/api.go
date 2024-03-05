@@ -20,6 +20,13 @@ func API() {
 			Install(MeshKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Delete the default meshretry policy
+		Expect(DeleteMeshPolicyOrError(
+			kubernetes.Cluster,
+			v1alpha1.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", meshName),
+		)).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -34,7 +41,7 @@ func API() {
 		// given no MeshRetry
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -70,7 +77,7 @@ spec:
 		// given no MeshRetry
 		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshretries", meshName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(HaveLen(0))
+		Expect(mrls).To(BeEmpty())
 
 		// when
 		err = k8s.KubectlApplyFromStringE(

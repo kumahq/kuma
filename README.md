@@ -1,25 +1,24 @@
 [![][kuma-logo]][kuma-url]
 
 **Builds**
-<!--CIBADGES-->
+
 [![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
-[![CircleCI release-1.6](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.6?label=release-1.6)](https://circleci.com/gh/kumahq/kuma/tree/release-1.6)
-[![CircleCI release-1.7](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.7?label=release-1.7)](https://circleci.com/gh/kumahq/kuma/tree/release-1.7)
-[![CircleCI release-1.8](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.8?label=release-1.8)](https://circleci.com/gh/kumahq/kuma/tree/release-1.8)
-[![CircleCI release-2.0](https://img.shields.io/circleci/build/github/kumahq/kuma/release-2.0?label=release-2.0)](https://circleci.com/gh/kumahq/kuma/tree/release-2.0)
-[![CircleCI release-2.1](https://img.shields.io/circleci/build/github/kumahq/kuma/release-2.1?label=release-2.1)](https://circleci.com/gh/kumahq/kuma/tree/release-2.1)
-<!--CIBADGES-->
 
 **Code quality**
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5576/badge)](https://bestpractices.coreinfrastructure.org/projects/5576)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5576/badge)](https://www.bestpractices.dev/projects/5576)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kumahq/kuma/badge)](https://securityscorecards.dev/viewer/?uri=github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
+[![CLOMonitor](https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/kuma/badge)](https://clomonitor.io/projects/cncf/kuma)
 
 **Releases**
+
 [![Docker hub](https://img.shields.io/docker/pulls/kumahq/kuma-cp)](https://hub.docker.com/u/kumahq)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
 
 **Social**
+
 [![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack)](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1rcll3y6t-DkV_CAItZUoy0IvCwQ~jlQ)
 [![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 
@@ -35,12 +34,19 @@ Built by Envoy contributors at Kong 🦍.
 
 [![][kuma-gui]][kuma-url]
 
-**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [Slack chat](https://kuma.io/community).
+## Get Started 
 
-[Installation](https://kuma.io/install) |
-[Documentation](https://kuma.io/docs) |
-[Community + Slack Chat](https://kuma.io/community) |
-[Blog](https://konghq.com/blog)
+- [Installation](https://kuma.io/install)
+- [Documentation](https://kuma.io/docs)
+
+## Get Involved
+
+- [Join the Kuma Slack](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1wi2o3uok-x0KmKJiSzjQy7NgNkC8IAA) or the #kuma channel in the [CNCF Slack](https://slack.cncf.io/) exists but is not actively in use. 
+- Attend a [Community Call](https://docs.google.com/document/d/1HgnK3wJIEg8uFlivdrhrPZYWTpElWWu3mhFDXj-bMWQ/edit?usp=sharing) monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
+- Follow us on [Twitter](https://twitter.com/kumamesh)
+- Read the [blog](https://kuma.io/blog/)
+
+**Need help?** In your journey with Kuma you can get in touch with the broader community via the official [community channels](https://kuma.io/community).
 
 ## Summary
 
@@ -126,6 +132,11 @@ You can use Kuma for modern greenfield applications built on containers as well 
 
 Kuma also provides an easy to use `kumactl` CLI client for every environment, and an official GUI that can be accessed by the browser.
 
+## Roadmap
+
+Kuma releases a minor version on a 10 week release cycle.
+The roadmap is tracked using milestones: https://github.com/kumahq/kuma/milestones
+
 ## Development
 
 Kuma is under active development and production-ready.
@@ -140,4 +151,3 @@ If you are implementing Kuma in a mission-critical environment and require enter
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
 [kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.jpg
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png
-

@@ -70,12 +70,16 @@ func NewRateLimitConfiguration(rlHttp *RateLimitConfiguration) (*anypb.Any, erro
 		}
 		responseHeaders = []*envoy_config_core_v3.HeaderValueOption{}
 		for _, h := range rlHttp.OnRateLimit.Headers {
+			appendAction := envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+			if h.Append {
+				appendAction = envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+			}
 			responseHeaders = append(responseHeaders, &envoy_config_core_v3.HeaderValueOption{
 				Header: &envoy_config_core_v3.HeaderValue{
 					Key:   h.Key,
 					Value: h.Value,
 				},
-				Append: proto.Bool(h.Append),
+				AppendAction: appendAction,
 			})
 		}
 	}

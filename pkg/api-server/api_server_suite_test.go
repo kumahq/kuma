@@ -5,13 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -30,11 +37,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	test_store "github.com/kumahq/kuma/pkg/test/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -47,6 +57,35 @@ func TestWs(t *testing.T) {
 type resourceApiClient struct {
 	address string
 	path    string
+}
+
+type TestMeta struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+	Mesh string `json:"mesh"`
+}
+
+type TestListResponse struct {
+	Total int        `json:"total"`
+	Next  string     `json:"next"`
+	Items []TestMeta `json:"items"`
+}
+
+func MatchListResponse(r TestListResponse) types.GomegaMatcher {
+	return And(
+		HaveHTTPStatus(http.StatusOK),
+		WithTransform(func(response *http.Response) (TestListResponse, error) {
+			res := TestListResponse{}
+			body, err := io.ReadAll(response.Body)
+			if err != nil {
+				return res, nil
+			}
+			if err := json.Unmarshal(body, &res); err != nil {
+				return res, err
+			}
+			return res, nil
+		}, Equal(r)),
+	)
 }
 
 func (r *resourceApiClient) fullAddress() string {
@@ -96,7 +135,7 @@ func (r *resourceApiClient) putJson(name string, json []byte) *http.Response {
 	return response
 }
 
-func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
+func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string, keyAndValue ...string) {
 	resource := core_mesh.TrafficRouteResource{
 		Spec: &mesh_proto.TrafficRoute{
 			Conf: &mesh_proto.TrafficRoute_Conf{
@@ -106,22 +145,27 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 			},
 		},
 	}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh))
+	labels := map[string]string{}
+	for i := 0; i < len(keyAndValue); i += 2 {
+		labels[keyAndValue[i]] = keyAndValue[i+1]
+	}
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, mesh), store.CreateWithLabels(labels))
 	Expect(err).NotTo(HaveOccurred())
 }
 
 type testApiServerConfigurer struct {
-	store   store.ResourceStore
-	config  *config_api_server.ApiServerConfig
-	metrics func() core_metrics.Metrics
-	zone    string
-	global  bool
+	store                        store.ResourceStore
+	config                       *config_api_server.ApiServerConfig
+	metrics                      func() core_metrics.Metrics
+	zone                         string
+	global                       bool
+	disableOriginLabelValidation bool
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
 	t := &testApiServerConfigurer{
 		metrics: func() core_metrics.Metrics {
-			m, _ := core_metrics.NewMetrics("Standalone")
+			m, _ := core_metrics.NewMetrics("Zone")
 			return m
 		},
 		config: config_api_server.DefaultApiServerConfig(),
@@ -143,14 +187,13 @@ func (t *testApiServerConfigurer) WithGlobal() *testApiServerConfigurer {
 	return t
 }
 
-func (t *testApiServerConfigurer) WithStandalone() *testApiServerConfigurer {
-	t.zone = ""
-	t.global = false
+func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *testApiServerConfigurer {
+	t.store = resourceStore
 	return t
 }
 
-func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *testApiServerConfigurer {
-	t.store = resourceStore
+func (t *testApiServerConfigurer) WithDisableOriginLabelValidation(disable bool) *testApiServerConfigurer {
+	t.disableOriginLabelValidation = disable
 	return t
 }
 
@@ -209,21 +252,25 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	if t.zone != "" {
 		cfg.Mode = config_core.Zone
 		cfg.Multizone.Zone.Name = t.zone
+		cfg.Multizone.Zone.GlobalAddress = "grpcs://global:5685"
 	} else if t.global {
 		cfg.Mode = config_core.Global
 	}
 
+	cfg.Multizone.Zone.DisableOriginLabelValidation = t.disableOriginLabelValidation
+
 	resManager := manager.NewResourceManager(t.store)
-	apiServer, err := api_server.NewApiServer( //nolint:contextcheck
+	apiServer, err := api_server.NewApiServer(
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(t.store), false),
 			cfg.DNSServer.Domain,
 			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		),
 		customization.NewAPIList(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
@@ -247,6 +294,8 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
+		func(*restful.WebService) error { return nil },
+		globalinsight.NewDefaultGlobalInsightService(t.store),
 	)
 	if err != nil {
 		return nil, cfg, stop, err
@@ -279,4 +328,38 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			}
 		}
 	}
+}
+
+// apiTest takes an `<testName>.input.yaml` which contains as first line a comment #<urlToRun> <statusCode> and then a set of yaml to preload in the resourceStore.
+// It will then run against the apiServer check that the status code matches and that the output matches `<testName>.golden.json`
+// Combined with `test.EntriesForFolder` and `ginkgo.DescribeTable` is a way to create a lot of api tests by only creating the input files.
+func apiTest(inputResourceFile string, apiServer *api_server.ApiServer, resourceStore store.ResourceStore) {
+	inputs, err := os.ReadFile(inputResourceFile)
+	Expect(err).NotTo(HaveOccurred())
+	parts := strings.SplitN(string(inputs), "\n", 2)
+	Expect(parts[0]).To(HavePrefix("#"), "the first line of the input is not a comment with the url path")
+	actions := strings.Split(strings.Trim(parts[0], "# "), " ")
+	Expect(actions).To(HaveLen(2), "the first line of the input should be: # <path> <statusCode>")
+	url := fmt.Sprintf("http://%s%s", apiServer.Address(), actions[0])
+	Expect(url).ToNot(BeEmpty())
+	status, err := strconv.Atoi(actions[1])
+	Expect(err).NotTo(HaveOccurred(), "status is not an int")
+
+	Expect(test_store.LoadResources(context.Background(), resourceStore, string(inputs))).To(Succeed())
+
+	req, err := http.NewRequest("GET", url, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	response, err := http.DefaultClient.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+	defer response.Body.Close()
+	Expect(response).To(HaveHTTPStatus(status))
+
+	// then
+	b, err := io.ReadAll(response.Body)
+	result := strings.ReplaceAll(string(b), apiServer.Address(), "{{address}}")
+	Expect(err).ToNot(HaveOccurred())
+	goldenFile := strings.ReplaceAll(inputResourceFile, ".input.yaml", ".golden.json")
+
+	Expect(result).To(matchers.MatchGoldenJSON(goldenFile))
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -29,6 +30,7 @@ const (
 type InterCpServer struct {
 	config     intercp.InterCpServerConfig
 	grpcServer *grpc.Server
+	instanceId string
 }
 
 var _ component.Component = &InterCpServer{}
@@ -38,6 +40,7 @@ func New(
 	metrics metrics.Metrics,
 	certificate tls.Certificate,
 	caCert x509.Certificate,
+	instanceId string,
 ) (*InterCpServer, error) {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
@@ -72,11 +75,13 @@ func New(
 
 	grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
+	grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	return &InterCpServer{
 		config:     config,
 		grpcServer: grpcServer,
+		instanceId: instanceId,
 	}, nil
 }
 
@@ -85,6 +90,10 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	log := log.WithValues(
+		"instanceId",
+		d.instanceId,
+	)
 
 	errChan := make(chan error)
 	go func() {
@@ -102,8 +111,9 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 
 	select {
 	case <-stop:
-		log.Info("stopping")
+		log.Info("stopping gracefully")
 		d.grpcServer.GracefulStop()
+		log.Info("stopped")
 		return nil
 	case err := <-errChan:
 		return err

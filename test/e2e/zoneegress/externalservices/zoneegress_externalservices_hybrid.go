@@ -80,22 +80,13 @@ conf:
 	var zone4 *UniversalCluster
 
 	BeforeAll(func() {
-		k8sClusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
-		universalClusters, err := NewUniversalClusters(
-			[]string{Kuma4, Kuma5},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
 		// Global
-		global = universalClusters.GetCluster(Kuma5)
+		global = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
+			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Install(YamlUniversal(ptWaitForWarmOnInit)).
 			Install(YamlUniversal(fmt.Sprintf(externalService1, nonDefaultMesh))).
 			Setup(global)).To(Succeed())
@@ -103,7 +94,7 @@ conf:
 		globalCP := global.GetKuma()
 
 		// K8s Cluster 1
-		zone1 = k8sClusters.GetCluster(Kuma1)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -116,11 +107,11 @@ conf:
 			Setup(zone1)).To(Succeed())
 
 		// Universal Cluster 4
-		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
-		Expect(err).ToNot(HaveOccurred())
+		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
 			Install(DemoClientUniversal(
 				"zone4-demo-client",
 				nonDefaultMesh,
@@ -134,6 +125,10 @@ conf:
 						WithoutDataplane(),
 						WithVerbose())
 				}).
+			Install(TestServerUniversal("test-server", nonDefaultMesh,
+				WithArgs([]string{"echo", "--instance", "test-server"}),
+				WithTransparentProxy(true),
+			)).
 			Setup(zone4),
 		).To(Succeed())
 
@@ -172,6 +167,16 @@ conf:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("es-test-server"))
 		}, "30s", "1s").Should(Succeed())
+
+		By("reaching internal service from k8s")
+		Eventually(func(g Gomega) {
+			response, err := client.CollectEchoResponse(
+				zone1, "demo-client", "test-server.mesh",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("test-server"))
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("passthrough false with zoneegress true", func() {
@@ -191,6 +196,16 @@ conf:
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				zone4, "zone4-demo-client", "external-service-2.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
+		}, "30s", "1s").Should(Succeed())
+
+		By("not reaching internal service from k8s when zone egress is down")
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				zone1, "demo-client", "test-server.mesh",
+				client.FromKubernetesPod(TestNamespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))

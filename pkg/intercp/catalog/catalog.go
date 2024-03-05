@@ -20,10 +20,15 @@ func (i Instance) InterCpURL() string {
 	return fmt.Sprintf("grpcs://%s", net.JoinHostPort(i.Address, strconv.Itoa(int(i.InterCpPort))))
 }
 
-type Catalog interface {
+type Reader interface {
 	Instances(context.Context) ([]Instance, error)
+}
+
+type Catalog interface {
+	Reader
 	Replace(context.Context, []Instance) (bool, error)
 	ReplaceLeader(context.Context, Instance) error
+	DropLeader(context.Context, Instance) error
 }
 
 var (

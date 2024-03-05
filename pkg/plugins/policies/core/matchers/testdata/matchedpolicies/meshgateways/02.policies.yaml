@@ -1,0 +1,98 @@
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: mesh
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /mesh
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: meshsubset
+spec:
+  targetRef:
+    kind: MeshSubset
+    proxyTypes: ["Gateway"]
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /meshsubset
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: nonmatchinggatewaylistener
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: other-gateway
+    tags:
+      listener: three
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /shouldnt-be-applied
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: only-one-hostname-listener
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gateway-1
+    tags:
+      listener: four-hostname-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: /applied-only-to-hostname
+---
+type: MeshGateway
+mesh: mesh-1
+name: gateway-1
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      tags:
+        listener: one
+    - port: 8081
+      protocol: HTTP
+      tags:
+        listener: two
+    - port: 8082
+      protocol: HTTP
+      tags:
+        listener: three
+    - port: 8083
+      protocol: HTTP
+      hostname: four-hostname-1
+      tags:
+        listener: four-hostname-1
+    - port: 8083
+      protocol: HTTP
+      hostname: four-hostname-2
+      tags:
+        listener: four-hostname-2

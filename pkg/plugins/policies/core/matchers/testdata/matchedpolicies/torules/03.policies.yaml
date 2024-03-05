@@ -1,0 +1,45 @@
+type: MeshHTTPRoute
+mesh: mesh-1
+name: http-route-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default: {}
+---
+# mtp-1 should select DPP because it targets MeshHTTPRoute that selects the DPP
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 1s
+---
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 3s

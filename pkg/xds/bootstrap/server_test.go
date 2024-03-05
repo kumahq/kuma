@@ -80,7 +80,7 @@ var _ = Describe("Bootstrap Server", func() {
 		port, err := test.GetFreePort()
 		baseURL = "https://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		dpServerCfg := dp_server_cfg.DpServerConfig{
@@ -95,7 +95,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 		proxyConfig := xds_config.DefaultProxyConfig()
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -128,9 +128,6 @@ var _ = Describe("Bootstrap Server", func() {
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
-		}
-		core.TempDir = func() string {
-			return "/tmp"
 		}
 	})
 

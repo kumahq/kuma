@@ -25,7 +25,7 @@ When e2e tests are executed here are the steps
 
 ## Use KIND instead of K3D
 
-K3D is faster than KIND and it is a default tool to run E2E tests. However, not all tests runs with it.
+K3D is faster than KIND and it is a default tool to run E2E tests. However, not all tests run with it.
 To use KIND in E2E tests add `K8S_CLUSTER_TOOL=kind`
 
 ```

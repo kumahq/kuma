@@ -1,0 +1,35 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "mesh": "default",
+  "name": "the-gateway",
+  "type": "MeshGateway"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "proxyRule": {
+    "conf": {
+     "backends": [
+      {
+       "type": "Zipkin",
+       "zipkin": {
+        "url": "http://jaeger-collector:9411/api/v2/spans"
+       }
+      }
+     ]
+    },
+    "origin": [
+     {
+      "mesh": "default",
+      "name": "default",
+      "type": "MeshTrace"
+     }
+    ]
+   },
+   "toRules": [],
+   "type": "MeshTrace",
+   "warnings": []
+  }
+ ]
+}

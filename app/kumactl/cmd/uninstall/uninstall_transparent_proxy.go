@@ -48,11 +48,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 				Stdout:        cmd.OutOrStdout(),
 			}
 
-			tp := transparentproxy.V1()
-
-			if args.EbpfEnabled {
-				tp = transparentproxy.V2()
-			}
+			tp := transparentproxy.V2()
 
 			output, err := tp.Cleanup(cfg)
 			if err != nil {

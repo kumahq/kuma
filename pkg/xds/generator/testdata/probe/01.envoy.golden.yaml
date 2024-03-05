@@ -16,6 +16,7 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
+            name: probe:route_configuration
             virtualHosts:
             - domains:
               - '*'
@@ -31,7 +32,6 @@ resources:
                   cluster: localhost:8080
                   regexRewrite:
                     pattern:
-                      googleRe2: {}
                       regex: .*
                     substitution: /healthz/probe
           statPrefix: probe_listener

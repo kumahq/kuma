@@ -44,32 +44,30 @@ func CpCompatibilityMultizoneKubernetes() {
 		globalCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
+		E2EDeferCleanup(func() {
+			Expect(globalCluster.DeleteKuma()).To(Succeed())
+			Expect(globalCluster.DismissCluster()).To(Succeed())
+		})
 
 		globalReleaseName = fmt.Sprintf(
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
 
-		E2EDeferCleanup(func() {
-			Expect(globalCluster.DeleteKuma()).To(Succeed())
-			Expect(globalCluster.DismissCluster()).To(Succeed())
-		})
-
 		// Zone CP
 		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-
-		zoneReleaseName = fmt.Sprintf(
-			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
-		)
-
 		E2EDeferCleanup(func() {
 			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())
 		})
+
+		zoneReleaseName = fmt.Sprintf(
+			"kuma-%s",
+			strings.ToLower(random.UniqueId()),
+		)
 	})
 
 	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
@@ -113,7 +111,7 @@ metadata:
 		// when new resources is created on Zone
 		err = democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))(zoneCluster)
 
-		// then resource is synchronized to Global
+		// then resource is synchronized to Global (The namespace here will need to be updated as soon as the minimum version is 2.5.x
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("default"), "get", "dataplanes")
@@ -128,17 +126,6 @@ metadata:
 			WithHelmChartPath(Config.HelmChartName),
 			WithoutHelmOpt("global.image.tag"),
 			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-		},
-	), Entry(
-		"Sync old global and new zone",
-		[]KumaDeploymentOption{
-			WithHelmChartPath(Config.HelmChartName),
-			WithoutHelmOpt("global.image.tag"),
-			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-		},
-		[]KumaDeploymentOption{
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmChartPath(Config.HelmChartPath),
 		},
 	))
 }

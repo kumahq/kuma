@@ -17,6 +17,10 @@ func (es *ExternalService) MatchTags(selector TagSelector) bool {
 	return selector.Matches(es.Tags)
 }
 
+func (es *ExternalService) MatchTagsFuzzy(selector TagSelector) bool {
+	return selector.MatchesFuzzy(es.Tags)
+}
+
 func (es *ExternalService) GetService() string {
 	if es == nil {
 		return ""

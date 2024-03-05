@@ -11,10 +11,11 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -40,9 +41,6 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if !ok {
 		return nil
 	}
-	if len(policies.SingleItemRules.Rules) == 0 {
-		return nil
-	}
 
 	listeners := policies_xds.GatherListeners(rs)
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
@@ -62,7 +60,10 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 }
 
 func applyToGateway(
-	rules xds.SingleItemRules, gatewayListeners map[xds.InboundListener]*envoy_listener.Listener, resources xds_context.ResourceMap, dataplane *core_mesh.DataplaneResource,
+	rules core_rules.SingleItemRules,
+	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
+	resources xds_context.ResourceMap,
+	dataplane *core_mesh.DataplaneResource,
 ) error {
 	var gateways *core_mesh.MeshGatewayResourceList
 	if rawList := resources[core_mesh.MeshGatewayType]; rawList != nil {
@@ -79,10 +80,11 @@ func applyToGateway(
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
 		address := dataplane.Spec.GetNetworking().Address
 		port := listener.GetPort()
-		listener, ok := gatewayListeners[xds.InboundListener{
+		inboundListener := core_rules.InboundListener{
 			Address: address,
 			Port:    port,
-		}]
+		}
+		listener, ok := gatewayListeners[inboundListener]
 		if !ok {
 			continue
 		}
@@ -100,7 +102,7 @@ func applyToGateway(
 	return nil
 }
 
-func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
 	for _, inboundListener := range inboundListeners {
 		if err := configureListener(rules, dataplane, inboundListener, ""); err != nil {
 			return err
@@ -110,7 +112,7 @@ func applyToInbounds(rules xds.SingleItemRules, inboundListeners map[xds.Inbound
 	return nil
 }
 
-func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
+func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -119,7 +121,7 @@ func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_prot
 			continue
 		}
 
-		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		serviceName := outbound.GetService()
 
 		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
 			return err
@@ -129,8 +131,11 @@ func applyToOutbounds(rules xds.SingleItemRules, outboundListeners map[mesh_prot
 	return nil
 }
 
-func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
+func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
+	if len(rules.Rules) == 0 {
+		return nil
+	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
@@ -139,6 +144,7 @@ func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.Dataplane
 		Service:          serviceName,
 		TrafficDirection: listener.TrafficDirection,
 		Destination:      destination,
+		IsGateway:        dataplane.Spec.IsBuiltinGateway(),
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -150,7 +156,10 @@ func configureListener(rules xds.SingleItemRules, dataplane *core_mesh.Dataplane
 	return nil
 }
 
-func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, proxy *xds.Proxy) error {
+	if len(rules.Rules) == 0 {
+		return nil
+	}
 	rawConf := rules.Rules[0].Conf
 
 	conf := rawConf.(api.Conf)
@@ -165,7 +174,6 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	var endpoint *xds.Endpoint
 	var provider string
 
-	builder := clusters.NewClusterBuilder(proxy.APIVersion)
 	switch {
 	case backend.Zipkin != nil:
 		endpoint = endpointForZipkin(backend.Zipkin)
@@ -176,10 +184,14 @@ func applyToClusters(rules xds.SingleItemRules, rs *xds.ResourceSet, proxy *xds.
 	case backend.OpenTelemetry != nil:
 		endpoint = endpointForOpenTelemetry(backend.OpenTelemetry)
 		provider = plugin_xds.OpenTelemetryProviderName
+	}
+	builder := clusters.NewClusterBuilder(proxy.APIVersion, plugin_xds.GetTracingClusterName(provider))
+
+	if backend.OpenTelemetry != nil {
 		builder.Configure(clusters.Http2())
 	}
 
-	res, err := builder.Configure(clusters.ProvidedEndpointCluster(plugin_xds.GetTracingClusterName(provider), proxy.Dataplane.IsIPv6(), *endpoint)).
+	res, err := builder.Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), *endpoint)).
 		Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
 		Configure(clusters.DefaultTimeout()).Build()
 	if err != nil {

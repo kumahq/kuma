@@ -17,21 +17,25 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }
 
-func InboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func InboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
+		Protocol: protocol,
+		Address:  address,
+		Port:     port,
 	})
 }
 
-func OutboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
+func OutboundListener(address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.OutboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
+		Protocol: protocol,
+		Address:  address,
+		Port:     port,
+	})
+}
+
+func PipeListener(socketPath string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.PipeListenerConfigurer{
+		SocketPath: socketPath,
 	})
 }
 
@@ -61,11 +65,9 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 	)
 }
 
-func DNS(vips map[string][]string, emptyDnsPort uint32, envoyVersion *mesh_proto.EnvoyVersion) ListenerBuilderOpt {
+func DNS(vips map[string][]string) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.DNSConfigurer{
-		VIPs:         vips,
-		EmptyDNSPort: emptyDnsPort,
-		EnvoyVersion: envoyVersion,
+		VIPs: vips,
 	})
 }
 
@@ -93,5 +95,11 @@ func EnableFreebind(enable bool) ListenerBuilderOpt {
 func TagsMetadata(tags map[string]string) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.TagsMetadataConfigurer{
 		Tags: tags,
+	})
+}
+
+func AdditionalAddresses(addresses []mesh_proto.OutboundInterface) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.AdditionalAddressConfigurer{
+		Addresses: addresses,
 	})
 }

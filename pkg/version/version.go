@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -39,6 +40,41 @@ func (b BuildInfo) FormatDetailedProductInfo() string {
 		base,
 		"\n",
 	)
+}
+
+func shortCommit(c string) string {
+	if len(c) < 7 {
+		return c
+	}
+	return c[:7]
+}
+
+func (b BuildInfo) AsMap() map[string]string {
+	res := map[string]string{
+		"product":    b.Product,
+		"version":    b.Version,
+		"build_date": b.BuildDate,
+		"git_commit": shortCommit(b.GitCommit),
+		"git_tag":    b.GitTag,
+	}
+	if b.BasedOnKuma != "" {
+		res["based_on_kuma"] = b.BasedOnKuma
+	}
+	return res
+}
+
+func (b BuildInfo) UserAgent(component string) string {
+	commit := shortCommit(b.GitCommit)
+	if b.BasedOnKuma != "" {
+		commit = fmt.Sprintf("%s/kuma-%s", commit, b.BasedOnKuma)
+	}
+	return fmt.Sprintf("%s/%s (%s; %s; %s/%s)",
+		component,
+		b.Version,
+		runtime.GOOS,
+		runtime.GOARCH,
+		b.Product,
+		commit)
 }
 
 var Build BuildInfo

@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/completion"
 	"github.com/kumahq/kuma/app/kumactl/cmd/config"
 	"github.com/kumahq/kuma/app/kumactl/cmd/delete"
+	"github.com/kumahq/kuma/app/kumactl/cmd/export"
 	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
 	"github.com/kumahq/kuma/app/kumactl/cmd/get"
 	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
@@ -23,7 +24,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	// Register gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
@@ -68,6 +69,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 
 			if root.Args.ConfigType == kumactl_cmd.InMemory {
 				root.LoadInMemoryConfig()
+				return nil
 			}
 
 			return root.LoadConfig()
@@ -84,6 +86,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
+	cmd.AddCommand(export.NewExportCmd(root))
 	cmd.AddCommand(completion.NewCompletionCommand())
 	cmd.AddCommand(config.NewConfigCmd(root))
 	cmd.AddCommand(delete.NewDeleteCmd(root))
@@ -108,4 +111,8 @@ func Execute() {
 	if err := DefaultRootCmd().Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	policies.InitAllPolicies()
 }

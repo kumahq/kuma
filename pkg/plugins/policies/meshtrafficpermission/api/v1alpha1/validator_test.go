@@ -86,16 +86,6 @@ from:
     default:
       action: Deny
 `),
-			Entry("allow MeshGatewayRoute at top-level targetRef", `
-targetRef:
-  kind: MeshGatewayRoute
-  name: backend-gateway-route
-from:
-  - targetRef:
-      kind: Mesh
-    default:
-      action: Deny
-`),
 		)
 
 		type testCase struct {

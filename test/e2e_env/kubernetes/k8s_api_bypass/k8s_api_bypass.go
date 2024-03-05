@@ -36,6 +36,7 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)

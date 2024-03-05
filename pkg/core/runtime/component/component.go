@@ -108,29 +108,29 @@ func (cm *manager) Add(c ...Component) error {
 	return nil
 }
 
-func (cm *manager) waitForDone() {
-	// limitation: waitForDone does not wait for components added after Start() is called.
-	// This is ok for now, because it's used only in context of Kuma DP where we are not adding components in runtime.
-	for _, c := range cm.components {
-		if gc, ok := c.(GracefulComponent); ok {
-			gc.WaitForDone()
-		}
-	}
-}
-
 func (cm *manager) Start(stop <-chan struct{}) error {
 	errCh := make(chan error)
 
 	cm.Lock()
-	cm.startNonLeaderComponents(stop, errCh)
+	internalDone := make(chan struct{})
+	cm.startNonLeaderComponents(internalDone, errCh)
 	cm.started = true
-	cm.stopCh = stop
+	cm.stopCh = internalDone
 	cm.errCh = errCh
 	cm.Unlock()
 	// this has to be called outside of lock because it can be leader at any time, and it locks in leader callbacks.
-	cm.startLeaderComponents(stop, errCh)
+	cm.startLeaderComponents(internalDone, errCh)
 
-	defer cm.waitForDone()
+	defer func() {
+		close(internalDone)
+		// limitation: waitForDone does not wait for components added after Start() is called.
+		// This is ok for now, because it's used only in context of Kuma DP where we are not adding components in runtime.
+		for _, c := range cm.components {
+			if gc, ok := c.(GracefulComponent); ok {
+				gc.WaitForDone()
+			}
+		}
+	}()
 	select {
 	case <-stop:
 		return nil

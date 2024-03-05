@@ -3,7 +3,6 @@ package kic
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -33,34 +32,24 @@ func KICKubernetes() {
 	mesh := "kic"
 	namespaceOutsideMesh := "kic-external"
 
-	getKICIP := func() string {
-		var ip string
-		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(namespace),
-				"get", "service", "gateway", "-ojsonpath={.spec.clusterIP}",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(BeEmpty())
-			ip = out
-		}, "60s", "1s").Should(Succeed(), "could not get the clusterIP of the Service")
-		return ip
-	}
-
 	var kicIP string
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshKubernetes(mesh)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceOutsideMesh)).
 			Install(democlient.Install(democlient.WithNamespace(namespaceOutsideMesh))). // this will not be in the mesh
 			Install(kic.KongIngressController(
 				kic.WithNamespace(namespace),
+				kic.WithName("kic"),
 				kic.WithMesh(mesh),
 			)).
-			Install(kic.KongIngressService(kic.WithNamespace(namespace))).
+			Install(kic.KongIngressService(
+				kic.WithNamespace(namespace),
+				kic.WithName("kic"),
+			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
@@ -68,7 +57,10 @@ func KICKubernetes() {
 			)).
 			Setup(kubernetes.Cluster)).To(Succeed())
 
-		kicIP = getKICIP()
+		ip, err := kic.From(kubernetes.Cluster).IP(namespace)
+		Expect(err).To(Succeed())
+
+		kicIP = ip
 	})
 
 	E2EAfterAll(func() {
@@ -79,24 +71,48 @@ func KICKubernetes() {
 
 	It("should route to service using Kube DNS", func() {
 		ingress := `
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
 metadata:
-  namespace: kic
-  name: kube-dns-ingress
+  name: kic
   annotations:
-    kubernetes.io/ingress.class: kong
+    konghq.com/gatewayclass-unmanaged: 'true'
 spec:
+  controllerName: konghq.com/kic-gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: kong
+  namespace: kic
+spec:
+  gatewayClassName: kic
+  listeners:
+  - name: proxy
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo
+  namespace: kic
+  annotations:
+    konghq.com/strip-path: 'true'
+spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
   rules:
-  - http:
-      paths:
-      - path: /test-server
-        pathType: Prefix
-        backend:
-          service:
-            name: test-server
-            port:
-              number: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /test-server
+    backendRefs:
+    - name: test-server
+      kind: Service
+      port: 80
 `
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingress))).To(Succeed())
 
@@ -112,6 +128,27 @@ spec:
 	It("should route to service using Kuma DNS", func() {
 		const ingressMeshDNS = `
 ---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo
+  namespace: kic
+  annotations:
+    konghq.com/strip-path: 'true'
+spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /test-server
+    backendRefs:
+    - name: test-server
+      kind: Service
+      port: 80
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -121,24 +158,26 @@ spec:
   type: ExternalName
   externalName: test-server.kic.svc.80.mesh
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
-  namespace: kic
   name: k8s-ingress-dot-mesh
+  namespace: kic
   annotations:
-    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: 'true'
 spec:
+  parentRefs:
+  - name: kong
+    namespace: kic
   rules:
-  - http:
-      paths:
-      - path: /dot-mesh
-        pathType: Prefix
-        backend:
-          service:
-            name: test-server-externalname
-            port:
-              number: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /dot-mesh
+    backendRefs:
+    - name: test-server-externalname
+      kind: Service
+      port: 80
 `
 
 		Expect(kubernetes.Cluster.Install(YamlK8s(ingressMeshDNS))).To(Succeed())

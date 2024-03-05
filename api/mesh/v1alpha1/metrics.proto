@@ -55,6 +55,9 @@ message PrometheusMetricsBackendConfig {
 
   // Configuration of Envoy's metrics.
   PrometheusEnvoyConfig envoy = 6;
+
+  // Configuration of TLS for prometheus listener.
+  PrometheusTlsConfig tls = 7;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
@@ -89,4 +92,26 @@ message PrometheusEnvoyConfig {
   // at least once, gauges changed at least once, and histograms added to at
   // least once). If nil, then it is treated as false.
   google.protobuf.BoolValue usedOnly = 2;
+}
+
+// PrometheusEnvoyConfig defines Tls configuration for Prometheus listener.
+message PrometheusTlsConfig {
+  enum Mode {
+    // control-plane delivers certificates to the prometheus listener.
+    // This should be used when prometheus is running inside the Mesh.
+    activeMTLSBackend = 0;
+    // In this way user is resposible for providing certificates to dataplanes.
+    // Path for the certificte and the key needs to be provided to the dataplane
+    // by environments variables:
+    // * KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH
+    // * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
+    providedTLS = 1;
+    // allows disabling TLS for the prometheus listener.
+    disabled = 2;
+  }
+
+  // mode defines how configured is the TLS for Prometheus.
+  // Supported values, delegated, disabled, activeMTLSBackend. Default to
+  // `activeMTLSBackend`.
+  Mode mode = 1;
 }

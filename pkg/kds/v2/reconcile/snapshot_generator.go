@@ -16,7 +16,7 @@ import (
 	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 )
 
-func NoopResourceMapper(r model.Resource) (model.Resource, error) {
+func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {
 	return r, nil
 }
 
@@ -24,10 +24,9 @@ func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, types []model.ResourceType, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
-		resourceTypes:   types,
 		resourceFilter:  filter,
 		resourceMapper:  mapper,
 	}
@@ -35,14 +34,17 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
-	resourceTypes   []model.ResourceType
 	resourceFilter  reconcile.ResourceFilter
 	resourceMapper  reconcile.ResourceMapper
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (envoy_cache.ResourceSnapshot, error) {
-	builder := cache_kds_v2.NewSnapshotBuilder()
-	for _, typ := range s.resourceTypes {
+func (s *snapshotGenerator) GenerateSnapshot(
+	ctx context.Context,
+	node *envoy_core.Node,
+	builder cache_kds_v2.SnapshotBuilder,
+	resTypes map[model.ResourceType]struct{},
+) (envoy_cache.ResourceSnapshot, error) {
+	for typ := range resTypes {
 		resources, err := s.getResources(ctx, typ, node)
 		if err != nil {
 			return nil, err
@@ -62,7 +64,7 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 		return nil, err
 	}
 
-	resources, err := s.mapper(s.filter(ctx, rlist, node))
+	resources, err := s.mapper(s.filter(ctx, rlist, node), node)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +73,9 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 }
 
 func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
-	features := kds.Features{}
-	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
-		features[value.GetStringValue()] = true
-	}
+	features := getFeatures(node)
 
-	rv, _ := registry.Global().NewList(rs.GetItemType())
+	rv := registry.Global().MustNewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
 		if s.resourceFilter(ctx, node.GetId(), features, r) {
 			_ = rv.AddItem(r)
@@ -85,11 +84,12 @@ func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, n
 	return rv
 }
 
-func (s *snapshotGenerator) mapper(rs model.ResourceList) (model.ResourceList, error) {
-	rv, _ := registry.Global().NewList(rs.GetItemType())
+func (s *snapshotGenerator) mapper(rs model.ResourceList, node *envoy_core.Node) (model.ResourceList, error) {
+	features := getFeatures(node)
 
+	rv := registry.Global().MustNewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
-		resource, err := s.resourceMapper(r)
+		resource, err := s.resourceMapper(features, r)
 		if err != nil {
 			return nil, err
 		}
@@ -100,4 +100,12 @@ func (s *snapshotGenerator) mapper(rs model.ResourceList) (model.ResourceList, e
 	}
 
 	return rv, nil
+}
+
+func getFeatures(node *envoy_core.Node) kds.Features {
+	features := kds.Features{}
+	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
+		features[value.GetStringValue()] = true
+	}
+	return features
 }

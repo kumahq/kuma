@@ -24,6 +24,7 @@ func ZoneIngress() *ZoneIngressBuilder {
 			Spec: &mesh_proto.ZoneIngress{
 				Networking: &mesh_proto.ZoneIngress_Networking{
 					Address: "127.0.0.1",
+					Port:    10000,
 				},
 			},
 		},
@@ -89,5 +90,21 @@ func (b *ZoneIngressBuilder) WithPort(port uint32) *ZoneIngressBuilder {
 
 func (b *ZoneIngressBuilder) WithAdvertisedPort(port uint32) *ZoneIngressBuilder {
 	b.res.Spec.Networking.AdvertisedPort = port
+	return b
+}
+
+func (b *ZoneIngressBuilder) AddSimpleAvailableService(svc string) *ZoneIngressBuilder {
+	return b.AddAvailableService(&mesh_proto.ZoneIngress_AvailableService{
+		Tags: map[string]string{
+			mesh_proto.ServiceTag: svc,
+		},
+		Instances:       1,
+		Mesh:            "default",
+		ExternalService: false,
+	})
+}
+
+func (b *ZoneIngressBuilder) AddAvailableService(svc *mesh_proto.ZoneIngress_AvailableService) *ZoneIngressBuilder {
+	b.res.Spec.AvailableServices = append(b.res.Spec.AvailableServices, svc)
 	return b
 }

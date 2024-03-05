@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"math/rand"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -10,28 +9,33 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
-type WithoutResource struct {
-	Resource core_model.ResourceType
-	Mesh     string
-	Name     string
-}
-
 var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
 	var dataplanes *DataplaneGenerator
 
+	type WithoutResource struct {
+		Resource core_model.ResourceType
+		Mesh     string
+		Name     string
+	}
+
 	Do := func() (cache.ResourceSnapshot, error) {
+		GinkgoHelper()
+
 		serverCtx := xds_server.NewXdsContext()
 		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 		if err != nil {
@@ -41,17 +45,19 @@ var _ = Describe("Gateway Route", func() {
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.
-		ctx, proxy := MakeGeneratorContext(rt,
-			core_model.ResourceKey{Mesh: "default", Name: "default"})
+		xdsCtx, proxy := MakeGeneratorContext(
+			rt,
+			core_model.ResourceKey{Mesh: "default", Name: "default"},
+		)
 
 		// Tokens for zone egress needs to be generated
 		// Without test configuration each run will generates
 		// new tokens for authentication.
-		ctx.ControlPlane.Secrets = &xds.TestSecrets{}
+		xdsCtx.ControlPlane.Secrets = &xds.TestSecrets{}
 
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
-		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
+		if _, err := reconciler.Reconcile(context.Background(), *xdsCtx, proxy); err != nil {
 			return nil, err
 		}
 
@@ -84,6 +90,8 @@ var _ = Describe("Gateway Route", func() {
 			"prefix-service",
 			"regex-header-match",
 			"regex-query-match",
+			"present-header-match",
+			"absent-header-match",
 		} {
 			dataplanes.Generate(service)
 		}
@@ -281,6 +289,8 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 302
+          path:
+            replaceFull: /redirected
 `,
 		),
 
@@ -367,6 +377,15 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /otherprefix/a
+      filters:
+        - redirect:
+            status_code: 302
+            path:
+              replacePrefixMatch: "/a"
 `,
 		),
 
@@ -388,6 +407,30 @@ conf:
       filters:
         - rewrite:
             replacePrefixMatch: "/a"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
+		Entry("should rewrite root prefix without trailing slash",
+			"rewrite-prefix-root-gateway-route.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+        - rewrite:
+            replacePrefixMatch: "/a/b"
       backends:
       - destination:
           kuma.io/service: echo-service
@@ -727,7 +770,18 @@ conf:
   http:
     request_timeout: 30s
     idle_timeout: 30s
-`,
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 
 		Entry("match circuit breaker policy",
@@ -812,7 +866,13 @@ conf:
   detectors:
     localErrors:
       consecutive: 30
-`,
+`, []WithoutResource{
+				{
+					Resource: meshcircuitbreaker_api.MeshCircuitBreakerType,
+					Mesh:     "default",
+					Name:     "mesh-circuit-breaker-all-default",
+				},
+			},
 		),
 
 		Entry("match health check policy",
@@ -928,9 +988,9 @@ conf:
 			"19-gateway-route.yaml", `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -952,7 +1012,7 @@ conf:
           value: "/"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `,
 		),
 
@@ -1034,6 +1094,69 @@ conf:
   http:
     request_timeout: 30s
     idle_timeout: 30s
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
+		),
+
+		Entry("generates isolated SNI routes",
+			"sni-isolation-gateway-route.yaml",
+			`
+# Rewrite the dataplane to attach the "gateway-multihost" Gateway.
+type: Dataplane
+mesh: default
+name: default
+networking:
+  address: 192.168.1.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: gateway-multihost
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-one
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: one.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /one
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-two
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: two.example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /two
+      backends:
+      - destination:
+          kuma.io/service: echo-service
 `,
 		),
 
@@ -1306,9 +1429,9 @@ routing:
   zoneEgress: true`, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1339,7 +1462,7 @@ conf:
           value: "/"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `,
 		),
 
@@ -1356,9 +1479,9 @@ routing:
   zoneEgress: true`, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1371,6 +1494,36 @@ name: echo-service
 selectors:
 - match:
     kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-http2-httpbin
+`,
+		),
+
+		Entry("external service works without traffic permission policy",
+			"external-service-without-default-traffic-permission.yaml", `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http
+networking:
+  address: httpbin.com:80
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
 selectors:
 - match:
     kuma.io/service: gateway-default
@@ -1407,9 +1560,9 @@ mtls:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1427,13 +1580,21 @@ conf:
   - port: 8080
     protocol: HTTP
     crossMesh: true
+  - port: 8081
+    protocol: HTTP
+    crossMesh: true
+    hostname: internal-cross-mesh.mesh
+    tags:
+      hostname: internal-cross-mesh.mesh
+  - port: 8082
+    protocol: HTTP
+    crossMesh: true
+    tags:
+      hostname: route-only
 `, `
 type: MeshGatewayRoute
 mesh: default
-name: echo-service
-selectors:
-- match:
-    kuma.io/service: gateway-default
+name: echo-service-default
 selectors:
 - match:
     kuma.io/service: gateway-default
@@ -1446,11 +1607,93 @@ conf:
           value: "/ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
     - matches:
       - path:
           match: PREFIX
           value: "/echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: route-only
+conf:
+  http:
+    hostnames:
+    - cross-mesh.mesh
+    - cross-mesh2.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-http2-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname-and-hostname-on-listener
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: internal-cross-mesh.mesh
+conf:
+  http:
+    hostnames:
+    - cross-mesh.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-no-match-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-http2-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-no-match-echo"
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-with-hostname-and-different-hostname-on-listener
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: internal-cross-mesh.mesh
+conf:
+  http:
+    hostnames:
+    - internal-cross-mesh.mesh
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-match-ext"
+      backends:
+      - destination:
+          kuma.io/service: external-http2-httpbin
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/hostname-and-hostname-on-listener-match-echo"
       backends:
       - destination:
           kuma.io/service: echo-service
@@ -1501,11 +1744,17 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`,
-			WithoutResource{
-				Resource: core_mesh.TimeoutType,
-				Mesh:     "default",
-				Name:     "timeout-all-default",
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
 			},
 		),
 
@@ -1521,9 +1770,9 @@ mtls:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-http2-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-http2-httpbin
   kuma.io/protocol: http2
 networking:
   address: httpbin.com:443
@@ -1556,7 +1805,7 @@ conf:
           value: "/ext"
       backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-http2-httpbin
 `, `
 type: Timeout
 mesh: default
@@ -1566,7 +1815,7 @@ sources:
     kuma.io/service: gateway-default
 destinations:
 - match:
-    kuma.io/service: external-httpbin
+    kuma.io/service: external-http2-httpbin
 conf:
   connect_timeout: 113s
   http:
@@ -1574,7 +1823,18 @@ conf:
     idle_timeout: 115s
     stream_idle_timeout: 116s
     max_stream_duration: 117s
-`,
+`, []WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 
 		Entry("doesn't create invalid config with tcp route",
@@ -1640,6 +1900,32 @@ conf:
     retryOn:
       - all_5xx
     numRetries: 20
+`, []WithoutResource{
+				{
+					Resource: meshretry_api.MeshRetryType,
+					Mesh:     "default",
+					Name:     "mesh-retry-all-default",
+				},
+			},
+		),
+		Entry("handled unresolved-backend tag",
+			"unresolved-backend.yaml", `
+type: MeshGatewayRoute
+mesh: default
+name: unresolved-backend
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: kuma.io/unresolved-backend
 `,
 		),
 	}
@@ -1672,9 +1958,9 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin
+name: external-no-protocol-httpbin
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin.com:443
   tls:
@@ -1691,7 +1977,7 @@ conf:
     rules:
     - backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-no-protocol-httpbin
       - destination:
           kuma.io/service: api-service
 `, `
@@ -1723,6 +2009,18 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 		Entry("generates direct cluster for TCP external service",
 			"tcp-route-no-egress.yaml", `
@@ -1751,9 +2049,9 @@ conf:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-1
+name: external-no-protocol-httpbin-1
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-1.com:443
   tls:
@@ -1761,9 +2059,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-2
+name: external-no-protocol-httpbin-2
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-2.com:443
   tls:
@@ -1771,9 +2069,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-3
+name: external-no-protocol-httpbin-3
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-3.com:443
   tls:
@@ -1781,9 +2079,9 @@ networking:
 `, `
 type: ExternalService
 mesh: default
-name: external-httpbin-4
+name: external-no-protocol-httpbin-4
 tags:
-  kuma.io/service: external-httpbin
+  kuma.io/service: external-no-protocol-httpbin
 networking:
   address: httpbin-4.com:443
   tls:
@@ -1800,7 +2098,7 @@ conf:
     rules:
     - backends:
       - destination:
-          kuma.io/service: external-httpbin
+          kuma.io/service: external-no-protocol-httpbin
 `, `
 type: Timeout
 mesh: default
@@ -1817,19 +2115,126 @@ conf:
     request_timeout: 10s
     idle_timeout: 10s
 `,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
 		),
 	}
 
+	tlsEntries := []TableEntry{
+		Entry("generates clusters for TLS",
+			"tcp-route.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  zoneEgress: true
+`, `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8443
+    protocol: TLS
+    hostname: "api.kuma.io"
+    tls:
+        mode: PASSTHROUGH
+    tags:
+      port: tls/8443
+  - port: 9443
+    protocol: TLS
+    hostname: "api.kuma.io"
+    tls:
+        mode: TERMINATE
+        certificates:
+        - secret: echo-example-com-server-cert
+    tags:
+      port: tls/8443
+`, `
+type: ExternalService
+mesh: default
+name: external-tcp-httpbin
+tags:
+  kuma.io/service: external-tcp-httpbin
+  kuma.io/protocol: tcp
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: false
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: external-or-api
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: external-tcp-httpbin
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  tcp:
+    rules:
+    - backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+			[]WithoutResource{
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-timeout-all-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-default",
+				},
+			},
+		),
+	}
 	handleArg := func(arg interface{}) {
+		GinkgoHelper()
+
 		switch val := arg.(type) {
-		case WithoutResource:
-			obj, err := registry.Global().NewObject(val.Resource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(rt.ResourceManager().Delete(
-				context.Background(), obj, store.DeleteByKey(val.Name, val.Mesh),
-			)).To(Succeed())
 		case string:
 			Expect(StoreInlineFixture(rt, []byte(val))).To(Succeed())
+		case []WithoutResource:
+			for _, resource := range val {
+				obj, err := registry.Global().NewObject(resource.Resource)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(rt.ResourceManager().Delete(
+					context.Background(), obj, store.DeleteByKey(resource.Name, resource.Mesh),
+				)).To(Succeed())
+			}
 		}
 	}
 	Context("with a HTTP gateway", func() {
@@ -1886,15 +2291,10 @@ conf:
 
 	Context("with a TCP gateway", func() {
 		DescribeTable("generating xDS resources",
-			func(goldenFileName string, fixtureResources ...string) {
+			func(goldenFileName string, args ...interface{}) {
 				// given
-				// #nosec G404 -- used just for tests
-				r := rand.New(rand.NewSource(GinkgoRandomSeed()))
-				r.Shuffle(len(fixtureResources), func(i, j int) {
-					fixtureResources[i], fixtureResources[j] = fixtureResources[j], fixtureResources[i]
-				})
-				for _, resource := range fixtureResources {
-					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				for _, arg := range args {
+					handleArg(arg)
 				}
 
 				// when
@@ -1906,6 +2306,29 @@ conf:
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "tcp", goldenFileName)))
 			},
 			tcpEntries,
+		)
+	})
+
+	Context("with a TLS gateway", func() {
+		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
+		})
+		DescribeTable("generating xDS resources",
+			func(goldenFileName string, args ...interface{}) {
+				// given
+				for _, arg := range args {
+					handleArg(arg)
+				}
+
+				// when
+				snap, err := Do()
+				Expect(err).To(Succeed())
+
+				// then
+				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+					To(matchers.MatchGoldenYAML(path.Join("testdata", "tls", goldenFileName)))
+			},
+			tlsEntries,
 		)
 	})
 })

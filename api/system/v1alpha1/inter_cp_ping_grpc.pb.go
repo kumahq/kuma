@@ -97,5 +97,5 @@ var InterCpPingService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "system/v1alpha1/inter_cp_ping.proto",
+	Metadata: "api/system/v1alpha1/inter_cp_ping.proto",
 }

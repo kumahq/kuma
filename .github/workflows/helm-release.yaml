@@ -1,19 +1,7 @@
 name: "Helm Charts"
-
-# This workflow provides two things:
-# On explicit dispatch, it packages, uploads and releases the chart to the
-# charts repo.
-#   It uses the appVersion and version as present in Chart.yaml.
-# On push to master, it packages and uploads a helm chart for the pushed commit.
-#   It updates both appVersion and version to be specific to this commit.
-#   See tools/release/helm.sh#dev_version
-# This workflow can be tested by any owner with a fork of kumahq/kuma and kumahq/charts
+# This workflow provides ability to release helm charts manually
+# Should be removed when v2.5 is out of support
 on:
-  push:
-    branches:
-      - master
-      - release-*
-  pull_request: {}
   workflow_dispatch:
     inputs:
       release:
@@ -21,17 +9,17 @@ on:
         required: false
         default: false
         type: boolean
-
+permissions:
+  contents: read
 env:
-  CR_VERSION: 1.3.0
-
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_OWNER: ${{ github.repository_owner }}
+  GH_REPO: "charts"
   HELM_DEV: ${{ contains(fromJSON('["pull_request", "push"]'), github.event_name) }}
   GITHUB_APP: "true"
   KUMA_DIR: "."
-
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   package:
     name: Package
@@ -39,19 +27,20 @@ jobs:
     outputs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
-      - uses: actions/cache@v3
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-            ~/.kuma-dev
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - name: Install dependencies
         run: |
           make dev/tools
@@ -72,7 +61,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
@@ -82,11 +71,12 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: github.event.inputs.release == 'true'
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          repository: ${{ env.GH_OWNER }}/charts
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.GH_REPO }}
       - name: Release chart
         if: github.event.inputs.release == 'true'
         env:

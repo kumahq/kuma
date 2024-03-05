@@ -1,0 +1,114 @@
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: mesh
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /mesh
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: servicesubset
+spec:
+ targetRef:
+  kind: MeshServiceSubset
+  name: edge-gateway
+  tags:
+    listener: two
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /servicesubset
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: gateway
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: gateway-1
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /from-gateway
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /to-gateway
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: gatewaylistener
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: gateway-1
+  tags:
+    listener: one
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /gateway-listener
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: nonmatchinggatewaylistener
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: other-gateway
+  tags:
+    listener: three
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /shouldnt-be-applied
+---
+type: MeshGateway
+mesh: mesh-1
+name: gateway-1
+selectors:
+ - match:
+    kuma.io/service: edge-gateway
+conf:
+ listeners:
+  - port: 8080
+    protocol: HTTP
+    tags:
+     listener: one
+  - port: 8081
+    protocol: HTTP
+    tags:
+     listener: two
+  - port: 8082
+    protocol: HTTP
+    tags:
+     listener: three

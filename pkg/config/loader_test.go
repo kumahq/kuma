@@ -106,6 +106,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
+			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -113,13 +114,18 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
 			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
-			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
+			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(15)))
+			Expect(cfg.Store.Upsert.ConflictRetryJitterPercent).To(Equal(uint(10)))
 
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
+
+			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
+			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
+			Expect(cfg.Store.Postgres.ReadReplica.Ratio).To(Equal(uint(80)))
 
 			Expect(cfg.ApiServer.ReadOnly).To(BeTrue())
 			Expect(cfg.ApiServer.HTTP.Enabled).To(BeFalse())
@@ -162,6 +168,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
+			Expect(cfg.Runtime.Kubernetes.AllowedUsers).To(Equal([]string{"allowed-usr-1", "allowed-usr-2"}))
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniApp).To(Equal("kuma-cni"))
 
@@ -201,17 +208,24 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
-			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyV1).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.InstanceIPEnvVarName).To(Equal("FOO"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.BPFFSPath).To(Equal("/run/kuma/bar"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.CgroupPath).To(Equal("/faz/daz/zaz"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.TCAttachIface).To(Equal("veth1"))
 			Expect(cfg.Runtime.Kubernetes.Injector.EBPF.ProgramsSourcePath).To(Equal("/kuma/baz"))
-
+			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
+			Expect(cfg.Runtime.Kubernetes.NodeTaintController.CniNamespace).To(Equal("kuma-system"))
+			Expect(cfg.Runtime.Kubernetes.ControllersConcurrency.PodController).To(Equal(10))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.Qps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
+			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -238,6 +252,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.DisableSOTW).To(BeTrue())
+			Expect(cfg.Multizone.Global.KDS.ResponseBackoff.Duration).To(Equal(time.Second))
+			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration).To(Equal(110 * time.Second))
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -245,9 +263,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.ResponseBackoff.Duration).To(Equal(2 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
-			Expect(cfg.Defaults.EnableLocalhostInboundClusters).To(BeTrue())
+			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
+			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -270,10 +291,14 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
 			Expect(cfg.Metrics.Zone.IdleTimeout.Duration).To(Equal(2 * time.Minute))
-			Expect(cfg.Metrics.Mesh.MinResyncTimeout.Duration).To(Equal(35 * time.Second))
-			Expect(cfg.Metrics.Mesh.MaxResyncTimeout.Duration).To(Equal(27 * time.Second))
+			Expect(cfg.Metrics.Zone.CompactFinishedSubscriptions).To(BeTrue())
+			Expect(cfg.Metrics.Mesh.MinResyncInterval.Duration).To(Equal(27 * time.Second))
+			Expect(cfg.Metrics.Mesh.FullResyncInterval.Duration).To(Equal(35 * time.Second))
+			Expect(cfg.Metrics.Mesh.BufferSize).To(Equal(23))
+			Expect(cfg.Metrics.Mesh.EventProcessors).To(Equal(2))
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
 			Expect(cfg.Metrics.Dataplane.IdleTimeout.Duration).To(Equal(1 * time.Minute))
+			Expect(cfg.Metrics.ControlPlane.ReportResourcesCount).To(BeTrue())
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -326,8 +351,17 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
+			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
+			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
+			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
+			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
+			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -352,12 +386,17 @@ store:
     maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
+    maxListQueryElements: 111
     tls:
       mode: verifyFull
       certPath: /path/to/cert
       keyPath: /path/to/key
       caPath: /path/to/rootCert
       disableSSLSNI: true
+    readReplica:
+      host: ro.host
+      port: 35432
+      ratio: 80
   kubernetes:
     systemNamespace: test-namespace
   cache:
@@ -365,7 +404,8 @@ store:
     expirationTime: 3s
   upsert:
     conflictRetryBaseBackoff: 4s
-    conflictRetryMaxTimes: 10
+    conflictRetryMaxTimes: 15
+    conflictRetryJitterPercent: 10
 bootstrapServer:
   params:
     adminPort: 1234
@@ -424,12 +464,15 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
+    vipRefreshInterval: 10s
   kubernetes:
     serviceAccountName: custom-sa
+    allowedUsers: ["allowed-usr-1", "allowed-usr-2"]
     controlPlaneServiceName: custom-control-plane
     nodeTaintController:
       enabled: true
       cniApp: kuma-cni
+      cniNamespace: kuma-system
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -448,6 +491,7 @@ runtime:
       initContainer:
         image: test-image:test
       sidecarContainer:
+        waitForDataplaneReady: true
         image: image:test
         redirectPortInbound: 2020
         redirectPortInboundV6: 2021
@@ -487,7 +531,7 @@ runtime:
       builtinDNS:
         enabled: true
         port: 1053
-      transparentProxyV1: true
+        logging: false
       ebpf:
         enabled: true
         instanceIPEnvVarName: FOO
@@ -495,6 +539,15 @@ runtime:
         cgroupPath: /faz/daz/zaz
         tcAttachIface: veth1
         programsSourcePath: /kuma/baz
+      ignoredServiceSelectorLabels: ["x", "y"]
+    controllersConcurrency: 
+      podController: 10
+    clientConfig:
+      qps: 100
+      burstQps: 100
+    leaderElection:
+      leaseDuration: 199s
+      renewDeadline: 99s
 reports:
   enabled: false
 general:
@@ -521,6 +574,11 @@ multizone:
       maxMsgSize: 1
       msgSendTimeout: 10s
       nackBackoff: 11s
+      responseBackoff: 1s
+      disableSOTW: true
+      zoneHealthCheck:
+        pollInterval: 11s
+        timeout: 110s
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -530,6 +588,9 @@ multizone:
       maxMsgSize: 2
       msgSendTimeout: 20s
       nackBackoff: 21s
+      responseBackoff: 2s
+      tlsSkipVerify: true
+    disableOriginLabelValidation: true
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -537,7 +598,8 @@ dnsServer:
   serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
-  enableLocalhostInboundClusters: true
+  skipTenantResources: true
+  createMeshRoutingResources: true
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -556,12 +618,17 @@ metrics:
   zone:
     subscriptionLimit: 23
     idleTimeout: 2m
+    compactFinishedSubscriptions: true
   mesh:
-    minResyncTimeout: 35s
-    maxResyncTimeout: 27s
+    fullResyncInterval: 35s
+    minResyncInterval: 27s
+    bufferSize: 23
+    eventProcessors: 2
   dataplane:
     subscriptionLimit: 47
     idleTimeout: 1m
+  controlPlane:
+    reportResourcesCount: true
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -635,19 +702,39 @@ experimental:
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
   kdsDeltaEnabled: true
+  useTagFirstVirtualOutboundModel: false
+  ingressTagFilters: ["kuma.io/service"]
+  kdsEventBasedWatchdog:
+    enabled: true
+    flushInterval: 10s
+    fullResyncInterval: 15s
+    delayFullResync: true
+  autoReachableServices: true
+  sidecarContainers: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
+eventBus:
+  bufferSize: 30
+policies:
+  pluginPoliciesEnabled:
+    - meshaccesslog
+    - meshcircuitbreaker
+tracing:
+  openTelemetry:
+    enabled: true
+    endpoint: collector:4317
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":                                         "13s",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":                                       "/access/log/test",
-				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":                                               "1.1.1.1",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":             "1234",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":               "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":               "4321",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":    "13s",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":  "/access/log/test",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":          "1.1.1.1",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_COREFILE_TEMPLATE_PATH": "/etc/resolv.conf",
 				"KUMA_ENVIRONMENT":                                                                         "kubernetes",
 				"KUMA_STORE_TYPE":                                                                          "postgres",
 				"KUMA_STORE_UNSAFE_DELETE":                                                                 "true",
@@ -671,11 +758,16 @@ proxy:
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
 				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
 				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
+				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
+				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
-				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "15",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_JITTER_PERCENT":                                          "10",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",
@@ -714,8 +806,10 @@ proxy:
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
+				"KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS":                                                    "allowed-usr-1,allowed-usr-2",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED":                                    "true",
 				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP":                                    "kuma-cni",
+				"KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE":                              "kuma-system",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -748,19 +842,27 @@ proxy:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1":                                    "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING":                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED":                                            "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_INSTANCE_IP_ENV_VAR_NAME":                           "FOO",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_BPFFS_PATH":                                         "/run/kuma/bar",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_CGROUP_PATH":                                        "/faz/daz/zaz",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE":                                    "veth1",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH":                               "/kuma/baz",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
+				"KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER":                           "10",
+				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_QPS":                                                "100",
+				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS":                                          "100",
+				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
+				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
+				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",
@@ -785,6 +887,10 @@ proxy:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF":                                               "1s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW":                                                   "true",
+				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_POLL_INTERVAL":                                "11s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_TIMEOUT":                                      "110s",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -792,10 +898,14 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
+				"KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF":                                                 "2s",
+				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
+				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
-				"KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS":                                          "true",
+				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
+				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
@@ -810,10 +920,16 @@ proxy:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
-				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "27s",
-				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "35s",
+				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
+				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
+				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
+				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
+				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
+				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",
+				"KUMA_METRICS_MESH_EVENT_PROCESSORS":                                                       "2",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
 				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
+				"KUMA_METRICS_CONTROL_PLANE_REPORT_RESOURCES_COUNT":                                        "true",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_TLS_MIN_VERSION":                                                           "TLSv1_3",
@@ -862,7 +978,19 @@ proxy:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
+				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
+				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED":                                       "true",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
+				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
+				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
+				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
+				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
+				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
+				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
+				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 			},
 			yamlFileConfig: "",
 		}),

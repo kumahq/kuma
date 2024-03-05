@@ -1,0 +1,9 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "mesh": "default",
+  "name": "gw-1",
+  "type": "MeshGateway"
+ },
+ "rules": []
+}

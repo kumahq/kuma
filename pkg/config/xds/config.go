@@ -13,7 +13,9 @@ var _ config.Config = &XdsServerConfig{}
 
 // Envoy XDS server configuration
 type XdsServerConfig struct {
-	// Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+	config.BaseConfig
+
+	// Interval for re-generating configuration for Dataplanes connected to the Control Plane
 	DataplaneConfigurationRefreshInterval config_types.Duration `json:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
 	DataplaneStatusFlushInterval config_types.Duration `json:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
@@ -25,9 +27,6 @@ type XdsServerConfig struct {
 	DataplaneDeregistrationDelay config_types.Duration `json:"dataplaneDeregistrationDelay" envconfig:"kuma_xds_dataplane_deregistration_delay"`
 	// Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
 	NACKBackoff config_types.Duration `json:"nackBackoff" envconfig:"kuma_xds_server_nack_backoff"`
-}
-
-func (x *XdsServerConfig) Sanitize() {
 }
 
 func (x *XdsServerConfig) Validate() error {

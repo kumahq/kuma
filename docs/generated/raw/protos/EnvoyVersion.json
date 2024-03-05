@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/EnvoyVersion",
+    "definitions": {
+        "EnvoyVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Envoy"
+                },
+                "build": {
+                    "type": "string",
+                    "description": "Full build tag of Envoy version"
+                },
+                "kumaDpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Envoy version is compatible with Kuma DP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Version",
+            "description": "EnvoyVersion describes details of Envoy version"
+        }
+    }
+}

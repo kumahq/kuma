@@ -5,36 +5,35 @@ import (
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/anypb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
-	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
 type RoutesConfigurer struct {
 	Matches                 []api.Match
 	Filters                 []api.Filter
-	Split                   []*plugins_xds.Split
-	BackendRefToClusterName map[string]string
+	Split                   []envoy_common.Split
+	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Matches)
 
+	h := api.HashMatches(c.Matches)
 	for _, match := range matches {
-		rb := &route.RouteBuilder{}
-
-		rb.Configure(route.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
-			// todo: create configurers for Match and Action
-			envoyRoute.Match = match.routeMatch
-			envoyRoute.Action = &envoy_route.Route_Route{
-				Route: c.routeAction(c.Split),
-			}
-			envoyRoute.TypedPerFilterConfig = map[string]*anypb.Any{}
-		}))
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, h).
+			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
+				// todo: create configurers for Match and Action
+				envoyRoute.Match = match.routeMatch
+				envoyRoute.Action = &envoy_route.Route_Route{
+					Route: c.routeAction(c.Split),
+				}
+			}))
 
 		// We pass the information about whether this match was created from
 		// a prefix match along to the filters because it's no longer
@@ -93,7 +92,7 @@ func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
 				routeQueryParamsMatch(envoyMatch, match.QueryParams)
 			}
 			routeHeadersMatch(envoyMatch, match.Headers)
-			if match.Path != nil && match.Path.Type == api.Prefix {
+			if match.Path != nil && match.Path.Type == api.PathPrefix {
 				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 			} else {
 				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
@@ -113,7 +112,7 @@ func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.Rou
 				Path: match.Value,
 			},
 		}}
-	case api.Prefix:
+	case api.PathPrefix:
 		if match.Value == "/" {
 			return []*envoy_route.RouteMatch{{
 				PathSpecifier: &envoy_route.RouteMatch_Prefix{
@@ -200,7 +199,7 @@ func routeQueryParamsMatch(envoyMatch *envoy_route.RouteMatch, matches []api.Que
 	}
 }
 
-func (c RoutesConfigurer) hasExternal(split []*plugins_xds.Split) bool {
+func (c RoutesConfigurer) hasExternal(split []envoy_common.Split) bool {
 	for _, s := range split {
 		if s.HasExternalService() {
 			return true
@@ -209,7 +208,7 @@ func (c RoutesConfigurer) hasExternal(split []*plugins_xds.Split) bool {
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(split []*plugins_xds.Split) *envoy_route.RouteAction {
+func (c RoutesConfigurer) routeAction(split []envoy_common.Split) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{
 		// this timeout should be updated by the MeshTimeout plugin
 		Timeout: util_proto.Duration(0),

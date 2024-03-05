@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -24,6 +25,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 	type testCase struct {
 		dataplaneFile string
 		expected      string
+		adminAddress  string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -36,8 +38,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
 
-			ctx := context.Context{
-				Mesh: context.MeshContext{
+			ctx := xds_context.Context{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -48,7 +50,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 
 			proxy := &xds.Proxy{
 				Metadata: &xds.DataplaneMetadata{
-					AdminPort: 9901,
+					AdminPort:    9901,
+					AdminAddress: given.adminAddress,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -62,7 +65,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			}
 
 			// when
-			resources, err := generator.Generate(ctx, proxy)
+			resources, err := generator.Generate(context.Background(), nil, ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -75,9 +78,63 @@ var _ = Describe("AdminProxyGenerator", func() {
 			// and output matches golden files
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "admin", given.expected)))
 		},
-		Entry("should generate admin resources", testCase{
+		Entry("should generate admin resources, empty admin address", testCase{
 			dataplaneFile: "01.dataplane.input.yaml",
 			expected:      "01.envoy-config.golden.yaml",
+			adminAddress:  "",
+		}),
+		Entry("should generate admin resources, IPv4 loopback", testCase{
+			dataplaneFile: "02.dataplane.input.yaml",
+			expected:      "02.envoy-config.golden.yaml",
+			adminAddress:  "127.0.0.1",
+		}),
+		Entry("should generate admin resources, IPv6 loopback", testCase{
+			dataplaneFile: "03.dataplane.input.yaml",
+			expected:      "03.envoy-config.golden.yaml",
+			adminAddress:  "::1",
+		}),
+		Entry("should generate admin resources, unspecified IPv4", testCase{
+			dataplaneFile: "04.dataplane.input.yaml",
+			expected:      "04.envoy-config.golden.yaml",
+			adminAddress:  "0.0.0.0",
+		}),
+		Entry("should generate admin resources, unspecified IPv6", testCase{
+			dataplaneFile: "05.dataplane.input.yaml",
+			expected:      "05.envoy-config.golden.yaml",
+			adminAddress:  "::",
 		}),
 	)
+
+	It("should return error when admin address is not allowed", func() {
+		ctx := xds_context.Context{
+			Mesh: xds_context.MeshContext{
+				Resource: &core_mesh.MeshResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "default",
+					},
+				},
+			},
+		}
+
+		proxy := &xds.Proxy{
+			Metadata: &xds.DataplaneMetadata{
+				AdminPort:    9901,
+				AdminAddress: "192.168.0.1", // it's not allowed to use such address
+			},
+			EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
+				CaPEM: []byte("caPEM"),
+				ServerPair: tls.KeyPair{
+					CertPEM: []byte("certPEM"),
+					KeyPEM:  []byte("keyPEM"),
+				},
+			},
+			Dataplane:  core_mesh.NewDataplaneResource(),
+			APIVersion: envoy_common.APIV3,
+		}
+
+		// when
+		_, err := generator.Generate(context.Background(), nil, ctx, proxy)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal(`envoy admin cluster is not allowed to have addresses other than "", "0.0.0.0", "127.0.0.1", "::", "::1"`))
+	})
 })

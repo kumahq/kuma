@@ -64,6 +64,7 @@ mtls:
 				Install(YamlUniversal(meshYaml)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -108,24 +109,26 @@ mtls:
 				client.Resolve("test-server.mesh:80", fmt.Sprintf("[%s]", host)))
 		})
 	})
+
 	It("enabling PERMISSIVE with no failed requests", func() {
 		Expect(universal.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 
 		// Disable retries so that we see every failed request
 		kumactl := universal.Cluster.GetKumactlOptions()
-		Expect(kumactl.KumactlDelete("retry", fmt.Sprintf("retry-all-%s", meshName), meshName)).To(Succeed())
+		Expect(kumactl.KumactlDelete("meshretry", fmt.Sprintf("mesh-retry-all-%s", meshName), meshName)).To(Succeed())
 
 		// We must start client before server to test this properly. The client
 		// should get XDS refreshes first to trigger the race condition fixed by
 		// kumahq/kuma#3019
-		Expect(universal.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))))
+		Expect(universal.Cluster.Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)))).To(Succeed())
 
-		Expect(universal.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))))
+		Expect(universal.Cluster.Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"})))).To(Succeed())
 
 		By("Check inside-mesh communication")
 		trafficAllowed("test-server.mesh")
 
 		By("Enable permissions mtls")
+		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(meshName))).To(Succeed())
 		meshYaml := fmt.Sprintf(
 			`
 type: Mesh
@@ -136,7 +139,7 @@ mtls:
   - name: ca-1
     type: builtin
     mode: PERMISSIVE`, meshName)
-		Expect(universal.Cluster.Install(YamlUniversal(meshYaml)))
+		Expect(universal.Cluster.Install(YamlUniversal(meshYaml))).To(Succeed())
 
 		By("inside-mesh communication never fails")
 		Consistently(func(g Gomega) {
@@ -146,23 +149,13 @@ mtls:
 		}).Should(Succeed())
 	})
 	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	DescribeTable("should enforce traffic permissions", FlakeAttempts(3),
+	PDescribeTable("should enforce traffic permissions", FlakeAttempts(3),
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 				Setup(universal.Cluster)
-			Expect(err).ToNot(HaveOccurred())
-			By("Remove default traffic-permission")
-			// Default default traffic-permission
-			var items []string
-			Eventually(func(g Gomega) {
-				items, err = universal.Cluster.GetKumactlOptions().KumactlList("traffic-permissions", meshName)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(items).To(HaveLen(1))
-			}).Should(Succeed())
-			err = universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-permission", items[0], meshName)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Can access test-server")

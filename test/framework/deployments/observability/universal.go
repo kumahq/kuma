@@ -73,7 +73,7 @@ func (j *universalDeployment) allocatePublicPortsFor(ports ...uint32) {
 func (j *universalDeployment) publishPortsForDocker() []string {
 	var args []string
 	for port := range j.ports {
-		args = append(args, "--publish="+strconv.Itoa(int(port)))
+		args = append(args, "--publish=0.0.0.0::"+strconv.Itoa(int(port)))
 	}
 	return args
 }

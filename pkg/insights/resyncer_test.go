@@ -2,8 +2,8 @@ package insights_test
 
 import (
 	"context"
-	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -20,58 +20,80 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
 	test_insights "github.com/kumahq/kuma/pkg/insights/test"
+	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 )
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
-	start := time.Now()
+	var metric metrics.Metrics
+	minInterval := time.Second
+	stepsToResync := 4
 
 	var stopCh chan struct{}
-	var tickCh chan time.Time
+	var doneCh chan struct{}
+	var eventCh chan events.Event
 
+	var step func(count int)
 	BeforeEach(func() {
+		tickCh := make(chan time.Time)
+		t := time.Now().UnixMilli()
+		now := &t
+		step = func(count int) {
+			for i := 0; i < count; i++ {
+				atomic.AddInt64(now, minInterval.Milliseconds())
+				tickCh <- time.UnixMilli(atomic.LoadInt64(now))
+			}
+		}
 		rm = manager.NewResourceManager(memory.NewStore())
 
 		stopCh = make(chan struct{})
-		tickCh = make(chan time.Time)
+		eventCh = make(chan events.Event)
+		doneCh = make(chan struct{})
 
+		var err error
+		metric, err = metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
 		resyncer := insights.NewResyncer(&insights.Config{
-			MinResyncTimeout:   5 * time.Second,
-			MaxResyncTimeout:   1 * time.Minute,
+			MinResyncInterval:  minInterval,
+			FullResyncInterval: minInterval * time.Duration(stepsToResync),
 			ResourceManager:    rm,
-			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: make(chan events.Event)}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) <-chan time.Time {
-				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
 			},
 			Now: func() time.Time {
-				Fail("This shouldn't be used as not tests use the event factory")
-				return start
+				return time.UnixMilli(atomic.LoadInt64(now))
 			},
-			Registry: registry.Global(),
-			AddressPortGenerator: func(s string) string {
-				return fmt.Sprintf("%s.mesh:80", s)
-			},
+			Registry:            registry.Global(),
+			TenantFn:            multitenant.SingleTenant,
+			EventBufferCapacity: 10,
+			EventProcessors:     10,
+			Metrics:             metric,
+			Extensions:          context.Background(),
 		})
 		go func() {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())
+			close(doneCh)
 		}()
 	})
 	AfterEach(func() {
 		close(stopCh)
+		<-doneCh
 	})
 
-	It("should sync more often than MaxResyncTimeout", func() {
+	It("should sync more often than FullResyncInterval", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(61 * time.Second)
+		step(stepsToResync + 1)
 
 		Eventually(func(g Gomega) {
 			insight := core_mesh.NewMeshInsightResource()
@@ -132,7 +154,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(60 * time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -218,7 +240,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(time.Minute)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -236,6 +258,11 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
 			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
 			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+
+			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
+			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
+			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
+			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -274,7 +301,7 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when resyncer generates insight
-		tickCh <- start.Add(time.Minute)
+		step(stepsToResync)
 
 		Eventually(func(g Gomega) {
 			meshInsight := core_mesh.NewMeshInsightResource()
@@ -306,7 +333,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(time.Minute + time.Second)
+		step(stepsToResync)
 
 		insight := core_mesh.NewMeshInsightResource()
 		Eventually(func() error {
@@ -462,7 +489,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(time.Minute + time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -473,7 +500,6 @@ var _ = Describe("Insight Persistence", func() {
 			service := serviceInsight.Spec.Services["backend-1"]
 			// then
 			g.Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
-			g.Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
 			g.Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
 			g.Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
 		}).Should(Succeed())
@@ -534,7 +560,7 @@ var _ = Describe("Insight Persistence", func() {
 			Expect(err).ToNot(HaveOccurred(), n)
 		}
 
-		tickCh <- start.Add(time.Minute + time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -544,7 +570,6 @@ var _ = Describe("Insight Persistence", func() {
 			internal := serviceInsight.Spec.Services["internal"]
 			g.Expect(internal).ToNot(BeNil())
 			g.Expect(internal.ServiceType).To(Equal(mesh_proto.ServiceInsight_Service_internal))
-			g.Expect(internal.AddressPort).To(Equal("internal.mesh:80"))
 
 			gw1 := serviceInsight.Spec.Services["gw1"]
 			g.Expect(gw1).ToNot(BeNil())
@@ -717,7 +742,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(time.Minute + time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -913,7 +938,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), es2, store.CreateByKey("es2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(time.Minute + time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -989,7 +1014,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		tickCh <- start.Add(61 * time.Second)
+		step(stepsToResync)
 
 		// when
 		Eventually(func(g Gomega) {
@@ -1007,10 +1032,110 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
-			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Total).To(Equal(uint32(3)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		}).Should(Succeed())
+	})
+
+	It("should sync on events", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
+	})
+
+	It("should sync on full resync", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.TriggerInsightsComputationEvent{}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+		}).Should(Succeed())
+	})
+
+	It("should not update things twice", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
+		}).Should(Succeed())
+	})
+
+	It("should update things twice but not update on the store", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "changed").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		}).Should(Succeed())
+
+		eventCh <- events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      core_mesh.MeshType,
+			Key: model.ResourceKey{
+				Name: "mesh-1",
+			},
+		}
+		step(1)
+
+		Eventually(func(g Gomega) {
+			insight := core_mesh.NewMeshInsightResource()
+			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(insight.Meta.GetVersion()).To(Equal("1"))
+			g.Expect(test_metrics.FindMetric(metric, "insights_resyncer_event_time_processing", "result", "no_changes").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		}).Should(Succeed())
 	})
 })

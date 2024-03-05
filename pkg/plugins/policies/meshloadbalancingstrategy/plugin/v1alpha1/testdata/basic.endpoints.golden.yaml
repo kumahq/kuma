@@ -1,0 +1,39 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.1
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-1
+      locality:
+        zone: zone-1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.2
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-2
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              kuma.io/zone: zone-2
+      locality:
+        zone: zone-2
+      priority: 1

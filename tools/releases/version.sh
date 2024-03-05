@@ -8,7 +8,7 @@ function envoy_version() {
   # - if ENVOY_TAG is a real git tag like 'v1.20.0' then the version is equal to '1.20.0' (without the first letter 'v').
   # - if ENVOY_TAG is a commit hash then the version will look like '1.20.1-dev-b16d390f'
 
-  ENVOY_TAG=${ENVOY_TAG:-"v1.22.7"}
+  ENVOY_TAG=${ENVOY_TAG:-"v1.29.1"}
   ENVOY_VERSION=$(curl --silent --location "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION.txt")
 
   # for envoy versions older than v1.22.0 file 'VERSION.txt' used to be called 'VERSION'
@@ -85,9 +85,14 @@ function version_info() {
     describedTag="no-git"
     longHash="no-git"
     baseBranchName="no-git"
+    ciDir="no-git"
   else
     baseBranchName=$(base_branch_name)
-    if [[ "$ciDeclared" == "true" ]] || git diff --quiet && git diff --cached --quiet; then
+    ciDir=$baseBranchName
+    if [[ "$ciDeclared" == "true" ]]; then
+      ciDir="ci"
+    fi
+    if [[ "$ciDeclared" == "true" ]] || { git diff --quiet && git diff --cached --quiet; }; then
       longHash=$(git rev-parse HEAD 2>/dev/null || echo "no-commit")
       shortHash=$(git rev-parse --short=9 HEAD 2> /dev/null || echo "no-commit")
       describedTag=$(git describe --tags 2>/dev/null || echo "none")
@@ -115,7 +120,7 @@ function version_info() {
       version="0.0.0-preview.v${shortHash}"
     fi
   fi
-  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${baseBranchName}"
+  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${ciDir}"
 }
 
 version_info

@@ -92,6 +92,18 @@ var _ = Describe("ServiceReconciler", func() {
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "non-system-ns-with-sidecar-injection",
+					Name:      "external-name",
+					Annotations: map[string]string{
+						metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					Type: kube_core.ServiceTypeExternalName,
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace:   "non-system-ns-with-sidecar-injection",
 					Name:        "non-annotations-service",
 					Annotations: nil,
@@ -129,6 +141,26 @@ var _ = Describe("ServiceReconciler", func() {
 		// given
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "builtin-gateway", Name: "service"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and service is not annotated
+		svc := &kube_core.Service{}
+		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(svc.GetAnnotations()).ToNot(HaveKey(metadata.IngressServiceUpstream))
+	})
+
+	It("should ignore service of ExternalName type", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "external-name"},
 		}
 
 		// when

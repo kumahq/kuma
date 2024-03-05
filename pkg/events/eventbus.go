@@ -3,40 +3,83 @@ package events
 import (
 	"sync"
 
-	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/kumahq/kuma/pkg/core"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-func NewEventBus() *EventBus {
-	return &EventBus{}
+var log = core.Log.WithName("eventbus")
+
+type subscriber struct {
+	ch         chan Event
+	predicates []Predicate
 }
 
-type EventBus struct {
+func NewEventBus(bufferSize uint, metrics core_metrics.Metrics) (EventBus, error) {
+	metric := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "events_dropped",
+		Help: "Number of dropped events in event bus due to full channels",
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
+	return &eventBus{
+		subscribers: map[string]subscriber{},
+		bufferSize:  bufferSize,
+		metric:      metric,
+	}, nil
+}
+
+type eventBus struct {
 	mtx         sync.RWMutex
-	subscribers []chan Event
+	subscribers map[string]subscriber
+	bufferSize  uint
+	metric      prometheus.Counter
 }
 
-func (b *EventBus) New() Listener {
+// Subscribe subscribes to a stream of events given Predicates
+// Predicate should not block on I/O, otherwise the whole event bus can block.
+// All predicates must pass for the event to enqueued.
+func (b *eventBus) Subscribe(predicates ...Predicate) Listener {
+	id := core.NewUUID()
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
-	events := make(chan Event, 10)
-	b.subscribers = append(b.subscribers, events)
+	events := make(chan Event, b.bufferSize)
+	b.subscribers[id] = subscriber{
+		ch:         events,
+		predicates: predicates,
+	}
 	return &reader{
 		events: events,
+		close: func() {
+			b.mtx.Lock()
+			defer b.mtx.Unlock()
+			delete(b.subscribers, id)
+		},
 	}
 }
 
-func (b *EventBus) Send(event Event) {
+func (b *eventBus) Send(event Event) {
 	b.mtx.RLock()
 	defer b.mtx.RUnlock()
-
-	switch e := event.(type) {
-	case ResourceChangedEvent:
-		for _, s := range b.subscribers {
-			s <- ResourceChangedEvent{
-				Operation: e.Operation,
-				Type:      e.Type,
-				Key:       e.Key,
+	for _, sub := range b.subscribers {
+		matched := true
+		for _, predicate := range sub.predicates {
+			if !predicate(event) {
+				matched = false
+			}
+		}
+		if matched {
+			select {
+			case sub.ch <- event:
+			default:
+				b.metric.Inc()
+				log.Info("[WARNING] event is not sent because the channel is full. Ignoring event. Consider increasing buffer size using KUMA_EVENT_BUS_BUFFER_SIZE",
+					"bufferSize", b.bufferSize,
+					"event", event,
+				)
 			}
 		}
 	}
@@ -44,16 +87,13 @@ func (b *EventBus) Send(event Event) {
 
 type reader struct {
 	events chan Event
+	close  func()
 }
 
-func (k *reader) Recv(stop <-chan struct{}) (Event, error) {
-	select {
-	case event, ok := <-k.events:
-		if !ok {
-			return nil, errors.New("end of events channel")
-		}
-		return event, nil
-	case <-stop:
-		return nil, ListenerStoppedErr
-	}
+func (k *reader) Recv() <-chan Event {
+	return k.events
+}
+
+func (k *reader) Close() {
+	k.close()
 }

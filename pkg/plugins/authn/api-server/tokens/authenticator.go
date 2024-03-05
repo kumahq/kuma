@@ -18,6 +18,10 @@ var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").
 
 func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authenticator {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+		if authn.SkipAuth(request) {
+			chain.ProcessFilter(request, response)
+			return
+		}
 		authnHeader := request.Request.Header.Get("authorization")
 		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
 			authnHeader != "" &&
@@ -25,7 +29,7 @@ func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authentic
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
 			u, err := validator.Validate(request.Request.Context(), token)
 			if err != nil {
-				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
+				rest_errors.HandleError(request.Request.Context(), response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
 				log.Info("authentication rejected", "reason", err.Error())
 				return
 			}

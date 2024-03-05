@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -28,6 +30,7 @@ type DataplaneProxyFactory struct {
 	DefaultAdminPort   uint32
 	ContainerConfig    runtime_k8s.DataplaneContainer
 	BuiltinDNS         runtime_k8s.BuiltinDNS
+	WaitForDataplane   bool
 }
 
 func NewDataplaneProxyFactory(
@@ -36,6 +39,7 @@ func NewDataplaneProxyFactory(
 	defaultAdminPort uint32,
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
+	waitForDataplane bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:    controlPlaneURL,
@@ -43,6 +47,7 @@ func NewDataplaneProxyFactory(
 		DefaultAdminPort:   defaultAdminPort,
 		ContainerConfig:    containerConfig,
 		BuiltinDNS:         builtinDNS,
+		WaitForDataplane:   waitForDataplane,
 	}
 }
 
@@ -98,6 +103,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 		adminPort = i.DefaultAdminPort
 	}
 
+	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+
 	args := []string{
 		"run",
 		"--log-level=info",
@@ -108,7 +118,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 			"--concurrency="+strconv.FormatInt(cpuCount, 10))
 	}
 
-	return kube_core.Container{
+	container := kube_core.Container{
 		Image:           i.ContainerConfig.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args:            args,
@@ -149,15 +159,27 @@ func (i *DataplaneProxyFactory) NewContainer(
 		},
 		Resources: kube_core.ResourceRequirements{
 			Requests: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Requests.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Requests.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(50, kube_api.Mega)),
 			},
 			Limits: kube_core.ResourceList{
-				kube_core.ResourceCPU:    kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
-				kube_core.ResourceMemory: kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceCPU:              kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU),
+				kube_core.ResourceMemory:           kube_api.MustParse(i.ContainerConfig.Resources.Limits.Memory),
+				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
 			},
 		},
-	}, nil
+	}
+	if waitForDataplaneReady {
+		container.Lifecycle = &kube_core.Lifecycle{
+			PostStart: &kube_core.LifecycleHandler{
+				Exec: &kube_core.ExecAction{
+					Command: []string{"kuma-dp", "wait", "--url", fmt.Sprintf("http://localhost:%d/ready", adminPort)},
+				},
+			},
+		}
+	}
+	return container, nil
 }
 
 func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
@@ -167,6 +189,33 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	envVars := map[string]kube_core.EnvVar{
+		"POD_NAME": {
+			Name: "POD_NAME",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
+			},
+		},
+		"POD_NAMESPACE": {
+			Name: "POD_NAMESPACE",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.namespace",
+				},
+			},
+		},
+		"INSTANCE_IP": {
+			Name: "INSTANCE_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
 		"KUMA_CONTROL_PLANE_URL": {
 			Name:  "KUMA_CONTROL_PLANE_URL",
 			Value: i.ControlPlaneURL,
@@ -174,12 +223,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		"KUMA_DATAPLANE_MESH": {
 			Name:  "KUMA_DATAPLANE_MESH",
 			Value: mesh,
-		},
-		"KUMA_DATAPLANE_NAME": {
-			Name: "KUMA_DATAPLANE_NAME",
-			// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
-			// that is why we have to use a runtime reference to POD_NAME instead
-			Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
 		},
 		"KUMA_DATAPLANE_DRAIN_TIME": {
 			Name:  "KUMA_DATAPLANE_DRAIN_TIME",
@@ -198,6 +241,11 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENABLED",
 			Value: "true",
+		}
+
+		envVars["KUMA_DNS_ENABLE_LOGGING"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENABLE_LOGGING",
+			Value: strconv.FormatBool(i.BuiltinDNS.Logging),
 		}
 
 		envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
@@ -231,6 +279,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: logLevel,
 		}
 	}
+	if complogLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaEnvoyComponentLogLevel); exist {
+		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL",
+			Value: complogLevel,
+		}
+	}
 
 	// override defaults with cfg env vars
 	for envName, envVal := range i.ContainerConfig.EnvVars {
@@ -257,37 +311,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		result = append(result, v)
 	}
 	sort.Stable(EnvVarsByName(result))
-
-	// those values needs to be added before other vars, otherwise expressions like "$(POD_NAME).$(POD_NAMESPACE)" won't be evaluated
-	result = append([]kube_core.EnvVar{
-		{
-			Name: "POD_NAME",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.name",
-				},
-			},
-		},
-		{
-			Name: "POD_NAMESPACE",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.namespace",
-				},
-			},
-		},
-		{
-			Name: "INSTANCE_IP",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "status.podIP",
-				},
-			},
-		},
-	}, result...)
 
 	return result, nil
 }

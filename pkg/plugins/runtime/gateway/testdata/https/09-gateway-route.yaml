@@ -13,12 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -26,6 +20,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -95,12 +91,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -127,8 +122,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTPS:8080:
-      name: edge-gateway:HTTPS:8080
+    edge-gateway:HTTPS:8080:echo.example.com:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTPS:8080:echo.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -138,16 +134,17 @@ Routes:
         name: echo.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
             safeRegex:
-              googleRe2: {}
               regex: ^/api/v[0-9]+$
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -164,7 +161,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

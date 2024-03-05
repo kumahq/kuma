@@ -11,20 +11,22 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("clusterID")
 
 // clusterIDReader tries to read cluster ID and sets it in the runtime. Cluster ID does not change during CP lifecycle
 // therefore once cluster ID is read and set, the component exits.
-// In standalone setup, followers are waiting until leader creates a cluster ID
-// In Multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
+// In single-zone setup, followers are waiting until leader creates a cluster ID
+// In multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
 type clusterIDReader struct {
 	rt core_runtime.Runtime
 }
 
 func (c *clusterIDReader) Start(stop <-chan struct{}) error {
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		select {

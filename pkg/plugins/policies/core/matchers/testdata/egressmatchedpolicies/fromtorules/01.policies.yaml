@@ -1,0 +1,38 @@
+type: MeshTimeout
+mesh: mesh-1
+name: mt-1
+spec:
+  targetRef:
+    kind: MeshServiceSubset
+    name: external-database
+    tags:
+      version: v1  
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 33s
+        http:
+          requestTimeout: 33s
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        connectionTimeout: 77s
+        http:
+          requestTimeout: 77s
+---
+type: MeshTimeout
+mesh: mesh-1
+name: mt-2
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 22s
+        http:
+          requestTimeout: 22s

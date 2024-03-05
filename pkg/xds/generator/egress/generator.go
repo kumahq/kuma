@@ -1,17 +1,18 @@
 package egress
 
 import (
+	"context"
+
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/generator"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	generator_secrets "github.com/kumahq/kuma/pkg/xds/generator/secrets"
 )
 
@@ -28,7 +29,7 @@ var log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.
 type ZoneEgressGenerator interface {
-	Generate(ctx xds_context.Context, proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
+	Generate(context.Context, xds_context.Context, *core_xds.Proxy, *envoy_listeners.ListenerBuilder, *core_xds.MeshResources) (*core_xds.ResourceSet, error)
 }
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -48,19 +49,18 @@ func makeListenerBuilder(
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(
-			envoy_listeners.InboundListener(
-				envoy_names.GetInboundListenerName(address, port),
-				address, port,
-				core_xds.SocketAddressProtocolTCP,
-			),
-			envoy_listeners.TLSInspector(),
-		)
+	return envoy_listeners.NewInboundListenerBuilder(
+		apiVersion,
+		address,
+		port,
+		core_xds.SocketAddressProtocolTCP,
+	).Configure(envoy_listeners.TLSInspector())
 }
 
 func (g Generator) Generate(
-	ctx xds_context.Context,
+	ctx context.Context,
+	_ *core_xds.ResourceSet,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -78,7 +78,7 @@ func (g Generator) Generate(
 		proxy.SecretsTracker = secretsTracker
 
 		for _, generator := range g.ZoneEgressGenerators {
-			rs, err := generator.Generate(ctx, proxy, listenerBuilder, meshResources)
+			rs, err := generator.Generate(ctx, xdsCtx, proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,
@@ -92,14 +92,12 @@ func (g Generator) Generate(
 			resources.AddSet(rs)
 		}
 
-		// If the resources are empty after all generator pass, it means there is filter chain,
-		// if there is no filter chain there is no need to build a listener
-		if !resources.Empty() {
-			listener, err := listenerBuilder.Build()
-			if err != nil {
-				return nil, err
-			}
-
+		listener, err := listenerBuilder.Build()
+		if err != nil {
+			return nil, err
+		}
+		if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
+			// Envoy rejects listener with no filter chains, so there is no point in sending it.
 			resources.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
 				Origin:   OriginEgress,
@@ -107,8 +105,14 @@ func (g Generator) Generate(
 			})
 		}
 
-		rs, err := g.SecretGenerator.GenerateForZoneEgress(
-			ctx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
+		rs, err := generator.NewGenerator().Generate(ctx, resources, xdsCtx, proxy)
+		if err != nil {
+			return nil, err
+		}
+		resources.AddSet(rs)
+
+		rs, err = g.SecretGenerator.GenerateForZoneEgress(
+			ctx, xdsCtx, proxy.Id, proxy.ZoneEgressProxy.ZoneEgressResource, secretsTracker, meshResources.Mesh,
 		)
 		if err != nil {
 			err := errors.Wrapf(
@@ -122,28 +126,5 @@ func (g Generator) Generate(
 
 		resources.AddSet(rs)
 	}
-
 	return resources, nil
-}
-
-func buildDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-) map[string][]envoy_tags.Tags {
-	destinations := map[string][]envoy_tags.Tags{}
-
-	for _, tr := range trafficRoutes {
-		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
-		}
-
-		for _, http := range tr.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
-			}
-		}
-	}
-
-	return destinations
 }

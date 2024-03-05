@@ -1,0 +1,224 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Retry",
+    "definitions": {
+        "Retry": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that retry policy should be configured for"
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that need to be health checked."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf",
+                    "additionalProperties": true,
+                    "description": "+required"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Retry"
+        },
+        "kuma.mesh.v1alpha1.Retry.Conf": {
+            "properties": {
+                "http": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf.Http",
+                    "additionalProperties": true
+                },
+                "tcp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf.Tcp",
+                    "additionalProperties": true
+                },
+                "grpc": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf.Grpc",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.Retry.Conf.BackOff": {
+            "properties": {
+                "base_interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "+required",
+                    "format": "regex"
+                },
+                "max_interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "+optional",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Back Off"
+        },
+        "kuma.mesh.v1alpha1.Retry.Conf.Grpc": {
+            "properties": {
+                "retry_on": {
+                    "items": {
+                        "enum": [
+                            "cancelled",
+                            0,
+                            "deadline_exceeded",
+                            1,
+                            "internal",
+                            2,
+                            "resource_exhausted",
+                            3,
+                            "unavailable",
+                            4
+                        ]
+                    },
+                    "type": "array",
+                    "title": "Retry On"
+                },
+                "num_retries": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "+optional"
+                },
+                "per_try_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "+optional",
+                    "format": "regex"
+                },
+                "back_off": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf.BackOff",
+                    "additionalProperties": true,
+                    "description": "+optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Grpc"
+        },
+        "kuma.mesh.v1alpha1.Retry.Conf.Http": {
+            "properties": {
+                "num_retries": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "+optional"
+                },
+                "per_try_timeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "+optional",
+                    "format": "regex"
+                },
+                "back_off": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Retry.Conf.BackOff",
+                    "additionalProperties": true,
+                    "description": "+optional"
+                },
+                "retriable_status_codes": {
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array",
+                    "description": "+optional"
+                },
+                "retriable_methods": {
+                    "items": {
+                        "enum": [
+                            "NONE",
+                            0,
+                            "CONNECT",
+                            1,
+                            "DELETE",
+                            2,
+                            "GET",
+                            3,
+                            "HEAD",
+                            4,
+                            "OPTIONS",
+                            5,
+                            "PATCH",
+                            6,
+                            "POST",
+                            7,
+                            "PUT",
+                            8,
+                            "TRACE",
+                            9
+                        ]
+                    },
+                    "type": "array",
+                    "title": "Http Method"
+                },
+                "retry_on": {
+                    "items": {
+                        "enum": [
+                            "all_5xx",
+                            0,
+                            "gateway_error",
+                            1,
+                            "reset",
+                            2,
+                            "connect_failure",
+                            3,
+                            "envoy_ratelimited",
+                            4,
+                            "retriable_4xx",
+                            5,
+                            "refused_stream",
+                            6,
+                            "retriable_status_codes",
+                            7,
+                            "retriable_headers",
+                            8,
+                            "http3_post_connect_failure",
+                            9
+                        ]
+                    },
+                    "type": "array",
+                    "title": "Http Retry On",
+                    "description": "These options correspond with the retry_on options in Envoy's documentation: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http"
+        },
+        "kuma.mesh.v1alpha1.Retry.Conf.Tcp": {
+            "properties": {
+                "max_connect_attempts": {
+                    "type": "integer",
+                    "description": "+optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tcp"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

@@ -2,7 +2,6 @@ package metrics_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -20,6 +19,7 @@ import (
 	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	"github.com/kumahq/kuma/pkg/multitenant"
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
@@ -43,7 +43,7 @@ var _ = Describe("Counter", func() {
 		stop = make(chan struct{})
 		tickCh = make(chan time.Time)
 
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		memoryStore := store_memory.NewStore()
@@ -53,22 +53,23 @@ var _ = Describe("Counter", func() {
 		resManager = manager.NewResourceManager(store)
 
 		counterTicker := time.NewTicker(500 * time.Millisecond)
-		counter, err := metrics_store.NewStoreCounter(resManager, metrics)
+		counter, err := metrics_store.NewStoreCounter(resManager, metrics, multitenant.SingleTenant)
 		Expect(err).ToNot(HaveOccurred())
 
 		resyncer := insights.NewResyncer(&insights.Config{
-			MinResyncTimeout:   5 * time.Second,
-			MaxResyncTimeout:   1 * time.Minute,
+			MinResyncInterval:  5 * time.Second,
+			FullResyncInterval: 5 * time.Second,
 			ResourceManager:    resManager,
 			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) <-chan time.Time {
 				return tickCh
 			},
-			Registry: registry.Global(),
-			Now:      nil,
-			AddressPortGenerator: func(s string) string {
-				return fmt.Sprintf("%s.mesh:80", s)
-			},
+			Registry:            registry.Global(),
+			TenantFn:            multitenant.SingleTenant,
+			EventBufferCapacity: 10,
+			EventProcessors:     1,
+			Metrics:             metrics,
+			Extensions:          context.Background(),
 		})
 
 		go func() {

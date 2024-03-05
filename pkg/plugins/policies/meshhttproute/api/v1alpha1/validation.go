@@ -4,60 +4,88 @@ import (
 	"fmt"
 	"strings"
 
+	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.TargetRef, r.Spec.To))
 	return verr.OrNil()
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
+			common_api.MeshGateway,
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 		},
+		GatewayListenerTagsAllowed: true,
 	})
 }
 
-func validateToRef(targetRef common_api.TargetRef) validators.ValidationError {
-	return matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.MeshService,
-		},
-	})
+func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.ValidationError {
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.MeshService,
+			},
+		})
+	}
 }
 
-func validateTos(tos []To) validators.ValidationError {
+func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, to := range tos {
 		path := validators.Root().Index(i)
-		errs.AddErrorAt(path.Field("targetRef"), validateToRef(to.TargetRef))
-		errs.AddErrorAt(path.Field("rules"), validateRules(to.Rules))
+		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
+		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
+		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
 	}
 
 	return errs
 }
 
-func validateRules(rules []Rule) validators.ValidationError {
+func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(rule.Default.Filters, rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(rule.Default.BackendRefs))
+		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(topTargetRef, rule.Default.Filters, rule.Matches))
+		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(topTargetRef, rule.Default.BackendRefs))
 	}
 
+	return errs
+}
+
+func validateHostnames(topTargetRef common_api.TargetRef, hostnames []string) validators.ValidationError {
+	var errs validators.ValidationError
+
+	path := validators.Root()
+	switch topTargetRef.Kind {
+	case common_api.MeshGateway:
+	default:
+		if len(hostnames) > 0 {
+			errs.AddViolationAt(path, validators.MustNotBeDefined)
+		}
+	}
 	return errs
 }
 
@@ -86,7 +114,7 @@ func validatePath(match *PathMatch) validators.ValidationError {
 	switch match.Type {
 	case RegularExpression:
 		break
-	case Prefix:
+	case PathPrefix:
 		if match.Value == "/" {
 			break
 		}
@@ -148,7 +176,7 @@ func validateQueryParams(matches []QueryParamsMatch) validators.ValidationError 
 
 func hasAnyMatchesWithoutPrefix(matches []Match) bool {
 	for _, match := range matches {
-		if match.Path == nil || match.Path.Type != Prefix {
+		if match.Path == nil || match.Path.Type != PathPrefix {
 			return true
 		}
 	}
@@ -157,7 +185,7 @@ func hasAnyMatchesWithoutPrefix(matches []Match) bool {
 	return false
 }
 
-func validateFilters(filters *[]Filter, matches []Match) validators.ValidationError {
+func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, matches []Match) validators.ValidationError {
 	var errs validators.ValidationError
 
 	if filters == nil {
@@ -191,6 +219,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				hasAnyMatchesWithoutPrefix(matches) {
 				errs.AddViolationAt(path.Field("requestRedirect").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
+			errs.AddErrorAt(path.Field("requestRedirect").Field("hostname"), validatePreciseHostname(filter.RequestRedirect.Hostname))
 		case URLRewriteType:
 			if filter.URLRewrite == nil {
 				errs.AddViolationAt(path.Field("urlRewrite"), validators.MustBeDefined)
@@ -201,6 +230,16 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				hasAnyMatchesWithoutPrefix(matches) {
 				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
+			errs.AddErrorAt(path.Field("urlRewrite").Field("hostname"), validatePreciseHostname(filter.URLRewrite.Hostname))
+			if filter.URLRewrite.HostToBackendHostname {
+				if topTargetRef.Kind != common_api.MeshGateway {
+					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "can only be set with MeshGateway")
+				}
+
+				if filter.URLRewrite.Hostname != nil {
+					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "cannot be set together with hostname")
+				}
+			}
 		case RequestMirrorType:
 			if filter.RequestMirror == nil {
 				errs.AddViolationAt(path.Field("requestMirror"), validators.MustBeDefined)
@@ -208,7 +247,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 			}
 			errs.AddErrorAt(
 				path.Field("requestMirror").Field("backendRef"),
-				matcher_validators.ValidateTargetRef(filter.RequestMirror.BackendRef, &matcher_validators.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,
@@ -216,6 +255,32 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 				}),
 			)
 		}
+	}
+
+	return errs
+}
+
+// PreciseHostname is the fully qualified domain name of a network host. This
+// matches the RFC 1123 definition of a hostname with 1 notable exception that
+// numeric IP addresses are not allowed.
+//
+// Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
+// alphanumeric characters or '-', and must start and end with an alphanumeric
+// character. No other punctuation is allowed.
+func validatePreciseHostname(hostname *PreciseHostname) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if hostname == nil {
+		return errs
+	}
+
+	if len(k8s_validation.IsValidIP(string(*hostname))) == 0 {
+		errs.AddViolationAt(validators.Root(), "cannot be an IP address")
+		return errs
+	}
+
+	for _, violation := range k8s_validation.IsDNS1123Subdomain(string(*hostname)) {
+		errs.AddViolationAt(validators.Root(), violation)
 	}
 
 	return errs
@@ -255,17 +320,23 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 	return errs
 }
 
-func validateBackendRefs(backendRefs *[]BackendRef) validators.ValidationError {
+func validateBackendRefs(topTargetRef common_api.TargetRef, backendRefs *[]common_api.BackendRef) validators.ValidationError {
 	var errs validators.ValidationError
 
-	if backendRefs == nil {
+	if backendRefs == nil || len(*backendRefs) == 0 {
+		if topTargetRef.Kind == common_api.MeshGateway {
+			errs.AddViolationAt(
+				validators.Root(),
+				validators.MustNotBeEmpty,
+			)
+		}
 		return errs
 	}
 
 	for i, backendRef := range *backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			matcher_validators.ValidateTargetRef(backendRef.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 					common_api.MeshServiceSubset,

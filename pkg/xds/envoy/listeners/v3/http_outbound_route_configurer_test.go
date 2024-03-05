@@ -27,9 +27,9 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
+			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				WithOverwriteName(given.listenerName).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(given.service, given.routes, given.dpTags)))).
 				Build()
@@ -106,7 +106,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                               weight: 20
                             - name: backend-1
                               weight: 80
-                            totalWeight: 100
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
@@ -238,21 +237,20 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                             name: x-custom-header-b
                           - name: x-custom-header-c
                             safeRegexMatch:
-                              googleRe2: {}
                               regex: ^regex$
                           - stringMatch:
                               exact: GET
                             name: :method
                           prefix: /asd
                         requestHeadersToAdd:
-                        - append: false
+                        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                           header:
                             key: test-add
                             value: abc
                         requestHeadersToRemove:
                         - test-remove
                         responseHeadersToAdd:
-                        - append: false
+                        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                           header:
                             key: test-add
                             value: abc

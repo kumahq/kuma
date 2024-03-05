@@ -13,11 +13,8 @@ func ResilienceMultizoneK8s() {
 	var global, zone1 *K8sCluster
 
 	BeforeAll(func() {
-		clusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
-		Expect(err).ToNot(HaveOccurred())
-
 		// Global
-		global = clusters.GetCluster(Kuma1).(*K8sCluster)
+		global = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Global, WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}))).
 			Setup(global)).To(Succeed())
@@ -26,7 +23,7 @@ func ResilienceMultizoneK8s() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		zone1 = clusters.GetCluster(Kuma2).(*K8sCluster)
+		zone1 = NewK8sCluster(NewTestingT(), Kuma2, Silent)
 
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}))).

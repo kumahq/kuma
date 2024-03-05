@@ -2,15 +2,14 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -42,7 +41,7 @@ func (r *GatewayReconciler) updateStatus(
 	return nil
 }
 
-func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayAddress {
+func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi_v1.GatewayStatusAddress {
 	if instance == nil {
 		return nil
 	}
@@ -50,18 +49,18 @@ func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.Gatew
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
-	var addrs []gatewayapi.GatewayAddress
+	var addrs []gatewayapi_v1.GatewayStatusAddress
 
 	if lb := instance.Status.LoadBalancer; lb != nil {
 		for _, addr := range instance.Status.LoadBalancer.Ingress {
 			if addr.IP != "" {
-				addrs = append(addrs, gatewayapi.GatewayAddress{
+				addrs = append(addrs, gatewayapi_v1.GatewayStatusAddress{
 					Type:  &ipType,
 					Value: addr.IP,
 				})
 			}
 			if addr.Hostname != "" {
-				addrs = append(addrs, gatewayapi.GatewayAddress{
+				addrs = append(addrs, gatewayapi_v1.GatewayStatusAddress{
 					Type:  &hostnameType,
 					Value: addr.Hostname,
 				})
@@ -77,8 +76,6 @@ const everyListener = gatewayapi.SectionName("")
 type attachedRoutes struct {
 	// num is the number of allowed routes for a listener
 	num int32
-	// invalidRoutes can be empty
-	invalidRoutes []string
 }
 
 // AttachedRoutesForListeners tracks the relevant status for routes pointing to a
@@ -94,7 +91,7 @@ func attachedRoutesForListeners(
 ) (AttachedRoutesForListeners, error) {
 	var routes gatewayapi.HTTPRouteList
 	if err := client.List(ctx, &routes, kube_client.MatchingFields{
-		gatewayIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+		gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
 	}); err != nil {
 		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
 	}
@@ -116,10 +113,6 @@ func attachedRoutesForListeners(
 
 					if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
 						attached.num++
-					}
-
-					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.RouteConditionResolvedRefs)) {
-						attached.invalidRoutes = append(attached.invalidRoutes, kube_client.ObjectKeyFromObject(&route).String())
 					}
 
 					attachedRoutes[sectionName] = attached
@@ -190,23 +183,6 @@ func mergeGatewayListenerStatuses(
 		// non-specific parents.
 		previousStatus.AttachedRoutes = attachedRouteStatuses[name].num + attachedRouteStatuses[everyListener].num
 
-		// If we can't resolve refs on a route and our listener condition
-		// ResolvedRefs is otherwise true, set it to false.
-		invalidRoutes := append(attachedRouteStatuses[everyListener].invalidRoutes, attachedRouteStatuses[name].invalidRoutes...)
-
-		if len(invalidRoutes) > 0 &&
-			kube_apimeta.IsStatusConditionTrue(previousStatus.Conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
-			// We only set the ResolvedRefs condition and don't set ready false
-			message := fmt.Sprintf("Attached HTTPRoutes %s have unresolved BackendRefs", strings.Join(invalidRoutes, ", "))
-			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, kube_meta.Condition{
-				Type:               string(gatewayapi.ListenerConditionResolvedRefs),
-				Status:             kube_meta.ConditionFalse,
-				Reason:             string(gatewayapi.ListenerReasonRefNotPermitted),
-				Message:            message,
-				ObservedGeneration: gateway.GetGeneration(),
-			})
-		}
-
 		statuses = append(statuses, previousStatus)
 	}
 
@@ -225,23 +201,23 @@ func mergeGatewayStatus(
 	gateway.Status.Listeners = mergeGatewayListenerStatuses(gateway, listenerConditions, attachedListeners)
 
 	programmedStatus := kube_meta.ConditionTrue
-	programmedReason := string(gatewayapi.GatewayReasonProgrammed)
+	programmedReason := string(gatewayapi_v1.GatewayReasonProgrammed)
 
 	for _, listener := range gateway.Status.Listeners {
-		if !kube_apimeta.IsStatusConditionTrue(listener.Conditions, string(gatewayapi.ListenerConditionProgrammed)) {
+		if !kube_apimeta.IsStatusConditionTrue(listener.Conditions, string(gatewayapi_v1.ListenerConditionProgrammed)) {
 			programmedStatus = kube_meta.ConditionFalse
-			programmedReason = string(gatewayapi.GatewayReasonInvalid)
+			programmedReason = string(gatewayapi_v1.GatewayReasonInvalid)
 		}
 	}
 
 	conditions := []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.GatewayConditionAccepted),
+			Type:   string(gatewayapi_v1.GatewayConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.GatewayReasonAccepted),
+			Reason: string(gatewayapi_v1.GatewayReasonAccepted),
 		},
 		{
-			Type:   string(gatewayapi.GatewayConditionProgrammed),
+			Type:   string(gatewayapi_v1.GatewayConditionProgrammed),
 			Status: programmedStatus,
 			Reason: programmedReason,
 		},

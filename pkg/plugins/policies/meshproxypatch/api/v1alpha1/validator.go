@@ -13,8 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/jsonpatch/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
 )
 
 const (
@@ -31,13 +30,15 @@ func (r *MeshProxyPatchResource) validate() error {
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.MeshGateway,
 		},
+		GatewayListenerTagsAllowed: false,
 	})
 	return targetRefErr
 }
@@ -45,9 +46,36 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("appendModifications")
+
+	if len(conf.AppendModifications) == 0 {
+		verr.AddViolationAt(path, validators.MustNotBeEmpty)
+	}
+
 	for i, modification := range conf.AppendModifications {
 		path := path.Index(i)
+
+		var modificationsAmount int
+		for _, m := range []bool{
+			modification.Cluster != nil,
+			modification.Listener != nil,
+			modification.VirtualHost != nil,
+			modification.NetworkFilter != nil,
+			modification.HTTPFilter != nil,
+		} {
+			if m {
+				modificationsAmount++
+			}
+		}
+
 		switch {
+		case modificationsAmount != 1:
+			verr.AddViolationAt(
+				path,
+				fmt.Sprintf(
+					"exactly one modification can be defined at a time. Currently, %d modifications are defined",
+					modificationsAmount,
+				),
+			)
 		case modification.Cluster != nil:
 			verr.AddErrorAt(path, validateClusterMod(*modification.Cluster))
 		case modification.Listener != nil:
@@ -58,13 +86,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 			verr.AddErrorAt(path, validateNetworkFilterMod(*modification.NetworkFilter))
 		case modification.HTTPFilter != nil:
 			verr.AddErrorAt(path, validateHTTPFilterMod(*modification.HTTPFilter))
-		default:
-			verr.AddViolationAt(path, "at least one modification has to be defined")
 		}
 	}
-	if len(conf.AppendModifications) == 0 {
-		verr.AddViolationAt(path, validators.MustNotBeEmpty)
-	}
+
 	return verr
 }
 

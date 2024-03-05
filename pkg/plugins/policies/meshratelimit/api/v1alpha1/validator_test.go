@@ -112,6 +112,23 @@ from:
           disabled: true
         tcp:
           disabled: true`),
+			Entry("gateway example", `
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`),
 		)
 		type testCase struct {
 			inputYaml string
@@ -134,16 +151,6 @@ from:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty 'from'", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-`,
-				expected: `
-violations:
-  - field: spec.from
-    message: needs at least one item`,
-			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
 targetRef:
@@ -236,36 +243,10 @@ violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
 			}),
-			Entry("not allow targetRef to be MeshGatewayRoute when http and tcp set", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshGatewayRoute
-  name: web-frontend
-from:
-- targetRef:
-    kind: MeshService
-    name: backend
-  default:
-    local:
-      http:
-        requestRate:
-          num: 100
-          interval: 500ms
-      tcp:
-        connectionRate:
-          num: 100
-          interval: 500ms`,
-				expected: `
-violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
-  - field: spec.from[0].targetRef.kind
-    message: value is not supported`,
-			}),
 			Entry("not allow from to be MeshService", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -279,15 +260,13 @@ from:
           interval: 500ms`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
 			}),
 			Entry("empty default", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -295,15 +274,13 @@ from:
   default: {}`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].default.local
     message: must be defined`,
 			}),
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshGatewayRoute
+  kind: MeshService
   name: web-frontend
 from:
 - targetRef:
@@ -312,8 +289,6 @@ from:
     local: {}`,
 				expected: `
 violations:
-  - field: spec.targetRef.kind
-    message: value is not supported
   - field: spec.from[0].default.local
     message: 'must have at least one defined: tcp, http'`,
 			}),
@@ -348,6 +323,29 @@ from:
 violations:
   - field: spec.from[0].default.local.http
     message: 'must have at least one defined: disabled, requestRate, onRateLimit'`,
+			}),
+			Entry("invalid gateway example", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: edge
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+        tcp:
+          connectionRate:
+            num: 100
+            interval: 100ms`,
+				expected: `
+violations:
+  - field: spec.from
+    message: 'must not be defined'`,
 			}),
 		)
 	})

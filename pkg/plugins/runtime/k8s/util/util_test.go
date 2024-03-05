@@ -9,6 +9,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -36,7 +37,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := util.MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod, nil)
 			// then
 			Expect(predicate(svc)).To(BeTrue())
 		})
@@ -61,9 +62,35 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := util.MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod, nil)
 			// then
 			Expect(predicate(svc)).To(BeFalse())
+		})
+
+		It("should match with ignored labels", func() {
+			// given
+			pod := &kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Labels: map[string]string{
+						"app":               "demo-app",
+						"pod-template-hash": "7cbbd658d5",
+					},
+				},
+			}
+			// and
+			svc := &kube_core.Service{
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app":               "demo-app",
+						"pod-template-hash": "xxxxxx",
+					},
+				},
+			}
+
+			// when
+			predicate := util.MatchServiceThatSelectsPod(pod, []string{"pod-template-hash"})
+			// then
+			Expect(predicate(svc)).To(BeTrue())
 		})
 	})
 
@@ -71,7 +98,7 @@ var _ = Describe("Util", func() {
 	DescribeTable("FindServices",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
-			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod))
+			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod, nil))
 			// then
 			Expect(matchingServices).To(WithTransform(func(svcs []*kube_core.Service) []string {
 				var res []string
@@ -655,7 +682,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// then
-			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
+			Expect(util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
 		})
 	})
 })

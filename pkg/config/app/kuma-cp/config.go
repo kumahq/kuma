@@ -14,10 +14,13 @@ import (
 	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/config/eventbus"
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
+	"github.com/kumahq/kuma/pkg/config/plugins/policies"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/pkg/config/tracing"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
@@ -28,29 +31,24 @@ var _ config.Config = &Config{}
 var _ config.Config = &Defaults{}
 
 type Defaults struct {
+	config.BaseConfig
+
 	// If true, it skips creating the default Mesh
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
-	// If true, instead of providing inbound clusters with address of dataplane, generates cluster with localhost.
-	// Enabled can cause security threat by exposing application listing on localhost. This configuration is going to
-	// be removed in the future.
-	// TODO: https://github.com/kumahq/kuma/issues/4772
-	EnableLocalhostInboundClusters bool `json:"enableLocalhostInboundClusters" envconfig:"kuma_defaults_enable_localhost_inbound_clusters"`
-}
-
-func (d *Defaults) Sanitize() {
-}
-
-func (d *Defaults) Validate() error {
-	return nil
+	// If true, it skips creating the default tenant resources
+	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
+	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
+	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
+	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 }
 
 type Metrics struct {
-	Dataplane *DataplaneMetrics `json:"dataplane"`
-	Zone      *ZoneMetrics      `json:"zone"`
-	Mesh      *MeshMetrics      `json:"mesh"`
-}
+	config.BaseConfig
 
-func (m *Metrics) Sanitize() {
+	Dataplane    *DataplaneMetrics    `json:"dataplane"`
+	Zone         *ZoneMetrics         `json:"zone"`
+	Mesh         *MeshMetrics         `json:"mesh"`
+	ControlPlane *ControlPlaneMetrics `json:"controlPlane"`
 }
 
 func (m *Metrics) Validate() error {
@@ -61,11 +59,10 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
+	config.BaseConfig
+
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
-}
-
-func (d *DataplaneMetrics) Sanitize() {
 }
 
 func (d *DataplaneMetrics) Validate() error {
@@ -76,11 +73,12 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
+	config.BaseConfig
+
 	SubscriptionLimit int                   `json:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
 	IdleTimeout       config_types.Duration `json:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
-}
-
-func (d *ZoneMetrics) Sanitize() {
+	// CompactFinishedSubscriptions compacts finished metrics (do not store config and details of KDS exchange).
+	CompactFinishedSubscriptions bool `json:"compactFinishedSubscriptions" envconfig:"kuma_metrics_zone_compact_finished_subscriptions"`
 }
 
 func (d *ZoneMetrics) Validate() error {
@@ -91,18 +89,34 @@ func (d *ZoneMetrics) Validate() error {
 }
 
 type MeshMetrics struct {
-	// MinResyncTimeout is a minimal time that should pass between MeshInsight resync
+	config.BaseConfig
+
+	// Deprecated: use MinResyncInterval instead
 	MinResyncTimeout config_types.Duration `json:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
-	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
+	// Deprecated: use FullResyncInterval instead
 	MaxResyncTimeout config_types.Duration `json:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+	// BufferSize the size of the buffer between event creation and processing
+	BufferSize int `json:"bufferSize" envconfig:"kuma_metrics_mesh_buffer_size"`
+	// MinResyncInterval the minimum time between 2 refresh of insights.
+	MinResyncInterval config_types.Duration `json:"minResyncInterval" envconfig:"kuma_metrics_mesh_min_resync_interval"`
+	// FullResyncInterval time between triggering a full refresh of all the insights
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_metrics_mesh_full_resync_interval"`
+	// EventProcessors is a number of workers that process metrics events.
+	EventProcessors int `json:"eventProcessors" envconfig:"kuma_metrics_mesh_event_processors"`
 }
 
-func (d *MeshMetrics) Sanitize() {
+type ControlPlaneMetrics struct {
+	// ReportResourcesCount if true will report metrics with the count of resources.
+	// Default: true
+	ReportResourcesCount bool `json:"reportResourcesCount" envconfig:"kuma_metrics_control_plane_report_resources_count"`
 }
 
 func (d *MeshMetrics) Validate() error {
-	if d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
-		return errors.New("MaxResyncTimeout should be greater than MinResyncTimeout")
+	if d.MinResyncTimeout.Duration != 0 && d.MaxResyncTimeout.Duration <= d.MinResyncTimeout.Duration {
+		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
+	}
+	if d.MinResyncInterval.Duration <= d.FullResyncInterval.Duration {
+		return errors.New("FullResyncInterval should be greater than MinResyncInterval")
 	}
 	return nil
 }
@@ -130,7 +144,7 @@ type Config struct {
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `json:"apiServer,omitempty"`
 	// Environment-specific configuration
-	Runtime *runtime.RuntimeConfig
+	Runtime *runtime.RuntimeConfig `json:"runtime,omitempty"`
 	// Default Kuma entities configuration
 	Defaults *Defaults `json:"defaults,omitempty"`
 	// Metrics configuration
@@ -153,6 +167,20 @@ type Config struct {
 	Proxy xds.Proxy `json:"proxy"`
 	// Intercommunication CP configuration
 	InterCp intercp.InterCpConfig `json:"interCp"`
+	// Tracing
+	Tracing tracing.Config `json:"tracing"`
+	// EventBus is a configuration of the event bus which is local to one instance of CP.
+	EventBus eventbus.Config `json:"eventBus"`
+	// Policies is a configuration of plugin policies like MeshAccessLog, MeshTrace etc.
+	Policies *policies.Config `json:"policies"`
+}
+
+func (c Config) IsFederatedZoneCP() bool {
+	return c.Mode == core.Zone && c.Multizone.Zone.GlobalAddress != "" && c.Multizone.Zone.Name != ""
+}
+
+func (c Config) IsNonFederatedZoneCP() bool {
+	return c.Mode == core.Zone && !c.IsFederatedZoneCP()
 }
 
 func (c *Config) Sanitize() {
@@ -168,22 +196,38 @@ func (c *Config) Sanitize() {
 	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
+	c.Policies.Sanitize()
+}
+
+func (c *Config) PostProcess() error {
+	return multierr.Combine(
+		c.General.PostProcess(),
+		c.Store.PostProcess(),
+		c.BootstrapServer.PostProcess(),
+		c.XdsServer.PostProcess(),
+		c.MonitoringAssignmentServer.PostProcess(),
+		c.ApiServer.PostProcess(),
+		c.Runtime.PostProcess(),
+		c.Metrics.PostProcess(),
+		c.Defaults.PostProcess(),
+		c.DNSServer.PostProcess(),
+		c.Multizone.PostProcess(),
+		c.Diagnostics.PostProcess(),
+		c.Policies.PostProcess(),
+	)
 }
 
 var DefaultConfig = func() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
-		Mode:                       core.Standalone,
+		Mode:                       core.Zone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
-		Defaults: &Defaults{
-			SkipMeshCreation:               false,
-			EnableLocalhostInboundClusters: false,
-		},
+		Defaults:                   DefaultDefaultsConfig(),
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				SubscriptionLimit: 2,
@@ -194,8 +238,13 @@ var DefaultConfig = func() Config {
 				IdleTimeout:       config_types.Duration{Duration: 5 * time.Minute},
 			},
 			Mesh: &MeshMetrics{
-				MinResyncTimeout: config_types.Duration{Duration: 1 * time.Second},
-				MaxResyncTimeout: config_types.Duration{Duration: 20 * time.Second},
+				MinResyncInterval:  config_types.Duration{Duration: 1 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 20 * time.Second},
+				BufferSize:         1000,
+				EventProcessors:    1,
+			},
+			ControlPlane: &ControlPlaneMetrics{
+				ReportResourcesCount: true,
 			},
 		},
 		Reports: &Reports{
@@ -208,12 +257,23 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			GatewayAPI:          false,
-			KubeOutboundsAsVIPs: true,
-			KDSDeltaEnabled:     false,
+			GatewayAPI:                      false,
+			KubeOutboundsAsVIPs:             true,
+			KDSDeltaEnabled:                 true,
+			UseTagFirstVirtualOutboundModel: false,
+			IngressTagFilters:               []string{},
+			KDSEventBasedWatchdog: ExperimentalKDSEventBasedWatchdog{
+				Enabled:            false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    false,
+			},
+			SidecarContainers: false,
 		},
-		Proxy:   xds.DefaultProxyConfig(),
-		InterCp: intercp.DefaultInterCpConfig(),
+		Proxy:    xds.DefaultProxyConfig(),
+		InterCp:  intercp.DefaultInterCpConfig(),
+		EventBus: eventbus.Default(),
+		Policies: policies.DefaultPoliciesConfig(),
 	}
 }
 
@@ -225,25 +285,6 @@ func (c *Config) Validate() error {
 	case core.Global:
 		if err := c.Multizone.Global.Validate(); err != nil {
 			return errors.Wrap(err, "Multizone Global validation failed")
-		}
-	case core.Standalone:
-		if err := c.XdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "Xds Server validation failed")
-		}
-		if err := c.BootstrapServer.Validate(); err != nil {
-			return errors.Wrap(err, "Bootstrap Server validation failed")
-		}
-		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
-			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
-		}
-		if c.Environment != core.KubernetesEnvironment && c.Environment != core.UniversalEnvironment {
-			return errors.Errorf("Environment should be either %s or %s", core.KubernetesEnvironment, core.UniversalEnvironment)
-		}
-		if err := c.Runtime.Validate(c.Environment); err != nil {
-			return errors.Wrap(err, "Runtime validation failed")
-		}
-		if err := c.Metrics.Validate(); err != nil {
-			return errors.Wrap(err, "Metrics validation failed")
 		}
 	case core.Zone:
 		if err := c.Multizone.Zone.Validate(); err != nil {
@@ -289,10 +330,18 @@ func (c *Config) Validate() error {
 	if err := c.InterCp.Validate(); err != nil {
 		return errors.Wrap(err, "InterCp validation failed")
 	}
+	if err := c.Tracing.Validate(); err != nil {
+		return errors.Wrap(err, "Tracing validation failed")
+	}
+	if err := c.Policies.Validate(); err != nil {
+		return errors.Wrap(err, "Policies validation failed")
+	}
 	return nil
 }
 
 type GeneralConfig struct {
+	config.BaseConfig
+
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
 	DNSCacheTTL config_types.Duration `json:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
@@ -312,9 +361,6 @@ type GeneralConfig struct {
 }
 
 var _ config.Config = &GeneralConfig{}
-
-func (g *GeneralConfig) Sanitize() {
-}
 
 func (g *GeneralConfig) Validate() error {
 	var errs error
@@ -345,7 +391,17 @@ func DefaultGeneralConfig() *GeneralConfig {
 	}
 }
 
+func DefaultDefaultsConfig() *Defaults {
+	return &Defaults{
+		SkipMeshCreation:           false,
+		SkipTenantResources:        false,
+		CreateMeshRoutingResources: false,
+	}
+}
+
 type ExperimentalConfig struct {
+	config.BaseConfig
+
 	// If true, experimental Gateway API is enabled
 	GatewayAPI bool `json:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
@@ -353,10 +409,36 @@ type ExperimentalConfig struct {
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
 	// KDSDeltaEnabled defines if using KDS Sync with incremental xDS
 	KDSDeltaEnabled bool `json:"kdsDeltaEnabled" envconfig:"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED"`
+	// Tag first virtual outbound model is compressed version of default Virtual Outbound model
+	// It is recommended to use tag first model for deployments with more than 2k services
+	// You can enable this flag on existing deployment. In order to downgrade cp with this flag enabled
+	// you need to first disable this flag and redeploy cp, after config is rewritten to default
+	// format you can downgrade your cp
+	UseTagFirstVirtualOutboundModel bool `json:"useTagFirstVirtualOutboundModel" envconfig:"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL"`
+	// List of prefixes that will be used to filter out tags by keys from ingress' available services section.
+	// This can trim the size of the ZoneIngress object significantly.
+	// The drawback is that you cannot use filtered out tags for traffic routing.
+	// If empty, no filter is applied.
+	IngressTagFilters []string `json:"ingressTagFilters" envconfig:"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS"`
+	// KDS event based watchdog settings. It is a more optimal way to generate KDS snapshot config.
+	KDSEventBasedWatchdog ExperimentalKDSEventBasedWatchdog `json:"kdsEventBasedWatchdog"`
+	// If true then control plane computes reachable services automatically based on MeshTrafficPermission.
+	// Lack of MeshTrafficPermission is treated as Deny the traffic.
+	AutoReachableServices bool `json:"autoReachableServices" envconfig:"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES"`
+	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
+	// environment.
+	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 }
 
-func (e ExperimentalConfig) Validate() error {
-	return nil
+type ExperimentalKDSEventBasedWatchdog struct {
+	// If true, then experimental event based watchdog to generate KDS snapshot is used.
+	Enabled bool `json:"enabled" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_ENABLED"`
+	// How often we flush changes when experimental event based watchdog is used.
+	FlushInterval config_types.Duration `json:"flushInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL"`
+	// How often we schedule full KDS resync when experimental event based watchdog is used.
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
+	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
+	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
 func (c Config) GetEnvoyAdminPort() uint32 {

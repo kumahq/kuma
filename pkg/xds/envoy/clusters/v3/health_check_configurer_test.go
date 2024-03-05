@@ -24,8 +24,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster(given.clusterName)).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.HealthCheck(core_mesh.ProtocolHTTP, given.healthCheck)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
@@ -222,7 +222,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
                   start: "201"
                 path: /foo
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: foobar
                     value: foobaz
@@ -299,7 +299,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
                   start: "201"
                 path: /foo
                 requestHeadersToAdd:
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: foobar
                     value: foobaz

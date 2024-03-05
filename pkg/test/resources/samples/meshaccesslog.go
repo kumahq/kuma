@@ -14,3 +14,11 @@ func LogFileBackend() *meshaccesslog_proto.FileBackend {
 		Path: "/tmp/access.logs",
 	}
 }
+
+func MeshAccessLogWithFileBackend() *meshaccesslog_proto.MeshAccessLogResource {
+	return builders.MeshAccessLog().
+		WithTargetRef(builders.TargetRefService("web")).
+		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
+		AddTo(builders.TargetRefMesh(), MeshAccessLogFileConf()).
+		Build()
+}

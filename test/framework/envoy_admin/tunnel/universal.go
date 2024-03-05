@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/clusters"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
@@ -52,6 +53,31 @@ func (t *UniversalTunnel) GetStats(name string) (*stats.Stats, error) {
 	}
 
 	return &s, nil
+}
+
+func (t *UniversalTunnel) GetClusters() (*clusters.Clusters, error) {
+	url := "http://localhost:9901/clusters?format=json"
+
+	sshArgs := []string{
+		"curl", "--silent", "--max-time", "3", "--fail", url,
+	}
+
+	app := ssh.NewApp("tunnel", "", t.verbose, t.port, nil, sshArgs)
+
+	if err := app.Run(); err != nil {
+		return nil, err
+	}
+
+	if app.Err() != "" {
+		return nil, errors.New(app.Err())
+	}
+
+	var c clusters.Clusters
+	if err := json.Unmarshal([]byte(app.Out()), &c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }
 
 func (t *UniversalTunnel) ResetCounters() error {

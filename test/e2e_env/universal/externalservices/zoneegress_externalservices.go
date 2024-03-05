@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
@@ -48,13 +47,14 @@ networking:
 		cluster = NewUniversalCluster(NewTestingT(), clusterName, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Zone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(YamlUniversal(meshDefaulMtlsOn)).
-			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+			Install(MeshTrafficPermissionAllowAllUniversal("default")).
+			Install(TestServerExternalServiceUniversal("http-server", 80, false, WithDockerContainerName("kuma-es-ze_externalservice-http-server"))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Install(EgressUniversal(func(zone string) (string, error) {
 				return cluster.GetKuma().GenerateZoneEgressToken("")

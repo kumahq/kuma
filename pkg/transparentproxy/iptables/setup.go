@@ -1,6 +1,8 @@
 package iptables
 
 import (
+	"errors"
+
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
 )
@@ -23,4 +25,8 @@ func Setup(cfg config.Config) (string, error) {
 	}
 
 	return builder.RestoreIPTables(cfg)
+}
+
+func Cleanup(cfg config.Config) (string, error) {
+	return "", errors.New("cleanup is not supported")
 }

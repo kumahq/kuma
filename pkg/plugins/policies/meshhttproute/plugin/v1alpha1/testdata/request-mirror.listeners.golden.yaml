@@ -30,10 +30,11 @@ resources:
               routes:
               - match:
                   path: /v1
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 route:
                   cluster: backend
                   requestMirrorPolicies:
-                  - cluster: payments-_0_
+                  - cluster: payments-9f43ffb3c22f8c19
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND
@@ -42,10 +43,11 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 route:
                   cluster: backend
                   requestMirrorPolicies:
-                  - cluster: payments-_0_
+                  - cluster: payments-9f43ffb3c22f8c19
                     runtimeFraction:
                       defaultValue:
                         denominator: TEN_THOUSAND
@@ -54,6 +56,7 @@ resources:
                   timeout: 0s
               - match:
                   prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   cluster: backend
                   timeout: 0s

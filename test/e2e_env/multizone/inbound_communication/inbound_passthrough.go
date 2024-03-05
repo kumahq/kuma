@@ -25,6 +25,7 @@ func InboundPassthrough() {
 		// Global
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

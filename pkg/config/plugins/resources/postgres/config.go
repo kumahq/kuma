@@ -33,8 +33,10 @@ var (
 	// some of the above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
 
-// Postgres store configuration
+// PostgresStoreConfig defines Postgres store configuration
 type PostgresStoreConfig struct {
+	config.BaseConfig
+
 	// Host of the Postgres DB
 	Host string `json:"host" envconfig:"kuma_store_postgres_host"`
 	// Port of the Postgres DB
@@ -63,6 +65,7 @@ type PostgresStoreConfig struct {
 	MaxOpenConnections int `json:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
 	// MaxIdleConnections (applied only when driverName=postgres) is the maximum number of connections in the idle connection pool
 	// <0 value means no idle connections and 0 means default max idle connections
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MaxIdleConnections int `json:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `json:"tls"`
@@ -71,10 +74,32 @@ type PostgresStoreConfig struct {
 	// consecutive failure this interval is doubled, until MaxReconnectInterval
 	// is reached. Successfully completing the connection establishment procedure
 	// resets the interval back to MinReconnectInterval.
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MinReconnectInterval config_types.Duration `json:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
 	// MaxReconnectInterval (applied only when driverName=postgres) controls the maximum possible duration to wait before trying
 	// to re-establish the database connection after connection loss.
+	// Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
 	MaxReconnectInterval config_types.Duration `json:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
+	// MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
+	MaxListQueryElements uint32 `json:"maxListQueryElements" envconfig:"kuma_store_postgres_max_list_query_elements"`
+	// ReadReplica is a setting for a DB replica used only for read queries
+	ReadReplica ReadReplica `json:"readReplica"`
+}
+
+type ReadReplica struct {
+	// Host of the Postgres DB read replica. If not set, read replica is not used.
+	Host string `json:"host" envconfig:"kuma_store_postgres_read_replica_host"`
+	// Port of the Postgres DB read replica
+	Port uint `json:"port" envconfig:"kuma_store_postgres_read_replica_port"`
+	// Ratio in [0-100] range. How many SELECT queries (out of 100) will use read replica.
+	Ratio uint `json:"ratio" envconfig:"kuma_store_postgres_read_replica_ratio"`
+}
+
+func (cfg ReadReplica) Validate() error {
+	if cfg.Ratio > 100 {
+		return errors.New(".Ratio out of [0-100] range")
+	}
+	return nil
 }
 
 func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
@@ -110,16 +135,16 @@ func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
 	return strings.Join(variables, " "), nil
 }
 
-// Modes available here https://godoc.org/github.com/lib/pq
+// TLSMode modes available here https://godoc.org/github.com/lib/pq
 type TLSMode string
 
 const (
 	Disable TLSMode = "disable"
-	// Always TLS (skip verification)
+	// VerifyNone represents Always TLS (skip verification)
 	VerifyNone TLSMode = "verifyNone"
-	// Always TLS (verify that the certificate presented by the server was signed by a trusted CA)
+	// VerifyCa represents Always TLS (verify that the certificate presented by the server was signed by a trusted CA)
 	VerifyCa TLSMode = "verifyCa"
-	// Always TLS (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
+	// VerifyFull represents Always TLS (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
 	VerifyFull TLSMode = "verifyFull"
 )
 
@@ -139,6 +164,8 @@ func (mode TLSMode) postgresMode() (string, error) {
 }
 
 type TLSPostgresStoreConfig struct {
+	config.BaseConfig
+
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
 	Mode TLSMode `json:"mode" envconfig:"kuma_store_postgres_tls_mode"`
 	// Path to TLS Certificate of the client. Required when server has METHOD=cert
@@ -149,9 +176,6 @@ type TLSPostgresStoreConfig struct {
 	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
 	// Whether to disable SNI the postgres `sslsni` option.
 	DisableSSLSNI bool `json:"disableSSLSNI" envconfig:"kuma_store_postgres_tls_disable_sslsni"`
-}
-
-func (s TLSPostgresStoreConfig) Sanitize() {
 }
 
 func (s TLSPostgresStoreConfig) Validate() error {
@@ -202,6 +226,27 @@ func (p *PostgresStoreConfig) Validate() error {
 	if p.MinReconnectInterval.Duration >= p.MaxReconnectInterval.Duration {
 		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
 	}
+	if p.MinOpenConnections < 0 {
+		return errors.New("MinOpenConnections should be greater than 0")
+	}
+	if p.MinOpenConnections > p.MaxOpenConnections {
+		return errors.New("MinOpenConnections should be less than MaxOpenConnections")
+	}
+	if p.MaxConnectionLifetime.Duration < 0 {
+		return errors.New("MaxConnectionLifetime should be greater than 0")
+	}
+	if p.MaxConnectionLifetimeJitter.Duration < 0 {
+		return errors.New("MaxConnectionLifetimeJitter should be greater than 0")
+	}
+	if p.MaxConnectionLifetimeJitter.Duration > p.MaxConnectionLifetime.Duration {
+		return errors.New("MaxConnectionLifetimeJitter should be less than MaxConnectionLifetime")
+	}
+	if p.HealthCheckInterval.Duration < 0 {
+		return errors.New("HealthCheckInterval should be greater than 0")
+	}
+	if err := p.ReadReplica.Validate(); err != nil {
+		return errors.Wrapf(err, "ReadReplica validation failed")
+	}
 	warning := "[WARNING] "
 	switch p.DriverName {
 	case DriverNamePgx:
@@ -218,6 +263,7 @@ func (p *PostgresStoreConfig) Validate() error {
 			logger.Info(warning + "MaxReconnectInterval " + pqAlternativeMessage)
 		}
 	case DriverNamePq:
+		logger.Info(warning + "DriverName='postgres' (pq) is deprecated. Please use DriverName='pgx' instead.")
 		pgxAlternativeMessage := "does not have an equivalent for pq driver. " +
 			"If you need this setting consider using pgx as a postgres driver by setting driverName='pgx' or " +
 			"setting KUMA_STORE_POSTGRES_DRIVER_NAME='pgx' env variable."
@@ -256,6 +302,11 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		MaxConnectionLifetime:       DefaultMaxConnectionLifetime,
 		MaxConnectionLifetimeJitter: DefaultMaxConnectionLifetimeJitter,
 		HealthCheckInterval:         DefaultHealthCheckInterval,
+		MaxListQueryElements:        0,
+		ReadReplica: ReadReplica{
+			Port:  5432,
+			Ratio: 100,
+		},
 	}
 }
 

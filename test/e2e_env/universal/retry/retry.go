@@ -19,17 +19,20 @@ func Policy() {
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Delete the default retry policy
+		// Delete the default meshretry policy
 		Eventually(func() error {
-			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "retry", "--mesh", meshName, "retry-all-"+meshName)
+			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
 		}).Should(Succeed())
 	})
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
@@ -76,7 +79,7 @@ conf:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}).Should(Succeed())
 
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
@@ -105,14 +108,6 @@ conf:
 				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		})
+		}, "1m", "1s", MustPassRepeatedly(3)).Should(Succeed())
 	})
 }

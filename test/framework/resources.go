@@ -1,8 +1,10 @@
 package framework
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -11,20 +13,45 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
+	var errs []error
+
 	for _, desc := range descriptor {
 		if _, ok := cluster.(*K8sCluster); ok {
-			return deleteMeshResourcesKubernetes(cluster, mesh, desc)
-		} else {
-			return deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc)
+			errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+			continue
 		}
+
+		errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
 	}
-	return nil
+
+	return errors.Join(errs...)
 }
 
-func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
+func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
+	_, err := retry.DoWithRetryE(
+		cluster.GetTesting(),
+		"delete policy",
+		10,
+		time.Second,
+		func() (string, error) {
+			return k8s.RunKubectlAndGetOutputE(
+				cluster.GetTesting(),
+				cluster.GetKubectlOptions(Config.KumaNamespace),
+				"delete",
+				descriptor.KumactlArg,
+				policyName,
+			)
+		},
+	)
+
+	return err
+}
+
+func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
 	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
 		return err
@@ -38,7 +65,7 @@ func deleteMeshResourcesUniversal(kumactl KumactlOptions, mesh string, descripto
 	return nil
 }
 
-func allResourcesOfType(kumactl KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
+func allResourcesOfType(kumactl kumactl.KumactlOptions, descriptor core_model.ResourceTypeDescriptor, mesh string) (core_model.ResourceList, error) {
 	dpps, err := kumactl.RunKumactlAndGetOutput("get", descriptor.KumactlListArg, "-m", mesh, "-o", "json")
 	if err != nil {
 		return nil, err

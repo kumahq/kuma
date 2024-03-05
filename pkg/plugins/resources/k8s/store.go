@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -55,6 +57,10 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return err
 	}
+
+	labels, annotations := splitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
+	obj.GetObjectMeta().SetLabels(labels)
+	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
@@ -83,6 +89,8 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 }
 
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
+	opts := store.NewUpdateOptions(fs...)
+
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		if typeIsUnregistered(err) {
@@ -90,6 +98,11 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
+
+	labels, annotations := splitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
+	obj.GetObjectMeta().SetLabels(labels)
+	obj.GetObjectMeta().SetAnnotations(annotations)
+	obj.SetMesh(r.GetMeta().GetMesh())
 
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
@@ -159,7 +172,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
 	if opts.Version != "" && r.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(r.Descriptor().Name, opts.Name, opts.Mesh)
+		return store.ErrorResourceConflict(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
 		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
@@ -206,7 +219,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
 	if coreName == "" {
-		return "", "", &store.PreconditionError{Reason: "name can't be empty"}
+		return "", "", store.PreconditionFormatError("name can't be empty")
 	}
 	switch scope {
 	case k8s_model.ScopeCluster:
@@ -214,12 +227,27 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	case k8s_model.ScopeNamespace:
 		name, ns, err := util_k8s.CoreNameToK8sName(coreName)
 		if err != nil {
-			return "", "", &store.PreconditionError{Reason: err.Error()}
+			return "", "", store.PreconditionFormatError(err.Error())
 		}
 		return name, ns, nil
 	default:
 		return "", "", errors.Errorf("unknown scope %s", scope)
 	}
+}
+
+// Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
+// We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
+func splitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
+	labels := maps.Clone(coreLabels)
+	annotations := maps.Clone(currentAnnotations)
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	if v, ok := labels[v1alpha1.DisplayName]; ok {
+		annotations[v1alpha1.DisplayName] = v
+		delete(labels, v1alpha1.DisplayName)
+	}
+	return labels, annotations
 }
 
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
@@ -254,6 +282,23 @@ func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
 
 func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
+	labels := maps.Clone(m.GetObjectMeta().GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
+		labels[v1alpha1.DisplayName] = displayName
+	} else {
+		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+	}
+	if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok && m.Namespace != "" {
+		labels[v1alpha1.KubeNamespaceTag] = m.Namespace
+	}
+
+	return labels
 }
 
 type KubeFactory interface {

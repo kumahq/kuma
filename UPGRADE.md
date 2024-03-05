@@ -6,11 +6,220 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upcoming release
+## Upgrade to `2.6.x`
+
+### Policy
+
+#### Sorting
+
+This change relates only to the new targetRef policies. When 2 policies have a tie on the targetRef kind we compare their names lexicographically.
+Policy merging now gives precedence to policies that lexicographically "less" than other policies, i.e. policy "aaa" takes precedence over "bbb" because "aaa" < "bbb".
+Previously, before 2.6.0 the order was the opposite.
+
+#### `targetRef.kind: MeshGateway`
+
+Note that when targeting `MeshGateways` you should be using `targetRef.kind:
+MeshGateway`. Previously `targetRef.kind: MeshService` was necessary but this
+left the control plane unable to fully validate policies for builtin gateway
+usage.
+
+##### `to` instead of `from`
+
+With `MeshFaultInjection` and `MeshRateLimit`, `spec.to` with `kind:
+MeshGateway` is now required instead of `spec.from` and `kind: MeshService`.
+
+### `MeshGateway`
+
+A new maximum length of 253 characters for listener hostnames has been introduced in order to ensure they are valid DNS names.
+
+### Unifying Default Connection Timeout Values
+
+To simplify configuration and provide a more consistent user experience, we've unified the default connection timeout values. When no `MeshTimeout` or `Timeout` policy is specified, the connection timeout will now be the same as the default `connectTimeout` values for `MeshTimeout` and `Timeout` policies. This value is now `5s`, which is a decrease from the previous default of `10s`.
+
+The connection timeout specifies the amount of time Envoy will wait for an upstream TCP connection to be established.
+
+The only users who need to take action are those who are explicitly relying on the previous default connection timeout value of `10s`. These users will need to create a new `MeshTimeout` policy with the appropriate `connectTimeout` value to maintain their desired behavior.
+
+We encourage all users to review their configuration, but we do not anticipate that this change will require any action for most users.
+
+### Default `TrafficRoute` and `TrafficPermission` resources are not created when creating a new `Mesh`
+
+We decided to remove default `TrafficRoute` and `TrafficPermission` policies that were created during a new mesh creation. Since this release your applications can communicate without need to apply any policy by default.
+If you want to keep the previous behaviour set `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` to `true`.
+
+**The following policies will no longer be created automatically**:
+  
+  * `CircuitBreaker`
+  * `Retry`
+  * `Timeout`
+  * `TrafficPermission`
+  * `TrafficRoute`
+
+**The following policies will be created by default**:
+
+  * `MeshCircuitBreaker`
+  * `MeshRetry`
+  * `MeshTimeout`
+
+> [!CAUTION]
+> Before enabling `mTLS`, remember to add `MeshTrafficPermission.`
+
+Previously, Kuma would automatically create the default `TrafficPermission` policy for traffic routing. However, starting from version `2.6.0`, this is no longer the case.
+
+If you are using `mTLS`, you will need to manually create the `MeshTrafficPermission` policy before enabling `mTLS`.
+
+The `MeshTrafficPermission` policy allows you to specify which services can communicate with each other. This is necessary in a `mTLS` environment because `mTLS` requires that all communication between services be authenticated and authorized.
+
+#### When is it appropriate to set the `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` environment variable to `true`?
+
+* When zones connecting to the global control plane may be running an older version than `2.6.0`.
+* When recreating an environment using continuous delivery (CD) with legacy policies, missing the `TrafficRoute` policy will prevent legacy policies from being applied.
+
+### Change of underlying envoy RBAC plugin for MeshTrafficPermission policies targeting HTTP services
+
+With the release of Kuma 2.6.0, we've made some changes to the implementation of `MeshTrafficPermission` policies targeting HTTP services. These changes primarily revolve around the use of the `envoy.filters.http.rbac` envoy filter instead of the `envoy.filters.network.rbac` filter. This migration entails the following adjustments:
+
+1. **Denied Request Response**: Rejected requests will now receive a 403 response code with the message `RBAC: access denied` instead of the previous 503 code. This aligns with the typical HTTP response code for authorization failures.
+
+2. **RBAC-Related Envoy Stats**: The prefix for RBAC-related Envoy stats has been updated from `<inbound|outbound>:<stat_prefix>.rbac.` to `http.<stat_prefix>.rbac.`. This reflects the use of the HTTP filter for RBAC enforcement. For instance, the stat `inbound:127.0.0.1:21011.rbac.allowed` will now become `http.127.0.0.1:21011.rbac.allowed.` If you're utilizing these stats in your observability stack, you'll need to update your configuration to reflect the change.
+
+To ensure a smooth transition to Kuma 2.6.0, carefully review your existing configuration files and make necessary adjustments related to denied request responses and RBAC-related Envoy stats.
+
+### Deprecation of postgres driverName=postgres (lib/pq)
+
+The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
+Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
+
+### Make format SI valid for bandwidth in MeshFaultInjection policy
+
+Prior to this upgrade `mbps` and `gbps` were used for units for parameter `conf.responseBandwidth.percentage`.
+These are not valid units according to the [International System of Units](https://en.wikipedia.org/wiki/International_System_of_Units) they are respectively corrected to `Gbps` and `Mbps` if using
+these invalid units convert them into `kbps` prior to upgrade to avoid invalid format.
+
+## Upgrade to `2.5.x`
+
+### Transparent-proxy and CNI v1 removal
+
+v2 has been default since 2.2.x. We are therefore removing v1.
+
+### Deprecated argument to transparent-proxy
+
+Parameters `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` are now merged into `--exclude-outbound-ports-for-uids` for `kumactl install transparent-proxy`.
+We've also added the matching Kubernetes annotation: `traffic.kuma.io/exclude-outbound-ports-for-uids`.
+The previous versions will still work but will be removed in the future.
+
+### More strict validation rules for resource names
+
+In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+
+New rule is applied for CREATE operations. The old rule is still applied for UPDATE, but this is going to change in Kuma 2.7.x or later.
+
+### API
+
+#### overview API coherency
+
+These endpoints are getting replaced to achieve more coherency on the API:
+
+- `/meshes/{mesh}/zoneegressoverviews` moves to `/meshes/{mesh}/zoneegresses/_overview`
+- `/meshes/{mesh}/zoneingresses+insights` moves to `/meshes/{mesh}/zone-ingresses/_overview`
+- `/meshes/{mesh}/dataplanes+insights` moves to `/meshes/{mesh}/dataplanes/_overview`
+- `/zones+insights` moves to `/zones/_overview`
+
+While you can use the old API they will be removed in a future version
+
+### Prometheus inbound listener is not secured by TrafficPermission anymore
+
+Due to the shadowing [issue](https://github.com/kumahq/kuma/issues/2417) with old TrafficPermission it was quite impossible to protect Prometheus inbound listener as expected.
+RBAC rules on the Prometheus inbound listener were blocking users from fully migrate to the new MeshTrafficPermission policy. 
+That's why we decided to discontinue TrafficPermission support on the Prometheus inbound listener starting 2.5.x.
+
+### Gateway API
+
+We support `v1` resources and `v1.0.0` of `gateway-api`. `v1beta1` resources are
+still supported but support for these WILL be removed in a future release.
+
+### KDS Delta enabled by default
+
+KDS Delta is enabled by default. You can fallback to SOTW KDS by setting `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED=false`.
+As a side effect, on kubernetes policies synced will be persisted in the `kuma-system` namespace instead of `default`.
+
+## Upgrade to `2.4.x`
+
+### Configuration change
+
+The configuration: `Metrics.Mesh.MinResyncTimeout` and `Metrics.Mesh.MaxResyncTimeout` are replaced by `Metrics.Mesh.MinResyncInterval` and `Metrics.Mesh.FullResyncInterval`.
+You can still use the current configs but it will be removed in the future.
+
+### **Breaking changes**
+
+#### Removal of service field in Dataplane outbound
+
+After a period of depreciation, the service field in now removed. The service name is only defined by the value of  `kuma.io/service` in the outbound tags field.
+
+## Upgrade to `2.3.x`
+
+### **Breaking changes**
+
+#### `MeshHTTPRoute`
+
+* Changed path match `type` from `Prefix` to `PathPrefix`
+
+#### `MeshAccessLog`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+* Added a new field `Type` for `Format` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+
+#### `MeshTrace`
+
+* Added a new field `Type` for `Backend` as a [Discriminator Field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md#discriminator-field)
+
+#### `kumactl` container image
+
+* Changed image's entrypoint to `/usr/bin/kumactl`
+
+This change was introduced to be consistent with `kuma-cp` and `kuma-dp` images,
+where names of images refer to binaries set in entrypoint. 
+
+Example valid before:
+```sh
+docker run kumahq/kumactl:2.2.1 kumactl install transparent-proxy --help
+```
+
+Equivalent example valid now:
+```sh
+docker run kumahq/kumactl:2.3.0 install transparent-proxy --help
+```
+
+#### TLS verification between Zone CP and Global CP
+
+If the CA used to sign the Global CP sync server is not provided to a Zone CP (HELM `controlPlane.tls.kdsZoneClient`, ENV: `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`), and the certificate is signed by a CA that is not included in the system's CA bundle on the Zone CP machine, you must do one of the following:
+* Provide the CA to the Zone CP, see https://kuma.io/docs/2.2.x/production/secure-deployment/certificates/#control-plane-to-control-plane-multizone .
+* Configure Zone CP. Set `KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY` or HELM value of `controlPlane.tls.kdsZoneClient.skipVerify` to `true`. 
+
+#### Removal of Common Name from generated certificates
+
+This only affects users who rely on generated certificates having a common name set.
+
+* `kumactl generate tls-certificate` generates certificates without CN
+* autogenerated TLS certificate for kuma-cp (when `general.tlsCertFile` is not provided) won't have CN
+
+## Upgrade to `2.2.x`
 
 ### Universal
 
-### Changed default postgres driver to pgx
+#### CentOS 7
+
+We are dropping support for running Envoy on CentOS 7 with this release and will
+not release CentOS 7 compatible Envoy builds.
+
+#### Changed default postgres driver to pgx
+
 - If you encounter any problems with the persistence layer please [submit an issue](https://github.com/kumahq/kuma/issues/new) and temporarily switch to the previous driver (`lib/pq`) by setting
 `DriverName=postgres` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME='postgres'` env variable.
 - Several configuration settings are not supported by the new driver right now, if used to configure them please try running with new defaults or [submit an issue](https://github.com/kumahq/kuma/issues/new).
@@ -19,28 +228,28 @@ List of unsupported configuration options:
   - MinReconnectInterval (used in events listener)
   - MaxReconnectInterval (used in events listener)
 
+#### Longer name of the resource in postgres
+
+Kuma now permits the creation of a resource with a name of up to 253 characters, which is an increase from the previous limit of 100 characters. This adjustment brings our system in line with the naming convention supported by Kubernetes.
+This change requires to run `kuma-cp migrate up` to apply changes to the postgres database.
+
 ### K8s
 
-### Removed deprecated annotations
+#### Removed deprecated annotations
 
 - `kuma.io/builtindns` and `kuma.io/builtindnsport` are removed in favour of `kuma.io/builtin-dns` and `kuma.io/builtin-dns-port` introduced in 1.8.0. If you are using the legacy CNI you main need to set these old annotations manually in your pod definition.
 - `kuma.io/sidecar-injection` is no longer supported as an annotation, you should use it as a label.
 
-### Helm
+#### Helm
 
 All containers now have defaults for `resources.requests.{cpu,memory}` and `resources.limits.{memory}`.
 There are new default values for `*.podSecurityContext` and `*.containerSecurityContext`, see `values.yaml`.
 
-### Gateway API
+#### Gateway API
 
 We now support version `v0.6.0` of the Gateway API. See the [upstream API
 changes](https://github.com/kubernetes-sigs/gateway-api/releases/tag/v0.6.0) for
 more info.
-
-### Longer name of the resource in postgres
-
-Kuma now permits the creation of a resource with a name of up to 253 characters, which is an increase from the previous limit of 100 characters. This adjustment brings our system in line with the naming convention supported by Kubernetes.
-This change requires to run `kuma-cp migrate up` to apply changes to the postgres database.
 
 ### Auth configuration of DP server in Kuma CP
 
@@ -102,6 +311,24 @@ helm upgrade --install --create-namespace --namespace kuma-system \
 ```sh
 kumactl install control-plane --set "legacy.transparentProxy=true" | kubectl apply -f-
 ```
+
+### Removal of deprecated options to reach applications bound to `localhost`
+
+The deprecated options `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS` and
+`defaults.enableLocalhostInboundClusters` were removed.
+
+This change affects only applications using transparent proxy.
+
+Applications that are binding to `localhost` won't be reachable anymore.
+This is the default behaviour from Kuma 1.8.0. Until now, it was possible to set
+a deprecated kuma-cp configurations `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
+or `defaults.enableLocalhostInboundClusters` to `true`, which was allowing to
+still reach these applications.
+
+One of the options to upgrade change address which the application is
+listening on, to `0.0.0.0`.
+Other option is to define `dataplane.networking.inbound[].serviceAddress`
+to the address which service is binding to.
 
 ## Upgrade to `2.1.x`
 

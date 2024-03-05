@@ -23,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 )
 
 type BootstrapGenerator interface {
@@ -39,7 +38,6 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
-	enableLocalhostInboundCluster bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -49,30 +47,28 @@ func NewDefaultBootstrapGenerator(
 		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
-		resManager:                    resManager,
-		config:                        serverConfig,
-		proxyConfig:                   proxyConfig,
-		xdsCertFile:                   dpServerCertFile,
-		authEnabledForProxyType:       authEnabledForProxyType,
-		enableReloadableTokens:        enableReloadableTokens,
-		hostsAndIps:                   hostsAndIps,
-		hdsEnabled:                    hdsEnabled,
-		defaultAdminPort:              defaultAdminPort,
-		enableLocalhostInboundCluster: enableLocalhostInboundCluster,
+		resManager:              resManager,
+		config:                  serverConfig,
+		proxyConfig:             proxyConfig,
+		xdsCertFile:             dpServerCertFile,
+		authEnabledForProxyType: authEnabledForProxyType,
+		enableReloadableTokens:  enableReloadableTokens,
+		hostsAndIps:             hostsAndIps,
+		hdsEnabled:              hdsEnabled,
+		defaultAdminPort:        defaultAdminPort,
 	}, nil
 }
 
 type bootstrapGenerator struct {
-	resManager                    core_manager.ResourceManager
-	config                        *bootstrap_config.BootstrapServerConfig
-	proxyConfig                   xds_config.Proxy
-	authEnabledForProxyType       map[string]bool
-	enableReloadableTokens        bool
-	xdsCertFile                   string
-	hostsAndIps                   SANSet
-	hdsEnabled                    bool
-	defaultAdminPort              uint32
-	enableLocalhostInboundCluster bool
+	resManager              core_manager.ResourceManager
+	config                  *bootstrap_config.BootstrapServerConfig
+	proxyConfig             xds_config.Proxy
+	authEnabledForProxyType map[string]bool
+	enableReloadableTokens  bool
+	xdsCertFile             string
+	hostsAndIps             SANSet
+	hdsEnabled              bool
+	defaultAdminPort        uint32
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -83,32 +79,52 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
+	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the request https://github.com/kumahq/kuma/issues/7220
+	accessLogSocketPath := request.AccessLogSocketPath
+	if accessLogSocketPath == "" {
+		accessLogSocketPath = core_xds.AccessLogSocketName(os.TempDir(), request.Name, request.Mesh)
+	}
+	metricsSocketPath := request.MetricsResources.SocketPath
+
+	if metricsSocketPath == "" {
+		metricsSocketPath = core_xds.MetricsHijackerSocketName(os.TempDir(), request.Name, request.Mesh)
+	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
-		Id:                    proxyId.String(),
-		AdminAddress:          b.config.Params.AdminAddress,
-		AdminAccessLogPath:    b.adminAccessLogPath(request.OperatingSystem),
-		XdsHost:               b.xdsHost(request),
-		XdsPort:               b.config.Params.XdsPort,
-		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout.Duration,
-		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
-		DataplaneToken:        request.DataplaneToken,
-		DataplaneTokenPath:    request.DataplaneTokenPath,
-		DataplaneResource:     request.DataplaneResource,
-		KumaDpVersion:         request.Version.KumaDp.Version,
-		KumaDpGitTag:          request.Version.KumaDp.GitTag,
-		KumaDpGitCommit:       request.Version.KumaDp.GitCommit,
-		KumaDpBuildDate:       request.Version.KumaDp.BuildDate,
-		EnvoyVersion:          request.Version.Envoy.Version,
-		EnvoyBuild:            request.Version.Envoy.Build,
-		EnvoyKumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
-		DynamicMetadata:       request.DynamicMetadata,
-		DNSPort:               request.DNSPort,
-		EmptyDNSPort:          request.EmptyDNSPort,
-		ProxyType:             request.ProxyType,
-		Features:              request.Features,
-		Resources:             request.Resources,
+		Id:                 proxyId.String(),
+		AdminAddress:       b.config.Params.AdminAddress,
+		AdminAccessLogPath: b.adminAccessLogPath(request.OperatingSystem),
+		XdsHost:            b.xdsHost(request),
+		XdsPort:            b.config.Params.XdsPort,
+		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout.Duration,
+		DataplaneToken:     request.DataplaneToken,
+		DataplaneTokenPath: request.DataplaneTokenPath,
+		DataplaneResource:  request.DataplaneResource,
+		Version: &mesh_proto.Version{
+			KumaDp: &mesh_proto.KumaDpVersion{
+				Version:   request.Version.KumaDp.Version,
+				GitTag:    request.Version.KumaDp.GitTag,
+				GitCommit: request.Version.KumaDp.GitCommit,
+				BuildDate: request.Version.KumaDp.BuildDate,
+			},
+			Envoy: &mesh_proto.EnvoyVersion{
+				Version:          request.Version.Envoy.Version,
+				Build:            request.Version.Envoy.Build,
+				KumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
+			},
+		},
+		DynamicMetadata:     request.DynamicMetadata,
+		DNSPort:             request.DNSPort,
+		EmptyDNSPort:        request.EmptyDNSPort,
+		ProxyType:           request.ProxyType,
+		Features:            request.Features,
+		Resources:           request.Resources,
+		Workdir:             request.Workdir,
+		AccessLogSocketPath: accessLogSocketPath,
+		MetricsSocketPath:   metricsSocketPath,
+		MetricsCertPath:     request.MetricsResources.CertPath,
+		MetricsKeyPath:      request.MetricsResources.KeyPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -146,6 +162,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.IsGatewayDataplane = true
 		}
 		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
+		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
+		if b.config.Params.CorefileTemplatePath != "" {
+			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
+			if err != nil {
+				return nil, kumaDpBootstrap, errors.Wrap(err, "could not read Corefile template")
+			}
+			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
+		}
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
@@ -230,15 +254,9 @@ func (b *bootstrapGenerator) getMetricsAddress(
 ) string {
 	if metricsConfig.Address != "" {
 		return metricsConfig.Address
-	} else {
-		var address string
-		if b.enableLocalhostInboundCluster {
-			address = core_mesh.IPv4Loopback.String()
-		} else {
-			address = dataplane.Spec.GetNetworking().GetAddress()
-		}
-		return address
 	}
+
+	return dataplane.Spec.GetNetworking().GetAddress()
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {

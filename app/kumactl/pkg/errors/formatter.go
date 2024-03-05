@@ -25,9 +25,19 @@ func FormatErrorWrapper(fn func(*cobra.Command, []string) error) func(*cobra.Com
 }
 
 func formatApiServerError(apiErr *types.Error) error {
-	msg := fmt.Sprintf("%s (%s)", apiErr.Title, apiErr.Details)
-	for _, cause := range apiErr.Causes {
-		msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Message)
+	// Get rid of back compat when we remove `Details` and `Causes`
+	if apiErr.Detail == "" {
+		apiErr.Detail = apiErr.Details
+	}
+	msg := fmt.Sprintf("%s (%s)", apiErr.Title, apiErr.Detail)
+	if apiErr.Causes != nil && apiErr.InvalidParameters == nil {
+		for _, cause := range apiErr.Causes {
+			msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Message)
+		}
+	} else {
+		for _, cause := range apiErr.InvalidParameters {
+			msg += fmt.Sprintf("\n* %s: %s", cause.Field, cause.Reason)
+		}
 	}
 	return errors.New(msg)
 }

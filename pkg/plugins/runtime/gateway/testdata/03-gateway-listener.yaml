@@ -2,7 +2,7 @@ Clusters:
   Resources:
     tracing:jaeger-collector:
       altStatName: tracing_jaeger-collector
-      connectTimeout: 10s
+      connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
         clusterName: tracing:jaeger-collector
@@ -62,12 +62,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: tracing-gateway:HTTP:8080
+              routeConfigName: tracing-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             tracing:
               overallSampling:
                 value: 100
@@ -79,6 +78,7 @@ Listeners:
                   collectorEndpoint: /api/v2/spans
                   collectorEndpointVersion: HTTP_JSON
                   collectorHostname: jaeger-collector.kuma-tracing:9411
+              spawnUpstreamSpan: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -89,8 +89,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    tracing-gateway:HTTP:8080:
-      name: tracing-gateway:HTTP:8080
+    tracing-gateway:HTTP:8080:*:
+      ignorePortInHostMatching: true
+      name: tracing-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false

@@ -56,5 +56,5 @@ func LookupBinaryPath(pathFns ...LookupPathFn) (string, error) {
 		}
 	}
 
-	return "", errors.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
+	return "", errors.Errorf("could not find executable binary in any of the following paths: %v", candidatePaths)
 }

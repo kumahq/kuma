@@ -35,4 +35,16 @@ var _ = Describe("Policies Endpoints", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(body).To(matchers.MatchGoldenJSON("testdata", "policies_list.golden.json"))
 	}))
+	It("should return the list of resources", test.Within(5*time.Second, func() {
+		// given
+
+		// when
+		resp, err := http.Get("http://" + apiServer.Address() + "/_resources")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(body).To(matchers.MatchGoldenJSON("testdata", "_resources_list.golden.json"))
+	}))
 })

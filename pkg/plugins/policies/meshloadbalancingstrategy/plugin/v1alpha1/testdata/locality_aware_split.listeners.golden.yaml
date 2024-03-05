@@ -1,0 +1,84 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 27777
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:backend
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=backend&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  timeout: 0s
+                  weightedClusters:
+                    clusters:
+                    - name: backend-bb38a94289f18fb9
+                      weight: 90
+                    - name: backend-c72efb5be46fae6b
+                      weight: 10
+          statPrefix: "127_0_0_1_27777"
+    name: outbound:127.0.0.1:27777
+    trafficDirection: OUTBOUND
+- name: payments
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 27778
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:backend
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=payment&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: payment
+                  hashPolicy:
+                  - queryParameter:
+                      name: queryparam
+                    terminal: true
+                  - connectionProperties:
+                      sourceIp: true
+                  timeout: 0s
+          statPrefix: "127_0_0_1_27778"
+    name: outbound:127.0.0.1:27778
+    trafficDirection: OUTBOUND

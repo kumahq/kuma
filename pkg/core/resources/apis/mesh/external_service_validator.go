@@ -30,6 +30,12 @@ func (es *ExternalServiceResource) Validate() error {
 		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
 	}))
 
+	if service := es.Spec.GetService(); service != "" {
+		if host, _, e := net.SplitHostPort(es.Spec.GetNetworking().GetAddress()); e == nil && service == host {
+			err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), "cannot be the same as networking.address")
+		}
+	}
+
 	return err.OrNil()
 }
 

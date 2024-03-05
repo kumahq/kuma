@@ -11,9 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/plugins"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/plugins/policies"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -52,11 +50,11 @@ func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	}
 }
 
-func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {
+func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (bool, error) {
 	node := &envoy_core.Node{Id: proxy.Id.String()}
-	snapshot, err := r.generator.GenerateSnapshot(ctx, proxy)
+	snapshot, err := r.generator.GenerateSnapshot(ctx, xdsCtx, proxy)
 	if err != nil {
-		return errors.Wrapf(err, "failed to generate a snapshot")
+		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
 
 	// To avoid assigning a new version every time, compare with
@@ -76,33 +74,32 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	// to Envoy. This ensures that we have as much in-band error
 	// information as possible, which is especially useful for tests
 	// that don't actually program an Envoy instance.
-	if len(changed) > 0 {
-		for _, resources := range snapshot.Resources {
-			for name, resource := range resources.Items {
-				if err := validateResource(resource.Resource); err != nil {
-					return errors.Wrapf(err, "invalid resource %q", name)
-				}
-			}
-		}
-
-		if err := snapshot.Consistent(); err != nil {
-			log.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
-			return errors.Wrap(err, "inconsistent snapshot")
-		}
-		log.Info("config has changed", "versions", changed)
-	} else {
+	if len(changed) == 0 {
 		log.V(1).Info("config is the same")
+		return false, nil
 	}
 
-	if err := r.cacher.Cache(node, snapshot); err != nil {
-		return errors.Wrap(err, "failed to store snapshot")
+	for _, resources := range snapshot.Resources {
+		for name, resource := range resources.Items {
+			if err := validateResource(resource.Resource); err != nil {
+				return false, errors.Wrapf(err, "invalid resource %q", name)
+			}
+		}
+	}
+
+	if err := snapshot.Consistent(); err != nil {
+		return false, errors.Wrap(err, "inconsistent snapshot")
+	}
+	log.Info("config has changed", "versions", changed)
+
+	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
+		return false, errors.Wrap(err, "failed to store snapshot")
 	}
 
 	for _, version := range changed {
 		r.statsCallbacks.ConfigReadyForDelivery(version)
 	}
-
-	return nil
+	return true, nil
 }
 
 func validateResource(r envoy_types.Resource) error {
@@ -154,7 +151,7 @@ func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 }
 
 type snapshotGenerator interface {
-	GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error)
+	GenerateSnapshot(context.Context, xds_context.Context, *model.Proxy) (*envoy_cache.Snapshot, error)
 }
 
 type TemplateSnapshotGenerator struct {
@@ -162,29 +159,17 @@ type TemplateSnapshotGenerator struct {
 	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
-func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
+func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx context.Context, xdsCtx xds_context.Context, proxy *model.Proxy) (*envoy_cache.Snapshot, error) {
 	template := s.ProxyTemplateResolver.GetTemplate(proxy)
 
 	gen := generator.ProxyTemplateGenerator{ProxyTemplate: template}
 
-	rs, err := gen.Generate(ctx, proxy)
+	rs, err := gen.Generate(ctx, xdsCtx, proxy)
 	if err != nil {
-		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return nil, err
 	}
-	allPolicies := plugins.Plugins().PolicyPlugins()
-	for _, policyName := range policies.Policies {
-		policy, exists := allPolicies[policyName]
-		if !exists {
-			reconcileLog.Error(errors.Errorf("policy doesn't exist"), "failed to apply policy's changes", "policyName", policyName)
-			continue
-		}
-		if err := policy.Apply(rs, ctx, proxy); err != nil {
-			return nil, errors.Wrapf(err, "could not apply policy plugin %s", policyName)
-		}
-	}
 	for _, hook := range s.ResourceSetHooks {
-		if err := hook.Modify(rs, ctx, proxy); err != nil {
+		if err := hook.Modify(rs, xdsCtx, proxy); err != nil {
 			return nil, errors.Wrapf(err, "could not apply hook %T", hook)
 		}
 	}
@@ -204,7 +189,7 @@ func (s *TemplateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 
 type snapshotCacher interface {
 	Get(*envoy_core.Node) (*envoy_cache.Snapshot, error)
-	Cache(*envoy_core.Node, *envoy_cache.Snapshot) error
+	Cache(context.Context, *envoy_core.Node, *envoy_cache.Snapshot) error
 	Clear(*envoy_core.Node)
 }
 
@@ -225,8 +210,8 @@ func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (*envoy_cache.Snapshot
 	return nil, err
 }
 
-func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
-	return s.store.SetSnapshot(context.TODO(), s.hasher.ID(node), snapshot)
+func (s *simpleSnapshotCacher) Cache(ctx context.Context, node *envoy_core.Node, snapshot *envoy_cache.Snapshot) error {
+	return s.store.SetSnapshot(ctx, s.hasher.ID(node), snapshot)
 }
 
 func (s *simpleSnapshotCacher) Clear(node *envoy_core.Node) {

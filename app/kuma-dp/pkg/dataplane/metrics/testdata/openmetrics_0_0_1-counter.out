@@ -1,0 +1,43 @@
+# HELP python_gc_objects_collected Objects collected during gc
+# TYPE python_gc_objects_collected counter
+python_gc_objects_collected_total{generation="0"} 309.0
+python_gc_objects_collected_total{generation="1"} 53.0
+python_gc_objects_collected_total{generation="2"} 0.0
+# HELP python_gc_objects_uncollectable Uncollectable objects found during GC
+# TYPE python_gc_objects_uncollectable counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections Number of times this generation was collected
+# TYPE python_gc_collections counter
+python_gc_collections_total{generation="0"} 77.0
+python_gc_collections_total{generation="1"} 7.0
+python_gc_collections_total{generation="2"} 0.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="10",patchlevel="8",version="3.10.8"} 1.0
+# TYPE envoy_cluster_assignment_stale counter
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 13
+envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 306
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 14
+envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 15
+envoy_cluster_assignment_stale{envoy_cluster_name="kuma_envoy_admin"} 16
+envoy_cluster_assignment_stale{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 17
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 18
+envoy_cluster_assignment_stale{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 19
+# TYPE envoy_http_downstream_rq_total counter
+envoy_http_downstream_rq_total{envoy_http_conn_manager_prefix="default_gateway",kuma_io_mesh_traffic="true"} 10
+# TYPE envoy_cluster_assignment_timeout_received counter
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client",kuma_io_mesh_traffic="true"} 3
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080",kuma_io_mesh_traffic="true"} 606
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 4
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 5
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="kuma_envoy_admin"} 6
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="localhost_3000",kuma_io_mesh_traffic="true"} 7
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv4",kuma_io_mesh_traffic="true"} 8
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="outbound_passthrough_ipv6",kuma_io_mesh_traffic="true"} 9
+# EOF

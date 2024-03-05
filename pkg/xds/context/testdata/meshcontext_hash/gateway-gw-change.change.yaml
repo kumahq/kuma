@@ -1,0 +1,14 @@
+type: MeshGateway
+mesh: mesh-2
+name: other-gateway
+selectors:
+  - match:
+      kuma.io/service: other-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      hostname: bar.example.com
+      tags:
+        port: http/8080
+

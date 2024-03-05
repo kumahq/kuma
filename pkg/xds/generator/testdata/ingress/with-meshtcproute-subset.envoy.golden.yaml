@@ -1,0 +1,101 @@
+resources:
+- name: mesh1:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh1_backend
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - region
+        - version
+    name: mesh1:backend
+    type: EDS
+- name: mesh1:backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh1:backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/zone: zone
+              mesh: mesh1
+              region: eu
+              version: v1
+            envoy.transport_socket_match:
+              kuma.io/zone: zone
+              mesh: mesh1
+              region: eu
+              version: v1
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.2
+              portValue: 2521
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/zone: zone
+              mesh: mesh1
+              region: us
+              version: v2
+            envoy.transport_socket_match:
+              kuma.io/zone: zone
+              mesh: mesh1
+              region: us
+              version: v2
+- name: inbound:10.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.0.0.1
+        portValue: 10001
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - backend{kuma.io/zone=zone,mesh=mesh1,region=eu,version=v1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh1:backend
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                region: eu
+                version: v1
+          statPrefix: mesh1_backend
+    - filterChainMatch:
+        serverNames:
+        - backend{mesh=mesh1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh1:backend
+          statPrefix: mesh1_backend
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:10.0.0.1:10001
+    trafficDirection: INBOUND

@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -29,7 +29,7 @@ var _ = Describe("RBACConfigurer", func() {
 				Mesh:      given.mesh,
 				StatsName: given.stats,
 			}
-			res, err := listeners.NewFilterChainBuilder(envoy.APIV3).Build()
+			res, err := listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).Build()
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

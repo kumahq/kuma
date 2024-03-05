@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -22,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -32,6 +34,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -44,6 +47,7 @@ type K8sNetworkingState struct {
 	ZoneEgress  PortFwd `json:"zoneEgress"`
 	ZoneIngress PortFwd `json:"zoneIngress"`
 	KumaCp      PortFwd `json:"kumaCp"`
+	MADS        PortFwd `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -57,7 +61,6 @@ type K8sCluster struct {
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
-	envoyTunnels        map[string]envoy_admin.Tunnel
 	portForwards        map[string]PortFwd
 }
 
@@ -73,7 +76,6 @@ func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sClu
 		deployments:         map[string]Deployment{},
 		defaultRetries:      Config.DefaultClusterStartupRetries,
 		defaultTimeout:      Config.DefaultClusterStartupTimeout,
-		envoyTunnels:        map[string]envoy_admin.Tunnel{},
 		portForwards:        map[string]PortFwd{},
 	}
 }
@@ -84,89 +86,58 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	return c
 }
 
-func (c *K8sCluster) createPortForward(
-	t testing.TestingT,
-	kubectlOptions *k8s.KubectlOptions,
-	resourceType k8s.KubeResourceType,
-	resourceName string,
-	port int,
-) error {
+func (c *K8sCluster) WithKubeConfig(kubeConfigPath string) Cluster {
+	c.kubeconfig = kubeConfigPath
+	return c
+}
+
+func (c *K8sCluster) PortForwardService(name, namespace string, port int) error {
 	localPort, err := utils.GetFreePort()
 	if err != nil {
 		return errors.Wrapf(err, "getting free port for the new tunnel failed")
 	}
-	tunnel := k8s.NewTunnel(kubectlOptions, resourceType, resourceName, localPort, port)
 
-	if err := tunnel.ForwardPortE(t); err != nil {
+	tnl := k8s.NewTunnel(c.GetKubectlOptions(namespace), k8s.ResourceTypeService, name, localPort, port)
+	if err := tnl.ForwardPortE(c.t); err != nil {
 		return errors.Wrapf(err, "port forwarding for %d:%d failed", localPort, port)
 	}
-	c.portForwards[resourceName] = PortFwd{
-		apiServerTunnel:   tunnel,
-		ApiServerEndpoint: tunnel.Endpoint(),
+
+	c.portForwards[name] = PortFwd{
+		apiServerTunnel:   tnl,
+		ApiServerEndpoint: tnl.Endpoint(),
 	}
 
 	return nil
 }
 
-func (c *K8sCluster) createEgressEnvoyTunnel() error {
-	err := c.createPortForward(
-		c.t,
-		c.GetKubectlOptions(Config.KumaNamespace),
-		k8s.ResourceTypeService,
-		Config.ZoneEgressApp,
-		9901,
-	)
-	if err != nil {
-		return err
-	}
-	err = c.createEnvoyAdminTunnel(c.portForwards[Config.ZoneEgressApp], Config.ZoneEgressApp)
-	if err != nil {
-		return err
-	}
+func (c *K8sCluster) AddPortForward(portForwards PortFwd, name string) error {
+	c.portForwards[name] = portForwards
 	return nil
 }
 
-func (c *K8sCluster) createIngressEnvoyTunnel() error {
-	err := c.createPortForward(
-		c.t,
-		c.GetKubectlOptions(Config.KumaNamespace),
-		k8s.ResourceTypeService,
-		Config.ZoneIngressApp,
-		9901,
-	)
-	if err != nil {
-		return err
-	}
-	err = c.createEnvoyAdminTunnel(c.portForwards[Config.ZoneIngressApp], Config.ZoneIngressApp)
-	if err != nil {
-		return err
-	}
-	return nil
+func (c *K8sCluster) GetPortForward(name string) PortFwd {
+	return c.portForwards[name]
 }
 
-func (c *K8sCluster) createEnvoyAdminTunnel(portForwards PortFwd, name string) error {
-	t, err := tunnel.NewK8sEnvoyAdminTunnel(c.t, portForwards.ApiServerEndpoint)
-	if err != nil {
-		return err
-	}
-	c.envoyTunnels[name] = t
-	return nil
+func (c *K8sCluster) ClosePortForward(name string) {
+	c.portForwards[name].apiServerTunnel.Close()
+	delete(c.portForwards, name)
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	tnl, ok := c.portForwards[Config.ZoneEgressApp]
 	if !ok {
 		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
 	}
-	return t
+	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
+	tnl, ok := c.portForwards[Config.ZoneIngressApp]
 	if !ok {
 		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
-	return t
+	return tunnel.NewK8sEnvoyAdminTunnel(c.t, tnl.ApiServerEndpoint)
 }
 
 func (c *K8sCluster) Verbose() bool {
@@ -307,16 +278,11 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string) error {
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	argsMap := map[string]string{
+		"--mode":                      mode,
 		"--namespace":                 Config.KumaNamespace,
 		"--control-plane-repository":  Config.KumaCPImageRepo,
 		"--dataplane-repository":      Config.KumaDPImageRepo,
 		"--dataplane-init-repository": Config.KumaInitImageRepo,
-	}
-	if Config.Arch == "arm64" {
-		argsMap["--control-plane-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--cni-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--ingress-node-selector"] = "kubernetes.io/arch=arm64"
-		argsMap["--egress-node-selector"] = "kubernetes.io/arch=arm64"
 	}
 	if Config.KumaImageRegistry != "" {
 		argsMap["--control-plane-registry"] = Config.KumaImageRegistry
@@ -324,7 +290,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--dataplane-init-registry"] = Config.KumaImageRegistry
 	}
 
-	if Config.KumaImageTag != "" {
+	if Config.KumaImageTag != "" && Config.KumaImageTag != "unknown" {
 		argsMap["--control-plane-version"] = Config.KumaImageTag
 		argsMap["--dataplane-version"] = Config.KumaImageTag
 		argsMap["--dataplane-init-version"] = Config.KumaImageTag
@@ -332,7 +298,13 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	switch mode {
 	case core.Zone:
-		argsMap["--kds-global-address"] = c.opts.globalAddress
+		if c.opts.globalAddress != "" {
+			argsMap["--zone"] = c.ZoneName()
+			argsMap["--kds-global-address"] = c.opts.globalAddress
+		}
+	}
+	if !Config.UseLoadBalancer {
+		argsMap["--use-node-port"] = ""
 	}
 
 	if c.opts.zoneIngress {
@@ -350,14 +322,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-net-dir"] = Config.CNIConf.NetDir
 		argsMap["--cni-bin-dir"] = Config.CNIConf.BinDir
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
-
-		if c.opts.cniV1 {
-			argsMap["--set"] = "legacy.cni.enabled=true"
-		}
-	}
-
-	if !c.opts.cni && c.opts.transparentProxyV1 {
-		argsMap["--set"] = "legacy.transparentProxy=true"
 	}
 
 	if Config.XDSApiVersion != "" {
@@ -396,13 +360,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
 	}
-	if Config.Arch == "arm64" {
-		values[`controlPlane.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`cni.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`ingress.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`egress.nodeSelector.kubernetes\.io/arch`] = "arm64"
-		values[`hooks.nodeSelector.kubernetes\.io/arch`] = "arm64"
-	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
 	}
@@ -431,10 +388,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.confName"] = Config.CNIConf.ConfName
 	}
 
-	if c.opts.cniV1 {
-		values["legacy.cni.enabled"] = "true"
-	}
-
 	if Config.CIDR != "" {
 		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = Config.CIDR
 	}
@@ -445,8 +398,11 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
 	case core.Zone:
-		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
-		values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
+		if c.opts.globalAddress != "" {
+			values["controlPlane.zone"] = c.ZoneName()
+			values["controlPlane.kdsGlobalAddress"] = c.opts.globalAddress
+			values["controlPlane.tls.kdsZoneClient.skipVerify"] = "true"
+		}
 	}
 
 	for _, value := range c.opts.noHelmOpts {
@@ -528,13 +484,11 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		replicas = c.opts.cpReplicas
 	}
 
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, c.opts.apiHeaders)
 
 	switch mode {
 	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
+		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
 	var err error
@@ -549,35 +503,46 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 		err = c.deployKumaViaHelm(mode)
 	default:
-		return errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
+		err = errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
 	}
-
 	if err != nil {
 		return err
 	}
 
-	err = c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas)
-	if err != nil {
-		return err
+	// First wait for kuma cp to start, then wait for the other components (they all need the CP anyway)
+	if err := c.WaitApp(Config.KumaServiceName, Config.KumaNamespace, replicas); err != nil {
+		return errors.Wrap(err, "Kuma control-plane failed to start")
 	}
 
+	var wg sync.WaitGroup
+	var appsToInstall []appInstallation
 	if c.opts.cni {
-		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
-		if err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1, nil})
 	}
-
 	if c.opts.zoneIngress {
-		if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
-			return err
-		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
+	}
+	if c.opts.zoneEgress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1, nil})
 	}
 
-	if c.opts.zoneEgress {
-		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
-			return err
+	for i := range appsToInstall {
+		idx := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			appsToInstall[idx].Outcome = c.WaitApp(appsToInstall[idx].Name, appsToInstall[idx].Namespace, appsToInstall[idx].Replicas)
+		}()
+	}
+
+	wg.Wait() // Because of the wait group we have a memory barrier which allows us to read Outcome in a thread safe manner.
+	for _, appInstall := range appsToInstall {
+		if appInstall.Outcome != nil {
+			err = multierr.Append(err, errors.Wrapf(appInstall.Outcome, "%s failed to start", appInstall.Name))
 		}
+	}
+	if err != nil {
+		return err
 	}
 
 	if c.opts.zoneEgressEnvoyAdminTunnel {
@@ -585,7 +550,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
 		}
 
-		if err := c.createEgressEnvoyTunnel(); err != nil {
+		if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -595,7 +560,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
 		}
 
-		if err := c.createIngressEnvoyTunnel(); err != nil {
+		if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 			return err
 		}
 	}
@@ -610,7 +575,8 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
 		if err != nil {
-			return err
+			deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName)
+			return &K8sDecoratedError{Err: err, Details: deploymentDetails}
 		}
 	}
 
@@ -653,7 +619,11 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma {
+		return c.VerifyKuma()
+	}
+
+	return nil
 }
 
 func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {
@@ -664,13 +634,6 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	c.opts.apply(opt...)
 	if c.opts.cpReplicas != 0 {
 		c.controlplane.replicas = c.opts.cpReplicas
-	}
-
-	switch mode {
-	case core.Zone:
-		if c.opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for zone")
-		}
 	}
 
 	if err := c.upgradeKumaViaHelm(mode); err != nil {
@@ -716,7 +679,7 @@ func (c *K8sCluster) StartZoneIngress() error {
 	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.createIngressEnvoyTunnel(); err != nil {
+	if err := c.PortForwardService(Config.ZoneIngressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil
@@ -727,7 +690,7 @@ func (c *K8sCluster) StopZoneIngress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards(Config.ZoneIngressApp)
+	c.ClosePortForward(Config.ZoneIngressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone ingress to be down",
 		c.defaultRetries,
@@ -755,7 +718,7 @@ func (c *K8sCluster) StartZoneEgress() error {
 	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 		return err
 	}
-	if err := c.createEgressEnvoyTunnel(); err != nil {
+	if err := c.PortForwardService(Config.ZoneEgressApp, Config.KumaNamespace, 9901); err != nil {
 		return err
 	}
 	return nil
@@ -766,7 +729,7 @@ func (c *K8sCluster) StopZoneEgress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
 		return err
 	}
-	c.closePortForwards(Config.ZoneEgressApp)
+	c.ClosePortForward(Config.ZoneEgressApp)
 	_, err := retry.DoWithRetryE(c.t,
 		"wait for zone egress to be down",
 		c.defaultRetries,
@@ -826,7 +789,11 @@ func (c *K8sCluster) RestartControlPlane() error {
 		return err
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma {
+		return c.VerifyKuma()
+	}
+
+	return nil
 }
 
 func (c *K8sCluster) GetKuma() ControlPlane {
@@ -867,12 +834,6 @@ func (c *K8sCluster) VerifyKuma() error {
 	}
 
 	return nil
-}
-
-func (c *K8sCluster) closePortForwards(name string) {
-	c.portForwards[name].apiServerTunnel.Close()
-	delete(c.portForwards, name)
-	delete(c.envoyTunnels, name)
 }
 
 func (c *K8sCluster) deleteCRDs() error {
@@ -960,28 +921,7 @@ func (c *K8sCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *K8sCluster) AddPortForward(portForwards PortFwd, name string) error {
-	c.portForwards[name] = portForwards
-	err := c.createEnvoyAdminTunnel(portForwards, name)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *K8sCluster) GetZoneIngressPortForward() PortFwd {
-	return c.getPortForward(Config.ZoneIngressApp)
-}
-
-func (c *K8sCluster) GetZoneEgressPortForward() PortFwd {
-	return c.getPortForward(Config.ZoneEgressApp)
-}
-
-func (c *K8sCluster) getPortForward(name string) PortFwd {
-	return c.portForwards[name]
-}
-
-func (c *K8sCluster) GetKumactlOptions() *KumactlOptions {
+func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 
@@ -1033,8 +973,10 @@ func (c *K8sCluster) CreateNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteNamespace(namespace string) error {
-	err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
-	if err != nil {
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -1044,11 +986,25 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
-	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	// speed up namespace termination by terminating pods without grace period.
+	// Namespace is then deleted in ~6s instead of ~43s.
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+	now := time.Now()
+	_, err := retry.DoWithRetryE(c.GetTesting(), "remove mesh", c.defaultRetries, c.defaultTimeout,
+		func() (string, error) {
+			return "", k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
+		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
+	return err
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -1140,7 +1096,7 @@ func (c *K8sCluster) DeleteDeployment(name string) error {
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
-	k8s.WaitUntilNumPodsCreated(c.t,
+	err := k8s.WaitUntilNumPodsCreatedE(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
@@ -1148,6 +1104,10 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		replicas,
 		c.defaultRetries,
 		c.defaultTimeout)
+	if err != nil {
+		deploymentDetails := ExtractDeploymentDetails(c.t, c.GetKubectlOptions(namespace), name)
+		return &K8sDecoratedError{Err: err, Details: deploymentDetails}
+	}
 
 	pods := k8s.ListPods(c.t,
 		c.GetKubectlOptions(namespace),
@@ -1160,13 +1120,15 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	}
 
 	for i := 0; i < replicas; i++ {
-		err := k8s.WaitUntilPodAvailableE(c.t,
+		podError := k8s.WaitUntilPodAvailableE(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
 			c.defaultRetries,
 			c.defaultTimeout)
-		if err != nil {
-			return err
+
+		if podError != nil {
+			podDetails := ExtractPodDetails(c.t, c.GetKubectlOptions(namespace), pods[i].Name)
+			return &K8sDecoratedError{Err: podError, Details: podDetails}
 		}
 	}
 	return nil
@@ -1280,4 +1242,18 @@ func (c *K8sCluster) K8sVersionCompare(otherVersion string, baseMessage string) 
 		c.t.Fatal(err)
 	}
 	return version.Compare(semver.MustParse(otherVersion)), fmt.Sprintf("%s with k8s version %s", baseMessage, version)
+}
+
+func (c *K8sCluster) ZoneName() string {
+	if c.opts.zoneName != "" {
+		return c.opts.zoneName
+	}
+	return c.Name()
+}
+
+type appInstallation struct {
+	Name      string
+	Namespace string
+	Replicas  int
+	Outcome   error
 }

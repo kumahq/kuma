@@ -1,3 +1,4 @@
+type: object
 properties:
   type:
     description: 'the type of the resource'

@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Metrics",
+    "definitions": {
+        "Metrics": {
+            "properties": {
+                "enabledBackend": {
+                    "type": "string",
+                    "description": "Name of the enabled backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available Metrics backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics",
+            "description": "Metrics defines configuration for metrics that should be collected and exposed by dataplanes."
+        },
+        "kuma.mesh.v1alpha1.MetricsBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'prometheus')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics Backend",
+            "description": "MetricsBackend defines metric backends"
+        }
+    }
+}

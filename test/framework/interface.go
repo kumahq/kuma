@@ -9,12 +9,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 )
-
-type Clusters interface {
-	GetCluster(name string) Cluster
-	Cluster
-}
 
 type InstallationMode string
 
@@ -46,12 +42,14 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
-	cniV1                       bool
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
 	yamlConfig                  string
-	transparentProxyV1          bool
+	apiHeaders                  []string
+	zoneName                    string
+	verifyKuma                  bool
+	setupKumactl                bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -64,7 +62,8 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
-	k.transparentProxyV1 = true
+	k.verifyKuma = true
+	k.setupKumactl = true
 
 	// Apply options.
 	for _, o := range opts {
@@ -113,7 +112,8 @@ type appDeploymentOptions struct {
 	appendDataplaneConfig string
 	boundToContainerIp    bool
 	serviceAddress        string
-	transparentProxyV1    bool
+	dpEnvs                map[string]string
+	additionalTags        map[string]string
 
 	dockerVolumes       []string
 	dockerContainerName string
@@ -257,6 +257,12 @@ func WithoutHelmOpt(name string) KumaDeploymentOption {
 	})
 }
 
+func ClearNoHelmOpts() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.noHelmOpts = nil
+	})
+}
+
 func WithEnv(name, value string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.env[name] = value
@@ -308,15 +314,9 @@ func WithEgress() KumaDeploymentOption {
 	})
 }
 
-func WithCNI(version ...CNIVersion) KumaDeploymentOption {
-	if len(version) > 1 {
-		panic("only one arg is supported")
-	}
+func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-		if len(version) == 1 && version[0] == CNIVersion1 {
-			o.cniV1 = true
-		}
 	})
 }
 
@@ -349,6 +349,30 @@ type MeshUpdateFunc func(mesh *mesh_proto.Mesh) *mesh_proto.Mesh
 func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.meshUpdateFuncs[mesh] = append(o.meshUpdateFuncs[mesh], u)
+	})
+}
+
+func WithApiHeaders(headers ...string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.apiHeaders = headers
+	})
+}
+
+func WithZoneName(zoneName string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneName = zoneName
+	})
+}
+
+func WithoutVerifyingKuma() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.verifyKuma = false
+	})
+}
+
+func WithoutConfiguringKumactl() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.setupKumactl = false
 	})
 }
 
@@ -479,10 +503,15 @@ func WithTransparentProxy(transparent bool) AppDeploymentOption {
 	})
 }
 
-func WithTransparentProxyV1(transparent bool) AppDeploymentOption {
+func WithAdditionalTags(tags map[string]string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.transparent = &transparent
-		o.transparentProxyV1 = true
+		o.additionalTags = tags
+	})
+}
+
+func WithDpEnvs(envs map[string]string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dpEnvs = envs
 	})
 }
 
@@ -532,7 +561,7 @@ type Cluster interface {
 	GetKumaCPLogs() (string, error)
 	VerifyKuma() error
 	DeleteKuma() error
-	GetKumactlOptions() *KumactlOptions
+	GetKumactlOptions() *kumactl.KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
 	DeleteDeployment(name string) error
@@ -542,6 +571,7 @@ type Cluster interface {
 	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
 	Verbose() bool
 	Install(fn InstallFunc) error
+	ZoneName() string
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
@@ -557,13 +587,16 @@ type Cluster interface {
 type ControlPlane interface {
 	GetName() string
 	GetMetrics() (string, error)
+	GetMonitoringAssignment(clientId string) (string, error)
 	GetKDSServerAddress() string
 	GetKDSInsecureServerAddress() string
+	GetXDSServerAddress() string
 	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
+	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)
 }

@@ -1,0 +1,30 @@
+# mesh-1 true
+type: Mesh
+name: mesh-1
+---
+type: Mesh
+name: mesh-2
+---
+type: Dataplane
+name: gw-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: edge-gateway
+---
+type: MeshGateway
+mesh: mesh-1
+name: edge-gateway
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      hostname: foo.example.com
+      tags:
+        port: http/8080

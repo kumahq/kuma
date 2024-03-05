@@ -1,4 +1,4 @@
-package postgres
+package postgres_test
 
 import (
 	"testing"
@@ -7,11 +7,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
 
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/test"
 	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var c test_postgres.PostgresContainer
+
+const (
+	dbVersion plugins.DbVersion = 1701180642
+)
 
 func TestPostgresStore(t *testing.T) {
 	testcontainers.SkipIfProviderIsNotHealthy(t)

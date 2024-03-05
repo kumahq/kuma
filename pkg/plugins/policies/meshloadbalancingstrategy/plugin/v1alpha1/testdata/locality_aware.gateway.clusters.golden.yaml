@@ -1,0 +1,21 @@
+resources:
+- name: backend-d230d75c0fcb71dc
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend-d230d75c0fcb71dc
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}

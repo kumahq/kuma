@@ -1,5 +1,16 @@
-{{- if .Values.patchSystemNamespace }}
-  {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+{{- if and ( .Values.noHelmHooks ) (eq .Values.controlPlane.environment "kubernetes") }}
+  {{- $errorMessage := ".Values.noHelmHooks is set. You must manually create and label the system namespace with kuma.io/system-namespace: \"true\" before installing or upgrading the chart" }}
+  {{- $systemNamespace := (lookup "v1" "Namespace" "" .Release.Namespace) }}
+  {{- if not $systemNamespace }}
+      {{- fail $errorMessage }}
+    {{- end }}
+  {{- $systemNamespaceLabels := ($systemNamespace).metadata.labels }}
+  {{- if ne (get $systemNamespaceLabels "kuma.io/system-namespace") "true" }}
+    {{- fail $errorMessage }}
+  {{- end }}
+{{- else}}
+  {{- if .Values.patchSystemNamespace }}
+    {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -90,7 +101,7 @@ spec:
       {{- toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
       containers:
         - name: pre-install-job
-          image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
+          image: "{{ .Values.kubectl.image.registry }}/{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
           securityContext:
           {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}
           resources:
@@ -110,3 +121,4 @@ spec:
             - '--patch'
             - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
   {{- end }}
+{{- end }}

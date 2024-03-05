@@ -11,7 +11,8 @@ networking:
   outbound:
     - address: 192.168.0.4
       port: 1234
-      service: redis
+      tags:
+        kuma.io/service: redis
   transparentProxying:
     redirectPort: 15001
     directAccessServices: ["*"]

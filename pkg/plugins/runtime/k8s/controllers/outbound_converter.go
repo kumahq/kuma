@@ -27,7 +27,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 		reachableServicesMap[service] = true
 	}
 
-	dataplanes := []*core_mesh.DataplaneResource{}
+	var dataplanes []*core_mesh.DataplaneResource
 	for _, other := range others {
 		dp := core_mesh.NewDataplaneResource()
 		if err := p.ResourceConverter.ToCoreResource(other, dp); err != nil {
@@ -50,6 +50,16 @@ func (p *PodConverter) OutboundInterfacesFor(
 
 		// Do not generate outbounds for service-less
 		if isServiceLess(port) {
+			continue
+		}
+
+		// Do not generate hostnames for ExternalName Service
+		if isExternalNameService(service) {
+			converterLog.V(1).Info(
+				"ignoring outbound generation for unsupported ExternalName Service",
+				"name", service.GetName(),
+				"namespace", service.GetNamespace(),
+			)
 			continue
 		}
 
@@ -83,7 +93,18 @@ func (p *PodConverter) OutboundInterfacesFor(
 }
 
 func isHeadlessService(svc *kube_core.Service) bool {
-	return svc.Spec.ClusterIP == "None"
+	return svc.Spec.ClusterIP == kube_core.ClusterIPNone
+}
+
+// Services of ExternalName type should not have any selectors.
+// Kubernetes does not validate this, so in rare cases, a service of
+// ExternalName type could point to a workload inside the mesh. If this
+// happens, we will add the service to the VIPs config map, but we will
+// not be able to obtain its IP address. As a result, the key in the map
+// will be incorrect (e.g., "1:"). We do not currently support
+// ExternalName services, so we can safely skip them from processing.
+func isExternalNameService(svc *kube_core.Service) bool {
+	return svc != nil && svc.Spec.Type == kube_core.ServiceTypeExternalName
 }
 
 func isServiceLess(port uint32) bool {

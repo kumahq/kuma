@@ -23,7 +23,7 @@ var _ = Describe("postgresLeaderElector", func() {
 		Expect(c.Start()).To(Succeed())
 		cfg, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
-		sql, err := common_postgres.ConnectToDb(*cfg)
+		sql, err := common_postgres.ConnectToDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		createElector := func(name string) component.LeaderElector {

@@ -14,6 +14,36 @@
   {{ end }}
 {{ end }}
 
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
+  {{ fail $msg }}
+{{ end }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if not (empty .Values.controlPlane.zone) }}
+    {{ if gt (len .Values.controlPlane.zone) 253 }}
+      {{ fail "controlPlane.zone must be no more than 253 characters" }}
+    {{ else }}
+      {{ if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" .Values.controlPlane.zone) }}
+        {{ fail "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character" }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
+    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
+    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+      {{ fail $msg }}
+    {{ end }}
+  {{ end }}
+{{ else }}
+  {{ if not (empty .Values.controlPlane.zone) }}
+    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
+  {{ end }}
+  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
+    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
+  {{ end }}
+{{ end }}
+
 {{- $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
 {{- if eq .Values.controlPlane.environment "universal" }}
 {{- $defaultEnv = include "kuma.universal.defaultEnv" . | fromYaml | pluck "env" | first }}
@@ -25,6 +55,9 @@
 {{- end }}
 {{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
 {{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
+{{- $defaultSecrets := include "kuma.parentSecrets" . | fromYaml }}
+{{- $extraSecrets := .Values.controlPlane.extraSecrets }}
+{{- $mergedSecrets := merge $extraSecrets $defaultSecrets }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -32,10 +65,12 @@ metadata:
   name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  annotations: {{ include "kuma.cpDeploymentAnnotations" . | nindent 4 }}
 spec:
   {{- if not .Values.controlPlane.autoscaling.enabled }}
   replicas: {{ .Values.controlPlane.replicas }}
   {{- end }}
+  minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -48,7 +83,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
+        {{- if .Values.restartOnSecretChange }}
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
+        {{- end }}
         {{- range $key, $value := $.Values.controlPlane.podAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
@@ -148,6 +185,7 @@ spec:
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}
+            - --log-output-path={{ .Values.controlPlane.logOutputPath }}
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
@@ -196,6 +234,22 @@ spec:
               subPath: ca.crt
               readOnly: true
           {{- end }}
+          {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
+            {{- if .Values.controlPlane.tls.general.secretName }}
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: general-tls-cert{{- if .Values.controlPlane.tls.general.caSecretName }}-ca{{- end }}
+              mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            {{- end }}
+          {{- end }}
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
@@ -240,10 +294,11 @@ spec:
               mountPath: {{ $extraConfigMap.mountPath }}
               readOnly: {{ $extraConfigMap.readOnly }}
           {{- end }}
-          {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
-            - name: {{ $extraSecret.name }}
-              mountPath: {{ $extraSecret.mountPath }}
-              readOnly: {{ $extraSecret.readOnly }}
+          {{- range $mergedSecret := $mergedSecrets }}
+            - name: {{ $mergedSecret.name }}
+              mountPath: {{ $mergedSecret.mountPath }}
+              subPath: {{ $mergedSecret.subPath }}
+              readOnly: {{ $mergedSecret.readOnly }}
           {{- end }}
             - name: tmp
               mountPath: /tmp
@@ -277,6 +332,18 @@ spec:
         - name: general-tls-cert
           secret:
             secretName: {{ include "kuma.name" . }}-tls-cert
+        {{- end }}
+        {{- if .Values.controlPlane.tls.general.caSecretName }}
+        - name: general-tls-cert-ca
+          secret:
+            secretName: {{ .Values.controlPlane.tls.general.caSecretName }}
+        {{- end }}
+      {{- end }}
+      {{- if and (eq .Values.controlPlane.environment "universal") (eq .Values.controlPlane.mode "zone") }}
+        {{- if .Values.controlPlane.tls.general.secretName }}
+        - name: general-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.general.secretName }}
         {{- end }}
         {{- if .Values.controlPlane.tls.general.caSecretName }}
         - name: general-tls-cert-ca
@@ -322,10 +389,10 @@ spec:
           configMap:
             name: {{ $extraConfigMap.name }}
         {{- end }}
-        {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
-        - name: {{ $extraSecret.name }}
+        {{- range $mergedSecret := $mergedSecrets }}
+        - name: {{ $mergedSecret.name }}
           secret:
-            secretName: {{ $extraSecret.name }}
+            secretName: {{ $mergedSecret.name }}
         {{- end }}
         - name: tmp
           emptyDir: {}

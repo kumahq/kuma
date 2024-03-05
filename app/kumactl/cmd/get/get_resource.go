@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -48,21 +47,8 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 				return fmt.Errorf("Scope %s is unsupported", desc.Scope)
 			}
 
-			resources := desc.NewList()
-			if err := resources.AddItem(resource); err != nil {
-				return err
-			}
-
-			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
-			case output.TableFormat:
-				return ResolvePrinter(desc.Name, resource.Descriptor().Scope).Print(pctx.Now(), resources, cmd.OutOrStdout())
-			default:
-				printer, err := printers.NewGenericPrinter(format)
-				if err != nil {
-					return err
-				}
-				return printer.Print(rest_types.From.Resource(resource), cmd.OutOrStdout())
-			}
+			format := output.Format(pctx.GetContext.Args.OutputFormat)
+			return printers.GenericPrint(format, resource, ResolvePrinter(desc.Name, resource.Descriptor().Scope, pctx.Now()), cmd.OutOrStdout())
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")

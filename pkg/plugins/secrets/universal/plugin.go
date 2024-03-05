@@ -14,5 +14,5 @@ func init() {
 }
 
 func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
-	return secret_store.NewSecretStore(pc.ResourceStore()), nil
+	return secret_store.NewSecretStore(pc.ResourceStore().DefaultResourceStore()), nil
 }

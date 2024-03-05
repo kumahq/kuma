@@ -1,0 +1,31 @@
+# MeshTrace with overriding a backend
+type: MeshTrace
+mesh: mesh-1
+name: mt-1
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    tags:
+      - name: team
+        literal: core
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
+---
+type: MeshTrace
+mesh: mesh-1
+name: mt-2
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  default:
+    tags:
+      - name: team
+        literal: support
+    backends:
+      - type: Datadog
+        datadog:
+          url: http://ingest.datadoghq.eu:8126

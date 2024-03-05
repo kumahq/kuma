@@ -94,7 +94,7 @@ func addInspectEnvoyAdminEndpoints(
 
 func inspectDataplaneAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(user.User) error,
+	access func(context.Context, user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -103,26 +103,26 @@ func inspectDataplaneAdmin(
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		if err := access(user.FromCtx(ctx)); err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		dp := core_mesh.NewDataplaneResource()
 		if err := rm.Get(ctx, dp, store.GetByKey(dataplaneName, meshName)); err != nil {
-			rest_errors.HandleError(response, err, "Could not get dataplane resource")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get dataplane resource")
 			return
 		}
 
 		stats, err := adminFn(ctx, dp)
 		if err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
-			rest_errors.HandleError(response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
 			return
 		}
 	}
@@ -132,7 +132,7 @@ func inspectZoneIngressAdmin(
 	mode core.CpMode,
 	localZone string,
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(user.User) error,
+	access func(context.Context, user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -140,32 +140,31 @@ func inspectZoneIngressAdmin(
 		ctx := request.Request.Context()
 		zoneIngressName := request.PathParameter("zoneingress")
 
-		if err := access(user.FromCtx(ctx)); err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		zi := core_mesh.NewZoneIngressResource()
 		if err := rm.Get(ctx, zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(response, err, "Could not get zone ingress resource")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone ingress resource")
 			return
 		}
 
 		if mode == core.Zone && zi.IsRemoteIngress(localZone) {
-			rest_errors.HandleError(response, &validators.ValidationError{},
-				"Could not connect to zone ingress that resides in another zone")
+			rest_errors.HandleError(request.Request.Context(), response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
 			return
 		}
 
 		stats, err := adminFn(ctx, zi)
 		if err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
-			rest_errors.HandleError(response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
 			return
 		}
 	}
@@ -173,7 +172,7 @@ func inspectZoneIngressAdmin(
 
 func inspectZoneEgressAdmin(
 	adminFn func(context.Context, core_model.ResourceWithAddress) ([]byte, error),
-	access func(user.User) error,
+	access func(context.Context, user.User) error,
 	rm manager.ResourceManager,
 	contentType string,
 ) restful.RouteFunction {
@@ -181,26 +180,26 @@ func inspectZoneEgressAdmin(
 		ctx := request.Request.Context()
 		name := request.PathParameter("zoneegress")
 
-		if err := access(user.FromCtx(ctx)); err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+		if err := access(ctx, user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		ze := core_mesh.NewZoneEgressResource()
 		if err := rm.Get(ctx, ze, store.GetByKey(name, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(response, err, "Could not get zone egress resource")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone egress resource")
 			return
 		}
 
 		stats, err := adminFn(ctx, ze)
 		if err != nil {
-			rest_errors.HandleError(response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
 			return
 		}
 
 		response.AddHeader(restful.HEADER_ContentType, contentType)
 		if _, err := response.Write(stats); err != nil {
-			rest_errors.HandleError(response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
 			return
 		}
 	}

@@ -41,7 +41,7 @@ type reconciler struct {
 	statsCallbacks xds.StatsCallbacks
 }
 
-func (r *reconciler) Clear(node *envoy_core.Node) {
+func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) {
 	id := r.hasher.ID(node)
 	snapshot := r.cache.ClearSnapshot(id)
 	if snapshot == nil {

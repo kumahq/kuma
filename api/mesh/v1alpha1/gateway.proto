@@ -5,9 +5,9 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "kuma-doc/config.proto";
-import "mesh/options.proto";
-import "mesh/v1alpha1/selector.proto";
-import "system/v1alpha1/datasource.proto";
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/selector.proto";
+import "api/system/v1alpha1/datasource.proto";
 import "validate/validate.proto";
 
 option (doc.config) = {
@@ -29,7 +29,6 @@ message MeshGateway {
   option (kuma.mesh.resource).name = "MeshGatewayResource";
   option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).is_experimental = true;
 
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "meshgateway";
@@ -48,7 +47,7 @@ message MeshGateway {
       // that the MeshGateway can't decipher the TLS stream except for the
       // ClientHello message of the TLS protocol. The certificate field
       // is ignored in this mode.
-      // PASSTHROUGH = 2;
+      PASSTHROUGH = 2;
     }
 
     message Options {
@@ -88,10 +87,10 @@ message MeshGateway {
     enum Protocol {
       NONE = 0;
       TCP = 1;
+      TLS = 3;
       HTTP = 4;
       HTTPS = 5;
       // UDP = 2;
-      // TLS = 3;
     }
 
     // Hostname specifies the virtual hostname to match for protocol types that

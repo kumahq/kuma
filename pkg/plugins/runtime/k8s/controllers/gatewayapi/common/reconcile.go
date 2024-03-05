@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -28,6 +27,10 @@ func hashNamespacedName(name kube_types.NamespacedName) string {
 	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s", name.Namespace, name.Name), hash.Sum(nil))
 }
 
+func OwnedPolicyName(owner kube_types.NamespacedName) string {
+	return fmt.Sprintf("%s.%s", owner.Name, owner.Namespace)
+}
+
 // ReconcileLabelledObject manages a set of owned kuma objects based on
 // labels with the owner key.
 // ownerMesh can be empty if the ownedSpec is nil.
@@ -41,7 +44,8 @@ func ReconcileLabelledObject(
 	owner kube_types.NamespacedName,
 	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
-	ownedSpec proto.Message,
+	ownedNamespace string,
+	owned map[string]core_model.ResourceSpec,
 ) error {
 	log := logger.WithValues("type", ownedType, "name", owner.Name, "namespace", owner.Namespace)
 	// First we list which existing objects are owned by this owner.
@@ -52,26 +56,19 @@ func ReconcileLabelledObject(
 		ownerLabel: ownerLabelValue,
 	}
 
-	ownedList, err := registry.NewList(ownedType)
+	existingList, err := registry.NewList(ownedType)
 	if err != nil {
 		return errors.Wrapf(err, "could not create list of owned %T", ownedType)
 	}
 
-	if err := client.List(ctx, ownedList, labels); err != nil {
+	if err := client.List(ctx, existingList, labels); err != nil {
 		return err
 	}
 
-	if l := len(ownedList.GetItems()); l > 1 {
-		return fmt.Errorf("internal error: found %d items labeled as owned by this object, expected either zero or one", l)
-	}
-
-	var existing k8s_model.KubernetesObject
-	if items := ownedList.GetItems(); len(items) == 1 {
-		existing = items[0]
-	}
-
-	if ownedSpec == nil {
-		if existing != nil {
+	// Delete unneeded objects
+	existingObjs := map[string]k8s_model.KubernetesObject{}
+	for _, existing := range existingList.GetItems() {
+		if _, ok := owned[existing.GetName()]; !ok {
 			err := client.Delete(ctx, existing)
 			switch {
 			case kube_apierrs.IsNotFound(err):
@@ -81,54 +78,62 @@ func ReconcileLabelledObject(
 			default:
 				return err
 			}
+			// We don't care about this anymore
+			continue
 		}
-		return nil
+		existingObjs[existing.GetName()] = existing
 	}
 
-	// We need a mesh when creating the object
-	if ownerMesh == "" {
+	// We need a mesh when creating objects
+	if len(owned) > 0 && ownerMesh == "" {
 		return fmt.Errorf("could not reconcile object, owner mesh must not be empty")
 	}
 
-	if existing != nil {
-		existingSpec, err := existing.GetSpec()
+	for ownedName, ownedSpec := range owned {
+		// Update existing
+		if existing, ok := existingObjs[ownedName]; ok {
+			existingSpec, err := existing.GetSpec()
+			if err != nil {
+				return err
+			}
+			if core_model.Equal(existingSpec, ownedSpec) {
+				log.V(1).Info("object is the same. Nothing to update")
+				continue
+			}
+			existing.SetSpec(ownedSpec)
+
+			if err := client.Update(ctx, existing); err != nil {
+				return errors.Wrapf(err, "could not update owned %T", ownedType)
+			}
+			log.Info("object updated")
+
+			continue
+		}
+
+		// Or create new
+		owned, err := registry.NewObject(ownedType)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "could not get new %T from registry", ownedType)
 		}
-		if core_model.Equal(existingSpec, ownedSpec) {
-			log.V(1).Info("object is the same. Nothing to update")
-			return nil
-		}
-		existing.SetSpec(ownedSpec)
 
-		if err := client.Update(ctx, existing); err != nil {
-			return errors.Wrapf(err, "could not update owned %T", ownedType)
-		}
-		log.Info("object updated")
-		return nil
-	}
+		owned.SetMesh(ownerMesh)
 
-	owned, err := registry.NewObject(ownedType)
-	if err != nil {
-		return errors.Wrapf(err, "could not get new %T from registry", ownedType)
-	}
-
-	owned.SetMesh(ownerMesh)
-
-	owned.SetObjectMeta(
-		&kube_meta.ObjectMeta{
-			Name: fmt.Sprintf("%s.%s", owner.Name, owner.Namespace),
-			Labels: map[string]string{
-				ownerLabel: ownerLabelValue,
+		owned.SetObjectMeta(
+			&kube_meta.ObjectMeta{
+				Name:      ownedName,
+				Namespace: ownedNamespace,
+				Labels: map[string]string{
+					ownerLabel: ownerLabelValue,
+				},
 			},
-		},
-	)
-	owned.SetSpec(ownedSpec)
+		)
+		owned.SetSpec(ownedSpec)
 
-	if err := client.Create(ctx, owned); err != nil {
-		return errors.Wrapf(err, "could not create owned %T", ownedType)
+		if err := client.Create(ctx, owned); err != nil {
+			return errors.Wrapf(err, "could not create owned %T", ownedType)
+		}
+		logger.Info("object created")
 	}
-	logger.Info("object created")
 
 	return nil
 }

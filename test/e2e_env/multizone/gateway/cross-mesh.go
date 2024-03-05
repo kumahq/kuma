@@ -79,6 +79,8 @@ func CrossMeshGatewayOnMultizone() {
 		globalSetup := NewClusterSetup().
 			Install(MTLSMeshUniversalEgress(gatewayMesh)).
 			Install(MTLSMeshUniversalEgress(gatewayOtherMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
+			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
 			Install(YamlUniversal(edgeGatewayYaml))
 		Expect(globalSetup.Setup(multizone.Global)).To(Succeed())

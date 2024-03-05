@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin-8490df2e58a77ae0:
+    external-http2-httpbin-b70cd456b09f96ac:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -10,7 +10,7 @@ Clusters:
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
-        clusterName: external-httpbin
+        clusterName: external-http2-httpbin
         endpoints:
         - lbEndpoints:
           - endpoint:
@@ -22,22 +22,16 @@ Clusters:
             metadata:
               filterMetadata:
                 envoy.lb:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
                 envoy.transport_socket_match:
-                  kuma.io/external-service-name: external-httpbin
+                  kuma.io/external-service-name: external-http2-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin-8490df2e58a77ae0
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
+      name: external-http2-httpbin-b70cd456b09f96ac
       perConnectionBufferLimitBytes: 32768
       transportSocketMatches:
       - match:
-          kuma.io/external-service-name: external-httpbin
+          kuma.io/external-service-name: external-http2-httpbin
           kuma.io/protocol: http2
         name: httpbin.com
         transportSocket:
@@ -51,6 +45,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             http2ProtocolOptions:
               initialConnectionWindowSize: 1048576
@@ -106,12 +102,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -138,8 +133,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTPS:8080:
-      name: edge-gateway:HTTPS:8080
+    edge-gateway:HTTPS:8080:echo.example.com:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTPS:8080:echo.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -149,14 +145,16 @@ Routes:
         name: echo.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
-            prefix: /
+            path: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -167,9 +165,25 @@ Routes:
             timeout: 15s
             weightedClusters:
               clusters:
-              - name: external-httpbin-8490df2e58a77ae0
+              - name: external-http2-httpbin-b70cd456b09f96ac
                 weight: 1
-              totalWeight: 1
+        - match:
+            prefix: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: external-http2-httpbin-b70cd456b09f96ac
+                weight: 1
 Runtimes:
   Resources:
     gateway.listeners:

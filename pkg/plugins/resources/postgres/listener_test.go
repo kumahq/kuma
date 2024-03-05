@@ -1,4 +1,4 @@
-package postgres
+package postgres_test
 
 import (
 	"context"
@@ -7,34 +7,28 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	postgres_config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	config_postgres "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_events "github.com/kumahq/kuma/pkg/events"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
-	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
+	events_postgres "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 	"github.com/kumahq/kuma/pkg/util/channels"
 )
 
 var _ = Describe("Events", func() {
-	var cfg postgres_config.PostgresStoreConfig
-
-	BeforeEach(func() {
-		c, err := c.Config(test_postgres.WithRandomDb)
-		Expect(err).ToNot(HaveOccurred())
-		cfg = *c
-		ver, err := MigrateDb(cfg)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(ver).To(Equal(plugins.DbVersion(1677096751)))
-	})
-
 	DescribeTable("should receive a notification from pq listener",
 		func(driverName string) {
+			cfg, err := c.Config()
+			Expect(err).ToNot(HaveOccurred())
+			ver, err := postgres.MigrateDb(cfg)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ver).To(Equal(dbVersion))
 			// given
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
@@ -42,12 +36,14 @@ var _ = Describe("Events", func() {
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
 			go triggerNotifications(cfg, driverName, storeErrCh)
 
+			eventsChan := listener.Recv()
+
 			// when
-			event, err := listener.Recv(eventBusStopCh)
+			var resourceChanged kuma_events.ResourceChangedEvent
+			Eventually(eventsChan, "1s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
 
 			// then
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged := event.(kuma_events.ResourceChangedEvent)
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 
@@ -57,47 +53,46 @@ var _ = Describe("Events", func() {
 			Eventually(channelClosesWithoutErrors(listenerErrCh), "5s", "10ms").Should(BeTrue())
 			Eventually(channelClosesWithoutErrors(storeErrCh), "5s", "10ms").Should(BeTrue())
 		},
-		Entry("When using pq", postgres_config.DriverNamePq),
-		Entry("When using pgx", postgres_config.DriverNamePgx),
+		Entry("When using pq", config_postgres.DriverNamePq),
+		Entry("When using pgx", config_postgres.DriverNamePgx),
 	)
 
 	DescribeTable("should continue handling notification after postgres recovery",
 		func(driverName string) {
 			// given
+			cfg, err := c.Config()
+			Expect(err).ToNot(HaveOccurred())
+			ver, err := postgres.MigrateDb(cfg)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ver).To(Equal(dbVersion))
 			listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh := setupChannels()
 			defer close(eventBusStopCh)
 			listener := setupListeners(cfg, driverName, listenerErrCh, listenerStopCh)
 			go triggerNotifications(cfg, driverName, storeErrCh)
 
-			// when
-			event, err := listener.Recv(eventBusStopCh)
+			eventsChan := listener.Recv()
 
-			// then
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged := event.(kuma_events.ResourceChangedEvent)
+			// when
+			var resourceChanged kuma_events.ResourceChangedEvent
+			Eventually(eventsChan, "1s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
+
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 
-			// when postgres is stopped
-			err = c.Stop()
-
-			// then
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(c.Stop()).To(Succeed())
 			Consistently(storeErrCh, "1s", "100ms").Should(Receive())
 
-			// when postgres is restarted
-			err = c.Start()
+			Expect(c.Start()).To(Succeed())
 
-			// then
-			Expect(err).To(Not(HaveOccurred()))
-			event, err = listener.Recv(eventBusStopCh)
-			Expect(err).To(Not(HaveOccurred()))
-			resourceChanged = event.(kuma_events.ResourceChangedEvent)
+			Eventually(eventsChan, "5s").Should(Receive(&resourceChanged))
+			Expect(eventBusStopCh).ToNot(BeClosed())
+
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 		},
-		Entry("When using pq", postgres_config.DriverNamePq),
-		Entry("When using pgx", postgres_config.DriverNamePgx),
+		Entry("When using pq", config_postgres.DriverNamePq),
+		Entry("When using pgx", config_postgres.DriverNamePgx),
 	)
 })
 
@@ -110,26 +105,29 @@ func setupChannels() (chan struct{}, chan error, chan struct{}, chan error) {
 	return listenerStopCh, listenerErrCh, eventBusStopCh, storeErrCh
 }
 
-func setupStore(cfg postgres_config.PostgresStoreConfig, driverName string) store.ResourceStore {
-	metrics, err := core_metrics.NewMetrics("Standalone")
+func setupStore(cfg config_postgres.PostgresStoreConfig, driverName string) store.ResourceStore {
+	metrics, err := core_metrics.NewMetrics("Zone")
 	Expect(err).ToNot(HaveOccurred())
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
-		cfg.DriverName = postgres_config.DriverNamePgx
-		pStore, err = NewPgxStore(metrics, cfg)
+		cfg.DriverName = config_postgres.DriverNamePgx
+		pStore, err = postgres.NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn)
 	} else {
-		cfg.DriverName = postgres_config.DriverNamePq
-		pStore, err = NewPqStore(metrics, cfg)
+		cfg.DriverName = config_postgres.DriverNamePq
+		pStore, err = postgres.NewPqStore(metrics, cfg)
 	}
 	Expect(err).ToNot(HaveOccurred())
 	return pStore
 }
 
-func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
+func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, listenerErrCh chan error, listenerStopCh chan struct{}) kuma_events.Listener {
 	cfg.DriverName = driverName
-	eventsBus := kuma_events.NewEventBus()
-	listener := eventsBus.New()
-	l := postgres_events.NewListener(cfg, eventsBus)
+	metrics, err := core_metrics.NewMetrics("")
+	Expect(err).ToNot(HaveOccurred())
+	eventsBus, err := kuma_events.NewEventBus(20, metrics)
+	Expect(err).ToNot(HaveOccurred())
+	listener := eventsBus.Subscribe()
+	l := events_postgres.NewListener(cfg, eventsBus)
 	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)
 	go func() {
 		listenerErrCh <- resilientListener.Start(listenerStopCh)
@@ -138,7 +136,7 @@ func setupListeners(cfg postgres_config.PostgresStoreConfig, driverName string, 
 	return listener
 }
 
-func triggerNotifications(cfg postgres_config.PostgresStoreConfig, driverName string, storeErrCh chan error) {
+func triggerNotifications(cfg config_postgres.PostgresStoreConfig, driverName string, storeErrCh chan error) {
 	pStore := setupStore(cfg, driverName)
 	defer GinkgoRecover()
 	for i := 0; !channels.IsClosed(storeErrCh); i++ {

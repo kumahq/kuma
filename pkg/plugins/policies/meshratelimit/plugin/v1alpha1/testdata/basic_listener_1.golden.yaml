@@ -43,15 +43,13 @@ filterChains:
                     numerator: 100
                   runtimeKey: local_rate_limit_enforced
                 responseHeadersToAdd:
-                - append: true
-                  header:
+                - header:
                     key: x-kuma-rate-limit-header
                     value: test-value
-                - append: true
-                  header:
+                - header:
                     key: x-kuma-rate-limit
                     value: other-value
-                - append: false
+                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: x-kuma-rate-limit-header-set
                     value: test-value

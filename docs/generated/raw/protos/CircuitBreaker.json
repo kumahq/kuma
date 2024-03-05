@@ -1,0 +1,198 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/CircuitBreaker",
+    "definitions": {
+        "CircuitBreaker": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that are sources of traffic."
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that are destinations of traffic."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Circuit Breaker",
+            "description": "CircuitBreaker defines circuit breaking policy for dataplane's outbound"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf": {
+            "properties": {
+                "interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Time interval between ejection analysis sweeps",
+                    "format": "regex"
+                },
+                "baseEjectionTime": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "The base time that a host is ejected for. The real time is equal to the base time multiplied by the number of times the host has been ejected",
+                    "format": "regex"
+                },
+                "maxEjectionPercent": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The maximum percent of an upstream cluster that can be ejected due to outlier detection, has to be in [0 - 100] range"
+                },
+                "splitExternalAndLocalErrors": {
+                    "type": "boolean",
+                    "description": "Enables Split Mode in which local and external errors are distinguished"
+                },
+                "detectors": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors",
+                    "additionalProperties": true
+                },
+                "thresholds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Thresholds",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors": {
+            "properties": {
+                "totalErrors": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Errors",
+                    "additionalProperties": true,
+                    "description": "Errors with status code 5xx and locally originated errors, in Split Mode - just errors with status code 5xx"
+                },
+                "gatewayErrors": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Errors",
+                    "additionalProperties": true,
+                    "description": "Subset of 'total' related to gateway errors (502, 503 or 504 status code)"
+                },
+                "localErrors": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Errors",
+                    "additionalProperties": true,
+                    "description": "Takes into account only in Split Mode, number of locally originated errors"
+                },
+                "standardDeviation": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.StandardDeviation",
+                    "additionalProperties": true
+                },
+                "failure": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Failure",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detectors"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Errors": {
+            "properties": {
+                "consecutive": {
+                    "additionalProperties": true,
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Errors",
+            "description": "Detector based on counting consecutive number of errors"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.Failure": {
+            "properties": {
+                "requestVolume": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Ignore hosts with less number of requests than 'requestVolume'"
+                },
+                "minimumHosts": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Won't count success rate for cluster if number of hosts with required 'requestVolume' is less than 'minimumHosts'"
+                },
+                "threshold": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Eject host if failure percentage of a given host is greater than or equal to this value, has to be in [0 - 100] range"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Failure",
+            "description": "Detection based on success rate, but threshold is set explicitly (unlike 'standardDeviation')"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf.Detectors.StandardDeviation": {
+            "properties": {
+                "requestVolume": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Ignore hosts with less number of requests than 'requestVolume'"
+                },
+                "minimumHosts": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Won't count success rate for cluster if number of hosts with required 'requestVolume' is less than 'minimumHosts'"
+                },
+                "factor": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Resulting threshold = mean - (stdev * factor)"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Standard Deviation",
+            "description": "Detection based on success rate, aggregated from every host in the cluser"
+        },
+        "kuma.mesh.v1alpha1.CircuitBreaker.Conf.Thresholds": {
+            "properties": {
+                "maxConnections": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024."
+                },
+                "maxPendingRequests": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024."
+                },
+                "maxRetries": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3."
+                },
+                "maxRequests": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Thresholds"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

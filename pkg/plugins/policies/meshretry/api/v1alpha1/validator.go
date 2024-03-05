@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
 func (r *MeshRetryResource) validate() error {
@@ -17,32 +17,49 @@ func (r *MeshRetryResource) validate() error {
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateTo(r.Spec.To, r.Spec.TargetRef))
 	return verr.OrNil()
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
 		},
+		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
 
-func validateTo(to []To) validators.ValidationError {
+func validateTo(to []To, topLevelKind common_api.TargetRef) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
+
+		var supportedKinds []common_api.TargetRefKind
+		switch topLevelKind.Kind {
+		case common_api.MeshGateway:
+			supportedKinds = []common_api.TargetRefKind{
+				common_api.Mesh,
+			}
+		default:
+			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
-			},
-		}))
+			}
+		}
+
+		verr.AddErrorAt(
+			path.Field("targetRef"),
+			mesh.ValidateTargetRef(
+				toItem.TargetRef,
+				&mesh.ValidateTargetRefOpts{SupportedKinds: supportedKinds},
+			),
+		)
 		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))
 	}
 	return verr
@@ -79,7 +96,8 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("http")
 	if http.NumRetries == nil && http.PerTryTimeout == nil && http.BackOff == nil && http.RetryOn == nil &&
-		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil && http.RateLimitedBackOff == nil {
+		http.RetriableRequestHeaders == nil && http.RetriableResponseHeaders == nil &&
+		http.RateLimitedBackOff == nil && http.HostSelection == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	if http.BackOff != nil {
@@ -90,6 +108,9 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	}
 	if http.RetryOn != nil {
 		verr.AddErrorAt(path, validateHTTPRetryOn(*http.RetryOn))
+	}
+	if http.HostSelection != nil {
+		verr.AddErrorAt(path, validateHostSelection(http.HostSelection))
 	}
 	return verr
 }
@@ -171,6 +192,35 @@ func validateRateLimitedBackOff(rateLimitedBackOff *RateLimitedBackOff) validato
 		}
 	}
 
+	return verr
+}
+
+func validateHostSelection(predicates *[]Predicate) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("hostSelection")
+	var prioritySet bool
+
+	for i, predicate := range *predicates {
+		switch predicate.PredicateType {
+		case OmitHostsWithTags:
+			if predicate.Tags == nil {
+				verr.AddViolationAt(path.Index(i).Field("tags"), validators.MustBeDefined)
+			}
+		case OmitPreviousPriorities:
+			if prioritySet {
+				verr.AddViolationAt(path.Index(i).Field("predicate"), fmt.Sprintf("%v must only be specified once",
+					predicate.PredicateType))
+			}
+			if predicate.UpdateFrequency <= 0 {
+				verr.AddViolationAt(path.Index(i).Field("updateFrequency"), validators.MustBeDefinedAndGreaterThanZero)
+			}
+			prioritySet = true
+		case OmitPreviousHosts:
+		default:
+			verr.AddViolationAt(path.Index(i).Field("predicate"), fmt.Sprintf("unknown predicate type '%v'",
+				predicate.PredicateType))
+		}
+	}
 	return verr
 }
 

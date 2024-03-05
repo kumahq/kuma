@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
@@ -26,11 +27,12 @@ type cachedManager struct {
 
 	mutexes  map[string]*sync.Mutex
 	mapMutex sync.Mutex // guards "mutexes" field
+	tenants  multitenant.Tenants
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
 
-func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics) (ReadOnlyResourceManager, error) {
+func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics, tenants multitenant.Tenants) (ReadOnlyResourceManager, error) {
 	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "store_cache",
 		Help: "Summary of Store Cache",
@@ -43,12 +45,17 @@ func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Dura
 		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 		metrics:  metric,
 		mutexes:  map[string]*sync.Mutex{},
+		tenants:  tenants,
 	}, nil
 }
 
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
+	tenantID, err := c.tenants.GetID(ctx)
+	if err != nil {
+		return err
+	}
 	opts := store.NewGetOptions(fs...)
-	cacheKey := fmt.Sprintf("GET:%s:%s", res.Descriptor().Name, opts.HashCode())
+	cacheKey := fmt.Sprintf("GET:%s:%s:%s", res.Descriptor().Name, opts.HashCode(), tenantID)
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
@@ -84,11 +91,15 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 }
 
 func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
+	tenantID, err := c.tenants.GetID(ctx)
+	if err != nil {
+		return err
+	}
 	opts := store.NewListOptions(fs...)
 	if !opts.IsCacheable() {
 		return fmt.Errorf("filter functions are not allowed for cached store")
 	}
-	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
+	cacheKey := fmt.Sprintf("LIST:%s:%s:%s", list.GetItemType(), opts.HashCode(), tenantID)
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.

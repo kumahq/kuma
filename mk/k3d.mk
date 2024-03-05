@@ -1,7 +1,7 @@
-CI_K3S_VERSION ?= v1.22.16-k3s1
+CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
+METALLB_VERSION ?= v0.13.9
 
-
-KUMA_MODE ?= standalone
+KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 # Comment about PORT_PREFIX generation
 #
@@ -43,18 +43,20 @@ K3D_NETWORK_CNI ?= flannel
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
+	--k3s-arg '--disable=servicelb@server:0' \
+    --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
-		--k3s-arg '--flannel-backend=none@server:*'
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
 endif
 
 ifdef CI
 ifeq ($(GOOS),linux)
-ifneq (,$(findstring e2e-legacy,$(CIRCLE_JOB)))
+ifneq (,$(findstring legacy,$(CIRCLE_JOB)))
 	K3D_CLUSTER_CREATE_OPTS += --volume "/sys/fs/bpf:/sys/fs/bpf:shared"
 endif
 endif
@@ -87,19 +89,37 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
 	$(MAKE) k3d/configure/ebpf
+	$(MAKE) k3d/configure/metallb
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:
 ifeq ($(GOOS),darwin)
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
-	docker exec -it k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount bpffs /sys/fs/bpf -t bpf && \
+	docker exec k3d-$(KIND_CLUSTER_NAME)-server-0 mount --make-shared /sys/fs/bpf
 endif
+
+.PHONY: k3d/configure/metallb
+k3d/configure/metallb:
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n metallb-system --all pods
+	@# Construct a valid address space from the docker network and the template IPAddressPool
+	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
+		IFS=/ read -r _byte prefix <<< "$${NETWORK_ADDR_SPACE[3]}"; \
+		    if [[ "$${prefix}" -gt 16 ]]; then echo "Unexpected docker network, expecting a prefix of at most 16 bits"; exit 1; fi; \
+		IFS=. read -ra BASE_ADDR_SPACE <<< "$$(yq 'select(.kind == "IPAddressPool") | .spec.addresses[0]' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml)"; \
+		ADDR_SPACE="$${NETWORK_ADDR_SPACE[0]}.$${NETWORK_ADDR_SPACE[1]}.$${BASE_ADDR_SPACE[2]}.$${BASE_ADDR_SPACE[3]}" \
+	      yq '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(ADDR_SPACE)' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml | \
+		KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
 
 .PHONY: k3d/wait
 k3d/wait:
-	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-	do echo "Waiting for the cluster to come up" && sleep 1; done
+	@TIMES_TRIED=0; \
+	MAX_ALLOWED_TRIES=30; \
+	until KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait -n kube-system --timeout=5s --for condition=Ready --all pods; do \
+    	echo "Waiting for the cluster to come up" && sleep 1; \
+  		TIMES_TRIED=$$((TIMES_TRIED+1)); \
+  		if [[ $$TIMES_TRIED -ge $$MAX_ALLOWED_TRIES ]]; then KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n kube-system -o Name | KUBECONFIG=$(KIND_KUBECONFIG) xargs -I % $(KUBECTL) -n kube-system describe %; exit 1; fi \
+    done
 
 .PHONY: k3d/stop
 k3d/stop:
@@ -131,11 +151,11 @@ k3d/deploy/kuma: build/kumactl k3d/load
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) | true
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
-	@KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) --wait | true
+	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
+	KUBECONFIG=$(KIND_KUBECONFIG) helm upgrade --install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
-                --set global.image.tag="$(BUILD_INFO_VERSION)-${GOARCH}" \
+                --set global.image.tag="$(BUILD_INFO_VERSION)" \
                 --set cni.enabled=true \
                 --set cni.chained=true \
                 --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \

@@ -2,9 +2,12 @@ package envoyadmin
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -13,6 +16,8 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
+	"github.com/kumahq/kuma/pkg/kds/service"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var clientLog = core.Log.WithName("intercp").WithName("envoyadmin").WithName("client")
@@ -58,7 +63,8 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 }
 
 func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
+	ctx = appendTenantMetadata(ctx)
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ConfigDumpRPC)
 	if err != nil {
 		return nil, err
 	}
@@ -79,11 +85,15 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	if err != nil {
 		return nil, err
 	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	}
 	return resp.GetConfig(), nil
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
+	ctx = appendTenantMetadata(ctx)
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.StatsRPC)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +114,15 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 	if err != nil {
 		return nil, err
 	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	}
 	return resp.GetStats(), nil
 }
 
 func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy))
+	ctx = appendTenantMetadata(ctx)
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ClustersRPC)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +143,9 @@ func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core
 	if err != nil {
 		return nil, err
 	}
+	if resp != nil && resp.GetError() != "" {
+		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	}
 	return resp.GetClusters(), nil
 }
 
@@ -146,19 +163,57 @@ func (f *forwardingKdsEnvoyAdminClient) logIntendedAction(proxy core_model.Resou
 	}
 }
 
-func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone string) (string, error) {
+func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone string, rpcName string) (string, error) {
 	zoneInsightRes := core_system.NewZoneInsightResource()
 	if err := f.resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err
 	}
-	sub := zoneInsightRes.Spec.GetLastSubscription().(*system_proto.KDSSubscription)
-	return sub.GlobalInstanceId, nil
+	streams := zoneInsightRes.Spec.GetEnvoyAdminStreams()
+	var globalInstanceID string
+	switch rpcName {
+	case service.ConfigDumpRPC:
+		globalInstanceID = streams.GetConfigDumpGlobalInstanceId()
+	case service.StatsRPC:
+		globalInstanceID = streams.GetStatsGlobalInstanceId()
+	case service.ClustersRPC:
+		globalInstanceID = streams.GetClustersGlobalInstanceId()
+	default:
+		return "", errors.Errorf("invalid operation %s", rpcName)
+	}
+	if globalInstanceID == "" {
+		return "", &StreamNotConnectedError{rpcName: rpcName}
+	}
+	return globalInstanceID, nil
 }
 
 func (f *forwardingKdsEnvoyAdminClient) clientForInstanceID(ctx context.Context, instanceID string) (mesh_proto.InterCPEnvoyAdminForwardServiceClient, error) {
-	instance, err := catalog.InstanceOfID(ctx, f.cat, instanceID)
+	instance, err := catalog.InstanceOfID(multitenant.WithTenant(ctx, multitenant.GlobalTenantID), f.cat, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	return f.newClientFn(instance.InterCpURL())
+}
+
+type StreamNotConnectedError struct {
+	rpcName string
+}
+
+func (e *StreamNotConnectedError) Error() string {
+	return fmt.Sprintf("stream to execute %s operations is not yet connected", e.rpcName)
+}
+
+func (e *StreamNotConnectedError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
+}
+
+type ForwardKDSRequestError struct {
+	reason string
+}
+
+func (e *ForwardKDSRequestError) Error() string {
+	return e.reason
+}
+
+func (e *ForwardKDSRequestError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }

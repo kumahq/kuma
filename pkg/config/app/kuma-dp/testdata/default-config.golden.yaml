@@ -10,6 +10,9 @@ dataplane:
   proxyType: dataplane
 dataplaneRuntime:
   binaryPath: envoy
+  dynamicConfiguration:
+    refreshInterval: 10s
+  metrics: {}
   resources: {}
 dns:
   coreDnsBinaryPath: coredns

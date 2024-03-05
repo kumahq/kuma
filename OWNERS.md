@@ -6,17 +6,34 @@ list their repository maintainers in their own `OWNERS.md` file.
 
 Please see [GOVERNANCE.md](GOVERNANCE.md) for governance guidelines and responsibilities for the maintainers.
 
+# Steering Committee
+
+Renews 2025/07/01:
+
+- Jakub Dyszkiewicz @jakubdyszkiewicz (jakub.dyszkiewicz@gmail.com)
+- Michael Beaumont @michaelbeaumont (mjboamail@gmail.com)
+- Charly Molter @lahabana (charly@molter.io)
+
 # Maintainers
 
-In alphabetical order:
+kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers 
 
-* Austin Cawley-Edwards([austince](https://github.com/austince)) (austin.cawley@gmail.com)
-* Bart Smykla ([bartsmykla](https://github.com/bartsmykla)) (bartek@smykla.com)
-* Charly Molter ([lahabana](https://github.com/lahabana)) (charly@molter.io)
-* Ilya Lobkov ([lobkovilya](https://github.com/lobkovilya)) (ilya.lobkov@konghq.com)
-* Jakub Dyszkiewicz ([jakubdyszkiewicz](https://github.com/jakubdyszkiewicz)) (jakub.dyszkiewicz@konghq.com)
-* James Peach ([jpeach](https://github.com/jpeach)) (james.peach@konghq.com)
-* Marco Palladino ([subnetmarco](https://github.com/subnetmarco)) (marco@konghq.com)
-* Mike Beaumont ([michaelbeaumont](https://github.com/michaelbeaumont)) (michael.beaumont@konghq.com)
-* Nikolay Nikolaev ([nickolaev](https://github.com/nickolaev)) (nicknickolaev@gmail.com)
-* Paul Parkanzky ([parkanzky](https://github.com/parkanzky)) (paul.parkanzky@konghq.com)
+- Bart Smykla @bartsmykla (bartek@smykla.com)
+- Ilya Lobkov @lobkovilya (ilya.lobkov@konghq.com)
+- Krzysztof Slonka @slonka (krzysztof.slonka@konghq.com)
+- Marcin Skalski @Automaat (marcin.skalski@konghq.com)
+- Lukasz Dziedziak @lukidzi (lukidzi@gmail.com) 
+
+# Reviewers
+
+
+# Emeritus Maintainers
+
+- Austin Cawley-Edwards @austince
+- James Peach @jpeach
+- Nikolay Nikolaev @nickolaev
+- Paul Parkanzky @parkanzky
+- Marco Palladino @subnetmarco
+
+# Emeritus Reviewers
+

@@ -30,7 +30,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				subscription := &DiscoverySubscription{
 					Id:                     "1",
 					ControlPlaneInstanceId: "node-001",
-					Status:                 NewSubscriptionStatus(),
+					Status:                 NewSubscriptionStatus(t1),
 				}
 
 				// when
@@ -44,6 +44,7 @@ var _ = Describe("DataplaneHelpers", func() {
                   status:
                     cds: {}
                     eds: {}
+                    lastUpdateTime: "2017-07-17T17:07:47Z"
                     lds: {}
                     rds: {}
                     total: {}
@@ -56,12 +57,12 @@ var _ = Describe("DataplaneHelpers", func() {
 					{
 						Id:                     "1",
 						ControlPlaneInstanceId: "node-001",
-						Status:                 NewSubscriptionStatus(),
+						Status:                 NewSubscriptionStatus(t1),
 					},
 					{
 						Id:                     "2",
 						ControlPlaneInstanceId: "node-002",
-						Status:                 NewSubscriptionStatus(),
+						Status:                 NewSubscriptionStatus(t2),
 					},
 				}
 
@@ -69,7 +70,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				subscription := &DiscoverySubscription{
 					Id:                     "1",
 					ControlPlaneInstanceId: "node-003",
-					Status:                 NewSubscriptionStatus(),
+					Status:                 NewSubscriptionStatus(t3),
 				}
 
 				// when
@@ -83,6 +84,7 @@ var _ = Describe("DataplaneHelpers", func() {
                   status:
                     cds: {}
                     eds: {}
+                    lastUpdateTime: "2019-09-19T19:09:49Z"
                     lds: {}
                     rds: {}
                     total: {}
@@ -91,6 +93,7 @@ var _ = Describe("DataplaneHelpers", func() {
                   status:
                     cds: {}
                     eds: {}
+                    lastUpdateTime: "2018-08-18T18:08:48Z"
                     lds: {}
                     rds: {}
                     total: {}
@@ -120,8 +123,8 @@ var _ = Describe("DataplaneHelpers", func() {
 				})).To(Succeed())
 
 				// then
-				_, subscription := dataplaneInsight.GetSubscription("2")
-				Expect(subscription.DisconnectTime).ToNot(BeNil())
+				subscription := dataplaneInsight.GetSubscription("2")
+				Expect(subscription.(*DiscoverySubscription).DisconnectTime).ToNot(BeNil())
 			})
 
 			It("should return error for wrong subscription type", func() {
@@ -237,7 +240,8 @@ var _ = Describe("DataplaneHelpers", func() {
 		var status *DiscoverySubscriptionStatus
 
 		BeforeEach(func() {
-			status = NewSubscriptionStatus()
+			t1, _ := time.Parse(time.RFC3339, "2017-07-17T17:07:47+00:00")
+			status = NewSubscriptionStatus(t1)
 		})
 
 		Describe("StatsOf()", func() {
@@ -250,6 +254,7 @@ var _ = Describe("DataplaneHelpers", func() {
                 cds:
                   responsesSent: "1"
                 eds: {}
+                lastUpdateTime: "2017-07-17T17:07:47Z"
                 lds: {}
                 rds: {}
                 total: {}
@@ -265,6 +270,7 @@ var _ = Describe("DataplaneHelpers", func() {
                 cds: {}
                 eds:
                   responsesSent: "1"
+                lastUpdateTime: "2017-07-17T17:07:47Z"
                 lds: {}
                 rds: {}
                 total: {}
@@ -279,6 +285,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
                 cds: {}
                 eds: {}
+                lastUpdateTime: "2017-07-17T17:07:47Z"
                 lds:
                   responsesSent: "1"
                 rds: {}
@@ -294,6 +301,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
                 cds: {}
                 eds: {}
+                lastUpdateTime: "2017-07-17T17:07:47Z"
                 lds: {}
                 rds:
                   responsesSent: "1"
@@ -309,6 +317,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
                 cds: {}
                 eds: {}
+                lastUpdateTime: "2017-07-17T17:07:47Z"
                 lds: {}
                 rds: {}
                 total: {}

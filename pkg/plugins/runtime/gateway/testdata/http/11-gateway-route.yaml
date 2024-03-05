@@ -13,12 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: exact-query-match-36212e4e8ec491f1
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -26,6 +20,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     regex-query-match-2c070f45017d23a5:
@@ -41,12 +37,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: regex-query-match-2c070f45017d23a5
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -54,6 +44,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -135,12 +127,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -151,8 +142,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
-      name: edge-gateway:HTTP:8080
+    edge-gateway:HTTP:8080:*:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -162,19 +154,19 @@ Routes:
         name: echo.example.com
         routes:
         - match:
-            prefix: /
+            path: /
             queryParameters:
             - name: Content-Type
               stringMatch:
                 safeRegex:
-                  googleRe2: {}
                   regex: application/.*
             - name: Language
               stringMatch:
                 safeRegex:
-                  googleRe2: {}
                   regex: .*sh
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -191,7 +183,86 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
+        - match:
+            path: /
+            queryParameters:
+            - name: Content-Type
+              stringMatch:
+                exact: application/json
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: exact-query-match-36212e4e8ec491f1
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            path: /
+            queryParameters:
+            - name: Language
+              stringMatch:
+                exact: gibberish
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: exact-query-match-36212e4e8ec491f1
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+        - match:
+            prefix: /
+            queryParameters:
+            - name: Content-Type
+              stringMatch:
+                safeRegex:
+                  regex: application/.*
+            - name: Language
+              stringMatch:
+                safeRegex:
+                  regex: .*sh
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: regex-query-match-2c070f45017d23a5
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
         - match:
             prefix: /
             queryParameters:
@@ -199,6 +270,8 @@ Routes:
               stringMatch:
                 exact: application/json
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -215,7 +288,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             prefix: /
             queryParameters:
@@ -223,6 +295,8 @@ Routes:
               stringMatch:
                 exact: gibberish
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -239,7 +313,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
 Runtimes:
   Resources:
     gateway.listeners:

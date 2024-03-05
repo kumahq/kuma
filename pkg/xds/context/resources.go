@@ -1,11 +1,14 @@
 package context
 
 import (
+	"hash/fnv"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
 type ResourceMap map[core_model.ResourceType]core_model.ResourceList
@@ -20,6 +23,14 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 		return list
 	}
 	return list
+}
+
+func (rm ResourceMap) Hash() []byte {
+	hasher := fnv.New128a()
+	for _, k := range maps.SortedKeys(rm) {
+		hasher.Write(core_model.ResourceListHash(rm[k]))
+	}
+	return hasher.Sum(nil)
 }
 
 type Resources struct {
@@ -112,6 +123,14 @@ func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
 
 func (r Resources) Secrets() *system.SecretResourceList {
 	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
+}
+
+func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
+	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
+}
+
+func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
+	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
 }
 
 func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {

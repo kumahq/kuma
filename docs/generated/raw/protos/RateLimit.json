@@ -1,0 +1,120 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/RateLimit",
+    "definitions": {
+        "RateLimit": {
+            "properties": {
+                "sources": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes that rate limit will be applied for"
+                },
+                "destinations": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match services that need to be rate limited."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.RateLimit.Conf",
+                    "additionalProperties": true,
+                    "description": "Configuration for RateLimit +required"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rate Limit"
+        },
+        "kuma.mesh.v1alpha1.RateLimit.Conf": {
+            "properties": {
+                "http": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.RateLimit.Conf.Http",
+                    "additionalProperties": true,
+                    "description": "The HTTP RateLimit configuration +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf"
+        },
+        "kuma.mesh.v1alpha1.RateLimit.Conf.Http": {
+            "properties": {
+                "requests": {
+                    "type": "integer",
+                    "description": "The number of HTTP requests this RateLimiter allows +required"
+                },
+                "interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "The the interval for which `requests` will be accounted. +required",
+                    "format": "regex"
+                },
+                "onRateLimit": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit",
+                    "additionalProperties": true,
+                    "description": "Describes the actions to take on RatelLimiter event +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Http"
+        },
+        "kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit": {
+            "properties": {
+                "status": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "The HTTP status code to be set on a RateLimit event +optional"
+                },
+                "headers": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit.HeaderValue"
+                    },
+                    "type": "array",
+                    "description": "The Headers to be added to the HTTP response on a RateLimit event +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "On Rate Limit"
+        },
+        "kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit.HeaderValue": {
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Header name +optional"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Header value +optional"
+                },
+                "append": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "Should the header be appended +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Header Value"
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        }
+    }
+}

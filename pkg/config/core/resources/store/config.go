@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/k8s"
@@ -22,7 +23,7 @@ const (
 	MemoryStore     StoreType = "memory"
 )
 
-// Resource Store configuration
+// StoreConfig defines Resource Store configuration
 type StoreConfig struct {
 	// Type of Store used in the Control Plane. Can be either "kubernetes", "postgres" or "memory"
 	Type StoreType `json:"type" envconfig:"kuma_store_type"`
@@ -55,6 +56,14 @@ func (s *StoreConfig) Sanitize() {
 	s.Cache.Sanitize()
 }
 
+func (s *StoreConfig) PostProcess() error {
+	return multierr.Combine(
+		s.Kubernetes.PostProcess(),
+		s.Postgres.PostProcess(),
+		s.Cache.PostProcess(),
+	)
+}
+
 func (s *StoreConfig) Validate() error {
 	switch s.Type {
 	case PostgresStore:
@@ -80,15 +89,10 @@ func (s *StoreConfig) Validate() error {
 var _ config.Config = &CacheStoreConfig{}
 
 type CacheStoreConfig struct {
+	config.BaseConfig
+
 	Enabled        bool                  `json:"enabled" envconfig:"kuma_store_cache_enabled"`
 	ExpirationTime config_types.Duration `json:"expirationTime" envconfig:"kuma_store_cache_expiration_time"`
-}
-
-func (c CacheStoreConfig) Sanitize() {
-}
-
-func (c CacheStoreConfig) Validate() error {
-	return nil
 }
 
 func DefaultCacheStoreConfig() CacheStoreConfig {
@@ -100,19 +104,21 @@ func DefaultCacheStoreConfig() CacheStoreConfig {
 
 func DefaultUpsertConfig() UpsertConfig {
 	return UpsertConfig{
-		ConflictRetryBaseBackoff: config_types.Duration{Duration: 100 * time.Millisecond},
-		ConflictRetryMaxTimes:    5,
+		ConflictRetryBaseBackoff:   config_types.Duration{Duration: 200 * time.Millisecond},
+		ConflictRetryMaxTimes:      10,
+		ConflictRetryJitterPercent: 30,
 	}
 }
 
 type UpsertConfig struct {
+	config.BaseConfig
+
 	// Base time for exponential backoff on upsert (get and update) operations when retry is enabled
 	ConflictRetryBaseBackoff config_types.Duration `json:"conflictRetryBaseBackoff" envconfig:"kuma_store_upsert_conflict_retry_base_backoff"`
 	// Max retries on upsert (get and update) operation when retry is enabled
 	ConflictRetryMaxTimes uint `json:"conflictRetryMaxTimes" envconfig:"kuma_store_upsert_conflict_retry_max_times"`
-}
-
-func (u *UpsertConfig) Sanitize() {
+	// Percentage of jitter. For example: if backoff is 20s, and this value 10, the backoff will be between 18s and 22s.
+	ConflictRetryJitterPercent uint `json:"conflictRetryJitterPercent" envconfig:"kuma_store_upsert_conflict_retry_jitter_percent"`
 }
 
 func (u *UpsertConfig) Validate() error {

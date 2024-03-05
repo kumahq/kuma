@@ -80,21 +80,31 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 	}
 }
 
-func YamlK8s(yaml string) InstallFunc {
+func YamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}
 }
 
-func DeleteYamlK8s(yaml string) InstallFunc {
+func DeleteYamlK8s(yamls ...string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "delete yaml resource", DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				return "", k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml)
+				for _, yaml := range yamls {
+					if err := k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), yaml); err != nil {
+						return "", err
+					}
+				}
+				return "", nil
 			})
 		return err
 	}
@@ -134,6 +144,26 @@ spec:
 	return YamlK8s(mesh)
 }
 
+func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
+	mtp := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  namespace: %[2]s
+  name: allow-all-%[1]s.%[2]s
+  labels:
+    kuma.io/mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow`, name, Config.KumaNamespace)
+	return YamlK8s(mtp)
+}
+
 func MTLSMeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
@@ -145,6 +175,250 @@ mtls:
       type: builtin
 `, name)
 	return YamlUniversal(mesh)
+}
+
+func TrafficRouteKubernetes(name string) InstallFunc {
+	tr := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+mesh: %[1]s
+metadata:
+  name: route-all-%[1]s
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'
+  conf:
+    loadBalancer:
+      roundRobin: {}
+    destination:
+      kuma.io/service: '*'`, name)
+	return YamlK8s(tr)
+}
+
+func TrafficRouteUniversal(name string) InstallFunc {
+	tr := fmt.Sprintf(`
+type: TrafficRoute
+name: route-all-%[1]s
+mesh: %[1]s
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: '*'`, name)
+	return YamlUniversal(tr)
+}
+
+func TrafficPermissionUniversal(name string) InstallFunc {
+	tp := fmt.Sprintf(`
+type: TrafficPermission
+name: allow-all-%[1]s
+mesh: %[1]s
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'`, name)
+	return YamlUniversal(tp)
+}
+
+func TrafficPermissionKubernetes(name string) InstallFunc {
+	tp := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: %[1]s
+metadata:
+  name: allow-all-%[1]s
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'`, name)
+	return YamlK8s(tp)
+}
+
+func TimeoutUniversal(name string) InstallFunc {
+	timeout := fmt.Sprintf(`
+type: Timeout
+mesh: %[1]s
+name: timeout-all-%[1]s
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  connectTimeout: 5s # all protocols
+  tcp: # tcp, kafka
+    idleTimeout: 1h
+  http: # http, http2, grpc
+    requestTimeout: 15s
+    idleTimeout: 1h
+    streamIdleTimeout: 30m
+    maxStreamDuration: 0s`, name)
+	return YamlUniversal(timeout)
+}
+
+func TimeoutKubernetes(name string) InstallFunc {
+	timeout := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Timeout
+mesh: %[1]s
+metadata:
+  name: timeout-all-%[1]s
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'
+  conf:
+    connectTimeout: 5s # all protocols
+    tcp: # tcp, kafka
+      idleTimeout: 1h 
+    http: # http, http2, grpc
+      requestTimeout: 15s 
+      idleTimeout: 1h
+      streamIdleTimeout: 30m
+      maxStreamDuration: 0s
+`, name)
+	return YamlK8s(timeout)
+}
+
+func CircuitBreakerUniversal(name string) InstallFunc {
+	cb := fmt.Sprintf(`
+type: CircuitBreaker
+mesh: %[1]s
+name: circuit-breaker-all-%[1]s
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+conf:
+  thresholds:
+    maxConnections: 1024
+    maxPendingRequests: 1024
+    maxRequests: 1024
+    maxRetries: 3`, name)
+	return YamlUniversal(cb)
+}
+
+func CircuitBreakerKubernetes(name string) InstallFunc {
+	cb := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: CircuitBreaker
+mesh: %[1]s
+metadata:
+  name: circuit-breaker-all-%[1]s
+spec:
+  sources:
+  - match:
+      kuma.io/service: '*'
+  destinations:
+  - match:
+      kuma.io/service: '*'
+  conf:
+    thresholds:
+      maxConnections: 1024
+      maxPendingRequests: 1024
+      maxRequests: 1024
+      maxRetries: 3`, name)
+	return YamlK8s(cb)
+}
+
+func RetryUniversal(name string) InstallFunc {
+	retry := fmt.Sprintf(`
+type: Retry
+name: retry-all-%[1]s
+mesh: %[1]s
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+conf:
+  http:
+    numRetries: 5
+    perTryTimeout: 16s
+    backOff:
+      baseInterval: 25ms
+      maxInterval: 250s
+  grpc:
+    numRetries: 5
+    perTryTimeout: 16s
+    backOff:
+      baseInterval: 25ms
+      maxInterval: 250ms
+  tcp:
+    maxConnectAttempts: 5
+`, name)
+	return YamlUniversal(retry)
+}
+
+func RetryKubernetes(name string) InstallFunc {
+	retry := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Retry
+mesh: %[1]s
+metadata:
+  name: retry-all-%[1]s
+spec:
+  sources:
+  - match:
+      kuma.io/service: '*'
+  destinations:
+  - match:
+      kuma.io/service: '*'
+  conf:
+    http:
+      numRetries: 5
+      perTryTimeout: 16s
+      backOff:
+        baseInterval: 25ms
+        maxInterval: 250s
+    grpc:
+      numRetries: 5
+      perTryTimeout: 16s
+      backOff:
+        baseInterval: 25ms
+        maxInterval: 250ms
+    tcp:
+      maxConnectAttempts: 5
+`, name)
+	return YamlK8s(retry)
+}
+
+func MeshTrafficPermissionAllowAllUniversal(name string) InstallFunc {
+	mtp := fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-all-%[1]s
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow`, name)
+	return YamlUniversal(mtp)
 }
 
 func YamlUniversal(yaml string) InstallFunc {
@@ -221,15 +495,22 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 func WaitPodsAvailableWithLabel(namespace, labelKey, labelValue string) InstallFunc {
 	return func(c Cluster) error {
 		ck8s := c.(*K8sCluster)
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
+		testingT := c.GetTesting()
+		kubectlOptions := c.GetKubectlOptions(namespace)
+
+		pods, err := k8s.ListPodsE(testingT, kubectlOptions,
 			metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=%s", labelKey, labelValue)})
 		if err != nil {
 			return err
 		}
+
+		var podError error
 		for _, p := range pods {
-			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
-			if err != nil {
-				return err
+			pod := p
+			podError = k8s.WaitUntilPodAvailableE(testingT, kubectlOptions, pod.GetName(), ck8s.defaultRetries, ck8s.defaultTimeout)
+			if podError != nil {
+				podDetails := ExtractPodDetails(testingT, c.GetKubectlOptions(namespace), pod.Name)
+				return &K8sDecoratedError{Err: podError, Details: podDetails}
 			}
 		}
 		return nil
@@ -243,10 +524,11 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	}
 }
 
-func zoneRelatedResource(
+func universalZoneRelatedResource(
 	tokenProvider func(zone string) (string, error),
 	appType AppMode,
 	resourceManifestFunc func(address string, port, advertisedPort int) string,
+	concurrency int,
 ) func(cluster Cluster) error {
 	dpName := string(appType)
 
@@ -264,6 +546,7 @@ func zoneRelatedResource(
 			[]string{},
 			[]string{},
 			"",
+			concurrency,
 		)
 		if err != nil {
 			return err
@@ -278,13 +561,9 @@ func zoneRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
+		dpYAML := resourceManifestFunc(publicAddress, universalKDSPort, universalKDSPort)
 
-		zone := uniCluster.name
-		if uniCluster.controlplane.mode == core.Standalone {
-			zone = ""
-		}
-		token, err := tokenProvider(zone)
+		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
 			return err
 		}
@@ -300,20 +579,26 @@ func zoneRelatedResource(
 	}
 }
 
-func IngressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
+func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	manifestFunc := func(address string, port, advertisedPort int) string {
 		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
 	}
 
-	return zoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
+	var opts appDeploymentOptions
+	opts.apply(opt...)
+
+	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc, opts.concurrency)
 }
 
-func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
+func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
 	manifestFunc := func(_ string, port, _ int) string {
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
+	var opts appDeploymentOptions
+	opts.apply(opt...)
+
+	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc, opts.concurrency)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
@@ -373,14 +658,19 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
 		transparent := opts.transparent != nil && *opts.transparent // default false
+		additionalTags := ""
+		for key, val := range opts.additionalTags {
+			additionalTags += fmt.Sprintf(`
+      %s: %s`, key, val)
+		}
 		if appYaml == "" {
 			if transparent {
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, additionalTags, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
-					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, additionalTags, "80", "8080")
 				} else {
-					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, additionalTags, "80", "8080")
 				}
 			}
 		}
@@ -410,28 +700,45 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 	}
 }
 
-func TestServerExternalServiceUniversal(name string, mesh string, port int, tls bool) InstallFunc {
+func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		containerName := fmt.Sprintf("%s.%s", name, mesh)
-		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
-		opt := []AppDeploymentOption{
-			WithAppname(name),
+		var opts appDeploymentOptions
+		opts.apply(opt...)
+		args := []string{"ncat", "-lk", "9999", ">", "/nc.out"}
+		opt = append(
+			opt,
 			WithName(name),
-			WithMesh(mesh),
+			WithAppname(AppModeTcpSink),
+			WithArgs(args),
 			WithoutDataplane(),
-			WithDockerContainerName(containerName),
-		}
+			WithTransparentProxy(false),
+			WithIPv6(Config.IPV6),
+		)
+		return cluster.DeployApp(opt...)
+	}
+}
+
+func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
+	return func(cluster Cluster) error {
+		var opts appDeploymentOptions
+		opts.apply(opt...)
+		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
 		if tls {
-			path, err := DumpTempCerts("localhost", containerName)
+			path, err := DumpTempCerts("localhost", opts.dockerContainerName)
 			Logf("using temp dir: %s", path)
 			if err != nil {
 				return err
 			}
 			args = append(args, "--crt", "/certs/cert.pem", "--key", "/certs/key.pem", "--tls")
-			opt = append(opt, WithDockerVolumes(path+":/certs"))
+			opts.dockerVolumes = append(opts.dockerVolumes, fmt.Sprintf("%s:/certs", path))
 		}
-
-		opt = append(opt, WithArgs(args))
+		opt = append(opt,
+			WithAppname(name),
+			WithName(name),
+			WithoutDataplane(),
+			WithArgs(args),
+			WithDockerVolumes(opts.dockerVolumes...),
+		)
 		return cluster.DeployApp(opt...)
 	}
 }
@@ -475,6 +782,12 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			}
 		}
 
+		additionalTags := ""
+		for key, val := range opts.additionalTags {
+			additionalTags += fmt.Sprintf(`
+      %s: %s`, key, val)
+		}
+
 		serviceProbe := ""
 		if opts.serviceProbe {
 			serviceProbe = `    serviceProbe:
@@ -508,7 +821,8 @@ networking:
 %s
 %s
 %s
-`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
+%s
+`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, additionalTags, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),
@@ -518,7 +832,9 @@ networking:
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
-			WithIPv6(Config.IPV6))
+			WithIPv6(Config.IPV6),
+			WithDpEnvs(opts.dpEnvs),
+		)
 		return cluster.DeployApp(opt...)
 	}
 }
@@ -581,7 +897,7 @@ func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error 
 }
 
 func CreateCertsFor(names ...string) (string, string, error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
+	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err
 	}

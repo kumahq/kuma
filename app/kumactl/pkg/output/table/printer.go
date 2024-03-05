@@ -2,52 +2,55 @@ package table
 
 import (
 	"io"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type Printer interface {
-	Print(Table, io.Writer) error
+	Print(io.Writer) error
 }
 
 type Table struct {
-	Headers []string
-	NextRow func() []string
-	Footer  string
+	Headers    []string
+	FooterFn   func(container interface{}) string
+	RowForItem func(i int, container interface{}) ([]string, error)
 }
 
-func NewPrinter() Printer {
-	return &printer{}
-}
-
-var _ Printer = &printer{}
-
-type printer struct{}
-
-func (p *printer) Print(data Table, out io.Writer) error {
+func (p *Table) Print(data interface{}, out io.Writer) error {
+	var allErr error
 	table := NewWriter(out)
 	defer table.Flush()
 
-	if 0 < len(data.Headers) {
-		if err := table.Headers(data.Headers...); err != nil {
+	if 0 < len(p.Headers) {
+		if err := table.Headers(p.Headers...); err != nil {
 			return err
 		}
 	}
 
-	if data.NextRow != nil {
-		for {
-			row := data.NextRow()
-			if row == nil {
-				break
+	for i := 0; ; i++ {
+		var row []string
+		if p.RowForItem != nil {
+			var err error
+			row, err = p.RowForItem(i, data)
+			if err != nil {
+				allErr = multierror.Append(allErr, err)
 			}
-			if err := table.Row(row...); err != nil {
+		}
+		if row == nil {
+			break
+		}
+		if err := table.Row(row...); err != nil {
+			return err
+		}
+	}
+
+	if p.FooterFn != nil {
+		r := p.FooterFn(data)
+		if r != "" {
+			if err := table.Footer(p.FooterFn(data)); err != nil {
 				return err
 			}
 		}
 	}
-
-	if data.Footer != "" {
-		if err := table.Footer(data.Footer); err != nil {
-			return err
-		}
-	}
-	return nil
+	return allErr
 }

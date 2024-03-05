@@ -8,12 +8,15 @@ import (
 
 	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
@@ -44,8 +47,25 @@ var ConnectionPolicyTypes = []model.ResourceType{
 }
 
 type GatewayHostInfo struct {
-	Host    GatewayHost
-	Entries []route.Entry
+	Host GatewayHost
+	// These are entries created internally in this plugin by MeshGatewayRoute
+	// before the Mesh*Route policies run
+	meshGatewayRouteEntries []route.Entry
+	// This are entries created by new Mesh*Route policies
+	routeEntries []route.Entry
+}
+
+func (i GatewayHostInfo) Entries() []route.Entry {
+	// We need to return one or the other because the gateway plugin doesn't
+	// know about Mesh*Routes and generates a 404 entry.
+	if len(i.routeEntries) > 0 {
+		return i.routeEntries
+	}
+	return i.meshGatewayRouteEntries
+}
+
+func (i *GatewayHostInfo) AppendEntries(entries []route.Entry) {
+	i.routeEntries = append(i.routeEntries, entries...)
 }
 
 type GatewayHost struct {
@@ -57,10 +77,20 @@ type GatewayHost struct {
 	Tags mesh_proto.TagSelector
 }
 
+type GatewayListenerHostname struct {
+	Hostname  string
+	TLS       *mesh_proto.MeshGateway_TLS_Conf
+	HostInfos []GatewayHostInfo
+}
+
+func (h GatewayListenerHostname) EnvoyRouteName(envoyListenerName string) string {
+	return envoyListenerName + ":" + h.Hostname
+}
+
 type GatewayListener struct {
-	Port         uint32
-	Protocol     mesh_proto.MeshGateway_Listener_Protocol
-	ResourceName string
+	Port              uint32
+	Protocol          mesh_proto.MeshGateway_Listener_Protocol
+	EnvoyListenerName string
 	// CrossMesh is important because for generation we need to treat such a
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
@@ -75,15 +105,15 @@ type GatewayListenerInfo struct {
 	ExternalServices  *core_mesh.ExternalServiceResourceList
 	OutboundEndpoints core_xds.EndpointMap
 
-	Listener  GatewayListener
-	HostInfos []GatewayHostInfo
+	Listener          GatewayListener
+	ListenerHostnames []GatewayListenerHostname
 }
 
 // FilterChainGenerator is responsible for handling the filter chain for
 // a specific protocol.
 // A FilterChainGenerator can be host-specific or shared amongst hosts.
 type FilterChainGenerator interface {
-	Generate(xds_context.Context, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
+	Generate(xds_context.Context, GatewayListenerInfo) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
 }
 
 // Generator generates xDS resources for an entire Gateway.
@@ -105,11 +135,9 @@ func (g *FilterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // GatewayListenerInfoFromProxy processes a Dataplane and the corresponding
 // Gateway and returns information about the listeners, routes and applied
 // policies.
-func GatewayListenerInfoFromProxy(
-	ctx context.Context, meshCtx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
-) (
-	[]GatewayListenerInfo, error,
-) {
+func gatewayListenerInfoFromProxy(
+	ctx context.Context, meshCtx *xds_context.MeshContext, proxy *core_xds.Proxy,
+) map[uint32]GatewayListenerInfo {
 	gateway := xds_topology.SelectGateway(meshCtx.Resources.Gateways().Items, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
@@ -119,7 +147,7 @@ func GatewayListenerInfoFromProxy(
 			"service", proxy.Dataplane.Spec.GetIdentifyingService(),
 		)
 
-		return nil, nil
+		return nil
 	}
 
 	log.V(1).Info(fmt.Sprintf("matched gateway %q to dataplane %q",
@@ -145,14 +173,9 @@ func GatewayListenerInfoFromProxy(
 
 	externalServices := meshCtx.Resources.ExternalServices()
 
-	var listenerInfos []GatewayListenerInfo
-
-	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
+	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(
 		proxy.Dataplane, externalServices, meshCtx.Resources.TrafficPermissions(),
 	)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
-	}
 
 	outboundEndpoints := core_xds.EndpointMap{}
 	for k, v := range meshCtx.EndpointMap {
@@ -164,65 +187,56 @@ func GatewayListenerInfoFromProxy(
 		meshCtx.Resource,
 		matchedExternalServices,
 		meshCtx.DataSourceLoader,
-		zone,
+		proxy.Zone,
 	)
 	for k, v := range esEndpoints {
 		outboundEndpoints[k] = v
 	}
 
+	listenerInfos := map[uint32]GatewayListenerInfo{}
+
 	// We already validate that listeners are collapsible
 	for _, listeners := range collapsed {
-		listener, hosts := MakeGatewayListener(meshCtx, gateway, proxy.Dataplane, listeners)
+		listener, hostInfos := MakeGatewayListener(meshCtx, gateway, listeners)
 
-		var hostInfos []GatewayHostInfo
-		for _, host := range hosts {
-			log.V(1).Info("applying merged traffic routes",
-				"listener-port", listener.Port,
-				"listener-name", listener.ResourceName,
-			)
-
-			hostInfos = append(hostInfos, GatewayHostInfo{
-				Host:    host,
-				Entries: GenerateEnvoyRouteEntries(host),
-			})
-		}
-
-		listenerInfos = append(listenerInfos, GatewayListenerInfo{
+		listenerInfos[listener.Port] = GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,
 			ExternalServices:  externalServices,
 			OutboundEndpoints: outboundEndpoints,
 			Listener:          listener,
-			HostInfos:         hostInfos,
-		})
+			ListenerHostnames: hostInfos,
+		}
 	}
 
-	return listenerInfos, nil
+	return listenerInfos
 }
 
-func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g Generator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-
-	listenerInfos, err := GatewayListenerInfoFromProxy(context.TODO(), ctx.Mesh, proxy, g.Zone)
-	if err != nil {
-		return nil, errors.Wrap(err, "error generating listener info from Proxy")
-	}
 
 	var limits []RuntimeResoureLimitListener
 
-	for _, info := range listenerInfos {
-		// This is checked by the gateway validator
-		if !SupportsProtocol(info.Listener.Protocol) {
-			return nil, errors.New("no support for protocol")
+	for _, info := range ExtractGatewayListeners(proxy) {
+		switch info.Listener.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTP, mesh_proto.MeshGateway_Listener_HTTPS:
+			httpRoute, ok := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType]
+			if ok && len(httpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
+				continue
+			}
+		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
+			tcpRoute, ok := proxy.Policies.Dynamic[meshtcproute_api.MeshTCPRouteType]
+			if ok && len(tcpRoute.GatewayRules.ToRules.ByListenerAndHostname) > 0 {
+				continue
+			}
 		}
-
-		cdsResources, err := g.generateCDS(ctx, info, info.HostInfos)
+		cdsResources, err := g.generateCDS(ctx, xdsCtx, info)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(cdsResources)
 
-		ldsResources, limit, err := g.generateLDS(ctx, info, info.HostInfos)
+		ldsResources, limit, err := g.generateLDS(xdsCtx, info)
 		if err != nil {
 			return nil, err
 		}
@@ -232,19 +246,19 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			limits = append(limits, *limit)
 		}
 
-		rdsResources, err := g.generateRDS(ctx, info, info.HostInfos)
+		rdsResources, err := g.generateRDS(xdsCtx, info)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(rdsResources)
 	}
 
-	resources.Add(g.generateRTDS(limits))
+	resources.Add(GenerateRTDS(limits))
 
 	return resources, nil
 }
 
-func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
+func GenerateRTDS(limits []RuntimeResoureLimitListener) *core_xds.Resource {
 	layer := map[string]interface{}{}
 	for _, limit := range limits {
 		layer[fmt.Sprintf("envoy.resource_limits.listener.%s.connection_limit", limit.Name)] = limit.ConnectionLimit
@@ -262,21 +276,16 @@ func (g Generator) generateRTDS(limits []RuntimeResoureLimitListener) *core_xds.
 	return res
 }
 
-func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, *RuntimeResoureLimitListener, error) {
+func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo) (*core_xds.ResourceSet, *RuntimeResoureLimitListener, error) {
 	resources := core_xds.NewResourceSet()
 
 	listenerBuilder, limit := GenerateListener(info)
-
-	var gatewayHosts []GatewayHost
-	for _, hostInfo := range hostInfos {
-		gatewayHosts = append(gatewayHosts, hostInfo.Host)
-	}
 
 	protocol := info.Listener.Protocol
 	if info.Listener.CrossMesh {
 		protocol = mesh_proto.MeshGateway_Listener_HTTPS
 	}
-	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[protocol].Generate(ctx, info, gatewayHosts)
+	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[protocol].Generate(ctx, info)
 	if err != nil {
 		return nil, limit, err
 	}
@@ -295,21 +304,27 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 	return resources, limit, nil
 }
 
-func (g Generator) generateCDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateCDS(
+	ctx context.Context,
+	xdsCtx xds_context.Context,
+	info GatewayListenerInfo,
+) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	for _, hostInfo := range hostInfos {
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(context.TODO(), ctx, info, hostInfo)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+	for _, listenerHostname := range info.ListenerHostnames {
+		for _, hostInfo := range listenerHostname.HostInfos {
+			clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, xdsCtx, info, hostInfo.Entries(), hostInfo.Host.Tags)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+			}
+			resources.AddSet(clusterRes)
 		}
-		resources.AddSet(clusterRes)
 	}
 
 	return resources, nil
 }
 
-func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo) (*core_xds.ResourceSet, error) {
 	switch info.Listener.Protocol {
 	case mesh_proto.MeshGateway_Listener_HTTPS,
 		mesh_proto.MeshGateway_Listener_HTTP:
@@ -317,24 +332,29 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 		return nil, nil
 	}
 
-	resources := core_xds.NewResourceSet()
-	routeConfig := GenerateRouteConfig(info)
+	hostInfosByHostname := info.ListenerHostnames
 
-	// Make a pass over the generators for each virtual host.
-	for _, hostInfo := range hostInfos {
-		vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries)
-		if err != nil {
-			return nil, err
+	resources := core_xds.NewResourceSet()
+	for _, hostInfos := range hostInfosByHostname {
+		routeName := hostInfos.EnvoyRouteName(info.Listener.EnvoyListenerName)
+		routeConfig := GenerateRouteConfig(info.Proxy, info.Listener.Protocol, routeName)
+
+		// Make a pass over the generators for each virtual host.
+		for _, hostInfo := range hostInfos.HostInfos {
+			vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
+			if err != nil {
+				return nil, err
+			}
+
+			routeConfig.Configure(envoy_routes.VirtualHost(vh))
 		}
 
-		routeConfig.Configure(envoy_routes.VirtualHost(vh))
+		res, err := BuildResourceSet(routeConfig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build route configuration resource")
+		}
+		resources.AddSet(res)
 	}
-
-	res, err := BuildResourceSet(routeConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build route configuration resource")
-	}
-	resources.AddSet(res)
 
 	return resources, nil
 }
@@ -345,17 +365,14 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 // Listeners must be validated for collapsibility in terms of hostnames and
 // protocols.
 func MakeGatewayListener(
-	meshContext xds_context.MeshContext,
+	meshContext *xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
-	dataplane *core_mesh.DataplaneResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
-) (GatewayListener, []GatewayHost) {
-	hostsByName := map[string]GatewayHost{}
-
+) (GatewayListener, []GatewayListenerHostname) {
 	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
 		Protocol: listeners[0].GetProtocol(),
-		ResourceName: envoy_names.GetGatewayListenerName(
+		EnvoyListenerName: envoy_names.GetGatewayListenerName(
 			gateway.Meta.GetName(),
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
@@ -364,26 +381,20 @@ func MakeGatewayListener(
 		Resources: listeners[0].GetResources(),
 	}
 
+	type hostAcc struct {
+		hosts []GatewayHost
+		tls   *mesh_proto.MeshGateway_TLS_Conf
+	}
+	hostsByName := map[string]hostAcc{}
+
 	// Hostnames must be unique to a listener to remove ambiguity
 	// in policy selection and TLS configuration.
 	for _, l := range listeners {
-		// An empty hostname is the same as "*", i.e. matches all hosts.
-		hostname := l.GetHostname()
-		if hostname == "" {
-			hostname = mesh_proto.WildcardHostname
-		}
+		hostname := l.GetNonEmptyHostname()
 
 		allRoutes := match.Routes(meshContext.Resources.GatewayRoutes().Items, l.GetTags())
 
-		var routes []*core_mesh.MeshGatewayRouteResource
-		switch listener.Protocol {
-		case mesh_proto.MeshGateway_Listener_HTTP,
-			mesh_proto.MeshGateway_Listener_HTTPS,
-			mesh_proto.MeshGateway_Listener_TCP:
-
-			routes = route.FilterProtocols(allRoutes, listener.Protocol)
-		default:
-		}
+		routes := route.FilterProtocols(allRoutes, listener.Protocol)
 
 		host := GatewayHost{
 			Hostname: hostname,
@@ -400,23 +411,53 @@ func MakeGatewayListener(
 			host.Policies[t] = matches
 		}
 
-		hostsByName[hostname] = host
+		hostnameKey := "*"
+		switch l.Protocol {
+		case mesh_proto.MeshGateway_Listener_HTTPS, mesh_proto.MeshGateway_Listener_TLS:
+			hostnameKey = hostname
+		}
+		acc, ok := hostsByName[hostnameKey]
+		if !ok {
+			acc = hostAcc{
+				tls: l.Tls,
+			}
+		}
+		acc.hosts = append(acc.hosts, host)
+		hostsByName[hostnameKey] = acc
 	}
 
-	var hosts []GatewayHost
-	for _, host := range hostsByName {
-		hosts = append(hosts, host)
+	var listenerHostnames []GatewayListenerHostname
+	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostsByName)) {
+		hostAcc := hostsByName[hostname]
+		hosts := RedistributeWildcardRoutes(hostAcc.hosts)
+
+		// Sort by reverse hostname, so that fully qualified hostnames sort
+		// before wildcard domains, and "*" is last.
+		sort.Slice(hosts, func(i, j int) bool {
+			return hosts[i].Hostname > hosts[j].Hostname
+		})
+
+		log.V(1).Info("applying merged traffic routes",
+			"listener-port", listener.Port,
+			"listener-name", listener.EnvoyListenerName,
+		)
+
+		var hostInfos []GatewayHostInfo
+		for _, host := range hosts {
+			hostInfos = append(hostInfos, GatewayHostInfo{
+				Host:                    host,
+				meshGatewayRouteEntries: GenerateEnvoyRouteEntries(host),
+			})
+		}
+
+		listenerHostnames = append(listenerHostnames, GatewayListenerHostname{
+			Hostname:  hostname,
+			TLS:       hostAcc.tls,
+			HostInfos: hostInfos,
+		})
 	}
 
-	hosts = RedistributeWildcardRoutes(hosts)
-
-	// Sort by reverse hostname, so that fully qualified hostnames sort
-	// before wildcard domains, and "*" is last.
-	sort.Slice(hosts, func(i, j int) bool {
-		return hosts[i].Hostname > hosts[j].Hostname
-	})
-
-	return listener, hosts
+	return listener, listenerHostnames
 }
 
 // RedistributeWildcardRoutes takes the routes from the wildcard host

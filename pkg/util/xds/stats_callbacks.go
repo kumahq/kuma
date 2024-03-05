@@ -163,7 +163,7 @@ func (s *statsCallbacks) OnDeltaStreamClosed(int64) {
 }
 
 func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryRequest) error {
-	if len(request.GetInitialResourceVersions()) == 0 {
+	if request.GetResponseNonce() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
 	}
 
@@ -173,7 +173,10 @@ func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryReq
 		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
 	}
 
-	// TODO(lukidzi): figure out how to measure delivery time because of lack of version
+	// Delta only has an initial version, therefore we need to change the key to nodeID and typeURL.
+	if configTime, exists := s.takeConfigTimeFromQueue(request.NodeId() + request.GetTypeUrl()); exists {
+		s.deliveryMetric.Observe(float64(core.Now().Sub(configTime).Milliseconds()))
+	}
 	return nil
 }
 

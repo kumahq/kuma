@@ -4,6 +4,12 @@
 # IDE: VS Code
 .vscode/
 
+.ci_tools/
+
+.tool-versions
+.run-full-matrix
+.build-info
+
 # CI
 build/
 

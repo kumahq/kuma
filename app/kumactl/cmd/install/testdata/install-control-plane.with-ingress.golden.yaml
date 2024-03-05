@@ -176,9 +176,11 @@ rules:
       - meshhealthchecks
       - meshhttproutes
       - meshloadbalancingstrategies
+      - meshmetrics
       - meshproxypatches
       - meshratelimits
       - meshretries
+      - meshtcproutes
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
@@ -304,8 +306,8 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
 spec:
   type: ClusterIP
   ports:
@@ -317,17 +319,17 @@ spec:
       appProtocol: http
     - port: 5682
       name: https-api-server
-      appProtocol: http
+      appProtocol: https
     - port: 443
       name: https-admission-server
       targetPort: 5443
-      appProtocol: http
+      appProtocol: https
     - port: 5676
       name: mads-server
-      appProtocol: http
+      appProtocol: https
     - port: 5678
       name: dp-server
-      appProtocol: http
+      appProtocol: https
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -363,8 +365,11 @@ metadata:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
+  annotations: 
+    
 spec:
   replicas: 1
+  minReadySeconds: 0
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -378,7 +383,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: abac59589c4ca4987ebcfc82191fd461b0bd3b7392c1ef39d505d6c052d44ad4
+        checksum/tls-secrets: 6f2a777e2b8ab1121f65749920773354b2bc2b367f6280dcdd48272803e8445e
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -442,6 +447,8 @@ spec:
               value: "grpcs://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -467,6 +474,7 @@ spec:
           args:
             - run
             - --log-level=info
+            - --log-output-path=
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
@@ -575,6 +583,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-ingress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -598,8 +607,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 60s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -646,7 +653,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: "kuma-tls-cert"
+            secretName: "general-tls-secret"
             items:
               - key: ca.crt
                 path: ca.crt
@@ -666,6 +673,11 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -688,9 +700,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -698,6 +712,11 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -733,9 +752,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -746,8 +767,13 @@ webhooks:
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     namespaceSelector:
-      matchLabels:
-        kuma.io/sidecar-injection: enabled
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values: ["enabled", "true"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -767,28 +793,14 @@ webhooks:
   - name: pods-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /inject-sidecar
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-        resources:
-          - pods
-    sideEffects: None
-  - name: kuma-injector.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore 
     clientConfig:
       caBundle: XYZ
       service:
@@ -819,6 +831,11 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -860,9 +877,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -872,6 +891,11 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -916,6 +940,11 @@ webhooks:
   - name: gateway.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:

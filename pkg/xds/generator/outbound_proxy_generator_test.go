@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 	"time"
 
@@ -49,6 +50,26 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		},
 	}
 
+	defaultTrafficRoute := &core_mesh.TrafficRouteResourceList{
+		Items: []*core_mesh.TrafficRouteResource{{
+			Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
+			Spec: &mesh_proto.TrafficRoute{
+				Sources: []*mesh_proto.Selector{{
+					Match: mesh_proto.MatchAnyService(),
+				}},
+				Destinations: []*mesh_proto.Selector{{
+					Match: mesh_proto.MatchAnyService(),
+				}},
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					Destination: mesh_proto.MatchAnyService(),
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+					},
+				},
+			},
+		}},
+	}
+
 	timeout := &mesh_proto.Timeout{
 		Conf: &mesh_proto.Timeout_Conf{
 			ConnectTimeout: util_proto.Duration(100 * time.Second),
@@ -75,6 +96,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Logging: logging,
 				},
 			},
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
 		},
 	}
 
@@ -83,6 +109,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
 			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
@@ -97,6 +128,44 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Logging: logging,
 				},
 				Meta: meta,
+			},
+		},
+	}
+
+	serviceVipCtx := xds_context.Context{
+		ControlPlane: &xds_context.ControlPlaneContext{
+			Secrets: &xds.TestSecrets{},
+		},
+		Mesh: xds_context.MeshContext{
+			Resources: xds_context.Resources{
+				MeshLocalResources: xds_context.ResourceMap{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
+				},
+			},
+			Resource: &core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
+							},
+						},
+					},
+					Logging: logging,
+				},
+				Meta: meta,
+			},
+			VIPDomains: []model.VIPDomains{
+				{
+					Address: "240.0.0.3",
+					Domains: []string{"backend"},
+				},
+				{
+					Address: "240.0.0.4",
+					Domains: []string{"backend"},
+				},
 			},
 		},
 	}
@@ -123,6 +192,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			Resources: xds_context.Resources{
 				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					core_mesh.TrafficRouteType: defaultTrafficRoute,
 					core_mesh.MeshType: &core_mesh.MeshResourceList{
 						Items: []*core_mesh.MeshResource{{
 							Spec: &mesh_proto.Mesh{
@@ -190,6 +260,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Weight: 1,
 						},
 					},
+				},
+			},
+			ServicesInformation: map[string]*xds_context.ServiceInformation{
+				"api-http": {
+					Protocol: core_mesh.ProtocolHTTP,
 				},
 			},
 		},
@@ -306,9 +381,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 			meshes := []string{given.ctx.Mesh.Resource.Meta.GetName()}
 			if given.ctx.Mesh.Resources.MeshLocalResources != nil {
-				meshResources := given.ctx.Mesh.Resources.MeshLocalResources[core_mesh.MeshType]
-				for _, mesh := range meshResources.GetItems() {
-					meshes = append(meshes, mesh.GetMeta().GetName())
+				if meshResources, ok := given.ctx.Mesh.Resources.MeshLocalResources[core_mesh.MeshType]; ok {
+					for _, mesh := range meshResources.GetItems() {
+						meshes = append(meshes, mesh.GetMeta().GetName())
+					}
 				}
 			}
 
@@ -549,27 +625,52 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 				},
 				Metadata: &model.DataplaneMetadata{
-					Features: model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					Features:            model.Features{"feature-tcp-accesslog-via-named-pipe": true},
+					AccessLogSocketPath: "/foo/log",
 				},
 			}
 
 			// when
-			metrics, err := core_metrics.NewMetrics("Standalone")
+			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			given.ctx.Mesh.EndpointMap = outboundTargets
-			given.ctx.Mesh.ServiceTLSReadiness = map[string]bool{
-				"api-http":  true,
-				"api-tcp":   true,
-				"api-http2": true,
-				"api-grpc":  true,
-				"backend":   true,
-				"db":        true,
-				"es":        true,
-				"es2":       true,
+			given.ctx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
+				"api-http": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"api-tcp": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolTCP,
+				},
+				"api-http2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
+				"api-grpc": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolGRPC,
+				},
+				"backend": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"db": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolUnknown,
+				},
+				"es": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP,
+				},
+				"es2": {
+					TLSReadiness: true,
+					Protocol:     core_mesh.ProtocolHTTP2,
+				},
 			}
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
-			rs, err := gen.Generate(given.ctx, proxy)
+			rs, err := gen.Generate(context.Background(), nil, given.ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -610,17 +711,23 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: gateway
               outbound:
               - port: 18080
-                service: backend
+                tags:
+                  kuma.io/service: backend
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 40001
-                service: api-http
+                tags:
+                  kuma.io/service: api-http
               - port: 40002
-                service: api-tcp
+                tags:
+                  kuma.io/service: api-tcp
               - port: 40003
-                service: api-http2
+                tags:
+                  kuma.io/service: api-http2
               - port: 40004
-                service: api-grpc
+                tags:
+                  kuma.io/service: api-grpc
 `,
 			expected: "03.envoy.golden.yaml",
 		}),
@@ -635,13 +742,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: web
               outbound:
               - port: 18080
-                service: backend
+                tags:
+                  kuma.io/service: backend
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 40001
-                service: api-http
+                tags:
+                  kuma.io/service: api-http
               - port: 40002
-                service: api-tcp
+                tags:
+                  kuma.io/service: api-tcp
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
@@ -730,7 +841,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "08.envoy.golden.yaml",
 		}),
-		Entry("cross-mesh", testCase{
+		Entry("09. cross-mesh", testCase{
 			ctx: crossMeshCtx,
 			dataplane: `
             networking:
@@ -741,11 +852,42 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: web
               outbound:
               - port: 30001
-                service: api-http
                 tags:
                   kuma.io/mesh: mesh2
+                  kuma.io/service: api-http
 `,
 			expected: "09.envoy.golden.yaml",
+		}),
+		Entry("10. service vips", testCase{
+			ctx: serviceVipCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 18080
+                tags:
+                  kuma.io/service: backend
+              - port: 80
+                address: 240.0.0.3
+                tags:
+                  kuma.io/service: backend
+              - port: 80
+                address: 240.0.0.4
+                tags:
+                  kuma.io/service: backend
+              - port: 8080
+                address: 240.0.0.4
+                tags:
+                  kuma.io/service: backend
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "10.envoy.golden.yaml",
 		}),
 	)
 
@@ -756,9 +898,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
         networking:
           outbound:
           - port: 18080
-            service: backend.kuma-system
+            tags:
+              kuma.io/service: backend.kuma-system
           - port: 54321
-            service: db.kuma-system`
+            tags:
+              kuma.io/service: db.kuma-system`
 
 		dataplane := &mesh_proto.Dataplane{}
 		Expect(util_proto.FromYAML([]byte(dp), dataplane)).To(Succeed())
@@ -819,7 +963,15 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 		// when
 		plainCtx.ControlPlane.CLACache = &test_xds.DummyCLACache{OutboundTargets: outboundTargets}
-		rs, err := gen.Generate(plainCtx, proxy)
+		plainCtx.Mesh.ServicesInformation = map[string]*xds_context.ServiceInformation{
+			"backend.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
+			"db.kuma-system": {
+				Protocol: core_mesh.ProtocolUnknown,
+			},
+		}
+		rs, err := gen.Generate(context.Background(), nil, plainCtx, proxy)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

@@ -1,0 +1,20 @@
+{
+  "total": 3,
+  "items": [
+    {
+      "type": "Dataplane",
+      "name": "foo",
+      "mesh": "default"
+    },
+    {
+      "type": "Dataplane",
+      "name": "bar",
+      "mesh": "default"
+    },
+    {
+      "type": "Dataplane",
+      "name": "baz",
+      "mesh": "default"
+    }
+  ]
+}

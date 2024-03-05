@@ -33,8 +33,18 @@ func KubeHosts(
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
 
-		// Do not generate outbounds for service-less
+		// Do not generate hostnames for service-less
 		if isServiceLess(port) {
+			continue
+		}
+
+		// Do not generate hostnames for ExternalName Service
+		if isExternalNameService(service) {
+			converterLog.V(1).Info(
+				"ignoring hostnames generation for unsupported ExternalName Service",
+				"name", service.GetName(),
+				"namespace", service.GetNamespace(),
+			)
 			continue
 		}
 
@@ -43,7 +53,7 @@ func KubeHosts(
 			for _, endpoint := range endpoints[serviceTag] {
 				hostnameEntry := vips.NewHostEntry(endpoint.Address)
 				err := view.Add(hostnameEntry, vips.OutboundEntry{
-					Port: endpoint.Port,
+					Port: port,
 					TagSet: map[string]string{
 						mesh_proto.ServiceTag:  serviceTag,
 						mesh_proto.InstanceTag: endpoint.Instance,

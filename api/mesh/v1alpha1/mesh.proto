@@ -4,8 +4,8 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "mesh/options.proto";
-import "mesh/v1alpha1/metrics.proto";
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
@@ -36,6 +36,9 @@ message Mesh {
 
     // List of available Certificate Authority backends
     repeated CertificateAuthorityBackend backends = 2 [ (doc.required) = true ];
+
+    // If enabled, skips CA validation.
+    bool skipValidation = 3;
   }
 
   // mTLS settings.
@@ -74,6 +77,11 @@ message Mesh {
 
   // Constraints that applies to the mesh and its entities
   Constraints constraints = 7;
+
+  // List of policies to skip creating by default when the mesh is created.
+  // e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
+  // policies.
+  repeated string skipCreatingInitialPolicies = 8;
 
   message DataplaneProxyConstraints {
 

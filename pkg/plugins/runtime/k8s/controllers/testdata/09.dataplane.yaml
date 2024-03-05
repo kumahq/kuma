@@ -5,7 +5,9 @@ spec:
   networking:
     address: 10.244.0.8
     inbound:
-    - port: 10001
+    - health:
+        ready: true
+      port: 10001
       tags:
         app: kuma-ingress
         k8s.kuma.io/namespace: kuma-system

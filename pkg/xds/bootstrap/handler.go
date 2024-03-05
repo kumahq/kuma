@@ -87,7 +87,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 }
 
 func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
-	if err == DpTokenRequired || store.IsResourcePreconditionFailed(err) || validators.IsValidationError(err) {
+	if err == DpTokenRequired || validators.IsValidationError(err) {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {
@@ -129,6 +129,8 @@ func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.B
 		},
 		Networking: types.NetworkingConfiguration{
 			IsUsingTransparentProxy: config.NetworkingConfig.IsUsingTransparentProxy,
+			Address:                 config.NetworkingConfig.Address,
+			CorefileTemplate:        config.NetworkingConfig.CorefileTemplate,
 		},
 	}
 	return &bootstrapConfig

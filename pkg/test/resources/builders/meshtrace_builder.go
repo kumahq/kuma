@@ -33,6 +33,7 @@ func (m *MeshTraceBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTr
 func (m *MeshTraceBuilder) WithZipkinBackend(zipkin *meshtrace_proto.ZipkinBackend) *MeshTraceBuilder {
 	m.res.Spec.Default.Backends = &[]meshtrace_proto.Backend{
 		{
+			Type:   meshtrace_proto.ZipkinBackendType,
 			Zipkin: zipkin,
 		},
 	}

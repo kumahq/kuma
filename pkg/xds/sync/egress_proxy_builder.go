@@ -6,28 +6,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {
-	ctx context.Context
-
-	ResManager         manager.ResourceManager
-	ReadOnlyResManager manager.ReadOnlyResourceManager
-	LookupIP           lookup.LookupIPFunc
-	meshCache          *xds_cache.Cache
-
 	zone       string
 	apiVersion core_xds.APIVersion
 }
@@ -35,46 +28,29 @@ type EgressProxyBuilder struct {
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
-	zoneEgress := core_mesh.NewZoneEgressResource()
-
-	if err := p.ReadOnlyResManager.Get(
-		ctx,
-		zoneEgress,
-		core_store.GetBy(key),
-	); err != nil {
-		return nil, err
-	}
-
-	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
-		return nil, err
+	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
+	if !ok {
+		return nil, core_store.ErrorResourceNotFound(core_mesh.ZoneEgressType, key.Name, key.Mesh)
 	}
 
 	// As egress is using SNI to identify the services, we need to filter out
 	// meshes with no mTLS enabled and with ZoneEgress enabled
 	var meshes []*core_mesh.MeshResource
-	for _, mesh := range meshList.Items {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if mesh.ZoneEgressEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}
 
-	var zoneIngressesList core_mesh.ZoneIngressResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &zoneIngressesList); err != nil {
-		return nil, err
-	}
-
 	// We don't want to process services from our local zone ingress
 	var zoneIngresses []*core_mesh.ZoneIngressResource
-	for _, zoneIngress := range zoneIngressesList.Items {
+	for _, zoneIngress := range aggregatedMeshCtxs.ZoneIngresses() {
 		if zoneIngress.IsRemoteIngress(p.zone) {
 			zoneIngresses = append(zoneIngresses, zoneIngress)
 		}
 	}
-
-	// Resolve hostnames to ips in zoneIngresses.
-	zoneIngresses = xds_topology.ResolveZoneIngressAddresses(xdsServerLog, p.LookupIP, zoneIngresses)
 
 	// It's done for achieving stable xds config
 	sort.Slice(zoneIngresses, func(a, b int) bool {
@@ -85,23 +61,17 @@ func (p *EgressProxyBuilder) Build(
 
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
-
-		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
-		if err != nil {
-			return nil, err
-		}
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
-		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
 
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
-			TrafficRoutes:    trafficRoutes,
 			ExternalServices: externalServices,
-			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+			EndpointMap: xds_topology.BuildEgressEndpointMap(
 				ctx,
 				mesh,
 				p.zone,
@@ -121,26 +91,24 @@ func (p *EgressProxyBuilder) Build(
 				externalServices,
 				rateLimits,
 			),
-			Dynamic: core_xds.ExternalServiceDynamicPolicies{},
+			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
+			Resources: meshCtx.Resources.MeshLocalResources,
 		}
 
 		for _, es := range externalServices {
-			policies := core_xds.PluginOriginatedPolicies{}
-			for name, plugin := range plugins.Plugins().PolicyPlugins() {
-				egressPlugin, ok := plugin.(plugins.EgressPolicyPlugin)
-				if !ok {
-					continue
-				}
-				res, err := egressPlugin.EgressMatchedPolicies(es, meshCtx.Resources)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not apply policy plugin %s", name)
-				}
-				if res.Type == "" {
-					return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", name)
-				}
-				policies[res.Type] = res
+			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)
+			if err != nil {
+				return nil, err
 			}
 			meshResources.Dynamic[es.Spec.GetService()] = policies
+		}
+
+		for serviceName := range meshResources.EndpointMap {
+			policies, err := matchEgressPolicies(map[string]string{mesh_proto.ServiceTag: serviceName}, meshCtx.Resources)
+			if err != nil {
+				return nil, err
+			}
+			meshResources.Dynamic[serviceName] = policies
 		}
 
 		meshResourcesList = append(meshResourcesList, meshResources)
@@ -149,12 +117,39 @@ func (p *EgressProxyBuilder) Build(
 	proxy := &core_xds.Proxy{
 		Id:         core_xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
+		Zone:       p.zone,
 		ZoneEgressProxy: &core_xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
 			ZoneIngresses:      zoneIngresses,
 			MeshResourcesList:  meshResourcesList,
 		},
 	}
+	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
+		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed applying proxy plugin: %s", k)
+		}
+	}
 
 	return proxy, nil
+}
+
+func matchEgressPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.PluginOriginatedPolicies, error) {
+	pluginPolicies := core_xds.PluginOriginatedPolicies{}
+	for _, plugin := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
+		egressPlugin, ok := plugin.Plugin.(core_plugins.EgressPolicyPlugin)
+		if !ok {
+			continue
+		}
+		res, err := egressPlugin.EgressMatchedPolicies(tags, resources)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not apply policy plugin %s", plugin.Name)
+		}
+		if res.Type == "" {
+			return nil, errors.Errorf("matched policy didn't set type for policy plugin %s", plugin.Name)
+		}
+		pluginPolicies[res.Type] = res
+	}
+
+	return pluginPolicies, nil
 }

@@ -13,12 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: api-service-ebbb1519109a5d70
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -26,6 +20,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-b70526a3f546ce4f:
@@ -41,12 +37,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-b70526a3f546ce4f
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -54,6 +44,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -135,12 +127,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -151,8 +142,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
-      name: edge-gateway:HTTP:8080
+    edge-gateway:HTTP:8080:*:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -164,6 +156,8 @@ Routes:
         - match:
             path: /v2
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -180,10 +174,11 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
         - match:
             path: /
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -200,7 +195,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
       - domains:
         - '*'
         name: '*'

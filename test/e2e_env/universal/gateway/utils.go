@@ -143,6 +143,7 @@ networking:
 
 		return universal.Cluster.DeployApp(
 			WithName(name),
+			WithMesh(mesh),
 			WithToken(token),
 			WithVerbose(),
 			WithYaml(dataplane),

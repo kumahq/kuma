@@ -1,6 +1,7 @@
 package generator_test
 
 import (
+	"context"
 	"path/filepath"
 	"time"
 
@@ -55,6 +56,26 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				},
 			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.TrafficRouteType] = &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{{
+					Meta: &test_model.ResourceMeta{Name: "default-allow-all"},
+					Spec: &mesh_proto.TrafficRoute{
+						Sources: []*mesh_proto.Selector{{
+							Match: mesh_proto.MatchAnyService(),
+						}},
+						Destinations: []*mesh_proto.Selector{{
+							Match: mesh_proto.MatchAnyService(),
+						}},
+						Conf: &mesh_proto.TrafficRoute_Conf{
+							Destination: mesh_proto.MatchAnyService(),
+							LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+								LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+							},
+						},
+					},
+				}},
+			}
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
@@ -67,9 +88,16 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
-					ServiceTLSReadiness: map[string]bool{
-						"db":      true,
-						"elastic": true,
+					Resources: resources,
+					ServicesInformation: map[string]*xds_context.ServiceInformation{
+						"db": {
+							TLSReadiness: true,
+							Protocol:     core_mesh.ProtocolUnknown,
+						},
+						"elastic": {
+							TLSReadiness: true,
+							Protocol:     core_mesh.ProtocolUnknown,
+						},
 					},
 				},
 			}
@@ -143,6 +171,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
+					MetricsSocketPath: "/foo/bar",
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -154,7 +183,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(ctx, proxy)
+			rs, err := gen.Generate(context.Background(), core_xds.NewResourceSet(), ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -189,9 +218,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/service: backend
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "1-envoy-config.golden.yaml",
@@ -214,9 +245,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/service: backend
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
@@ -252,9 +285,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/protocol: http
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "3-envoy-config.golden.yaml",
@@ -287,9 +322,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                     kuma.io/protocol: http
               outbound:
               - port: 54321
-                service: db
+                tags:
+                  kuma.io/service: db
               - port: 59200
-                service: elastic
+                tags:
+                  kuma.io/service: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006

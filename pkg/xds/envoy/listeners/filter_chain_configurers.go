@@ -13,6 +13,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	envoy_routes_v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
@@ -25,12 +27,19 @@ func Kafka(statsName string) FilterChainBuilderOpt {
 	})
 }
 
-func Tracing(backend *mesh_proto.TracingBackend, service string, direction envoy_common.TrafficDirection, destination string) FilterChainBuilderOpt {
+func Tracing(
+	backend *mesh_proto.TracingBackend,
+	service string,
+	direction envoy_common.TrafficDirection,
+	destination string,
+	spawnUpstreamSpan bool,
+) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TracingConfigurer{
-		Backend:          backend,
-		Service:          service,
-		TrafficDirection: direction,
-		Destination:      destination,
+		Backend:           backend,
+		Service:           service,
+		TrafficDirection:  direction,
+		Destination:       destination,
+		SpawnUpstreamSpan: spawnUpstreamSpan,
 	})
 }
 
@@ -38,6 +47,13 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
 		VirtualHostName: virtualHostName,
 		Paths:           paths,
+	})
+}
+
+func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoints) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.DirectResponseConfigurer{
+		VirtualHostName: virtualHostName,
+		Endpoints:       endpoints,
 	})
 }
 
@@ -51,6 +67,13 @@ func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracke
 func ServerSideStaticMTLS(mtlsCerts core_xds.ServerSideMTLSCerts) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideStaticMTLSConfigurer{
 		MTLSCerts: mtlsCerts,
+	})
+}
+
+func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerSideStaticTLSConfigurer{
+		CertPath: tlsCerts.CertPath,
+		KeyPath:  tlsCerts.KeyPath,
 	})
 }
 
@@ -72,18 +95,59 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 	})
 }
 
-func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+type splitAdapter struct {
+	clusterName string
+	weight      uint32
+	lbMetadata  tags.Tags
+
+	hasExternalService bool
+}
+
+func (s *splitAdapter) ClusterName() string      { return s.clusterName }
+func (s *splitAdapter) Weight() uint32           { return s.weight }
+func (s *splitAdapter) LBMetadata() tags.Tags    { return s.lbMetadata }
+func (s *splitAdapter) HasExternalService() bool { return s.hasExternalService }
+
+func TcpProxyDeprecated(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+	var splits []envoy_common.Split
+	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
+		splits = append(splits, &splitAdapter{
+			clusterName:        cluster.Name(),
+			weight:             cluster.Weight(),
+			lbMetadata:         cluster.Tags(),
+			hasExternalService: cluster.IsExternalService(),
+		})
+	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
-		Clusters:    clusters,
+		Splits:      splits,
 		UseMetadata: false,
 	})
 }
 
-func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+func TcpProxyDeprecatedWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+	var splits []envoy_common.Split
+	for _, cluster := range clusters {
+		cluster := cluster.(*envoy_common.ClusterImpl)
+		splits = append(splits, &splitAdapter{
+			clusterName:        cluster.Name(),
+			weight:             cluster.Weight(),
+			lbMetadata:         cluster.Tags(),
+			hasExternalService: cluster.IsExternalService(),
+		})
+	}
 	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
 		StatsName:   statsName,
-		Clusters:    clusters,
+		Splits:      splits,
+		UseMetadata: true,
+	})
+}
+
+func TCPProxy(statsName string, splits ...envoy_common.Split) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.TcpProxyConfigurer{
+		StatsName:   statsName,
+		Splits:      splits,
 		UseMetadata: true,
 	})
 }
@@ -195,10 +259,12 @@ func Retry(
 		return FilterChainBuilderOptFunc(nil)
 	}
 
-	return AddFilterChainConfigurer(&v3.RetryConfigurer{
-		Retry:    retry,
-		Protocol: protocol,
-	})
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			for _, virtualHost := range hcm.GetRouteConfig().VirtualHosts {
+				virtualHost.RetryPolicy = envoy_routes_v3.RetryConfig(retry, protocol)
+			}
+		}))
 }
 
 func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) FilterChainBuilderOpt {

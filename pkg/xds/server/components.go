@@ -11,7 +11,6 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
@@ -31,10 +30,10 @@ var (
 	}
 )
 
-func MeshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
+func MeshResourceTypes() []core_model.ResourceType {
 	types := []core_model.ResourceType{}
 	for _, desc := range registry.Global().ObjectDescriptors() {
-		if desc.Scope == core_model.ScopeMesh && !exclude[desc.Name] {
+		if desc.Scope == core_model.ScopeMesh && !HashMeshExcludedResources[desc.Name] {
 			types = append(types, desc.Name)
 		}
 	}
@@ -48,10 +47,6 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	// Build common dependencies for V2 and V3 servers.
 	// We want to have same metrics (we cannot register one metric twice) and same caches for both V2 and V3.
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
-	if err != nil {
-		return err
-	}
-	xdsMetrics, err := xds_metrics.NewMetrics(rt.Metrics())
 	if err != nil {
 		return err
 	}
@@ -80,7 +75,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		Zone:     rt.Config().Multizone.Zone.Name,
 	}
 
-	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, envoyCpCtx, rt); err != nil {
+	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {
 		return errors.Wrap(err, "could not register V3 XDS")
 	}
 	return nil

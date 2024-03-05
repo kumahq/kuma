@@ -4,64 +4,85 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-// MeshReconciler reconciles a Mesh object
+// MeshReconciler creates default resources for created Mesh and ensures that CA was created
 type MeshReconciler struct {
-	kube_client.Client
-	Log logr.Logger
-
-	Scheme          *kube_runtime.Scheme
-	Converter       k8s_common.Converter
-	CaManagers      core_ca.Managers
-	SystemNamespace string
-	ResourceManager manager.ResourceManager
+	ResourceManager            manager.ResourceManager
+	Log                        logr.Logger
+	Extensions                 context.Context
+	CreateMeshRoutingResources bool
+	K8sStore                   bool
+	CaManagers                 core_ca.Managers
+	SystemNamespace            string
 }
 
 func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	log := r.Log.WithValues("mesh", req.NamespacedName)
-
-	// Fetch the Mesh instance
-	mesh := &mesh_k8s.Mesh{}
-	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			// Force delete associated resources. It will return an error ErrorResourceNotFound because Mesh was already deleted but we still need to cleanup resources
-			// Remove this part after https://github.com/kumahq/kuma/issues/1137 is implemented.
-			err := r.ResourceManager.Delete(ctx, core_mesh.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
-			if err == nil || store.IsResourceNotFound(err) {
-				return kube_ctrl.Result{}, nil
-			}
-			return kube_ctrl.Result{}, err
+	mesh := core_mesh.NewMeshResource()
+	if err := r.ResourceManager.Get(ctx, mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
+		if store.IsResourceNotFound(err) {
+			return kube_ctrl.Result{}, nil
 		}
-		log.Error(err, "unable to fetch Mesh")
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not get default mesh resources")
+	}
+
+	r.Log.V(1).Info("ensuring CAs for mesh exist")
+	if err := core_managers.EnsureCAs(ctx, r.CaManagers, mesh, mesh.Meta.GetName()); err != nil {
+		r.Log.Error(err, "unable to ensure that mesh CAs are created")
 		return kube_ctrl.Result{}, err
 	}
 
-	meshResource := core_mesh.NewMeshResource()
-	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
-		log.Error(err, "unable to convert Mesh k8s object into core model")
-		return kube_ctrl.Result{}, err
-	}
-
-	log.V(1).Info("ensuring CAs for mesh exist")
-	if err := core_managers.EnsureCAs(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
-		log.Error(err, "unable to ensure that mesh CAs are created")
+	if err := r.ensureDefaultResources(ctx, mesh); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_mesh.MeshResource) error {
+	// Before creating default policies for the mesh we want to ensure that this mesh wasn't processed before.
+	if processed := mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated]; processed == "true" {
+		return nil
+	}
+
+	r.Log.Info("ensuring that default mesh resources exist", "mesh", mesh.GetMeta().GetName())
+	if err := defaults_mesh.EnsureDefaultMeshResources(
+		ctx,
+		r.ResourceManager,
+		mesh,
+		mesh.Spec.GetSkipCreatingInitialPolicies(),
+		r.Extensions,
+		r.CreateMeshRoutingResources,
+		r.K8sStore,
+		r.SystemNamespace,
+	); err != nil {
+		return errors.Wrap(err, "could not create default mesh resources")
+	}
+
+	if mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations() == nil {
+		mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = map[string]string{}
+	}
+	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
+
+	r.Log.Info("marking mesh that default resources were generated", "mesh", mesh.GetMeta().GetName())
+
+	if err := r.ResourceManager.Update(ctx, mesh); err != nil {
+		return errors.Wrap(err, "could not mark Mesh that default resources were generated")
+	}
+	return nil
 }
 
 func (r *MeshReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

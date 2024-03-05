@@ -25,8 +25,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
         type: EDS`
 
 		// when
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.EdsCluster(clusterName)).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
+			Configure(clusters.EdsCluster()).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 

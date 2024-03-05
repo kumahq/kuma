@@ -9,10 +9,13 @@ import (
 
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer, timeout time.Duration) (util_http.Client, error) {
-	headers := make(map[string]string)
+	headers := map[string]string{
+		"User-Agent": kuma_version.Build.UserAgent("kumactl"),
+	}
 	baseURL, err := url.Parse(coordinates.Url)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")

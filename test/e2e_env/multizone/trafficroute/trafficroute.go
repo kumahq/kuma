@@ -5,10 +5,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
+	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
@@ -19,14 +20,26 @@ func TrafficRoute() {
 
 	BeforeAll(func() {
 		// Global
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		err := NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Setup(multizone.Global)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
+		err = NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
+			)).
+			Install(TestServerUniversal("dp-echo-5", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v5"}),
+				WithServiceVersion("v5"),
+			)).
+			Install(TestServerUniversal("dp-echo-6", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v6"}),
+				WithServiceVersion("v6"),
 			)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
@@ -90,18 +103,17 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "three-way-route"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.HashedName(meshName, "three-way-route")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
-			And(
-				HaveLen(3),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
-			),
+			MatchAllKeys(Keys{
+				"echo-v1": Not(BeNil()),
+				"echo-v2": Not(BeNil()),
+				"echo-v4": Not(BeNil()),
+			}),
 		)
 	})
 
@@ -123,15 +135,15 @@ conf:
     kuma.io/service: another-test-server
 `
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-echo-to-backend"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.HashedName(meshName, "route-echo-to-backend")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
-			And(
-				HaveLen(1),
-				HaveKeyWithValue(Equal(`another-test-server`), Not(BeNil())),
-			),
+			MatchAllKeys(Keys{
+				"another-test-server": Not(BeNil()),
+			}),
 		)
 	})
 
@@ -163,27 +175,61 @@ conf:
         version: v2
 `, v1Weight, v2Weight)
 		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-		Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-20-80-split"}, multizone.Zones()...)).Should(Succeed())
+		hashedName := hash.HashedName(meshName, "route-20-80-split")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 		Eventually(func(g Gomega) {
 			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res).To(And(
-				HaveLen(2),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2*v1Weight, 20)),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 2*v2Weight, 20)),
-			))
+			g.Expect(res).To(MatchAllKeys(Keys{
+				"echo-v1": BeNumerically("~", 2*v1Weight, 20),
+				"echo-v2": BeNumerically("~", 2*v2Weight, 20),
+			}))
+		}, "1m", "5s").Should(Succeed())
+	})
+
+	It("should route split traffic between the versions with 20/80 ratio, local zone", func() {
+		v1Weight := 80
+		v2Weight := 20
+
+		trafficRoute := fmt.Sprintf(`
+type: TrafficRoute
+name: route-20-80-split-local
+mesh: tr-test
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  loadBalancer:
+    roundRobin: {}
+  split:
+    - weight: %d
+      destination:
+        kuma.io/service: test-server
+        version: v5
+    - weight: %d
+      destination:
+        kuma.io/service: test-server
+        version: v6
+`, v1Weight, v2Weight)
+		Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
+		hashedName := hash.HashedName(meshName, "route-20-80-split-local")
+		Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			res, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(200))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(res).To(MatchAllKeys(Keys{
+				"echo-v5": BeNumerically("~", 2*v1Weight, 20),
+				"echo-v6": BeNumerically("~", 2*v2Weight, 20),
+			}))
 		}, "1m", "5s").Should(Succeed())
 	})
 
 	Context("HTTP routing", func() {
-		HaveOnlyResponseFrom := func(response string) types.GomegaMatcher {
-			return And(
-				HaveLen(1),
-				HaveKeyWithValue(MatchRegexp(`.*`+response+`.*`), Not(BeNil())),
-			)
-		}
-
 		It("should route matching by path", func() {
 			const trafficRoute = `
 type: TrafficRoute
@@ -222,20 +268,21 @@ conf:
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-by-path"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.HashedName(meshName, "route-by-path")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version1")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v1": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version2")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v2": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/version3")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v3": Not(BeNil())}))
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
+			}, "30s", "500ms").Should(MatchAllKeys(Keys{"echo-v4": Not(BeNil())}))
 		})
 
 		It("should same splits with a different weights", func() {
@@ -276,26 +323,25 @@ conf:
       version: v2
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "two-splits"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.HashedName(meshName, "two-splits")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": BeNumerically("~", 5, 1),
+					"echo-v2": BeNumerically("~", 5, 1),
+				}),
 			)
 
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": BeNumerically("~", 2, 1),
+					"echo-v2": BeNumerically("~", 8, 1),
+				}),
 			)
 		})
 	}, Ordered)
@@ -319,25 +365,27 @@ conf:
     kuma.io/service: '*'
 `
 			Expect(YamlUniversal(trafficRoute)(multizone.Global)).To(Succeed())
-			Eventually(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: "route-all-tr-test"}, multizone.Zones()...)).Should(Succeed())
+			hashedName := hash.HashedName(meshName, "route-all-tr-test")
+			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 		})
 
 		It("should loadbalance all requests equally by default", func() {
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(4),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil())),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+				MatchAllKeys(Keys{
+					"echo-v1": Not(BeNil()),
+					"echo-v2": Not(BeNil()),
+					"echo-v3": Not(BeNil()),
+					"echo-v4": Not(BeNil()),
+					"echo-v5": Not(BeNil()),
+					"echo-v6": Not(BeNil()),
 					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 10, 1)),
 					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 10, 1)),
-				),
+				}),
 			)
 		})
 
@@ -358,10 +406,11 @@ routing:
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
-				And(
-					HaveLen(1),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-				),
+				MatchAllKeys(Keys{
+					"echo-v1": Not(BeNil()),
+					"echo-v5": Not(BeNil()),
+					"echo-v6": Not(BeNil()),
+				}),
 			)
 		})
 	}, Ordered)

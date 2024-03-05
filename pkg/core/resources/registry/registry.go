@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,10 @@ type TypeRegistry interface {
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
+
+	MustNewObject(model.ResourceType) model.Resource
+	MustNewList(model.ResourceType) model.ResourceList
+
 	DescriptorFor(resourceType model.ResourceType) (model.ResourceTypeDescriptor, error)
 
 	ObjectTypes(filters ...model.TypeFilter) []model.ResourceType
@@ -25,6 +30,22 @@ func NewTypeRegistry() TypeRegistry {
 	}
 }
 
+type InvalidResourceTypeError struct {
+	ResType model.ResourceType
+}
+
+func (e *InvalidResourceTypeError) Error() string {
+	return fmt.Sprintf("invalid resource type %q", e.ResType)
+}
+
+func (e *InvalidResourceTypeError) Is(target error) bool {
+	t, ok := target.(*InvalidResourceTypeError)
+	if !ok {
+		return false
+	}
+	return t.ResType == e.ResType || t.ResType == ""
+}
+
 type typeRegistry struct {
 	descriptors map[model.ResourceType]model.ResourceTypeDescriptor
 }
@@ -32,7 +53,7 @@ type typeRegistry struct {
 func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
 	typDesc, ok := t.descriptors[resType]
 	if !ok {
-		return model.ResourceTypeDescriptor{}, errors.Errorf("invalid resource type %q", resType)
+		return model.ResourceTypeDescriptor{}, &InvalidResourceTypeError{ResType: resType}
 	}
 	return typDesc, nil
 }
@@ -90,4 +111,22 @@ func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, 
 		return nil, errors.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc.NewList(), nil
+}
+
+// MustNewObject implements TypeRegistry.
+func (t *typeRegistry) MustNewObject(resType model.ResourceType) model.Resource {
+	res, err := t.NewObject(resType)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// MustNewList implements TypeRegistry.
+func (t *typeRegistry) MustNewList(resType model.ResourceType) model.ResourceList {
+	resList, err := t.NewList(resType)
+	if err != nil {
+		panic(err)
+	}
+	return resList
 }

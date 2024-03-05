@@ -62,7 +62,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Errorf("invalid key type %q", ctx.args.keyType)
 			}
 
-			keyPair, err := NewSelfSignedCert(ctx.args.hostnames[0], certType, keyType, ctx.args.hostnames...)
+			keyPair, err := NewSelfSignedCert(certType, keyType, ctx.args.hostnames...)
 			if err != nil {
 				return errors.Wrap(err, "could not generate certificate")
 			}

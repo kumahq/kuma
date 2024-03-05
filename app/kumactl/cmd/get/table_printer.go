@@ -2,7 +2,6 @@ package get
 
 import (
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
@@ -12,8 +11,8 @@ import (
 )
 
 // CustomTablePrinters are used to define different ways to print entities in table format.
-var CustomTablePrinters = map[model.ResourceType]TablePrinter{
-	mesh.DataplaneType: RowPrinter{
+var CustomTablePrinters = map[model.ResourceType]RowPrinter{
+	mesh.DataplaneType: {
 		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			dataplane := item.(*mesh.DataplaneResource)
@@ -30,7 +29,7 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 			}
 		},
 	},
-	mesh.ExternalServiceType: RowPrinter{
+	mesh.ExternalServiceType: {
 		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			externalService := item.(*mesh.ExternalServiceResource)
@@ -43,7 +42,7 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 			}
 		},
 	},
-	model.ScopeMesh: RowPrinter{
+	model.ScopeMesh: {
 		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "LOCALITY", "ZONEEGRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			mesh := item.(*mesh.MeshResource)
@@ -95,32 +94,38 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 	},
 }
 
-type TablePrinter interface {
-	Print(time.Time, model.ResourceList, io.Writer) error
-}
-
 type RowPrinter struct {
 	Headers []string
 	RowFn   func(rootTime time.Time, item model.Resource) []string
+	Now     time.Time
 }
 
-func (rp RowPrinter) Print(rootTime time.Time, resources model.ResourceList, out io.Writer) error {
-	items := resources.GetItems()
-	data := printers.Table{
+func (rp RowPrinter) AsTable() printers.Table {
+	return printers.Table{
 		Headers: rp.Headers,
-		NextRow: func() func() []string {
-			i := 0
-			return func() []string {
-				defer func() { i++ }()
+		RowForItem: func(i int, container interface{}) ([]string, error) {
+			rl, ok := container.(model.ResourceList)
+			if ok {
+				items := rl.GetItems()
 				if len(items) <= i {
-					return nil
+					return nil, nil
 				}
-				return rp.RowFn(rootTime, items[i])
+				return rp.RowFn(rp.Now, items[i]), nil
+			} else {
+				if i != 0 {
+					return nil, nil
+				}
+				return rp.RowFn(rp.Now, container.(model.Resource)), nil
 			}
-		}(),
-		Footer: table.PaginationFooter(resources),
+		},
+		FooterFn: func(container interface{}) string {
+			rl, ok := container.(model.ResourceList)
+			if !ok {
+				return ""
+			}
+			return table.PaginationFooter(rl)
+		},
 	}
-	return printers.NewTablePrinter().Print(data, out)
 }
 
 var BasicResourceTablePrinter = RowPrinter{
@@ -144,9 +149,9 @@ var BasicGlobalResourceTablePrinter = RowPrinter{
 	},
 }
 
-func ResolvePrinter(resourceType model.ResourceType, scope model.ResourceScope) TablePrinter {
-	tablePrinter := CustomTablePrinters[resourceType]
-	if tablePrinter == nil {
+func ResolvePrinter(resourceType model.ResourceType, scope model.ResourceScope, now time.Time) printers.Table {
+	tablePrinter, ok := CustomTablePrinters[resourceType]
+	if !ok {
 		switch scope {
 		case model.ScopeMesh:
 			tablePrinter = BasicResourceTablePrinter
@@ -154,5 +159,6 @@ func ResolvePrinter(resourceType model.ResourceType, scope model.ResourceScope) 
 			tablePrinter = BasicGlobalResourceTablePrinter
 		}
 	}
-	return tablePrinter
+	tablePrinter.Now = now
+	return tablePrinter.AsTable()
 }

@@ -176,7 +176,7 @@ type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
-	// defined inplace.
+	// defined in-place.
 	TargetRef common_api.TargetRef` + " `json:\"targetRef\"`" + `
 	{{- end }}
 	{{- if .generateTo }}
@@ -228,7 +228,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/pkg/plugins/policies/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	api "{{ .package }}"
 	{{- end}}
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -264,7 +264,7 @@ var validatorTemplate = template.Must(template.New("").Option("missingkey=error"
 import (
 	{{- if or .generateTargetRef (or .generateTo .generateFrom) }}
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	{{- end}}
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -299,7 +299,7 @@ func (r *{{.name}}Resource) validate() error {
 {{- if .generateTargetRef }}
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			// TODO add supported TargetRef kinds for this policy
 		},
@@ -314,7 +314,7 @@ func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.TargetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'from' item
 			},
@@ -331,7 +331,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.TargetRef, &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'to' item
 			},

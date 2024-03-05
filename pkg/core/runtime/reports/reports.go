@@ -160,7 +160,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	b.mutable["meshes_total"] = strconv.Itoa(len(meshes.Items))
 
 	switch rt.Config().Mode {
-	case config_core.Standalone:
+	case config_core.Zone:
 		b.mutable["zones_total"] = strconv.Itoa(1)
 	case config_core.Global:
 		zones, err := fetchZones(ctx, rt)

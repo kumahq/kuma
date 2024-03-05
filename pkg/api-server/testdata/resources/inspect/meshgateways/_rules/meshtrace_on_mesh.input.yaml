@@ -1,0 +1,23 @@
+#/meshes/default/meshgateways/the-gateway/_rules 200
+type: MeshGateway
+name: the-gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gw-1
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+---
+type: MeshTrace
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector:9411/api/v2/spans

@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 )
 
-func ResilienceStandaloneUniversal() {
+func ResilienceUniversal() {
 	const clusterName = "kuma-resilience"
 	var universal Cluster
 
@@ -19,7 +19,7 @@ func ResilienceStandaloneUniversal() {
 		Expect(postgres.Install(clusterName)(universal)).To(Succeed())
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone,
+			Install(Kuma(core.Zone,
 				WithPostgres(postgres.From(universal, clusterName).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).

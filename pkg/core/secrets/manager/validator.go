@@ -53,7 +53,7 @@ func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh 
 	for _, backend := range meshRes.Spec.GetMtls().GetBackends() {
 		used, err := s.secretUsedByMTLSBackend(name, meshRes.GetMeta().GetName(), backend)
 		if err != nil {
-			log.Info("Error while checking if secret is used by mTLS backend. Deleting secret anyway", err)
+			log.Info("error while checking if secret is used by mTLS backend. Deleting secret anyway", "cause", err)
 		}
 		if used {
 			verr.AddViolation("name", fmt.Sprintf(`The secret %q that you are trying to remove is currently in use in Mesh %q in mTLS backend %q. Please remove the reference from the %q backend before removing the secret.`, name, mesh, backend.Name, backend.Name))

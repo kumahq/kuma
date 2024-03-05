@@ -23,11 +23,10 @@ var _ = Describe("TracingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
+				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(HttpConnectionManager("localhost:8080", false)).
-					Configure(Tracing(given.backend, "service", given.direction, given.destination)))).
+					Configure(Tracing(given.backend, "service", given.direction, given.destination, false)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -64,6 +63,7 @@ var _ = Describe("TracingConfigurer", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
+                    spawnUpstreamSpan: false
                     overallSampling:
                       value: 30.5
                     provider:
@@ -102,6 +102,7 @@ var _ = Describe("TracingConfigurer", func() {
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
+                    spawnUpstreamSpan: false
                     provider:
                       name: envoy.tracers.zipkin
                       typedConfig:
@@ -140,6 +141,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:
@@ -177,6 +179,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:
@@ -215,6 +218,7 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
+                spawnUpstreamSpan: false
                 provider:
                   name: envoy.tracers.datadog
                   typedConfig:

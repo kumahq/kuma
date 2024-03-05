@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -19,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -43,19 +43,29 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 	return f(session)
 }
 
-type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error
+type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
 
-func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, deltaInitState cache_v2.ResourceVersionMap) error {
-	return f(session, deltaInitState)
+func (f OnGlobalToZoneSyncStartedFunc) OnGlobalToZoneSyncStarted(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error) {
+	f(session, errorCh)
+}
+
+type OnZoneToGlobalSyncStartedFunc func(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error)
+
+func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_proto.KDSSyncService_ZoneToGlobalSyncClient, errorCh chan error) {
+	f(session, errorCh)
 }
 
 type server struct {
 	config               multizone.KdsServerConfig
 	callbacks            Callbacks
+	CallbacksGlobal      OnGlobalToZoneSyncConnectFunc
+	CallbacksZone        OnZoneToGlobalSyncConnectFunc
 	filters              []Filter
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
+	streamInterceptors   []grpc.StreamServerInterceptor
+	unaryInterceptors    []grpc.UnaryServerInterceptor
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -64,6 +74,8 @@ var _ component.Component = &server{}
 func NewServer(
 	callbacks Callbacks,
 	filters []Filter,
+	streamInterceptors []grpc.StreamServerInterceptor,
+	unaryInterceptors []grpc.UnaryServerInterceptor,
 	config multizone.KdsServerConfig,
 	metrics core_metrics.Metrics,
 	serviceServer *service.GlobalKDSServiceServer,
@@ -76,6 +88,8 @@ func NewServer(
 		metrics:              metrics,
 		serviceServer:        serviceServer,
 		kdsSyncServiceServer: kdsSyncServiceServer,
+		streamInterceptors:   streamInterceptors,
+		unaryInterceptors:    unaryInterceptors,
 	}
 }
 
@@ -111,10 +125,20 @@ func (s *server) Start(stop <-chan struct{}) error {
 		}
 		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
+	for _, interceptor := range s.streamInterceptors {
+		grpcOptions = append(grpcOptions, grpc.ChainStreamInterceptor(interceptor))
+	}
+	grpcOptions = append(
+		grpcOptions,
+		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services
-	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	if !s.config.DisableSOTW {
+		mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	}
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
@@ -140,18 +164,20 @@ func (s *server) Start(stop <-chan struct{}) error {
 	case <-stop:
 		muxServerLog.Info("stopping gracefully")
 		grpcServer.GracefulStop()
+		muxServerLog.Info("stopped")
 		return nil
 	case err := <-errChan:
 		return err
 	}
 }
 
+// StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
-	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
+	zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 	if err != nil {
 		return err
 	}
-	log := muxServerLog.WithValues("client-id", clientID)
+	log := muxServerLog.WithValues("client-id", zoneID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	// The buffer size should be of a size of all inflight request, so we never write to a blocked buffer.
 	// The buffer is separate for each direction (send/receive) on each multiplexed stream (global acting as server/global acting as client)
@@ -160,7 +186,7 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	// Therefore the maximum number of inflight requests are number of synced resources.
 	// For the simplicity we just take all resources available in Kuma (.
 	bufferSize := len(registry.Global().ObjectTypes())
-	session := NewSession(clientID, stream, uint32(bufferSize), s.config.MsgSendTimeout.Duration)
+	session := NewSession(zoneID, stream, uint32(bufferSize), s.config.MsgSendTimeout.Duration)
 	for _, filter := range s.filters {
 		if err := filter.InterceptSession(session); err != nil {
 			log.Error(err, "closing KDS stream following a callback error")

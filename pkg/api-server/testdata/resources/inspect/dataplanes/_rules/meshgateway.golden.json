@@ -1,0 +1,59 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "mesh": "default",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "toRules": [
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "20s",
+      "http": {
+       "requestTimeout": "10s"
+      }
+     },
+     "matchers": [],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "mt-on-gateway",
+       "type": "MeshTimeout"
+      }
+     ]
+    }
+   ],
+   "type": "MeshTimeout",
+   "warnings": []
+  },
+  {
+   "fromRules": [],
+   "proxyRule": {
+    "conf": {
+     "appendModifications": [
+      {
+       "cluster": {
+        "operation": "Add",
+        "value": "name: test-cluster\nconnectTimeout: 5s\ntype: STATIC"
+       }
+      }
+     ]
+    },
+    "origin": [
+     {
+      "mesh": "default",
+      "name": "mpp-on-gateway",
+      "type": "MeshProxyPatch"
+     }
+    ]
+   },
+   "toRules": [],
+   "type": "MeshProxyPatch",
+   "warnings": []
+  }
+ ]
+}

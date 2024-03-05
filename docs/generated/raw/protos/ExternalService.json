@@ -1,0 +1,112 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ExternalService",
+    "definitions": {
+        "ExternalService": {
+            "properties": {
+                "networking": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ExternalService.Networking",
+                    "additionalProperties": true
+                },
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags associated with the external service, e.g. kuma.io/service=web, kuma.io/protocol, version=1.0."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "External Service",
+            "description": "ExternalService defines configuration of the externally accessible service"
+        },
+        "kuma.mesh.v1alpha1.ExternalService.Networking": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Address of the external service"
+                },
+                "tls": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ExternalService.Networking.TLS",
+                    "additionalProperties": true
+                },
+                "disableHostDNSEntry": {
+                    "type": "boolean",
+                    "description": "If disableHostDNSEntry is set to true then a DNS entry for the external service taken from 'networking.address' won't be generated. You can still reach this external service using external-service-name.mesh:80 where \"external-service-name\" is taken from \"kuma.io/service\" tag."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking",
+            "description": "Networking describes the properties of the external service connectivity"
+        },
+        "kuma.mesh.v1alpha1.ExternalService.Networking.TLS": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "denotes that the external service uses TLS"
+                },
+                "ca_cert": {
+                    "$ref": "#/definitions/kuma.system.v1alpha1.DataSource",
+                    "additionalProperties": true,
+                    "description": "Data source for the certificate of CA"
+                },
+                "client_cert": {
+                    "$ref": "#/definitions/kuma.system.v1alpha1.DataSource",
+                    "additionalProperties": true,
+                    "description": "Data source for the authentication"
+                },
+                "client_key": {
+                    "$ref": "#/definitions/kuma.system.v1alpha1.DataSource",
+                    "additionalProperties": true,
+                    "description": "Data source for the authentication"
+                },
+                "allowRenegotiation": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then TLS session will allow renegotiation. It's not recommended to set this to true because of security reasons. However, some servers require this setting, especially when using mTLS."
+                },
+                "server_name": {
+                    "additionalProperties": true,
+                    "type": "string",
+                    "description": "ServerName overrides the default Server Name Indicator set by Kuma. The default value is set to \"address\" specified in \"networking\"."
+                },
+                "skipHostnameVerification": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "If true then hostname verification will be skipped during certificate verification."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "TLS",
+            "description": "TLS"
+        },
+        "kuma.system.v1alpha1.DataSource": {
+            "properties": {
+                "secret": {
+                    "type": "string",
+                    "description": "Data source is a secret with given Secret key."
+                },
+                "file": {
+                    "type": "string",
+                    "description": "Data source is a path to a file. Deprecated, use other sources of a data."
+                },
+                "inline": {
+                    "additionalProperties": true,
+                    "type": "string",
+                    "description": "Data source is inline bytes."
+                },
+                "inlineString": {
+                    "type": "string",
+                    "description": "Data source is inline string"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data Source",
+            "description": "DataSource defines the source of bytes to use."
+        }
+    }
+}

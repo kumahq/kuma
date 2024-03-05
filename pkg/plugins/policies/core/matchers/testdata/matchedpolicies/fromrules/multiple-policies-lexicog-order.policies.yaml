@@ -1,0 +1,44 @@
+# When using multiple policies with the same top level targetRef the lexicographic order of the policy should be maintained
+type: MeshTrafficPermission
+mesh: default
+name: rule-b
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/service-name: demo-app
+  from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: ui
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-order
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-payment
+---
+type: MeshTrafficPermission
+mesh: default
+name: rule-a
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/service-name: demo-app
+  from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-payment

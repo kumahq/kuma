@@ -16,15 +16,12 @@ func BuildCommand(
 	name string,
 	args ...string,
 ) *exec.Cmd {
-	command := exec.CommandContext(ctx, name, args...)
-	command.Stdout = stdout
-	command.Stderr = stderr
+	command := baseBuildCommand(ctx, stdout, stderr, name, args...)
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
 		// Set those attributes so the new process won't receive the signals from a parent automatically.
 		Setpgid: true,
 		Pgid:    0,
 	}
-
 	return command
 }

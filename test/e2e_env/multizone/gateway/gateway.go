@@ -21,7 +21,10 @@ func GatewayHybrid() {
 	const UniResponse = "universal"
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		err := NewClusterSetup().
@@ -76,7 +79,7 @@ conf:
       hostname: example.kuma.io
 `,
 					)).
-					Install(YamlUniversal(`
+					Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGatewayRoute
 mesh: gateway-hybrid
 name: edge-gateway
@@ -93,7 +96,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: test-server_gateway-hybrid_svc_80
-          kuma.io/zone: kuma-1-zone
+          kuma.io/zone: %s 
     - matches:
       - path:
           match: PREFIX
@@ -109,7 +112,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: test-server_gateway-hybrid_svc_80
-`)).
+`, multizone.KubeZone1.ZoneName()))).
 					Setup(multizone.Global)
 				Expect(err).ToNot(HaveOccurred())
 

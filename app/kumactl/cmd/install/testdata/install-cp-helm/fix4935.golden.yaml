@@ -241,9 +241,11 @@ rules:
       - meshhealthchecks
       - meshhttproutes
       - meshloadbalancingstrategies
+      - meshmetrics
       - meshproxypatches
       - meshratelimits
       - meshretries
+      - meshtcproutes
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
@@ -417,9 +419,9 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "5680"
     foo: "{\"bar\": \"baz\"}"
+    prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
     service: "annotation"
 spec:
   type: ClusterIP
@@ -432,17 +434,17 @@ spec:
       appProtocol: http
     - port: 5682
       name: https-api-server
-      appProtocol: http
+      appProtocol: https
     - port: 443
       name: https-admission-server
       targetPort: 5443
-      appProtocol: http
+      appProtocol: https
     - port: 5676
       name: mads-server
-      appProtocol: http
+      appProtocol: https
     - port: 5678
       name: dp-server
-      appProtocol: http
+      appProtocol: https
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -500,9 +502,7 @@ metadata:
   name: kuma-cni-node
   namespace: kube-system
   annotations:
-    ignore-check.kube-linter.io/host-network: "The containers modify the host's network namespace"
-    ignore-check.kube-linter.io/no-read-only-root-fs: "The containers modify the filesystem"
-    ignore-check.kube-linter.io/run-as-non-root: "The containers modify /proc"
+    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
   labels:
     app: kuma-cni
     app.kubernetes.io/name: kuma
@@ -532,11 +532,10 @@ spec:
       # marks the pod as a critical add-on, ensuring it gets
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
       nodeSelector:
       
         kubernetes.io/os: linux
-      hostNetwork: true
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.
         - effect: NoSchedule
@@ -550,10 +549,12 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      securityContext:
+        {}
       containers:
         - name: install-cni
-          image: "docker.io/kumahq/kuma-cni:0.0.1"
           imagePullPolicy: IfNotPresent
+          image: "docker.io/kumahq/kuma-cni:0.0.1"
           readinessProbe:
             initialDelaySeconds: 0
             exec:
@@ -562,6 +563,11 @@ spec:
                 - /tmp/ready
           command: [ "sh", "-c", "--" ]
           args: [ "sleep 0 && exec /install-cni" ]
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsGroup: 0
+            runAsNonRoot: false
+            runAsUser: 0
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -590,6 +596,8 @@ spec:
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
+            - name: tmp
+              mountPath: /tmp
       volumes:
         # Used to install CNI.
         - name: cni-bin-dir
@@ -598,6 +606,8 @@ spec:
         - name: cni-net-dir
           hostPath:
             path: /etc/cni/multus/net.d
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -608,8 +618,11 @@ metadata:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
+  annotations: 
+    
 spec:
   replicas: 1
+  minReadySeconds: 0
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -623,7 +636,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: abac59589c4ca4987ebcfc82191fd461b0bd3b7392c1ef39d505d6c052d44ad4
+        checksum/tls-secrets: 6f2a777e2b8ab1121f65749920773354b2bc2b367f6280dcdd48272803e8445e
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -689,6 +702,8 @@ spec:
               value: "grpcs://localhost:5678"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone1"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -718,6 +733,7 @@ spec:
           args:
             - run
             - --log-level=info
+            - --log-output-path=
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
@@ -829,6 +845,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-egress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -851,8 +868,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 30s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -898,7 +913,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: "kuma-tls-cert"
+            secretName: "general-tls-secret"
             items:
               - key: ca.crt
                 path: ca.crt
@@ -962,6 +977,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 5678
       serviceAccountName: kuma-ingress
+      automountServiceAccountToken: true
       nodeSelector:
       
         kubernetes.io/os: linux
@@ -985,8 +1001,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/cp-ca/ca.crt
-            - name: KUMA_DATAPLANE_NAME
-              value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_DRAIN_TIME
               value: 30s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
@@ -1033,7 +1047,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: "kuma-tls-cert"
+            secretName: "general-tls-secret"
             items:
               - key: ca.crt
                 path: ca.crt
@@ -1079,6 +1093,11 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1101,9 +1120,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -1111,6 +1132,11 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1146,9 +1172,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -1159,8 +1187,13 @@ webhooks:
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     namespaceSelector:
-      matchLabels:
-        kuma.io/sidecar-injection: enabled
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values: ["enabled", "true"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1180,28 +1213,14 @@ webhooks:
   - name: pods-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /inject-sidecar
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-        resources:
-          - pods
-    sideEffects: None
-  - name: kuma-injector.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore 
     clientConfig:
       caBundle: XYZ
       service:
@@ -1232,6 +1251,11 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1273,9 +1297,11 @@ webhooks:
           - meshhealthchecks
           - meshhttproutes
           - meshloadbalancingstrategies
+          - meshmetrics
           - meshproxypatches
           - meshratelimits
           - meshretries
+          - meshtcproutes
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
@@ -1285,6 +1311,11 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:
@@ -1329,6 +1360,11 @@ webhooks:
   - name: gateway.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
     clientConfig:
       caBundle: XYZ
       service:

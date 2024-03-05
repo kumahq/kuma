@@ -13,12 +13,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: api-service-4508437668c35ed8
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -26,6 +20,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-mirror-3dd740a2de879d4c:
@@ -41,12 +37,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-mirror-3dd740a2de879d4c
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -54,6 +44,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
     echo-service-9f149ed9e14091ca:
@@ -69,12 +61,6 @@ Clusters:
           ads: {}
           resourceApiVersion: V3
       name: echo-service-9f149ed9e14091ca
-      outlierDetection:
-        enforcingConsecutive5xx: 0
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
       perConnectionBufferLimitBytes: 32768
       type: EDS
       typedExtensionProtocolOptions:
@@ -82,6 +68,8 @@ Clusters:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
             idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
@@ -183,12 +171,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTPS:8080
+              routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
         transportSocket:
           name: envoy.transport_sockets.tls
@@ -215,8 +202,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTPS:8080:
-      name: edge-gateway:HTTPS:8080
+    edge-gateway:HTTPS:8080:echo.example.com:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTPS:8080:echo.example.com
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -226,7 +214,7 @@ Routes:
         name: echo.example.com
         requireTls: ALL
         responseHeadersToAdd:
-        - append: false
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
           header:
             key: Strict-Transport-Security
             value: max-age=31536000; includeSubDomains
@@ -234,6 +222,8 @@ Routes:
         - match:
             path: /api
           route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             retryPolicy:
               numRetries: 5
               perTryTimeout: 16s
@@ -250,7 +240,6 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
           typedPerFilterConfig:
             envoy.filters.http.local_ratelimit:
               '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
@@ -268,44 +257,10 @@ Routes:
                 maxTokens: 1
                 tokensPerFill: 1
         - match:
-            prefix: /api/
+            path: /
           route:
-            retryPolicy:
-              numRetries: 5
-              perTryTimeout: 16s
-              retryBackOff:
-                baseInterval: 0.025s
-                maxInterval: 0.250s
-              retryOn: gateway-error,connect-failure,refused-stream
-            timeout: 15s
-            weightedClusters:
-              clusters:
-              - name: api-service-4508437668c35ed8
-                requestHeadersToAdd:
-                - header:
-                    key: x-kuma-tags
-                    value: '&kuma.io/service=gateway-default&'
-                weight: 1
-              totalWeight: 1
-          typedPerFilterConfig:
-            envoy.filters.http.local_ratelimit:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              filterEnabled:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enabled
-              filterEnforced:
-                defaultValue:
-                  numerator: 100
-                runtimeKey: local_rate_limit_enforced
-              statPrefix: rate_limit
-              tokenBucket:
-                fillInterval: 20s
-                maxTokens: 1
-                tokensPerFill: 1
-        - match:
-            prefix: /
-          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
             requestMirrorPolicies:
             - cluster: echo-mirror-3dd740a2de879d4c
               runtimeFraction:
@@ -327,7 +282,85 @@ Routes:
                     key: x-kuma-tags
                     value: '&kuma.io/service=gateway-default&'
                 weight: 1
-              totalWeight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 10s
+                maxTokens: 1
+                tokensPerFill: 1
+        - match:
+            prefix: /api/
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: api-service-4508437668c35ed8
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 20s
+                maxTokens: 1
+                tokensPerFill: 1
+        - match:
+            prefix: /
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            requestMirrorPolicies:
+            - cluster: echo-mirror-3dd740a2de879d4c
+              runtimeFraction:
+                defaultValue:
+                  numerator: 1
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-9f149ed9e14091ca
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-default&'
+                weight: 1
           typedPerFilterConfig:
             envoy.filters.http.local_ratelimit:
               '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit

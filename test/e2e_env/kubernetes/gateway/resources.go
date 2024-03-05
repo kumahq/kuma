@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -84,6 +85,7 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(waitingClientNamespace)).
 			Install(Namespace(curlingClientNamespace)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName))).
 			Install(democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName))).
 			Install(YamlK8s(meshGatewayWithoutLimit)).
@@ -107,7 +109,7 @@ spec:
 	})
 
 	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
-	target := fmt.Sprintf("http://%s:8080", gatewayHost)
+	target := fmt.Sprintf("http://%s", net.JoinHostPort(gatewayHost, "8080"))
 
 	keepConnectionOpen := func() {
 		// Open TCP connections to the gateway
@@ -142,7 +144,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("kubernetes"))
-		}, "20s", "1s")
+		}, "20s", "1s").Should(Succeed())
 
 		By("allowing more than 1 connection without a limit")
 

@@ -18,7 +18,11 @@ const (
 	defaultKumaCniConfName = "YYY-kuma-cni.conflist"
 )
 
+var _ config.Config = InstallerConfig{}
+
 type InstallerConfig struct {
+	config.BaseConfig
+
 	CfgCheckInterval          int    `envconfig:"cfgcheck_interval" default:"1"`
 	ChainedCniPlugin          bool   `envconfig:"chained_cni_plugin" default:"true"`
 	CniConfName               string `envconfig:"cni_conf_name" default:""`
@@ -32,9 +36,6 @@ type InstallerConfig struct {
 	KubernetesServiceProtocol string `envconfig:"kubernetes_service_protocol" default:"https"`
 	MountedCniNetDir          string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
 	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
-}
-
-func (i InstallerConfig) Sanitize() {
 }
 
 func (i InstallerConfig) Validate() error {

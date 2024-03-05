@@ -11,7 +11,6 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
-	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -22,12 +21,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -236,7 +235,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: utilpointer.String("http"),
+							AppProtocol: pointer.To("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -278,12 +277,15 @@ var _ = Describe("PodReconciler", func() {
 			}).Build()
 
 		reconciler = &PodReconciler{
-			Client:            kubeClient,
-			EventRecorder:     kube_record.NewFakeRecorder(10),
-			Scheme:            k8sClientScheme,
-			Log:               core.Log.WithName("test"),
+			Client:        kubeClient,
+			EventRecorder: kube_record.NewFakeRecorder(10),
+			Scheme:        k8sClientScheme,
+			Log:           core.Log.WithName("test"),
+			PodConverter: PodConverter{
+				ResourceConverter: k8s.NewSimpleConverter(),
+			},
 			SystemNamespace:   "kuma-system",
-			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
+			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore()), false),
 			ResourceConverter: k8s.NewSimpleConverter(),
 		}
 	})
@@ -307,7 +309,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should ignore Pods without Kuma sidecar", func() {
@@ -330,7 +332,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should not reconcile Ingress with namespace other than system", func() {
@@ -407,7 +409,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should ignore Pods without IP address", func() {
@@ -430,7 +432,7 @@ var _ = Describe("PodReconciler", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(dataplanes.Items).To(HaveLen(0))
+		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
 	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected", func() {
@@ -478,7 +480,8 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - health: {} 
+            - state: NotReady
+              health: {}
               port: 8080
               tags:
                 app: sample
@@ -487,7 +490,8 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
-            - health: {} 
+            - state: NotReady
+              health: {}
               port: 6060
               tags:
                 app: sample
@@ -539,8 +543,6 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        apiVersion: kuma.io/v1alpha1
-        kind: Dataplane
         mesh: poc
         metadata:
           creationTimestamp: null
@@ -558,7 +560,8 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - health: {} 
+            - state: NotReady 
+              health: {}
               port: 8080
               tags:
                 app: sample
@@ -567,7 +570,8 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
-            - health: {} 
+            - state: NotReady
+              health: {}
               port: 6060
               tags:
                 app: sample
@@ -586,7 +590,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-1",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-1",
 				}},
@@ -603,7 +607,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-2",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-2",
 				}},
@@ -620,7 +624,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-3",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: pointer.To(true),
 					Kind:       "Pod",
 					Name:       "dp-3",
 				}},
@@ -630,30 +634,5 @@ var _ = Describe("PodReconciler", func() {
 			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
-
-		l := log.NewLogger(log.InfoLevel)
-		mapper := ExternalServiceToPodsMapper(l, kubeClient)
-		es := &mesh_k8s.ExternalService{
-			Mesh: "mesh-1",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "es-1",
-			},
-			Spec: mesh_k8s.ToSpec(&mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "httpbin.org:443",
-				},
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "httpbin",
-				},
-			}),
-		}
-		requests := mapper(es)
-		requestsStr := []string{}
-		for _, r := range requests {
-			requestsStr = append(requestsStr, r.Name)
-		}
-		Expect(requestsStr).To(HaveLen(2))
-		Expect(requestsStr).To(ConsistOf("dp-1", "dp-2"))
 	})
 })

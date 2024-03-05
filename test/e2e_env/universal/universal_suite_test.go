@@ -50,12 +50,13 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	_ = SynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
+	_ = E2ESynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
 		if Config.CleanupLogsOnSuccess {
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
 		}
 	})
+	_ = ReportAfterSuite("cp logs", universal.PrintCPLogsOnFailure)
 )
 
 var (
@@ -89,7 +90,7 @@ var (
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
-	_ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
+	_ = Describe("Traffic Permission", trafficpermission.TrafficPermission, Ordered)
 	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
@@ -100,9 +101,10 @@ var (
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Label("arm-not-supported"), Ordered)
-	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
+	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
+	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 )

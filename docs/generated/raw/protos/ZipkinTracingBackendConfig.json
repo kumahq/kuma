@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ZipkinTracingBackendConfig",
+    "definitions": {
+        "ZipkinTracingBackendConfig": {
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Address of Zipkin collector."
+                },
+                "traceId128bit": {
+                    "type": "boolean",
+                    "description": "Generate 128bit traces. Default: false"
+                },
+                "apiVersion": {
+                    "type": "string",
+                    "description": "Version of the API. values: httpJson, httpJsonV1, httpProto. Default: httpJson see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion"
+                },
+                "sharedSpanContext": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "Determines whether client and server spans will share the same span context. Default: true. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zipkin Tracing Backend Config"
+        }
+    }
+}

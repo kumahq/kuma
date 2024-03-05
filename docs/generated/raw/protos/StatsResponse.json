@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/StatsResponse",
+    "definitions": {
+        "StatsResponse": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID that was set by the Global CP."
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error that was captured by the Zone CP when executing kuma-dp stats request."
+                },
+                "stats": {
+                    "type": "string",
+                    "description": "The stats content that is a successful result of kuma-dp stats execution.",
+                    "format": "binary",
+                    "binaryEncoding": "base64"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Stats Response",
+            "description": "StatsResponse is a response containing result of kuma-dp stats execution on Zone CP."
+        }
+    }
+}

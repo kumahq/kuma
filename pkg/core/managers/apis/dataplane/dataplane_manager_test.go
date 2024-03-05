@@ -214,7 +214,6 @@ var _ = Describe("Dataplane Manager", func() {
 		actual := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(actual.Spec.Networking.Inbound[0].Health).ToNot(BeNil())
-		Expect(actual.Spec.Networking.Inbound[0].Health.Ready).To(BeFalse())
+		Expect(actual.Spec.Networking.Inbound[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_NotReady))
 	})
 })

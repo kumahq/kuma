@@ -64,8 +64,8 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
-    prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
 spec:
   type: ClusterIP
   ports:
@@ -77,7 +77,7 @@ spec:
       appProtocol: http
     - port: 5682
       name: https-api-server
-      appProtocol: http
+      appProtocol: https
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -92,8 +92,11 @@ metadata:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
+  annotations: 
+    
 spec:
   replicas: 1
+  minReadySeconds: 0
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -157,6 +160,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
@@ -199,6 +204,8 @@ spec:
               value: "/tmp/kuma"
             - name: KUMA_MODE
               value: "global"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
             - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
@@ -214,6 +221,7 @@ spec:
           args:
             - run
             - --log-level=info
+            - --log-output-path=
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680

@@ -10,7 +10,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -114,9 +113,6 @@ func validateLoggingBackend(backend *mesh_proto.LoggingBackend) validators.Valid
 	var verr validators.ValidationError
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
-	}
-	if err := accesslog.ValidateFormat(backend.Format); err != nil {
-		verr.AddViolation("format", err.Error())
 	}
 	switch backend.GetType() {
 	case mesh_proto.LoggingFileType:
@@ -265,6 +261,10 @@ func validatePrometheusConfig(cfgStr *structpb.Struct) validators.ValidationErro
 		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
 		return verr
 	}
+	if cfg.SkipMTLS != nil && cfg.Tls != nil && !hasEqualConfiguration(&cfg) {
+		verr.AddViolation("", "skipMTLS and tls configuration cannot be defined together")
+		return verr
+	}
 	if _, err := regexp.Compile(cfg.GetEnvoy().GetFilterRegex()); err != nil {
 		verr.AddViolationAt(validators.RootedAt("envoy").Field("filterRegex"), fmt.Sprintf("provided regexp isn't correct: %s", err.Error()))
 		return verr
@@ -291,4 +291,9 @@ func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls)
 		}
 	}
 	return verr
+}
+
+func hasEqualConfiguration(cfg *mesh_proto.PrometheusMetricsBackendConfig) bool {
+	return (!cfg.SkipMTLS.GetValue() && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_activeMTLSBackend) ||
+		(cfg.SkipMTLS.GetValue() && cfg.Tls.GetMode() == mesh_proto.PrometheusTlsConfig_disabled)
 }

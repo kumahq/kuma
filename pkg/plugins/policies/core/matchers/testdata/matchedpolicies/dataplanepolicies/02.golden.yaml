@@ -1,0 +1,119 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: 2-my-policy
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Mesh
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: 1-my-policy
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Mesh
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: "222"
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshSubset
+      tags:
+        version: v1
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: "111"
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshSubset
+      tags:
+        version: v1
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: my-policy-2
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshService
+      name: web
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: my-policy-1
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshService
+      name: web
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: bbb
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshServiceSubset
+      name: web
+      tags:
+        version: v1
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: aaa
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: MeshServiceSubset
+      name: web
+      tags:
+        version: v1
+  type: MeshTrafficPermission
+next: null
+total: 0

@@ -69,6 +69,7 @@ func (f *from) Meta(r core_model.Resource) v1alpha1.ResourceMeta {
 			Name:             r.GetMeta().GetName(),
 			CreationTime:     r.GetMeta().GetCreationTime(),
 			ModificationTime: r.GetMeta().GetModificationTime(),
+			Labels:           r.GetMeta().GetLabels(),
 		}
 	}
 	return meta

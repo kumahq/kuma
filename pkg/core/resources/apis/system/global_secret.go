@@ -91,6 +91,10 @@ func (l *GlobalSecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *GlobalSecretResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var GlobalSecretResourceTypeDescriptor model.ResourceTypeDescriptor
 
 func init() {
@@ -101,7 +105,7 @@ func init() {
 		ReadOnly:       false,
 		AdminOnly:      true,
 		Scope:          model.ScopeGlobal,
-		KDSFlags:       model.FromGlobalToZone,
+		KDSFlags:       model.GlobalToAllZonesFlag,
 		WsPath:         "global-secrets",
 		KumactlArg:     "global-secret",
 		KumactlListArg: "global-secrets",

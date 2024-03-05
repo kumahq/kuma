@@ -1,0 +1,36 @@
+# true
+type: Mesh
+name: mesh-1
+---
+type: Mesh
+name: mesh-2
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: Dataplane
+name: dp-2
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: Dataplane
+name: dp-2
+mesh: mesh-2
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo

@@ -1,6 +1,7 @@
 package watchdog
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,7 +13,7 @@ type Watchdog interface {
 
 type SimpleWatchdog struct {
 	NewTicker func() *time.Ticker
-	OnTick    func() error
+	OnTick    func(context.Context) error
 	OnError   func(error)
 	OnStop    func()
 }
@@ -22,28 +23,43 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 	defer ticker.Stop()
 
 	for {
+		ctx, cancel := context.WithCancel(context.Background())
+		// cancel is called at the end of the loop
+		go func() {
+			select {
+			case <-stop:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
 		select {
 		case <-ticker.C:
-			if err := w.onTick(); err != nil {
-				w.OnError(err)
+			select {
+			case <-stop:
+			default:
+				if err := w.onTick(ctx); err != nil && !errors.Is(err, context.Canceled) {
+					w.OnError(err)
+				}
 			}
 		case <-stop:
 			if w.OnStop != nil {
 				w.OnStop()
 			}
+			// cancel will be called by the above goroutine
 			return
 		}
+		cancel()
 	}
 }
 
-func (w *SimpleWatchdog) onTick() error {
+func (w *SimpleWatchdog) onTick(ctx context.Context) error {
 	defer func() {
 		if cause := recover(); cause != nil {
 			if w.OnError != nil {
 				var err error
 				switch typ := cause.(type) {
 				case error:
-					err = typ
+					err = errors.WithStack(typ)
 				default:
 					err = errors.Errorf("%v", cause)
 				}
@@ -51,5 +67,5 @@ func (w *SimpleWatchdog) onTick() error {
 			}
 		}
 	}()
-	return w.OnTick()
+	return w.OnTick(ctx)
 }

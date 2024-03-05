@@ -1,0 +1,28 @@
+---
+type: MeshTimeout
+name: mt1
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+---
+type: MeshTimeout
+name: mt1
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: kong_kong_svc_80
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+

@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"fmt"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,9 +22,13 @@ func (k *k8SDeployment) Name() string {
 }
 
 func (k *k8SDeployment) service() *corev1.Service {
-	appProtocol := "http"
-	if len(k.opts.healthcheckTCPArgs) > 0 {
+	appProtocol := k.opts.protocol
+	if len(k.opts.healthcheckTCPArgs) > 0 || k.opts.tlsKey != "" {
 		appProtocol = "tcp"
+	}
+	servicePort := 80
+	if k.opts.tlsKey != "" {
+		servicePort = 443
 	}
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -38,7 +43,8 @@ func (k *k8SDeployment) service() *corev1.Service {
 			Ports: []corev1.ServicePort{
 				{
 					Name:        "main",
-					Port:        80,
+					Port:        int32(servicePort),
+					TargetPort:  intstr.FromString("main"),
 					AppProtocol: &appProtocol,
 				},
 			},
@@ -72,7 +78,7 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &k.opts.Replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": k.Name()},
+				MatchLabels: k.getLabels(),
 			},
 			Strategy: appsv1.DeploymentStrategy{
 				RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -107,7 +113,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	var args []string
 	var liveness *corev1.Probe
 	var readiness *corev1.Probe
-	if len(k.opts.healthcheckTCPArgs) > 0 {
+	var volumeMounts []corev1.VolumeMount
+	var volumes []corev1.Volume
+	switch {
+	case len(k.opts.healthcheckTCPArgs) > 0:
 		args = k.opts.healthcheckTCPArgs
 		liveness = &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -127,7 +136,22 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       3,
 		}
-	} else {
+	case k.opts.tlsKey != "":
+		args = append([]string{"echo", "--port", "443", "--tls", "--key", "/etc/tls/tls.key", "--crt", "/etc/tls/tls.crt"}, k.opts.echoArgs...)
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "tls",
+			MountPath: "/etc/tls",
+			ReadOnly:  true,
+		})
+		volumes = append(volumes, corev1.Volume{
+			Name: "tls",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: k.tlsSecretName(),
+				},
+			},
+		})
+	default:
 		args = append([]string{"echo", "--port", "80", "--probes"}, k.opts.echoArgs...)
 		liveness = &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -158,9 +182,13 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		liveness = nil
 		readiness = nil
 	}
+	containerPort := 80
+	if k.opts.tlsKey != "" {
+		containerPort = 443
+	}
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      map[string]string{"app": k.Name()},
+			Labels:      k.getLabels(),
 			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
@@ -174,7 +202,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					LivenessProbe:   liveness,
 					Image:           framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
-						{ContainerPort: 80},
+						{
+							ContainerPort: int32(containerPort),
+							Name:          "main",
+						},
 					},
 					Env: []corev1.EnvVar{
 						{
@@ -201,10 +232,13 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 							},
 						},
 					},
+					VolumeMounts: volumeMounts,
 				},
 			},
+			Volumes: volumes,
 		},
 	}
+	spec.Spec.InitContainers = append(spec.Spec.InitContainers, k.opts.initContainersToAdd...)
 	if len(k.opts.ReachableServices) > 0 {
 		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
 	}
@@ -220,6 +254,15 @@ func (k *k8SDeployment) getAnnotations() map[string]string {
 	return annotations
 }
 
+func (k *k8SDeployment) getLabels() map[string]string {
+	labels := make(map[string]string)
+	labels["app"] = k.Name()
+	for key, value := range k.opts.PodLabels {
+		labels[key] = value
+	}
+	return labels
+}
+
 func meta(namespace string, name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      name,
@@ -228,43 +271,67 @@ func meta(namespace string, name string) metav1.ObjectMeta {
 	}
 }
 
+func (k *k8SDeployment) tlsSecretName() string {
+	return fmt.Sprintf("%s-tls", k.Name())
+}
+
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	var funcs []framework.InstallFunc
 	if k.opts.ServiceAccount != "" {
 		funcs = append(funcs, framework.YamlK8sObject(k.serviceAccount()))
+	}
+	if k.opts.tlsKey != "" {
+		funcs = append(funcs, framework.YamlK8sObject(
+			&corev1.Secret{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Secret",
+					APIVersion: "v1",
+				},
+				Type: corev1.SecretTypeTLS,
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      k.tlsSecretName(),
+					Namespace: k.opts.Namespace,
+				},
+				StringData: map[string]string{
+					"tls.key": k.opts.tlsKey,
+					"tls.crt": k.opts.tlsCrt,
+				},
+			},
+		))
 	}
 	if k.opts.WithStatefulSet {
 		funcs = append(funcs, framework.YamlK8sObject(k.statefulSet()))
 	} else {
 		funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
 	}
-	funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	if k.opts.EnableService {
+		funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	}
 	if k.opts.WaitingToBeReady {
 		funcs = append(funcs,
-			framework.WaitService(k.opts.Namespace, k.Name()),
 			framework.WaitNumPods(k.opts.Namespace, 1, k.Name()),
 			framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
 		)
+		if k.opts.EnableService {
+			funcs = append(funcs, framework.WaitService(k.opts.Namespace, k.Name()))
+		}
 	}
 	return framework.Combine(funcs...)(cluster)
 }
 
-func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
+func (k *k8SDeployment) Delete(c framework.Cluster) error {
 	// todo(jakubdyszkiewicz) right now we delete TestNamespace before we Dismiss the cluster
 	// This means that namespace is no longer available so the code below would throw an error
 	// If we ever switch DemoClient to be deployment and remove manual deletion of TestNamespace
 	// then we can rely on code below to delete tht deployment.
 
-	// k8s.KubectlDeleteFromString(
-	// 	cluster.GetTesting(),
-	// 	cluster.GetKubectlOptions(framework.TestNamespace),
-	// 	service,
-	// )
-	// k8s.KubectlDeleteFromString(
-	// 	cluster.GetTesting(),
-	// 	cluster.GetKubectlOptions(framework.TestNamespace),
-	// 	fmt.Sprintf(deployment, k.opts.Mesh, framework.GetUniversalImage()),
-	// )
+	// TODO(lukidzi): https://github.com/kumahq/kuma/issues/8245
+	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "service", k.opts.Name); err != nil {
+	// 	return err
+	// }
+	// if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(k.opts.Namespace), "delete", "deployment", k.opts.Name); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 

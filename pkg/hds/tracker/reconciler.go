@@ -1,6 +1,8 @@
 package tracker
 
 import (
+	"context"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/kumahq/kuma/pkg/hds/cache"
@@ -14,8 +16,8 @@ type reconciler struct {
 	versioner util_xds_v3.SnapshotVersioner
 }
 
-func (r *reconciler) Reconcile(node *envoy_config_core_v3.Node) error {
-	new, err := r.generator.GenerateSnapshot(node)
+func (r *reconciler) Reconcile(ctx context.Context, node *envoy_config_core_v3.Node) error {
+	new, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
 		return err
 	}

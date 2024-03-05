@@ -8,8 +8,10 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -56,5 +58,11 @@ func (s *meshedSigningKeyManager) CreateSigningKey(ctx context.Context, keyID Ke
 			Value: key,
 		},
 	}
-	return s.manager.Create(ctx, secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, keyID, s.mesh)))
+
+	owner := core_mesh.NewMeshResource()
+	if err := s.manager.Get(ctx, owner, store.GetByKey(s.mesh, model.NoMesh)); err != nil {
+		return manager.MeshNotFound(s.mesh)
+	}
+
+	return s.manager.Create(ctx, secret, store.CreateWithOwner(owner), store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, keyID, s.mesh)))
 }

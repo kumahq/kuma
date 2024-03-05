@@ -1,0 +1,161 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/MeshInsight",
+    "definitions": {
+        "MeshInsight": {
+            "properties": {
+                "dataplanes": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "policies": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.PolicyStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object"
+                },
+                "dpVersions": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DpVersions",
+                    "additionalProperties": true
+                },
+                "mTLS": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.MTLS",
+                    "additionalProperties": true,
+                    "description": "mTLS statistics"
+                },
+                "services": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.ServiceStat",
+                    "additionalProperties": true
+                },
+                "dataplanesByType": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplanesByType",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Insight",
+            "description": "MeshInsight defines the observed state of a Mesh."
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DataplaneStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                },
+                "online": {
+                    "type": "integer"
+                },
+                "offline": {
+                    "type": "integer"
+                },
+                "partially_degraded": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplane Stat",
+            "description": "DataplaneStat defines statistic specifically for Dataplane"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DataplanesByType": {
+            "properties": {
+                "standard": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gateway": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gatewayBuiltin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gatewayDelegated": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplanes By Type",
+            "description": "DataplanesByType defines statistics splitted by dataplane types"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DpVersions": {
+            "properties": {
+                "kumaDp": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplane stats grouped by KumaDP version"
+                },
+                "envoy": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplane stats grouped by Envoy version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dp Versions",
+            "description": "DpVersions defines statistics grouped by dataplane versions"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.MTLS": {
+            "properties": {
+                "issuedBackends": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplanes grouped by issued backends."
+                },
+                "supportedBackends": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplanes grouped by supported backends."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "MTLS"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.PolicyStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Policy Stat",
+            "description": "PolicyStat defines statistic for all policies in general"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.ServiceStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                },
+                "internal": {
+                    "type": "integer"
+                },
+                "external": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Service Stat",
+            "description": "ServiceStat defines statistics of mesh services"
+        }
+    }
+}

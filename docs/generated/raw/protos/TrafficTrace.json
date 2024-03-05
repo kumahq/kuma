@@ -1,0 +1,53 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/TrafficTrace",
+    "definitions": {
+        "TrafficTrace": {
+            "properties": {
+                "selectors": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Selector"
+                    },
+                    "type": "array",
+                    "description": "List of selectors to match dataplanes."
+                },
+                "conf": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.TrafficTrace.Conf",
+                    "additionalProperties": true,
+                    "description": "Configuration of the tracing."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Traffic Trace",
+            "description": "TrafficTrace defines trace configuration for selected dataplanes."
+        },
+        "kuma.mesh.v1alpha1.Selector": {
+            "properties": {
+                "match": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags to match, can be used for both source and destinations"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selector",
+            "description": "Selector defines structure for selecting tags for given dataplane"
+        },
+        "kuma.mesh.v1alpha1.TrafficTrace.Conf": {
+            "properties": {
+                "backend": {
+                    "type": "string",
+                    "description": "Backend defined in the Mesh entity."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conf",
+            "description": "Configuration defines settings of the tracing."
+        }
+    }
+}

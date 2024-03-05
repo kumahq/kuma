@@ -34,12 +34,16 @@ func mapHttpHeaders(
 ) []*envoy_core.HeaderValueOption {
 	var envoyHeaders []*envoy_core.HeaderValueOption
 	for _, header := range headers {
+		appendAction := envoy_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+		if header.Append.Value {
+			appendAction = envoy_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+		}
 		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 			Header: &envoy_core.HeaderValue{
 				Key:   header.Header.Key,
 				Value: header.Header.Value,
 			},
-			Append: header.Append,
+			AppendAction: appendAction,
 		})
 	}
 	return envoyHeaders

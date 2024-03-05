@@ -5,7 +5,9 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-    - port: 8080
+    - health:
+        ready: true
+      port: 8080
       tags:
         app: example
         k8s.kuma.io/namespace: demo

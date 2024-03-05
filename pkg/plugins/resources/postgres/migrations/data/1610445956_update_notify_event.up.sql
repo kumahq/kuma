@@ -14,11 +14,13 @@ BEGIN
             'name', OLD.name,
             'mesh', OLD.mesh,
             'type', OLD.type);
+        -- tenant_id is always empty so do not include it in JSON
     ELSE
         data = json_build_object(
                 'name', NEW.name,
                 'mesh', NEW.mesh,
                 'type', NEW.type);
+        -- tenant_id is always empty so do not include it in JSON
     END IF;
 
     -- Construct the notification as a JSON string.

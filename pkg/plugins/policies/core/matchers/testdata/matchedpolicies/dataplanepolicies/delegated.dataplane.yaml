@@ -1,0 +1,16 @@
+type: Dataplane
+mesh: mesh-1
+name: kong
+networking:
+  address: 10.244.0.13
+  admin:
+    port: 9901
+  gateway:
+    tags:
+      app.kubernetes.io/component: controller
+      k8s.kuma.io/namespace: kong
+      k8s.kuma.io/service-name: kong
+      k8s.kuma.io/service-port: "80"
+      kuma.io/service: kong_kong_svc_80
+      kuma.io/zone: default
+      pod-template-hash: 6b5f99ddff

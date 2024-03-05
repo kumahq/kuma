@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -85,7 +86,7 @@ func resourceKey(obj model.KubernetesObject) core_model.ResourceKey {
 	}
 }
 
-func (k *listener) OnAdd(obj interface{}) {
+func (k *listener) OnAdd(obj interface{}, _ bool) {
 	kobj := obj.(model.KubernetesObject)
 	if err := k.addTypeInformationToObject(kobj); err != nil {
 		log.Error(err, "unable to add TypeMeta to KubernetesObject")
@@ -153,7 +154,11 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 	if err != nil {
 		return nil, err
 	}
-	client, err := apiutil.RESTClientForGVK(gvk, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()))
+	httpClient, err := rest.HTTPClientFor(k.mgr.GetConfig())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create HTTP client from Manager config")
+	}
+	client, err := apiutil.RESTClientForGVK(gvk, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()), httpClient)
 	if err != nil {
 		return nil, err
 	}

@@ -142,6 +142,48 @@ var _ = Describe("Catalog", func() {
 		})
 	})
 
+	Context("DropLeader", func() {
+		leader := catalog.Instance{
+			Id:     "leader-1",
+			Leader: true,
+		}
+
+		It("should drop a leader", func() {
+			// given
+			_, err := c.Replace(context.Background(), []catalog.Instance{leader})
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = c.DropLeader(context.Background(), leader)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			readInstances, err := c.Instances(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(readInstances).To(HaveLen(1))
+			Expect(readInstances[0].Leader).To(BeFalse())
+		})
+
+		It("should ignore when there is no leader", func() {
+			// given
+			instances := []catalog.Instance{
+				{
+					Id:     "instance-1",
+					Leader: false,
+				},
+			}
+			_, err := c.Replace(context.Background(), instances)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = c.DropLeader(context.Background(), leader)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 	Context("Leader", func() {
 		It("should return a leader if there is a leader in the list", func() {
 			// given
@@ -191,7 +233,7 @@ var _ = Describe("Catalog", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(instances).To(HaveLen(0))
+		Expect(instances).To(BeEmpty())
 	})
 
 	It("should handle IPV6 addresses when building inter cp URL", func() {

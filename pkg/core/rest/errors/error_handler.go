@@ -1,190 +1,178 @@
 package errors
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
-	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
-func HandleError(response *restful.Response, err error, title string) {
+func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
+	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
+	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err):
-		handleNotFound(title, response)
-	case store.IsResourcePreconditionFailed(err):
-		handlePreconditionFailed(title, response)
-	case errors.Is(err, &store.PreconditionError{}):
-		var err2 *store.PreconditionError
-		errors.As(err, &err2)
-		WriteError(response, 400, types.Error{
-			Title:   "Bad Request",
-			Details: err2.Reason,
-		})
-	case err == store.ErrorInvalidOffset:
-		handleInvalidOffset(title, response)
+		kumaErr = &types.Error{
+			Status: 404,
+			Title:  title,
+			Detail: "Not found",
+		}
+	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), errors.Is(err, &store.PreconditionError{}), errors.Is(err, &BadRequest{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
+		}
 	case manager.IsMeshNotFound(err):
-		handleMeshNotFound(title, err.(*manager.MeshNotFoundError), response)
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: "Mesh is not found",
+			InvalidParameters: []types.InvalidParameter{
+				{
+					Field:  "mesh",
+					Reason: fmt.Sprintf("mesh of name %s is not found", err.(*manager.MeshNotFoundError).Mesh),
+				},
+			},
+		}
 	case validators.IsValidationError(err):
-		handleValidationError(title, err.(*validators.ValidationError), response)
-	case api_server_types.IsMaxPageSizeExceeded(err):
-		handleMaxPageSizeExceeded(title, err, response)
-	case err == api_server_types.InvalidPageSize:
-		handleInvalidPageSize(title, response)
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: "Resource is not valid",
+		}
+		for _, violation := range err.(*validators.ValidationError).Violations {
+			kumaErr.InvalidParameters = append(kumaErr.InvalidParameters, types.InvalidParameter{
+				Field:  violation.Field,
+				Reason: violation.Message,
+			})
+		}
+	case err == store.ErrorInvalidOffset:
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: "Invalid offset",
+			InvalidParameters: []types.InvalidParameter{
+				{
+					Field:  "offset",
+					Reason: "Invalid format",
+				},
+			},
+		}
+	case errors.Is(err, &api_server_types.InvalidPageSizeError{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: "Invalid page size",
+			InvalidParameters: []types.InvalidParameter{
+				{
+					Field:  "size",
+					Reason: err.Error(),
+				},
+			},
+		}
 	case tokens.IsSigningKeyNotFound(err):
-		handleSigningKeyNotFound(err, response)
+		kumaErr = &types.Error{
+			Status: 404,
+			Title:  "Signing Key not found",
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &MethodNotAllowed{}):
+		kumaErr = &types.Error{
+			Status: 405,
+			Title:  "Method not Allowed",
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &Conflict{}) || errors.Is(err, &store.ResourceConflictError{}):
+		kumaErr = &types.Error{
+			Status: 409,
+			Title:  "Conflict",
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &ServiceUnavailable{}):
+		kumaErr = &types.Error{
+			Status: 503,
+			Title:  "Service unavailable",
+			Detail: err.Error(),
+		}
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError
 		errors.As(err, &accessErr)
-		handleAccessDenied(accessErr, response)
+		kumaErr = &types.Error{
+			Status: 403,
+			Title:  "Access Denied",
+			Detail: accessErr.Reason,
+		}
 	case errors.Is(err, &Unauthenticated{}):
 		var unauthenticated *Unauthenticated
-		errors.As(err, &err)
-		handleUnauthenticated(unauthenticated, title, response)
+		errors.As(err, &unauthenticated)
+		kumaErr = &types.Error{
+			Status: 401,
+			Title:  title,
+			Detail: unauthenticated.Error(),
+		}
+	case errors.Is(err, &envoyadmin.StreamNotConnectedError{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  "Bad Request",
+			Detail: err.Error(),
+		}
 	case err == tokens.IssuerDisabled:
-		handleIssuerDisabled(err, title, response)
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: err.Error(),
+		}
+	case err == multitenant.TenantMissingErr:
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: err.Error(),
+		}
+	case errors.Is(err, &admin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
+		kumaErr = &types.Error{
+			Status: 400,
+			Title:  title,
+			Detail: err.Error(),
+		}
+	case errors.As(err, &kumaErr):
 	default:
-		handleUnknownError(err, title, response)
+		log.Error(err, title)
+		kumaErr = &types.Error{
+			Status: 500,
+			Title:  title,
+			Detail: "Internal Server Error",
+		}
 	}
-}
-
-func handleIssuerDisabled(err error, title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
+	if ctx != nil {
+		if span := trace.SpanFromContext(ctx); span.IsRecording() {
+			kumaErr.Instance = span.SpanContext().TraceID().String()
+		}
 	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleInvalidPageSize(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid page size",
-		Causes: []types.Cause{
-			{
-				Field:   "size",
-				Message: "Invalid format",
-			},
-		},
+	// Fix to handle legacy errors
+	kumaErr.Type = "/std-errors"
+	kumaErr.Details = kumaErr.Detail
+	for _, ip := range kumaErr.InvalidParameters {
+		kumaErr.Causes = append(kumaErr.Causes, types.Cause{Field: ip.Field, Message: ip.Reason})
 	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleNotFound(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Not found",
-	}
-	WriteError(response, 404, kumaErr)
-}
-
-func handlePreconditionFailed(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Precondition Failed",
-	}
-	WriteError(response, 412, kumaErr)
-}
-
-func handleMeshNotFound(title string, err *manager.MeshNotFoundError, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Mesh is not found",
-		Causes: []types.Cause{
-			{
-				Field:   "mesh",
-				Message: fmt.Sprintf("mesh of name %s is not found", err.Mesh),
-			},
-		},
-	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleValidationError(title string, err *validators.ValidationError, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Resource is not valid",
-	}
-	for _, violation := range err.Violations {
-		kumaErr.Causes = append(kumaErr.Causes, types.Cause{
-			Field:   violation.Field,
-			Message: violation.Message,
-		})
-	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleInvalidOffset(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid offset",
-		Causes: []types.Cause{
-			{
-				Field:   "offset",
-				Message: "Invalid format",
-			},
-		},
-	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Invalid page size",
-		Causes: []types.Cause{
-			{
-				Field:   "size",
-				Message: err.Error(),
-			},
-		},
-	}
-	WriteError(response, 400, kumaErr)
-}
-
-func handleUnknownError(err error, title string, response *restful.Response) {
-	core.Log.Error(err, title)
-	kumaErr := types.Error{
-		Title:   title,
-		Details: "Internal Server Error",
-	}
-	WriteError(response, 500, kumaErr)
-}
-
-func handleSigningKeyNotFound(err error, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   "Signing Key not found",
-		Details: err.Error(),
-	}
-	WriteError(response, 404, kumaErr)
-}
-
-func handleAccessDenied(err *access.AccessDeniedError, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   "Access Denied",
-		Details: err.Reason,
-	}
-	WriteError(response, 403, kumaErr)
-}
-
-func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
-	}
-	WriteError(response, 401, kumaErr)
-}
-
-func WriteError(response *restful.Response, httpStatus int, kumaErr types.Error) {
-	if err := response.WriteHeaderAndJson(httpStatus, kumaErr, "application/json"); err != nil {
-		core.Log.Error(err, "Could not write the error response")
+	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
+		log.Error(err, "Could not write the error response")
 	}
 }

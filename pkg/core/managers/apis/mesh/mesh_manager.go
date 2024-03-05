@@ -6,9 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -22,25 +23,37 @@ func NewMeshManager(
 	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
-	unsafeDelete bool,
+	extensions context.Context,
+	config kuma_cp.Config,
 ) core_manager.ResourceManager {
-	return &meshManager{
-		store:         store,
-		otherManagers: otherManagers,
-		caManagers:    caManagers,
-		registry:      registry,
-		meshValidator: validator,
-		unsafeDelete:  unsafeDelete,
+	meshManager := &meshManager{
+		store:                      store,
+		otherManagers:              otherManagers,
+		caManagers:                 caManagers,
+		registry:                   registry,
+		meshValidator:              validator,
+		unsafeDelete:               config.Store.UnsafeDelete,
+		extensions:                 extensions,
+		createMeshRoutingResources: config.Defaults.CreateMeshRoutingResources,
 	}
+	if config.Store.Type == config_store.KubernetesStore {
+		meshManager.k8sStore = true
+		meshManager.systemNamespace = config.Store.Kubernetes.SystemNamespace
+	}
+	return meshManager
 }
 
 type meshManager struct {
-	store         core_store.ResourceStore
-	otherManagers core_manager.ResourceManager
-	caManagers    core_ca.Managers
-	registry      core_registry.TypeRegistry
-	meshValidator MeshValidator
-	unsafeDelete  bool
+	store                      core_store.ResourceStore
+	otherManagers              core_manager.ResourceManager
+	caManagers                 core_ca.Managers
+	registry                   core_registry.TypeRegistry
+	meshValidator              MeshValidator
+	unsafeDelete               bool
+	extensions                 context.Context
+	createMeshRoutingResources bool
+	k8sStore                   bool
+	systemNamespace            string
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -74,15 +87,24 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
 		return err
 	}
-	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
-		return err
-	}
-
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name); err != nil {
+	// We need to first persist the mesh so that we can hook up secrets (cert/key) as their owner in EnsureCAs.
+	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
+		return err
+	}
+	if err := defaults_mesh.EnsureDefaultMeshResources(
+		ctx,
+		m.otherManagers,
+		mesh,
+		mesh.Spec.GetSkipCreatingInitialPolicies(),
+		m.extensions,
+		m.createMeshRoutingResources,
+		m.k8sStore,
+		m.systemNamespace,
+	); err != nil {
 		return err
 	}
 	return nil
@@ -110,10 +132,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 			return err
 		}
 	}
-	// delete all secrets
-	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
-		return errors.Wrap(err, "could not delete associated secrets")
-	}
+	// secrets are deleted via owner reference
 	return notFoundErr
 }
 

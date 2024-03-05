@@ -4,7 +4,7 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
-import "mesh/options.proto";
+import "api/mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
@@ -20,6 +20,20 @@ message ZoneInsight {
 
   // List of KDS subscriptions created by a given Zone Kuma CP.
   repeated KDSSubscription subscriptions = 1;
+
+  // Statistics about Envoy Admin Streams
+  EnvoyAdminStreams envoy_admin_streams = 2;
+
+  HealthCheck health_check = 3;
+}
+
+message EnvoyAdminStreams {
+  // Global instance ID that handles XDS Config Dump streams.
+  string config_dump_global_instance_id = 1;
+  // Global instance ID that handles Stats streams.
+  string stats_global_instance_id = 2;
+  // Global instance ID that handles Clusters streams.
+  string clusters_global_instance_id = 3;
 }
 
 // KDSSubscription describes a single KDS subscription
@@ -59,6 +73,13 @@ message KDSSubscription {
 
   // Config of Zone Kuma CP
   string config = 8;
+
+  // Indicates if subscription provided auth token
+  bool auth_token_provided = 9;
+
+  // Zone CP instance that handled the given subscription (This is the leader at
+  // time of connection).
+  string zone_instance_id = 10;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.
@@ -110,4 +131,10 @@ message KumaCpVersion {
 
   // True iff this Zone CP version is compatible with Global CP
   bool kumaCpGlobalCompatible = 5;
+}
+
+// HealthCheck holds information about the received zone health check
+message HealthCheck {
+  // Time last health check received
+  google.protobuf.Timestamp time = 1;
 }

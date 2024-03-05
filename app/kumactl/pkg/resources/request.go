@@ -23,7 +23,7 @@ func doRequest(client util_http.Client, ctx context.Context, req *http.Request) 
 	if resp.StatusCode/100 >= 4 {
 		kumaErr := error_types.Error{}
 		if err := json.Unmarshal(b, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
+			if kumaErr.Title != "" {
 				return resp.StatusCode, b, &kumaErr
 			}
 		}

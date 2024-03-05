@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/status"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -28,17 +29,16 @@ func New(
 	refresh time.Duration,
 	filter reconcile.ResourceFilter,
 	mapper reconcile.ResourceMapper,
-	insight bool,
 	nackBackoff time.Duration,
 ) (Server, error) {
-	hasher, cache := newKDSContext(log)
+	hashFn, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
+	reconciler := reconcile.NewReconciler(hashFn, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -50,27 +50,9 @@ func New(
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptCallbacks(NewNackBackoff(nackBackoff)), todo(jakubdyszkiewicz) temporarily disable to see if it's a reason for E2E flakes.
 		syncTracker,
-	}
-	if insight {
-		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
+		status.DefaultStatusTracker(rt, log),
 	}
 	return NewServer(cache, callbacks, log), nil
-}
-
-func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
-	return NewStatusTracker(rt, func(accessor StatusAccessor, l logr.Logger) ZoneInsightSink {
-		return NewZoneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration)
-			},
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout.Duration / 2)
-			},
-			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval.Duration/10,
-			NewZonesInsightStore(rt.ResourceManager()),
-			l)
-	}, log)
 }
 
 func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
@@ -95,7 +77,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
-			OnTick: func() error {
+			OnTick: func(context.Context) error {
 				start := core.Now()
 				defer func() {
 					kdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -108,20 +90,14 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				reconciler.Clear(node)
+				reconciler.Clear(ctx, node)
 			},
 		}, nil
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
-	hasher := hasher{}
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) { //nolint:unparam
+	hashFn := util_xds_v3.IDHash{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
-}
-
-type hasher struct{}
-
-func (_ hasher) ID(node *envoy_core.Node) string {
-	return node.Id
+	return hashFn, util_xds_v3.NewSnapshotCache(false, hashFn, logger)
 }

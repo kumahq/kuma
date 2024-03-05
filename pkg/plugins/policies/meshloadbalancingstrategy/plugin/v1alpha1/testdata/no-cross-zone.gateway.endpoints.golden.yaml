@@ -1,0 +1,72 @@
+resources:
+- name: backend-d230d75c0fcb71dc
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-d230d75c0fcb71dc
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.1
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+            envoy.transport_socket_match:
+              k8s.io/node: node1
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.2
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+            envoy.transport_socket_match:
+              k8s.io/node: node2
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.3
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/az: test
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+            envoy.transport_socket_match:
+              k8s.io/az: test
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.1.4
+              portValue: 8080
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              k8s.io/region: test
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+            envoy.transport_socket_match:
+              k8s.io/region: test
+              kuma.io/protocol: http
+              kuma.io/zone: test-zone
+      loadBalancingWeight: 1
+      locality:
+        zone: test-zone
+    policy:
+      overprovisioningFactor: 200

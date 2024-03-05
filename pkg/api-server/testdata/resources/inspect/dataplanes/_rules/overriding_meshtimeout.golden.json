@@ -1,0 +1,134 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "mesh": "default",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [
+    {
+     "inbound": {
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": {
+        "connectionTimeout": "20s",
+        "idleTimeout": "20s",
+        "http": {
+         "requestTimeout": "5s"
+        }
+       },
+       "matchers": [],
+       "origin": [
+        {
+         "mesh": "default",
+         "name": "default",
+         "type": "MeshTimeout"
+        },
+        {
+         "mesh": "default",
+         "name": "override",
+         "type": "MeshTimeout"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "toRules": [
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "20s",
+      "http": {
+       "requestTimeout": "15s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "foo"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "default",
+       "type": "MeshTimeout"
+      },
+      {
+       "mesh": "default",
+       "name": "override",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "20s",
+      "http": {
+       "requestTimeout": "20s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "bar"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "default",
+       "type": "MeshTimeout"
+      },
+      {
+       "mesh": "default",
+       "name": "override",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "20s",
+      "http": {
+       "requestTimeout": "10s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": true,
+       "value": "bar"
+      },
+      {
+       "key": "kuma.io/service",
+       "not": true,
+       "value": "foo"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "default",
+       "type": "MeshTimeout"
+      }
+     ]
+    }
+   ],
+   "type": "MeshTimeout",
+   "warnings": []
+  }
+ ]
+}

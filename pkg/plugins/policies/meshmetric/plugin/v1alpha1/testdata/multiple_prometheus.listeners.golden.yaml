@@ -1,0 +1,94 @@
+resources:
+- name: _kuma:dynamicconfig:observability
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      pipe:
+        path: /tmp/kuma-mesh-metric-config.sock
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:dynamicconfig:observability
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"sidecar":{"regex":"http.*","includeUnused":false}}}}'
+                  status: 200
+                match:
+                  prefix: /
+          statPrefix: _kuma_dynamicconfig_observability
+    name: _kuma:dynamicconfig:observability
+- name: _kuma:metrics:prometheus:first-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 5670
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:metrics:prometheus:first-backend
+              routes:
+              - match:
+                  prefix: /metrics
+                route:
+                  cluster: _kuma:metrics:hijacker
+                  prefixRewrite: /meshmetric
+          statPrefix: _kuma_metrics_prometheus_first-backend
+    name: _kuma:metrics:prometheus:first-backend
+    trafficDirection: INBOUND
+- name: _kuma:metrics:prometheus:second-backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 5671
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:metrics:prometheus:second-backend
+              routes:
+              - match:
+                  prefix: /metrics
+                route:
+                  cluster: _kuma:metrics:hijacker
+                  prefixRewrite: /meshmetric
+          statPrefix: _kuma_metrics_prometheus_second-backend
+    name: _kuma:metrics:prometheus:second-backend
+    trafficDirection: INBOUND

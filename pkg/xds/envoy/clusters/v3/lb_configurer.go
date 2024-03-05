@@ -10,6 +10,8 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
+const DefaultChoiceCount = 2
+
 type LbConfigurer struct {
 	Lb *mesh_proto.TrafficRoute_LoadBalancer
 }
@@ -31,6 +33,11 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		c.LbPolicy = envoy_cluster.Cluster_LEAST_REQUEST
 
 		lbConfig := e.Lb.GetLeastRequest()
+		if lbConfig == nil || lbConfig.GetChoiceCount() == 0 {
+			lbConfig = &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
+				ChoiceCount: DefaultChoiceCount,
+			}
+		}
 		c.LbConfig = &envoy_cluster.Cluster_LeastRequestLbConfig_{
 			LeastRequestLbConfig: &envoy_cluster.Cluster_LeastRequestLbConfig{
 				ChoiceCount: util_proto.UInt32(lbConfig.ChoiceCount),

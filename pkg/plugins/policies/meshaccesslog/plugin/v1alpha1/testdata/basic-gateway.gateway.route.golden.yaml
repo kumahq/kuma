@@ -1,0 +1,29 @@
+ignorePortInHostMatching: true
+name: gateway:HTTP:8080:*
+requestHeadersToRemove:
+- x-kuma-tags
+validateClusters: false
+virtualHosts:
+- domains:
+  - '*'
+  name: '*'
+  routes:
+  - match:
+      path: /
+    route:
+      clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      idleTimeout: 5s
+      weightedClusters:
+        clusters:
+        - name: backend-c58ee0574727fc94
+          requestHeadersToAdd:
+          - header:
+              key: x-kuma-tags
+              value: '&kuma.io/service=gateway&'
+          weight: 1
+        - name: other-service-125fdda5c50dda21
+          requestHeadersToAdd:
+          - header:
+              key: x-kuma-tags
+              value: '&kuma.io/service=gateway&'
+          weight: 1

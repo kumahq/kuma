@@ -22,7 +22,7 @@ var _ = Describe("ServiceValidator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		decoder, err = kube_admission.NewDecoder(scheme)
+		decoder = kube_admission.NewDecoder(scheme)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -34,17 +34,12 @@ var _ = Describe("ServiceValidator", func() {
 
 	DescribeTable("should make a proper admission verdict",
 		func(given testCase) {
-			// setup
-			validator := &ServiceValidator{}
-			// when
-			err := validator.InjectDecoder(decoder)
-			// then
-			Expect(err).ToNot(HaveOccurred())
+			validator := &ServiceValidator{Decoder: decoder}
 
 			// setup
 			admissionReview := admissionv1.AdmissionReview{}
 			// when
-			err = yaml.Unmarshal([]byte(given.request), &admissionReview)
+			err := yaml.Unmarshal([]byte(given.request), &admissionReview)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

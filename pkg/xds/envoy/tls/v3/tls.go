@@ -87,7 +87,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, skipHostnameVerification bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -108,22 +108,24 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
-		subjectAltNameMatch := hostname
-		if len(sni) > 0 {
-			subjectAltNameMatch = sni
-		}
-		for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
-			envoy_tls.SubjectAltNameMatcher_DNS,
-			envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
-		} {
-			matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
-				SanType: typ,
-				Matcher: &envoy_type_matcher.StringMatcher{
-					MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-						Exact: subjectAltNameMatch,
+		if !skipHostnameVerification {
+			subjectAltNameMatch := hostname
+			if len(sni) > 0 {
+				subjectAltNameMatch = sni
+			}
+			for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+				envoy_tls.SubjectAltNameMatcher_DNS,
+				envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+			} {
+				matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+					SanType: typ,
+					Matcher: &envoy_type_matcher.StringMatcher{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: subjectAltNameMatch,
+						},
 					},
-				},
-			})
+				})
+			}
 		}
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
@@ -172,21 +174,41 @@ func KumaIDMatcher(tagName, tagValue string) *envoy_type_matcher.StringMatcher {
 	}
 }
 
-func StaticDownstreamTlsContext(keyPair *tls.KeyPair) *envoy_tls.DownstreamTlsContext {
+func StaticDownstreamTlsContextWithPath(certPath, keyPath string) *envoy_tls.DownstreamTlsContext {
+	cert := &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_Filename{
+			Filename: certPath,
+		},
+	}
+	key := &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_Filename{
+			Filename: keyPath,
+		},
+	}
+	return staticDownstreamTlsContext(cert, key)
+}
+
+func StaticDownstreamTlsContextWithValue(keyPair *tls.KeyPair) *envoy_tls.DownstreamTlsContext {
+	cert := &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_InlineBytes{
+			InlineBytes: keyPair.CertPEM,
+		},
+	}
+	key := &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_InlineBytes{
+			InlineBytes: keyPair.KeyPEM,
+		},
+	}
+	return staticDownstreamTlsContext(cert, key)
+}
+
+func staticDownstreamTlsContext(cert *envoy_core.DataSource, key *envoy_core.DataSource) *envoy_tls.DownstreamTlsContext {
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext: &envoy_tls.CommonTlsContext{
 			TlsCertificates: []*envoy_tls.TlsCertificate{
 				{
-					CertificateChain: &envoy_core.DataSource{
-						Specifier: &envoy_core.DataSource_InlineBytes{
-							InlineBytes: keyPair.CertPEM,
-						},
-					},
-					PrivateKey: &envoy_core.DataSource{
-						Specifier: &envoy_core.DataSource_InlineBytes{
-							InlineBytes: keyPair.KeyPEM,
-						},
-					},
+					CertificateChain: cert,
+					PrivateKey:       key,
 				},
 			},
 		},

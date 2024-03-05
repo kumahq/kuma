@@ -21,6 +21,8 @@ linters:
     - unparam
     - unused
     - whitespace
+    - nosprintfhostport
+    - loggercheck
 
 run:
   skip-files:
@@ -30,7 +32,6 @@ run:
   modules-download-mode: readonly
   skip-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
   skip-dirs:
-    - pkg/transparentproxy/istio/tools
     - (^|/)vendored($|/)
   timeout: 30m
 
@@ -66,6 +67,8 @@ linters-settings:
       alias: core_model
     - pkg: github.com/kumahq/kuma/api/common/v1alpha1
       alias: common_api
+    - pkg: github.com/kumahq/kuma/api/openapi/types
+      alias: api_types
   gomodguard:
     blocked:
       modules:
@@ -129,22 +132,12 @@ issues:
     - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
         - staticcheck
       text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
-    - path: pkg/api-server/inspect_endpoints.go
-      linters:
-        - staticcheck
-      text: "SA1019: rest_unversioned.From.Resource is deprecated"
-    - path: pkg/api-server/types/inspect_test.go
-      linters:
-        - staticcheck
-      text: "SA1019: rest_unversioned.From.Resource is deprecated"
-    - path: pkg/api-server/service_insight_endpoints.go
-      linters:
-        - staticcheck
-      text: "SA1019: rest_unversioned.From.Resource is deprecated"
     - linters:
         - staticcheck
       text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
     - linters:
-        - gosec
-      path: pkg/transparent-proxy/istio
-
+        - staticcheck
+      text: "SA1019: .* is deprecated: use MinResyncInterval instead"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use FullResyncInterval instead"

@@ -80,10 +80,7 @@ func validateListenerCollapsibility(path validators.PathBuilder, listeners []*me
 		protocols[listener.GetProtocol().String()] = append(protocols[listener.GetProtocol().String()], i)
 
 		// An empty hostname is the same as "*", i.e. matches all hosts.
-		hostname := listener.GetHostname()
-		if hostname == "" {
-			hostname = mesh_proto.WildcardHostname
-		}
+		hostname := listener.GetNonEmptyHostname()
 
 		hostnames[hostname] = append(hostnames[hostname], i)
 
@@ -163,10 +160,15 @@ func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshG
 		case mesh_proto.MeshGateway_Listener_NONE:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "cannot be empty")
 		case mesh_proto.MeshGateway_Listener_HTTPS:
-			if l.GetCrossMesh() {
+			switch {
+			case l.GetCrossMesh():
 				err.AddViolationAt(path.Index(i).Field("protocol"), "protocol is not supported with crossMesh")
-			} else if l.GetTls() == nil {
+			case l.GetTls() == nil:
 				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
+			case l.GetTls().GetMode() == mesh_proto.MeshGateway_TLS_PASSTHROUGH:
+				err.AddViolationAt(
+					path.Index(i).Field("tls").Field("mode"),
+					"mode is not supported on HTTPS listeners")
 			}
 		}
 

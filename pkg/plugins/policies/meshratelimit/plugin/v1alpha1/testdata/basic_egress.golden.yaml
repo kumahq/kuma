@@ -1,0 +1,151 @@
+resources:
+- name: test_listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 10002
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:external-service-1
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=external-service-1&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: external-service-1
+              routes:
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: external-service-1
+                  timeout: 0s
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 100
+                      tokensPerFill: 100
+          statPrefix: external-service-1
+      name: external-service-1_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: external-service-2
+          statPrefix: external-service-2
+      name: external-service-2_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+          statPrefix: tcp_rate_limit
+          tokenBucket:
+            fillInterval: 22s
+            maxTokens: 22
+            tokensPerFill: 22
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: external-service-1
+          statPrefix: external-service-1
+      name: external-service-1_mesh-2
+    - filterChainMatch:
+        serverNames:
+        - external-service-2{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:external-service-2
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=external-service-2&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: external-service-2
+              routes:
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: external-service-2
+                  timeout: 0s
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 100
+                      tokensPerFill: 100
+          statPrefix: external-service-2
+      name: external-service-2_mesh-2
+    - filterChainMatch:
+        serverNames:
+        - internal-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      name: internal-service-1_mesh-1
+    name: test_listener
+    trafficDirection: INBOUND

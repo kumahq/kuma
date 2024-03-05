@@ -6,7 +6,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
-	. "github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("Gateway", func() {
@@ -96,6 +96,25 @@ conf:
     port: 99
     resources:
       connectionLimit: 2
+`,
+		),
+		Entry("TLS listener with TERMINATE", `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - port: 443
+    protocol: TLS
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: example-kuma-io-certificate
 `,
 		),
 	)
@@ -272,11 +291,14 @@ conf:
       name: https
 `),
 
-		ErrorCase("has an invalid hostname",
-			validators.Violation{
+		ErrorCases("has an invalid hostname",
+			[]validators.Violation{{
 				Field:   "conf.listeners[0].hostname",
 				Message: "invalid hostname",
-			}, `
+			}, {
+				Field:   "conf.listeners[1].hostname",
+				Message: "must be at most 253 characters",
+			}}, `
 type: MeshGateway
 name: gateway
 mesh: default
@@ -290,6 +312,11 @@ conf:
   - hostname: "foo.example$.com"
     protocol: HTTP
     port: 99
+    tags:
+      name: https
+  - hostname: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.com"
+    protocol: HTTP
+    port: 100
     tags:
       name: https
 `),
@@ -315,6 +342,30 @@ conf:
     crossMesh: true
     tags:
       name: https
+`),
+
+		ErrorCase("HTTPS and PASSTHROUGH",
+			validators.Violation{
+				Field:   "conf.listeners[0].tls.mode",
+				Message: "mode is not supported on HTTPS listeners",
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - hostname: "foo.example.com"
+    protocol: HTTPS
+    port: 99
+    tags:
+      name: https
+    tls:
+      mode: PASSTHROUGH
 `),
 
 		ErrorCase("crossMesh and multiple services",

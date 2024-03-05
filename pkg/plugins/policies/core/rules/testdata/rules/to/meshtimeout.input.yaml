@@ -1,0 +1,36 @@
+# MeshTimeout With overrides
+type: MeshTimeout
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 10s
+---
+type: MeshTimeout
+name: override
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: foo
+  to:
+    - targetRef:
+        kind: MeshService
+        name: foo
+      default:
+        http:
+          requestTimeout: 15s
+    - targetRef:
+        kind: MeshService
+        name: bar
+      default:
+        http:
+          requestTimeout: 20s

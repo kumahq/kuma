@@ -6,6 +6,7 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
@@ -65,7 +66,7 @@ func (stream *MockServerStream) ClientStream(stopCh chan struct{}) *MockClientSt
 
 func NewMockServerStream() *MockServerStream {
 	return &MockServerStream{
-		Ctx:    context.Background(),
+		Ctx:    metadata.NewIncomingContext(context.Background(), map[string][]string{}),
 		SentCh: make(chan *envoy_sd.DiscoveryResponse, len(registry.Global().ObjectTypes())),
 		RecvCh: make(chan *envoy_sd.DiscoveryRequest, len(registry.Global().ObjectTypes())),
 	}

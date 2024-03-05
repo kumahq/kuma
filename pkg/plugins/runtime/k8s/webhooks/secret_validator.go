@@ -144,8 +144,3 @@ func meshOfSecret(secret *kube_core.Secret) string {
 	}
 	return meshName
 }
-
-func (v *SecretValidator) InjectDecoder(d *admission.Decoder) error {
-	v.Decoder = d
-	return nil
-}

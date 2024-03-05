@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "Invalid page size",
+ "invalid_parameters": [
+  {
+   "field": "size",
+   "reason": "invalid page size of 2000. Maximum page size is 1000"
+  }
+ ],
+ "details": "Invalid page size",
+ "causes": [
+  {
+   "field": "size",
+   "message": "invalid page size of 2000. Maximum page size is 1000"
+  }
+ ]
+}

@@ -74,7 +74,7 @@ func (d *DataplaneResource) Validate() error {
 }
 
 // For networking section validation we need to take into account our legacy model.
-// Legacy model is detected by having interface defined on inbound listeners.
+// Sotw model is detected by having interface defined on inbound listeners.
 // We do not allow networking.address with the old format. Instead, we recommend switching to the new format.
 // When we've got dataplane in the new format, we require networking.address field to be defined.
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
@@ -220,7 +220,7 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 
 	if len(outbound.Tags) == 0 {
 		// nolint:staticcheck
-		if outbound.Service == "" {
+		if outbound.GetService() == "" {
 			result.AddViolationAt(validators.RootedAt("tags"), `mandatory tag "kuma.io/service" is missing`)
 		}
 	} else {

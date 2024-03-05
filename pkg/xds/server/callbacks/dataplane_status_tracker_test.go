@@ -72,14 +72,6 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		Expect(subscription.DisconnectTime.AsTime().UnixNano()).To(BeNumerically(">=", subscription.ConnectTime.AsTime().UnixNano()))
 	})
 
-	zeroStatus := mesh_proto.DiscoverySubscriptionStatus{
-		Total: &mesh_proto.DiscoveryServiceStats{},
-		Cds:   &mesh_proto.DiscoveryServiceStats{},
-		Eds:   &mesh_proto.DiscoveryServiceStats{},
-		Lds:   &mesh_proto.DiscoveryServiceStats{},
-		Rds:   &mesh_proto.DiscoveryServiceStats{},
-	}
-
 	It("should tolerate xDS requests with empty Node", func() {
 		// given
 		streamID := int64(1)
@@ -109,7 +101,14 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		key, subscription := accessor.GetStatus()
 		// then
 		Expect(key).To(Equal(core_model.ResourceKey{}))
-		Expect(subscription.Status).To(MatchProto(&zeroStatus))
+		Expect(subscription.Status).To(MatchProto(&mesh_proto.DiscoverySubscriptionStatus{
+			Total:          &mesh_proto.DiscoveryServiceStats{},
+			Cds:            &mesh_proto.DiscoveryServiceStats{},
+			Eds:            &mesh_proto.DiscoveryServiceStats{},
+			LastUpdateTime: subscription.GetStatus().GetLastUpdateTime(),
+			Lds:            &mesh_proto.DiscoveryServiceStats{},
+			Rds:            &mesh_proto.DiscoveryServiceStats{},
+		}))
 	})
 
 	type testCase struct {
@@ -180,7 +179,14 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				Mesh: "default",
 				Name: "example-001",
 			}))
-			Expect(subscription.Status).To(MatchProto(&zeroStatus))
+			Expect(subscription.Status).To(MatchProto(&mesh_proto.DiscoverySubscriptionStatus{
+				Total:          &mesh_proto.DiscoveryServiceStats{},
+				Cds:            &mesh_proto.DiscoveryServiceStats{},
+				Eds:            &mesh_proto.DiscoveryServiceStats{},
+				LastUpdateTime: subscription.GetStatus().GetLastUpdateTime(),
+				Lds:            &mesh_proto.DiscoveryServiceStats{},
+				Rds:            &mesh_proto.DiscoveryServiceStats{},
+			}))
 			Expect(subscription.ConnectTime.AsTime().UnixNano()).NotTo(BeZero())
 			// and
 			// We don't want to validate KumaDpVersion.KumaCpCompatible

@@ -1,0 +1,59 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "mesh": "default",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "proxyRule": {
+    "conf": {
+     "backends": [
+      {
+       "type": "Zipkin",
+       "zipkin": {
+        "url": "http://jaeger-collector:9411/api/v2/spans"
+       }
+      }
+     ],
+     "tags": [
+      {
+       "name": "team",
+       "literal": "core"
+      },
+      {
+       "name": "env",
+       "header": {
+        "name": "x-env",
+        "default": "prod"
+       }
+      },
+      {
+       "name": "version",
+       "header": {
+        "name": "x-version"
+       }
+      }
+     ]
+    },
+    "origin": [
+     {
+      "mesh": "default",
+      "name": "default",
+      "type": "MeshTrace"
+     },
+     {
+      "mesh": "default",
+      "name": "override",
+      "type": "MeshTrace"
+     }
+    ]
+   },
+   "toRules": [],
+   "type": "MeshTrace",
+   "warnings": []
+  }
+ ]
+}

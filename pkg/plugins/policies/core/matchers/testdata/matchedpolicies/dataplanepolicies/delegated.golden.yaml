@@ -1,0 +1,32 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mt1
+  spec:
+    targetRef:
+      kind: Mesh
+    to:
+    - default:
+        http:
+          requestTimeout: 2s
+      targetRef:
+        kind: Mesh
+  type: MeshTimeout
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mt1
+  spec:
+    targetRef:
+      kind: MeshService
+      name: kong_kong_svc_80
+    to:
+    - default:
+        http:
+          requestTimeout: 2s
+      targetRef:
+        kind: Mesh
+  type: MeshTimeout
+next: null
+total: 0

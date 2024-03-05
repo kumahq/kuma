@@ -34,7 +34,8 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("example", "backend"),
 				Metadata: &core_xds.DataplaneMetadata{
-					Features: core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					Features:            core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					AccessLogSocketPath: "/tmp/kuma-al-dataplane0-demo.sock",
 				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &model.ResourceMeta{
@@ -51,8 +52,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
-								Port:    15432,
-								Service: "db",
+								Port: 15432,
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "db",
+								},
 							}},
 						},
 					},
@@ -60,10 +63,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(TcpProxy(given.statsName, given.clusters...)).
+			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
+				WithOverwriteName(given.listenerName).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
@@ -152,8 +155,8 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			)},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "tcp",
-				Format: `[%START_TIME%] "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%REQ(ORIGIN)%" "%REQ(CONTENT-TYPE)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%
-"%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
+				Format: `[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%
+"%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
 				Type: mesh_proto.LoggingTcpType,
 				Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{

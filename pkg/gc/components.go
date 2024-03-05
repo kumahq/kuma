@@ -28,9 +28,16 @@ func setupCollector(rt runtime.Runtime) error {
 		// Therefore, on K8S offline dataplanes are cleaned up quickly enough to not run this.
 		return nil
 	}
-	return rt.Add(
-		NewCollector(rt.ResourceManager(), func() *time.Ticker { return time.NewTicker(1 * time.Minute) }, rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration),
+	collector, err := NewCollector(
+		rt.ResourceManager(),
+		func() *time.Ticker { return time.NewTicker(1 * time.Minute) },
+		rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration,
+		rt.Metrics(),
 	)
+	if err != nil {
+		return err
+	}
+	return rt.Add(collector)
 }
 
 func setupFinalizer(rt runtime.Runtime) error {
@@ -38,13 +45,6 @@ func setupFinalizer(rt runtime.Runtime) error {
 	var resourceTypes []model.ResourceType
 
 	switch rt.Config().Mode {
-	case config_core.Standalone:
-		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
-		}
-		resourceTypes = []model.ResourceType{
-			mesh.DataplaneInsightType,
-		}
 	case config_core.Zone:
 		newTicker = func() *time.Ticker {
 			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout.Duration)
@@ -65,7 +65,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
-	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), newTicker, resourceTypes...)
+	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), rt.Tenants(), newTicker, rt.Metrics(), rt.Extensions(), rt.Config().Store.Upsert, resourceTypes...)
 	if err != nil {
 		return err
 	}

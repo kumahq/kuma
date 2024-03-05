@@ -13,8 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	yaml_output "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -116,8 +115,12 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
+				if err, msg := mesh.ValidateMetaBackwardsCompatible(res.GetMeta(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()
+				} else if msg != "" {
+					if _, printErr := fmt.Fprintln(cmd.ErrOrStderr(), msg); printErr != nil {
+						return printErr
+					}
 				}
 				resources = append(resources, res)
 			}
@@ -128,10 +131,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					return err
 				}
 			}
-			p, err := printers.NewGenericPrinter(output.YAMLFormat)
-			if err != nil {
-				return err
-			}
+			p := yaml_output.NewPrinter()
 			for _, resource := range resources {
 				if rs == nil {
 					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {
@@ -161,7 +161,7 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	meta := res.GetMeta()
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()))
+			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
 		} else {
 			return err
 		}
@@ -169,5 +169,5 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
 		return err
 	}
-	return rs.Update(ctx, newRes)
+	return rs.Update(ctx, newRes, store.UpdateWithLabels(meta.GetLabels()))
 }

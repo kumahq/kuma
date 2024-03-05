@@ -1,0 +1,10 @@
+type: Dataplane
+name: gw-1
+mesh: mesh-2
+networking:
+  address: 127.0.0.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: edge-gateway
+      foo: bar

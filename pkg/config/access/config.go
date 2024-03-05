@@ -44,15 +44,14 @@ func DefaultAccessConfig() AccessConfig {
 	}
 }
 
-// AccessConfig defines a configuration for acccess control
+// AccessConfig defines a configuration for access control
 type AccessConfig struct {
+	config.BaseConfig
+
 	// Type of the access strategy (available values: "static")
 	Type string `json:"type" envconfig:"KUMA_ACCESS_TYPE"`
 	// Configuration of static access strategy
 	Static StaticAccessConfig `json:"static"`
-}
-
-func (r AccessConfig) Sanitize() {
 }
 
 func (r AccessConfig) Validate() error {

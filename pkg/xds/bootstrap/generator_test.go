@@ -54,9 +54,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
 		}
-		core.TempDir = func() string {
-			return "/tmp"
-		}
 	})
 
 	defaultDataplane := func() *core_mesh.DataplaneResource {
@@ -99,14 +96,15 @@ var _ = Describe("bootstrapGenerator", func() {
 	})
 
 	type testCase struct {
-		serverConfig       *bootstrap_config.BootstrapServerConfig
-		proxyConfig        *xds_config.Proxy
-		dataplane          func() *core_mesh.DataplaneResource
-		dpAuthForProxyType map[string]bool
-		useTokenPath       bool
-		request            types.BootstrapRequest
-		expectedConfigFile string
-		hdsEnabled         bool
+		serverConfig        *bootstrap_config.BootstrapServerConfig
+		proxyConfig         *xds_config.Proxy
+		dataplane           func() *core_mesh.DataplaneResource
+		dpAuthForProxyType  map[string]bool
+		useTokenPath        bool
+		request             types.BootstrapRequest
+		expectedConfigFile  string
+		dpBootstrapVerifier func(KumaDpBootstrap)
+		hdsEnabled          bool
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
@@ -119,11 +117,11 @@ var _ = Describe("bootstrapGenerator", func() {
 				proxyConfig = *given.proxyConfig
 			}
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, proxyConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			bootstrapConfig, _, err := generator.Generate(context.Background(), given.request)
+			bootstrapConfig, dpBootstrap, err := generator.Generate(context.Background(), given.request)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -131,7 +129,12 @@ var _ = Describe("bootstrapGenerator", func() {
 			// and config is as expected
 			actual, err := util_proto.ToYAML(bootstrapConfig)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
+			if given.expectedConfigFile != "" {
+				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
+			}
+			if given.dpBootstrapVerifier != nil {
+				given.dpBootstrapVerifier(dpBootstrap)
+			}
 		},
 		Entry("default config with minimal request", testCase{
 			dpAuthForProxyType: map[string]bool{},
@@ -375,6 +378,10 @@ var _ = Describe("bootstrapGenerator", func() {
 				DNSPort:            53001,
 				EmptyDNSPort:       53002,
 				DataplaneTokenPath: "/path/to/file",
+				MetricsResources: types.MetricsResources{
+					CertPath: "/path/cert/pem",
+					KeyPath:  "/path/key/pem",
+				},
 			},
 			expectedConfigFile: "generator.default-config-token-path.golden.yaml",
 			hdsEnabled:         true,
@@ -422,6 +429,37 @@ var _ = Describe("bootstrapGenerator", func() {
 			hdsEnabled:         true,
 			useTokenPath:       true,
 		}),
+		Entry("dns corefile template", testCase{
+			dpAuthForProxyType: map[string]bool{},
+			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
+				return &bootstrap_config.BootstrapServerConfig{
+					Params: &bootstrap_config.BootstrapParamsConfig{
+						AdminAddress:         "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminAccessLogPath:   "/var/log",
+						XdsHost:              "localhost",
+						XdsPort:              15678,
+						XdsConnectTimeout:    config_types.Duration{Duration: 2 * time.Second},
+						CorefileTemplatePath: filepath.Join("testdata", "corefile.template"),
+					},
+				}
+			}(),
+			dataplane: func() *core_mesh.DataplaneResource {
+				dp := defaultDataplane()
+				dp.Spec.Networking.Admin.Port = 9902
+				return dp
+			},
+			request: types.BootstrapRequest{
+				Mesh:    "mesh",
+				Name:    "name.namespace",
+				Version: defaultVersion,
+			},
+			dpBootstrapVerifier: func(dpBootstrap KumaDpBootstrap) {
+				expected, err := os.ReadFile(filepath.Join("testdata", "corefile.template"))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dpBootstrap.NetworkingConfig.CorefileTemplate).To(Equal(expected))
+			},
+			hdsEnabled: true,
+		}),
 	)
 
 	type errTestCase struct {
@@ -437,7 +475,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 			proxyCfg := xds_config.DefaultProxyConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -575,7 +613,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -670,7 +708,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		err = resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "metrics"))
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, config(), proxyCfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

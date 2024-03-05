@@ -2,62 +2,63 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"strings"
 
 	v1 "k8s.io/api/admission/v1"
-	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/version"
 )
 
-func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, cpServiceAccountName string) k8s_common.AdmissionValidator {
+func NewValidatingWebhook(
+	converter k8s_common.Converter,
+	coreRegistry core_registry.TypeRegistry,
+	k8sRegistry k8s_registry.TypeRegistry,
+	checker ResourceAdmissionChecker,
+) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry:         coreRegistry,
-		k8sRegistry:          k8sRegistry,
-		converter:            converter,
-		mode:                 mode,
-		cpServiceAccountName: cpServiceAccountName,
+		coreRegistry:             coreRegistry,
+		k8sRegistry:              k8sRegistry,
+		converter:                converter,
+		ResourceAdmissionChecker: checker,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry         core_registry.TypeRegistry
-	k8sRegistry          k8s_registry.TypeRegistry
-	converter            k8s_common.Converter
-	decoder              *admission.Decoder
-	mode                 core.CpMode
-	cpServiceAccountName string
+	ResourceAdmissionChecker
+
+	coreRegistry core_registry.TypeRegistry
+	k8sRegistry  k8s_registry.TypeRegistry
+	converter    k8s_common.Converter
+	decoder      *admission.Decoder
 }
 
-func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
+func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
 	h.decoder = d
-	return nil
 }
 
 func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
-	resType := core_model.ResourceType(req.Kind.Kind)
-
-	_, err := h.coreRegistry.DescriptorFor(resType)
+	_, err := h.coreRegistry.DescriptorFor(core_model.ResourceType(req.Kind.Kind))
 	if err != nil {
 		// we only care about types in the registry for this handler
 		return admission.Allowed("")
 	}
 
-	if resp := h.isOperationAllowed(resType, req.UserInfo); !resp.Allowed {
+	coreRes, k8sObj, err := h.decode(req)
+	if err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if resp := h.IsOperationAllowed(req.UserInfo, coreRes); !resp.Allowed {
 		return resp
 	}
 
@@ -65,23 +66,18 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	case v1.Delete:
 		return admission.Allowed("")
 	default:
-		if resp := h.validateResourceLocation(resType); !resp.Allowed {
-			return resp
-		}
-
-		coreRes, k8sObj, err := h.decode(req)
-		if err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-
 		if err := core_mesh.ValidateMesh(k8sObj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
+			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
+		}
+
+		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
 		if err := core_model.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
-				return convertSpecValidationError(kumaErr, k8sObj)
+				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsTargetRefBased, k8sObj)
 			}
 			return admission.Denied(err.Error())
 		}
@@ -99,90 +95,46 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := h.decoder.Decode(req, k8sObj); err != nil {
-		return nil, nil, err
+
+	switch req.Operation {
+	case v1.Delete:
+		if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
+			return nil, nil, err
+		}
+	default:
+		if err := h.decoder.Decode(req, k8sObj); err != nil {
+			return nil, nil, err
+		}
 	}
+
 	if err := h.converter.ToCoreResource(k8sObj, coreRes); err != nil {
 		return nil, nil, err
 	}
 	return coreRes, k8sObj, nil
 }
 
-// Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
-	if userInfo.Username == h.cpServiceAccountName ||
-		userInfo.Username == "system:serviceaccount:kube-system:generic-garbage-collector" {
-		// Assume this means sync from another zone or GC cleanup resources due to OwnerRef.
-		// Not security; protecting user from self.
-		return admission.Allowed("")
-	}
-
-	descriptor, err := h.coreRegistry.DescriptorFor(resType)
-	if err != nil {
-		return syncErrorResponse(resType, h.mode)
-	}
-	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
-		return syncErrorResponse(resType, h.mode)
-	}
-	return admission.Allowed("")
-}
-
-func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
-	otherCpMode := ""
-	if cpMode == core.Zone {
-		otherCpMode = core.Global
-	} else if cpMode == core.Global {
-		otherCpMode = core.Zone
-	}
-	return admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status: "Failure",
-				Message: fmt.Sprintf("Operation not allowed. %s resources like %s can be updated or deleted only "+
-					"from the %s control plane and not from a %s control plane.", version.Product, resType, strings.ToUpper(otherCpMode), strings.ToUpper(cpMode)),
-				Reason: "Forbidden",
-				Code:   403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be empty",
-							Field:   "metadata.annotations[kuma.io/synced]",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-// validateResourceLocation validates if resources that suppose to be applied on Global are applied on Global and other way around
-func (h *validatingHandler) validateResourceLocation(resType core_model.ResourceType) admission.Response {
-	if err := system.ValidateLocation(resType, h.mode); err != nil {
-		return admission.Response{
-			AdmissionResponse: v1.AdmissionResponse{
-				Allowed: false,
-				Result: &metav1.Status{
-					Status:  "Failure",
-					Message: err.Error(),
-					Reason:  "Forbidden",
-					Code:    403,
-				},
-			},
+func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+	var verr validators.ValidationError
+	if origin, ok := core_model.ResourceOrigin(rm); ok {
+		if err := origin.IsValid(); err != nil {
+			verr.AddViolationAt(validators.Root().Field("labels").Key(mesh_proto.ResourceOriginLabel), err.Error())
 		}
 	}
-	return admission.Allowed("")
+	return verr
 }
 
 func (h *validatingHandler) Supports(admission.Request) bool {
 	return true
 }
 
-func convertSpecValidationError(kumaErr *validators.ValidationError, obj k8s_model.KubernetesObject) admission.Response {
-	verr := validators.ValidationError{}
+func convertSpecValidationError(kumaErr *validators.ValidationError, isTargetRef bool, obj k8s_model.KubernetesObject) admission.Response {
+	verr := validators.OK()
 	if kumaErr != nil {
-		verr.AddError("spec", *kumaErr)
+		if isTargetRef {
+			verr = *kumaErr
+		} else {
+			verr.AddError("spec", *kumaErr)
+		}
 	}
 	return convertValidationErrorOf(verr, obj, obj.GetObjectMeta())
 }

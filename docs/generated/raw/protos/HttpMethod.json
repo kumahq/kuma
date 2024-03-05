@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "enum": [
+        "NONE",
+        0,
+        "CONNECT",
+        1,
+        "DELETE",
+        2,
+        "GET",
+        3,
+        "HEAD",
+        4,
+        "OPTIONS",
+        5,
+        "PATCH",
+        6,
+        "POST",
+        7,
+        "PUT",
+        8,
+        "TRACE",
+        9
+    ],
+    "oneOf": [
+        {
+            "type": "string"
+        },
+        {
+            "type": "integer"
+        }
+    ],
+    "title": "Http Method"
+}

@@ -3,7 +3,6 @@ package v3
 import (
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -14,6 +13,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func UpdateHTTPConnectionManager(filterChain *envoy_listener.FilterChain, updateFunc func(manager *envoy_hcm.HttpConnectionManager) error) error {
@@ -110,10 +111,8 @@ func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.Fractiona
 	}
 }
 
-var bandwidthRegex = regexp.MustCompile(`(\d*)\s?([gmk]?bps)`)
-
 func ConvertBandwidthToKbps(bandwidth string) (uint64, error) {
-	match := bandwidthRegex.FindStringSubmatch(bandwidth)
+	match := validators.BandwidthRegex.FindStringSubmatch(bandwidth)
 	value, err := strconv.Atoi(match[1])
 	if err != nil {
 		return 0, err
@@ -125,9 +124,9 @@ func ConvertBandwidthToKbps(bandwidth string) (uint64, error) {
 	switch units {
 	case "kbps":
 		factor = 1
-	case "mbps":
+	case "Mbps":
 		factor = 1000
-	case "gbps":
+	case "Gbps":
 		factor = 1000000
 	default:
 		return 0, errors.New("unsupported unit type")

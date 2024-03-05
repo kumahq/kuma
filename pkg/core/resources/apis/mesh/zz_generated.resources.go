@@ -5,6 +5,7 @@
 package mesh
 
 import (
+	"errors"
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -103,6 +104,10 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *CircuitBreakerResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                CircuitBreakerType,
 	Resource:            NewCircuitBreakerResource(),
@@ -110,7 +115,7 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "circuit-breakers",
 	KumactlArg:          "circuit-breaker",
 	KumactlListArg:      "circuit-breakers",
@@ -208,6 +213,10 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *DataplaneResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                DataplaneType,
 	Resource:            NewDataplaneResource(),
@@ -215,7 +224,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromZoneToGlobal,
+	KDSFlags:            model.ZoneToGlobalFlag,
 	WsPath:              "dataplanes",
 	KumactlArg:          "dataplane",
 	KumactlListArg:      "dataplanes",
@@ -224,6 +233,8 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane",
 	PluralDisplayName:   "Dataplanes",
 	IsExperimental:      false,
+	Insight:             NewDataplaneInsightResource(),
+	Overview:            NewDataplaneOverviewResource(),
 }
 
 func init() {
@@ -313,6 +324,10 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *DataplaneInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                DataplaneInsightType,
 	Resource:            NewDataplaneInsightResource(),
@@ -320,7 +335,7 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromZoneToGlobal,
+	KDSFlags:            model.ZoneToGlobalFlag,
 	WsPath:              "dataplane-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -382,6 +397,21 @@ func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneOverviewResourceTypeDescriptor
 }
 
+func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &mesh_proto.DataplaneOverview{
+		Dataplane: resource.GetSpec().(*mesh_proto.Dataplane),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.DataplaneInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'DataplaneInsight'")
+		}
+		overview.DataplaneInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {
@@ -416,6 +446,10 @@ func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *DataplaneOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -518,6 +552,10 @@ func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ExternalServiceResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ExternalServiceType,
 	Resource:            NewExternalServiceResource(),
@@ -525,7 +563,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "external-services",
 	KumactlArg:          "external-service",
 	KumactlListArg:      "external-services",
@@ -631,6 +669,10 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *FaultInjectionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                FaultInjectionType,
 	Resource:            NewFaultInjectionResource(),
@@ -638,7 +680,7 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "fault-injections",
 	KumactlArg:          "fault-injection",
 	KumactlListArg:      "fault-injections",
@@ -744,6 +786,10 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *HealthCheckResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                HealthCheckType,
 	Resource:            NewHealthCheckResource(),
@@ -751,7 +797,7 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "health-checks",
 	KumactlArg:          "healthcheck",
 	KumactlListArg:      "healthchecks",
@@ -849,6 +895,10 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshType,
 	Resource:            NewMeshResource(),
@@ -856,7 +906,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshes",
 	KumactlArg:          "mesh",
 	KumactlListArg:      "meshes",
@@ -958,6 +1008,10 @@ func (l *MeshGatewayResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshGatewayResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshGatewayType,
 	Resource:            NewMeshGatewayResource(),
@@ -965,7 +1019,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag,
 	WsPath:              "meshgateways",
 	KumactlArg:          "meshgateway",
 	KumactlListArg:      "meshgateways",
@@ -973,7 +1027,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            true,
 	SingularDisplayName: "Mesh Gateway",
 	PluralDisplayName:   "Mesh Gateways",
-	IsExperimental:      true,
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1067,6 +1121,10 @@ func (l *MeshGatewayRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *MeshGatewayRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                MeshGatewayRouteType,
 	Resource:            NewMeshGatewayRouteResource(),
@@ -1074,7 +1132,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "meshgatewayroutes",
 	KumactlArg:          "meshgatewayroute",
 	KumactlListArg:      "meshgatewayroutes",
@@ -1082,7 +1140,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            true,
 	SingularDisplayName: "Mesh Gateway Route",
 	PluralDisplayName:   "Mesh Gateway Routes",
-	IsExperimental:      true,
+	IsExperimental:      false,
 }
 
 func init() {
@@ -1170,6 +1228,10 @@ func (l *MeshInsightResourceList) AddItem(r model.Resource) error {
 
 func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *MeshInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1280,6 +1342,10 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ProxyTemplateResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ProxyTemplateType,
 	Resource:            NewProxyTemplateResource(),
@@ -1287,7 +1353,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "proxytemplates",
 	KumactlArg:          "proxytemplate",
 	KumactlListArg:      "proxytemplates",
@@ -1393,6 +1459,10 @@ func (l *RateLimitResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *RateLimitResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                RateLimitType,
 	Resource:            NewRateLimitResource(),
@@ -1400,7 +1470,7 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "rate-limits",
 	KumactlArg:          "rate-limit",
 	KumactlListArg:      "rate-limits",
@@ -1506,6 +1576,10 @@ func (l *RetryResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *RetryResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                RetryType,
 	Resource:            NewRetryResource(),
@@ -1513,7 +1587,7 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "retries",
 	KumactlArg:          "retry",
 	KumactlListArg:      "retries",
@@ -1611,6 +1685,10 @@ func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ServiceInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ServiceInsightType,
 	Resource:            NewServiceInsightResource(),
@@ -1618,7 +1696,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "service-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -1714,6 +1792,10 @@ func (l *ServiceOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ServiceOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ServiceOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -1824,6 +1906,10 @@ func (l *TimeoutResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TimeoutResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TimeoutType,
 	Resource:            NewTimeoutResource(),
@@ -1831,7 +1917,7 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "timeouts",
 	KumactlArg:          "timeout",
 	KumactlListArg:      "timeouts",
@@ -1937,6 +2023,10 @@ func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficLogResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficLogType,
 	Resource:            NewTrafficLogResource(),
@@ -1944,7 +2034,7 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "traffic-logs",
 	KumactlArg:          "traffic-log",
 	KumactlListArg:      "traffic-logs",
@@ -2050,6 +2140,10 @@ func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficPermissionResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficPermissionType,
 	Resource:            NewTrafficPermissionResource(),
@@ -2057,7 +2151,7 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "traffic-permissions",
 	KumactlArg:          "traffic-permission",
 	KumactlListArg:      "traffic-permissions",
@@ -2163,6 +2257,10 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficRouteResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficRouteType,
 	Resource:            NewTrafficRouteResource(),
@@ -2170,7 +2268,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "traffic-routes",
 	KumactlArg:          "traffic-route",
 	KumactlListArg:      "traffic-routes",
@@ -2272,6 +2370,10 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *TrafficTraceResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                TrafficTraceType,
 	Resource:            NewTrafficTraceResource(),
@@ -2279,7 +2381,7 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "traffic-traces",
 	KumactlArg:          "traffic-trace",
 	KumactlListArg:      "traffic-traces",
@@ -2381,6 +2483,10 @@ func (l *VirtualOutboundResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *VirtualOutboundResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                VirtualOutboundType,
 	Resource:            NewVirtualOutboundResource(),
@@ -2388,7 +2494,7 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "virtual-outbounds",
 	KumactlArg:          "virtual-outbound",
 	KumactlListArg:      "virtual-outbounds",
@@ -2486,6 +2592,10 @@ func (l *ZoneEgressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneEgressResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneEgressType,
 	Resource:            NewZoneEgressResource(),
@@ -2493,7 +2603,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromZoneToGlobal,
+	KDSFlags:            model.ZoneToGlobalFlag,
 	WsPath:              "zoneegresses",
 	KumactlArg:          "zoneegress",
 	KumactlListArg:      "zoneegresses",
@@ -2502,6 +2612,8 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress",
 	PluralDisplayName:   "Zone Egresses",
 	IsExperimental:      false,
+	Insight:             NewZoneEgressInsightResource(),
+	Overview:            NewZoneEgressOverviewResource(),
 }
 
 func init() {
@@ -2591,6 +2703,10 @@ func (l *ZoneEgressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneEgressInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneEgressInsightType,
 	Resource:            NewZoneEgressInsightResource(),
@@ -2598,7 +2714,7 @@ var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromZoneToGlobal,
+	KDSFlags:            model.ZoneToGlobalFlag,
 	WsPath:              "zoneegressinsights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -2660,6 +2776,21 @@ func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneEgressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &mesh_proto.ZoneEgressOverview{
+		ZoneEgress: resource.GetSpec().(*mesh_proto.ZoneEgress),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.ZoneEgressInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneEgressInsight'")
+		}
+		overview.ZoneEgressInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
 var _ model.ResourceList = &ZoneEgressOverviewResourceList{}
 
 type ZoneEgressOverviewResourceList struct {
@@ -2694,6 +2825,10 @@ func (l *ZoneEgressOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneEgressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneEgressOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
@@ -2796,6 +2931,10 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneIngressResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneIngressType,
 	Resource:            NewZoneIngressResource(),
@@ -2803,7 +2942,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromZoneToGlobal | model.FromGlobalToZone,
+	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
 	WsPath:              "zone-ingresses",
 	KumactlArg:          "zone-ingress",
 	KumactlListArg:      "zone-ingresses",
@@ -2812,6 +2951,8 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress",
 	PluralDisplayName:   "Zone Ingresses",
 	IsExperimental:      false,
+	Insight:             NewZoneIngressInsightResource(),
+	Overview:            NewZoneIngressOverviewResource(),
 }
 
 func init() {
@@ -2901,6 +3042,10 @@ func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneIngressInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneIngressInsightType,
 	Resource:            NewZoneIngressInsightResource(),
@@ -2908,7 +3053,7 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromZoneToGlobal,
+	KDSFlags:            model.ZoneToGlobalFlag,
 	WsPath:              "zone-ingress-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -2970,6 +3115,21 @@ func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor 
 	return ZoneIngressOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneIngressOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &mesh_proto.ZoneIngressOverview{
+		ZoneIngress: resource.GetSpec().(*mesh_proto.ZoneIngress),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*mesh_proto.ZoneIngressInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneIngressInsight'")
+		}
+		overview.ZoneIngressInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
 var _ model.ResourceList = &ZoneIngressOverviewResourceList{}
 
 type ZoneIngressOverviewResourceList struct {
@@ -3004,6 +3164,10 @@ func (l *ZoneIngressOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneIngressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneIngressOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{

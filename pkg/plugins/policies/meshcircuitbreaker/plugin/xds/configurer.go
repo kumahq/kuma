@@ -94,6 +94,9 @@ func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.Outlier
 
 func configureDetectors(outlierDetection *envoy_cluster.OutlierDetection, detectors *api.Detectors) error {
 	if detectors == nil {
+		configureTotalFailures(outlierDetection, nil)
+		configureLocalOriginFailures(outlierDetection, nil)
+		configureGatewayFailures(outlierDetection, nil)
 		return nil
 	}
 
@@ -172,7 +175,7 @@ func configureGatewayFailures(
 	outlierDetection *envoy_cluster.OutlierDetection,
 	gatewayFailures *api.DetectorGatewayFailures,
 ) {
-	if gatewayFailures == nil {
+	if gatewayFailures == nil || gatewayFailures.Consecutive == nil {
 		outlierDetection.EnforcingConsecutiveGatewayFailure = util_proto.UInt32(0)
 		return
 	}
@@ -185,7 +188,7 @@ func configureLocalOriginFailures(
 	outlierDetection *envoy_cluster.OutlierDetection,
 	conf *api.DetectorLocalOriginFailures,
 ) {
-	if conf == nil {
+	if conf == nil || conf.Consecutive == nil {
 		outlierDetection.EnforcingConsecutiveLocalOriginFailure = util_proto.UInt32(0)
 		return
 	}
@@ -198,7 +201,7 @@ func configureTotalFailures(
 	outlierDetection *envoy_cluster.OutlierDetection,
 	conf *api.DetectorTotalFailures,
 ) {
-	if conf == nil {
+	if conf == nil || conf.Consecutive == nil {
 		outlierDetection.EnforcingConsecutive_5Xx = util_proto.UInt32(0)
 		return
 	}

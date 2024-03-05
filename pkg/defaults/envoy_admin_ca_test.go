@@ -21,6 +21,7 @@ var _ = Describe("Envoy Admin CA defaults", func() {
 		manager := core_manager.NewResourceManager(store)
 		component := defaults.EnvoyAdminCaDefaultComponent{
 			ResManager: manager,
+			Extensions: context.Background(),
 		}
 
 		// when

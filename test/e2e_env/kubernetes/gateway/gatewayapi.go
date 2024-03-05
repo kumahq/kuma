@@ -44,6 +44,7 @@ spec:
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(externalServicesNamespace)).
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(testserver.Install(
 				testserver.WithName("test-server-1"),
 				testserver.WithMesh(meshName),
@@ -503,30 +504,6 @@ data:
 				_, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "secret", "-m", meshName, convertedSecretName)
 				g.Expect(err).To(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
-		})
-	})
-
-	Context("Upstream validation", func() {
-		It("should validate Gateway", func() {
-			gateway := fmt.Sprintf(`
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: Gateway
-metadata:
-  name: kuma-validate
-  namespace: %s
-  annotations:
-    kuma.io/mesh: %s
-spec:
-  gatewayClassName: kuma
-  listeners:
-  - name: proxy
-    port: 10080
-    protocol: TCP
-    hostname: xyz.io
-`, namespace, meshName)
-
-			err := k8s.KubectlApplyFromStringE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), gateway)
-			Expect(err).To(HaveOccurred())
 		})
 	})
 }

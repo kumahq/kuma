@@ -21,7 +21,6 @@ var (
 	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
 	SetLogger             = kube_log.SetLogger
 	Now                   = time.Now
-	TempDir               = os.TempDir
 
 	SetupSignalHandler = func() (context.Context, context.Context) {
 		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())
@@ -29,14 +28,15 @@ var (
 		c := make(chan os.Signal, 3)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
+			logger := Log.WithName("runtime")
 			s := <-c
-			Log.Info("Received signal, stopping instance gracefully", "signal", s.String())
+			logger.Info("received signal, stopping instance gracefully", "signal", s.String())
 			gracefulCancel()
 			s = <-c
-			Log.Info("Received second signal, stopping instance", "signal", s.String())
+			logger.Info("received second signal, stopping instance", "signal", s.String())
 			cancel()
 			s = <-c
-			Log.Info("Received third signal, force exit", "signal", s.String())
+			logger.Info("received third signal, force exit", "signal", s.String())
 			os.Exit(1)
 		}()
 		return gracefulCtx, ctx

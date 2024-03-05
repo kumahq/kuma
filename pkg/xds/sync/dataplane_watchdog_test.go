@@ -42,9 +42,9 @@ type staticSnapshotReconciler struct {
 	proxy *core_xds.Proxy
 }
 
-func (s *staticSnapshotReconciler) Reconcile(ctx xds_context.Context, proxy *core_xds.Proxy) error {
+func (s *staticSnapshotReconciler) Reconcile(_ context.Context, _ xds_context.Context, proxy *core_xds.Proxy) (bool, error) {
 	s.proxy = proxy
-	return nil
+	return true, nil
 }
 
 func (s *staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
@@ -70,12 +70,13 @@ var _ = Describe("Dataplane Watchdog", func() {
 		resManager = manager.NewResourceManager(store)
 		meshContextBuilder := xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			".mesh",
 			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
 		Expect(err).ToNot(HaveOccurred())
@@ -111,7 +112,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 		var ctx context.Context
 
 		BeforeEach(func() {
-			Expect(samples.MeshDefaultBuilder().Create(resManager))
+			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
 			resKey = core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
 
@@ -124,14 +125,15 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 		It("should reissue admin tls certificate when address has changed", func() {
 			// when
-			err := watchdog.Sync(ctx)
+			_, err := watchdog.Sync(ctx)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			certs, err := cert.ParseCertsPEM(snapshotReconciler.proxy.EnvoyAdminMTLSCerts.ServerPair.CertPEM)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(certs[0].Subject.CommonName).To(Equal(samples.DataplaneBackend().Spec.Networking.Address))
+			Expect(certs[0].IPAddresses).To(HaveLen(1))
+			Expect(certs[0].IPAddresses[0].String()).To(Equal(samples.DataplaneBackend().Spec.Networking.Address))
 
 			// when address has changed
 			newAddress := "192.168.1.100"
@@ -143,19 +145,20 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 			// and
 			time.Sleep(cacheExpirationTime)
-			err = watchdog.Sync(ctx)
+			_, err = watchdog.Sync(ctx)
 
 			// then cert is reissued with a new address
 			Expect(err).ToNot(HaveOccurred())
 
 			certs, err = cert.ParseCertsPEM(snapshotReconciler.proxy.EnvoyAdminMTLSCerts.ServerPair.CertPEM)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(certs[0].Subject.CommonName).To(Equal(newAddress))
+			Expect(certs[0].IPAddresses).To(HaveLen(1))
+			Expect(certs[0].IPAddresses[0].String()).To(Equal(newAddress))
 		})
 
 		It("should not reconcile if mesh hash is the same", func() {
 			// when
-			err := watchdog.Sync(ctx)
+			_, err := watchdog.Sync(ctx)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -164,7 +167,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// when
 			snapshotReconciler.proxy = nil // set to nil so we can check if it was not called again
 			time.Sleep(cacheExpirationTime)
-			err = watchdog.Sync(ctx)
+			_, err = watchdog.Sync(ctx)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -18,10 +17,12 @@ func ApplicationOnUniversalClientOnK8s() {
 	meshName := "healthcheck-app-on-universal"
 
 	BeforeAll(func() {
-		err := multizone.Global.Install(MTLSMeshUniversal(meshName))
+		err := NewClusterSetup().
+			Install(MTLSMeshUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
+			Install(TrafficPermissionUniversal(meshName)).
+			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(DeleteMeshResources(multizone.Global, meshName, mesh.RetryResourceTypeDescriptor)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -29,8 +30,6 @@ func ApplicationOnUniversalClientOnK8s() {
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		// This is deliberately deployed on UniZone2 where KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS is set to false
-		// Change this to UniZone2 (or split to both zones) when https://github.com/kumahq/kuma/issues/5335 is fixed.
 		err = NewClusterSetup().
 			Install(TestServerUniversal("test-server-1", meshName,
 				WithArgs([]string{"echo", "--instance", "dp-universal-1"}),

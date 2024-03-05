@@ -12,7 +12,7 @@ type Command struct {
 	short      string
 	chainName  string
 	position   int
-	parameters []*parameters.Parameter
+	parameters parameters.Parameters
 }
 
 func (c *Command) Build(verbose bool) string {
@@ -32,13 +32,7 @@ func (c *Command) Build(verbose bool) string {
 		cmd = append(cmd, strconv.Itoa(c.position))
 	}
 
-	for _, parameter := range c.parameters {
-		if parameter != nil {
-			cmd = append(cmd, parameter.Build(verbose))
-		}
-	}
-
-	return strings.Join(cmd, " ")
+	return strings.Join(append(cmd, c.parameters.Build(verbose)...), " ")
 }
 
 func Append(chainName string, parameters []*parameters.Parameter) *Command {

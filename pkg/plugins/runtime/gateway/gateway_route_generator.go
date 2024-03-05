@@ -78,6 +78,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 		}
 	}
 
+	return HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
+}
+
+func HandlePrefixMatchesAndPopulatePolicies(host GatewayHost, exactEntries, prefixEntries map[string][]route.Entry, entries []route.Entry) []route.Entry {
 	// The Kubernetes Ingress and Gateway APIs define prefix matching
 	// to match in terms of path components, so we follow suit here.
 	// Envoy path prefix matching is byte-wise, so we need to do some
@@ -95,6 +99,13 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
 				exactPathRewrite = &rewrite
 			}
+			var exactPathRedirectPathRewrite *string
+			if redir := e.Action.Redirect; redir != nil {
+				if rw := redir.PathRewrite; rw != nil && rw.ReplacePrefixMatch != nil {
+					rewrite := strings.TrimRight(*rw.ReplacePrefixMatch, "/")
+					exactPathRedirectPathRewrite = &rewrite
+				}
+			}
 
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
@@ -106,13 +117,11 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				replace := *exactPathRewrite + "/"
 				e.Rewrite.ReplacePrefixMatch = &replace
 			}
-			entries = append(entries, e)
-
-			// If the prefix is '/', it matches everything anyway,
-			// so we don't need to install an exact match.
-			if e.Match.PrefixPath == "/" {
-				continue
+			if exactPathRedirectPathRewrite != nil {
+				replace := *exactPathRedirectPathRewrite + "/"
+				e.Action.Redirect.PathRewrite.ReplacePrefixMatch = &replace
 			}
+			entries = append(entries, e)
 
 			// Duplicate the route to an exact match only if there
 			// isn't already an exact match for this path.
@@ -120,6 +129,9 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 				exactMatch := e
 				exactMatch.Match.PrefixPath = ""
 				exactMatch.Match.ExactPath = exactPath
+				if exactPath == "" {
+					exactMatch.Match.ExactPath = "/"
+				}
 
 				// We need to make sure this prefix replacement
 				// does _not_ get a trailing slash (unless it is "/")
@@ -131,6 +143,17 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 					exactMatch.Rewrite = &route.Rewrite{
 						ReplaceFullPath: &path,
 					}
+				}
+				if exactPathRedirectPathRewrite != nil {
+					path := *exactPathRedirectPathRewrite
+					if path == "" {
+						path = "/"
+					}
+					redir := *exactMatch.Action.Redirect
+					redir.PathRewrite = &route.Rewrite{
+						ReplaceFullPath: &path,
+					}
+					exactMatch.Action.Redirect = &redir
 				}
 				exactEntries[exactPath] = append(exactEntries[exactPath], exactMatch)
 			}
@@ -181,13 +204,24 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 
 	for _, f := range rule.GetFilters() {
 		if r := f.GetRedirect(); r != nil {
-			entry.Action.Redirect = &route.Redirection{
+			redirection := &route.Redirection{
 				Status:     r.GetStatusCode(),
 				Scheme:     r.GetScheme(),
 				Host:       r.GetHostname(),
 				Port:       r.GetPort(),
 				StripQuery: true,
 			}
+			if p := r.GetPath(); p != nil {
+				rewrite := &route.Rewrite{}
+				switch t := p.GetPath().(type) {
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplaceFull:
+					rewrite.ReplaceFullPath = &t.ReplaceFull
+				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch:
+					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
+				}
+				redirection.PathRewrite = rewrite
+			}
+			entry.Action.Redirect = redirection
 		} else if m := f.GetMirror(); m != nil {
 			entry.Mirror = &route.Mirror{
 				Percentage: m.GetPercentage().GetValue(),
@@ -239,6 +273,10 @@ func makeHttpRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute
 				case *mesh_proto.MeshGatewayRoute_HttpRoute_Filter_Rewrite_ReplacePrefixMatch:
 					rewrite.ReplacePrefixMatch = &t.ReplacePrefixMatch
 				}
+			}
+
+			if r.GetHostToBackendHostname() {
+				rewrite.HostToBackendHostname = true
 			}
 
 			entry.Rewrite = &rewrite

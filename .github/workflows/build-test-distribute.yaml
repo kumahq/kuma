@@ -1,0 +1,89 @@
+name: "build-test-distribute"
+on:
+  push:
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
+  pull_request:
+    branches: ["master", "release-*"]
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+env:
+  KUMA_DIR: "."
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+jobs:
+  check:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        with:
+          args: --fix=false --verbose
+          version: v1.56.1
+          skip-pkg-cache: true
+      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make clean
+      - run: |
+          make check
+      - id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
+        with:
+          dir: .
+          config: .syft.yaml
+      - id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+  test:
+    needs: ["check"]
+    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    uses: ./.github/workflows/_test.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+    secrets: inherit
+  build_publish:
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+    secrets: inherit
+  distributions:
+    needs: ["build_publish", "check", "test"]
+    timeout-minutes: 10
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Halt due to previous failures"
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
+        run: |-
+          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
+          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
+          exit 1

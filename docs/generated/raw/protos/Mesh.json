@@ -1,0 +1,390 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Mesh",
+    "definitions": {
+        "Mesh": {
+            "properties": {
+                "mtls": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.Mtls",
+                    "additionalProperties": true,
+                    "description": "mTLS settings. +optional"
+                },
+                "tracing": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Tracing",
+                    "additionalProperties": true,
+                    "description": "Tracing settings. +optional"
+                },
+                "logging": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Logging",
+                    "additionalProperties": true,
+                    "description": "Logging settings. +optional"
+                },
+                "metrics": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Metrics",
+                    "additionalProperties": true,
+                    "description": "Configuration for metrics collected and exposed by dataplanes. Settings defined here become defaults for every dataplane in a given Mesh. Additionally, it is also possible to further customize this configuration for each dataplane individually using Dataplane resource. +optional"
+                },
+                "networking": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Networking",
+                    "additionalProperties": true,
+                    "description": "Networking settings of the mesh"
+                },
+                "routing": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Routing",
+                    "additionalProperties": true,
+                    "description": "Routing settings of the mesh"
+                },
+                "constraints": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.Constraints",
+                    "additionalProperties": true,
+                    "description": "Constraints that applies to the mesh and its entities"
+                },
+                "skipCreatingInitialPolicies": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh",
+            "description": "Mesh defines configuration of a single mesh."
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend. Has to be one of the loaded plugins (Kuma ships with builtin and provided)"
+                },
+                "dpCert": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert",
+                    "additionalProperties": true,
+                    "description": "Dataplane certificate settings"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                },
+                "mode": {
+                    "enum": [
+                        "STRICT",
+                        0,
+                        "PERMISSIVE",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                },
+                "rootChain": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Certificate Authority Backend",
+            "description": "CertificateAuthorityBackend defines Certificate Authority backend"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert": {
+            "properties": {
+                "rotation": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation",
+                    "additionalProperties": true,
+                    "description": "Rotation settings"
+                },
+                "requestTimeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Timeout on request to CA for DP certificate generation and retrieval",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dp Cert",
+            "description": "DpCert defines settings for certificates generated for Dataplanes"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation": {
+            "properties": {
+                "expiration": {
+                    "type": "string",
+                    "description": "Time after which generated certificate for Dataplane will expire"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rotation",
+            "description": "Rotation defines rotation settings for Dataplane certificate"
+        },
+        "kuma.mesh.v1alpha1.CertificateAuthorityBackend.RootChain": {
+            "properties": {
+                "requestTimeout": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "Timeout on request for to CA for root certificate chain. If not specified, defaults to 10s.",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Root Chain",
+            "description": "RootChain defines settings related to CA root certificate chain."
+        },
+        "kuma.mesh.v1alpha1.Logging": {
+            "properties": {
+                "defaultBackend": {
+                    "type": "string",
+                    "description": "Name of the default backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.LoggingBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available logging backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logging"
+        },
+        "kuma.mesh.v1alpha1.LoggingBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.logging.defaultBackend or in TrafficLogging"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Format of access logs. Placeholders available on https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'tcp' and 'file')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Logging Backend",
+            "description": "LoggingBackend defines logging backend available to mesh. Backends can be used in TrafficLog rules."
+        },
+        "kuma.mesh.v1alpha1.Mesh.Constraints": {
+            "properties": {
+                "dataplaneProxy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints",
+                    "additionalProperties": true,
+                    "description": "DataplaneProxyMembership defines a set of requirements for data plane proxies to be a member of the mesh."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Constraints",
+            "description": "Constraints to apply to the mesh and its entities"
+        },
+        "kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints": {
+            "properties": {
+                "requirements": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules"
+                    },
+                    "type": "array",
+                    "description": "Requirements defines a set of requirements that data plane proxies must fulfill in order to join the mesh. A data plane proxy must fulfill at least one requirement in order to join the mesh. Empty list of allowed requirements means that any proxy that is not explicitly denied can join."
+                },
+                "restrictions": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules"
+                    },
+                    "type": "array",
+                    "description": "Restrictions defines a set of restrictions that data plane proxies cannot fulfill in order to join the mesh. A data plane proxy cannot fulfill any requirement in order to join the mesh. Restrictions takes precedence over requirements."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplane Proxy Constraints"
+        },
+        "kuma.mesh.v1alpha1.Mesh.DataplaneProxyConstraints.Rules": {
+            "properties": {
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Tags defines set of required tags. You can specify '*' in value to require non empty value of tag"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rules",
+            "description": "Rules defines a set of rules for data plane proxies to be member of the mesh."
+        },
+        "kuma.mesh.v1alpha1.Mesh.Mtls": {
+            "properties": {
+                "enabledBackend": {
+                    "type": "string",
+                    "description": "Name of the enabled backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.CertificateAuthorityBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available Certificate Authority backends"
+                },
+                "skipValidation": {
+                    "type": "boolean",
+                    "description": "If enabled, skips CA validation."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mtls",
+            "description": "mTLS settings of a Mesh."
+        },
+        "kuma.mesh.v1alpha1.Metrics": {
+            "properties": {
+                "enabledBackend": {
+                    "type": "string",
+                    "description": "Name of the enabled backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MetricsBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available Metrics backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics",
+            "description": "Metrics defines configuration for metrics that should be collected and exposed by dataplanes."
+        },
+        "kuma.mesh.v1alpha1.MetricsBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.metrics.enabledBackend"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'prometheus')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics Backend",
+            "description": "MetricsBackend defines metric backends"
+        },
+        "kuma.mesh.v1alpha1.Networking": {
+            "properties": {
+                "outbound": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Networking.Outbound",
+                    "additionalProperties": true,
+                    "description": "Outbound settings"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking",
+            "description": "Networking defines the networking configuration of the mesh"
+        },
+        "kuma.mesh.v1alpha1.Networking.Outbound": {
+            "properties": {
+                "passthrough": {
+                    "additionalProperties": true,
+                    "type": "boolean",
+                    "description": "Control the passthrough cluster"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Outbound",
+            "description": "Outbound describes the common mesh outbound settings"
+        },
+        "kuma.mesh.v1alpha1.Routing": {
+            "properties": {
+                "localityAwareLoadBalancing": {
+                    "type": "boolean",
+                    "description": "Enable the Locality Aware Load Balancing"
+                },
+                "zoneEgress": {
+                    "type": "boolean",
+                    "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Routing",
+            "description": "Routing defines configuration for the routing in the mesh"
+        },
+        "kuma.mesh.v1alpha1.Tracing": {
+            "properties": {
+                "defaultBackend": {
+                    "type": "string",
+                    "description": "Name of the default backend"
+                },
+                "backends": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.TracingBackend"
+                    },
+                    "type": "array",
+                    "description": "List of available tracing backends"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tracing",
+            "description": "Tracing defines tracing configuration of the mesh."
+        },
+        "kuma.mesh.v1alpha1.TracingBackend": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend, can be then used in Mesh.tracing.defaultBackend or in TrafficTrace"
+                },
+                "sampling": {
+                    "additionalProperties": true,
+                    "type": "number",
+                    "description": "Percentage of traces that will be sent to the backend (range 0.0 - 100.0). Empty value defaults to 100.0%"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of the backend (Kuma ships with 'zipkin')"
+                },
+                "conf": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "description": "Configuration of the backend"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tracing Backend",
+            "description": "TracingBackend defines tracing backend available to mesh. Backends can be used in TrafficTrace rules."
+        }
+    }
+}

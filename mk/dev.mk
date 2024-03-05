@@ -18,13 +18,20 @@ ifdef XDG_DATA_HOME
 endif
 CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 
+# Change here and `make check` ensures these are used for CI
+# Note: These are _docker image tags_
+# If changing min version, update mk/kind.mk as well
+K8S_MIN_VERSION = v1.23.17-k3s1
+K8S_MAX_VERSION = v1.29.1-k3s2
+export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
+export GOLANGCI_LINT_VERSION=v1.56.1
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
 define GATE_PUSH
-$(if $(ALLOW_PUSH),$(1), # $(1))
+$(if $(filter $(ALLOW_PUSH),true),$(1), # $(1))
 endef
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
@@ -39,14 +46,17 @@ K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
 KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
+CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
 KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
 PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
 SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
+CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
 # from go-deps
 PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
 PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
 PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
 PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
+PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
 GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
 GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
 HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
@@ -106,11 +116,9 @@ dev/sync-demo:
 		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/gateway.yaml
 
-CIRCLECI_BADGE ?= [![CircleCI {{branch}}](https://img.shields.io/circleci/build/github/kumahq/kuma/{{branch}}?label={{branch}})](https://circleci.com/gh/kumahq/kuma/tree/{{branch}})
-.PHONY: dev/repo-health
-dev/repo-health:
-	go run $(TOOLS_DIR)/dev/repo-health.go -action README -circleci-badge '$(CIRCLECI_BADGE)'
-
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
 	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+
+.PHONY: clean
+clean: clean/build clean/generated clean/docs ## Dev: Clean

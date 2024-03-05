@@ -16,7 +16,7 @@ func Load(file string, cfg Config) error {
 
 func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool) error {
 	if file == "" {
-		core.Log.Info("Skipping reading config from file")
+		core.Log.WithName("config").Info("skipping reading config from file")
 	} else if err := loadFromFile(file, cfg, strict); err != nil {
 		return err
 	}
@@ -26,6 +26,11 @@ func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, valid
 			return err
 		}
 	}
+
+	if err := cfg.PostProcess(); err != nil {
+		return errors.Wrap(err, "configuration post processing failed")
+	}
+
 	if validate {
 		if err := cfg.Validate(); err != nil {
 			return errors.Wrapf(err, "Invalid configuration")

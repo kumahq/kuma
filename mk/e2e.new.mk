@@ -10,8 +10,8 @@ E2E_DEPS_TARGETS ?=
 # Environment veriables the tests should run with
 E2E_ENV_VARS ?=
 
-E2E_K8S_BIN_DEPS =
-E2E_UNIVERSAL_BIN_DEPS =
+E2E_K8S_BIN_DEPS = images/test
+E2E_UNIVERSAL_BIN_DEPS = images/test
 ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
 E2E_K8S_BIN_DEPS+= docker/load
@@ -19,7 +19,7 @@ E2E_UNIVERSAL_BIN_DEPS+= docker/load
 E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
 E2E_K8S_BIN_DEPS+= build/kumactl images
-E2E_UNIVERSAL_BIN_DEPS+= build/kumactl images/test
+E2E_UNIVERSAL_BIN_DEPS+= build/kumactl
 E2E_ENV_VARS+= GINKGO_EDITOR_INTEGRATION=true
 endif
 
@@ -54,26 +54,18 @@ endif
 ifeq ($(K8S_CLUSTER_TOOL),kind)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!kind-not-supported)
 endif
-
-ifeq ($(CI_K3S_VERSION),v1.19.16-k3s1)
-GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!legacy-k3s-not-supported)
+ifdef IPV6
+	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!ipv6-not-supported)
 endif
 
 ifeq ($(shell uname -m | sed -e s/aarch.*/arm64/),arm64)
 	GINKGO_E2E_LABEL_FILTERS := $(call append_label_filter,!arm-not-supported)
 endif
 
-
-ifdef IPV6
-KIND_CONFIG_IPV6=-ipv6
-endif
-
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
-	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
-	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/start
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/start
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
@@ -85,8 +77,7 @@ test/e2e/k8s/wait/$1:
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
-	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/stop
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/stop
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
@@ -136,8 +127,7 @@ test/e2e/prevent-flakes:
 # Run only with -j and K8S_CLUSTER_TOOL=k3d (which is the default value)
 .PHONY: test/e2e/debug
 test/e2e/debug: $(E2E_DEPS_TARGETS)
-	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
-	$(MAKE) build/kumactl images
+	$(MAKE) -j $(K8SCLUSTERS_START_TARGETS) build/kumactl images
 	$(MAKE) docker/tag
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
@@ -168,6 +158,15 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
 
+.PHONY: test/e2e-gatewayapi
+test/e2e-gatewayapi: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run kubernetes e2e tests. Use DEBUG=1 to more easily find issues
+	$(MAKE) docker/tag
+	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
+	$(MAKE) test/e2e/k8s/wait/kuma-1
+	$(MAKE) test/e2e/k8s/load/images/kuma-1
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) ./test/e2e_env/gatewayapi || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
+
 .PHONY: test/e2e-universal
 test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/create ## Run universal e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag/test
@@ -177,5 +176,5 @@ test/e2e-universal: $(E2E_DEPS_TARGETS) $(E2E_UNIVERSAL_BIN_DEPS) k3d/network/cr
 test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e tests. Use DEBUG=1 to more easily find issues
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
-	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop

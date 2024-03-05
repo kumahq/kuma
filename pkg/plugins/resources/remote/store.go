@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
@@ -17,6 +18,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
+
+var log = core.Log.WithName("store-remote")
 
 func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {
 	return &remoteStore{
@@ -35,9 +38,10 @@ type remoteStore struct {
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	meta := rest_v1alpha1.ResourceMeta{
-		Type: string(res.Descriptor().Name),
-		Name: opts.Name,
-		Mesh: opts.Mesh,
+		Type:   string(res.Descriptor().Name),
+		Name:   opts.Name,
+		Mesh:   opts.Mesh,
+		Labels: opts.Labels,
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
@@ -46,10 +50,12 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
+	opts := store.NewUpdateOptions(fs...)
 	meta := rest_v1alpha1.ResourceMeta{
-		Type: string(res.Descriptor().Name),
-		Name: res.GetMeta().GetName(),
-		Mesh: res.GetMeta().GetMesh(),
+		Type:   string(res.Descriptor().Name),
+		Name:   res.GetMeta().GetName(),
+		Mesh:   res.GetMeta().GetMesh(),
+		Labels: opts.Labels,
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
@@ -130,16 +136,21 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return err
 	}
 	statusCode, b, err := s.doRequest(ctx, req)
+	if statusCode == 404 {
+		return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
+	}
 	if err != nil {
-		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
-		}
 		return err
 	}
 	if statusCode != 200 {
 		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	return rest.JSON.UnmarshalToCore(b, res)
+	restRes, err := rest.JSON.Unmarshal(b, res.Descriptor())
+	if err != nil {
+		return err
+	}
+	res.SetMeta(restRes.GetMeta())
+	return res.SetSpec(restRes.GetSpec())
 }
 
 func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
@@ -161,6 +172,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 	}
 	req.URL.RawQuery = query.Encode()
 
+	log.V(1).Info("doing request to control-plane", "method", req.Method, "url", req.URL.String())
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		return err
@@ -186,7 +198,7 @@ func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []
 	if resp.StatusCode/100 >= 4 {
 		kumaErr := types.Error{}
 		if err := json.Unmarshal(b, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
+			if kumaErr.Title != "" {
 				return resp.StatusCode, b, &kumaErr
 			}
 		}

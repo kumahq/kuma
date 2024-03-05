@@ -4,63 +4,65 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
+	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
 const TagsHeaderName = "x-kuma-tags"
 
+// Format of split cluster name and regex for parsing it, see usages
+const splitClusterFmtString = "%s-%x"
+
+var splitClusterRegex = regexp.MustCompile("(.*)-[[:xdigit:]]{16}$")
+
 type Tags map[string]string
+
+func ServiceFromClusterName(name string) string {
+	matchedGroups := splitClusterRegex.FindStringSubmatch(name)
+	if len(matchedGroups) == 0 {
+		return name
+	}
+	return matchedGroups[1]
+}
 
 // DestinationClusterName generates a unique cluster name for the
 // destination. identifyingTags are useful for adding extra metadata outside of just tags. Tags must at least contain `kuma.io/service`
 func (t Tags) DestinationClusterName(
-	identifyingTags map[string]string,
+	additionalIdentifyingTags map[string]string,
 ) (string, error) {
 	serviceName := t[mesh_proto.ServiceTag]
 	if serviceName == "" {
 		return "", fmt.Errorf("missing %s tag", mesh_proto.ServiceTag)
 	}
+
 	// If there's no tags other than serviceName just return the serviceName
-	if len(identifyingTags) == 0 && len(t) == 1 {
+	if len(additionalIdentifyingTags) == 0 && len(t) == 1 {
 		return serviceName, nil
 	}
 
 	// If cluster is splitting the target service with selector tags,
 	// hash the tag names to generate a unique cluster name.
-	var keys []string
-	for k := range t {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
 	h := sha256.New()
 
-	// destination tags from route
-	for _, k := range keys {
+	for _, k := range maps.SortedKeys(t) {
 		h.Write([]byte(k))
 		h.Write([]byte(t[k]))
 	}
-
-	keys = []string{}
-	for k := range identifyingTags {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// identifyingTags contains listener, meshGateway and Dataplane tags
-	for _, k := range keys {
+	for _, k := range maps.SortedKeys(additionalIdentifyingTags) {
 		h.Write([]byte(k))
-		h.Write([]byte(identifyingTags[k]))
+		h.Write([]byte(additionalIdentifyingTags[k]))
 	}
 
 	// The qualifier is 16 hex digits. Unscientifically balancing the length
 	// of the hex against the likelihood of collisions.
-	return fmt.Sprintf("%s-%x", serviceName, h.Sum(nil)[:8]), nil
+	// Note: policy configuration is sensitive to this format!
+	return fmt.Sprintf(splitClusterFmtString, serviceName, h.Sum(nil)[:8]), nil
 }
 
 func (t Tags) WithoutTags(tags ...string) Tags {
@@ -105,6 +107,28 @@ func (t Tags) String() string {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", key, t[key]))
 	}
 	return strings.Join(pairs, ",")
+}
+
+func FromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
+	var service string
+	tags := Tags{}
+
+	switch targetRef.Kind {
+	case common_api.MeshService:
+		service = targetRef.Name
+	case common_api.MeshServiceSubset:
+		service = targetRef.Name
+		tags = targetRef.Tags
+	case common_api.Mesh:
+		service = mesh_proto.MatchAllTag
+	case common_api.MeshSubset:
+		service = mesh_proto.MatchAllTag
+		tags = targetRef.Tags
+	default:
+		return nil, false
+	}
+
+	return tags.WithTags(mesh_proto.ServiceTag, service), true
 }
 
 type (

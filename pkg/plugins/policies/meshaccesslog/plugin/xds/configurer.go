@@ -2,7 +2,6 @@ package xds
 
 import (
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 
@@ -20,7 +19,6 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -34,12 +32,13 @@ const (
 )
 
 type Configurer struct {
-	Mesh               string
-	TrafficDirection   envoy.TrafficDirection
-	SourceService      string
-	DestinationService string
-	Backend            api.Backend
-	Dataplane          *core_mesh.DataplaneResource
+	Mesh                string
+	TrafficDirection    envoy.TrafficDirection
+	SourceService       string
+	DestinationService  string
+	Backend             api.Backend
+	Dataplane           *core_mesh.DataplaneResource
+	AccessLogSocketPath string
 }
 
 type EndpointAccumulator struct {
@@ -63,27 +62,8 @@ func (acc *EndpointAccumulator) clusterForEndpoint(endpoint LoggingEndpoint) end
 	return endpointClusterName(fmt.Sprintf("meshaccesslog:opentelemetry:%d", ind))
 }
 
-func (c *Configurer) interpolateKumaVariables(formatString string) (*accesslog.AccessLogFormat, error) {
-	envoyFormat, err := accesslog.ParseFormat(formatString)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
-	}
-
-	variables := accesslog.InterpolationVariables{
-		accesslog.CMD_KUMA_SOURCE_ADDRESS:              net.JoinHostPort(c.Dataplane.GetIP(), "0"), // deprecated variable
-		accesslog.CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT: c.Dataplane.GetIP(),                        // replacement variable
-		accesslog.CMD_KUMA_SOURCE_SERVICE:              c.SourceService,
-		accesslog.CMD_KUMA_DESTINATION_SERVICE:         c.DestinationService,
-		accesslog.CMD_KUMA_MESH:                        c.Mesh,
-		accesslog.CMD_KUMA_TRAFFIC_DIRECTION:           string(c.TrafficDirection),
-	}
-
-	envoyFormat, err = envoyFormat.Interpolate(variables)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to interpolate access log format string with Kuma-specific variables: %s", formatString)
-	}
-
-	return envoyFormat, nil
+func (c *Configurer) interpolateKumaVariables(formatString string) string {
+	return listeners_v3.InterpolateKumaValues(formatString, c.SourceService, c.DestinationService, c.Mesh, c.TrafficDirection, c.Dataplane)
 }
 
 const defaultOpenTelemetryGRPCPort uint32 = 4317
@@ -109,11 +89,7 @@ func (c *Configurer) envoyAccessLog(endpoints *EndpointAccumulator, defaultForma
 	case c.Backend.File != nil:
 		return c.fileBackend(c.Backend.File, defaultFormat)
 	case c.Backend.OpenTelemetry != nil:
-		backend := *c.Backend.OpenTelemetry
-
-		clusterName := endpoints.clusterForEndpoint(endpointForOtel(backend.Endpoint))
-
-		return otelAccessLog(backend, clusterName, "MeshAccessLog")
+		return c.otelAccessLog(c.Backend.OpenTelemetry, endpoints, defaultFormat)
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
 	}
@@ -124,37 +100,28 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 
 	switch {
 	case backend.Format == nil:
-		envoyFormat, err := c.interpolateKumaVariables(newLine(defaultFormat))
-		if err != nil {
-			return nil, err
-		}
+		envoyFormat := c.interpolateKumaVariables(newLine(defaultFormat))
 		sfs = c.sfsJSON(map[string]*structpb.Value{
 			"address": structpb.NewStringValue(backend.Address),
-			"message": structpb.NewStringValue(envoyFormat.String()),
+			"message": structpb.NewStringValue(envoyFormat),
 		}, false)
 	case backend.Format.Plain != nil:
-		envoyFormat, err := c.interpolateKumaVariables(newLine(*backend.Format.Plain))
-		if err != nil {
-			return nil, err
-		}
+		envoyFormat := c.interpolateKumaVariables(newLine(*backend.Format.Plain))
 		sfs = c.sfsJSON(map[string]*structpb.Value{
 			"address": structpb.NewStringValue(backend.Address),
-			"message": structpb.NewStringValue(envoyFormat.String()),
+			"message": structpb.NewStringValue(envoyFormat),
 		}, pointer.Deref(backend.Format.OmitEmptyValues))
 	case backend.Format.Json != nil:
-		if fields, err := c.jsonToFields(*backend.Format.Json); err != nil {
-			return nil, err
-		} else {
-			sfs = c.sfsJSON(map[string]*structpb.Value{
-				"address": structpb.NewStringValue(backend.Address),
-				"message": structpb.NewStructValue(&structpb.Struct{Fields: fields}),
-			}, pointer.Deref(backend.Format.OmitEmptyValues))
-		}
+		fields := c.jsonToFields(*backend.Format.Json)
+		sfs = c.sfsJSON(map[string]*structpb.Value{
+			"address": structpb.NewStringValue(backend.Address),
+			"message": structpb.NewStructValue(&structpb.Struct{Fields: fields}),
+		}, pointer.Deref(backend.Format.OmitEmptyValues))
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
 
-	return fileAccessLog(sfs, envoy.AccessLogSocketName(c.Dataplane.Meta.GetName(), c.Mesh))
+	return fileAccessLog(sfs, c.AccessLogSocketPath)
 }
 
 func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string) (*envoy_accesslog.AccessLog, error) {
@@ -162,23 +129,12 @@ func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string)
 
 	switch {
 	case backend.Format == nil:
-		if plain, err := c.sfsPlain(newLine(defaultFormat), false); err != nil {
-			return nil, err
-		} else {
-			sfs = plain
-		}
+		sfs = c.sfsPlain(newLine(defaultFormat), false)
 	case backend.Format.Plain != nil:
-		if plain, err := c.sfsPlain(newLine(*backend.Format.Plain), pointer.Deref(backend.Format.OmitEmptyValues)); err != nil {
-			return nil, err
-		} else {
-			sfs = plain
-		}
+		sfs = c.sfsPlain(newLine(*backend.Format.Plain), pointer.Deref(backend.Format.OmitEmptyValues))
 	case backend.Format.Json != nil:
-		if fields, err := c.jsonToFields(*backend.Format.Json); err != nil {
-			return nil, err
-		} else {
-			sfs = c.sfsJSON(fields, pointer.Deref(backend.Format.OmitEmptyValues))
-		}
+		fields := c.jsonToFields(*backend.Format.Json)
+		sfs = c.sfsJSON(fields, pointer.Deref(backend.Format.OmitEmptyValues))
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
@@ -190,21 +146,18 @@ func newLine(s string) string {
 	return s + "\n"
 }
 
-func (c *Configurer) sfsPlain(plain string, omitEmpty bool) (*envoy_core.SubstitutionFormatString, error) {
-	envoyFormat, err := c.interpolateKumaVariables(plain)
-	if err != nil {
-		return nil, err
-	}
+func (c *Configurer) sfsPlain(plain string, omitEmpty bool) *envoy_core.SubstitutionFormatString {
+	envoyFormat := c.interpolateKumaVariables(plain)
 	return &envoy_core.SubstitutionFormatString{
 		Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
 			TextFormatSource: &envoy_core.DataSource{
 				Specifier: &envoy_core.DataSource_InlineString{
-					InlineString: envoyFormat.String(),
+					InlineString: envoyFormat,
 				},
 			},
 		},
 		OmitEmptyValues: omitEmpty,
-	}, nil
+	}
 }
 
 func (c *Configurer) sfsJSON(fields map[string]*structpb.Value, omitEmpty bool) *envoy_core.SubstitutionFormatString {
@@ -218,17 +171,13 @@ func (c *Configurer) sfsJSON(fields map[string]*structpb.Value, omitEmpty bool) 
 	}
 }
 
-func (c *Configurer) jsonToFields(jsonValues []api.JsonValue) (map[string]*structpb.Value, error) {
+func (c *Configurer) jsonToFields(jsonValues []api.JsonValue) map[string]*structpb.Value {
 	fields := map[string]*structpb.Value{}
 	for _, kv := range jsonValues {
-		interpolated, err := c.interpolateKumaVariables(kv.Value)
-		if err != nil {
-			return nil, err
-		}
-
-		fields[kv.Key] = structpb.NewStringValue(interpolated.String())
+		interpolated := c.interpolateKumaVariables(kv.Value)
+		fields[kv.Key] = structpb.NewStringValue(interpolated)
 	}
-	return fields, nil
+	return fields
 }
 
 func fileAccessLog(logFormat *envoy_core.SubstitutionFormatString, path string) (*envoy_accesslog.AccessLog, error) {
@@ -251,29 +200,82 @@ func fileAccessLog(logFormat *envoy_core.SubstitutionFormatString, path string) 
 	}, nil
 }
 
-func otelAccessLog(backend api.OtelBackend, clusterName endpointClusterName, logName string) (*envoy_accesslog.AccessLog, error) {
-	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{
-		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
-			LogName:             logName,
-			TransportApiVersion: envoy_core.ApiVersion_V3,
-			GrpcService: &envoy_core.GrpcService{
-				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
-						ClusterName: string(clusterName),
-					},
-				},
-			},
-		},
-		Attributes: &otlp.KeyValueList{},
+func (c *Configurer) interpolateKumaVariablesInAnyValue(val *otlp.AnyValue) error {
+	switch v := val.GetValue().(type) {
+	case *otlp.AnyValue_StringValue:
+		interpolated := c.interpolateKumaVariables(v.StringValue)
+		v.StringValue = interpolated
+	case *otlp.AnyValue_ArrayValue:
+		for _, kv := range v.ArrayValue.Values {
+			if err := c.interpolateKumaVariablesInAnyValue(kv); err != nil {
+				return err
+			}
+		}
+	case *otlp.AnyValue_KvlistValue:
+		for _, kv := range v.KvlistValue.Values {
+			if err := c.interpolateKumaVariablesInAnyValue(kv.Value); err != nil {
+				return err
+			}
+			key := c.interpolateKumaVariables(kv.Key)
+			kv.Key = key
+		}
+	case *otlp.AnyValue_BoolValue:
+	case *otlp.AnyValue_IntValue:
+	case *otlp.AnyValue_DoubleValue:
+	case *otlp.AnyValue_BytesValue:
 	}
 
+	return nil
+}
+
+func (c *Configurer) otelAccessLog(
+	backend *api.OtelBackend,
+	endpoints *EndpointAccumulator,
+	defaultBodyFormat string,
+) (*envoy_accesslog.AccessLog, error) {
+	defaultBody := c.interpolateKumaVariables(defaultBodyFormat)
+	body := &otlp.AnyValue{
+		Value: &otlp.AnyValue_StringValue{StringValue: defaultBody},
+	}
+	if backend.Body != nil {
+		if err := util_proto.FromJSON(backend.Body.Raw, body); err == nil {
+			if err := c.interpolateKumaVariablesInAnyValue(body); err != nil {
+				return nil, errors.Wrap(err, "couldn't interpolate OTLP any value")
+			}
+		} else {
+			interpolatedRaw := c.interpolateKumaVariables(string(backend.Body.Raw))
+			body = &otlp.AnyValue{
+				Value: &otlp.AnyValue_StringValue{StringValue: interpolatedRaw},
+			}
+		}
+	}
+
+	attributes := otlp.KeyValueList{}
 	for _, kv := range backend.Attributes {
-		log.Attributes.Values = append(log.Attributes.Values, &otlp.KeyValue{
+		attributes.Values = append(attributes.Values, &otlp.KeyValue{
 			Key: kv.Key,
 			Value: &otlp.AnyValue{
 				Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
 			},
 		})
+	}
+
+	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{
+		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
+			LogName:             "MeshAccessLog",
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcService: &envoy_core.GrpcService{
+				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+						ClusterName: string(endpoints.clusterForEndpoint(
+							endpointForOtel(backend.Endpoint),
+						)),
+					},
+				},
+			},
+		},
+		Body:       body,
+		Attributes: &attributes,
 	}
 
 	marshaled, err := util_proto.MarshalAnyDeterministic(log)

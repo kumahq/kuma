@@ -16,21 +16,20 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
 	nodeReadinessTaintKey = "NodeReadiness"
 	nodeIndexField        = "spec.nodeName"
 	cniAppLabel           = "app"
-	cniPodNamespace       = "kube-system"
 )
 
 type CniNodeTaintReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	CniApp string
+	CniApp       string
+	CniNamespace string
 }
 
 func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -49,7 +48,7 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	log.V(1).Info("node successfully fetched")
 
 	kubeSystemPods := &kube_core.PodList{}
-	namespaceOption := kube_client.InNamespace(cniPodNamespace)
+	namespaceOption := kube_client.InNamespace(r.CniNamespace)
 	matchingFields := kube_client.MatchingFields{nodeIndexField: node.Name}
 	matchingLabels := kube_client.MatchingLabels{cniAppLabel: r.CniApp}
 	if err := r.Client.List(ctx, kubeSystemPods, namespaceOption, matchingFields, matchingLabels); err != nil {
@@ -133,15 +132,15 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		Watches(
-			&kube_source.Kind{Type: &kube_core.Pod{}},
-			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp)),
+			&kube_core.Pod{},
+			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp, r.CniNamespace)),
 			builder.WithPredicates(podEvents()),
 		).
 		Complete(r)
 }
 
-func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+func podToNodeMapper(log logr.Logger, cniApp string, cniNamespace string) kube_handler.MapFunc {
+	return func(_ context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		pod, ok := obj.(*kube_core.Pod)
 		if !ok {
 			log.WithValues("pod", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", pod, obj), "wrong argument type")
@@ -151,7 +150,7 @@ func podToNodeMapper(log logr.Logger, cniApp string) kube_handler.MapFunc {
 		// it is more performant not to use shouldTriggerReconciliation in the predicates but instead in the mapper
 		// podEvents correctly checks only ObjectNew, the mapper may be called with an ObjectOld that doesn't pass filterPods
 		// and may trigger an extra reconciliation
-		if !shouldTriggerReconciliation(pod, cniApp) {
+		if !shouldTriggerReconciliation(pod, cniApp, cniNamespace) {
 			return nil
 		}
 
@@ -194,7 +193,7 @@ func podEvents() predicate.Funcs {
 	}
 }
 
-func shouldTriggerReconciliation(obj kube_client.Object, cniApp string) bool {
+func shouldTriggerReconciliation(obj kube_client.Object, cniApp string, cniNamespace string) bool {
 	pod, ok := obj.(*kube_core.Pod)
 	if !ok {
 		return false
@@ -202,7 +201,7 @@ func shouldTriggerReconciliation(obj kube_client.Object, cniApp string) bool {
 	if pod.Spec.NodeName == "" {
 		return false
 	}
-	if pod.Namespace != cniPodNamespace {
+	if pod.Namespace != cniNamespace {
 		return false
 	}
 	if pod.Labels[cniAppLabel] != cniApp {

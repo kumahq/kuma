@@ -1,0 +1,30 @@
+# MeshTrafficPermission with 2 'env' tags that have different values
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          zone: us-east
+      default:
+        action: Deny
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          env: dev
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          env: prod
+      default:
+        action: Allow

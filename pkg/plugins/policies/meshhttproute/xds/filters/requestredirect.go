@@ -52,7 +52,7 @@ func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) err
 		}
 	}
 
-	switch pointer.DerefOr(redirect.StatusCode, 301) {
+	switch pointer.DerefOr(redirect.StatusCode, 302) {
 	case 301:
 		envoyRedirect.ResponseCode = envoy_route.RedirectAction_MOVED_PERMANENTLY
 	case 302:
@@ -77,9 +77,6 @@ func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) err
 func regexRewrite(s string) *envoy_type_matcher.RegexMatchAndSubstitute {
 	return &envoy_type_matcher.RegexMatchAndSubstitute{
 		Pattern: &envoy_type_matcher.RegexMatcher{
-			EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-				GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-			},
 			Regex: `.*`,
 		},
 		Substitution: s,

@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/XDSConfigRequest",
+    "definitions": {
+        "XDSConfigRequest": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID of a request so we can correlate requests with response on one stream."
+                },
+                "resource_type": {
+                    "type": "string",
+                    "description": "Type of resource (Dataplane, ZoneIngress, ZoneEgress)"
+                },
+                "resource_name": {
+                    "type": "string",
+                    "description": "Name of the resource on which we execute config dump."
+                },
+                "resource_mesh": {
+                    "type": "string",
+                    "description": "Mesh of the resource on which we execute config dump. Should be empty for ZoneIngress, ZoneEgress."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "XDS Config Request",
+            "description": "XDSConfigRequest is a request for XDS Config Dump that is executed on Zone CP."
+        }
+    }
+}

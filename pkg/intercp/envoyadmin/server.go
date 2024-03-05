@@ -32,6 +32,7 @@ func NewServer(adminClient admin.EnvoyAdminClient, resManager manager.ReadOnlyRe
 }
 
 func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest) (*mesh_proto.XDSConfigResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "XDSConfig", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {
@@ -39,6 +40,13 @@ func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest
 	}
 	configDump, err := s.adminClient.ConfigDump(ctx, resWithAddr)
 	if err != nil {
+		if errors.Is(err, &admin.KDSTransportError{}) {
+			return &mesh_proto.XDSConfigResponse{
+				Result: &mesh_proto.XDSConfigResponse_Error{
+					Error: err.Error(),
+				},
+			}, nil
+		}
 		return nil, err
 	}
 	return &mesh_proto.XDSConfigResponse{
@@ -49,6 +57,7 @@ func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest
 }
 
 func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh_proto.StatsResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "Stats", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {
@@ -56,6 +65,13 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 	}
 	stats, err := s.adminClient.Stats(ctx, resWithAddr)
 	if err != nil {
+		if errors.Is(err, &admin.KDSTransportError{}) {
+			return &mesh_proto.StatsResponse{
+				Result: &mesh_proto.StatsResponse_Error{
+					Error: err.Error(),
+				},
+			}, nil
+		}
 		return nil, err
 	}
 	return &mesh_proto.StatsResponse{
@@ -66,6 +82,7 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 }
 
 func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) (*mesh_proto.ClustersResponse, error) {
+	ctx = extractTenantMetadata(ctx)
 	serverLog.V(1).Info("received forwarded request", "operation", "Clusters", "request", req)
 	resWithAddr, err := s.resWithAddress(ctx, req.ResourceType, req.ResourceName, req.ResourceMesh)
 	if err != nil {
@@ -73,6 +90,13 @@ func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) 
 	}
 	clusters, err := s.adminClient.Clusters(ctx, resWithAddr)
 	if err != nil {
+		if errors.Is(err, &admin.KDSTransportError{}) {
+			return &mesh_proto.ClustersResponse{
+				Result: &mesh_proto.ClustersResponse_Error{
+					Error: err.Error(),
+				},
+			}, nil
+		}
 		return nil, err
 	}
 	return &mesh_proto.ClustersResponse{

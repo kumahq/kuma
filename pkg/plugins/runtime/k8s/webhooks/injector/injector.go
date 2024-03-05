@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -39,6 +40,7 @@ func New(
 	cfg runtime_k8s.Injector,
 	controlPlaneURL string,
 	client kube_client.Client,
+	sidecarContainersEnabled bool,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	systemNamespace string,
@@ -52,47 +54,32 @@ func New(
 		caCert = string(bytes)
 	}
 	return &KumaInjector{
-		cfg:              cfg,
-		client:           client,
-		converter:        converter,
-		defaultAdminPort: envoyAdminPort,
+		cfg:                      cfg,
+		client:                   client,
+		sidecarContainersEnabled: sidecarContainersEnabled,
+		converter:                converter,
+		defaultAdminPort:         envoyAdminPort,
 		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
-			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS),
+			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady),
 		systemNamespace: systemNamespace,
 	}, nil
 }
 
 type KumaInjector struct {
-	cfg              runtime_k8s.Injector
-	client           kube_client.Client
-	converter        k8s_common.Converter
-	proxyFactory     *containers.DataplaneProxyFactory
-	defaultAdminPort uint32
-	systemNamespace  string
+	cfg                      runtime_k8s.Injector
+	client                   kube_client.Client
+	sidecarContainersEnabled bool
+	converter                k8s_common.Converter
+	proxyFactory             *containers.DataplaneProxyFactory
+	defaultAdminPort         uint32
+	systemNamespace          string
 }
 
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
-	ns, err := i.namespaceFor(ctx, pod)
-	if err != nil {
-		return errors.Wrap(err, "could not retrieve namespace for pod")
-	}
 	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
-	// Log deprecated annotations
-	for _, d := range metadata.PodAnnotationDeprecations {
-		if _, exists := pod.Annotations[d.Key]; exists {
-			logger.Info("WARNING: using deprecated pod annotation", "key", d.Key, "message", d.Message)
-		}
-	}
-	if inject, err := i.needInject(pod, ns); err != nil {
-		return err
-	} else if !inject {
-		logger.V(1).Info("skip injecting Kuma")
-		return nil
-	}
-	meshName := k8s_util.MeshOfByAnnotation(pod, ns)
-	logger = logger.WithValues("mesh", meshName)
-	// Check mesh exists
-	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {
+
+	meshName, err := i.preCheck(ctx, pod, logger)
+	if meshName == "" || err != nil {
 		return err
 	}
 
@@ -106,6 +93,23 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
+	sidecarTmp := kube_core.Volume{
+		Name: "kuma-sidecar-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
+
+	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
+		Name:      sidecarTmp.Name,
+		MountPath: "/tmp",
+		ReadOnly:  false,
+	})
+	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
+
 	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {
 		return err
@@ -119,9 +123,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if _, hasDefaultContainer := pod.Annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !hasDefaultContainer {
 		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
 	}
-
-	// inject sidecar as first container
-	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 
 	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {
@@ -159,9 +160,25 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
+		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+		if err != nil {
+			return err
+		}
+		if enabled {
+			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
+			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+		} else {
+			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
+		}
+	}
 
-		// inject kuma init container as first
-		pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+	if i.sidecarContainersEnabled {
+		// inject sidecar after init
+		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+	} else {
+		// inject sidecar as first container
+		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
@@ -169,54 +186,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 
 	return nil
-}
-
-func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
-	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
-	if i.isInjectionException(pod) {
-		log.V(1).Info("pod fulfills exception requirements")
-		return false, nil
-	}
-
-	for _, container := range pod.Spec.Containers {
-		if container.Name == k8s_util.KumaSidecarContainerName {
-			log.V(1).Info("pod already has Kuma sidecar")
-			return false, nil
-		}
-	}
-
-	enabled, exist, err := metadata.Annotations(pod.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" label`)
-		}
-		return enabled, nil
-	}
-
-	enabled, exist, err = metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" label`)
-		}
-		return enabled, nil
-	}
-	return false, err
-}
-
-func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
-	for key, value := range i.cfg.Exceptions.Labels {
-		podValue, exist := pod.Labels[key]
-		if exist && (value == "*" || value == podValue) {
-			return true
-		}
-	}
-	return false
 }
 
 type namedContainerPatches struct {
@@ -343,7 +312,6 @@ func (i *KumaInjector) NewSidecarContainer(
 	}
 
 	container.Name = k8s_util.KumaSidecarContainerName
-
 	return container, nil
 }
 
@@ -387,7 +355,7 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	podRedirect, err := tp_k8s.NewPodRedirectForPod(i.cfg.TransparentProxyV1, pod)
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
@@ -421,13 +389,10 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}
 
 	if i.cfg.EBPF.Enabled {
-		// container.SecurityContext.Privileged expects to have a reference
-		// to the bool value
-		tru := true
 		bidirectional := kube_core.MountPropagationBidirectional
 
 		container.SecurityContext.Capabilities = &kube_core.Capabilities{}
-		container.SecurityContext.Privileged = &tru
+		container.SecurityContext.Privileged = pointer.To(true)
 
 		container.Env = []kube_core.EnvVar{
 			{
@@ -520,11 +485,16 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	if err != nil {
 		return nil, err
 	}
+	logging, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Logging, metadata.KumaBuiltinDNSLogging)
+	if err != nil {
+		return nil, err
+	}
 
 	if enabled {
 		portVal := strconv.Itoa(int(port))
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
 		annotations[metadata.KumaBuiltinDNSPort] = portVal
+		annotations[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(logging)
 	}
 
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {

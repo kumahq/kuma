@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 var gcLog = core.Log.WithName("dataplane-gc")
@@ -21,14 +24,29 @@ type collector struct {
 	rm         manager.ResourceManager
 	cleanupAge time.Duration
 	newTicker  func() *time.Ticker
+	metric     prometheus.Summary
 }
 
-func NewCollector(rm manager.ResourceManager, newTicker func() *time.Ticker, cleanupAge time.Duration) component.Component {
+func NewCollector(
+	rm manager.ResourceManager,
+	newTicker func() *time.Ticker,
+	cleanupAge time.Duration,
+	metrics core_metrics.Metrics,
+) (component.Component, error) {
+	metric := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "component_dp_gc",
+		Help:       "Summary of Dataplane GC component interval",
+		Objectives: core_metrics.DefaultObjectives,
+	})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
 	return &collector{
 		cleanupAge: cleanupAge,
 		rm:         rm,
 		newTicker:  newTicker,
-	}
+		metric:     metric,
+	}, nil
 }
 
 func (d *collector) Start(stop <-chan struct{}) error {
@@ -39,10 +57,12 @@ func (d *collector) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case now := <-ticker.C:
+			start := core.Now()
 			if err := d.cleanup(ctx, now); err != nil {
 				gcLog.Error(err, "unable to cleanup")
 				continue
 			}
+			d.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			gcLog.Info("stopped")
 			return nil

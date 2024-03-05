@@ -1,0 +1,13 @@
+type: MeshGateway
+mesh: mesh-1
+name: edge-gateway
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      hostname: bar.example.com
+      tags:
+        port: http/8080

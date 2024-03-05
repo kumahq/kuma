@@ -134,12 +134,12 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(t.config.RefreshInterval.Duration)
 		},
-		OnTick: func() error {
+		OnTick: func(ctx context.Context) error {
 			start := core.Now()
 			defer func() {
 				t.metrics.HdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
 			}()
-			return t.reconciler.Reconcile(node)
+			return t.reconciler.Reconcile(ctx, node)
 		},
 		OnError: func(err error) {
 			t.metrics.HdsGenerationsErrors.Inc()
@@ -208,9 +208,18 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bo
 		} else {
 			workloadHealth = envoyHealth
 		}
-		if inbound.Health == nil || inbound.Health.Ready != workloadHealth {
+		if workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_NotReady {
+			inbound.State = mesh_proto.Dataplane_Networking_Inbound_Ready
+			// write health for backwards compatibility with Kuma 2.5 and older
 			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-				Ready: workloadHealth,
+				Ready: true,
+			}
+			changed = true
+		} else if !workloadHealth && inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready {
+			inbound.State = mesh_proto.Dataplane_Networking_Inbound_NotReady
+			// write health for backwards compatibility with Kuma 2.5 and older
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: false,
 			}
 			changed = true
 		}

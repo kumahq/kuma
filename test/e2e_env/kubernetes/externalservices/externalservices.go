@@ -3,7 +3,6 @@ package externalservices
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -46,9 +45,6 @@ spec:
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-external-services")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -129,7 +125,7 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(503))
+				g.Expect(response.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 
 			// when TrafficPermission is added

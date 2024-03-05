@@ -1,4 +1,5 @@
-name: sample-gateway:HTTP:8080
+ignorePortInHostMatching: true
+name: sample-gateway:HTTP:8080:*
 requestHeadersToRemove:
 - x-kuma-tags
 validateClusters: false
@@ -10,6 +11,8 @@ virtualHosts:
   - match:
       path: /
     route:
+      clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      idleTimeout: 5s
       weightedClusters:
         clusters:
         - name: backend-26cb64fa4e85e7b7
@@ -18,7 +21,6 @@ virtualHosts:
               key: x-kuma-tags
               value: '&kuma.io/service=sample-gateway&'
           weight: 1
-        totalWeight: 1
     typedPerFilterConfig:
       envoy.filters.http.local_ratelimit:
         '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
@@ -31,12 +33,10 @@ virtualHosts:
             numerator: 100
           runtimeKey: local_rate_limit_enforced
         responseHeadersToAdd:
-        - append: true
-          header:
+        - header:
             key: x-kuma-rate-limit-header
             value: test-value
-        - append: true
-          header:
+        - header:
             key: x-kuma-rate-limit
             value: other-value
         statPrefix: rate_limit

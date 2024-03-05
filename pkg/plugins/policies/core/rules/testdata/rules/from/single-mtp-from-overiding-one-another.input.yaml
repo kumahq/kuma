@@ -1,0 +1,32 @@
+# The first entry in from is then overridden by the following ones
+type: MeshTrafficPermission
+mesh: default
+name: default-demo-app
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/service-name: demo-app
+  from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: Mesh
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: ui
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-order
+    - default:
+        action: Allow
+      targetRef:
+        kind: MeshSubset
+        tags:
+          app.kubernetes.io/name: service-payment

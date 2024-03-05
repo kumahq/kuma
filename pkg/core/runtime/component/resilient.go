@@ -33,7 +33,7 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 			defer func() {
 				if e := recover(); e != nil {
 					if err, ok := e.(error); ok {
-						errCh <- err
+						errCh <- errors.WithStack(err)
 					} else {
 						errCh <- errors.Errorf("%v", e)
 					}

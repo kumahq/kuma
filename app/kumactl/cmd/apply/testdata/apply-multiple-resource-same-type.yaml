@@ -8,13 +8,14 @@ networking:
     port: 80
     servicePort: 8080
     tags:
-      "kuma.io/service": "web"
+      kuma.io/service: "web"
       service: web
       version: "1.0"
       env: production
   outbound:
   - port: 3000
-    service: postgres
+    tags:
+      kuma.io/service: postgres
 ---
 name: sample2
 mesh: default
@@ -32,4 +33,5 @@ networking:
       env: staging
   outbound:
   - port: 3000
-    service: postgres
+    tags:
+      kuma.io/service: postgres

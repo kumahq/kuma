@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ClustersRequest",
+    "definitions": {
+        "ClustersRequest": {
+            "properties": {
+                "request_id": {
+                    "type": "string",
+                    "description": "RequestID is a UUID of a request so we can correlate requests with response on one stream."
+                },
+                "resource_type": {
+                    "type": "string",
+                    "description": "Type of resource (Dataplane, ZoneIngress, ZoneEgress)"
+                },
+                "resource_name": {
+                    "type": "string",
+                    "description": "Name of the resource on which we execute kuma-dp clusters request."
+                },
+                "resource_mesh": {
+                    "type": "string",
+                    "description": "Mesh of the resource on which we execute kuma-dp clusters request. Should be empty for ZoneIngress, ZoneEgress."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Clusters Request",
+            "description": "ClustersRequest is a request for kuma-dp clusters that is executed on Zone CP."
+        }
+    }
+}

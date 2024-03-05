@@ -112,6 +112,15 @@ app: {{ include "kuma.name" . }}-control-plane
 {{- end }}
 
 {{/*
+control plane deployment annotations
+*/}}
+{{- define "kuma.cpDeploymentAnnotations" -}}
+{{- range $key, $value := $.Values.controlPlane.deploymentAnnotations }}
+{{ $key | quote }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
 ingress labels
 */}}
 {{- define "kuma.ingressLabels" -}}
@@ -172,35 +181,20 @@ returns: formatted image string
 {{- define "kuma.parentEnv" -}}
 {{- end -}}
 
+{{- define "kuma.parentSecrets" -}}
+{{- end -}}
+
+{{- define "kuma.pluginPoliciesEnabled" -}}
+{{- $list := list -}}
+{{- range $k, $v := .Values.plugins.policies -}}
+{{- if $v -}}
+{{- $list = append $list (printf "%s" $k) -}}
+{{- end -}}
+{{- end -}}
+{{ join "," $list }}
+{{- end -}}
+
 {{- define "kuma.defaultEnv" -}}
-{{ if (and (eq .Values.controlPlane.environment "universal") (not (eq .Values.controlPlane.mode "global"))) }}
-  {{ fail "Currently you can only run universal mode on kubernetes in a global mode, this limitation might be lifted in the future" }}
-{{ end }}
-{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
-  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
-  {{ fail $msg }}
-{{ end }}
-{{ if eq .Values.controlPlane.mode "zone" }}
-  {{ if empty .Values.controlPlane.zone }}
-    {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
-  {{ end }}
-  {{ if empty .Values.controlPlane.kdsGlobalAddress }}
-    {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
-  {{ else }}
-    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
-    {{ if not (or (eq $url.scheme "grpcs") (eq $url.scheme "grpc")) }}
-      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
-      {{ fail $msg }}
-    {{ end }}
-  {{ end }}
-{{ else }}
-  {{ if not (empty .Values.controlPlane.zone) }}
-    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
-  {{ end }}
-  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
-    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
-  {{ end }}
-{{ end }}
 env:
 {{ include "kuma.parentEnv" . }}
 - name: KUMA_ENVIRONMENT
@@ -233,6 +227,10 @@ env:
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+{{- if .Values.dataPlane.dnsLogging }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
+  value: "true"
+{{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
@@ -271,15 +269,11 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
-{{- if and .Values.cni.enabled (not .Values.legacy.cni.enabled) }}
+{{- if .Values.cni.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
   value: "{{ include "kuma.name" . }}-cni"
-{{- end }}
-{{- if .Values.legacy.transparentProxy }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_V1
-  value: "true"
 {{- end }}
 {{- if .Values.experimental.ebpf.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_ENABLED
@@ -295,10 +289,35 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
+{{- if not .Values.experimental.deltaKds }}
+- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  value: "false"
+{{- end }}
+{{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
+  value: "true"
+{{- end }}
+- name: KUMA_PLUGIN_POLICIES_ENABLED
+  value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
+{{- end }}
+
+{{- define "kuma.controlPlane.tls.general.caSecretName" -}}
+{{ .Values.controlPlane.tls.general.caSecretName | default .Values.controlPlane.tls.general.secretName | default (printf "%s-tls-cert" (include "kuma.name" .)) | quote }}
 {{- end }}
 
 {{- define "kuma.universal.defaultEnv" -}}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if .Values.ingress.enabled }}
+    {{ fail "Can't have ingress.enabled when running controlPlane.mode=='universal'" }}
+  {{ end }}
+  {{ if .Values.egress.enabled }}
+    {{ fail "Can't have egress.enabled when running controlPlane.mode=='universal'" }}
+  {{ end }}
+{{ end }}
+
 env:
+- name: KUMA_PLUGIN_POLICIES_ENABLED
+  value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
 - name: KUMA_GENERAL_WORK_DIR
   value: "/tmp/kuma"
 - name: KUMA_ENVIRONMENT
@@ -309,8 +328,34 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+{{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
+- name: KUMA_GENERAL_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+- name: KUMA_GENERAL_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/tls-cert/tls.key
+{{ end }}
 - name: KUMA_MODE
-  value: "global"
+  value: {{ .Values.controlPlane.mode | quote }}
+{{- if eq .Values.controlPlane.mode "zone" }}
+- name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
+  value: {{ .Values.controlPlane.kdsGlobalAddress }}
+{{- end }}
+{{- if .Values.controlPlane.zone }}
+- name: KUMA_MULTIZONE_ZONE_NAME
+  value: {{ .Values.controlPlane.zone | quote }}
+{{- end }}
+{{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
+- name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
+  value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
+{{- end }}
+{{- if not .Values.experimental.deltaKds }}
+- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
+  value: "false"
+{{- end }}
+{{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
+  value: "true"
+{{- end }}
 {{- if .Values.controlPlane.tls.apiServer.secretName }}
 - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
@@ -349,17 +394,3 @@ env:
 {{- end }}
 {{- end }}
 {{- end }}
-
-{{/*
-params: { image: { registry?, repository, tag? }, root: $ }
-returns: formatted image string
-*/}}
-{{- define "kubectl.formatImage" -}}
-{{- $img := .image }}
-{{- $tag := .tag }}
-{{- $root := .root }}
-{{- $registry := ($img.registry | default $root.Values.kubectl.image.registry) -}}
-{{- $repo := ($img.repository | default $root.Values.kubectl.image.repository) -}}
-{{- $imageTag := ($tag | default $root.Values.kubectl.image.tag) -}}
-{{- printf "%s/%s:%s" $registry $repo $imageTag -}}
-{{- end -}}

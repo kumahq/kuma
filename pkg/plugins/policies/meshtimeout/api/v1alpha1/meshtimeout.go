@@ -65,4 +65,9 @@ type Http struct {
 	// starting from when it was first established. Setting this timeout to 0 will disable it.
 	// Disabled by default.
 	MaxConnectionDuration *k8s.Duration `json:"maxConnectionDuration,omitempty"`
+	// RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
+	// activated when the first byte of the headers is received, and is disarmed when the last byte of
+	// the headers has been received. If not specified or set to 0, this timeout is disabled.
+	// Disabled by default.
+	RequestHeadersTimeout *k8s.Duration `json:"requestHeadersTimeout,omitempty"`
 }

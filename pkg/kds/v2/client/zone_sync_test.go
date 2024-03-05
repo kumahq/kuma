@@ -10,6 +10,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -19,25 +21,26 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
-	initStateMap := cache_v2.ResourceVersionMap{}
 
+	runtimeInfo := runtime.TestRuntimeInfo{InstanceId: "zone-inst", Mode: config_core.Zone}
 	newPolicySink := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) client_v2.KDSSyncClient {
 		return client_v2.NewKDSSyncClient(
 			core.Log.WithName("kds-sink"),
-			registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)),
-			client_v2.NewDeltaKDSStream(cs, zoneName, "", initStateMap),
-			sync_store_v2.ZoneSyncCallback(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
+			registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
+			client_v2.NewDeltaKDSStream(cs, zoneName, &runtimeInfo, ""),
+			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"), 0,
 		)
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
@@ -67,8 +70,14 @@ var _ = Describe("Zone Delta Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 
-		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), "global")
-		srv, err := setup.StartDeltaServer(globalStore, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Zone.Name = "global"
+
+		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
+		srv, err := setup.NewKdsServerBuilder(globalStore).
+			WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
+			WithKdsContext(kdsCtx).
+			Delta()
 		Expect(err).ToNot(HaveOccurred())
 		serverStream := grpc.NewMockDeltaServerStream()
 		wg.Add(1)
@@ -84,7 +93,10 @@ var _ = Describe("Zone Delta Sync", func() {
 		clientStream := serverStream.ClientStream(stop)
 
 		zoneStore = memory.NewStore()
-		zoneSyncer = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		zoneSyncer, err = sync_store_v2.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
 
 		wg.Add(1)
 		go func() {
@@ -104,7 +116,10 @@ var _ = Describe("Zone Delta Sync", func() {
 	})
 
 	It("should sync policies from global store to the local", func() {
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1},
+			store.CreateByKey("mesh-1", model.NoMesh),
+			store.CreateWithLabels(map[string]string{"foo": "bar"}),
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -119,11 +134,18 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			"foo":                          "bar",
+		}))
 	})
 
 	It("should sync policies update and remove from global store to the local", func() {
 		// when create Mesh resource
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1},
+			store.CreateByKey("mesh-1", model.NoMesh),
+			store.CreateWithLabels(map[string]string{"foo": "bar"}),
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -139,6 +161,10 @@ var _ = Describe("Zone Delta Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
+		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			"foo":                          "bar",
+		}))
 
 		// get mesh
 		mesh1 := mesh.NewMeshResource()
@@ -147,7 +173,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		// when update mesh
 		mesh1.Spec = &mesh_proto.Mesh{}
-		err = globalStore.Update(context.Background(), mesh1)
+		err = globalStore.Update(context.Background(), mesh1, store.UpdateWithLabels(map[string]string{"foo": "barbar", "newlabel": "newvalue"}))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
@@ -157,6 +183,11 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items).To(HaveLen(1))
 			// then zone store should have updated mesh
 			g.Expect(actual.Items[0].GetSpec().(*mesh_proto.Mesh).Mtls).To(BeNil())
+			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				"foo":                          "barbar",
+				"newlabel":                     "newvalue",
+			}))
 		}, "5s", "100ms").Should(Succeed())
 
 		// when delete Mesh resource
@@ -167,7 +198,7 @@ var _ = Describe("Zone Delta Sync", func() {
 			actual := mesh.MeshResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(actual.Items).To(HaveLen(0))
+			g.Expect(actual.Items).To(BeEmpty())
 		}, "5s", "100ms").Should(Succeed())
 	})
 
@@ -214,7 +245,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
 	})
 
 	It("should not delete predefined ConfigMaps in the Zone cluster", func() {
@@ -254,5 +285,22 @@ var _ = Describe("Zone Delta Sync", func() {
 			"kuma-cluster-id",
 		}
 		Expect(actualNames).To(ConsistOf(expectedNames))
+	})
+
+	It("should override zone resources that moved to global by user during the federation process", func() {
+		// given zone with "mesh-1"
+		Expect(zoneStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).To(Succeed())
+		// when user manually exports "mesh-1" to global
+		Expect(globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).To(Succeed())
+		// then it's synced back to zone with "kuma.io/origin" label
+		Eventually(func(g Gomega) {
+			actual := mesh.MeshResourceList{}
+			err := zoneStore.List(context.Background(), &actual)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(HaveLen(1))
+			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			}))
+		}, "5s", "100ms").Should(Succeed())
 	})
 })

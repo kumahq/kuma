@@ -1,3 +1,5 @@
+SHELL := /usr/bin/env bash
+
 .PHONY: help
 help: ## Display this help screen
 	@# Display top-level targets since they are the ones most developes will need.
@@ -25,8 +27,8 @@ include mk/kind.mk
 include mk/k3d.mk
 include mk/e2e.new.mk
 include mk/docs.mk
-include mk/envoy.mk
 include mk/helm.mk
 include mk/ebpf.mk
 include mk/distribution.mk
 include mk/run.mk
+include mk/test-container-structure.mk

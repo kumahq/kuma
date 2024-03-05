@@ -72,11 +72,13 @@ const (
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
 	// KumaBuiltinDNS the sidecar will use its builtin DNS
-	KumaBuiltinDNS     = "kuma.io/builtin-dns"
-	KumaBuiltinDNSPort = "kuma.io/builtin-dns-port"
+	KumaBuiltinDNS        = "kuma.io/builtin-dns"
+	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
+	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
 	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
 	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 
@@ -94,7 +96,8 @@ const (
 
 	// KumaEnvoyLogLevel allows to control Envoy log level.
 	// Available values are: [trace][debug][info][warning|warn][error][critical][off]
-	KumaEnvoyLogLevel = "kuma.io/envoy-log-level"
+	KumaEnvoyLogLevel          = "kuma.io/envoy-log-level"
+	KumaEnvoyComponentLogLevel = "kuma.io/envoy-component-log-level"
 
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
@@ -106,6 +109,12 @@ const (
 	KumaMetricsPrometheusAggregateEnabled = "prometheus.metrics.kuma.io/aggregate-%s-enabled"
 	// KumaMetricsPrometheusAggregatePattern allows to retrieve all the apps for which need to get port/path configuration
 	KumaMetricsPrometheusAggregatePattern = "^prometheus\\.metrics\\.kuma\\.io/aggregate-([a-zA-Z0-9-]+)-(port|path|enabled)$"
+
+	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
+	// list of init containers
+	KumaInitFirst = "kuma.io/init-first"
+	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
+	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

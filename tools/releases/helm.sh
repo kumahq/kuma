@@ -69,6 +69,20 @@ function package {
       --package-path "${CHARTS_PACKAGE_PATH}" \
       "${dir}"
 
+    # repackage archive to remove potential duplicates
+    for f in "${CHARTS_PACKAGE_PATH}"/*.tgz; do
+      local tmpdir
+      tmpdir=$(mktemp --directory)
+
+      tar -xzf "${f}" --directory "${tmpdir}"
+
+      tar -czf "${f}" \
+        --directory "${tmpdir}" \
+        --owner 0 \
+        --group 0 \
+        "$(basename "${dir}")"
+    done
+
     # Restore files removed above
     git checkout -- "${dir}"
   done

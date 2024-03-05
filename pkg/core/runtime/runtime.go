@@ -5,9 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/emicklei/go-restful/v3"
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -23,13 +27,16 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/multitenant"
+	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
-	mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -46,6 +53,7 @@ type RuntimeInfo interface {
 	SetClusterId(clusterId string)
 	GetClusterId() string
 	GetStartTime() time.Time
+	GetMode() core.CpMode
 }
 
 type RuntimeContext interface {
@@ -53,9 +61,11 @@ type RuntimeContext interface {
 	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
+	Transactions() core_store.Transactions
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
+	GlobalInsightService() globalinsight.GlobalInsightService
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	ConfigManager() config_manager.ConfigManager
@@ -63,7 +73,7 @@ type RuntimeContext interface {
 	LookupIP() lookup.LookupIPFunc
 	EnvoyAdminClient() admin.EnvoyAdminClient
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ListenerFactory
+	EventBus() events.EventBus
 	APIInstaller() api_server.APIInstaller
 	XDS() xds_runtime.XDSRuntimeContext
 	CAProvider() secrets.CaProvider
@@ -78,6 +88,9 @@ type RuntimeContext interface {
 	TokenIssuers() builtin.TokenIssuers
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
+	PgxConfigCustomizationFn() config.PgxConfigCustomization
+	Tenants() multitenant.Tenants
+	APIWebServiceCustomize() func(ws *restful.WebService) error
 }
 
 type Access struct {
@@ -110,6 +123,7 @@ type runtimeInfo struct {
 	instanceId string
 	clusterId  string
 	startTime  time.Time
+	mode       core.CpMode
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
@@ -132,44 +146,53 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 	return i.startTime
 }
 
+func (i *runtimeInfo) GetMode() core.CpMode {
+	return i.mode
+}
+
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg            kuma_cp.Config
-	rm             core_manager.ResourceManager
-	rs             core_store.ResourceStore
-	ss             store.SecretStore
-	cs             core_store.ResourceStore
-	rom            core_manager.ReadOnlyResourceManager
-	cam            ca.Managers
-	dsl            datasource.Loader
-	ext            context.Context
-	configm        config_manager.ConfigManager
-	leadInfo       component.LeaderInfo
-	lif            lookup.LookupIPFunc
-	eac            admin.EnvoyAdminClient
-	metrics        metrics.Metrics
-	erf            events.ListenerFactory
-	apim           api_server.APIInstaller
-	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
-	dps            *dp_server.DpServer
-	kdsctx         *kds_context.Context
-	rv             ResourceValidators
-	au             authn.Authenticator
-	acc            Access
-	appCtx         context.Context
-	extraReportsFn ExtraReportsFn
-	tokenIssuers   builtin.TokenIssuers
-	meshCache      *mesh.Cache
-	interCpPool    *client.Pool
+	cfg                      kuma_cp.Config
+	rm                       core_manager.ResourceManager
+	rs                       core_store.ResourceStore
+	txs                      core_store.Transactions
+	ss                       store.SecretStore
+	cs                       core_store.ResourceStore
+	gis                      globalinsight.GlobalInsightService
+	rom                      core_manager.ReadOnlyResourceManager
+	cam                      ca.Managers
+	dsl                      datasource.Loader
+	ext                      context.Context
+	configm                  config_manager.ConfigManager
+	leadInfo                 component.LeaderInfo
+	lif                      lookup.LookupIPFunc
+	eac                      admin.EnvoyAdminClient
+	metrics                  metrics.Metrics
+	erf                      events.EventBus
+	apim                     api_server.APIInstaller
+	xds                      xds_runtime.XDSRuntimeContext
+	cap                      secrets.CaProvider
+	dps                      *dp_server.DpServer
+	kdsctx                   *kds_context.Context
+	rv                       ResourceValidators
+	au                       authn.Authenticator
+	acc                      Access
+	appCtx                   context.Context
+	extraReportsFn           ExtraReportsFn
+	tokenIssuers             builtin.TokenIssuers
+	meshCache                *mesh.Cache
+	interCpPool              *client.Pool
+	pgxConfigCustomizationFn config.PgxConfigCustomization
+	tenants                  multitenant.Tenants
+	apiWebServiceCustomize   []func(*restful.WebService) error
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
 	return rc.metrics
 }
 
-func (rc *runtimeContext) EventReaderFactory() events.ListenerFactory {
+func (rc *runtimeContext) EventBus() events.EventBus {
 	return rc.erf
 }
 
@@ -193,12 +216,20 @@ func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
 }
 
+func (rc *runtimeContext) Transactions() core_store.Transactions {
+	return rc.txs
+}
+
 func (rc *runtimeContext) SecretStore() store.SecretStore {
 	return rc.ss
 }
 
 func (rc *runtimeContext) ConfigStore() core_store.ResourceStore {
 	return rc.cs
+}
+
+func (rc *runtimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
+	return rc.gis
 }
 
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
@@ -275,4 +306,24 @@ func (rc *runtimeContext) MeshCache() *mesh.Cache {
 
 func (rc *runtimeContext) InterCPClientPool() *client.Pool {
 	return rc.interCpPool
+}
+
+func (rc *runtimeContext) PgxConfigCustomizationFn() config.PgxConfigCustomization {
+	return rc.pgxConfigCustomizationFn
+}
+
+func (rc *runtimeContext) Tenants() multitenant.Tenants {
+	return rc.tenants
+}
+
+func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
+	return func(ws *restful.WebService) error {
+		err := &multierror.Error{}
+
+		for _, apiWebServiceCustomize := range rc.apiWebServiceCustomize {
+			err = multierror.Append(err, apiWebServiceCustomize(ws))
+		}
+
+		return err.ErrorOrNil()
+	}
 }

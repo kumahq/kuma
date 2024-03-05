@@ -7,7 +7,6 @@ import (
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -26,8 +25,7 @@ var _ = Describe("LBConfigurer", func() {
 			configurer := &xds.LoadBalancerConfigurer{
 				LoadBalancer: given.conf,
 			}
-			cluster := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(policies_xds.WithName("test")).
+			cluster := clusters.NewClusterBuilder(envoy.APIV3, "test").
 				MustBuild()
 
 			// when

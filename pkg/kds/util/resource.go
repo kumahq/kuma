@@ -53,6 +53,7 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:    r.GetMeta().GetName(),
 				Mesh:    r.GetMeta().GetMesh(),
+				Labels:  r.GetMeta().GetLabels(),
 				Version: "",
 			},
 			Spec: pbany,
@@ -63,17 +64,26 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 
 func AddPrefixToNames(rs []model.Resource, prefix string) {
 	for _, r := range rs {
-		newName := fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())
-		m := NewResourceMeta(newName, r.GetMeta().GetMesh())
-		r.SetMeta(m)
+		r.SetMeta(CloneResourceMeta(
+			r.GetMeta(),
+			WithName(fmt.Sprintf("%s.%s", prefix, r.GetMeta().GetName())),
+		))
 	}
+}
+
+func AddPrefixToResourceKeyNames(rk []model.ResourceKey, prefix string) []model.ResourceKey {
+	for idx, r := range rk {
+		rk[idx].Name = fmt.Sprintf("%s.%s", prefix, r.Name)
+	}
+	return rk
 }
 
 func AddSuffixToNames(rs []model.Resource, suffix string) {
 	for _, r := range rs {
-		newName := fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)
-		m := NewResourceMeta(newName, r.GetMeta().GetMesh())
-		r.SetMeta(m)
+		r.SetMeta(CloneResourceMeta(
+			r.GetMeta(),
+			WithName(fmt.Sprintf("%s.%s", r.GetMeta().GetName(), suffix)),
+		))
 	}
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/v2/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -46,7 +47,10 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		syncer = sync_store.NewResourceSyncer(core.Log, resourceStore)
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		syncer, err = sync_store.NewResourceSyncer(core.Log, resourceStore, store.NoTransactions{}, metrics, context.Background())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should create new resources in empty store", func() {
@@ -61,7 +65,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -84,7 +88,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = removedResources
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -121,7 +125,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			model.WithoutMesh("mesh-10"),
 		}
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -152,7 +156,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
 
-		err := syncer.Sync(upstreamResponse)
+		err := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
@@ -173,7 +177,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 
 		// when
-		err := syncer.Sync(upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+		err := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetName() != "mesh-1"
 		}))
 
@@ -200,7 +204,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		Expect(syncer.Sync(upstreamResponse)).To(Succeed())
+		Expect(syncer.Sync(context.Background(), upstreamResponse)).To(Succeed())
 
 		// then resource's version is the same
 		actual := mesh.NewMeshResource()

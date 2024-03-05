@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
@@ -20,6 +22,10 @@ type BootstrapServerConfig struct {
 
 func (b *BootstrapServerConfig) Sanitize() {
 	b.Params.Sanitize()
+}
+
+func (b *BootstrapServerConfig) PostProcess() error {
+	return multierr.Combine(b.Params.PostProcess())
 }
 
 func (b *BootstrapServerConfig) Validate() error {
@@ -38,6 +44,8 @@ func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 var _ config.Config = &BootstrapParamsConfig{}
 
 type BootstrapParamsConfig struct {
+	config.BaseConfig
+
 	// Address of Envoy Admin
 	AdminAddress string `json:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
@@ -50,9 +58,8 @@ type BootstrapParamsConfig struct {
 	XdsPort uint32 `json:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
 	XdsConnectTimeout config_types.Duration `json:"xdsConnectTimeout" envconfig:"kuma_bootstrap_server_params_xds_connect_timeout"`
-}
-
-func (b *BootstrapParamsConfig) Sanitize() {
+	// Path to the template of Corefile for data planes to use
+	CorefileTemplatePath string `json:"corefileTemplatePath" envconfig:"kuma_bootstrap_server_params_corefile_template_path"`
 }
 
 func (b *BootstrapParamsConfig) Validate() error {
@@ -74,16 +81,20 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.XdsConnectTimeout.Duration < 0 {
 		return errors.New("XdsConnectTimeout cannot be negative")
 	}
+	if b.CorefileTemplatePath != "" && !files.FileExists(b.CorefileTemplatePath) {
+		return errors.New("CorefileTemplatePath must point to an existing file")
+	}
 	return nil
 }
 
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
-		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
-		AdminPort:          9901,
-		AdminAccessLogPath: os.DevNull,
-		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
-		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-		XdsConnectTimeout:  config_types.Duration{Duration: 1 * time.Second},
+		AdminAddress:         "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
+		AdminPort:            9901,
+		AdminAccessLogPath:   os.DevNull,
+		XdsHost:              "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
+		XdsPort:              0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		XdsConnectTimeout:    config_types.Duration{Duration: 1 * time.Second},
+		CorefileTemplatePath: "", // by default, data plane will use the embedded Corefile to be the template
 	}
 }

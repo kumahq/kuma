@@ -228,6 +228,16 @@ to:
       name: web-backend
     default:
       connectionLimits: { }`),
+			Entry("gateway example", `
+targetRef:
+  kind: MeshGateway
+  name: edge
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      connectionLimits: { }`),
 		)
 
 		type testCase struct {
@@ -404,9 +414,9 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
-    message: has to be in [0 - 100] range
+    message: must be in inclusive range [0, 100]
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
-    message: has to be in [0 - 100] range`,
+    message: must be in inclusive range [0, 100]`,
 			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `
@@ -443,7 +453,7 @@ violations:
   - field: spec.to[0].default.outlierDetection.detectors
     message: 'must have at least one defined: totalFailures, gatewayFailures, localOriginFailures, successRate, failurePercentage'`,
 			}),
-			Entry("detector is empty", testCase{
+			Entry("detector has incorrect values", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService

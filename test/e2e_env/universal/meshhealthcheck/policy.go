@@ -3,6 +3,7 @@ package meshhealthcheck
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -225,6 +226,7 @@ spec:
 					WithProtocol(mesh.ProtocolTCP),
 					WithServiceName("test-server-mtls")),
 				).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -292,6 +294,7 @@ spec:
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
+				Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName))).
 				Install(TestServerUniversal("test-client", meshName,
 					WithServiceName("test-client"),
@@ -399,7 +402,7 @@ spec:
         - matches: 
             - path: 
                 value: /
-                type: Prefix
+                type: PathPrefix
           default: 
             backendRefs: 
               - kind: MeshServiceSubset
@@ -424,11 +427,6 @@ spec:
 				Install(TestServerUniversal("test-server-2", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP), WithServiceVersion("v2"))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
-
-			Eventually(func() error {
-				return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "traffic-route", "--mesh", meshName, "route-all-"+meshName)
-			}).Should(Succeed())
-
 			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
 		})
 
@@ -450,20 +448,12 @@ spec:
 			// update HealthCheck policy to check for another status code
 			Expect(YamlUniversal(healthCheck(meshName, "are-you-healthy", "500"))(universal.Cluster)).To(Succeed())
 
-			// wait cluster 'test-server-_0_' to be marked as unhealthy
+			// wait for both split clusters to be marked as unhealthy
 			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-_0_\""}
+				cmd := []string{"/bin/bash", "-c", `"curl --silent localhost:9901/clusters | grep -c 'test-server-.*health_flags::/failed_active_hc'"`}
 				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
-			}, "30s", "500ms").Should(Succeed())
-
-			// wait cluster 'test-server-_1_' to be marked as unhealthy
-			Eventually(func(g Gomega) {
-				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server-_1_\""}
-				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+				g.Expect(strings.TrimSpace(stdout)).To(Equal("2"))
 			}, "30s", "500ms").Should(Succeed())
 
 			// check that test-server is unhealthy

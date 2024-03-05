@@ -3,7 +3,6 @@ package listeners
 import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -17,27 +16,30 @@ import (
 // The goal of FilterChainBuilderOpt is to facilitate fluent FilterChainBuilder API.
 type FilterChainBuilderOpt interface {
 	// ApplyTo adds FilterChainConfigurer(s) to the FilterChainBuilder.
-	ApplyTo(config *FilterChainBuilderConfig)
+	ApplyTo(builder *FilterChainBuilder)
 }
 
-func NewFilterChainBuilder(apiVersion core_xds.APIVersion) *FilterChainBuilder {
+func NewFilterChainBuilder(apiVersion core_xds.APIVersion, name string) *FilterChainBuilder {
 	return &FilterChainBuilder{
 		apiVersion: apiVersion,
+		name:       name,
 	}
 }
 
 // FilterChainBuilder is responsible for generating an Envoy filter chain
 // by applying a series of FilterChainConfigurers.
 type FilterChainBuilder struct {
-	apiVersion core_xds.APIVersion
-	config     FilterChainBuilderConfig
+	apiVersion  core_xds.APIVersion
+	configurers []v3.FilterChainConfigurer
+	name        string
 }
 
 // Configure configures FilterChainBuilder by adding individual FilterChainConfigurers.
 func (b *FilterChainBuilder) Configure(opts ...FilterChainBuilderOpt) *FilterChainBuilder {
 	for _, opt := range opts {
-		opt.ApplyTo(&b.config)
+		opt.ApplyTo(b)
 	}
+
 	return b
 }
 
@@ -46,18 +48,21 @@ func (b *FilterChainBuilder) ConfigureIf(condition bool, opts ...FilterChainBuil
 		return b
 	}
 	for _, opt := range opts {
-		opt.ApplyTo(&b.config)
+		opt.ApplyTo(b)
 	}
+
 	return b
 }
 
 // Build generates an Envoy filter chain by applying a series of FilterChainConfigurers.
-func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
+func (b *FilterChainBuilder) Build() (envoy.NamedResource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
-		filterChain := envoy_listener_v3.FilterChain{}
+		filterChain := envoy_listener_v3.FilterChain{
+			Name: b.name,
+		}
 
-		for _, configurer := range b.config.ConfigurersV3 {
+		for _, configurer := range b.configurers {
 			if err := configurer.Configure(&filterChain); err != nil {
 				return nil, err
 			}
@@ -65,6 +70,11 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 
 		// Ensure there is always an HTTP router terminating the filter chain.
 		_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			for _, filter := range hcm.HttpFilters {
+				if filter.Name == "envoy.filters.http.router" {
+					return nil
+				}
+			}
 			router := &envoy_hcm.HttpFilter{
 				Name: "envoy.filters.http.router",
 				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
@@ -84,30 +94,24 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 	}
 }
 
-// FilterChainBuilderConfig holds configuration of a FilterChainBuilder.
-type FilterChainBuilderConfig struct {
-	// A series of FilterChainConfigurers to apply to Envoy filter chain.
-	ConfigurersV3 []v3.FilterChainConfigurer
-}
-
-// AddV3 appends a given FilterChainConfigurer to the end of the chain.
-func (c *FilterChainBuilderConfig) AddV3(configurer v3.FilterChainConfigurer) {
-	c.ConfigurersV3 = append(c.ConfigurersV3, configurer)
+// AddConfigurer appends a given FilterChainConfigurer to the end of the chain.
+func (b *FilterChainBuilder) AddConfigurer(configurer v3.FilterChainConfigurer) {
+	b.configurers = append(b.configurers, configurer)
 }
 
 // FilterChainBuilderOptFunc is a convenience type adapter.
-type FilterChainBuilderOptFunc func(config *FilterChainBuilderConfig)
+type FilterChainBuilderOptFunc func(builder *FilterChainBuilder)
 
-func (f FilterChainBuilderOptFunc) ApplyTo(config *FilterChainBuilderConfig) {
+func (f FilterChainBuilderOptFunc) ApplyTo(builder *FilterChainBuilder) {
 	if f != nil {
-		f(config)
+		f(builder)
 	}
 }
 
 // AddFilterChainConfigurer produces an option that applies the given
 // configurer to the filter chain.
 func AddFilterChainConfigurer(c v3.FilterChainConfigurer) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.AddV3(c)
+	return FilterChainBuilderOptFunc(func(builder *FilterChainBuilder) {
+		builder.AddConfigurer(c)
 	})
 }

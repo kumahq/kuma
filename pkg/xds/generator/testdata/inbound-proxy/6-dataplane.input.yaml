@@ -24,3 +24,13 @@ networking:
       servicePort: 8443
       tags:
         kuma.io/service: backend4
+    - address: 127.0.0.1
+      port: 8080
+      servicePort: 1234
+      tags:
+        kuma.io/service: loopback
+    - address: ::1
+      port: 8081
+      servicePort: 12345
+      tags:
+        kuma.io/service: loopbackv6

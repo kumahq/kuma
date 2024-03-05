@@ -8,6 +8,10 @@ admin:
     socketAddress:
       address: 127.0.0.1
       portValue: 1234
+defaultRegexEngine:
+  name: envoy.regex_engines.google_re2
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.regex_engines.v3.GoogleRE2
 dynamicResources:
   adsConfig:
     apiType: GRPC
@@ -59,29 +63,32 @@ layeredRuntime:
   layers:
   - name: kuma
     staticLayer:
-      envoy.restart_features.use_apple_api_for_dns_lookups: false
       re2.max_program_size.error_level: 4294967295
       re2.max_program_size.warn_level: 1000
 node:
   cluster: backend
   id: mesh.name.namespace
   metadata:
+    accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
+    dataplane.admin.address: 127.0.0.1
     dataplane.admin.port: "1234"
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
     features: []
+    metricsCertPath: /path/cert/pem
+    metricsKeyPath: /path/key/pem
+    metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     version:
-      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
-        kumaDpCompatible: false
         version: 1.15.0
       kumaDp:
         buildDate: "2019-08-07T11:26:06Z"
         gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
         gitTag: v0.0.1
         version: 0.0.1
+    workdir: ""
 staticResources:
   clusters:
   - connectTimeout: 1s

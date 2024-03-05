@@ -1,0 +1,81 @@
+resources:
+- name: kuma:metrics:hijacker
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_metrics_hijacker
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: kuma:metrics:hijacker
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /foo/bar
+    name: kuma:metrics:hijacker
+    type: STATIC
+- name: kuma:metrics:prometheus
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 1234
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma:metrics:prometheus
+              routes:
+              - match:
+                  prefix: /non-standard-path
+                route:
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
+          statPrefix: kuma_metrics_prometheus
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma:metrics:prometheus
+              routes:
+              - match:
+                  prefix: /non-standard-path
+                route:
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
+          statPrefix: kuma_metrics_prometheus
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificates:
+            - certificateChain:
+                filename: /path/cert
+              privateKey:
+                filename: /path/key
+    name: kuma:metrics:prometheus
+    trafficDirection: INBOUND

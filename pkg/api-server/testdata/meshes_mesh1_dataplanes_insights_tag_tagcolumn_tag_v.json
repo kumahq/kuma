@@ -1,0 +1,67 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "DataplaneOverview",
+   "mesh": "mesh1",
+   "name": "dp-1",
+   "creationTime": "2018-07-17T16:05:36.995Z",
+   "modificationTime": "2018-07-17T16:05:36.995Z",
+   "dataplane": {
+    "networking": {
+     "address": "127.0.0.1",
+     "inbound": [
+      {
+       "port": 1234,
+       "tags": {
+        "service": "backend",
+        "tagcolumn": "tag:v",
+        "version": "v1"
+       }
+      }
+     ]
+    }
+   },
+   "dataplaneInsight": {
+    "subscriptions": [
+     {
+      "id": "stream-id-1",
+      "controlPlaneInstanceId": "cp-1",
+      "connectTime": "2019-07-01T00:00:00Z",
+      "status": {
+       "lastUpdateTime": "2019-07-01T00:00:00Z",
+       "total": {},
+       "cds": {},
+       "eds": {},
+       "lds": {},
+       "rds": {}
+      }
+     }
+    ]
+   }
+  },
+  {
+   "type": "DataplaneOverview",
+   "mesh": "mesh1",
+   "name": "dp-no-insights",
+   "creationTime": "2018-07-17T16:05:36.995Z",
+   "modificationTime": "2018-07-17T16:05:36.995Z",
+   "dataplane": {
+    "networking": {
+     "address": "127.0.0.1",
+     "inbound": [
+      {
+       "port": 1234,
+       "tags": {
+        "service": "backend",
+        "tagcolumn": "tag:v",
+        "version": "v1"
+       }
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "next": null
+}

@@ -47,12 +47,11 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
             statPrefix: gateway-default
             streamIdleTimeout: 5s
-            stripAnyHostPort: true
             useRemoteAddress: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
@@ -63,8 +62,9 @@ Listeners:
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
-      name: edge-gateway:HTTP:8080
+    edge-gateway:HTTP:8080:*:
+      ignorePortInHostMatching: true
+      name: edge-gateway:HTTP:8080:*
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
@@ -78,6 +78,10 @@ Routes:
           redirect:
             hostRedirect: example.com
             portRedirect: 8080
+            regexRewrite:
+              pattern:
+                regex: .*
+              substitution: /redirected
             responseCode: FOUND
             schemeRedirect: https
             stripQuery: true

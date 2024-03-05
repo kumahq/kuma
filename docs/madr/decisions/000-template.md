@@ -1,6 +1,6 @@
 # {short title of solved problem and solution}
 
-* Status: {rejected | accepted | deprecated | superseded by [ADR-0005](0005-example.md) | implemented in `<link to releavant PR/issue...>`} <!-- recomended to have the status as accepted proactively and then to change it if needed -->
+* Status: {rejected | accepted | deprecated | superseded by [ADR-0005](0005-example.md) | implemented in `<link to releavant PR/issue...>`} <!-- recommended to have the status as accepted proactively and then to change it if needed -->
 
 Technical Story: {description | ticket/issue URL} <!-- link to the github issue -->
 

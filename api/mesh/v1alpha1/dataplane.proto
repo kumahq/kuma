@@ -4,9 +4,9 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "mesh/options.proto";
-import "mesh/v1alpha1/metrics.proto";
-import "mesh/v1alpha1/envoy_admin.proto";
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/metrics.proto";
+import "api/mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -27,6 +27,23 @@ message Dataplane {
   option (kuma.mesh.resource).kds.send_to_global = true;
   option (kuma.mesh.resource).ws.name = "dataplane";
   option (kuma.mesh.resource).scope_namespace = true;
+  option (kuma.mesh.resource).has_insights = true;
+  option (kuma.mesh.resource).additional_printer_columns =
+      "description=\"Service tag of the first "
+      "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"
+      "service\']`,name=\"kuma.io/service\",type=string";
+  option (kuma.mesh.resource).additional_printer_columns =
+      "description=\"Service tag of the second "
+      "inbound\",JSONPath=`.spec.networking.inbound[1].tags[\'kuma\\.io/"
+      "service\']`,name=\"kuma.io/service\",type=string";
+  option (kuma.mesh.resource).additional_printer_columns =
+      "description=\"Service tag of the third "
+      "inbound\",JSONPath=`.spec.networking.inbound[2].tags[\'kuma\\.io/"
+      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
+  option (kuma.mesh.resource).additional_printer_columns =
+      "description=\"Service tag of the fourth "
+      "inbound\",JSONPath=`.spec.networking.inbound[3].tags[\'kuma\\.io/"
+      "service\']`,name=\"kuma.io/service\",type=string,priority=1";
 
   // Networking describes inbound and outbound interfaces of a data plane proxy.
   message Networking {
@@ -66,8 +83,7 @@ message Dataplane {
 
       // Address of the service that requests will be forwarded to.
       // Defaults to 'inbound.address', since Kuma DP should be deployed next
-      // to the service. When `KUMA_DEFAULTS_ENABLE_LOCALHOST_INBOUND_CLUSTERS`
-      // is true, this defaults to `127.0.0.1`.
+      // to the service.
       string serviceAddress = 6;
 
       // Address on which inbound listener will be exposed.
@@ -130,6 +146,20 @@ message Dataplane {
       // See https://kuma.io/docs/latest/documentation/health for more
       // information.
       ServiceProbe serviceProbe = 8;
+
+      enum State {
+        // Inbound is ready to serve the traffic.
+        Ready = 0;
+        // Inbound is not ready to serve the traffic.
+        NotReady = 1;
+        // Inbound is not created. It cannot be targeted by policies.
+        // However, a data plane proxy receives a certificate with identity of
+        // this inbound.
+        Ignored = 2;
+      }
+
+      // State describes the current state of the listener.
+      State state = 9;
     }
 
     // Outbound describes a service consumed by the data plane proxy.
@@ -144,11 +174,6 @@ message Dataplane {
       // proxy. When transparent proxying is not used, Envoy will bind to this
       // port.
       uint32 port = 4 [ (doc.required) = true ];
-
-      // DEPRECATED: use `networking.outbound[].tags['kuma.io/service']`
-      // Service name identified by the value of `kuma.io/service`.
-      string service = 2
-          [ (validate.rules).string.hostname = true, deprecated = true ];
 
       // Tags of consumed data plane proxies.
       // `kuma.io/service` tag is required.

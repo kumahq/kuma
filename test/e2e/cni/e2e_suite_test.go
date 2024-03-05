@@ -14,6 +14,6 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	_ = Describe("Taint controller", Label("job-0"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
-	_ = Describe("Old CNI", Label("job-0"), Label("arm-not-supported"), Label("legacy-k3s-not-supported"), Label("kind-not-supported"), cni.AppDeploymentWithCniAndNoTaintController)
+	_ = Describe("Taint controller", Label("job-1"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.AppDeploymentWithCniAndTaintController)
+	_ = Describe("Connectivity - Exclude Outbound Port", Label("job-0"), Label("kind-not-supported"), Label("legacy-k3s-not-supported"), cni.ExcludeOutboundPort, Ordered)
 )

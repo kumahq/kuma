@@ -43,45 +43,49 @@ func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
 }
 
 type ResourceInfo struct {
-	ResourceName           string
-	ResourceType           string
-	ProtoType              string
-	Selectors              []string
-	SkipRegistration       bool
-	SkipKubernetesWrappers bool
-	ScopeNamespace         bool
-	Global                 bool
-	KumactlSingular        string
-	KumactlPlural          string
-	WsReadOnly             bool
-	WsAdminOnly            bool
-	WsPath                 string
-	KdsDirection           string
-	AllowToInspect         bool
-	StorageVersion         bool
-	IsPolicy               bool
-	SingularDisplayName    string
-	PluralDisplayName      string
-	IsExperimental         bool
+	ResourceName             string
+	ResourceType             string
+	ProtoType                string
+	Selectors                []string
+	SkipRegistration         bool
+	SkipKubernetesWrappers   bool
+	ScopeNamespace           bool
+	Global                   bool
+	KumactlSingular          string
+	KumactlPlural            string
+	WsReadOnly               bool
+	WsAdminOnly              bool
+	WsPath                   string
+	KdsDirection             string
+	AllowToInspect           bool
+	StorageVersion           bool
+	IsPolicy                 bool
+	SingularDisplayName      string
+	PluralDisplayName        string
+	IsExperimental           bool
+	AdditionalPrinterColumns []string
+	HasInsights              bool
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	r := KumaResourceForMessage(desc)
 
 	out := ResourceInfo{
-		ResourceType:           r.Type,
-		ResourceName:           r.Name,
-		ProtoType:              string(desc.Name()),
-		Selectors:              SelectorsForMessage(desc),
-		SkipRegistration:       r.SkipRegistration,
-		SkipKubernetesWrappers: r.SkipKubernetesWrappers,
-		Global:                 r.Global,
-		ScopeNamespace:         r.ScopeNamespace,
-		AllowToInspect:         r.AllowToInspect,
-		StorageVersion:         r.StorageVersion,
-		SingularDisplayName:    core_model.DisplayName(r.Type),
-		PluralDisplayName:      r.PluralDisplayName,
-		IsExperimental:         r.IsExperimental,
+		ResourceType:             r.Type,
+		ResourceName:             r.Name,
+		ProtoType:                string(desc.Name()),
+		Selectors:                SelectorsForMessage(desc),
+		SkipRegistration:         r.SkipRegistration,
+		SkipKubernetesWrappers:   r.SkipKubernetesWrappers,
+		Global:                   r.Global,
+		ScopeNamespace:           r.ScopeNamespace,
+		AllowToInspect:           r.AllowToInspect,
+		StorageVersion:           r.StorageVersion,
+		SingularDisplayName:      core_model.DisplayName(r.Type),
+		PluralDisplayName:        r.PluralDisplayName,
+		IsExperimental:           r.IsExperimental,
+		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
+		HasInsights:              r.HasInsights,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural
@@ -111,11 +115,15 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
 		out.KdsDirection = ""
 	case r.Kds.SendToGlobal && r.Kds.SendToZone:
-		out.KdsDirection = "model.FromZoneToGlobal | model.FromGlobalToZone"
+		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag"
 	case r.Kds.SendToGlobal:
-		out.KdsDirection = "model.FromZoneToGlobal"
+		out.KdsDirection = "model.ZoneToGlobalFlag"
 	case r.Kds.SendToZone:
-		out.KdsDirection = "model.FromGlobalToZone"
+		out.KdsDirection = "model.GlobalToAllZonesFlag"
+	}
+
+	if out.ResourceType == "MeshGateway" {
+		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag"
 	}
 
 	if p := desc.Parent(); p != nil {

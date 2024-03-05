@@ -18,6 +18,5 @@ func Cleanup(cfg config.Config) (string, error) {
 	if cfg.Ebpf.Enabled {
 		return ebpf.Cleanup(cfg)
 	}
-
-	panic("currently not supported")
+	return iptables.Cleanup(cfg)
 }

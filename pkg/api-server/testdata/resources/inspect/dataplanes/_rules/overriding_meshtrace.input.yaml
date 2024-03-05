@@ -1,0 +1,45 @@
+#/meshes/default/dataplanes/dp-1/_rules 200
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: MeshTrace
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector:9411/api/v2/spans
+    tags:
+      - name: team
+        literal: core
+      - name: env
+        header:
+          name: x-env
+          default: prod
+      - name: version
+        header:
+          name: x-version
+---
+type: MeshTrace
+name: override
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: foo
+  default:
+    backends:
+      - type: Zipkin
+        zipkin:
+          url: http://jaeger-collector:9411/api/v2/spans

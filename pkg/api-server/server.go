@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -16,27 +17,36 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	"github.com/kumahq/kuma/pkg/api-server/filters"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	secrets_k8s "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -89,11 +99,14 @@ func NewApiServer(
 	defs []model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
 	metrics metrics.Metrics,
-	getInstanceId func() string, getClusterId func() string,
+	getInstanceId func() string,
+	getClusterId func() string,
 	authenticator authn.Authenticator,
 	access runtime.Access,
 	envoyAdminClient admin.EnvoyAdminClient,
 	tokenIssuers builtin.TokenIssuers,
+	wsCustomize func(*restful.WebService) error,
+	globalInsightService globalinsight.GlobalInsightService,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -105,6 +118,10 @@ func NewApiServer(
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
+
+	// NOTE: This must come before any filters that make HTTP calls
+	container.Filter(otelrestful.OTelFilter("api-server"))
+
 	if cfg.ApiServer.Authn.LocalhostIsAdmin {
 		container.Filter(authn.LocalhostAuthenticator)
 	}
@@ -126,14 +143,17 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
-	addPoliciesWsEndpoints(ws, cfg.Mode, cfg.ApiServer.ReadOnly, defs)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
+	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
 	addZoneEndpoints(ws, resManager)
-	guiUrl := cfg.ApiServer.GUI.BasePath
-	if cfg.ApiServer.GUI.RootUrl != "" {
-		guiUrl = cfg.ApiServer.GUI.RootUrl
+	guiUrl := ""
+	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
+		guiUrl = cfg.ApiServer.GUI.BasePath
+		if cfg.ApiServer.GUI.RootUrl != "" {
+			guiUrl = cfg.ApiServer.GUI.RootUrl
+		}
 	}
 	apiUrl := cfg.ApiServer.BasePath
 	if cfg.ApiServer.RootUrl != "" {
@@ -144,11 +164,16 @@ func NewApiServer(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
-	enableGUI := cfg.ApiServer.GUI.Enabled && cfg.Mode != config_core.Zone
-	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI, guiUrl); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, guiUrl); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	addWhoamiEndpoints(ws)
+
+	ws.SetDynamicRoutes(true)
+	if err := wsCustomize(ws); err != nil {
+		return nil, errors.Wrap(err, "couldn't customize webservice")
+	}
+
 	container.Add(ws)
 
 	path := cfg.ApiServer.BasePath
@@ -176,8 +201,16 @@ func NewApiServer(
 		basePath = u.Path
 	}
 	basePath = strings.TrimSuffix(basePath, "/")
-	guiHandler, err := NewGuiHandler(guiPath, enableGUI, GuiConfig{
-		BaseGuiPath: basePath, ApiUrl: apiUrl, Version: version.Build.Version, Product: version.Product, BasedOnKuma: version.Build.BasedOnKuma,
+	guiHandler, err := NewGuiHandler(guiPath, !cfg.ApiServer.GUI.Enabled || cfg.IsFederatedZoneCP(), GuiConfig{
+		BaseGuiPath: basePath,
+		ApiUrl:      apiUrl,
+		Version:     version.Build.Version,
+		Product:     version.Product,
+		BasedOnKuma: version.Build.BasedOnKuma,
+		Mode:        cfg.Mode,
+		Environment: cfg.Environment,
+		StoreType:   cfg.Store.Type,
+		ReadOnly:    cfg.ApiServer.ReadOnly,
 	})
 	if err != nil {
 		return nil, err
@@ -194,60 +227,67 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_access.ResourceAccess) {
-	dpOverviewEndpoints := dataplaneOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
-	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
-	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
-
-	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneOverviewEndpoints.addFindEndpoint(ws)
-	zoneOverviewEndpoints.addListEndpoint(ws)
-
-	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
-	zoneIngressOverviewEndpoints.addListEndpoint(ws)
-
-	zoneEgressOverviewEndpoints := zoneEgressOverviewEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
-	zoneEgressOverviewEndpoints.addFindEndpoint(ws)
-	zoneEgressOverviewEndpoints.addListEndpoint(ws)
-
+func addResourcesEndpoints(
+	ws *restful.WebService,
+	defs []model.ResourceTypeDescriptor,
+	resManager manager.ResourceManager,
+	cfg *kuma_cp.Config,
+	resourceAccess resources_access.ResourceAccess,
+	globalInsightService globalinsight.GlobalInsightService,
+	meshContextBuilder xds_context.MeshContextBuilder,
+) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
 
+	globalInsightEndpoint := globalInsightEndpoint{
+		globalInsightService: globalInsightService,
+	}
+	globalInsightEndpoint.addEndpoint(ws)
+
+	var k8sMapper k8s.ResourceMapperFunc
+	var k8sSecretMapper k8s.ResourceMapperFunc
+	switch cfg.Store.Type {
+	case config_store.KubernetesStore:
+		k8sMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
+		k8sSecretMapper = secrets_k8s.NewKubernetesMapper()
+	default:
+		k8sMapper = k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace, k8s.NewSimpleKubeFactory())
+		k8sSecretMapper = secrets_k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace)
+	}
 	for _, definition := range defs {
 		defType := definition.Name
 		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			mode:           cfg.Mode,
-			resManager:     resManager,
-			descriptor:     definition,
-			resourceAccess: resourceAccess,
+			k8sMapper:                    k8sMapper,
+			mode:                         cfg.Mode,
+			federatedZone:                cfg.IsFederatedZoneCP(),
+			resManager:                   resManager,
+			descriptor:                   definition,
+			resourceAccess:               resourceAccess,
+			filter:                       filters.Resource(definition),
+			meshContextBuilder:           meshContextBuilder,
+			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
 		}
+		if defType == system.SecretType || defType == system.GlobalSecretType {
+			endpoints.k8sMapper = k8sSecretMapper
+		}
 		switch defType {
 		case mesh.ServiceInsightType:
 			// ServiceInsight is a bit different
-			ep := serviceInsightEndpoints{endpoints}
+			ep := serviceInsightEndpoints{
+				resourceEndpoints: endpoints,
+				addressPortGenerator: func(svc string) string {
+					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
+				},
+			}
 			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
 			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
@@ -275,13 +315,13 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	if cfg.ApiServer.ReadOnly {
 		return true
 	}
-	if kdsFlag == model.KDSDisabled {
+	if kdsFlag == model.KDSDisabledFlag {
 		return false
 	}
-	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.ProvidedByGlobal) {
+	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.GlobalToAllZonesFlag) {
 		return true
 	}
-	if cfg.Mode == config_core.Zone && !kdsFlag.Has(model.ProvidedByZone) {
+	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ZoneToGlobalFlag) {
 		return true
 	}
 	return false
@@ -321,6 +361,7 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 		ReadHeaderTimeout: time.Second,
 		Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
 		Handler:           a.mux,
+		ErrorLog:          adapter.ToStd(log),
 	}
 
 	go func() {
@@ -363,6 +404,7 @@ func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 		Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
 		Handler:           a.mux,
 		TLSConfig:         tlsConfig,
+		ErrorLog:          adapter.ToStd(log),
 	}
 
 	go func() {
@@ -421,8 +463,8 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 	tlsConfig.ClientCAs = clientCertPool
 	if cfg.HTTPS.RequireClientCert {
 		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	} else {
-		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+	} else if cfg.Authn.Type == certs.PluginName {
+		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
 	}
 	return nil
 }
@@ -433,12 +475,13 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.ResourceManager(),
 		xds_context.NewMeshContextBuilder(
 			rt.ResourceManager(),
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
@@ -450,6 +493,8 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.Access(),
 		rt.EnvoyAdminClient(),
 		rt.TokenIssuers(),
+		rt.APIWebServiceCustomize(),
+		rt.GlobalInsightService(),
 	)
 	if err != nil {
 		return err

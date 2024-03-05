@@ -1,0 +1,65 @@
+resources:
+- name: test_listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 10002
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                    - any: true
+                    principals:
+                    - authenticated:
+                        principalName:
+                          exact: spiffe://mesh-1/frontend
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: external-service-1
+      name: external-service-1_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-2{mesh=mesh-1}
+        transportProtocol: tls
+      name: external-service-2_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              MeshTrafficPermission:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: test_listener.
+      name: external-service-1_mesh-2
+    - filterChainMatch:
+        serverNames:
+        - internal-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      name: internal-service-1_mesh-1
+    name: test_listener
+    trafficDirection: INBOUND

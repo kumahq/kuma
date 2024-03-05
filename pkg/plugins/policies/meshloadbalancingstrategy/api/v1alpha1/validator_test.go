@@ -5,13 +5,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources"
+	. "github.com/kumahq/kuma/pkg/test/resources/validators"
 )
 
 var _ = Describe("validation", func() {
-	resources.DescribeErrorCases(
+	DescribeErrorCases(
 		api.NewMeshLoadBalancingStrategyResource,
-		resources.ErrorCases(
+		ErrorCases(
 			"spec errors",
 			[]validators.Violation{
 				{
@@ -32,7 +32,7 @@ targetRef:
   name: route-1
 to: []
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"spec.to errors",
 			[]validators.Violation{{
 				Field:   "spec.to[0].targetRef.kind",
@@ -52,7 +52,7 @@ to:
       tags:
         version: v1
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"ringHash error",
 			[]validators.Violation{
 				{
@@ -98,7 +98,7 @@ to:
             - type: QueryParameter
             - type: FilterState
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"ringHash cookie error",
 			[]validators.Violation{{
 				Field:   "spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].cookie.path",
@@ -126,7 +126,7 @@ to:
                 ttl: 1s
                 path: relative-path
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"maglev error",
 			[]validators.Violation{
 				{
@@ -168,7 +168,7 @@ to:
             - type: QueryParameter
             - type: FilterState
 `),
-		resources.ErrorCases(
+		ErrorCases(
 			"maglev cookie error",
 			[]validators.Violation{{
 				Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[0].cookie.path",
@@ -195,9 +195,209 @@ to:
                 name: cookie-name
                 ttl: 1s
                 path: relative-path
-`))
+`),
+		ErrorCases(
+			"leastRequest error",
+			[]validators.Violation{{
+				Field:   "spec.to[0].default.loadBalancer.leastRequest.activeRequestBias",
+				Message: "must be greater or equal then: 0",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: -1
+`),
+		ErrorCases("empty from in failover", []validators.Violation{{
+			Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].from.zones",
+			Message: "must not be empty",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failover:
+            - from:
+                zones: []
+              to: 
+                type: None
+`),
+		ErrorCases("incorrect weight", []validators.Violation{
+			{
+				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[0].weight",
+				Message: "must be greater than 0",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags[1].key",
+				Message: "must not be empty",
+			},
+		}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags:
+            - key: k8s/node
+              weight: 0
+            - key: ""
+              weight: 10
+`),
+		ErrorCases("mixing affinity tags with and without weights", []validators.Violation{{
+			Field:   "spec.to[0].default.localityAwareness.localZone.affinityTags",
+			Message: "all or none affinity tags should have weight",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags:
+            - key: k8s/node
+              weight: 10
+            - key: k8s/az
+`),
+		ErrorCases("percentage can't be zero", []validators.Violation{{
+			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
+			Message: "must be greater than 0",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failoverThreshold:
+            percentage: 0
+`),
+		ErrorCases("percentage is not a parseable number", []validators.Violation{{
+			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
+			Message: "string must be a valid number",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failoverThreshold:
+            percentage: "hello"
+`),
+		ErrorCases("broken failover rules", []validators.Violation{
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[0].to.zones",
+				Message: "must be empty when type is None",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[1].from.zones[1]",
+				Message: "must not be empty",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[2].to.zones",
+				Message: "must be empty when type is Any",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[3].to.zones",
+				Message: "must not be empty when type is Only",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[4].to.zones",
+				Message: "must not be empty when type is Only",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[5].to.zones",
+				Message: "must not be empty when type is AnyExcept",
+			},
+			{
+				Field:   "spec.to[0].default.localityAwareness.crossZone.failover[6].to.zones",
+				Message: "must not be empty when type is AnyExcept",
+			},
+		}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      localityAwareness:
+        crossZone:
+          failover:
+            - from:
+                zones: ["zone-1"]
+              to: 
+                type: None
+                zones: ["zone-1"]
+            - from:
+                zones: ["zone-1", ""]
+              to: 
+                type: Any
+            - to:
+                type: Any
+                zones: ["zone-1"]
+            - to:
+                type: Only
+                zones: []
+            - to:
+                type: Only
+            - to:
+                type: AnyExcept
+                zones: []
+            - to:
+                type: AnyExcept
 
-	resources.DescribeValidCases(
+`),
+	)
+
+	DescribeValidCases(
 		api.NewMeshLoadBalancingStrategyResource,
 		Entry(
 			"full spec",
@@ -224,6 +424,90 @@ to:
                 name: cookie-name
                 ttl: 1s
                 path: /absolute-path
+`),
+		Entry(
+			"full spec leastRequest",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
+`),
+		Entry(
+			"full locality awareness spec",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+to: 
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      localityAwareness:
+        localZone:
+          affinityTags: 
+            - key: "k8s/node"
+            - key: "k8s/az"
+        crossZone:
+          failover:
+            - from:
+                zones: ["zone-1"]
+              to: 
+                type: Only
+                zones: ["zone-2"]
+            - from:
+                zones: ["zone-3"]
+              to:
+                type: Any
+            - from:
+                zones: ["zone-4"]
+              to:
+                type: AnyExcept
+                zones: ["zone-1"]
+            - to:
+                type: None
+          failoverThreshold:
+            percentage: 70
+`),
+		Entry(
+			"top level MeshGateway",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge
+  tags:
+    name: listener-1
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
 `),
 	)
 })

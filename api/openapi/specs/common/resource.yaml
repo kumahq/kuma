@@ -1,0 +1,156 @@
+components:
+  schemas:
+    ResourceTypeDescription:
+      description: Description of a resource type, this is useful for dynamically generated clients and the gui
+      type: object
+      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation]
+      properties:
+        name:
+          description: the name of the resource type
+          type: string
+        scope:
+          type: string
+          enum: [Global, Mesh]
+        readOnly:
+          type: boolean
+        path:
+          description: the path to use for accessing this resource. If scope is `Global` then it will be `/<path>` otherwise it will be `/meshes/<path>`
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        includeInFederation:
+          description: description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
+          type: boolean
+        policy:
+          $ref: "#/components/schemas/PolicyDescription"
+    PolicyDescription:
+      type: object
+      required: [hasToTargetRef, hasFromTargetRef, isTargetRef]
+      description: information about a policy
+      properties:
+        isTargetRef:
+          description: whether this policy uses targetRef matching
+          type: boolean
+        hasToTargetRef:
+          description: indicates that this policy can be used as an outbound policy
+          type: boolean
+        hasFromTargetRef:
+          description: indicates that this policy can be used as an inbound policy
+          type: boolean
+    Meta:
+      type: object
+      required: [type, mesh, name]
+      properties:
+        type:
+          type: string
+          example: Dataplane
+          description: the type of this resource
+        mesh:
+          type: string
+          example: default
+          description: the mesh this resource is part of
+        name:
+          type: string
+          example: my-resource
+          description: the name of the resource
+    InspectRule:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          example: MeshRetry
+          description: the type of the policy
+        proxyRule:
+          description: a rule that affects the entire proxy
+          $ref: '#/components/schemas/ProxyRule'
+        toRules:
+          type: array
+          description: a set of rules for the outbounds of this proxy
+          items:
+            $ref: '#/components/schemas/Rule'
+        fromRules:
+          type: array
+          description: a set of rules for each inbound of this proxy
+          items:
+            $ref: '#/components/schemas/FromRule'
+        warnings:
+          type: array
+          description: a set of warnings to show in policy matching
+          example: ["Mesh is not Mtls enabled this policy will have no effect"]
+          items:
+            type: string
+    FromRule:
+     type: object
+     required: [rules, inbound]
+     properties:
+       inbound:
+         $ref: '#/components/schemas/Inbound'
+       rules:
+         type: array
+         items:
+           $ref: '#/components/schemas/Rule'
+    Inbound:
+      type: object
+      required: [tags, port]
+      properties:
+        tags:
+          type: object
+          x-go-type: 'map[string]string'
+        port:
+          type: integer
+    ProxyRule:
+      type: object
+      required: [conf, origin]
+      properties:
+        conf:
+          description: The actual conf generated
+          type: object
+          x-go-type: 'interface{}'
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    Rule:
+      type: object
+      required: [matchers, conf, origin]
+      properties:
+        matchers:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleMatcher'
+        conf:
+          description: The actual conf generated
+          type: object
+          x-go-type: 'interface{}'
+        origin:
+          type: array
+          items:
+            $ref: '#/components/schemas/Meta'
+    RuleMatcher:
+      type: object
+      required: [key, value, not]
+      description: A matcher to select which traffic this conf applies to
+      properties:
+        key:
+          type: string
+          description: the key to match against
+          example: kuma.io/service
+        value:
+          type: string
+          description: the value for the key to match against
+          example: my-cool-service
+        not:
+          type: boolean
+          description: whether we check on the absence of this key:value pair
+    HttpMatch:
+      type: object
+      required: [hash, match]
+      properties:
+        hash:
+          type: string
+        match:
+          type: object
+          x-go-type: interface{}

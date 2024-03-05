@@ -24,7 +24,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	BeforeEach(func() {
 		var err error
-		metrics, err = core_metrics.NewMetrics("Standalone")
+		metrics, err = core_metrics.NewMetrics("Zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		claCache, err = cla.NewCache(expiration, metrics)

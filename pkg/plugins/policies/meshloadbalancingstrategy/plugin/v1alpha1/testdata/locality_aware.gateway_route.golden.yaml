@@ -1,0 +1,23 @@
+ignorePortInHostMatching: true
+name: sample-gateway:HTTP:8080
+requestHeadersToRemove:
+- x-kuma-tags
+validateClusters: false
+virtualHosts:
+- domains:
+  - '*'
+  name: '*'
+  routes:
+  - match:
+      path: /
+    route:
+      clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      idleTimeout: 5s
+      weightedClusters:
+        clusters:
+        - name: backend-d230d75c0fcb71dc
+          requestHeadersToAdd:
+          - header:
+              key: x-kuma-tags
+              value: '&k8s.io/az=test&&k8s.io/node=node1&&k8s.io/region=test&&kuma.io/service=sample-gateway&'
+          weight: 1

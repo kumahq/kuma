@@ -85,6 +85,7 @@ func ErrorCase(description string, err validators.Violation, yaml string) TableE
 }
 
 func ErrorCases(description string, errs []validators.Violation, yaml string) TableEntry {
+	GinkgoHelper()
 	return Entry(
 		description,
 		ResourceValidationCase{

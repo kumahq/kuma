@@ -15,9 +15,20 @@ type MeshRateLimit struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
+	// To list makes a match between clients and corresponding configurations
+	To []To `json:"to,omitempty"`
 }
 
 type From struct {
+	// TargetRef is a reference to the resource that represents a group of
+	// clients.
+	TargetRef common_api.TargetRef `json:"targetRef"`
+	// Default is a configuration specific to the group of clients referenced in
+	// 'targetRef'
+	Default Conf `json:"default,omitempty"`
+}
+
+type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
 	TargetRef common_api.TargetRef `json:"targetRef"`

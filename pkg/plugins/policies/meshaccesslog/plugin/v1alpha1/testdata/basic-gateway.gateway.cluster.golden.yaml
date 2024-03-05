@@ -1,0 +1,15 @@
+connectTimeout: 5s
+edsClusterConfig:
+  edsConfig:
+    ads: {}
+    resourceApiVersion: V3
+name: backend-c58ee0574727fc94
+perConnectionBufferLimitBytes: 32768
+type: EDS
+typedExtensionProtocolOptions:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    commonHttpProtocolOptions:
+      idleTimeout: 0s
+    explicitHttpConfig:
+      httpProtocolOptions: {}

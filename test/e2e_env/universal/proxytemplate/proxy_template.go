@@ -22,6 +22,11 @@ func ProxyTemplate() {
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
+			Install(TimeoutUniversal(mesh)).
+			Install(RetryUniversal(mesh)).
+			Install(TrafficRouteUniversal(mesh)).
+			Install(TrafficPermissionUniversal(mesh)).
+			Install(CircuitBreakerUniversal(mesh)).
 			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

@@ -1,0 +1,13 @@
+---
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  selectors:
+    app: example
+    version: "0.2"
+  ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 7070

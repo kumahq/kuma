@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -15,7 +16,7 @@ func DefaultRuntimeConfig() *RuntimeConfig {
 	}
 }
 
-// Environment-specific configuration
+// RuntimeConfig defines Environment-specific configuration
 type RuntimeConfig struct {
 	// Kubernetes-specific configuration
 	Kubernetes *k8s.KubernetesRuntimeConfig `json:"kubernetes"`
@@ -25,6 +26,13 @@ type RuntimeConfig struct {
 
 func (c *RuntimeConfig) Sanitize() {
 	c.Kubernetes.Sanitize()
+}
+
+func (c *RuntimeConfig) PostProcess() error {
+	return multierr.Combine(
+		c.Kubernetes.PostProcess(),
+		c.Universal.PostProcess(),
+	)
 }
 
 func (c *RuntimeConfig) Validate(env core.EnvironmentType) error {

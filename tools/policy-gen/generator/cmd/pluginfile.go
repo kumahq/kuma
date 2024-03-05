@@ -79,7 +79,7 @@ import (
 {{- end}}
 )
 
-func init() {
+func InitPlugin() {
 	{{- range $idx, $version := .Versions}}
 	core.Register(
 		api_{{ $version }}.{{ $name }}ResourceTypeDescriptor,

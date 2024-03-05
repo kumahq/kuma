@@ -123,12 +123,13 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
 		rt.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		server.MeshResourceTypes(),
 		rt.LookupIP(),
 		rt.Config().Multizone.Zone.Name,
-		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
+		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager(), false),
 		rt.Config().DNSServer.Domain,
 		rt.Config().DNSServer.ServiceVipPort,
+		xds_context.AnyToAnyReachableServicesGraphBuilder,
 	)
 
 	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)
@@ -331,10 +332,18 @@ var _ = BeforeSuite(func() {
 	// Ensure that the plugin is registered so that tests at least
 	// have a chance of working.
 	Expect(plugins.Plugins().BootstrapPlugins()).To(
-		WithTransform(func(in []plugins.BootstrapPlugin) []plugins.PluginName {
-			var out []plugins.PluginName
+		WithTransform(func(in []plugins.BootstrapPlugin) []string {
+			var out []string
 			for _, p := range in {
-				out = append(out, p.Name())
+				out = append(out, string(p.Name()))
+			}
+			return out
+		}, ContainElement(metadata.PluginName)))
+	Expect(plugins.Plugins().ProxyPlugins()).To(
+		WithTransform(func(in map[plugins.PluginName]plugins.ProxyPlugin) []string {
+			var out []string
+			for k := range in {
+				out = append(out, string(k))
 			}
 			return out
 		}, ContainElement(metadata.PluginName)))

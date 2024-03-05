@@ -1,9 +1,14 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"strings"
+	"text/template"
+
+	ginko "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 func ShellEscape(arg string) string {
@@ -23,4 +28,17 @@ func GetFreePort() (int, error) {
 	defer listener.Close()
 
 	return listener.Addr().(*net.TCPAddr).Port, nil
+}
+
+func FromTemplate(g gomega.Gomega, tmpl string, data any) string {
+	t, err := template.New("tmpl").Parse(tmpl)
+	g.Expect(err).ToNot(gomega.HaveOccurred())
+	b := bytes.Buffer{}
+	g.Expect(t.Execute(&b, data)).To(gomega.Succeed())
+	return b.String()
+}
+
+func TestCaseName(ginkgo ginko.FullGinkgoTInterface) string {
+	nameSplit := strings.Split(ginkgo.Name(), " ")
+	return nameSplit[len(nameSplit)-1]
 }

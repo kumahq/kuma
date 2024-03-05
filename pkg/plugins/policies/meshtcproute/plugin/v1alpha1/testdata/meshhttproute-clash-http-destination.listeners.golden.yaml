@@ -1,0 +1,21 @@
+resources:
+- name: outbound:127.0.0.1:10002
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10002
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: tcp-backend
+          statPrefix: tcp-backend
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: tcp-backend
+    name: outbound:127.0.0.1:10002
+    trafficDirection: OUTBOUND

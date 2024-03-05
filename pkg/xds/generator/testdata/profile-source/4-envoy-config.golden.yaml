@@ -2,7 +2,7 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -41,7 +41,7 @@ resources:
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -87,7 +87,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough:ipv4
     type: ORIGINAL_DST
@@ -99,7 +99,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_envoy_admin
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:envoy:admin
       endpoints:
@@ -115,7 +115,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_metrics_hijacker
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: kuma:metrics:hijacker
       endpoints:
@@ -123,7 +123,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-mh-backend-01-demo.sock
+                path: /foo/bar
     name: kuma:metrics:hijacker
     type: STATIC
 - name: localhost:8080
@@ -157,7 +157,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough:ipv4
     type: ORIGINAL_DST
@@ -202,11 +202,6 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -214,6 +209,10 @@ resources:
             idleTimeout: 7200s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules: {}
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -395,11 +394,6 @@ resources:
                   prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
     - filters:
-      - name: envoy.filters.network.rbac
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
-          rules: {}
-          statPrefix: kuma_metrics_prometheus.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager

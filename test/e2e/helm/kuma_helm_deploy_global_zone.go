@@ -24,21 +24,14 @@ import (
 )
 
 func ZoneAndGlobalWithHelmChart() {
-	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
 
 	BeforeAll(func() {
-		var err error
-		clusters, err = NewK8sClusters(
-			[]string{Kuma1, Kuma2},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
-		c1 = clusters.GetCluster(Kuma1).
+		c1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-		c2 = clusters.GetCluster(Kuma2).
+		c2 = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
@@ -47,7 +40,7 @@ func ZoneAndGlobalWithHelmChart() {
 			strings.ToLower(random.UniqueId()),
 		)
 
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
@@ -86,7 +79,8 @@ interCp:
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())
-		Expect(clusters.DismissCluster()).To(Succeed())
+		Expect(c1.DismissCluster()).To(Succeed())
+		Expect(c2.DismissCluster()).To(Succeed())
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {
@@ -117,10 +111,10 @@ interCp:
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
-			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
+			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions(Config.KumaNamespace), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("demo-client"))
 	})
 
 	It("communication in between apps in zone works", func() {
@@ -182,16 +176,12 @@ interCp:
 			g.Expect(err).ToNot(HaveOccurred())
 			// Dataplane names are generated, so we check for a partial match.
 			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("demo-client")))
+			for _, dpName := range dataplanes {
+				if strings.Contains(dpName, "demo-client") {
+					_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dpName, "--type", "config-dump")
+					Expect(err).ToNot(HaveOccurred())
+				}
+			}
 		}, "30s", "250ms").Should(Succeed())
-
-		podName, err := PodNameOfApp(c2, "demo-client", TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-		dataplaneName := fmt.Sprintf("%s-zone.%s.%s.default", Kuma2, podName, TestNamespace)
-
-		// when
-		_, err = c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--type", "config-dump")
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
 	})
 }

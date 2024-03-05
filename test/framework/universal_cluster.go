@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -17,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
@@ -150,10 +152,11 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if mode == core.Zone {
-		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
+		env["KUMA_MULTIZONE_ZONE_NAME"] = c.ZoneName()
+		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "")
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -177,7 +180,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		ApiServerPort: app.ports["5681"],
 		SshPort:       app.ports["22"],
 	}
-	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf)
+	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf, c.opts.apiHeaders, c.opts.setupKumactl)
 	if err != nil {
 		return err
 	}
@@ -197,7 +200,11 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		}
 	}
 
-	return c.VerifyKuma()
+	if c.opts.verifyKuma {
+		return c.VerifyKuma()
+	}
+
+	return nil
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -209,7 +216,7 @@ func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
-	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
+	return c.controlplane.kumactl.RunKumactl("get", "meshes")
 }
 
 func (c *UniversalCluster) DeleteKuma() error {
@@ -219,7 +226,7 @@ func (c *UniversalCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *UniversalCluster) GetKumactlOptions() *KumactlOptions {
+func (c *UniversalCluster) GetKumactlOptions() *kumactl.KumactlOptions {
 	return c.controlplane.kumactl
 }
 
@@ -239,12 +246,12 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool, concurrency int) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency)
+	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, app.dpEnv)
 	return app.dpApp.Start()
 }
 
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0)
+	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, app.dpEnv)
 
 	if err := c.addIngressEnvoyTunnel(); err != nil {
 		return err
@@ -258,7 +265,7 @@ func (c *UniversalCluster) CreateZoneEgress(
 	name, ip, dpYAML, token string,
 	builtinDNS bool,
 ) error {
-	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", 0)
+	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", app.concurrency, app.dpEnv)
 
 	if err := c.addEgressEnvoyTunnel(); err != nil {
 		return err
@@ -286,7 +293,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
 	if err != nil {
 		return err
 	}
@@ -324,7 +331,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 		builtindns := opts.builtindns == nil || *opts.builtindns
 		if transparent {
-			app.setupTransparent(c.controlplane.Networking().IP, builtindns, opts.transparentProxyV1)
+			app.setupTransparent(builtindns)
 		}
 
 		ip := app.ip
@@ -339,6 +346,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if opts.mesh == "" {
 			opts.mesh = "default"
 		}
+		app.dpEnv = opts.dpEnvs
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}
@@ -394,7 +402,13 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 }
 
 func (c *UniversalCluster) DeleteMesh(mesh string) error {
-	return c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+	now := time.Now()
+	_, err := retry.DoWithRetryE(c.t, "remove mesh", DefaultRetries, 1*time.Second,
+		func() (string, error) {
+			return "", c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+		})
+	Logf("mesh: " + mesh + " deleted in: " + time.Since(now).String())
+	return err
 }
 
 func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
@@ -541,4 +555,11 @@ func (c *UniversalCluster) Install(fn InstallFunc) error {
 
 func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
 	c.controlplane = cp
+}
+
+func (c *UniversalCluster) ZoneName() string {
+	if c.opts.zoneName != "" {
+		return c.opts.zoneName
+	}
+	return c.Name()
 }

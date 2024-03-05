@@ -5,6 +5,7 @@
 package system
 
 import (
+	"errors"
 	"fmt"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -95,6 +96,10 @@ func (l *ConfigResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ConfigResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ConfigType,
 	Resource:            NewConfigResource(),
@@ -102,7 +107,7 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -200,6 +205,10 @@ func (l *SecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *SecretResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                SecretType,
 	Resource:            NewSecretResource(),
@@ -207,7 +216,7 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           true,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.FromGlobalToZone,
+	KDSFlags:            model.GlobalToAllZonesFlag,
 	WsPath:              "secrets",
 	KumactlArg:          "secret",
 	KumactlListArg:      "secrets",
@@ -305,6 +314,10 @@ func (l *ZoneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneType,
 	Resource:            NewZoneResource(),
@@ -320,6 +333,8 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone",
 	PluralDisplayName:   "Zones",
 	IsExperimental:      false,
+	Insight:             NewZoneInsightResource(),
+	Overview:            NewZoneOverviewResource(),
 }
 
 func init() {
@@ -409,6 +424,10 @@ func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+func (l *ZoneInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
 var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                ZoneInsightType,
 	Resource:            NewZoneInsightResource(),
@@ -477,6 +496,21 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
+func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &system_proto.ZoneOverview{
+		Zone: resource.GetSpec().(*system_proto.Zone),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*system_proto.ZoneInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneInsight'")
+		}
+		overview.ZoneInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
 var _ model.ResourceList = &ZoneOverviewResourceList{}
 
 type ZoneOverviewResourceList struct {
@@ -511,6 +545,10 @@ func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+func (l *ZoneOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
 }
 
 var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{

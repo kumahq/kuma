@@ -1,6 +1,6 @@
 {{- if .Values.controlPlane.autoscaling.enabled }}
-{{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
-apiVersion: "autoscaling/v2beta2"
+{{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
+apiVersion: "autoscaling/v2"
 {{ else }}
 apiVersion: "autoscaling/v1"
 {{ end }}
@@ -16,7 +16,7 @@ spec:
     name: {{ include "kuma.name" . }}-control-plane
   minReplicas: {{ .Values.controlPlane.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
-  {{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
+  {{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
   metrics: {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
   {{ else }}
   targetCPUUtilizationPercentage: {{ .Values.controlPlane.autoscaling.targetCPUUtilizationPercentage }}

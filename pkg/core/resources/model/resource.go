@@ -2,12 +2,18 @@ package model
 
 import (
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -44,13 +50,31 @@ const (
 type KDSFlagType uint32
 
 const (
-	KDSDisabled      = KDSFlagType(0)
-	ConsumedByZone   = KDSFlagType(1)
-	ConsumedByGlobal = KDSFlagType(1 << 2)
-	ProvidedByZone   = KDSFlagType(1 << 3)
-	ProvidedByGlobal = KDSFlagType(1 << 4)
-	FromZoneToGlobal = ConsumedByGlobal | ProvidedByZone
-	FromGlobalToZone = ProvidedByGlobal | ConsumedByZone
+	// KDSDisabledFlag is a flag that indicates that this resource type is not sent using KDS.
+	KDSDisabledFlag = KDSFlagType(0)
+
+	// ZoneToGlobalFlag is a flag that indicates that this resource type is sent from Zone CP to Global CP.
+	ZoneToGlobalFlag = KDSFlagType(1)
+
+	// GlobalToAllZonesFlag is a flag that indicates that this resource type is sent from Global CP to all zones.
+	GlobalToAllZonesFlag = KDSFlagType(1 << 2)
+
+	// GlobalToAllButOriginalZoneFlag is a flag that indicates that this resource type is sent from Global CP to
+	// all zones except the zone where the resource was originally created. Today the only resource that has this
+	// flag is ZoneIngress.
+	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
+)
+
+const (
+	// GlobalToZoneSelector is selector for all flags that indicate resource sync from Global to Zone.
+	// Can't be used as KDS flag for resource type.
+	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
+
+	// AllowedOnGlobalSelector is selector for all flags that indicate resource can be created on Global.
+	AllowedOnGlobalSelector = GlobalToAllZonesFlag
+
+	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
+	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
@@ -68,6 +92,27 @@ type Resource interface {
 	Descriptor() ResourceTypeDescriptor
 }
 
+type ResourceHasher interface {
+	Hash() []byte
+}
+
+func Hash(resource Resource) []byte {
+	if r, ok := resource.(ResourceHasher); ok {
+		return r.Hash()
+	}
+	return HashMeta(resource)
+}
+
+func HashMeta(r Resource) []byte {
+	meta := r.GetMeta()
+	hasher := fnv.New128a()
+	_, _ = hasher.Write([]byte(r.Descriptor().Name))
+	_, _ = hasher.Write([]byte(meta.GetMesh()))
+	_, _ = hasher.Write([]byte(meta.GetName()))
+	_, _ = hasher.Write([]byte(meta.GetVersion()))
+	return hasher.Sum(nil)
+}
+
 type ResourceValidator interface {
 	Validate() error
 }
@@ -77,6 +122,15 @@ func Validate(resource Resource) error {
 		return rv.Validate()
 	}
 	return nil
+}
+
+type OverviewResource interface {
+	SetOverviewSpec(resource Resource, insight Resource) error
+}
+
+type ResourceWithInsights interface {
+	NewInsightList() ResourceList
+	NewOverviewList() ResourceList
 }
 
 type ResourceTypeDescriptor struct {
@@ -112,15 +166,27 @@ type ResourceTypeDescriptor struct {
 	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
+	// IsTargetRefBased indicates if a policy uses targetRef or not
+	IsTargetRefBased bool
+	// HasToTargetRef indicates that the policy can be applied to outbound traffic
+	HasToTargetRef bool
+	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
+	HasFromTargetRef bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
+	// Insight contains the insight type attached to this resourceType
+	Insight Resource
+	// Overview contains the overview type attached to this resourceType
+	Overview Resource
+	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
+	DumpForGlobal bool
 }
 
-func (d ResourceTypeDescriptor) NewObject() Resource {
-	specType := reflect.TypeOf(d.Resource.GetSpec()).Elem()
+func newObject(baseResource Resource) Resource {
+	specType := reflect.TypeOf(baseResource.GetSpec()).Elem()
 	newSpec := reflect.New(specType).Interface().(ResourceSpec)
 
-	resType := reflect.TypeOf(d.Resource).Elem()
+	resType := reflect.TypeOf(baseResource).Elem()
 	resource := reflect.New(resType).Interface().(Resource)
 
 	if err := resource.SetSpec(newSpec); err != nil {
@@ -130,9 +196,45 @@ func (d ResourceTypeDescriptor) NewObject() Resource {
 	return resource
 }
 
+func (d ResourceTypeDescriptor) NewObject() Resource {
+	return newObject(d.Resource)
+}
+
 func (d ResourceTypeDescriptor) NewList() ResourceList {
 	listType := reflect.TypeOf(d.ResourceList).Elem()
 	return reflect.New(listType).Interface().(ResourceList)
+}
+
+func (d ResourceTypeDescriptor) HasInsights() bool {
+	return d.Insight != nil
+}
+
+func (d ResourceTypeDescriptor) NewInsight() Resource {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return newObject(d.Insight)
+}
+
+func (d ResourceTypeDescriptor) NewInsightList() ResourceList {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return d.Insight.Descriptor().NewList()
+}
+
+func (d ResourceTypeDescriptor) NewOverview() Resource {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return newObject(d.Overview)
+}
+
+func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
+	if !d.HasInsights() {
+		panic("No insight type precondition broken")
+	}
+	return d.Overview.Descriptor().NewList()
 }
 
 type TypeFilter interface {
@@ -153,7 +255,7 @@ func HasKDSFlag(flagType KDSFlagType) TypeFilter {
 
 func HasKdsEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags != 0
+		return descriptor.KDSFlags != KDSDisabledFlag
 	})
 }
 
@@ -204,6 +306,18 @@ func Not(filter TypeFilter) TypeFilter {
 	})
 }
 
+func Or(filters ...TypeFilter) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		for _, filter := range filters {
+			if filter.Apply(descriptor) {
+				return true
+			}
+		}
+
+		return false
+	})
+}
+
 type ByMeta []Resource
 
 func (a ByMeta) Len() int { return len(a) }
@@ -216,6 +330,18 @@ func (a ByMeta) Less(i, j int) bool {
 }
 
 func (a ByMeta) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
+const (
+	// K8sNamespaceComponent identifies the namespace component of a resource name on Kubernetes.
+	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
+	// The value has a format of a Kubernetes label name.
+	K8sNamespaceComponent = "k8s.kuma.io/namespace"
+
+	// K8sNameComponent identifies the name component of a resource name on Kubernetes.
+	// The value is considered a part of user-facing Kuma API and should not be changed lightly.
+	// The value has a format of a Kubernetes label name.
+	K8sNameComponent = "k8s.kuma.io/name"
+)
 
 type ResourceType string
 
@@ -247,6 +373,73 @@ type ResourceMeta interface {
 	GetMesh() string
 	GetCreationTime() time.Time
 	GetModificationTime() time.Time
+	GetLabels() map[string]string
+}
+
+// IsReferenced check if `refMeta` references with `refName` the entity `resourceMeta`
+// This is required because in multi-zone policies may have names different from the name they are defined with.
+func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMeta) bool {
+	if refMeta.GetMesh() != resourceMeta.GetMesh() {
+		return false
+	}
+
+	if len(refMeta.GetNameExtensions()) == 0 {
+		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
+	}
+
+	nsRef := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	nsRes := refMeta.GetNameExtensions()[K8sNamespaceComponent]
+	if nsRef == "" || nsRef != nsRes {
+		return false
+	}
+
+	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
+}
+
+func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+	switch mode {
+	case config_core.Global:
+		origin, ok := ResourceOrigin(r.GetMeta())
+		return !ok || origin == mesh_proto.GlobalResourceOrigin
+	case config_core.Zone:
+		origin, _ := ResourceOrigin(r.GetMeta())
+		return origin == mesh_proto.ZoneResourceOrigin
+	default:
+		return true
+	}
+}
+
+func GetDisplayName(r Resource) string {
+	// prefer display name as it's more predictable, because
+	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
+	// * When policies are synced to Zone, hash suffix also breaks sorting
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+		return labels[mesh_proto.DisplayName]
+	}
+	return r.GetMeta().GetName()
+}
+
+func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
+	}
+	return "", false
+}
+
+// ZoneOfResource returns zone from which the resource was synced to Global CP
+// There is no information in the resource itself whether the resource is synced or created on the CP.
+// Therefore, it's a caller responsibility to make use it only on synced resources.
+func ZoneOfResource(res Resource) string {
+	if labels := res.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
+		return labels[mesh_proto.ZoneTag]
+	}
+	parts := strings.Split(res.GetMeta().GetName(), ".")
+	return parts[0]
+}
+
+func equalNames(mesh, n1, n2 string) bool {
+	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
+	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
@@ -259,12 +452,44 @@ func MetaToResourceKey(meta ResourceMeta) ResourceKey {
 	}
 }
 
+func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
+	rkey := []ResourceKey{}
+	for _, r := range rl.GetItems() {
+		rkey = append(rkey, MetaToResourceKey(r.GetMeta()))
+	}
+	return rkey
+}
+
+func ResourceListByMesh(rl ResourceList) (map[string]ResourceList, error) {
+	res := map[string]ResourceList{}
+	for _, r := range rl.GetItems() {
+		mrl, ok := res[r.GetMeta().GetMesh()]
+		if !ok {
+			mrl = r.Descriptor().NewList()
+			res[r.GetMeta().GetMesh()] = mrl
+		}
+		if err := mrl.AddItem(r); err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func ResourceListHash(rl ResourceList) []byte {
+	hasher := fnv.New128()
+	for _, entity := range rl.GetItems() {
+		_, _ = hasher.Write(Hash(entity))
+	}
+	return hasher.Sum(nil)
+}
+
 type ResourceList interface {
 	GetItemType() ResourceType
 	GetItems() []Resource
 	NewItem() Resource
 	AddItem(Resource) error
 	GetPagination() *Pagination
+	SetPagination(pagination Pagination)
 }
 
 type Pagination struct {
@@ -297,10 +522,31 @@ type ResourceWithAddress interface {
 	AdminAddress(defaultAdminPort uint32) string
 }
 
-// ZoneOfResource returns zone from which the resource was synced to Global CP
-// There is no information in the resource itself whether the resource is synced or created on the CP.
-// Therefore, it's a caller responsibility to make use it only on synced resources.
-func ZoneOfResource(res Resource) string {
-	parts := strings.Split(res.GetMeta().GetName(), ".")
-	return parts[0]
+type PolicyItem interface {
+	GetTargetRef() common_api.TargetRef
+	GetDefault() interface{}
+}
+
+type TransformDefaultAfterMerge interface {
+	Transform()
+}
+
+type Policy interface {
+	ResourceSpec
+	GetTargetRef() common_api.TargetRef
+}
+
+type PolicyWithToList interface {
+	Policy
+	GetToList() []PolicyItem
+}
+
+type PolicyWithFromList interface {
+	Policy
+	GetFromList() []PolicyItem
+}
+
+type PolicyWithSingleItem interface {
+	Policy
+	GetPolicyItem() PolicyItem
 }

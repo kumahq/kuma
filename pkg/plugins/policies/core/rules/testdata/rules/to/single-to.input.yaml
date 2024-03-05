@@ -1,0 +1,23 @@
+# MeshRetry with nothing specific
+type: MeshRetry
+mesh: mesh-1
+name: retry-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        tcp:
+          maxConnectAttempt: 5
+        http:
+          perTryTimeout: 20s
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        tcp:
+          maxConnectAttempt: 5
+        http:
+          numRetries: 10

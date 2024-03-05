@@ -1,0 +1,18 @@
+controlPlane:
+  url: invalid-url
+  retry:
+    backoff: 0s
+    maxDuration: 0s
+dataplane:
+  mesh:
+  # If anything changes the order of environment variables in Kubernetes,
+  # and $POD_NAME or $POD_NAMESPACE are defined after $KUMA_DATAPLANE_NAME,
+  # the name might contain only the names of the environment variables
+  # instead of their values.
+  name: $(POD_NAME).$(POD_NAMESPACE)
+  # If a field value is not valid, config loader fails early
+  # and `Validate()` method is not be called at all.
+  drainTime: 0
+  proxyType: dataplane
+dataplaneRuntime:
+  binaryPath:

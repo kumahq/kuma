@@ -33,7 +33,7 @@ func VirtualOutbound() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(meshName))
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	BeforeEach(func() {

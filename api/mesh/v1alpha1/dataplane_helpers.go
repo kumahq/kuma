@@ -12,9 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// To remove in the future.
-// TODO: https://github.com/kumahq/kuma/issues/4772
-var EnableLocalhostInboundClusters bool
+const (
+	KubeNamespaceTag = "k8s.kuma.io/namespace"
+	KubeServiceTag   = "k8s.kuma.io/service-name"
+	KubePortTag      = "k8s.kuma.io/service-port"
+)
 
 const (
 	// Mandatory tag that has a reserved meaning in Kuma.
@@ -40,7 +42,32 @@ const (
 
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
+
+	// DisplayName is a standard label that can be used to easier recognize policy name.
+	// On Kubernetes, Kuma resource name contains namespace. Display name is original name without namespace.
+	// The name contains hash when the resource is synced from global to zone. In this case, display name is original name from originated CP.
+	DisplayName = "kuma.io/display-name"
+
+	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
+	// It can be either "global" or "zone".
+	ResourceOriginLabel = "kuma.io/origin"
 )
+
+type ResourceOrigin string
+
+const (
+	GlobalResourceOrigin ResourceOrigin = "global"
+	ZoneResourceOrigin   ResourceOrigin = "zone"
+)
+
+func (o ResourceOrigin) IsValid() error {
+	switch o {
+	case GlobalResourceOrigin, ZoneResourceOrigin:
+		return nil
+	default:
+		return errors.Errorf("unknown resource origin %q", o)
+	}
+}
 
 type ProxyType string
 
@@ -145,6 +172,15 @@ func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
 	return ifaces
 }
 
+func (n *Dataplane_Networking) GetInboundForPort(port uint32) *Dataplane_Networking_Inbound {
+	for _, inbound := range n.Inbound {
+		if port == inbound.Port {
+			return inbound
+		}
+	}
+	return nil
+}
+
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {
 	iface := InboundInterface{
 		DataplanePort: inbound.Port,
@@ -162,12 +198,7 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
 	} else {
-		switch EnableLocalhostInboundClusters {
-		case true:
-			iface.WorkloadIP = "127.0.0.1"
-		default:
-			iface.WorkloadIP = iface.DataplaneIP
-		}
+		iface.WorkloadIP = iface.DataplaneIP
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort
@@ -180,6 +211,9 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbound {
 	var inbounds []*Dataplane_Networking_Inbound
 	for _, inbound := range n.GetInbound() {
+		if inbound.GetState() != Dataplane_Networking_Inbound_Ready {
+			continue
+		}
 		if inbound.Health != nil && !inbound.Health.Ready {
 			continue
 		}
@@ -235,15 +269,15 @@ func (d *Dataplane_Networking_Inbound) GetProtocol() string {
 	return d.Tags[ProtocolTag]
 }
 
-// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
-// Remove it and migrate to GetTags() once "kuma.io/service" field is removed.
-func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
-	if d.Tags == nil {
-		return map[string]string{
-			ServiceTag: d.Service,
-		}
+// GetService returns a service name represented by this outbound interface.
+//
+// The purpose of this method is to encapsulate implementation detail
+// that service is modeled as a tag rather than a separate field.
+func (d *Dataplane_Networking_Outbound) GetService() string {
+	if d == nil || d.GetTags() == nil {
+		return ""
 	}
-	return d.Tags
+	return d.GetTags()[ServiceTag]
 }
 
 const MatchAllTag = "*"
@@ -323,8 +357,14 @@ func (t SingleValueTagSet) Keys() []string {
 	return keys
 }
 
-func Merge(other ...SingleValueTagSet) SingleValueTagSet {
-	merged := SingleValueTagSet{}
+func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
+	// Small optimization, to not iterate over the whole map if only one
+	// argument is provided
+	if len(other) == 1 {
+		return other[0]
+	}
+
+	merged := TagSet{}
 
 	for _, t := range other {
 		for k, v := range t {
@@ -333,6 +373,11 @@ func Merge(other ...SingleValueTagSet) SingleValueTagSet {
 	}
 
 	return merged
+}
+
+// MergeAs is just syntactic sugar which converts merged result to assumed type
+func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
+	return R(Merge(other...))
 }
 
 func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {

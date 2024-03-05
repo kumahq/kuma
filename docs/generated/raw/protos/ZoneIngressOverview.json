@@ -1,0 +1,299 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ZoneIngressOverview",
+    "definitions": {
+        "ZoneIngressOverview": {
+            "properties": {
+                "zone_ingress": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngress",
+                    "additionalProperties": true
+                },
+                "zone_ingress_insight": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngressInsight",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Ingress Overview",
+            "description": "ZoneIngressOverview defines the projected state of a ZoneIngress."
+        },
+        "kuma.mesh.v1alpha1.DiscoveryServiceStats": {
+            "properties": {
+                "responses_sent": {
+                    "type": "string",
+                    "description": "Number of xDS responses sent to the Dataplane."
+                },
+                "responses_acknowledged": {
+                    "type": "string",
+                    "description": "Number of xDS responses ACKed by the Dataplane."
+                },
+                "responses_rejected": {
+                    "type": "string",
+                    "description": "Number of xDS responses NACKed by the Dataplane."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Service Stats",
+            "description": "DiscoveryServiceStats defines all stats over a single xDS service."
+        },
+        "kuma.mesh.v1alpha1.DiscoverySubscription": {
+            "properties": {
+                "id": {
+                    "minLength": 1,
+                    "type": "string",
+                    "description": "Unique id per ADS subscription."
+                },
+                "control_plane_instance_id": {
+                    "minLength": 1,
+                    "type": "string",
+                    "description": "Control Plane instance that handled given subscription."
+                },
+                "connect_time": {
+                    "type": "string",
+                    "description": "Time when a given Dataplane connected to the Control Plane.",
+                    "format": "date-time"
+                },
+                "disconnect_time": {
+                    "type": "string",
+                    "description": "Time when a given Dataplane disconnected from the Control Plane.",
+                    "format": "date-time"
+                },
+                "status": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoverySubscriptionStatus",
+                    "additionalProperties": true,
+                    "description": "Status of the ADS subscription."
+                },
+                "version": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Version",
+                    "additionalProperties": true,
+                    "description": "Version of Envoy and Kuma dataplane"
+                },
+                "generation": {
+                    "type": "integer",
+                    "description": "Generation is an integer number which is periodically increased by the status sink"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Subscription",
+            "description": "DiscoverySubscription describes a single ADS subscription created by a Dataplane to the Control Plane. Ideally, there should be only one such subscription per Dataplane lifecycle. Presence of multiple subscriptions might indicate one of the following events: - transient loss of network connection between Dataplane and Control Plane - Dataplane restart (i.e. hot restart or crash) - Control Plane restart (i.e. rolling update or crash) - etc"
+        },
+        "kuma.mesh.v1alpha1.DiscoverySubscriptionStatus": {
+            "properties": {
+                "last_update_time": {
+                    "type": "string",
+                    "description": "Time when status of a given ADS subscription was most recently updated.",
+                    "format": "date-time"
+                },
+                "total": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "Total defines an aggregate over individual xDS stats."
+                },
+                "cds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "CDS defines all CDS stats."
+                },
+                "eds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "EDS defines all EDS stats."
+                },
+                "lds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "LDS defines all LDS stats."
+                },
+                "rds": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoveryServiceStats",
+                    "additionalProperties": true,
+                    "description": "RDS defines all RDS stats."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Discovery Subscription Status",
+            "description": "DiscoverySubscriptionStatus defines status of an ADS subscription."
+        },
+        "kuma.mesh.v1alpha1.EnvoyAdmin": {
+            "properties": {
+                "port": {
+                    "type": "integer",
+                    "description": "Port on which Envoy Admin API server will be listening"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Admin"
+        },
+        "kuma.mesh.v1alpha1.EnvoyVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Envoy"
+                },
+                "build": {
+                    "type": "string",
+                    "description": "Full build tag of Envoy version"
+                },
+                "kumaDpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Envoy version is compatible with Kuma DP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Version",
+            "description": "EnvoyVersion describes details of Envoy version"
+        },
+        "kuma.mesh.v1alpha1.KumaDpVersion": {
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Version number of Kuma Dataplane"
+                },
+                "gitTag": {
+                    "type": "string",
+                    "description": "Git tag of Kuma Dataplane version"
+                },
+                "gitCommit": {
+                    "type": "string",
+                    "description": "Git commit of Kuma Dataplane version"
+                },
+                "buildDate": {
+                    "type": "string",
+                    "description": "Build date of Kuma Dataplane version"
+                },
+                "kumaCpCompatible": {
+                    "type": "boolean",
+                    "description": "True iff Kuma DP version is compatible with Kuma CP version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Kuma Dp Version",
+            "description": "KumaDpVersion describes details of Kuma Dataplane version"
+        },
+        "kuma.mesh.v1alpha1.Version": {
+            "properties": {
+                "kumaDp": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.KumaDpVersion",
+                    "additionalProperties": true,
+                    "description": "Version of Kuma Dataplane"
+                },
+                "envoy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyVersion",
+                    "additionalProperties": true,
+                    "description": "Version of Envoy"
+                },
+                "dependencies": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Versions of other dependencies, i.e. CoreDNS"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Version",
+            "description": "Version defines version of Kuma Dataplane and Envoy"
+        },
+        "kuma.mesh.v1alpha1.ZoneIngress": {
+            "properties": {
+                "zone": {
+                    "type": "string",
+                    "description": "Zone field contains Zone name where ingress is serving, field will be automatically set by Global Kuma CP"
+                },
+                "networking": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngress.Networking",
+                    "additionalProperties": true,
+                    "description": "Networking defines the address and port of the Ingress to listen on. Additionally publicly advertised address and port could be specified."
+                },
+                "availableServices": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneIngress.AvailableService"
+                    },
+                    "type": "array",
+                    "description": "AvailableService contains tags that represent unique subset of endpoints"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Ingress",
+            "description": "ZoneIngress allows us to configure dataplane in the Ingress mode. In this mode, dataplane has only inbound interfaces. Every inbound interface matches with services that reside in that cluster."
+        },
+        "kuma.mesh.v1alpha1.ZoneIngress.AvailableService": {
+            "properties": {
+                "tags": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "tags of the service"
+                },
+                "instances": {
+                    "type": "integer",
+                    "description": "number of instances available for given tags"
+                },
+                "mesh": {
+                    "type": "string",
+                    "description": "mesh of the instances available for given tags"
+                },
+                "externalService": {
+                    "type": "boolean",
+                    "description": "instance of external service available from the zone"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Available Service"
+        },
+        "kuma.mesh.v1alpha1.ZoneIngress.Networking": {
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "description": "Address on which inbound listener will be exposed"
+                },
+                "advertisedAddress": {
+                    "type": "string",
+                    "description": "AdvertisedAddress defines IP or DNS name on which ZoneIngress is accessible to other Kuma clusters."
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port of the inbound interface that will forward requests to the service."
+                },
+                "advertisedPort": {
+                    "type": "integer",
+                    "description": "AdvertisedPort defines port on which ZoneIngress is accessible to other Kuma clusters."
+                },
+                "admin": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyAdmin",
+                    "additionalProperties": true,
+                    "description": "Admin contains configuration related to Envoy Admin API"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Networking"
+        },
+        "kuma.mesh.v1alpha1.ZoneIngressInsight": {
+            "properties": {
+                "subscriptions": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.DiscoverySubscription"
+                    },
+                    "type": "array",
+                    "description": "List of ADS subscriptions created by a given Zone Kuma CP."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Ingress Insight",
+            "description": "ZoneIngressInsight defines the observed state of a Zone Ingress."
+        }
+    }
+}

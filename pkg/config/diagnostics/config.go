@@ -9,6 +9,8 @@ import (
 )
 
 type DiagnosticsConfig struct {
+	config.BaseConfig
+
 	// Port of Diagnostic Server for checking health and readiness of the Control Plane
 	ServerPort uint32 `json:"serverPort" envconfig:"kuma_diagnostics_server_port"`
 	// If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
@@ -28,9 +30,6 @@ type DiagnosticsConfig struct {
 }
 
 var _ config.Config = &DiagnosticsConfig{}
-
-func (d *DiagnosticsConfig) Sanitize() {
-}
 
 func (d *DiagnosticsConfig) Validate() error {
 	var errs error

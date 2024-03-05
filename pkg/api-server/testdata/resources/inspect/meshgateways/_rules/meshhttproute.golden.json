@@ -1,0 +1,198 @@
+{
+ "httpMatches": [
+  {
+   "hash": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs=",
+   "match": [
+    {
+     "path": {
+      "value": "/api/v2",
+      "type": "PathPrefix"
+     }
+    }
+   ]
+  },
+  {
+   "hash": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU=",
+   "match": [
+    {
+     "path": {
+      "value": "/api",
+      "type": "PathPrefix"
+     }
+    }
+   ]
+  }
+ ],
+ "resource": {
+  "mesh": "default",
+  "name": "the-gateway",
+  "type": "MeshGateway"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "toRules": [
+    {
+     "conf": {
+      "rules": [
+       {
+        "matches": [
+         {
+          "path": {
+           "value": "/api/v2",
+           "type": "PathPrefix"
+          }
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "1.0"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "matches": [
+         {
+          "path": {
+           "value": "/api",
+           "type": "PathPrefix"
+          }
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "other-svc",
+           "tags": {
+            "version": "1.0"
+           }
+          },
+          {
+           "kind": "MeshServiceSubset",
+           "name": "other-svc-2",
+           "tags": {
+            "version": "1.0"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "matchers": [],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "the-http-route",
+       "type": "MeshHTTPRoute"
+      },
+      {
+       "mesh": "default",
+       "name": "the-other-http-route",
+       "type": "MeshHTTPRoute"
+      }
+     ]
+    }
+   ],
+   "type": "MeshHTTPRoute",
+   "warnings": []
+  },
+  {
+   "fromRules": [],
+   "toRules": [
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "15s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": false,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "on-route",
+       "type": "MeshTimeout"
+      },
+      {
+       "mesh": "default",
+       "name": "on-service",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "20s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": true,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "on-service",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "15s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": false,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": true,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "on-route",
+       "type": "MeshTimeout"
+      }
+     ]
+    }
+   ],
+   "type": "MeshTimeout",
+   "warnings": []
+  }
+ ]
+}

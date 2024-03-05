@@ -114,6 +114,7 @@ networking:
     redirectPortOutbound: %s
 `
 
+	AppModeTcpSink      = "tcp-sink"
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
@@ -127,6 +128,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -153,6 +155,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   outbound:
   - port: 4000
     tags:
@@ -176,6 +179,7 @@ networking:
     tags:
       kuma.io/service: %s
       team: client-owners
+%s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
@@ -191,22 +195,25 @@ type UniversalApp struct {
 	mainAppEnv    map[string]string
 	mainAppArgs   []string
 	dpApp         *ssh.App
+	dpEnv         map[string]string
 	ports         map[string]string
 	container     string
 	containerName string
 	ip            string
 	verbose       bool
 	mesh          string
+	concurrency   int
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
-		logsPath:      universal_logs.CreateLogsPath(Config.UniversalE2ELogsPath),
+		logsPath:      universal_logs.CurrentLogsPath(Config.UniversalE2ELogsPath),
 		ports:         map[string]string{},
 		verbose:       verbose,
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
+		concurrency:   concurrency,
 	}
 	if containerName != "" {
 		app.containerName = containerName
@@ -225,7 +232,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 	dockerExtraOptions := []string{
 		"--network", "kind",
 	}
-	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker(isipv6)...)
+	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
 	if !isipv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
 		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
@@ -294,17 +301,17 @@ func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	}
 }
 
-func (s *UniversalApp) publishPortsForDocker(isipv6 bool) []string {
+func (s *UniversalApp) publishPortsForDocker() []string {
 	// If we aren't using IPv6 in the container then we only want to listen on
 	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
 	// the container and having the container not respond.
-	ip := "0.0.0.0::"
-	if isipv6 {
-		ip = ""
-	}
+	// We only use the ipv4 address to access the container services
+	// even if ipv6 is enabled in the container to prevent port number conflicts
+	// between ipv4 and ipv6 addresses.
+	ipv4Ip := "0.0.0.0::"
 	var args []string
 	for port := range s.ports {
-		args = append(args, "--publish="+ip+port)
+		args = append(args, "--publish="+ipv4Ip+port)
 	}
 	return args
 }
@@ -369,7 +376,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
 		"wget",
-		fmt.Sprintf("https://download.konghq.com/mesh-alpine/kuma-%s-ubuntu-amd64.tar.gz", version),
+		fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-amd64/versions/%[1]s/kuma-%[1]s-linux-amd64.tar.gz", version),
 		"-O",
 		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
 	}).Run()
@@ -423,6 +430,7 @@ func (s *UniversalApp) CreateDP(
 	builtindns bool,
 	proxyType string,
 	concurrency int,
+	envsMap map[string]string,
 ) {
 	// create the token file on the app container
 	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
@@ -466,24 +474,16 @@ func (s *UniversalApp) CreateDP(
 		args = append(args, "--proxy-type", proxyType)
 	}
 
-	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], nil, args)
+	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
 
-func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool, transparentProxyV1 bool) {
+func (s *UniversalApp) setupTransparent(builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-dp-uid", "5678",
 		"--skip-dns-conntrack-zone-split",
-	}
-
-	if transparentProxyV1 {
-		args = append(args,
-			"--kuma-cp-ip", cpIp,
-			"--use-transparent-proxy-engine-v1",
-		)
-	} else {
-		args = append(args, "--exclude-inbound-ports", "22")
+		"--exclude-inbound-ports", "22",
 	}
 
 	if builtindns {

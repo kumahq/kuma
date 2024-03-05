@@ -1,0 +1,15 @@
+{
+ "items": [
+  {
+   "mesh": "default",
+   "name": "dp-1",
+   "type": "Dataplane"
+  },
+  {
+   "mesh": "default",
+   "name": "dp-2",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 2
+}

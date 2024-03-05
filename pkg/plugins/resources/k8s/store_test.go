@@ -483,6 +483,7 @@ var _ = Describe("KubernetesStore", func() {
 				"k8s.kuma.io/namespace": "",
 				"k8s.kuma.io/name":      name,
 			}))
+			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal(name))
 			// and
 			Expect(actual.Spec.Conf.Destination["path"]).To(Equal("/example"))
 		})
@@ -530,6 +531,34 @@ var _ = Describe("KubernetesStore", func() {
 					},
 				},
 			}))
+		})
+
+		It("should return a display name from annotation", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
+            mesh: default
+            metadata:
+              annotations:
+                kuma.io/display-name: dn
+              name: %s
+            spec:
+              conf:
+                destination:
+                  path: /example
+`, name))
+			backend.Create(expected)
+
+			// given
+			actual := core_mesh.NewTrafficRouteResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal("dn"))
 		})
 	})
 
@@ -598,7 +627,7 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(trl.Items).To(HaveLen(0))
+			Expect(trl.Items).To(BeEmpty())
 		})
 
 		It("should return a list of matching resource", func() {

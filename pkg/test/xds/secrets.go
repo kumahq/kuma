@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"context"
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -64,6 +65,7 @@ func (ts *TestSecrets) get(meshes []*core_mesh.MeshResource) (*core_xds.Identity
 }
 
 func (ts *TestSecrets) GetForZoneEgress(
+	_ context.Context,
 	_ *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
@@ -73,6 +75,7 @@ func (ts *TestSecrets) GetForZoneEgress(
 }
 
 func (ts *TestSecrets) GetForDataPlane(
+	_ context.Context,
 	_ *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	meshes []*core_mesh.MeshResource,
@@ -82,6 +85,7 @@ func (ts *TestSecrets) GetForDataPlane(
 }
 
 func (ts *TestSecrets) GetAllInOne(
+	_ context.Context,
 	mesh *core_mesh.MeshResource,
 	_ *core_mesh.DataplaneResource,
 	meshes []*core_mesh.MeshResource,

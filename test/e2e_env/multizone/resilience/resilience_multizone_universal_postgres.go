@@ -12,14 +12,17 @@ import (
 )
 
 func ResilienceMultizoneUniversalPostgres() {
-	const clusterName1 = "kuma-respos1"
-	const clusterName2 = "kuma-respos2"
+	var clusterName1 string
+	var clusterName2 string
 
 	var global, zoneUniversal Cluster
 
 	BeforeEach(func() {
+		testingT := NewTestingT()
+		clusterName1 = "kuma1-" + testingT.Hash()
+		clusterName2 = "kuma2-" + testingT.Hash()
 		// Global
-		global = NewUniversalCluster(NewTestingT(), clusterName1, Verbose)
+		global = NewUniversalCluster(testingT, clusterName1, Verbose)
 
 		err := NewClusterSetup().
 			Install(postgres.Install(clusterName1)).
@@ -159,5 +162,22 @@ func ResilienceMultizoneUniversalPostgres() {
 		Eventually(func() (string, error) {
 			return zoneUniversal.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
 		}, "40s", "1s").Should(ContainSubstring("Offline"))
+	})
+
+	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9345
+	XIt("should mark zone as offline when zone control-plane is down", func() {
+		// given zone connected to global
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainSubstring("Online"))
+
+		// when Zone CP is killed
+		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then zone is offline immediately
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "10s", "1s").Should(ContainSubstring("Offline"))
 	})
 }

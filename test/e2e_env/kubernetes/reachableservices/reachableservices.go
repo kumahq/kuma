@@ -17,6 +17,7 @@ func ReachableServices() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MTLSMeshKubernetes(meshName)).
+			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("client-server"),
@@ -40,7 +41,7 @@ func ReachableServices() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(meshName))
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should be able to connect to reachable services", func() {

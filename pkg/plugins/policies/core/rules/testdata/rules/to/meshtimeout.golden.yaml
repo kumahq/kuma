@@ -1,0 +1,59 @@
+Rules:
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 15s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: override
+    type: MeshTimeout
+  Subset:
+  - Key: kuma.io/service
+    Not: false
+    Value: foo
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 20s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: override
+    type: MeshTimeout
+  Subset:
+  - Key: kuma.io/service
+    Not: false
+    Value: bar
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: kuma.io/service
+    Not: true
+    Value: bar
+  - Key: kuma.io/service
+    Not: true
+    Value: foo

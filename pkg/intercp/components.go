@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	"github.com/kumahq/kuma/pkg/intercp/server"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
+	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 var log = core.Log.WithName("inter-cp")
@@ -47,6 +47,7 @@ func Setup(rt runtime.Runtime) error {
 	go pool.StartCleanup(rt.AppContext(), time.NewTicker(10*time.Second))
 
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
+	ctx = multitenant.WithTenant(ctx, multitenant.GlobalTenantID)
 	registerComponent := component.ComponentFunc(func(stop <-chan struct{}) error {
 		certs, err := generateCerts(ctx, rt.ReadOnlyResourceManager(), cfg.Catalog.InstanceAddress)
 		if err != nil {
@@ -57,7 +58,7 @@ func Setup(rt runtime.Runtime) error {
 			ClientCert: certs.client,
 		})
 
-		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca)
+		interCpServer, err := server.New(cfg.Server, rt.Metrics(), certs.server, certs.ca, instance.Id)
 		if err != nil {
 			return errors.Wrap(err, "could not start inter-cp server")
 		}
@@ -66,27 +67,32 @@ func Setup(rt runtime.Runtime) error {
 		envoyAdminServer := envoyadmin.NewServer(
 			admin.NewKDSEnvoyAdminClient(
 				rt.KDSContext().EnvoyAdminRPCs,
-				rt.Config().Store.Type == store.KubernetesStore,
+				rt.ReadOnlyResourceManager(),
 			),
 			rt.ResourceManager(),
 		)
 		mesh_proto.RegisterInterCPEnvoyAdminForwardServiceServer(interCpServer.GrpcServer(), envoyAdminServer)
 
-		return rt.Add(
-			interCpServer,
-			catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
-				conn, err := pool.Client(serverURL)
-				if err != nil {
-					return nil, errors.Wrap(err, "could not create inter-cp client")
-				}
-				return system_proto.NewInterCpPingServiceClient(conn), nil
-			}),
-		)
+		heartbeatComponent, err := catalog.NewHeartbeatComponent(c, instance, cfg.Catalog.HeartbeatInterval.Duration, func(serverURL string) (system_proto.InterCpPingServiceClient, error) {
+			conn, err := pool.Client(serverURL)
+			if err != nil {
+				return nil, errors.Wrap(err, "could not create inter-cp client")
+			}
+			return system_proto.NewInterCpPingServiceClient(conn), nil
+		}, rt.Metrics())
+		if err != nil {
+			return err
+		}
+		return rt.Add(interCpServer, heartbeatComponent)
 	})
 
+	writer, err := catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration, rt.Metrics())
+	if err != nil {
+		return err
+	}
 	return rt.Add(
 		defaults,
-		catalog.NewWriter(c, heartbeats, instance, cfg.Catalog.WriterInterval.Duration),
+		writer,
 		registerComponent,
 	)
 }

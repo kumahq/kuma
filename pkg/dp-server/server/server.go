@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
@@ -88,6 +89,7 @@ func (d *DpServer) Start(stop <-chan struct{}) error {
 		Addr:              fmt.Sprintf(":%d", d.config.Port),
 		Handler:           http.HandlerFunc(d.handle),
 		TLSConfig:         tlsConfig,
+		ErrorLog:          adapter.ToStd(log),
 	}
 
 	errChan := make(chan error)

@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -12,8 +13,9 @@ import (
 )
 
 type MeteredStore struct {
-	delegate store.ResourceStore
-	metric   *prometheus.HistogramVec
+	delegate  store.ResourceStore
+	metric    *prometheus.HistogramVec
+	conflicts *prometheus.CounterVec
 }
 
 func NewMeteredStore(delegate store.ResourceStore, metrics core_metrics.Metrics) (*MeteredStore, error) {
@@ -23,8 +25,12 @@ func NewMeteredStore(delegate store.ResourceStore, metrics core_metrics.Metrics)
 			Name: "store",
 			Help: "Summary of Store operations",
 		}, []string{"operation", "resource_type"}),
+		conflicts: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "store_conflicts",
+			Help: "Counter of store conflicts while update",
+		}, []string{"resource_type"}),
 	}
-	if err := metrics.Register(meteredStore.metric); err != nil {
+	if err := metrics.BulkRegister(meteredStore.metric, meteredStore.conflicts); err != nil {
 		return nil, err
 	}
 	return &meteredStore, nil
@@ -35,7 +41,11 @@ func (m *MeteredStore) Create(ctx context.Context, resource model.Resource, opti
 	defer func() {
 		m.metric.WithLabelValues("create", string(resource.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
-	return m.delegate.Create(ctx, resource, optionsFunc...)
+	err := m.delegate.Create(ctx, resource, optionsFunc...)
+	if errors.Is(err, &store.ResourceConflictError{}) {
+		m.conflicts.WithLabelValues(string(resource.Descriptor().Name)).Inc()
+	}
+	return err
 }
 
 func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...store.UpdateOptionsFunc) error {
@@ -43,7 +53,11 @@ func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, opti
 	defer func() {
 		m.metric.WithLabelValues("update", string(resource.Descriptor().Name)).Observe(core.Now().Sub(start).Seconds())
 	}()
-	return m.delegate.Update(ctx, resource, optionsFunc...)
+	err := m.delegate.Update(ctx, resource, optionsFunc...)
+	if errors.Is(err, &store.ResourceConflictError{}) {
+		m.conflicts.WithLabelValues(string(resource.Descriptor().Name)).Inc()
+	}
+	return err
 }
 
 func (m *MeteredStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...store.DeleteOptionsFunc) error {

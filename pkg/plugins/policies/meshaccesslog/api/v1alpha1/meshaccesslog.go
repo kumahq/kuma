@@ -2,6 +2,8 @@
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
@@ -10,7 +12,7 @@ import (
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
-	// defined inplace.
+	// defined in-place.
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To []To `json:"to,omitempty"`
@@ -40,7 +42,17 @@ type Conf struct {
 	Backends *[]Backend `json:"backends,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Tcp;File;OpenTelemetry
+type BackendType string
+
+const (
+	TCPBackendType           BackendType = "Tcp"
+	FileBackendType          BackendType = "File"
+	OtelTelemetryBackendType BackendType = "OpenTelemetry"
+)
+
 type Backend struct {
+	Type          BackendType  `json:"type"`
 	Tcp           *TCPBackend  `json:"tcp,omitempty"`
 	File          *FileBackend `json:"file,omitempty"`
 	OpenTelemetry *OtelBackend `json:"openTelemetry,omitempty"`
@@ -52,6 +64,8 @@ type TCPBackend struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	Format *Format `json:"format,omitempty"`
 	// Address of the TCP logging backend
+	// +kubebuilder:example="127.0.0.1:5000"
+	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 }
 
@@ -59,7 +73,14 @@ type TCPBackend struct {
 type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
 	Attributes []JsonValue `json:"attributes,omitempty"`
+	// Body is a raw string or an OTLP any value as described at
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+	// It can contain placeholders available on
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
+	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// Endpoint of OpenTelemetry collector. An empty port defaults to 4317.
 	// +kubebuilder:example="otel-collector:4317"
 	// +kubebuilder:validation:MinLength=1
@@ -72,13 +93,27 @@ type FileBackend struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	Format *Format `json:"format,omitempty"`
 	// Path to a file that logs will be written to
+	// +kubebuilder:example="/tmp/access.log"
+	// +kubebuilder:validation:MinLength=1
 	Path string `json:"path"`
 }
 
+// +kubebuilder:validation:Enum=Plain;Json
+type FormatType string
+
+const (
+	PlainFormatType FormatType = "Plain"
+	JsonFormatType  FormatType = "Json"
+)
+
 type Format struct {
-	Plain           *string      `json:"plain,omitempty"`
-	Json            *[]JsonValue `json:"json,omitempty"`
-	OmitEmptyValues *bool        `json:"omitEmptyValues,omitempty"`
+	Type FormatType `json:"type"`
+	// +kubebuilder:example="[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%"
+	Plain *string `json:"plain,omitempty"`
+	// +kubebuilder:example={{key: "start_time", value: "%START_TIME%"},{key: "bytes_received", value: "%BYTES_RECEIVED%"}}
+	Json *[]JsonValue `json:"json,omitempty"`
+	// +kubebuilder:default=false
+	OmitEmptyValues *bool `json:"omitEmptyValues,omitempty"`
 }
 
 type JsonValue struct {

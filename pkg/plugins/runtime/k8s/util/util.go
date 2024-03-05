@@ -5,9 +5,11 @@ import (
 	"sort"
 
 	"github.com/go-logr/logr"
+	"golang.org/x/exp/maps"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -17,10 +19,13 @@ import (
 
 type ServicePredicate func(*kube_core.Service) bool
 
-func MatchServiceThatSelectsPod(pod *kube_core.Pod) ServicePredicate {
+func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) ServicePredicate {
 	return func(svc *kube_core.Service) bool {
-		selector := kube_labels.SelectorFromSet(svc.Spec.Selector)
-		return selector.Matches(kube_labels.Set(pod.Labels))
+		selector := maps.Clone(svc.Spec.Selector)
+		for _, ignoredLabel := range ignoredLabels {
+			delete(selector, ignoredLabel)
+		}
+		return kube_labels.SelectorFromSet(selector).Matches(kube_labels.Set(pod.Labels))
 	}
 }
 
@@ -117,13 +122,21 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_co
 	return 0, nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
 }
 
-func FindContainerStatus(pod *kube_core.Pod, containerName string) *kube_core.ContainerStatus {
-	for _, cs := range pod.Status.ContainerStatuses {
+func findContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	for _, cs := range append(status, initStatus...) {
 		if cs.Name == containerName {
 			return &cs
 		}
 	}
 	return nil
+}
+
+func FindContainerStatus(containerName string, status []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	return findContainerStatus(containerName, status, nil)
+}
+
+func FindContainerOrInitContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {
+	return findContainerStatus(containerName, status, initStatus)
 }
 
 func CopyStringMap(in map[string]string) map[string]string {
@@ -162,6 +175,7 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 		return mesh
 	}
 
+	// Label wasn't found on the object, let's look on the namespace instead
 	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
 		return mesh
 	}
@@ -169,12 +183,12 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 	return model.DefaultMesh
 }
 
-// ServiceTagFor returns the canonical service name for a Kubernetes service,
+// ServiceTag returns the canonical service name for a Kubernetes service,
 // optionally with a specific port.
-func ServiceTagFor(svc *kube_core.Service, svcPort *int32) string {
+func ServiceTag(name kube_types.NamespacedName, svcPort *int32) string {
 	port := ""
 	if svcPort != nil {
 		port = fmt.Sprintf("_%d", *svcPort)
 	}
-	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
+	return fmt.Sprintf("%s_%s_svc%s", name.Name, name.Namespace, port)
 }

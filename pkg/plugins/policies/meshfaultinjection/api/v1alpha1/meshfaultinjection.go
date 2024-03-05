@@ -17,9 +17,21 @@ type MeshFaultInjection struct {
 
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
+
+	// To list makes a match between clients and corresponding configurations
+	To []To `json:"to,omitempty"`
 }
 
 type From struct {
+	// TargetRef is a reference to the resource that represents a group of
+	// destinations.
+	TargetRef common_api.TargetRef `json:"targetRef"`
+	// Default is a configuration specific to the group of destinations referenced in
+	// 'targetRef'
+	Default Conf `json:"default,omitempty"`
+}
+
+type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
 	TargetRef common_api.TargetRef `json:"targetRef"`
@@ -63,7 +75,7 @@ type DelayConf struct {
 }
 
 type ResponseBandwidthConf struct {
-	// Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+	// Limit is represented by value measure in Gbps, Mbps, kbps, e.g.
 	// 10kbps
 	Limit string `json:"limit"`
 	// Percentage of requests on which response bandwidth limit will be

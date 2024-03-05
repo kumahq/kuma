@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -23,9 +24,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 var muxClientLog = core.Log.WithName("kds-mux-client")
@@ -33,6 +35,7 @@ var muxClientLog = core.Log.WithName("kds-mux-client")
 type client struct {
 	callbacks           Callbacks
 	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
+	zoneToGlobalCb      OnZoneToGlobalSyncStartedFunc
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
@@ -40,34 +43,20 @@ type client struct {
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
-	// stores map[typ]map[resource-name]version in case of reconnect
-	// sends these information in first request so server responds only
-	// with real changes
-	deltaInitState cache_v2.ResourceVersionMap
 }
 
-func NewClient(
-	ctx context.Context,
-	globalURL string,
-	clientID string,
-	callbacks Callbacks,
-	globalToZoneCb OnGlobalToZoneSyncStartedFunc,
-	config multizone.KdsClientConfig,
-	experimantalConfig config.ExperimentalConfig,
-	metrics metrics.Metrics,
-	envoyAdminProcessor service.EnvoyAdminProcessor,
-) component.Component {
+func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
 	return &client{
 		ctx:                 ctx,
 		callbacks:           callbacks,
 		globalToZoneCb:      globalToZoneCb,
+		zoneToGlobalCb:      zoneToGlobalCb,
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
 		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
-		deltaInitState:      cache_v2.ResourceVersionMap{},
 	}
 }
 
@@ -77,7 +66,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		return err
 	}
 	dialOpts := c.metrics.GRPCClientInterceptors()
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(
+	dialOpts = append(dialOpts, grpc.WithUserAgent(version.Build.UserAgent("kds")), grpc.WithDefaultCallOptions(
 		grpc.MaxCallSendMsgSize(int(c.config.MaxMsgSize)),
 		grpc.MaxCallRecvMsgSize(int(c.config.MaxMsgSize))),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -90,7 +79,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig, err := tlsConfig(c.config.RootCAFile)
+		tlsConfig, err := tlsConfig(c.config.RootCAFile, c.config.TlsSkipVerify)
 		if err != nil {
 			return errors.Wrap(err, "could not ")
 		}
@@ -111,19 +100,24 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	withKDSCtx, cancel := context.WithCancel(metadata.AppendToOutgoingContext(c.ctx,
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
+		kds.FeaturesMetadataKey, kds.FeatureZonePingHealth,
+		kds.FeaturesMetadataKey, kds.FeatureHashSuffix,
 	))
 	defer cancel()
 
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	errorCh := make(chan error)
 
-	go c.startXDSConfigs(withKDSCtx, log, conn, stop, errorCh)
-	go c.startStats(withKDSCtx, log, conn, stop, errorCh)
-	go c.startClusters(withKDSCtx, log, conn, stop, errorCh)
+	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
+
+	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
+	go c.startStats(withKDSCtx, log, conn, errorCh)
+	go c.startClusters(withKDSCtx, log, conn, errorCh)
 	if c.experimantalConfig.KDSDeltaEnabled {
-		go c.startGlobalToZoneSync(withKDSCtx, log, conn, stop, errorCh)
+		go c.startGlobalToZoneSync(withKDSCtx, log, conn, errorCh)
+		go c.startZoneToGlobalSync(withKDSCtx, log, conn, errorCh)
 	} else {
-		go c.startKDSMultiplex(withKDSCtx, log, conn, stop, errorCh)
+		go c.startKDSMultiplex(withKDSCtx, log, conn, errorCh)
 	}
 
 	select {
@@ -131,11 +125,12 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		cancel()
 		return errs
 	case err = <-errorCh:
+		cancel()
 		return err
 	}
 }
 
-func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	stream, err := muxClient.StreamMessage(ctx)
@@ -151,48 +146,50 @@ func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *g
 		errorCh <- err
 		return
 	}
-	select {
-	case <-stop:
-		log.Info("KDS stream stopped", "reason", err)
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		err = <-session.Error()
-		errorCh <- err
-	case err = <-session.Error():
+	err = <-session.Error()
+	if errors.Is(err, context.Canceled) {
+		log.Info("KDS stream shutting down")
+	} else {
 		log.Error(err, "KDS stream failed prematurely, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
-		return
 	}
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	errorCh <- err
 }
 
-func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, stop <-chan struct{}, errorCh chan error) {
+func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
 	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log = log.WithValues("rpc", "global-to-zone")
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global to zone sync of resources with delta xDS")
 	stream, err := kdsClient.GlobalToZoneSync(ctx)
 	if err != nil {
 		errorCh <- err
 		return
 	}
-	if err := c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, c.deltaInitState); err != nil {
-		errorCh <- errors.Wrap(err, "closing Global to Zone Sync stream after callback error")
+	processingErrorsCh := make(chan error)
+	c.globalToZoneCb.OnGlobalToZoneSyncStarted(stream, processingErrorsCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+}
+
+func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
+	kdsClient := mesh_proto.NewKDSSyncServiceClient(conn)
+	log = log.WithValues("rpc", "zone-to-global")
+	log.Info("initializing Kuma Discovery Service (KDS) stream for zone to global sync of resources with delta xDS")
+	stream, err := kdsClient.ZoneToGlobalSync(ctx)
+	if err != nil {
+		errorCh <- err
 		return
 	}
-	<-stop
-	log.Info("Global to Zone Sync rpc stream stopped")
-	if err := stream.CloseSend(); err != nil {
-		errorCh <- errors.Wrap(err, "CloseSend returned an error")
-	}
+	processingErrorsCh := make(chan error)
+	c.zoneToGlobalCb.OnZoneToGlobalSyncStarted(stream, processingErrorsCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startXDSConfigs(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -206,14 +203,13 @@ func (c *client) startXDSConfigs(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startStats(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -227,14 +223,13 @@ func (c *client) startStats(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
 }
 
 func (c *client) startClusters(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	stop <-chan struct{},
 	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
@@ -248,34 +243,74 @@ func (c *client) startClusters(
 
 	processingErrorsCh := make(chan error)
 	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(stream, log, stop, processingErrorsCh, errorCh)
+	c.handleProcessingErrors(stream, log, processingErrorsCh, errorCh)
+}
+
+func (c *client) startHealthCheck(
+	ctx context.Context,
+	log logr.Logger,
+	conn *grpc.ClientConn,
+	errorCh chan error,
+) {
+	client := mesh_proto.NewGlobalKDSServiceClient(conn)
+	log = log.WithValues("rpc", "healthcheck")
+	log.Info("starting")
+
+	prevInterval := 5 * time.Minute
+	ticker := time.NewTicker(prevInterval)
+	defer ticker.Stop()
+	for {
+		log.Info("sending health check")
+		resp, err := client.HealthCheck(ctx, &mesh_proto.ZoneHealthCheckRequest{})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			if status.Code(err) == codes.Unimplemented {
+				log.Info("health check unimplemented in server, stopping")
+				return
+			}
+			log.Error(err, "health check failed")
+			errorCh <- errors.Wrap(err, "zone health check request failed")
+		} else if interval := resp.Interval.AsDuration(); interval > 0 {
+			if prevInterval != interval {
+				prevInterval = interval
+				log.Info("Global CP requested new healthcheck interval", "interval", interval)
+			}
+			ticker.Reset(interval)
+		}
+
+		select {
+		case <-ticker.C:
+			continue
+		case <-ctx.Done():
+			log.Info("stopping")
+			return
+		}
+	}
 }
 
 func (c *client) handleProcessingErrors(
 	stream grpc.ClientStream,
 	log logr.Logger,
-	stop <-chan struct{},
 	processingErrorsCh chan error,
 	errorCh chan error,
 ) {
-	select {
-	case <-stop:
-		log.Info("Envoy Admin rpc stream stopped")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-	case err := <-processingErrorsCh:
-		if status.Code(err) == codes.Unimplemented {
-			log.Error(err, "Envoy Admin rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")
-			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
-			return
-		}
-		log.Error(err, "Envoy Admin rpc stream failed prematurely, will restart in background")
-		if err := stream.CloseSend(); err != nil {
-			log.Error(err, "CloseSend returned an error")
-		}
-		errorCh <- err
+	err := <-processingErrorsCh
+	if status.Code(err) == codes.Unimplemented {
+		log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
+		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
+	}
+	if errors.Is(err, context.Canceled) {
+		log.Info("rpc stream shutting down")
+		// Let's not propagate this error further as we've already cancelled the context
+		err = nil
+	} else {
+		log.Error(err, "rpc stream failed prematurely, will restart in background")
+	}
+	if err := stream.CloseSend(); err != nil {
+		log.Error(err, "CloseSend returned an error")
+	}
+	if err != nil {
+		errorCh <- err
 	}
 }
 
@@ -283,22 +318,23 @@ func (c *client) NeedLeaderElection() bool {
 	return true
 }
 
-func tlsConfig(rootCaFile string) (*tls.Config, error) {
-	if rootCaFile == "" {
-		// #nosec G402 -- we allow this when not specifying a CA
-		return &tls.Config{
-			InsecureSkipVerify: true,
-			MinVersion:         tls.VersionTLS12,
-		}, nil
+func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
+	// #nosec G402 -- we let the user decide if they want to ignore verification
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: skipVerify,
+		MinVersion:         tls.VersionTLS12,
 	}
-	roots := x509.NewCertPool()
-	caCert, err := os.ReadFile(rootCaFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+	if rootCaFile != "" {
+		roots := x509.NewCertPool()
+		caCert, err := os.ReadFile(rootCaFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
+		}
+		ok := roots.AppendCertsFromPEM(caCert)
+		if !ok {
+			return nil, errors.New("failed to parse root certificate")
+		}
+		tlsConfig.RootCAs = roots
 	}
-	ok := roots.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, errors.New("failed to parse root certificate")
-	}
-	return &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}, nil
+	return tlsConfig, nil
 }

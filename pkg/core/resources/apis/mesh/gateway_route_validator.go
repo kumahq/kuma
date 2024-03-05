@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"fmt"
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -93,12 +94,26 @@ func validateMeshGatewayRouteHTTPRule(
 		}
 	}
 
-	for i, f := range conf.GetFilters() {
+	var rewriteHostToBackendHostname bool
+	var filters []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter
+
+	for _, f := range conf.GetFilters() {
+		if m := f.GetRewrite(); m != nil {
+			if m.GetHostToBackendHostname() {
+				rewriteHostToBackendHostname = true
+				continue
+			}
+		}
+
+		filters = append(filters, f)
+	}
+
+	for i, f := range filters {
 		if f.GetRedirect() != nil {
 			hasRedirect = true
 		}
 
-		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f, hasPrefixMatch))
+		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f, hasPrefixMatch, rewriteHostToBackendHostname))
 	}
 
 	// It doesn't make sense to redirect and also mirror or rewrite request headers.
@@ -194,7 +209,7 @@ func validateMeshGatewayRouteHTTPMatch(
 func validateMeshGatewayRouteHTTPFilter(
 	path validators.PathBuilder,
 	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Filter,
-	hasPrefixMatch bool,
+	hasPrefixMatch, rewriteHostToBackendHostname bool,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -205,7 +220,17 @@ func validateMeshGatewayRouteHTTPFilter(
 		) validators.ValidationError {
 			var err validators.ValidationError
 			for i, h := range headers {
-				if h.GetName() == "" {
+				switch h.GetName() {
+				case ":authority", "Host", "host":
+					if rewriteHostToBackendHostname {
+						message := fmt.Sprintf(
+							"cannot modify '%s' header, when route has set 'rewrite.host_to_backend_hostname' option",
+							h.GetName(),
+						)
+
+						err.AddViolationAt(path.Index(i), message)
+					}
+				case "":
 					err.AddViolationAt(path.Index(i).Field("name"), "cannot be empty")
 				}
 				if h.GetValue() == "" {

@@ -15,9 +15,6 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if d.Name() == "istio" {
-				return filepath.SkipDir
-			}
 			if d.IsDir() {
 				allDirs = append(allDirs, path)
 			}

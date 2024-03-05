@@ -21,8 +21,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster(given.clusterName)).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.ClientSideTLS(given.endpoints)).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
@@ -148,6 +148,54 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                       trustedCa:
                         inlineBytes: Y2FjZXJ0
                   sni: custom
+            type: EDS
+`,
+		}),
+		Entry("cluster with mTLS and certs but skipHostnameVerification", testCase{
+			clusterName: "testCluster",
+			endpoints: []xds.Endpoint{
+				{
+					Target: "httpbin.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:               true,
+						CaCert:                   []byte("cacert"),
+						ClientCert:               []byte("clientcert"),
+						ClientKey:                []byte("clientkey"),
+						AllowRenegotiation:       true,
+						SkipHostnameVerification: true,
+						ServerName:               "",
+					},
+				},
+			},
+
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            name: testCluster
+            transportSocketMatches:
+            - match: {}
+              name: httpbin.org
+              transportSocket:
+                name: envoy.transport_sockets.tls
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                  allowRenegotiation: true
+                  commonTlsContext:
+                    tlsCertificates:
+                    - certificateChain:
+                        inlineBytes: Y2xpZW50Y2VydA==
+                      privateKey:
+                        inlineBytes: Y2xpZW50a2V5
+                    validationContext:
+                      trustedCa:
+                        inlineBytes: Y2FjZXJ0
+                  sni: httpbin.org
             type: EDS
 `,
 		}),

@@ -10,7 +10,7 @@ contributors and maintainers.
 
 [Slack](https://kuma-mesh.slack.com) is the main chat channel used by the
 community and the maintainers of this project. If you do not have an
-existing account, please follow this [link](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1rcll3y6t-DkV_CAItZUoy0IvCwQ~jlQ) to sign
+existing account, please follow this [link](https://join.slack.com/t/kuma-mesh/shared_invite/zt-1tu98qcw4-pJNW9lRdBqx1I9kF9rvImA) to sign
 up for free.
 
 **Please avoid opening GitHub issues for general questions or help**, as those
@@ -202,6 +202,7 @@ specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
 
 Allowed types are enforced via `commitlint`. The list can be found at the
 [`config-conventional` repository](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum).
+`fix` and `feat` should only be used for end user visibile contributions. A change to CI, build, a MADR or docs contribution should use the respective `ci`, `build`, `test` types.
 
 ##### Scope
 
@@ -279,18 +280,16 @@ Changes that are to be backported should only be critical bug fixes of one of th
 - Security
 - CI/CD (anything related to the release process)
 
-If you think your PR applies and should be backported please add a comment: `@mergifyio backport <release-1.x> <release-1.y>...`.
-Once the PR is approved and merged mergifyio will open a new PR with the backport for each of the branches. If you backport a change it's your responsibility to make sure the backport succeeds.
+If you think your PR applies and should be backported please add the label: `backport`.
+Once the PR is approved and merged the action `backport.yaml` will open a new PR with the backport for each of the maintained branches. If you backport a change it's your responsibility to make sure the backports goes through.
 
 #### Reviewing
 
 You can indicate that you are reviewing a PR by using the `eyes` emoji on the PR description.
 If you give up on doing so please remove the emoji.
 
-### Contributor T-shirt
+### Contributor Badge
 
-If your Pull Request to [kumahq/kuma](https://github.com/kumahq/kuma) was
-accepted, and it fixes a bug, adds functionality, or makes it significantly
-easier to use or understand Kuma, congratulations! You are eligible to
-receive the very special Contributor T-shirt! Go ahead and fill out the
-[Contributors Submissions form](https://goo.gl/forms/5w6mxLaE4tz2YM0L2).
+If your Pull Request to [kumahq/kuma](https://github.com/kumahq/kuma) was accepted, and it fixes a bug, adds functionality, or makes it significantly easier to use or understand Kuma, congratulations! You are eligible to receive a digital Contributor Badge! Go ahead and fill out the [Contributor Submissions form](https://goo.gl/forms/5w6mxLaE4tz2YM0L2).
+
+*Badges expire after 1 year, at which point you may submit a new contribution to renew the badge.* 

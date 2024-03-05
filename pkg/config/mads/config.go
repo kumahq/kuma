@@ -22,8 +22,11 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 	}
 }
 
-// Monitoring Assignment Discovery Service (MADS) server configuration.
+// MonitoringAssignmentServerConfig contains Monitoring Assignment Discovery Service (MADS)
+// server configuration.
 type MonitoringAssignmentServerConfig struct {
+	config.BaseConfig
+
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.
 	Port uint32 `json:"port" envconfig:"kuma_monitoring_assignment_server_port"`
@@ -48,9 +51,6 @@ type MonitoringAssignmentServerConfig struct {
 }
 
 var _ config.Config = &MonitoringAssignmentServerConfig{}
-
-func (c *MonitoringAssignmentServerConfig) Sanitize() {
-}
 
 func (c *MonitoringAssignmentServerConfig) Validate() error {
 	var errs error

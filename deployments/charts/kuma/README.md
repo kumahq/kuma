@@ -16,19 +16,24 @@ A Helm chart for the Kuma Control Plane
 | patchSystemNamespace | bool | `true` | Whether to patch the target namespace with the system label |
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
+| noHelmHooks | bool | `false` | Whether to disable all helm hooks |
+| restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
-| controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
+| controlPlane.logOutputPath | string | `""` | Kuma CP log output path: Defaults to /dev/stdout |
+| controlPlane.mode | string | `"zone"` | Kuma CP modes: one of zone,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
-| controlPlane.podAnnotations | object | `{}` | Control Plane Pod Annotations |
+| controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
+| controlPlane.deploymentAnnotations | object | `{}` | Annotations applied only to the `Deployment` resource |
+| controlPlane.podAnnotations | object | `{}` | Annotations applied only to the `Pod` resource |
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | controlPlane.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | controlPlane.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.tolerations | list | `[]` | Tolerations for the Kuma Control Plane pods |
 | controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
@@ -36,21 +41,27 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["{{ include \"kuma.name\" . }}-control-plane"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Control Plane pods. This is rendered as a template, so you can reference other helm variables or includes. |
 | controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
+| controlPlane.service.apiServer.http.nodePort | int | `30681` | Port on which Http api server Service is exposed on Node for service of type NodePort |
+| controlPlane.service.apiServer.https.nodePort | int | `30682` | Port on which Https api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
-| controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
+| controlPlane.service.annotations | object | `{"prometheus.io/port":"5680","prometheus.io/scrape":"true"}` | Annotations to put on the Kuma Control Plane |
 | controlPlane.ingress.enabled | bool | `false` | Install K8s Ingress resource that exposes GUI and API |
 | controlPlane.ingress.ingressClassName | string | `nil` | IngressClass defines which controller will implement the resource |
 | controlPlane.ingress.hostname | string | `nil` | Ingress hostname |
 | controlPlane.ingress.annotations | object | `{}` | Map of ingress annotations. |
 | controlPlane.ingress.path | string | `"/"` | Ingress path. |
 | controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
+| controlPlane.ingress.servicePort | int | `5681` | Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port |
 | controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
+| controlPlane.globalZoneSyncService.loadBalancerSourceRanges | list | `[]` | Optionally specify allowed source ranges that can access the load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
+| controlPlane.globalZoneSyncService.nodePort | int | `30685` | Port on which Global Zone Sync Service is exposed on Node for service of type NodePort |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
+| controlPlane.globalZoneSyncService.protocol | string | `"grpc"` | Protocol of the Global Zone Sync service port |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
@@ -68,6 +79,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s Secret resource that contains ca.crt which was used to sign the certificate of KDS Global Server. If you set this and don't set create=true, you have to create the secret manually. |
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
+| controlPlane.tls.kdsZoneClient.skipVerify | bool | `false` | If true, TLS cert of the server is not verified. |
+| controlPlane.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
@@ -90,6 +103,7 @@ A Helm chart for the Kuma Control Plane
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.tolerations | list | `[]` | Tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
+| cni.namespace | string | `"kube-system"` | Set the CNI namespace |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
@@ -102,7 +116,8 @@ A Helm chart for the Kuma Control Plane
 | cni.resources.requests.memory | string | `"100Mi"` |  |
 | cni.resources.limits.memory | string | `"100Mi"` |  |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
-| cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
+| cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
+| dataPlane.dnsLogging | bool | `false` | If true, then turn on CoreDNS query logging |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -112,14 +127,15 @@ A Helm chart for the Kuma Control Plane
 | ingress.extraLabels | object | `{}` | Labels to add to resources, in addition to default labels |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
+| ingress.logLevel | string | `"info"` | Log level for ingress (available values: off|info|debug) |
 | ingress.resources | object | `{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Define the resources to allocate to mesh ingress |
 | ingress.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | ingress.terminationGracePeriodSeconds | int | `40` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | ingress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | ingress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | ingress.service.enabled | bool | `true` | Whether to create a Service resource. |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -136,15 +152,18 @@ A Helm chart for the Kuma Control Plane
 | ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
 | ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
+| ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
+| ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress. Ignored when autoscaling is enabled. |
+| egress.logLevel | string | `"info"` | Log level for egress (available values: off|info|debug) |
 | egress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
 | egress.autoscaling.minReplicas | int | `2` | The minimum CP pods to allow |
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
-| egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
-| egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2, autoscaling/v1 is used |
+| egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2, use metrics |
 | egress.resources.requests.cpu | string | `"50m"` |  |
 | egress.resources.requests.memory | string | `"64Mi"` |  |
 | egress.resources.limits.cpu | string | `"1000m"` |  |
@@ -165,11 +184,13 @@ A Helm chart for the Kuma Control Plane
 | egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
+| egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
+| egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
-| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
+| kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
+| kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
@@ -184,11 +205,7 @@ A Helm chart for the Kuma Control Plane
 | experimental.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | Host's cgroup2 path |
 | experimental.ebpf.tcAttachIface | string | `""` | Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty |
 | experimental.ebpf.programsSourcePath | string | `"/kuma/ebpf"` | Path where compiled eBPF programs which will be installed can be found |
-| legacy.transparentProxy | bool | `false` | If true, use the legacy transparent proxy engine |
-| legacy.cni.enabled | bool | `false` | If true, it installs legacy version of the CNI |
-| legacy.cni.image.registry | string | `"docker.io/kumahq"` | CNI v1 image registry |
-| legacy.cni.image.repository | string | `"install-cni"` | CNI v1 image repository |
-| legacy.cni.image.tag | string | `"0.0.10"` | CNI v1 image tag |
+| experimental.deltaKds | bool | `true` | If false, it uses legacy API for resource synchronization |
 | postgres.port | string | `"5432"` | Postgres port, password should be provided as a secret reference in "controlPlane.secrets" with the Env value "KUMA_STORE_POSTGRES_PASSWORD". Example: controlPlane:   secrets:     - Secret: postgres-postgresql       Key: postgresql-password       Env: KUMA_STORE_POSTGRES_PASSWORD |
 | postgres.tls.mode | string | `"disable"` | Mode of TLS connection. Available values are: "disable", "verifyNone", "verifyCa", "verifyFull" |
 | postgres.tls.disableSSLSNI | bool | `false` | Whether to disable SNI the postgres `sslsni` option. |

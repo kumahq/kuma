@@ -1,0 +1,14 @@
+#/meshes/default/meshgateways/gw-1/_rules 200
+type: MeshGateway
+name: gw-1
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      hostname: foo.example.com
+      tags:
+        port: http/8080

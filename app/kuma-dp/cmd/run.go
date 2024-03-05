@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
@@ -109,6 +112,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					cfg.DataplaneRuntime.ConfigDir = tmpDir
 				}
 
+				if cfg.DataplaneRuntime.SocketDir == "" {
+					cfg.DataplaneRuntime.SocketDir = tmpDir
+				}
+
 				if cfg.DNS.ConfigDir == "" {
 					cfg.DNS.ConfigDir = tmpDir
 				}
@@ -126,7 +133,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
-			if err := rootCtx.DataplaneTokenGenerator(cfg); err != nil {
+			tokenComp, err := rootCtx.DataplaneTokenGenerator(cfg)
+			if err != nil {
 				runLog.Error(err, "unable to get or generate dataplane token")
 				return err
 			}
@@ -139,46 +147,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := make(chan struct{})
+			// gracefulCtx indicate that the process received a signal to shutdown
 			gracefulCtx, ctx := opts.SetupSignalHandler()
-			components := []component.Component{
-				component.NewResilientComponent(
-					runLog.WithName("access-log-streamer"),
-					accesslogs.NewAccessLogStreamer(cfg.Dataplane),
-				),
-			}
+			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
+			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
+			components := []component.Component{tokenComp}
 
 			opts := envoy.Opts{
 				Config:    *cfg,
 				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
-				Quit:      shouldQuit,
-			}
-
-			if cfg.DNS.Enabled &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
-				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
-				dnsOpts := &dnsserver.Opts{
-					Config: *cfg,
-					Stdout: cmd.OutOrStdout(),
-					Stderr: cmd.OutOrStderr(),
-					Quit:   shouldQuit,
-				}
-
-				dnsServer, err := dnsserver.New(dnsOpts)
-				if err != nil {
-					return err
-				}
-
-				version, err := dnsServer.GetVersion()
-				if err != nil {
-					return err
-				}
-
-				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-
-				components = append(components, dnsServer)
+				OnFinish:  cancelComponents,
 			}
 
 			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
@@ -196,11 +176,16 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			runLog.Info("generating bootstrap configuration")
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:       opts.Dataplane,
-				DNSPort:         cfg.DNS.EnvoyDNSPort,
-				EmptyDNSPort:    cfg.DNS.CoreDNSEmptyPort,
-				EnvoyVersion:    *envoyVersion,
-				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
+				Dataplane:           opts.Dataplane,
+				DNSPort:             cfg.DNS.EnvoyDNSPort,
+				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
+				EnvoyVersion:        *envoyVersion,
+				Workdir:             cfg.DataplaneRuntime.SocketDir,
+				AccessLogSocketPath: core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+				MetricsSocketPath:   core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
+				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
+				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -213,43 +198,67 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
-			dataplane, err := envoy.New(opts)
+			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
+				dnsOpts := &dnsserver.Opts{
+					Config:   *cfg,
+					Stdout:   cmd.OutOrStdout(),
+					Stderr:   cmd.OutOrStderr(),
+					OnFinish: cancelComponents,
+				}
+
+				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
+					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
+				}
+
+				dnsServer, err := dnsserver.New(dnsOpts)
+				if err != nil {
+					return err
+				}
+
+				version, err := dnsServer.GetVersion()
+				if err != nil {
+					return err
+				}
+
+				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+
+				components = append(components, dnsServer)
+			}
+
+			envoyComponent, err := envoy.New(opts)
 			if err != nil {
 				return err
 			}
+			components = append(components, envoyComponent)
 
-			components = append(components, dataplane)
-			metricsServer := metrics.New(
-				cfg.Dataplane,
-				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
-				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
-			)
-			components = append(components, metricsServer)
-
+			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
+			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
+			stopComponents := make(chan struct{})
 			go func() {
-				<-gracefulCtx.Done()
-				runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
-				if err := dataplane.DrainConnections(); err != nil {
-					runLog.Error(err, "could not drain connections")
-				} else {
-					runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-					select {
-					case <-time.After(cfg.Dataplane.DrainTime.Duration):
-					case <-ctx.Done():
+				select {
+				case <-gracefulCtx.Done():
+					runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
+					if err := envoyComponent.DrainConnections(); err != nil {
+						runLog.Error(err, "could not drain connections")
+					} else {
+						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+						select {
+						case <-time.After(cfg.Dataplane.DrainTime.Duration):
+						case <-ctx.Done():
+						}
 					}
+				case <-componentCtx.Done():
 				}
 				runLog.Info("stopping all Kuma DP components")
-				if shouldQuit != nil {
-					close(shouldQuit)
-				}
+				close(stopComponents)
 			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
+			if err := rootCtx.ComponentManager.Start(stopComponents); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
@@ -257,7 +266,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 	}
-	var bootstrapVersion string
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane", "ingress")`)
@@ -266,9 +274,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
-	// todo(lobkovilya): delete deprecated bootstrap-version flag. Issue https://github.com/kumahq/kuma/issues/2986
-	cmd.PersistentFlags().StringVar(&bootstrapVersion, "bootstrap-version", "", "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
-	_ = cmd.PersistentFlags().MarkDeprecated("bootstrap-version", "Envoy API v3 is used and can not be changed")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
@@ -276,6 +281,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyLogLevel, "envoy-log-level", "", "Envoy log level. Available values are: [trace][debug][info][warning|warn][error][critical][off]. By default it inherits Kuma DP logging level.")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyComponentLogLevel, "envoy-component-log-level", "", "Configures Envoy's --component-log-level")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
@@ -284,11 +292,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
 	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
+	cmd.PersistentFlags().BoolVar(&cfg.DNS.CoreDNSLogging, "dns-enable-logging", cfg.DNS.CoreDNSLogging, "If true then CoreDNS logging is enabled")
+
+	_ = cmd.PersistentFlags().MarkDeprecated("dns-coredns-empty-port", "It's not used anymore. It will be removed in 2.7.x version")
 	return cmd
 }
 
 func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
-	applicationsToScrape := []metrics.ApplicationToScrape{}
+	var applicationsToScrape []metrics.ApplicationToScrape
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
@@ -298,6 +309,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Port:          item.Port,
 				IsIPv6:        net.IsAddressIPv6(item.Address),
 				QueryModifier: metrics.RemoveQueryParameters,
+				OtelMutator:   metrics.ParsePrometheusMetrics,
 			})
 		}
 	}
@@ -310,6 +322,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
 		Mutator:       metrics.MergeClusters,
+		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 	return applicationsToScrape
 }
@@ -319,4 +332,44 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return os.WriteFile(filename, data, perm)
+}
+
+func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config) []component.Component {
+	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+
+	accessLogStreamer := component.NewResilientComponent(
+		runLog.WithName("access-log-streamer"),
+		accesslogs.NewAccessLogStreamer(
+			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		),
+	)
+
+	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
+		cfg.Dataplane.Mesh,
+		cfg.Dataplane.Name,
+		bootstrap.Node.Cluster,
+		baseApplicationsToScrape,
+		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+	)
+	metricsServer := metrics.New(
+		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
+		baseApplicationsToScrape,
+		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+		openTelemetryProducer,
+	)
+
+	meshMetricsConfigFetcher := component.NewResilientComponent(
+		runLog.WithName("mesh-metric-config-fetcher"),
+		meshmetrics.NewMeshMetricConfigFetcher(
+			core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+			time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+			metricsServer,
+			openTelemetryProducer,
+			kumaSidecarConfiguration.Networking.Address,
+			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		),
+	)
+
+	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}
 }

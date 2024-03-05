@@ -12,8 +12,10 @@ import (
 
 var _ config.Config = &ApiServerConfig{}
 
-// API Server configuration
+// ApiServerConfig defines API Server configuration
 type ApiServerConfig struct {
+	config.BaseConfig
+
 	// If true, then API Server will operate in read only mode (serving GET requests)
 	ReadOnly bool `json:"readOnly" envconfig:"kuma_api_server_read_only"`
 	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
@@ -60,7 +62,7 @@ func (a *ApiServerGUI) Validate() error {
 	return errs
 }
 
-// API Server HTTP configuration
+// ApiServerHTTPConfig defines API Server HTTP configuration
 type ApiServerHTTPConfig struct {
 	// If true then API Server will be served on HTTP
 	Enabled bool `json:"enabled" envconfig:"kuma_api_server_http_enabled"`
@@ -81,7 +83,7 @@ func (a *ApiServerHTTPConfig) Validate() error {
 	return errs
 }
 
-// API Server HTTPS configuration
+// ApiServerHTTPSConfig defines API Server HTTPS configuration
 type ApiServerHTTPSConfig struct {
 	// If true then API Server will be served on HTTPS
 	Enabled bool `json:"enabled" envconfig:"kuma_api_server_https_enabled"`
@@ -128,13 +130,13 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 	return errs
 }
 
-// API Server authentication configuration
+// ApiServerAuth defines API Server authentication configuration
 type ApiServerAuth struct {
 	// Directory of authorized client certificates (only valid in HTTPS)
 	ClientCertsDir string `json:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
 }
 
-// Api Server Authentication configuration
+// ApiServerAuthn defines Api Server Authentication configuration
 type ApiServerAuthn struct {
 	// Type of authentication mechanism (available values: "clientCerts", "tokens")
 	Type string `json:"type" envconfig:"kuma_api_server_authn_type"`
@@ -169,7 +171,11 @@ func (a ApiServerAuthnTokens) Validate() error {
 	return nil
 }
 
+var _ config.Config = TokensValidator{}
+
 type TokensValidator struct {
+	config.BaseConfig
+
 	// If true then Kuma secrets with prefix "user-token-signing-key" are considered as signing keys.
 	UseSecrets bool `json:"useSecrets" envconfig:"kuma_api_server_authn_tokens_validator_use_secrets"`
 	// List of public keys used to validate the token.
@@ -183,9 +189,6 @@ func (t TokensValidator) Validate() error {
 		}
 	}
 	return nil
-}
-
-func (a *ApiServerConfig) Sanitize() {
 }
 
 func (a *ApiServerConfig) Validate() error {

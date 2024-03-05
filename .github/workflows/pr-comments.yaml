@@ -5,20 +5,23 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-
+  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+permissions:
+  contents: read
 jobs:
   pr_comments:
+    timeout-minutes: 30
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: check-maintainer
-        run:  |
+        run: |
           # Ensure the commenter is a maintainer
           if [[ `gh api  '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep ${{ github.event.comment.user.login }}` ]]; then
             gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
@@ -35,33 +38,30 @@ jobs:
           echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@v4
+          token: ${{ steps.github-app-token.outputs.token }}
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-          go-version: "~1.20.2"
-      - uses: actions/cache@v3
+          go-version-file: go.mod
+      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-            ~/.kuma-dev
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('mk/dependencies/deps.lock') }}
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
       - name: format
-        if: contains(github.event.comment.body, '/format')   # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/format') # check the comment if it contains the keywords
         run: |
-          make format
+          make clean/generated generate format
       - name: run golden_files
-        if: contains(github.event.comment.body, '/golden_files')  # check the comment if it contains the keywords
+        if: contains(github.event.comment.body, '/golden_files') # check the comment if it contains the keywords
         run: |
           make test UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes

@@ -6,8 +6,8 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	matcher_validators "github.com/kumahq/kuma/pkg/plugins/policies/matchers/validators"
 )
 
 func (r *MeshAccessLogResource) validate() error {
@@ -19,19 +19,19 @@ func (r *MeshAccessLogResource) validate() error {
 	}
 	verr.AddErrorAt(path, validateTo(r.Spec.To))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
-	verr.AddErrorAt(path, validateIncompatibleCombinations(r.Spec))
 	return verr.OrNil()
 }
 
 func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := matcher_validators.ValidateTargetRef(targetRef, &matcher_validators.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
-			common_api.MeshGatewayRoute,
 		},
+		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
@@ -40,7 +40,7 @@ func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(fromItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 			},
@@ -56,7 +56,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), matcher_validators.ValidateTargetRef(toItem.GetTargetRef(), &matcher_validators.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
@@ -84,36 +84,42 @@ func validateDefault(conf Conf) validators.ValidationError {
 func validateBackend(backend Backend) validators.ValidationError {
 	var verr validators.ValidationError
 
-	var defined int
-	if backend.File != nil {
-		defined++
-	}
-	if backend.Tcp != nil {
-		defined++
-	}
-	if backend.OpenTelemetry != nil {
-		defined++
-	}
-	if defined != 1 {
-		verr.AddViolation("", validators.MustHaveOnlyOne("backend", "tcp", "file", "openTelemetry"))
-	}
+	switch backend.Type {
+	case FileBackendType:
+		root := validators.RootedAt("file")
+		if backend.File == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
 
-	switch {
-	case backend.File != nil:
 		if backend.File.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("file").Field("format"), validateFormat(*backend.File.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.File.Format))
 		}
 		isFilePath, _ := govalidator.IsFilePath(backend.File.Path)
 		if !isFilePath {
-			verr.AddViolationAt(validators.RootedAt("file").Field("path"), `file backend requires a valid path`)
+			verr.AddViolationAt(root.Field("path"), `file backend requires a valid path`)
 		}
-	case backend.Tcp != nil:
+	case TCPBackendType:
+		root := validators.RootedAt("tcp")
+		if backend.Tcp == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if backend.Tcp.Format != nil {
-			verr.AddErrorAt(validators.RootedAt("tcp").Field("format"), validateFormat(*backend.Tcp.Format))
+			verr.AddErrorAt(root.Field("format"), validateFormat(*backend.Tcp.Format))
 		}
 		if !govalidator.IsURL(backend.Tcp.Address) {
-			verr.AddViolationAt(validators.RootedAt("tcp").Field("address"), `tcp backend requires valid address`)
+			verr.AddViolationAt(root.Field("address"), `tcp backend requires valid address`)
 		}
+	case OtelTelemetryBackendType:
+		root := validators.RootedAt("openTelemetry")
+		if backend.OpenTelemetry == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+	default:
+		panic(fmt.Sprintf("unknown backend type %v", backend.Type))
 	}
 
 	return verr
@@ -122,16 +128,23 @@ func validateBackend(backend Backend) validators.ValidationError {
 func validateFormat(format Format) validators.ValidationError {
 	var verr validators.ValidationError
 
-	if (format.Plain != nil) == (format.Json != nil) {
-		verr.AddViolation("", validators.MustHaveOnlyOne("format", "plain", "json"))
-	}
-
-	switch {
-	case format.Plain != nil:
-		if *format.Plain == "" {
-			verr.AddViolation("plain", validators.MustNotBeEmpty)
+	switch format.Type {
+	case PlainFormatType:
+		root := validators.RootedAt("plain")
+		if format.Plain == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
 		}
-	case format.Json != nil:
+		if *format.Plain == "" {
+			verr.AddViolationAt(root, validators.MustNotBeEmpty)
+		}
+	case JsonFormatType:
+		root := validators.RootedAt("json")
+		if format.Json == nil {
+			verr.AddViolationAt(root, validators.MustBeDefined)
+			break
+		}
+
 		if len(*format.Json) == 0 {
 			verr.AddViolation("json", validators.MustNotBeEmpty)
 		}
@@ -147,16 +160,9 @@ func validateFormat(format Format) validators.ValidationError {
 				verr.AddViolationAt(path, `is not a valid JSON object`)
 			}
 		}
+	default:
+		panic(fmt.Sprintf("unknown backend type %v", format.Type))
 	}
 
-	return verr
-}
-
-func validateIncompatibleCombinations(spec *MeshAccessLog) validators.ValidationError {
-	var verr validators.ValidationError
-	targetRef := spec.GetTargetRef().Kind
-	if targetRef == common_api.MeshGatewayRoute && len(spec.To) > 0 {
-		verr.AddViolation("to", `cannot use "to" when "targetRef" is "MeshGatewayRoute" - there is no outbound`)
-	}
 	return verr
 }

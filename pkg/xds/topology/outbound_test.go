@@ -108,8 +108,18 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 						Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-							{Service: "redis", Port: 10001},
-							{Service: "elastic", Port: 10002},
+							{
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "redis",
+								},
+								Port: 10001,
+							},
+							{
+								Tags: map[string]string{
+									mesh_proto.ServiceTag: "elastic",
+								},
+								Port: 10002,
+							},
 						},
 					},
 				},
@@ -1128,7 +1138,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 		)
-		Describe("BuildRemoteEndpointMap()", func() {
+		Describe("BuildEgressEndpointMap()", func() {
 			type testCase struct {
 				zoneIngresses    []*core_mesh.ZoneIngressResource
 				externalServices []*core_mesh.ExternalServiceResource
@@ -1139,7 +1149,7 @@ var _ = Describe("TrafficRoute", func() {
 			DescribeTable("should generate endpoints map for zone egress",
 				func(given testCase) {
 					// when
-					endpoints := BuildRemoteEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
+					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
 					// then
 					Expect(endpoints).To(Equal(given.expected))
 				},
@@ -1185,12 +1195,11 @@ var _ = Describe("TrafficRoute", func() {
 					expected: core_xds.EndpointMap{
 						"service-in-zone2": []core_xds.Endpoint{
 							{
-								Target:          "192.168.0.100",
-								Port:            12345,
-								Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
-								Weight:          2, // local weight is bumped to 2 to factor two instances of Ingresses
-								Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 0},
-								ExternalService: &core_xds.ExternalService{},
+								Target:   "192.168.0.100",
+								Port:     12345,
+								Tags:     map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
+								Weight:   2, // local weight is bumped to 2 to factor two instances of Ingresses
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
 							},
 						},
 						"test": []core_xds.Endpoint{

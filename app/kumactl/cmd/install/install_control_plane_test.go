@@ -220,16 +220,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources with CNI plugin v1", testCase{
-			extraArgs: []string{
-				"--cni-enabled",
-				"--set",
-				"legacy.cni.enabled=true",
-			},
-			goldenFile: "install-control-plane.cni-legacy-enabled.golden.yaml",
-		}),
-		Entry("should generate Kubernetes resources with transparent v2 "+
-			"using ebpf (experimental)", testCase{
+		Entry("should generate Kubernetes resources using ebpf (experimental)", testCase{
 			extraArgs: []string{
 				"--set", "experimental.ebpf.enabled=true",
 			},
@@ -253,6 +244,19 @@ var _ = Describe("kumactl install control-plane", func() {
 				"postgres.tls.caSecretName=postgres-ca",
 			},
 			goldenFile: "install-control-plane.global-universal-on-k8s.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources for Zone Universal mode", testCase{
+			extraArgs: []string{
+				"--mode",
+				"zone",
+				"--set",
+				"controlPlane.environment=universal",
+				"--kds-global-address",
+				"grpcs://192.168.0.1:5685",
+				"--zone",
+				"zone-1",
+			},
+			goldenFile: "install-control-plane.zone-universal-on-k8s.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
@@ -341,19 +345,21 @@ controlPlane:
 			extraArgs: []string{"--mode", "test"},
 			errorMsg:  "controlPlane.mode invalid got:'test'",
 		}),
-		Entry("--mode is not global and environment is universal", errTestCase{
-			extraArgs: []string{
-				"--mode",
-				"zone",
-				"--set",
-				"controlPlane.environment=universal",
-			},
-			errorMsg: "Currently you can only run universal mode on kubernetes in a global mode, " +
-				"this limitation might be lifted in the future",
+		Entry("", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
+			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
 		}),
-		Entry("--kds-global-address is missing when installing zone", errTestCase{
-			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone'",
+		Entry("", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "zone-1", "--set", "controlPlane.environment=universal", "--set", "egress.enabled=true"},
+			errorMsg:  "Can't have egress.enabled when running controlPlane.mode=='universal'",
+		}),
+		Entry("--zone is more than 253 characters", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
+			errorMsg:  "controlPlane.zone must be no more than 253 characters",
+		}),
+		Entry("--zone format is invalid when installing zone", errTestCase{
+			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "Invalid_z0ne"},
+			errorMsg:  "controlPlane.zone must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character",
 		}),
 		Entry("--kds-global-address is not valid URL", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},

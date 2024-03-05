@@ -30,28 +30,12 @@ type DNSServer struct {
 var _ component.GracefulComponent = &DNSServer{}
 
 type Opts struct {
-	Config kuma_dp.Config
-	Stdout io.Writer
-	Stderr io.Writer
-	Quit   chan struct{}
+	Config                   kuma_dp.Config
+	Stdout                   io.Writer
+	Stderr                   io.Writer
+	OnFinish                 context.CancelFunc
+	ProvidedCorefileTemplate []byte
 }
-
-// DefaultCoreFileTemplate defines the template to use to configure coreDNS to use the envoy dns filter.
-const DefaultCoreFileTemplate = `.:{{ .CoreDNSPort }} {
-    forward . 127.0.0.1:{{ .EnvoyDNSPort }}
-    # We want all requests to be sent to the Envoy DNS Filter, unsuccessful responses should be forwarded to the original DNS server.
-    # For example: requests other than A, AAAA and SRV will return NOTIMP when hitting the envoy filter and should be sent to the original DNS server.
-    # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
-    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
-    prometheus localhost:{{ .PrometheusPort }}
-    errors
-}
-
-.:{{ .CoreDNSEmptyPort }} {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }
-}`
 
 func lookupDNSServerPath(configuredPath string) (string, error) {
 	return files.LookupBinaryPath(
@@ -64,8 +48,10 @@ func lookupDNSServerPath(configuredPath string) (string, error) {
 func New(opts *Opts) (*DNSServer, error) {
 	dnsServerPath, err := lookupDNSServerPath(opts.Config.DNS.CoreDNSBinaryPath)
 	if err != nil {
-		runLog.Error(err, "could not find the DNS Server executable in your path")
-		return nil, err
+		return nil, errors.Wrapf(err, "could not find coreDNS executable")
+	}
+	if opts.OnFinish == nil {
+		opts.OnFinish = func() {}
 	}
 
 	return &DNSServer{opts: opts, path: dnsServerPath}, nil
@@ -76,7 +62,7 @@ func (s *DNSServer) GetVersion() (string, error) {
 	command := exec.Command(path, "--version")
 	output, err := command.Output()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "failed to execute coreDNS at path %s", path)
 	}
 
 	match := regexp.MustCompile(`CoreDNS-(.*)`).FindSubmatch(output)
@@ -93,40 +79,21 @@ func (s *DNSServer) NeedLeaderElection() bool {
 
 func (s *DNSServer) Start(stop <-chan struct{}) error {
 	s.wg.Add(1)
+	// Component should only be considered done after CoreDNS exists.
+	// Otherwise, we may not propagate SIGTERM on time.
+	defer func() {
+		s.wg.Done()
+		s.opts.OnFinish()
+	}()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	dnsConfig := s.opts.Config.DNS
 
-	var tmpl *template.Template
-
-	if dnsConfig.CoreDNSConfigTemplatePath != "" {
-		t, err := template.ParseFiles(dnsConfig.CoreDNSConfigTemplatePath)
-		if err != nil {
-			return err
-		}
-
-		tmpl = t
-	} else {
-		t, err := template.New("Corefile").Parse(DefaultCoreFileTemplate)
-		if err != nil {
-			return err
-		}
-
-		tmpl = t
-	}
-
-	bs := bytes.NewBuffer([]byte{})
-
-	if err := tmpl.Execute(bs, dnsConfig); err != nil {
-		return err
-	}
-
-	configFile, err := GenerateConfigFile(dnsConfig, bs.Bytes())
+	configFile, err := s.generateCoreFile(dnsConfig)
 	if err != nil {
 		return err
 	}
-	runLog.Info("configuration saved to a file", "file", configFile)
 
 	args := []string{
 		"-conf", configFile,
@@ -142,33 +109,62 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 		return err
 	}
 
-	done := make(chan error, 1)
-
 	go func() {
-		done <- command.Wait()
-		// Component should only be considered done after CoreDNS exists.
-		// Otherwise, we may not propagate SIGTERM on time.
-		s.wg.Done()
-	}()
-
-	select {
-	case <-stop:
+		<-stop
 		runLog.Info("stopping DNS Server")
 		cancel()
-		return nil
-	case err := <-done:
-		if err != nil {
-			runLog.Error(err, "DNS Server terminated with an error")
-		} else {
-			runLog.Info("DNS Server terminated successfully")
-		}
-
-		if s.opts.Quit != nil {
-			close(s.opts.Quit)
-		}
-
+	}()
+	err = command.Wait()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		runLog.Error(err, "DNS Server terminated with an error")
 		return err
 	}
+	runLog.Info("DNS Server terminated successfully")
+	return nil
+}
+
+func (s *DNSServer) generateCoreFile(dnsConfig kuma_dp.DNS) (string, error) {
+	var tmpl *template.Template
+
+	if dnsConfig.CoreDNSConfigTemplatePath != "" {
+		t, err := template.ParseFiles(dnsConfig.CoreDNSConfigTemplatePath)
+		if err != nil {
+			return "", err
+		}
+
+		tmpl = t
+	} else {
+		var corefileTemplate []byte
+		if len(s.opts.ProvidedCorefileTemplate) > 0 {
+			corefileTemplate = s.opts.ProvidedCorefileTemplate
+		} else {
+			embedded, err := config.ReadFile("Corefile")
+			if err != nil {
+				return "", errors.Wrap(err, "couldn't open embedded Corefile")
+			}
+			corefileTemplate = embedded
+		}
+
+		t, err := template.New("Corefile").Parse(string(corefileTemplate))
+		if err != nil {
+			return "", err
+		}
+
+		tmpl = t
+	}
+
+	bs := bytes.NewBuffer([]byte{})
+
+	if err := tmpl.Execute(bs, dnsConfig); err != nil {
+		return "", err
+	}
+
+	configFile, err := WriteCorefile(dnsConfig, bs.Bytes())
+	if err != nil {
+		return "", err
+	}
+	runLog.Info("configuration saved to a file", "file", configFile)
+	return configFile, nil
 }
 
 func (s *DNSServer) WaitForDone() {

@@ -1,5 +1,5 @@
 connectTimeout: 10s
-name: other-service-_0_
+name: other-service-c72efb5be46fae6b
 typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

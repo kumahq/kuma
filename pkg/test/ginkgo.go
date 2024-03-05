@@ -1,6 +1,8 @@
 package test
 
 import (
+	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -13,10 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 )
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
 func RunSpecs(t *testing.T, description string) {
+	policies.InitAllPolicies()
+	format.TruncatedDiff = false
 	if strings.HasPrefix(description, "E2E") {
 		panic("Use RunE2ESpecs for e2e tests!")
 	}
@@ -24,6 +29,7 @@ func RunSpecs(t *testing.T, description string) {
 }
 
 func RunE2ESpecs(t *testing.T, description string) {
+	policies.InitAllPolicies()
 	gomega.SetDefaultConsistentlyDuration(time.Second * 5)
 	gomega.SetDefaultConsistentlyPollingInterval(time.Millisecond * 200)
 	gomega.SetDefaultEventuallyPollingInterval(time.Millisecond * 500)
@@ -48,4 +54,29 @@ func runSpecs(t *testing.T, description string) {
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
 	ginkgo.RunSpecs(t, description)
+}
+
+// EntriesForFolder returns all files in the folder as gingko table entries for files *.input.yaml this makes it easier to add test by only adding input and golden files
+// if you prefix the file with a `F` we'll focus this specific test
+func EntriesForFolder(folder string) []ginkgo.TableEntry {
+	var entries []ginkgo.TableEntry
+	testDir := path.Join("testdata", folder)
+	files, err := os.ReadDir(testDir)
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".input.yaml") {
+			input := path.Join(testDir, f.Name())
+			switch {
+			case strings.HasPrefix(f.Name(), "F"):
+				entries = append(entries, ginkgo.FEntry(input, input))
+			case strings.HasPrefix(f.Name(), "P"):
+				entries = append(entries, ginkgo.PEntry(input, input))
+			default:
+				entries = append(entries, ginkgo.Entry(input, input))
+			}
+		}
+	}
+	return entries
 }

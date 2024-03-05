@@ -99,7 +99,7 @@ func (d *DataplaneBuilder) WithoutInbounds() *DataplaneBuilder {
 }
 
 func (d *DataplaneBuilder) WithInboundOfTags(tagsKV ...string) *DataplaneBuilder {
-	return d.WithInboundOfTagsMap(tagsKVToMap(tagsKV))
+	return d.WithInboundOfTagsMap(TagsKVToMap(tagsKV))
 }
 
 func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
@@ -115,7 +115,7 @@ func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBui
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
-	return d.AddInboundOfTagsMap(tagsKVToMap(tags))
+	return d.AddInboundOfTagsMap(TagsKVToMap(tags))
 }
 
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
@@ -134,6 +134,13 @@ func (d *DataplaneBuilder) AddInbound(inbound *InboundBuilder) *DataplaneBuilder
 
 func (d *DataplaneBuilder) AddOutbound(outbound *OutboundBuilder) *DataplaneBuilder {
 	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, outbound.Build())
+	return d
+}
+
+func (d *DataplaneBuilder) AddOutbounds(outbounds []*OutboundBuilder) *DataplaneBuilder {
+	for _, outbound := range outbounds {
+		d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, outbound.Build())
+	}
 	return d
 }
 
@@ -162,7 +169,7 @@ func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirec
 	return d
 }
 
-func tagsKVToMap(tagsKV []string) map[string]string {
+func TagsKVToMap(tagsKV []string) map[string]string {
 	if len(tagsKV)%2 == 1 {
 		panic("tagsKV has to have even number of arguments")
 	}
@@ -188,6 +195,13 @@ func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
 			mesh_proto.ServiceTag: name,
 		},
 		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+	}
+	return d
+}
+
+func (d *DataplaneBuilder) AddBuiltInGatewayTags(tags map[string]string) *DataplaneBuilder {
+	for k, v := range tags {
+		d.res.Spec.Networking.Gateway.Tags[k] = v
 	}
 	return d
 }

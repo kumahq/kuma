@@ -8,14 +8,20 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/kumahq/kuma/test/server/types"
 )
 
 func newEchoHTTPCmd() *cobra.Command {
+	counters := newCounters()
+
 	args := struct {
 		ip       string
 		port     uint32
@@ -30,10 +36,25 @@ func newEchoHTTPCmd() *cobra.Command {
 		Short: "Run Test Server with generic echo response",
 		Long:  `Run Test Server with generic echo response.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			promExporter, err := prometheus.New(prometheus.WithoutCounterSuffixes())
+			if err != nil {
+				return err
+			}
+			sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
+			promHandler := promhttp.Handler()
+
 			http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 				headers := request.Header
 				handleDelay(headers)
 				headers.Add("host", request.Host)
+
+				if n, id, ok := parseSucceedAfterNHeaders(headers); ok {
+					if counters.get(id) <= n {
+						writer.WriteHeader(http.StatusServiceUnavailable)
+						return
+					}
+				}
+
 				resp := &types.EchoResponse{
 					Instance: args.instance,
 					Received: types.EchoResponseReceived{
@@ -53,6 +74,9 @@ func newEchoHTTPCmd() *cobra.Command {
 				if _, err := writer.Write(respBody); err != nil {
 					panic(err)
 				}
+			})
+			http.HandleFunc("/metrics", func(writer http.ResponseWriter, request *http.Request) {
+				promHandler.ServeHTTP(writer, request)
 			})
 			if args.probes {
 				http.HandleFunc("/probes", func(writer http.ResponseWriter, request *http.Request) {
@@ -105,6 +129,37 @@ func newEchoHTTPCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
 	cmd.PersistentFlags().BoolVar(&args.probes, "probes", false, "generate readiness and liveness endpoints")
 	return cmd
+}
+
+type counters struct {
+	sync.RWMutex
+	counters map[string]int
+}
+
+func newCounters() *counters {
+	return &counters{counters: map[string]int{}}
+}
+
+func (c *counters) get(hash string) int {
+	c.Lock()
+	defer c.Unlock()
+	c.counters[hash]++
+	return c.counters[hash]
+}
+
+func parseSucceedAfterNHeaders(headers http.Header) (int, string, bool) {
+	id := headers.Get("x-succeed-after-n-id")
+	if id == "" {
+		return 0, "", false
+	}
+
+	nHeader := headers.Get("x-succeed-after-n")
+	n, err := strconv.Atoi(nHeader)
+	if err != nil || n < 2 {
+		return 0, "", false
+	}
+
+	return n, id, true
 }
 
 func handleDelay(headers http.Header) {

@@ -1,0 +1,42 @@
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 1s
+---
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes: ["Gateway"]
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 3s
+---
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: MeshSubset
+    proxyTypes: ["Sidecar"]
+    tags:
+      version: "v1"
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 7s

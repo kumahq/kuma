@@ -32,6 +32,7 @@ var _ = Describe("Ingress Dataplane", func() {
 	type testCase struct {
 		dataplanes map[string][]string
 		expected   string
+		tagFilters []string
 	}
 	DescribeTable("should generate ingress based on other dataplanes",
 		func(given testCase) {
@@ -47,7 +48,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				}
 			}
 
-			actual := ingress.GetIngressAvailableServices(dataplanes)
+			actual := ingress.GetIngressAvailableServices(dataplanes, given.tagFilters)
 			actualYAML, err := yaml.Marshal(actual)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualYAML).To(MatchYAML(given.expected))
@@ -152,6 +153,63 @@ var _ = Describe("Ingress Dataplane", func() {
               mesh: mesh2
               tags:
                 service: b1
+`,
+		}),
+		Entry("use filters", testCase{
+			dataplanes: map[string][]string{
+				"default": {
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        kuma.io/service: backend
+                        kuma.io/zone: "east"
+                        version: "1"
+                        team: infra
+`,
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        kuma.io/service: backend
+                        kuma.io/zone: "east"
+                        version: "2"
+                        team: infra
+`,
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        kuma.io/service: backend
+                        kuma.io/zone: "east"
+                        version: "2"
+                        team: infra
+`,
+				},
+			},
+			tagFilters: []string{"kuma.io/", "version"},
+			expected: `
+            - instances: 1
+              mesh: default
+              tags:
+                kuma.io/service: backend
+                kuma.io/zone: "east"
+                version: "1"
+            - instances: 2
+              mesh: default
+              tags:
+                kuma.io/service: backend
+                kuma.io/zone: "east"
+                version: "2"
 `,
 		}),
 	)
@@ -265,7 +323,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
-		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others, nil, externalServices)
+		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others, nil, externalServices, nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mgr.updCounter).To(Equal(0))
 	})
@@ -351,7 +409,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 
-		actual := ingress.GetIngressAvailableServices(dataplanes)
+		actual := ingress.GetIngressAvailableServices(dataplanes, nil)
 		Expect(actual).To(Equal(expectedAvailableServices))
 	})
 
@@ -411,7 +469,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 
-		actual := ingress.GetIngressAvailableServices(dataplanes)
+		actual := ingress.GetIngressAvailableServices(dataplanes, nil)
 		Expect(actual).To(Equal(expectedAvailableServices))
 	})
 })

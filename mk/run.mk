@@ -25,7 +25,7 @@ endef
 
 POSTGRES_MODE = standard
 CP_STORE = memory
-CP_ENV += KUMA_ENVIRONMENT=universal KUMA_STORE_TYPE=$(CP_STORE)
+CP_ENV += KUMA_ENVIRONMENT=universal KUMA_MULTIZONE_ZONE_NAME=zone-1 KUMA_STORE_TYPE=$(CP_STORE)
 ifeq ($(CP_STORE),postgres)
 CP_ENV += KUMA_STORE_POSTGRES_HOST=localhost \
 	KUMA_STORE_POSTGRES_PORT=15432 \
@@ -64,7 +64,7 @@ endif
 
 .PHONY: run/kuma-dp
 run/kuma-dp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-dp` locally
-	$(DISTRIBUTION_FOLDER)/bin/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token --valid-for=24h
+	$(DISTRIBUTION_FOLDER)/bin/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) --valid-for=24h > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	echo "$$EXAMPLE_DATAPLANE_RESOURCE" > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH).yaml
 	$(DISTRIBUTION_FOLDER)/bin/kuma-dp run --log-level=debug --dataplane-token-file /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token --dataplane-file /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH).yaml
 

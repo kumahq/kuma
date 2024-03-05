@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -59,12 +61,13 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		resManager,
 		xds_context.NewMeshContextBuilder(
 			resManager,
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(resManager, config_manager.NewConfigManager(store)),
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(store), false),
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		),
 		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
@@ -84,6 +87,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
 			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
 		},
+		func(*restful.WebService) error { return nil },
+		globalinsight.NewDefaultGlobalInsightService(store),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

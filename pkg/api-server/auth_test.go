@@ -6,7 +6,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +16,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/tls"
 	http2 "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -83,7 +86,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be able to access admin endpoints using client certs and HTTPS", func() {
 		// when
-		resp, err := httpsClient.Get(fmt.Sprintf("https://%s:%d/secrets", externalIP, httpsPort))
+		resp, err := httpsClient.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -92,34 +95,34 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s:%d/secrets", externalIP, httpPort))
+		resp, err := http.Get(fmt.Sprintf("http://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := io.ReadAll(resp.Body)
+		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-non-localhost.golden.json")))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
 		// when
-		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s:%d/secrets", externalIP, httpsPort))
+		resp, err := httpsClientWithoutCerts.Get(fmt.Sprintf("https://%s/secrets", net.JoinHostPort(externalIP, strconv.Itoa(int(httpsPort)))))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := io.ReadAll(resp.Body)
+		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
 	})
 })
 
 // we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
 func createCertsForIP(ip string) (string, string) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
+	keyPair, err := tls.NewSelfSignedCert(tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
 	dir, err := os.MkdirTemp("", "temp-certs")
 	Expect(err).ToNot(HaveOccurred())

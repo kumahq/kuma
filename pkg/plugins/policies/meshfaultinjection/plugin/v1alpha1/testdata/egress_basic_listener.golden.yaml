@@ -1,0 +1,94 @@
+resources:
+- name: test_listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 10002
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              abort:
+                httpStatus: 444
+                percentage:
+                  numerator: 12
+              delay:
+                fixedDelay: 55s
+                percentage:
+                  numerator: 55
+              headers:
+              - name: x-kuma-tags
+                stringMatch:
+                  safeRegex:
+                    regex: .*&kuma.io/service=[^&]*frontend[,&].*
+              responseRateLimit:
+                fixedLimit:
+                  limitKbps: "111000"
+                percentage:
+                  denominator: TEN_THOUSAND
+                  numerator: 6290
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: external-service-1
+      name: external-service-1_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-2{mesh=mesh-1}
+        transportProtocol: tls
+      name: external-service-2_mesh-1
+    - filterChainMatch:
+        serverNames:
+        - external-service-1{mesh=mesh-2}
+        transportProtocol: tls
+      name: external-service-1_mesh-2
+    - filterChainMatch:
+        serverNames:
+        - external-service-2{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              abort:
+                httpStatus: 444
+                percentage:
+                  numerator: 12
+              delay:
+                fixedDelay: 55s
+                percentage:
+                  numerator: 55
+              responseRateLimit:
+                fixedLimit:
+                  limitKbps: "111000"
+                percentage:
+                  denominator: TEN_THOUSAND
+                  numerator: 6290
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: external-service-2
+      name: external-service-2_mesh-2
+    - filterChainMatch:
+        serverNames:
+        - internal-service-1{mesh=mesh-1}
+        transportProtocol: tls
+      name: internal-service-1_mesh-1
+    name: test_listener
+    trafficDirection: INBOUND

@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -44,6 +45,28 @@ var _ = Describe("TimeoutConfigurer", func() {
 		},
 	}
 
+	timeoutResource := &core_mesh.TimeoutResource{
+		Spec: &mesh_proto.Timeout{
+			Sources: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Destinations: []*mesh_proto.Selector{{
+				Match: mesh_proto.MatchAnyService(),
+			}},
+			Conf: &mesh_proto.Timeout_Conf{
+				ConnectTimeout: util_proto.Duration(policies_defaults.DefaultConnectTimeout),
+				Tcp: &mesh_proto.Timeout_Conf_Tcp{
+					IdleTimeout: util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+				},
+				Http: &mesh_proto.Timeout_Conf_Http{
+					IdleTimeout:       util_proto.Duration(policies_defaults.DefaultIdleTimeout),
+					RequestTimeout:    util_proto.Duration(policies_defaults.DefaultRequestTimeout),
+					StreamIdleTimeout: util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout),
+				},
+			},
+		},
+	}
+
 	type testCase struct {
 		timeout  *mesh_proto.Timeout_Conf
 		expected string
@@ -52,8 +75,8 @@ var _ = Describe("TimeoutConfigurer", func() {
 	DescribeTable("should set timeouts for outbound HTTP cluster",
 		func(given testCase) {
 			// given
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster("backend")).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolHTTP)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -83,7 +106,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:
@@ -119,8 +142,8 @@ typedExtensionProtocolOptions:
 	DescribeTable("should set timeouts for outbound GRPC cluster",
 		func(given testCase) {
 			// given
-			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.EdsCluster("backend")).
+			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "backend").
+				Configure(clusters.EdsCluster()).
 				Configure(clusters.Timeout(given.timeout, core_mesh.ProtocolGRPC)).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -150,7 +173,7 @@ typedExtensionProtocolOptions:
       maxStreamDuration: 105s`,
 		}),
 		Entry("default timeout", testCase{
-			timeout: mesh.DefaultTimeoutResource().(*core_mesh.TimeoutResource).Spec.GetConf(),
+			timeout: timeoutResource.Spec.GetConf(),
 			expected: `
 connectTimeout: 5s
 edsClusterConfig:
@@ -186,8 +209,8 @@ typedExtensionProtocolOptions:
 
 	It("should set timeouts for inbound HTTP cluster", func() {
 		// given
-		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.ProvidedEndpointCluster("localhost:8080", false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "localhost:8080").
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
 			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
