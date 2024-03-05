@@ -213,7 +213,7 @@ jobs:
       - name: package-helm-chart
         id: package-helm
         env:
-          HELM_DEV: ${{ github.ref_type == 'tag' }}
+          HELM_DEV: ${{ github.ref_type != 'tag' }}
         run: |
           make helm/update-version
 
