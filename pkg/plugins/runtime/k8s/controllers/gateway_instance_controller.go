@@ -467,7 +467,6 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 			req = append(req, kube_reconcile.Request{
 				NamespacedName: name,
 			})
-
 		}
 		return req
 	}
