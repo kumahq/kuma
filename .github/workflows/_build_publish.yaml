@@ -110,6 +110,8 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
