@@ -2,7 +2,7 @@
 
 set -e
 
-POLICIES_FILE="pkg/config/plugins/policies/policies.go"
+POLICIES_FILE="pkg/config/plugins/policies/zz_generated.policies.go"
 
 policies=$(for i in "${@:1}"; do
   if [[ -f pkg/plugins/policies/${i}/zz_generated.plugin.go ]]; then

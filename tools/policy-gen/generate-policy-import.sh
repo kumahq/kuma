@@ -3,7 +3,7 @@
 set -e
 GO_MODULE=$1
 POLICIES_DIR=$2 # pkg/plugins/policies or pkg/core/resources/apis
-IMPORTS_FILE="${POLICIES_DIR}/modules.go"
+IMPORTS_FILE="${POLICIES_DIR}/zz_generated.modules.go"
 
 imports=$(
   for i in "${@:3}"; do
