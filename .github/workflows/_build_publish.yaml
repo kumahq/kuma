@@ -139,14 +139,14 @@ jobs:
       # TODO Do we need to scan images for each arch?
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -178,7 +178,7 @@ jobs:
         # TODO At the it's asking for verifying a token in a browser... Something seems off
         if: false # ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
           image_digest: ${{ steps.manifest_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.tag }}
