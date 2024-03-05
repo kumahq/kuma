@@ -47,7 +47,7 @@ which can be extended with others like GRPC.
 ### `MeshHTTPRoute`
 
 The new resource routes and alters requests from one service to another
-depending on where the request coming from and where it's going to.
+depending on where the request is coming from and where it's going to.
 Routes end up in the client-side Envoy config so the source of the affected requests will
 be under `spec.targetRef`. The destination we can select in `spec.to`.
 

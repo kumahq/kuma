@@ -213,7 +213,7 @@ metrics:
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
-			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.NewFormat(expfmt.TypeTextPlain))))
 
 			// response doesn't exist because was disabled
 			g.Expect(stdout).ToNot(ContainSubstring("path-stats"))
@@ -244,7 +244,7 @@ metrics:
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
-			g.Expect(stdout).To(ContainSubstring(string(expfmt.FmtText)))
+			g.Expect(stdout).To(ContainSubstring(string(expfmt.NewFormat(expfmt.TypeTextPlain))))
 
 			// path doesn't have defined address
 			g.Expect(stdout).ToNot(ContainSubstring("localhost-bound-not-exposed"))

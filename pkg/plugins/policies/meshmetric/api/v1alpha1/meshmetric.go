@@ -2,6 +2,8 @@
 package v1alpha1
 
 import (
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
@@ -85,6 +87,8 @@ type PrometheusTls struct {
 type OpenTelemetryBackend struct {
 	// Endpoint for OpenTelemetry collector
 	Endpoint string `json:"endpoint"`
+	// RefreshInterval defines how frequent metrics should be pushed to collector
+	RefreshInterval *k8s.Duration `json:"refreshInterval,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Disabled;ProvidedTLS;ActiveMTLSBackend

@@ -11,6 +11,7 @@ type DeploymentOpts struct {
 	Namespace        string
 	Mesh             string
 	WaitingToBeReady bool
+	Service          bool
 	PodAnnotations   map[string]string
 	NodeSelector     map[string]string
 }
@@ -60,6 +61,12 @@ func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
 func WithNodeSelector(selector map[string]string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.NodeSelector = selector
+	}
+}
+
+func WithService(service bool) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Service = service
 	}
 }
 

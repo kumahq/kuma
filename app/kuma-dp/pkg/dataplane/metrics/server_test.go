@@ -10,6 +10,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/expfmt"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+)
+
+var (
+	regex         = "abc"
+	includeUnused = true
 )
 
 var _ = Describe("Rewriting the metrics URL", func() {
@@ -47,6 +54,23 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			expected:      "http://127.0.0.1:80/stats",
 			queryModifier: RemoveQueryParameters,
 		}),
+		Entry("add usedonly and filter parameters", testCase{
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&three=four",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?filter=abc&one=two&three=four&usedonly=",
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
+				Regex:         &regex,
+				IncludeUnused: &includeUnused,
+			}),
+		}),
+		Entry("add default usedonly parameter", testCase{
+			address:       "127.0.0.1",
+			input:         "http://foo/bar?one=two&three=four",
+			adminPort:     80,
+			expected:      "http://127.0.0.1:80/stats?filter=&one=two&three=four&usedonly=",
+			queryModifier: AddSidecarParameters(nil),
+		}),
 	)
 })
 
@@ -58,14 +82,14 @@ var _ = Describe("Select Content Type", func() {
 
 	It("should honor app content-type", func() {
 		contentTypes := make(chan expfmt.Format, 3)
-		contentTypes <- expfmt.FmtOpenMetrics_0_0_1
+		contentTypes <- FmtOpenMetrics_0_0_1
 		contentTypes <- expfmt.Format("")
-		contentTypes <- expfmt.FmtText
+		contentTypes <- expfmt.NewFormat(expfmt.TypeTextPlain)
 		close(contentTypes)
 		reqHeader.Add("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.FmtOpenMetrics_0_0_1))
+		Expect(actualContentType).To(Equal(FmtOpenMetrics_0_0_1))
 	})
 
 	It("should negotiate content-type based on Accept header", func() {
@@ -102,35 +126,35 @@ var _ = Describe("Response Format", func() {
 		},
 		Entry("return FmtProtoDelim for a 'delimited protobuf content type' response", testCase{
 			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited",
-			expectedFormat: expfmt.FmtProtoDelim,
+			expectedFormat: expfmt.NewFormat(expfmt.TypeProtoDelim),
 		}),
-		Entry("return FmtUnknown for a 'text protobuf content type' response", testCase{
+		Entry("return expfmt.NewFormat(expfmt.TypeUnknown) for a 'text protobuf content type' response", testCase{
 			contentType:    "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=text",
-			expectedFormat: expfmt.FmtUnknown,
+			expectedFormat: expfmt.NewFormat(expfmt.TypeUnknown),
 		}),
 		Entry("return FmtText for a 'text plain content type' response", testCase{
 			contentType:    "text/plain; charset=UTF-8",
-			expectedFormat: expfmt.FmtText,
+			expectedFormat: expfmt.NewFormat(expfmt.TypeTextPlain),
 		}),
 		Entry("return FmtOpenMetrics_1_0_0 for a 'openmetrics v1.0.0 content type' response", testCase{
 			contentType:    "application/openmetrics-text; version=1.0.0",
-			expectedFormat: expfmt.FmtOpenMetrics_1_0_0,
+			expectedFormat: FmtOpenMetrics_1_0_0,
 		}),
 		Entry("return FmtOpenMetrics_0_0_1 for a 'openmetrics v0.0.1 content type' response", testCase{
 			contentType:    "application/openmetrics-text; version=0.0.1",
-			expectedFormat: expfmt.FmtOpenMetrics_0_0_1,
+			expectedFormat: FmtOpenMetrics_0_0_1,
 		}),
-		Entry("return FmtUnknown for a 'invalid content type' response", testCase{
+		Entry("return expfmt.NewFormat(expfmt.TypeUnknown) for a 'invalid content type' response", testCase{
 			contentType:    "application/invalid",
-			expectedFormat: expfmt.FmtUnknown,
+			expectedFormat: expfmt.NewFormat(expfmt.TypeUnknown),
 		}),
 		Entry("return FmtOpenMetrics_0_0_1 for a 'openmetrics content type with no version param' response", testCase{
 			contentType:    "application/openmetrics-text",
-			expectedFormat: expfmt.FmtOpenMetrics_0_0_1,
+			expectedFormat: FmtOpenMetrics_0_0_1,
 		}),
-		Entry("return FmtUnknown for a 'openmetrics content type with unsupported version param' response", testCase{
+		Entry("return expfmt.NewFormat(expfmt.TypeUnknown) for a 'openmetrics content type with unsupported version param' response", testCase{
 			contentType:    "application/openmetrics-text; version=2.0.0",
-			expectedFormat: expfmt.FmtUnknown,
+			expectedFormat: expfmt.NewFormat(expfmt.TypeUnknown),
 		}),
 	)
 })
@@ -163,17 +187,17 @@ var _ = Describe("Process Metrics", func() {
 		},
 		Entry("return OpenMetrics compliant metrics", testCase{
 			input:       []string{"openmetrics_0_1_1.in", "counter.out"},
-			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			contentType: FmtOpenMetrics_0_0_1,
 			expected:    "openmetrics_0_0_1-counter.out",
 		}),
 		Entry("handle multiple # EOF", testCase{
 			input:       []string{"openmetrics_0_1_1.in", "openmetrics_0_1_1.in", "counter.out"},
-			contentType: expfmt.FmtOpenMetrics_0_0_1,
+			contentType: FmtOpenMetrics_0_0_1,
 			expected:    "multi-openmetrics-counter.out",
 		}),
 		Entry("return Prometheus text compliant metrics", testCase{
 			input:       []string{"prom-text.in", "counter.out"},
-			contentType: expfmt.FmtText,
+			contentType: expfmt.NewFormat(expfmt.TypeTextPlain),
 			expected:    "prom-text-counter.out",
 		}),
 	)

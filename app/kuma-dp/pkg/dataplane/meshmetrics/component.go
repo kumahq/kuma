@@ -33,7 +33,7 @@ type ConfigFetcher struct {
 	envoyAdminAddress     string
 	envoyAdminPort        uint32
 	openTelemetryProducer *metrics.AggregatedProducer
-	openTelemetryExporter *sdkmetric.MeterProvider
+	runningBackends       map[string]*runningBackend
 }
 
 const unixDomainSocket = "unix"
@@ -59,6 +59,7 @@ func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker
 		defaultAddress:        address,
 		envoyAdminAddress:     envoyAdminAddress,
 		envoyAdminPort:        envoyAdminPort,
+		runningBackends:       map[string]*runningBackend{},
 	}
 }
 
@@ -80,7 +81,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications)
+			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
 			err = cf.configureOpenTelemetryExporter(newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 			if err != nil {
@@ -127,22 +128,53 @@ func (cf *ConfigFetcher) configurePrometheus(applicationsToScrape []metrics.Appl
 	if len(prometheusBackends) == 0 {
 		return
 	}
-	cf.hijacker.SetApplicationsToScrape(applicationsToScrape)
+	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
 }
 
-func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends []xds.Backend) error {
-	if len(openTelemetryBackends) == 0 {
-		return cf.shutdownOpenTelemetryExporterIfRunning()
+func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+	err := cf.reconfigureBackends(openTelemetryBackends)
+	if err != nil {
+		return err
+	}
+	err = cf.shutdownBackendsRemovedFromConfig(openTelemetryBackends)
+	if err != nil {
+		return err
 	}
 	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
-	return cf.startOpenTelemetryExporterIfNotRunning(openTelemetryBackends[0].OpenTelemetry.Endpoint)
+	return nil
 }
 
-func (cf *ConfigFetcher) shutdownOpenTelemetryExporterIfRunning() error {
-	if cf.openTelemetryExporter != nil {
-		logger.Info("Stopping OpenTelemetry exporter")
-		err := cf.openTelemetryExporter.Shutdown(context.Background())
-		cf.openTelemetryExporter = nil
+func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+	for backendName, backend := range openTelemetryBackends {
+		// backend already running, in the future we can reconfigure it here
+		if cf.runningBackends[backendName] != nil {
+			err := cf.reconfigureBackendIfNeeded(backendName, backend)
+			if err != nil {
+				return err
+			}
+		}
+		// start backend as it is not running yet
+		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
+		if err != nil {
+			return err
+		}
+		cf.runningBackends[backendName] = exporter
+	}
+	return nil
+}
+
+func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+	var backendsToRemove []string
+	for backendName := range cf.runningBackends {
+		// backend still configured in policy
+		if openTelemetryBackends[backendName] != nil {
+			continue
+		}
+		backendsToRemove = append(backendsToRemove, backendName)
+	}
+	for _, backendName := range backendsToRemove {
+		logger.Info("Shutting down OpenTelemetry exporter", "backend", backendName)
+		err := cf.shutdownBackend(backendName)
 		if err != nil {
 			return err
 		}
@@ -150,38 +182,46 @@ func (cf *ConfigFetcher) shutdownOpenTelemetryExporterIfRunning() error {
 	return nil
 }
 
-func (cf *ConfigFetcher) startOpenTelemetryExporterIfNotRunning(endpoint string) error {
-	if cf.openTelemetryExporter != nil {
-		return nil
+func (cf *ConfigFetcher) shutdownBackend(backendName string) error {
+	err := cf.runningBackends[backendName].exporter.Shutdown(context.Background())
+	if err != nil {
+		return err
 	}
-	// TODO dynamic reconfigure if config changed
-	logger.Info("Starting OpenTelemetry exporter")
+	delete(cf.runningBackends, backendName)
+	return nil
+}
+
+func startExporter(backend *xds.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
+	if backend == nil {
+		return nil, nil
+	}
+	logger.Info("Starting OpenTelemetry exporter", "backend", backendName)
 	exporter, err := otlpmetricgrpc.New(
 		context.Background(),
-		otlpmetricgrpc.WithEndpoint(endpoint),
+		otlpmetricgrpc.WithEndpoint(backend.Endpoint),
 		otlpmetricgrpc.WithInsecure(),
 		otlpmetricgrpc.WithDialOption(dialOptions()...),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cf.openTelemetryExporter = sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
-			exporter,
-			// TODO probably can be configured from policy. Issue: https://github.com/kumahq/kuma/issues/8925
-			sdkmetric.WithInterval(30*time.Second),
-			sdkmetric.WithProducer(cf.openTelemetryProducer),
-		)),
-	)
-
-	return nil
+	return &runningBackend{
+		exporter: sdkmetric.NewMeterProvider(
+			sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
+				exporter,
+				sdkmetric.WithInterval(backend.RefreshInterval.Duration),
+				sdkmetric.WithProducer(producer),
+			)),
+		),
+		appliedConfig: *backend,
+	}, nil
 }
 
-func getOpenTelemetryBackends(allBackends []xds.Backend) []xds.Backend {
-	var openTelemetryBackends []xds.Backend
+func getOpenTelemetryBackends(allBackends []xds.Backend) map[string]*xds.OpenTelemetryBackend {
+	openTelemetryBackends := map[string]*xds.OpenTelemetryBackend{}
 	for _, backend := range allBackends {
 		if backend.Type == string(v1alpha1.OpenTelemetryBackendType) {
-			openTelemetryBackends = append(openTelemetryBackends, backend)
+			openTelemetryBackends[pointer.Deref(backend.Name)] = backend.OpenTelemetry
 		}
 	}
 	return openTelemetryBackends
@@ -197,7 +237,7 @@ func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
 	return prometheusBackends
 }
 
-func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application) []metrics.ApplicationToScrape {
+func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
 	for _, application := range applications {
@@ -222,12 +262,31 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Address:       cf.envoyAdminAddress,
 		Port:          cf.envoyAdminPort,
 		IsIPv6:        false,
-		QueryModifier: metrics.AddPrometheusFormat,
+		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		Mutator:       metrics.MergeClusters,
 		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 
 	return applicationsToScrape
+}
+
+func (cf *ConfigFetcher) reconfigureBackendIfNeeded(backendName string, backend *xds.OpenTelemetryBackend) error {
+	if configChanged(cf.runningBackends[backendName].appliedConfig, backend) {
+		err := cf.shutdownBackend(backendName)
+		if err != nil {
+			return err
+		}
+		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
+		if err != nil {
+			return err
+		}
+		cf.runningBackends[backendName] = exporter
+	}
+	return nil
+}
+
+func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
+	return appliedConfig.RefreshInterval.Duration != newConfig.RefreshInterval.Duration
 }
 
 func dialOptions() []grpc.DialOption {
@@ -238,4 +297,9 @@ func dialOptions() []grpc.DialOption {
 	return []grpc.DialOption{
 		grpc.WithContextDialer(dialer),
 	}
+}
+
+type runningBackend struct {
+	exporter      *sdkmetric.MeterProvider
+	appliedConfig xds.OpenTelemetryBackend
 }

@@ -14,6 +14,7 @@ import (
 )
 
 type K8SDeployment struct {
+	name               string
 	namespace          string
 	image              string
 	waitingToBeReady   bool
@@ -24,7 +25,7 @@ type K8SDeployment struct {
 var _ Deployment = &K8SDeployment{}
 
 func (k *K8SDeployment) Name() string {
-	return DeploymentName
+	return k.name
 }
 
 func (k *K8SDeployment) Deploy(cluster framework.Cluster) error {
@@ -57,6 +58,11 @@ func (k *K8SDeployment) ExporterEndpoint() string {
 
 func newK8sDeployment() *K8SDeployment {
 	return &K8SDeployment{}
+}
+
+func (k *K8SDeployment) WithName(name string) *K8SDeployment {
+	k.name = name
+	return k
 }
 
 func (k *K8SDeployment) WithNamespace(namespace string) *K8SDeployment {
@@ -291,21 +297,18 @@ processors:
     send_batch_size: 4096
     send_batch_max_size: 8192
   memory_limiter:
-    limit_mib: 1500
-    spike_limit_mib: 512
+    limit_mib: 500
+    spike_limit_mib: 400
     check_interval: 5s
 extensions:
   zpages: {}
-  memory_ballast:
-    # Memory Ballast size should be max 1/3 to 1/2 of memory.
-    size_mib: 683
 exporters:
   debug:
     verbosity: basic
   prometheus:
     endpoint: "%s:%d"
 service:
-  extensions: [zpages, memory_ballast]
+  extensions: [zpages]
   pipelines:
     traces/1:
       receivers: [otlp]
