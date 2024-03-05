@@ -176,6 +176,15 @@ spec:
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
+    startupProbe:
+      failureThreshold: 213
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 261
+      periodSeconds: 26
+      successThreshold: 1
+      timeoutSeconds: 24
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
