@@ -34,7 +34,7 @@ jobs:
           npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
           commitlint --config .github/commitlint.config.js --edit=<(echo "${TITLE}")
       - name: Maybe add backport label
-        if: github.event.action == 'synchronize'
+        if: github.event.action == 'synchronize' && false # disable until https://github.com/kumahq/kuma/issues/9482
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PREDEFINED_GLOBS: ".github/**/*,.circleci/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
