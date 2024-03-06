@@ -51,6 +51,12 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 						PeriodSeconds:       5,
 						FailureThreshold:    12,
 					},
+					StartupProbe: SidecarStartupProbe{
+						InitialDelaySeconds: 1,
+						TimeoutSeconds:      3,
+						PeriodSeconds:       5,
+						FailureThreshold:    12,
+					},
 					Resources: SidecarResources{
 						Requests: SidecarResourceRequests{
 							CPU:    "50m",
@@ -247,6 +253,8 @@ type DataplaneContainer struct {
 	ReadinessProbe SidecarReadinessProbe `json:"readinessProbe,omitempty"`
 	// Liveness probe.
 	LivenessProbe SidecarLivenessProbe `json:"livenessProbe,omitempty"`
+	// Startup probe for sidecar containers feature
+	StartupProbe SidecarStartupProbe `json:"startupProbe,omitempty"`
 	// Compute resource requirements.
 	Resources SidecarResources `json:"resources,omitempty"`
 	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
@@ -295,6 +303,20 @@ type SidecarLivenessProbe struct {
 	PeriodSeconds int32 `json:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_period_seconds"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
 	FailureThreshold int32 `json:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_liveness_probe_failure_threshold"`
+}
+
+// SidecarStartupProbe defines startup probe of Kuma sidecar.
+type SidecarStartupProbe struct {
+	config.BaseConfig
+
+	// Number of seconds after the container has started before startup probes are initiated.
+	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_startup_probe_initial_delay_seconds"`
+	// Number of seconds after which the probe times out.
+	TimeoutSeconds int32 `json:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_startup_probe_timeout_seconds"`
+	// How often (in seconds) to perform the probe.
+	PeriodSeconds int32 `json:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_startup_probe_period_seconds"`
+	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
+	FailureThreshold int32 `json:"failureThreshold,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_startup_probe_failure_threshold"`
 }
 
 // SidecarResources defines compute resource requirements.

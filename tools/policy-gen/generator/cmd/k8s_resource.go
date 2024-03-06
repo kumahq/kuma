@@ -29,6 +29,7 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 			}
 
 			pconfig.GoModule = rootArgs.goModule
+			pconfig.ResourceDir = rootArgs.pluginDir
 
 			k8sPath := filepath.Join(rootArgs.pluginDir, "k8s", rootArgs.version)
 			if err := os.MkdirAll(k8sPath, 0o755); err != nil {
@@ -68,7 +69,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	policy "{{.GoModule}}/pkg/plugins/policies/{{.NameLower}}/api/{{.Package}}"
+	policy "{{.GoModule}}/{{.ResourceDir}}/api/{{.Package}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	{{- if not .SkipRegistration }}
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -78,8 +79,10 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
+{{- if .IsPolicy }} 
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"
 // +kubebuilder:printcolumn:name="TargetRef Name",type="string",JSONPath=".spec.targetRef.name"
+{{- end }}
 type {{.Name}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}

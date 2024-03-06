@@ -170,7 +170,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -195,7 +195,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -217,7 +217,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
       - type: Prometheus
         prometheus: 
           port: 8080
@@ -245,11 +245,11 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, primaryOpenTelemetryEndpoint, secondaryOpenTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -316,6 +316,8 @@ func MeshMetric() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(observabilityNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(secondaryOpenTelemetryCollectorNamespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mainMesh)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(secondaryMesh)).To(Succeed())
 	})
