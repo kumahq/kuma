@@ -101,7 +101,7 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
-func (r *GatewayInstanceReconciler) resolveGatewayInstancServiceTag(gatewayInstance *mesh_k8s.MeshGatewayInstance) {
+func (r *GatewayInstanceReconciler) resolveGatewayInstanceServiceTag(gatewayInstance *mesh_k8s.MeshGatewayInstance) {
 	tags := maps.Clone(gatewayInstance.Spec.Tags)
 	if tags == nil {
 		tags = map[string]string{}
@@ -127,7 +127,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, nil, err
 	}
 	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
-		r.resolveGatewayInstancServiceTag(gatewayInstance)
+		r.resolveGatewayInstanceServiceTag(gatewayInstance)
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
@@ -438,6 +438,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 		var req []kube_reconcile.Request
 		for _, serviceName := range serviceNames {
 			// TODO: remove in version 2.9.x
+			// get MeshGatewayInstance by kuma.io/service name and map to requests
 			instances := &mesh_k8s.MeshGatewayInstanceList{}
 			err := client.List(ctx, instances, kube_client.MatchingFields{serviceKey: serviceName})
 			if err != nil && !kube_apierrs.IsNotFound(err) {
@@ -452,14 +453,8 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 				continue
 			}
 
-			// map generated kuma.io/service
+			// map generated kuma.io/service to namespaced name
 			name, err := k8s_util.NamespacesNameFromServiceTag(serviceName)
-			if err != nil {
-				l.Error(err, "failed to fetch GatewayInstances")
-				continue
-			}
-			instance := &mesh_k8s.MeshGatewayInstance{}
-			err = client.Get(ctx, name, instance)
 			if err != nil {
 				l.Error(err, "failed to fetch GatewayInstances")
 				continue
