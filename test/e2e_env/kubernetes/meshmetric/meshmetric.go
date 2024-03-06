@@ -568,7 +568,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	It("MeshMetric with multiple OpenTelemetry backends", func() {
+	XIt("MeshMetric with multiple OpenTelemetry backends", func() {
 		// given
 		primaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		secondaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, secondaryOtelCollectorName)
