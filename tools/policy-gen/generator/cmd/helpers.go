@@ -28,6 +28,10 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			if !pconfig.IsPolicy {
+				return nil
+			}
+
 			outPath := filepath.Join(filepath.Dir(policyPath), "zz_generated.helpers.go")
 			return save.GoTemplate(helpersTemplate, map[string]interface{}{
 				"name":                  pconfig.Name,

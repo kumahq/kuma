@@ -2,11 +2,13 @@ package meshretry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshfault_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -28,30 +30,41 @@ func HttpRetry() {
 		}).Should(Succeed())
 	})
 
+	BeforeEach(func() {
+		Expect(DeleteMeshResources(universal.Cluster, meshName,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			meshfault_api.MeshFaultInjectionResourceTypeDescriptor,
+			meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
+		)).To(Succeed())
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on HTTP connection failure", func() {
-		echoServerDataplane := fmt.Sprintf(`
-type: Dataplane
+		meshFaultInjection := fmt.Sprintf(`
+type: MeshFaultInjection
 mesh: "%s"
-name: fake-echo-server
-networking:
-  address:  241.0.0.1
-  inbound:
-  - port: 7777
-    servicePort: 7777
-    tags:
-      kuma.io/service: test-server
-      kuma.io/protocol: http
+name: mesh-fault-injecton
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: "50.0"
 `, meshName)
 		meshRetryPolicy := fmt.Sprintf(`
 type: MeshRetry
 mesh: "%s"
-name: fake-meshretry-policy
+name: meshretry-policy
 spec:
   targetRef:
     kind: MeshService
@@ -63,6 +76,8 @@ spec:
       default:
         http:
           numRetries: 5
+          retryOn:
+            - "5xx"
 `, meshName)
 
 		By("Checking requests succeed")
@@ -71,32 +86,22 @@ spec:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// --max-time 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
+		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
-		By("Adding a faulty dataplane")
-		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		By("Adding a MeshFaultInjection for test-server")
+		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
 
 		By("Check some errors happen")
-		var errs []error
-		for i := 0; i < 50; i++ {
-			time.Sleep(time.Millisecond * 100)
-			_, err := client.CollectEchoResponse(
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-		Expect(errs).ToNot(BeEmpty())
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
+		}, "10s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -105,7 +110,101 @@ spec:
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+	})
+
+	It("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
+		meshFaultInjection := fmt.Sprintf(`
+type: MeshFaultInjection
+mesh: "%s"
+name: mesh-fault-injecton
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: "50.0"
+`, meshName)
+		meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
+mesh: "%s"
+name: meshretry-policy
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, meshName)
+		meshHttpRoute := fmt.Sprintf(`
+type: MeshHTTPRoute
+mesh: %s
+name: http-route-1
+spec:
+  targetRef:
+    kind: MeshService
+    name: demo-client
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      rules:
+        - matches:
+            - path:
+                value: /
+                type: PathPrefix
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server
+                weight: 100`, meshName)
+
+		Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
+
+		By("Checking requests succeed")
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
+
+		By("Adding a MeshFaultInjection for test-server")
+		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
+
+		By("Check some errors happen")
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "test-server.mesh",
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
+		}, "10s", "100ms").Should(Succeed())
+
+		By("Apply a MeshRetry policy")
+		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+		By("Eventually all requests succeed consistently")
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
