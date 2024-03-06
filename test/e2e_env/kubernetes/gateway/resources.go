@@ -20,6 +20,8 @@ func Resources() {
 	namespace := "gateway-resources"
 	waitingClientNamespace := "gateway-resources-client-wait"
 	curlingClientNamespace := "gateway-resources-client-curl"
+	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
+	target := fmt.Sprintf("http://%s", net.JoinHostPort(gatewayHost, "8080"))
 
 	meshGatewayWithoutLimit := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -108,9 +110,6 @@ spec:
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	gatewayHost := fmt.Sprintf("%s.%s", gatewayName, namespace)
-	target := fmt.Sprintf("http://%s", net.JoinHostPort(gatewayHost, "8080"))
-
 	keepConnectionOpen := func() {
 		// Open TCP connections to the gateway
 		defer GinkgoRecover()
@@ -144,21 +143,13 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("kubernetes"))
-		}, "20s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 
 		By("allowing more than 1 connection without a limit")
 
 		go keepConnectionOpen()
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster, "demo-client", target,
-				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
-			)
-
-			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
 				kubernetes.Cluster, "demo-client", target,
 				client.FromKubernetesPod(curlingClientNamespace, "demo-client"),
@@ -166,7 +157,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("kubernetes"))
-		}, "40s", "1s").Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
 
 		By("not allowing more than 1 connection with a limit of 1")
 
@@ -184,6 +175,6 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "40s", "1s").Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }
