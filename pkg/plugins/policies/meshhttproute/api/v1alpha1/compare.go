@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"cmp"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -18,39 +19,27 @@ func comparePath(a *PathMatch, b *PathMatch) int {
 	}
 
 	switch {
-	case a.Type == Exact && b.Type == Exact:
-	case a.Type == Exact && b.Type != Exact:
-		return -1
-	case a.Type != Exact && b.Type == Exact:
-		return 1
-	}
-
-	switch {
-	case a.Type == PathPrefix && b.Type != PathPrefix:
-		return -1
-	case a.Type != PathPrefix && b.Type == PathPrefix:
-		return 1
-	case a.Type == PathPrefix && b.Type == PathPrefix:
-		switch {
-		case len(a.Value) > len(b.Value):
-			return -1
-		case len(a.Value) < len(b.Value):
-			return 1
+	case a.Type == b.Type:
+		switch a.Type {
+		case Exact:
+			return 0
+		case PathPrefix, RegularExpression:
+			// Note this is intentionally "flipped" because a longer prefix means a
+			// lesser match
+			return cmp.Compare(len(b.Value), len(a.Value))
 		}
-	}
-
-	switch {
-	case a.Type == RegularExpression && b.Type != RegularExpression:
+	case a.Type == Exact:
 		return -1
-	case a.Type != RegularExpression && b.Type == RegularExpression:
+	case b.Type == Exact:
 		return 1
-	case a.Type == RegularExpression && b.Type == RegularExpression:
-		switch {
-		case len(a.Value) > len(b.Value):
-			return -1
-		case len(a.Value) < len(b.Value):
-			return 1
-		}
+	case a.Type == PathPrefix:
+		return -1
+	case b.Type == PathPrefix:
+		return 1
+	case a.Type == RegularExpression:
+		return -1
+	case b.Type == RegularExpression:
+		return 1
 	}
 
 	return 0
