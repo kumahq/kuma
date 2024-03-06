@@ -77,6 +77,13 @@ var _ = Describe("SortRules", func() {
 	methodMatch := api.Match{
 		Method: pointer.To(api.Method("GET")),
 	}
+	exactAndMethodMatch := api.Match{
+		Path: &api.PathMatch{
+			Type:  api.Exact,
+			Value: "/exact",
+		},
+		Method: pointer.To(api.Method("GET")),
+	}
 	singleHeaderMatch := api.Match{
 		Headers: []common_api.HeaderMatch{{
 			Type:  pointer.To(common_api.HeaderMatchExact),
@@ -84,6 +91,40 @@ var _ = Describe("SortRules", func() {
 			Value: "value",
 		}},
 	}
+	exactSingleHeaderMatch := api.Match{
+		Path: &api.PathMatch{
+			Type:  api.Exact,
+			Value: "/exact",
+		},
+		Headers: []common_api.HeaderMatch{{
+			Type:  pointer.To(common_api.HeaderMatchExact),
+			Name:  "header",
+			Value: "value",
+		}},
+	}
+	exactDoubleHeaderMatch := api.Match{
+		Path: &api.PathMatch{
+			Type:  api.Exact,
+			Value: "/other-exact",
+		},
+		Headers: []common_api.HeaderMatch{{
+			Type:  pointer.To(common_api.HeaderMatchExact),
+			Name:  "header",
+			Value: "value",
+		}, {
+			Type:  pointer.To(common_api.HeaderMatchExact),
+			Name:  "other-header",
+			Value: "other-value",
+		}},
+	}
+	It("handles base cases", func() {
+		Expect(api.SortRules(makeSingleMatchRules([]api.Match{}))).To(Equal(makeRoutes([]api.Match{})))
+		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
+			exactMatch,
+		}))).To(Equal(makeRoutes([]api.Match{
+			exactMatch,
+		})))
+	})
 	It("handles path matches", func() {
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			prefixMatch,
@@ -118,6 +159,22 @@ var _ = Describe("SortRules", func() {
 		}))).To(Equal(makeRoutes([]api.Match{
 			prefixMatch,
 			singleHeaderMatch,
+		})))
+	})
+	It("handles AND matches", func() {
+		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
+			exactMatch,
+			exactAndMethodMatch,
+		}))).To(Equal(makeRoutes([]api.Match{
+			exactAndMethodMatch,
+			exactMatch,
+		})))
+		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
+			exactSingleHeaderMatch,
+			exactDoubleHeaderMatch,
+		}))).To(Equal(makeRoutes([]api.Match{
+			exactDoubleHeaderMatch,
+			exactSingleHeaderMatch,
 		})))
 	})
 	It("is stable", func() {
