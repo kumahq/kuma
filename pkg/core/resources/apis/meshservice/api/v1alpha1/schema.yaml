@@ -1,0 +1,71 @@
+type: object
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshService
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma MeshService resource.
+    properties:
+      ports:
+        items:
+          properties:
+            port:
+              format: int32
+              type: integer
+            protocol:
+              default: tcp
+              description: Protocol identifies a protocol supported by a service.
+              type: string
+            targetPort:
+              format: int32
+              type: integer
+          required:
+            - port
+          type: object
+        type: array
+        x-kubernetes-list-map-keys:
+          - port
+          - protocol
+        x-kubernetes-list-type: map
+      selector:
+        properties:
+          dataplaneTags:
+            additionalProperties:
+              type: string
+            type: object
+        type: object
+      status:
+        properties:
+          addresses:
+            items:
+              properties:
+                hostname:
+                  type: string
+              type: object
+            type: array
+          tls:
+            properties:
+              status:
+                enum:
+                  - Ready
+                  - NotReady
+                type: string
+            type: object
+          vips:
+            items:
+              properties:
+                ip:
+                  type: string
+              type: object
+            type: array
+        type: object
+    type: object
