@@ -19,7 +19,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
   update-insecure-dependencies:
-    timeout-minutes: 10
+    timeout-minutes: 20
     needs:
       - build-matrix
     strategy:

@@ -27,6 +27,8 @@ type PolicyConfig struct {
 	HasTo               bool
 	HasFrom             bool
 	GoModule            string
+	ResourceDir         string
+	IsPolicy            bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -124,6 +126,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		AlternativeNames:    []string{strings.ToLower(name)},
 		HasTo:               hasTo,
 		HasFrom:             hasFrom,
+		IsPolicy:            true,
 	}
 
 	if v, ok := parseBool(markers, "kuma:policy:skip_registration"); ok {
@@ -131,6 +134,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 	}
 	if v, ok := parseBool(markers, "kuma:policy:skip_get_default"); ok {
 		res.SkipGetDefault = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:is_policy"); ok {
+		res.IsPolicy = v
 	}
 
 	if v, ok := markers["kuma:policy:singular_display_name"]; ok {

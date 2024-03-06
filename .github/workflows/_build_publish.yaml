@@ -21,8 +21,6 @@ on:
         value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.build.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
-permissions:
-  contents: read
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -136,17 +134,16 @@ jobs:
           name: images_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
-      # TODO Do we need to scan images for each arch?
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -173,15 +170,15 @@ jobs:
         run: |
           echo "Fetching image digest for ${{ matrix.image }}"
           digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
+          echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
       - name: sign image
-        # TODO At the it's asking for verifying a token in a browser... Something seems off
-        if: false # ${{ fromJSON(inputs.ALLOW_PUSH) }}
+        if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@60c9b136104671b7091b2306c599d80fec34ae3f # v2.0.3
         with:
-          image_digest: ${{ steps.manifest_digest.outputs.digest }}
-          tags: ${{ steps.image_meta.outputs.tag }}
+          image_digest: ${{ steps.image_digest.outputs.digest }}
+          tags: ${{ steps.image_meta.outputs.image }}
           signature_registry: ${{ steps.image_meta.outputs.registry }}/notary${{ contains(steps.image_meta.outputs.tag, 'preview') && '-internal' }}
           registry_username: ${{ vars.DOCKER_USERNAME }}
           registry_password: ${{ secrets.DOCKER_API_KEY }}
@@ -213,7 +210,7 @@ jobs:
       - name: package-helm-chart
         id: package-helm
         env:
-          HELM_DEV: ${{ github.ref_type == 'tag' }}
+          HELM_DEV: ${{ github.ref_type != 'tag' }}
         run: |
           make helm/update-version
 
