@@ -99,6 +99,8 @@ type Route struct {
 
 // SortRules orders the rules according to Gateway API precedence:
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
+// We treat RegularExpression matches, which are implementation-specific, the
+// same as prefix matches, the longer length match has priority.
 func SortRules(rules []Rule) []Route {
 	type keyed struct {
 		sortKey Match
