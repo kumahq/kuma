@@ -595,7 +595,6 @@ type ControlPlane interface {
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
-	GenerateZoneIngressLegacyToken(zone string) (string, error)
 	GenerateZoneEgressToken(zone string) (string, error)
 	GenerateZoneToken(zone string, scope []string) (string, error)
 	Exec(cmd ...string) (string, string, error)

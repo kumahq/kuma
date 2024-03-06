@@ -525,9 +525,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 }
 
 func initializeTokenIssuers(builder *core_runtime.Builder) {
-	issuers := builtin.TokenIssuers{
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-	}
+	issuers := builtin.TokenIssuers{}
 	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
 		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
 	} else {

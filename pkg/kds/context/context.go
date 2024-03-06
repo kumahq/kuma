@@ -30,7 +30,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 )
 
@@ -232,7 +231,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return configs[resName]
 		case r.Descriptor().Name == system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
-				zoneingress.ZoneIngressSigningKeyPrefix,
 				zone_tokens.SigningKeyPrefix,
 			}...)
 		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):

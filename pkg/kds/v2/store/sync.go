@@ -29,7 +29,6 @@ import (
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 // ResourceSyncer allows to synchronize resources in Store
@@ -296,7 +295,6 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
-						zoneingress.ZoneIngressSigningKeyPrefix,
 						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))
