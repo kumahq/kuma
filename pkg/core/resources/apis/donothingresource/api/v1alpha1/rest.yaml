@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "DoNothingResource"
+
+paths:
+  /meshes/{mesh}/donothingresources/{name}:
+    get:
+      summary: Returns DoNothingResource entity
+      tags: [ "DoNothingResource" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the DoNothingResource
+      responses:
+        '200':
+          $ref: "#/components/responses/DoNothingResourceItem"
+
+    put:
+      summary: Creates or Updates DoNothingResource entity
+      tags: [ "DoNothingResource" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the DoNothingResource
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoNothingResourceItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+
+    delete:
+      summary: Deletes DoNothingResource entity
+      tags: [ "DoNothingResource" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the DoNothingResource
+      responses:
+        '200':
+          description: Successful response
+
+
+  /meshes/{mesh}/donothingresources:
+    get:
+      summary: Returns a list of DoNothingResource in the mesh.
+      tags: [ "DoNothingResource" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/DoNothingResourceList"
+
+components:
+  schemas:
+    DoNothingResourceItem:
+      $ref: 'schema.yaml'
+  responses:
+    DoNothingResourceItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DoNothingResourceItem'
+    DoNothingResourceList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DoNothingResourceItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

@@ -1,0 +1,17 @@
+type: object
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - DoNothingResource
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma DoNothingResource resource.
+    type: object

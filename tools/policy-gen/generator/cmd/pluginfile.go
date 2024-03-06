@@ -47,15 +47,19 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 
 			outPath := filepath.Join(rootArgs.pluginDir, "zz_generated.plugin.go")
 			return save.GoTemplate(pluginGoTemplate, struct {
-				Package  string
-				Versions []string
-				Name     string
-				GoModule string
+				Package     string
+				Versions    []string
+				Name        string
+				GoModule    string
+				ResourceDir string
+				IsPolicy    bool
 			}{
-				Package:  strings.ToLower(pconfig.Name),
-				Name:     pconfig.Name,
-				Versions: versions,
-				GoModule: rootArgs.goModule,
+				Package:     strings.ToLower(pconfig.Name),
+				Name:        pconfig.Name,
+				Versions:    versions,
+				GoModule:    rootArgs.goModule,
+				ResourceDir: rootArgs.pluginDir,
+				IsPolicy:    pconfig.IsPolicy,
 			}, outPath)
 		},
 	}
@@ -66,26 +70,32 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 var pluginGoTemplate = template.Must(template.New("plugin-go").Parse(`
 package {{ .Package }}
 
-{{ $pkg := .Package }}
+{{ $pkg := .ResourceDir }}
 {{ $name := .Name }}
 {{ $gomodule := .GoModule }}
+{{ $isPolicy := .IsPolicy }}
 
 import (
-	"github.com/kumahq/kuma/pkg/plugins/policies/core"
+{{- if $isPolicy }}
+	"github.com/kumahq/kuma/pkg/core/plugins"
+{{- end}}
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 {{- range $idx, $version := .Versions}}
-	api_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/api/{{ $version }}"
-	k8s_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/k8s/{{ $version }}"
-	plugin_{{ $version }} "{{ $gomodule }}/pkg/plugins/policies/{{ $pkg }}/plugin/{{ $version }}"
+	api_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/api/{{ $version }}"
+	k8s_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/k8s/{{ $version }}"
+{{- if $isPolicy }}
+	plugin_{{ $version }} "{{ $gomodule }}/{{ $pkg }}/plugin/{{ $version }}"
+{{- end }}
 {{- end}}
 )
 
 func InitPlugin() {
 	{{- range $idx, $version := .Versions}}
-	core.Register(
-		api_{{ $version }}.{{ $name }}ResourceTypeDescriptor,
-		k8s_{{ $version }}.AddToScheme,
-		plugin_{{ $version }}.NewPlugin(),
-	)
+	registry.AddKubeScheme(k8s_{{ $version }}.AddToScheme)
+	registry.RegisterType(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor)
+{{- if $isPolicy }}
+	plugins.Register(plugins.PluginName(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor.KumactlArg), plugin_{{ $version }}.NewPlugin())
+{{- end }}
 	{{- end}}
 }
 `))

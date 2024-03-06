@@ -12,7 +12,7 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       routeConfig:
-        name: outbound:backend
+        name: outbound:http-service
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
@@ -21,13 +21,61 @@ filterChains:
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: http-service
           routes:
+          - match:
+              headers:
+              - name: :method
+                stringMatch:
+                  exact: GET
+              path: /another-backend
+            name: U8NGexJyQPtOd+lzwvsjLMysuDL6MmTJPSRX4C43niU=
+            route:
+              cluster: http-service
+              retryPolicy:
+                hostSelectionRetryMaxAttempts: "99"
+                numRetries: 6
+                perTryTimeout: 77s
+                rateLimitedRetryBackOff:
+                  maxInterval: 11s
+                  resetHeaders:
+                  - format: UNIX_TIMESTAMP
+                    name: x-retry-after-http
+                retriableHeaders:
+                - name: x-retry-regex
+                  stringMatch:
+                    safeRegex:
+                      regex: .*
+                retriableRequestHeaders:
+                - name: x-retry-prefix
+                  stringMatch:
+                    prefix: prefix-another
+                retryBackOff:
+                  baseInterval: 88s
+                  maxInterval: 999s
+                retryHostPredicate:
+                - name: envoy.retry_host_predicates.previous_hosts
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.previous_hosts.v3.PreviousHostsPredicate
+                - name: envoy.retry_host_predicates.omit_host_metadata
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.host.omit_host_metadata.v3.OmitHostMetadataConfig
+                    metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          another-test: another-test
+                retryOn: gateway-error,connect-failure,refused-stream
+                retryPriority:
+                  name: envoy.retry_priorities.previous_priorities
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.retry.priority.previous_priorities.v3.PreviousPrioritiesConfig
+                    updateFrequency: 5
+              timeout: 0s
           - match:
               prefix: /
             name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
-              cluster: backend
+              cluster: http-service
               retryPolicy:
                 hostSelectionRetryMaxAttempts: "2"
                 numRetries: 1
