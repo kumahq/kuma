@@ -3,7 +3,7 @@ package jsonpatch
 import (
 	"fmt"
 
-	"github.com/evanphx/json-patch/v5"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
