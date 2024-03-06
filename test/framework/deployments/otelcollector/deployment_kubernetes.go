@@ -302,16 +302,13 @@ processors:
     check_interval: 5s
 extensions:
   zpages: {}
-  memory_ballast:
-    # Memory Ballast size should be max 1/3 to 1/2 of memory.
-    size_mib: 256
 exporters:
   debug:
     verbosity: basic
   prometheus:
     endpoint: "%s:%d"
 service:
-  extensions: [zpages, memory_ballast]
+  extensions: [zpages]
   pipelines:
     traces/1:
       receivers: [otlp]

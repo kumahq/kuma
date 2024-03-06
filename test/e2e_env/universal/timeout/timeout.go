@@ -14,48 +14,11 @@ import (
 
 func Policy() {
 	meshName := "timeout"
-	faultInjection := fmt.Sprintf(`
-type: FaultInjection
-mesh: "%s"
-name: fi1
-sources:
-   - match:
-       kuma.io/service: demo-client
-destinations:
-   - match:
-       kuma.io/service: test-server
-       kuma.io/protocol: http
-conf:
-   delay:
-     percentage: 100
-     value: 5s
-`, meshName)
-
-	timeout := fmt.Sprintf(`
-type: Timeout
-mesh: "%s"
-name: echo-service-timeouts
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  connectTimeout: 10s
-  http:
-    requestTimeout: 2s
-`, meshName)
-
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(YamlUniversal(faultInjection)).
 			Install(TimeoutUniversal(meshName)).
-			Install(RetryUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
-			Install(TrafficPermissionUniversal(meshName)).
-			Install(CircuitBreakerUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true)),
 			).
@@ -76,30 +39,43 @@ conf:
 	})
 
 	It("should reset the connection by timeout", func() {
-		By("check requests take over 5s")
+		By("check requests take over 2s")
 		Eventually(func(g Gomega) {
 			start := time.Now()
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(10),
+				client.WithHeader("x-set-response-delay-ms", "2000"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*2))
 		}).Should(Succeed())
 
 		By("apply a new policy")
-		Expect(universal.Cluster.Install(YamlUniversal(timeout))).To(Succeed())
+		err := universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: Timeout
+mesh: "%s"
+name: echo-service-timeouts
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: test-server
+conf:
+  connectTimeout: 10s
+  http:
+    requestTimeout: 1s
+`, meshName)))
+		Expect(err).ToNot(HaveOccurred())
 
 		By("eventually requests timeout consistently")
-		expectation := func(g Gomega) {
+		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(10),
+				client.WithHeader("x-set-response-delay-ms", "2000"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
-		}
-		Eventually(expectation).Should(Succeed())
-		Consistently(expectation).Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }

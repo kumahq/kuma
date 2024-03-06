@@ -54,7 +54,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					ImagePullPolicy: "IfNotPresent",
 					Image:           framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
-						{ContainerPort: 3000},
+						{ContainerPort: 3000, Name: "main"},
 					},
 					Command: []string{"ncat"},
 					Args:    []string{"-lk", "-p", "3000"},
@@ -65,6 +65,31 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func (k *k8SDeployment) service() *corev1.Service {
+	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      k.Name(),
+			Namespace: k.opts.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "main",
+					Port:       3000,
+					TargetPort: intstr.FromString("main"),
+				},
+			},
+			Selector: map[string]string{
+				"app": k.Name(),
 			},
 		},
 	}
@@ -89,6 +114,11 @@ func meta(namespace string, name string) metav1.ObjectMeta {
 
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	funcs := []framework.InstallFunc{framework.YamlK8sObject(k.deployment())}
+
+	if k.opts.Service {
+		funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	}
+
 	if k.opts.WaitingToBeReady {
 		funcs = append(funcs,
 			framework.WaitNumPods(k.opts.Namespace, 1, k.Name()),
