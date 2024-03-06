@@ -59,25 +59,15 @@ func compareMethod(a *Method, b *Method) int {
 }
 
 func compareHeaders(a []common_api.HeaderMatch, b []common_api.HeaderMatch) int {
-	switch {
-	case len(a) > len(b):
-		return -1
-	case len(b) > len(a):
-		return 1
-	}
-
-	return 0
+	// Note this is intentionally "flipped" because more header matches
+	// means a lesser match
+	return cmp.Compare(len(b), len(a))
 }
 
 func compareQueryParams(a []QueryParamsMatch, b []QueryParamsMatch) int {
-	switch {
-	case len(a) > len(b):
-		return -1
-	case len(b) > len(a):
-		return 1
-	}
-
-	return 0
+	// Note this is intentionally "flipped" because more query params matches
+	// means a lesser match
+	return cmp.Compare(len(b), len(a))
 }
 
 func CompareMatch(a Match, b Match) int {
