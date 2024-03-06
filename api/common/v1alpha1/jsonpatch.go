@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-        "github.com/evanphx/json-patch/v5"
+	"github.com/evanphx/json-patch/v5"
 	"github.com/gobeam/stringy"
 	"go.uber.org/multierr"
 )
