@@ -35,11 +35,10 @@ func ReachableServices() {
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
+		}, "1s", "100ms").Should(Succeed())
 	})
 
-	// Disabled because of flakiness: https://github.com/kumahq/kuma/issues/9349
-	XIt("should not be able to non reachable services", func() {
+	It("should not be able to non reachable services", func() {
 		Consistently(func(g Gomega) {
 			// when
 			response, err := client.CollectFailure(
@@ -48,6 +47,6 @@ func ReachableServices() {
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(6))
-		}).Should(Succeed())
+		}, "1s", "100ms").Should(Succeed())
 	})
 }
