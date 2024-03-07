@@ -57,7 +57,7 @@ for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[]
         exit 1
     fi
     # Do not downgrade in order to fix the vulnerability
-    if [[ $(compare_versions currentMajor currentMinor currentPatch fixMajor fixMinor fixPatch) -eq -1]]; then
+    if [[ $(compare_versions "$currentMajor" "$currentMinor" "$currentPatch" "$fixMajor" "$fixMinor" "$fixPatch") -eq -1 ]]; then
       package=$(jq -r .name <<< "$dep")
       if [[ "$package" == "stdlib" ]]; then
         yq -i e ".parameters.go_version.default = \"$version\"" .circleci/config.yml
