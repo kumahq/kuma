@@ -504,7 +504,7 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry enabled", func() {
+	It("MeshMetric with OpenTelemetry enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -521,7 +521,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and usedonly/filter", func() {
+	It("MeshMetric with OpenTelemetry and usedonly/filter", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndIncludeUnused(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -539,7 +539,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
+	It("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		testServerIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)

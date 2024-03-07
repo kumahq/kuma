@@ -106,6 +106,8 @@ jobs:
       - name: "GitHub Actions: run E2E tests"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
+          while true; do ps -eo pcpu,pmem,pid,user,args | sort -k 1 -r | head -30 >> /tmp/stats.txt ; sleep 1; done &
+          
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
             export K8S_CLUSTER_TOOL=kind
@@ -136,6 +138,12 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
+      - name: Upload cpu stats
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: cpu-stats.txt
+          path: /tmp/stats.txt
+          retention-days: 7
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params
