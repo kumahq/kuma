@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
@@ -24,8 +24,7 @@ type ZoneValidator struct {
 	unsafeDelete bool
 }
 
-func (z *ZoneValidator) InjectDecoder(_ *admission.Decoder) error {
-	return nil
+func (z *ZoneValidator) InjectDecoder(_ *admission.Decoder) {
 }
 
 func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admission.Response {

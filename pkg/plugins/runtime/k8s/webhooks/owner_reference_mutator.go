@@ -26,11 +26,6 @@ type OwnerReferenceMutator struct {
 	Scheme       *kube_runtime.Scheme
 }
 
-func (m *OwnerReferenceMutator) InjectDecoder(d *admission.Decoder) error {
-	m.Decoder = d
-	return nil
-}
-
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	resType := core_model.ResourceType(req.Kind.Kind)
 

@@ -15,7 +15,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -186,7 +185,7 @@ func tagsForRef(referrer kube_client.Object, ref gatewayapi.ParentReference) map
 func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("routesForGateway")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway, ok := obj.(*gatewayapi.Gateway)
 		if !ok {
 			l.Error(nil, "unexpected error converting to be mapped %T object to Gateway", obj)
@@ -194,7 +193,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var routes gatewayapi.HTTPRouteList
-		if err := client.List(context.Background(), &routes); err != nil {
+		if err := client.List(ctx, &routes); err != nil {
 			l.Error(err, "unexpected error listing HTTPRoutes in cluster")
 			return nil
 		}
@@ -220,7 +219,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("routesForGrant")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		grant, ok := obj.(*gatewayapi.ReferenceGrant)
 		if !ok {
 			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayGrant", obj)
@@ -238,7 +237,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 
 		for _, namespace := range namespaces {
 			routes := &gatewayapi.HTTPRouteList{}
-			if err := client.List(context.Background(), routes, kube_client.InNamespace(namespace)); err != nil {
+			if err := client.List(ctx, routes, kube_client.InNamespace(namespace)); err != nil {
 				l.Error(err, "unexpected error listing HTTPRoutes")
 				return nil
 			}
@@ -258,11 +257,11 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
-			&kube_source.Kind{Type: &gatewayapi.Gateway{}},
+			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
 		).
 		Watches(
-			&kube_source.Kind{Type: &gatewayapi.ReferenceGrant{}},
+			&gatewayapi.ReferenceGrant{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
 		).
 		Complete(r)

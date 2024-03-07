@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,10 +19,11 @@ type Defaulter interface {
 	Default() error
 }
 
-func DefaultingWebhookFor(converter k8s_common.Converter) *admission.Webhook {
+func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &defaultingHandler{
 			converter: converter,
+			decoder:   admission.NewDecoder(scheme),
 		},
 	}
 }
@@ -29,13 +31,6 @@ func DefaultingWebhookFor(converter k8s_common.Converter) *admission.Webhook {
 type defaultingHandler struct {
 	converter k8s_common.Converter
 	decoder   *admission.Decoder
-}
-
-var _ admission.DecoderInjector = &defaultingHandler{}
-
-func (h *defaultingHandler) InjectDecoder(d *admission.Decoder) error {
-	h.decoder = d
-	return nil
 }
 
 func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {

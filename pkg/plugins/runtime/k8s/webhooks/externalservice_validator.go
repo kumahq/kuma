@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	externalservice_managers "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
@@ -27,9 +27,8 @@ type ExternalServiceValidator struct {
 	decoder   *admission.Decoder
 }
 
-func (h *ExternalServiceValidator) InjectDecoder(d *admission.Decoder) error {
+func (h *ExternalServiceValidator) InjectDecoder(d *admission.Decoder) {
 	h.decoder = d
-	return nil
 }
 
 func (h *ExternalServiceValidator) Handle(ctx context.Context, req admission.Request) admission.Response {

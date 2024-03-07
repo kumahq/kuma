@@ -306,6 +306,8 @@ cni:
   tolerations: []
   # -- Additional pod annotations
   podAnnotations: { }
+  # -- Set the CNI namespace
+  namespace: kube-system
 
   image:
     # -- CNI image repository

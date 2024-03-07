@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -145,11 +144,11 @@ func getParametersRef(
 func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("gatewayToClassMapper")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		// If we don't have an object, we need to reconcile all GatewayClasses
 		if obj == nil {
 			classes := &gatewayapi.GatewayClassList{}
-			if err := client.List(context.Background(), classes); err != nil {
+			if err := client.List(ctx, classes); err != nil {
 				l.Error(err, "failed to list GatewayClasses")
 			}
 
@@ -184,7 +183,7 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("gatewaysForConfig")
 
-	return func(obj kube_client.Object) []kube_reconcile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		config, ok := obj.(*mesh_k8s.MeshGatewayConfig)
 		if !ok {
 			l.Error(nil, "unexpected error converting to be mapped %T object to MeshGatewayConfig", obj)
@@ -193,7 +192,7 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 
 		classes := &gatewayapi.GatewayClassList{}
 		if err := client.List(
-			context.Background(), classes, kube_client.MatchingFields{parametersRefField: config.Name},
+			ctx, classes, kube_client.MatchingFields{parametersRefField: config.Name},
 		); err != nil {
 			l.Error(err, "unexpected error listing GatewayClasses")
 			return nil
@@ -251,13 +250,12 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&gatewayapi.GatewayClass{}).
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
-		Watches(&kube_source.Kind{
-			Type: &gatewayapi.Gateway{},
-		},
+		Watches(
+			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
 		).
 		Watches(
-			&kube_source.Kind{Type: &mesh_k8s.MeshGatewayConfig{}},
+			&mesh_k8s.MeshGatewayConfig{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayClassesForConfig(r.Log, r.Client)),
 		).
 		Complete(r)

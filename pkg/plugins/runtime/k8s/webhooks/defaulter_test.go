@@ -57,8 +57,7 @@ var _ = Describe("Defaulter", func() {
 	var handler *kube_admission.Webhook
 
 	BeforeEach(func() {
-		handler = DefaultingWebhookFor(converter)
-		Expect(handler.InjectScheme(scheme)).To(Succeed())
+		handler = DefaultingWebhookFor(scheme, converter)
 	})
 
 	type testCase struct {

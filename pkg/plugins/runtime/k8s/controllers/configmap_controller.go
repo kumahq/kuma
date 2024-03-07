@@ -15,7 +15,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -87,26 +86,25 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.ConfigMap{}).
-		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ZoneIngress{}}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.VirtualOutbound{}}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGateway{}}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.MeshGatewayRoute{}}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayRouteToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
+		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
+		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
+		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&mesh_k8s.MeshGatewayRoute{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayRouteToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Complete(r)
 }
 
 func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemNamespace string) kube_handler.MapFunc {
 	l = l.WithName("service-to-configmap-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*kube_core.Service)
 		if !ok {
 			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
 			return nil
 		}
 
-		ctx := context.Background()
 		svcName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
 		// List Pods in the same namespace
 		pods := &kube_core.PodList{}
@@ -137,7 +135,7 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemN
 
 func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
 	l = l.WithName("dataplane-to-mesh-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.Dataplane)
 		if !ok {
 			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -158,9 +156,7 @@ func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_commo
 
 func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
 	l = l.WithName("meshgateway-to-mesh-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
-		ctx := context.Background()
-
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.MeshGateway)
 		if !ok {
 			l.WithValues("meshgateway", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -188,9 +184,7 @@ func MeshGatewayToMeshMapper(client kube_client.Reader, l logr.Logger, ns string
 
 func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
 	l = l.WithName("meshgatewayroute-to-mesh-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
-		ctx := context.Background()
-
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.MeshGatewayRoute)
 		if !ok {
 			l.WithValues("meshgatewayroute", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -218,7 +212,7 @@ func MeshGatewayRouteToMeshMapper(client kube_client.Reader, l logr.Logger, ns s
 
 func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
 	l = l.WithName("zone-ingress-to-mesh-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ZoneIngress)
 		if !ok {
 			l.WithValues("zoneIngress", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -247,7 +241,7 @@ func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_com
 
 func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.MapFunc {
 	l = l.WithName("external-service-to-configmap-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(_ context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.ExternalService)
 		if !ok {
 			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
@@ -262,7 +256,7 @@ func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.Ma
 
 func VirtualOutboundToConfigMapsMapper(l logr.Logger, ns string) kube_handler.MapFunc {
 	l = l.WithName("virtual-outbound-to-configmap-mapper")
-	return func(obj kube_client.Object) []kube_reconile.Request {
+	return func(_ context.Context, obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*mesh_k8s.VirtualOutbound)
 		if !ok {
 			l.WithValues("virtualOutbound", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
