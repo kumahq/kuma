@@ -197,14 +197,12 @@ func applyToGateway(
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
 						routeConf := getConf(toRules, core_rules.MeshSubset().WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
-						if conf == nil && routeConf == nil {
-							continue
-						}
-						if routeConf == nil && conf != nil {
-							routeConf = conf
-						}
 						if routeConf == nil {
-							continue
+							if conf == nil {
+								continue
+							}
+							// use the common configuration for all routes
+							routeConf = conf
 						}
 						plugin_xds.ConfigureRouteAction(
 							r.GetRoute(),

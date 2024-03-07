@@ -671,10 +671,10 @@ spec:
 					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/timeout",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 					client.WithHeader("host", "example.kuma.io"),
-					client.WithHeader("x-set-response-delay-ms", "3000"),
-					client.WithMaxTime(10),
+					client.WithHeader("x-set-response-delay-ms", "3000"), // delay response by 3 seconds
 				)
 				g.Expect(err).ToNot(HaveOccurred())
+				// check that request timed out
 				g.Expect(response.ResponseCode).To(Equal(504))
 			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
@@ -685,10 +685,10 @@ spec:
 					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/no-timeout",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 					client.WithHeader("host", "example.kuma.io"),
-					client.WithHeader("x-set-response-delay-ms", "3000"),
-					client.WithMaxTime(10), // we don't want 'curl' to return early
+					client.WithHeader("x-set-response-delay-ms", "3000"), // delay response by 3 seconds
 				)
 				g.Expect(err).ToNot(HaveOccurred())
+				// check that resonse was received after more than 3 seconds
 				g.Expect(time.Since(start)).To(BeNumerically(">", 3*time.Second))
 			}, "30s", "1s").Should(Succeed())
 		})
