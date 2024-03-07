@@ -306,7 +306,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
-			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Authn.DpProxy.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.EnableIssuer).To(BeFalse())
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.Validator.UseSecrets).To(BeFalse())
@@ -646,8 +645,6 @@ dpServer:
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   readHeaderTimeout: 11s
   port: 9876
-  auth:
-    type: dpToken
   authn:
     dpProxy:
       type: dpToken
@@ -949,8 +946,6 @@ tracing:
 				"KUMA_DP_SERVER_TLS_MAX_VERSION":                                                           "TLSv1_3",
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_READ_HEADER_TIMEOUT":                                                       "11s",
-				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
-				"KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH":                                                       "true",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
