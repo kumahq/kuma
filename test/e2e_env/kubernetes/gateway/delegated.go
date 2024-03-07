@@ -47,6 +47,10 @@ func Delegated() {
 				testserver.WithNamespace(config.NamespaceOutsideMesh),
 				testserver.WithName("external-service"),
 			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(config.NamespaceOutsideMesh),
+				testserver.WithName("external-tcp-service"),
+			)).
 			Install(otelcollector.Install(
 				otelcollector.WithNamespace(config.NamespaceOutsideMesh),
 				otelcollector.WithIPv6(Config.IPV6),
@@ -115,4 +119,5 @@ spec:
 	Context("MeshTrace", delegated.MeshTrace(&config))
 	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
 	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
+	Context("MeshTCPRoute", delegated.MeshTCPRoute(&config))
 }

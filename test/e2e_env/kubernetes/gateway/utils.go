@@ -113,6 +113,23 @@ spec:
 	return instance
 }
 
+func MkGatewayInstanceNoServiceTag(name, namespace, mesh string) string {
+	instance := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayInstance
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  replicas: 1
+  serviceType: ClusterIP
+`, name, namespace, mesh)
+
+	return instance
+}
+
 func gatewayAddress(instanceName, instanceNamespace string, port int) string {
 	services, err := k8s.ListServicesE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(instanceNamespace), metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred())

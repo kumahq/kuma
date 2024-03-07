@@ -29,6 +29,12 @@ resources:
               name: backend
               routes:
               - match:
+                  path: /v1/specific
+                name: yih0Y9HpUXVKBUFYOjdHJ6ltlVzhID6xNw9/5VgD9w8=
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
                   path: /v1
                 name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
                 route:
@@ -41,36 +47,12 @@ resources:
                   cluster: backend
                   timeout: 0s
               - match:
-                  path: /v2
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
-                route:
-                  cluster: backend-c72efb5be46fae6b
-                  timeout: 0s
-              - match:
-                  prefix: /v2/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
-                route:
-                  cluster: backend-c72efb5be46fae6b
-                  timeout: 0s
-              - match:
-                  path: /v3
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
-                route:
-                  cluster: backend-c72efb5be46fae6b
-                  timeout: 0s
-              - match:
-                  prefix: /v3/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
-                route:
-                  cluster: backend-c72efb5be46fae6b
-                  timeout: 0s
-              - match:
-                  prefix: /
-                  queryParameters:
-                  - name: v1
+                  headers:
+                  - name: :method
                     stringMatch:
-                      exact: "true"
-                name: eIgW92wXHwW4jQW9ZASIi/jftgxb/u98hIBaTzIRSIw=
+                      exact: GET
+                  prefix: /
+                name: yih0Y9HpUXVKBUFYOjdHJ6ltlVzhID6xNw9/5VgD9w8=
                 route:
                   cluster: backend
                   timeout: 0s
