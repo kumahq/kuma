@@ -16,23 +16,27 @@ func Deduct(in *Input) (string, error) {
 	current := semver.MustParse(in.Current)
 	collections := parseCollections(in.FixedVersions)
 
-	leastFixVersionForCVE := []*semver.Version{}
+	leastVersionPerCVE := []*semver.Version{}
 	for _, c := range collections {
 		filtered := filterNewerThanCurrent(c, current)
 		if len(filtered) == 0 {
 			// there is no version to update for the CVE
 			continue
 		}
-		leastFixVersionForCVE = append(leastFixVersionForCVE, filtered[0])
+		leastVersionPerCVE = append(leastVersionPerCVE, filtered[0])
 	}
 
-	if len(leastFixVersionForCVE) == 0 {
+	if len(leastVersionPerCVE) == 0 {
 		return "null", nil
 	}
 
-	sort.Stable(semver.Collection(leastFixVersionForCVE))
+	// newest version out of all the least versions is the least common version to satisfy all the CVEs
+	return newest(leastVersionPerCVE).String(), nil
+}
 
-	return leastFixVersionForCVE[len(leastFixVersionForCVE)-1].String(), nil
+func newest(c []*semver.Version) *semver.Version {
+	sort.Stable(semver.Collection(c))
+	return c[len(c)-1]
 }
 
 func parseCollections(ss [][]string) []semver.Collection {
