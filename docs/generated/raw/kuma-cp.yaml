@@ -568,12 +568,6 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
-  # Auth defines an authentication configuration for the DP Server
-  # DEPRECATED: use "authn" section.
-  auth:
-    # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
-    # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
-    type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.
