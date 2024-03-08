@@ -42,7 +42,7 @@ type CollectResponsesOpts struct {
 	namespace   string
 	application string
 
-	withoutRetries                bool
+	withoutRetries bool
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
