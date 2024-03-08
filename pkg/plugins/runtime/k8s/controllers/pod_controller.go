@@ -20,7 +20,6 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -47,7 +46,6 @@ type PodReconciler struct {
 	Scheme                       *kube_runtime.Scheme
 	Log                          logr.Logger
 	PodConverter                 PodConverter
-	Persistence                  *vips.Persistence
 	ResourceConverter            k8s_common.Converter
 	SystemNamespace              string
 	IgnoredServiceSelectorLabels []string

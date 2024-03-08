@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -54,18 +55,23 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 }
 
 type Configurer struct {
-	Http *api.LocalHTTP
-	Tcp  *api.LocalTCP
+	Subset core_rules.Subset
+	Rules  core_rules.Rules
 }
 
 func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
-	if c.Http != nil {
-		if err := c.configureHttpListener(filterChain); err != nil {
+	conf := c.getConf(c.Subset)
+	if conf == nil || conf.Local == nil {
+		return nil
+	}
+
+	if conf.Local.HTTP != nil {
+		if err := c.configureHttpListener(filterChain, conf.Local.HTTP); err != nil {
 			return err
 		}
 	}
-	if c.Tcp != nil {
-		if err := c.configureTcpListener(filterChain); err != nil {
+	if conf.Local.TCP != nil {
+		if err := c.configureTcpListener(filterChain, conf.Local.TCP); err != nil {
 			return err
 		}
 	}
@@ -73,11 +79,12 @@ func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChai
 }
 
 func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	if route == nil {
+	conf := c.getConf(c.Subset)
+	if route == nil || conf == nil || conf.Local == nil {
 		return nil
 	}
 
-	rlConf := RateLimitConfigurationFromPolicy(c.Http)
+	rlConf := RateLimitConfigurationFromPolicy(conf.Local.HTTP)
 	if rlConf == nil {
 		return nil
 	}
@@ -96,8 +103,55 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	return nil
 }
 
-func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterChain) error {
-	rlConf := RateLimitConfigurationFromPolicy(c.Http)
+func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration) error {
+	if route == nil {
+		return nil
+	}
+
+	conf := c.getConf(c.Subset)
+	var defaultConf *envoy_routes_v3.RateLimitConfiguration
+	if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
+		defaultConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
+	}
+
+	var err error
+	var defaultRateLimit *anypb.Any
+	if defaultConf != nil {
+		defaultRateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(defaultConf)
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, vh := range route.VirtualHosts {
+		for _, r := range vh.Routes {
+			conf := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
+			var routeConf *envoy_routes_v3.RateLimitConfiguration
+			var rateLimit *anypb.Any
+			if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
+				routeConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
+			}
+			if routeConf != nil {
+				rateLimit, err = envoy_routes_v3.NewRateLimitConfiguration(routeConf)
+			}
+			if err != nil {
+				return err
+			}
+			if defaultConf == nil && routeConf == nil {
+				continue
+			}
+			if routeConf == nil {
+				rateLimit = defaultRateLimit
+			}
+			c.addRateLimitToRoute(r, rateLimit)
+		}
+	}
+
+	return nil
+}
+
+func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterChain, conf *api.LocalHTTP) error {
+	rlConf := RateLimitConfigurationFromPolicy(conf)
 	if rlConf == nil {
 		// MeshRateLimit policy is matched for the DPP, but rate limit either disabled
 		// or not configured. Potentially we can return errors that bubble up to GUI from here.
@@ -148,8 +202,8 @@ func (c *Configurer) configureHttpListener(filterChain *envoy_listener.FilterCha
 	return nil
 }
 
-func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain) error {
-	if pointer.Deref(c.Tcp.Disabled) || c.Tcp.ConnectionRate == nil {
+func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChain, conf *api.LocalTCP) error {
+	if pointer.Deref(conf.Disabled) || conf.ConnectionRate == nil {
 		// MeshRateLimit policy is matched for the DPP, but rate limit either disabled
 		// or not configured. Potentially we can return errors that bubble up to GUI from here.
 		return nil
@@ -158,9 +212,9 @@ func (c *Configurer) configureTcpListener(filterChain *envoy_listener.FilterChai
 	config := &envoy_extensions_filters_network_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix: "tcp_rate_limit",
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens:     c.Tcp.ConnectionRate.Num,
-			TokensPerFill: proto.UInt32(c.Tcp.ConnectionRate.Num),
-			FillInterval:  proto.Duration(c.Tcp.ConnectionRate.Interval.Duration),
+			MaxTokens:     conf.ConnectionRate.Num,
+			TokensPerFill: proto.UInt32(conf.ConnectionRate.Num),
+			FillInterval:  proto.Duration(conf.ConnectionRate.Interval.Duration),
 		},
 	}
 	pbst, err := proto.MarshalAnyDeterministic(config)
@@ -188,4 +242,11 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 		return
 	}
 	route.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
+}
+
+func (c *Configurer) getConf(subset core_rules.Subset) *api.Conf {
+	if c.Rules == nil {
+		return &api.Conf{}
+	}
+	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
 }

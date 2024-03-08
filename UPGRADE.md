@@ -89,6 +89,11 @@ Example output of a zone ingress token:
 4. Restart the Ingress with the new token.
 5. Now, you can safely upgrade the control-plane.
 
+### Configuration option `KUMA_DP_SERVER_AUTH_*`, `dpServer.auth.*` was removed
+
+The option to configure authentication was deprecated and has been removed in release `2.7.x`. If you are still using `KUMA_DP_SERVER_AUTH_*`
+environment variables or `dpServer.auth.*` configuration, please migrate your configuration to use `dpServer.authn` before upgrade.
+
 ## Upgrade to `2.6.x`
 
 ### Policy
