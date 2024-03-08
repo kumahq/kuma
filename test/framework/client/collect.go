@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,14 +26,15 @@ import (
 )
 
 type CollectResponsesOpts struct {
-	numberOfRequests      int
-	maxConcurrentRequests int
-	maxTime               int
-	verbose               bool
-	cacert                string
-	URL                   string
-	Method                string
-	Headers               map[string]string
+	numberOfRequests          int
+	maxConcurrentRequests     int
+	maxConcurrentRequestDelay int
+	maxTime                   int
+	verbose                   bool
+	cacert                    string
+	URL                       string
+	Method                    string
+	Headers                   map[string]string
 
 	Flags        []string
 	ShellEscaped func(string) string
@@ -40,18 +42,20 @@ type CollectResponsesOpts struct {
 	namespace   string
 	application string
 
-	withoutRetries bool
+	withoutRetries                bool
+	withoutConcurrentRequestDelay bool
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
 	return CollectResponsesOpts{
-		numberOfRequests:      10,
-		maxConcurrentRequests: 10,
-		maxTime:               5,
-		verbose:               false,
-		Method:                "GET",
-		Headers:               map[string]string{},
-		ShellEscaped:          utils.ShellEscape,
+		numberOfRequests:          10,
+		maxConcurrentRequests:     10,
+		maxConcurrentRequestDelay: 100,
+		maxTime:                   5,
+		verbose:                   false,
+		Method:                    "GET",
+		Headers:                   map[string]string{},
+		ShellEscaped:              utils.ShellEscape,
 		Flags: []string{
 			"--fail",
 		},
@@ -84,9 +88,16 @@ func WithCACert(cacert string) CollectResponsesOptsFn {
 	}
 }
 
-func WithMaxConcurrentReqeusts(maxConcurrentRequests int) CollectResponsesOptsFn {
+func WithMaxConcurrentRequests(maxConcurrentRequests int) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.maxConcurrentRequests = maxConcurrentRequests
+	}
+}
+
+// Number of milliseconds as an int
+func WithMaxConcurrentRequestDelay(maxConcurrentRequestDelay int) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.maxConcurrentRequestDelay = maxConcurrentRequestDelay
 	}
 }
 
@@ -99,6 +110,12 @@ func WithMethod(method string) CollectResponsesOptsFn {
 func WithoutRetries() CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.withoutRetries = true
+	}
+}
+
+func WithoutConcurrentRequestDelay() CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.withoutConcurrentRequestDelay = true
 	}
 }
 
@@ -524,6 +541,8 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 	inJobs := make(chan result, opts.numberOfRequests)
 	results := make(chan result, opts.numberOfRequests)
 	for i := 0; i < opts.maxConcurrentRequests; i++ {
+		// #nosec G404 - math rand is enough
+		delay := time.Duration(rand.Intn(opts.maxConcurrentRequestDelay)) * time.Millisecond
 		go func() {
 			for {
 				select {
@@ -532,6 +551,10 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 						return
 					}
 					res.res, res.err = call()
+					// delay between requests
+					if !opts.withoutConcurrentRequestDelay {
+						time.Sleep(delay)
+					}
 					results <- res
 				case <-ctx.Done():
 					return
