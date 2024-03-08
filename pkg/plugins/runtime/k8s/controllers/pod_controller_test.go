@@ -11,7 +11,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
-	utilpointer "k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -235,7 +235,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
-							AppProtocol: utilpointer.String("http"),
+							AppProtocol: ptr.To("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -588,7 +588,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-1",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: ptr.To(true),
 					Kind:       "Pod",
 					Name:       "dp-1",
 				}},
@@ -605,7 +605,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-2",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: ptr.To(true),
 					Kind:       "Pod",
 					Name:       "dp-2",
 				}},
@@ -622,7 +622,7 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "dp-3",
 				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: utilpointer.Bool(true),
+					Controller: ptr.To(true),
 					Kind:       "Pod",
 					Name:       "dp-3",
 				}},
