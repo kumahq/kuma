@@ -11,6 +11,8 @@ concurrency:
 permissions:
   contents: read
   id-token: write # For using token to sign images
+  actions: read # For getting workflow run info to build provenance
+  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
@@ -90,6 +92,9 @@ jobs:
     uses: ./.github/workflows/_provenance.yaml
     permissions:
       contents: read
+      id-token: write # For using token to sign images
+      actions: read # For getting workflow run info to build provenance
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
       binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
   distributions:
