@@ -7,7 +7,7 @@ on:
         type: string
         description: file containing hash for all compressed binary artifacts
 permissions:
-  contents: read
+  contents: write
   id-token: write # needed for signing the images
   actions: read # For getting workflow run info to build provenance
   packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues

@@ -9,7 +9,7 @@ concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 permissions:
-  contents: read
+  contents: write # To upload assets
   id-token: write # For using token to sign images
   actions: read # For getting workflow run info to build provenance
   packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
@@ -91,7 +91,7 @@ jobs:
     needs: ["build_publish"]
     uses: ./.github/workflows/_provenance.yaml
     permissions:
-      contents: read
+      contents: write
       id-token: write # For using token to sign images
       actions: read # For getting workflow run info to build provenance
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
