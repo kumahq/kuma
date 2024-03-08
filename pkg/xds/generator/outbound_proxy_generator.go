@@ -11,7 +11,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+=======
+	"github.com/kumahq/kuma/pkg/util/maps"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -44,10 +49,15 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
 
+<<<<<<< HEAD
 	for _, outbound := range outbounds {
+=======
+	outboundsMultipleIPs := buildOutboundsWithMultipleIPs(proxy.Dataplane, outbounds, xdsCtx.Mesh.VIPDomains)
+	for _, outbound := range outboundsMultipleIPs {
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+		routes := g.determineRoutes(proxy, outbound.Addresses[0], clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 
 		protocol := InferProtocol(proxy, clusters)
@@ -90,15 +100,20 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 	return resources, nil
 }
 
+<<<<<<< HEAD
 func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
+=======
+func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound OutboundWithMultipleIPs, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+	oface := outbound.Addresses[0]
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
 	rateLimits := []*core_mesh.RateLimitResource{}
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
 		rateLimits = append(rateLimits, rateLimit)
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
-	serviceName := outbound.GetService()
+	serviceName := outbound.Tags[mesh_proto.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]
 	var timeoutPolicyConf *mesh_proto.Timeout_Conf
@@ -173,7 +188,12 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	listener, err := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+<<<<<<< HEAD
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag))).
+=======
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.Tags).WithoutTags(mesh_proto.MeshTag))).
+		Configure(envoy_listeners.AdditionalAddresses(outbound.AdditionalAddresses())).
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
@@ -325,12 +345,11 @@ func InferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mes
 
 func (OutboundProxyGenerator) determineRoutes(
 	proxy *model.Proxy,
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
+	oface mesh_proto.OutboundInterface,
 	clusterCache map[string]string,
 	hasEgress bool,
 ) envoy_common.Routes {
 	var routes envoy_common.Routes
-	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 	route := proxy.Routing.TrafficRoutes[oface]
 	if route == nil {
@@ -438,3 +457,49 @@ func (OutboundProxyGenerator) determineRoutes(
 
 	return routes
 }
+<<<<<<< HEAD
+=======
+
+type OutboundWithMultipleIPs struct {
+	Tags      map[string]string
+	Addresses []mesh_proto.OutboundInterface
+}
+
+func (o OutboundWithMultipleIPs) AdditionalAddresses() []mesh_proto.OutboundInterface {
+	if len(o.Addresses) > 1 {
+		return o.Addresses[1:]
+	}
+	return nil
+}
+
+func buildOutboundsWithMultipleIPs(dataplane *core_mesh.DataplaneResource, outbounds []*mesh_proto.Dataplane_Networking_Outbound, meshVIPDomains []model.VIPDomains) []OutboundWithMultipleIPs {
+	kumaVIPs := map[string]bool{}
+	for _, vipDomain := range meshVIPDomains {
+		kumaVIPs[vipDomain.Address] = true
+	}
+
+	tagsToOutbounds := map[string]OutboundWithMultipleIPs{}
+	for _, outbound := range outbounds {
+		tags := outbound.GetTags()
+		tags[mesh_proto.ServiceTag] = outbound.GetService()
+		tagsStr := mesh_proto.SingleValueTagSet(tags).String()
+		owmi := tagsToOutbounds[tagsStr]
+		owmi.Tags = tags
+		address := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+		// add Kuma VIPs down the list, so if there is a non Kuma VIP (i.e. Kube Cluster IP), it goes as primary address.
+		if kumaVIPs[address.DataplaneIP] {
+			owmi.Addresses = append(owmi.Addresses, address)
+		} else {
+			owmi.Addresses = append([]mesh_proto.OutboundInterface{address}, owmi.Addresses...)
+		}
+		tagsToOutbounds[tagsStr] = owmi
+	}
+
+	// return sorted outbounds for a stable XDS config
+	var result []OutboundWithMultipleIPs
+	for _, key := range maps.SortedKeys(tagsToOutbounds) {
+		result = append(result, tagsToOutbounds[key])
+	}
+	return result
+}
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
