@@ -57,6 +57,7 @@ resources:
           idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
+<<<<<<< HEAD
 - name: outbound:240.0.0.0:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -157,9 +158,20 @@ resources:
           kuma.io/service: es2
     name: outbound:240.0.0.1:80
     trafficDirection: OUTBOUND
+=======
+>>>>>>> 22978c894 (fix(xds): duplicated listeners (#9542))
 - name: outbound:240.0.0.2:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    additionalAddresses:
+    - address:
+        socketAddress:
+          address: 240.0.0.1
+          portValue: 80
+    - address:
+        socketAddress:
+          address: 240.0.0.0
+          portValue: 80
     address:
       socketAddress:
         address: 240.0.0.2

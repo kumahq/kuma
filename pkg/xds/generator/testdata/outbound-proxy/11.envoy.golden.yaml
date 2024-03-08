@@ -1,0 +1,51 @@
+resources:
+- name: outbound:10.0.0.1:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.0.0.1
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/instance: instance-1
+          kuma.io/service: backend
+    name: outbound:10.0.0.1:80
+    trafficDirection: OUTBOUND
+- name: outbound:10.0.0.2:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.0.0.2
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/instance: instance-2
+          kuma.io/service: backend
+    name: outbound:10.0.0.2:80
+    trafficDirection: OUTBOUND
+- name: outbound:240.0.0.3:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.3
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:240.0.0.3:80
+    trafficDirection: OUTBOUND
