@@ -481,15 +481,23 @@ func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networki
 		// scan from the beginning to find all possible siblings, because the outbounds are not sorted
 		// the value vips will contain all the VIPs pointing to the service, excluding the REAL service itself
 		for _, obInner := range outbounds {
+			// they should be pointing to the same service
 			if service != obInner.GetService() {
 				continue
 			}
 
+			// if this outbound is an instance of a headless service, we don't merge it
+			if _, ok := obInner.GetTags()[mesh_proto.InstanceTag]; ok {
+				continue
+			}
+
+			// there should be a VIP pointing to this service
 			if !fullVIPAddrMap[obInner.Address] {
 				nonVIPServiceFound = true
 				continue
 			}
 
+			// and it's not the REAL service itself
 			if !slices.ContainsFunc(vips, func(oface mesh_proto.OutboundInterface) bool {
 				return oface.DataplaneIP == obInner.Address && oface.DataplanePort == obInner.Port
 			}) {
@@ -505,5 +513,7 @@ func buildServiceAdditionalAddressMap(outbounds []*mesh_proto.Dataplane_Networki
 		}
 	}
 
+	// we don't create independent listeners for these VIPs
+	// because they are going to be added as additional addresses to the listeners for the REAL services
 	return vipToSkipMap, serviceToVIPMap
 }

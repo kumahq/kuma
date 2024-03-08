@@ -889,6 +889,44 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "10.envoy.golden.yaml",
 		}),
+		Entry("11. service vips with headless service", testCase{
+			ctx: serviceVipCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 18080
+                tags:
+                  kuma.io/service: backend
+              - port: 80
+                address: 240.0.0.3
+                tags:
+                  kuma.io/service: backend
+              - port: 5432
+                address: 240.0.0.4
+                tags:
+                  kuma.io/service: db
+                  kuma.io/instance: db-1
+              - port: 5432
+                address: 10.16.26.3
+                tags:
+                  kuma.io/service: db
+                  kuma.io/instance: db-1
+              - port: 5432
+                address: 10.16.31.5
+                tags:
+                  kuma.io/service: backend
+                  kuma.io/instance: db-2
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "11.envoy.golden.yaml",
+		}),
 	)
 
 	It("Add sanitized alternative cluster name for stats", func() {
