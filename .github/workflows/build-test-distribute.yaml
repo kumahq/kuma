@@ -69,7 +69,6 @@ jobs:
     permissions:
       contents: read
     needs: ["check"]
-    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
@@ -98,7 +97,7 @@ jobs:
     with:
       binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
   distributions:
-    needs: ["build_publish", "check", "test"]
+    needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
