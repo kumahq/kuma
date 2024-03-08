@@ -43,7 +43,6 @@ type CollectResponsesOpts struct {
 	application string
 
 	withoutRetries                bool
-	withoutConcurrentRequestDelay bool
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
@@ -110,12 +109,6 @@ func WithMethod(method string) CollectResponsesOptsFn {
 func WithoutRetries() CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.withoutRetries = true
-	}
-}
-
-func WithoutConcurrentRequestDelay() CollectResponsesOptsFn {
-	return func(opts *CollectResponsesOpts) {
-		opts.withoutConcurrentRequestDelay = true
 	}
 }
 
@@ -552,9 +545,7 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 					}
 					res.res, res.err = call()
 					// delay between requests
-					if !opts.withoutConcurrentRequestDelay {
-						time.Sleep(delay)
-					}
+					time.Sleep(delay)
 					results <- res
 				case <-ctx.Done():
 					return
