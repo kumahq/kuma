@@ -83,6 +83,7 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
     strategy:
@@ -186,6 +187,7 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   publish-helm:
     needs: [build-images]
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
