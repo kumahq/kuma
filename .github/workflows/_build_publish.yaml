@@ -21,6 +21,9 @@ on:
         value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.build.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+permissions:
+  contents: read
+  id-token: write # Required for image signing
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -34,7 +37,6 @@ jobs:
     timeout-minutes: 40
     runs-on: ubuntu-latest
     outputs:
-      IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -82,7 +84,7 @@ jobs:
   build-images:
     runs-on: ubuntu-latest
     outputs:
-      BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
+      IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
     strategy:
       fail-fast: false
       matrix:
