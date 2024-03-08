@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/tools/ci/update_vulnerable_dependencies/leastcommonversion"
+	"github.com/kumahq/kuma/tools/ci/update-vulnerable-dependencies/leastcommonversion"
 )
 
 var _ = Describe("Least Common Version", func() {

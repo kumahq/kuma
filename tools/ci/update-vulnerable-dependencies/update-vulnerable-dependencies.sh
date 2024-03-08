@@ -12,7 +12,7 @@ for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[]
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
   map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name != "github.com/kumahq/kuma")'); do
 
-  fixVersion=$(go run tools/ci/update_vulnerable_dependencies/main.go <<< "$dep")
+  fixVersion=$(go run tools/ci/update-vulnerable-dependencies/main.go <<< "$dep")
 
   if [ "$fixVersion" != "null" ]; then
     package=$(jq -r .name <<< "$dep")
