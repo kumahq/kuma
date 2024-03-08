@@ -722,6 +722,9 @@ proxy:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+coreResources:
+  enabled:
+  - meshservice
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -999,6 +1002,7 @@ tracing:
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
+				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
 			},
 			yamlFileConfig: "",
 		}),

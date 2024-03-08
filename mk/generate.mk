@@ -57,6 +57,7 @@ generate/resources:
 	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
 	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-import
 	POLICIES_DIR=$(POLICIES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
+	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-config
 
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
@@ -85,7 +86,7 @@ generate/policy-import:
 	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
 
 generate/policy-config:
-	./tools/policy-gen/generate-policy-config.sh $(policies)
+	./tools/policy-gen/generate-policy-config.sh  $(POLICIES_DIR) $(policies)
 
 generate/policy-defaults:
 	./tools/policy-gen/generate-policy-defaults.sh $(KUMA_DIR) $(kuma_policies) $(policies)

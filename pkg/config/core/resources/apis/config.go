@@ -1,7 +1,7 @@
-package policies
+package apis
 
 type Config struct {
-	Enabled []string `json:"pluginPoliciesEnabled" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED" default:""`
+	Enabled []string `json:"enabled" envconfig:"KUMA_CORE_RESOURCES_ENABLED" default:""`
 }
 
 func (c *Config) PostProcess() error {
