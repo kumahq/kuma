@@ -122,7 +122,7 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, uniZone1Options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressLegacyToken)).
+			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(UniZone1)
 		Expect(err).ToNot(HaveOccurred())

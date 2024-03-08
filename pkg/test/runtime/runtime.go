@@ -143,9 +143,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
-		DataplaneToken:   tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
-		ZoneIngressToken: tokens_builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
+		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
+		ZoneToken:      tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 	builder.WithMultitenancy(multitenant.SingleTenant)
