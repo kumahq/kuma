@@ -103,13 +103,19 @@ jobs:
           }
           EOF
           sudo service docker restart
+      - uses: azure/setup-kubectl@v3
+        id: install
       - name: "GitHub Actions: run E2E tests"
         id: e2e
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
-          FILENAME="stats$RANDOM.txt"
-          echo "stats_filename=$FILENAME" >> $GITHUB_OUTPUT
-          while true; do ps -eo pcpu,pmem,pid,user,args | tail -n +2 | sort -k 1 -r | head -30 >> /tmp/$FILENAME ; echo "---" >> /tmp/$FILENAME ; sleep 1; done &
+          RANDOM_ID=$RANDOM
+          FILENAME_K1="stats_k1_$RANDOM_ID.txt"
+          FILENAME_K2="stats_k2_$RANDOM_ID.txt"
+          echo "stats_filename_k1=$FILENAME_K1" >> $GITHUB_OUTPUT
+          echo "stats_filename_k2=$FILENAME_K2" >> $GITHUB_OUTPUT
+          while true; do kubectl top pod -A --sort-by=cpu --context=k3d-kuma-1 | head -30 >> /tmp/$FILENAME_K1 ; echo "---" >> /tmp/$FILENAME_K1 ; sleep 1; done &
+          while true; do kubectl top pod -A --sort-by=cpu --context=k3d-kuma-2 | head -30 >> /tmp/$FILENAME_K2 ; echo "---" >> /tmp/$FILENAME_K2 ; sleep 1; done &
           
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
@@ -144,8 +150,14 @@ jobs:
       - name: Upload cpu stats
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
-          name: ${{ steps.e2e.outputs.stats_filename }}
-          path: /tmp/${{ steps.e2e.outputs.stats_filename }}
+          name: ${{ steps.e2e.outputs.stats_filename_k1 }}
+          path: /tmp/${{ steps.e2e.outputs.stats_filename_k1 }}
+          retention-days: 7
+      - name: Upload cpu stats
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: ${{ steps.e2e.outputs.stats_filename_k2 }}
+          path: /tmp/${{ steps.e2e.outputs.stats_filename_k2 }}
           retention-days: 7
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
