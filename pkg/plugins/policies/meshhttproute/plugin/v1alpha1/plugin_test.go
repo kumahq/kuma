@@ -566,13 +566,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 															Type: api.RequestMirrorType,
 															RequestMirror: &api.RequestMirror{
 																Percentage: pointer.To(intstr.FromString("99.9")),
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshServiceSubset,
-																	Name: "payments",
-																	Tags: map[string]string{
-																		"version": "v1",
-																		"region":  "us",
-																		"env":     "dev",
+																BackendRef: common_api.BackendRef{
+																	TargetRef: common_api.TargetRef{
+																		Kind: common_api.MeshServiceSubset,
+																		Name: "payments",
+																		Tags: map[string]string{
+																			"version": "v1",
+																			"region":  "us",
+																			"env":     "dev",
+																		},
 																	},
 																},
 															},
@@ -580,9 +582,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 														{
 															Type: api.RequestMirrorType,
 															RequestMirror: &api.RequestMirror{
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshService,
-																	Name: "backend",
+																BackendRef: common_api.BackendRef{
+																	TargetRef: common_api.TargetRef{
+																		Kind: common_api.MeshService,
+																		Name: "backend",
+																	},
 																},
 															},
 														},

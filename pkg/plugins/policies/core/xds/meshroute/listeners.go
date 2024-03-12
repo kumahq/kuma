@@ -15,7 +15,7 @@ import (
 )
 
 func MakeTCPSplit(
-	clusterCache map[common_api.TargetRefHash]string,
+	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
@@ -37,7 +37,7 @@ func MakeTCPSplit(
 }
 
 func MakeHTTPSplit(
-	clusterCache map[common_api.TargetRefHash]string,
+	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,

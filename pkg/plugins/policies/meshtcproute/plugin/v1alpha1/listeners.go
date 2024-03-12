@@ -26,7 +26,7 @@ func generateListeners(
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[common_api.TargetRefHash]string{}
+	clusterCache := map[common_api.BackendRefHash]string{}
 	networking := proxy.Dataplane.Spec.GetNetworking()
 	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
 		ToRules.Rules

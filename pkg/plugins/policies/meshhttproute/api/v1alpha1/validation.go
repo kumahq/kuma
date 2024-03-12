@@ -247,7 +247,7 @@ func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, match
 			}
 			errs.AddErrorAt(
 				path.Field("requestMirror").Field("backendRef"),
-				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef, &mesh.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,

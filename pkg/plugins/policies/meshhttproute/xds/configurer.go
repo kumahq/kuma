@@ -19,7 +19,7 @@ type RoutesConfigurer struct {
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[common_api.TargetRefHash]string
+	BackendRefToClusterName map[common_api.BackendRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
