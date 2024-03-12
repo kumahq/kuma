@@ -773,3 +773,5 @@ policies:
     - meshtimeouts
     - meshtraces
     - meshtrafficpermissions
+coreResources:
+  enabled: [] # ENV: KUMA_CORE_RESOURCES_ENABLED
