@@ -2,8 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"regexp"
+
+
+	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -81,7 +83,7 @@ func validateSelectors(selectors []Selector, selectorType string) validators.Val
 			if err != nil {
 				verr.AddViolation(path.Field("match").String(), "invalid regex")
 			}
-		case PrefixSelectorType,ExactSelectorType:
+		case PrefixSelectorType, ExactSelectorType:
 		default:
 			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'regex', 'prefix', 'exact' are supported", selector.Type))
 		}
