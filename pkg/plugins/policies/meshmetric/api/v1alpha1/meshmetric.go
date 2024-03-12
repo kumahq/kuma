@@ -40,7 +40,7 @@ type Profiles struct {
 	// AppendProfiles allows to combine the metrics from multiple predefined profiles.
 	// Currently, it's only possible to define one profile.
 	// +kubebuilder:validation:MaxItems=1
-	AppendProfiles *[]Profile `json:"profiles,omitempty"`
+	AppendProfiles *[]Profile `json:"appendProfiles,omitempty"`
 	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
 	// Exclude is subordinate to Include.
 	Exclude *[]Selector `json:"exclude,omitempty"`
@@ -58,9 +58,9 @@ type Profile struct {
 type ProfileName string
 
 const (
-	AllProfileName ProfileName = "All"
-	BasicProfileName  ProfileName = "Basic"
-	NoneProfileName  ProfileName = "None"
+	AllProfileName ProfileName = "all"
+	BasicProfileName  ProfileName = "basic"
+	NoneProfileName  ProfileName = "none"
 )
 
 type Selector struct {
@@ -73,9 +73,9 @@ type Selector struct {
 type SelectorType string
 
 const (
-	PrefixSelectorType SelectorType = "Prefix"
-	RegexSelectorType  SelectorType = "Regex"
-	ExactSelectorType  SelectorType = "Exact"
+	PrefixSelectorType SelectorType = "prefix"
+	RegexSelectorType  SelectorType = "regex"
+	ExactSelectorType  SelectorType = "exact"
 )
 
 type Application struct {

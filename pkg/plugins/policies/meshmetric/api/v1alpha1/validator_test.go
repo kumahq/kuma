@@ -100,7 +100,7 @@ default:
     - port: 95599
 `),
 		ErrorCase(
-			"invalid regex",
+			"invalid exclude regexes",
 			validators.Violation{
 				Field:   "spec.default.sidecar.profiles.exclude[0].match",
 				Message: "invalid regex",
@@ -121,10 +121,10 @@ default:
     includeUnused: true
 `),
 		ErrorCase(
-			"invalid selector type",
+			"invalid include types",
 			validators.Violation{
-				Field:   "spec.default.sidecar.profiles.exclude[0].type",
-				Message: "unrecognized type: 'regex', 'prefix', 'exact' are supported",
+				Field:   "spec.default.sidecar.profiles.include[0].type",
+				Message: "unrecognized type 'not_supported' - 'regex', 'prefix', 'exact' are supported",
 			},
 			`
 type: MeshMetric
@@ -136,9 +136,27 @@ targetRef:
 default:
   sidecar:
     profiles:
-      exclude:
+      include:
         - type: not_supported
-    includeUnused: true
+`),
+		ErrorCase(
+			"invalid profile",
+			validators.Violation{
+				Field:   "spec.default.sidecar.profiles.appendProfiles[0].name",
+				Message: "unrecognized profile name 'not_supported' - 'all', 'none', 'basic' are supported",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      appendProfiles:
+        - name: not_supported
 `),
 		ErrorCase(
 			"invalid url",

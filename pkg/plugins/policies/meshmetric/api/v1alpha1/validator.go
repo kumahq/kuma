@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"github.com/asaskevich/govalidator"
 	"regexp"
 
@@ -48,6 +49,23 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 		if profiles.Include != nil {
 			verr.AddError("profiles", validateSelectors(*profiles.Include, "include"))
 		}
+		if profiles.AppendProfiles != nil {
+			verr.AddError("profiles.appendProfiles", validateAppendProfiles(*profiles.AppendProfiles))
+		}
+	}
+	return verr
+}
+
+func validateAppendProfiles(profiles []Profile) validators.ValidationError {
+	var verr validators.ValidationError
+	for i, profile := range profiles {
+		path := validators.Root().Index(i)
+
+		switch profile.Name {
+		case AllProfileName, NoneProfileName, BasicProfileName:
+		default:
+			verr.AddViolation(path.Field("name").String(), fmt.Sprintf("unrecognized profile name '%s' - 'all', 'none', 'basic' are supported", profile.Name))
+		}
 	}
 	return verr
 }
@@ -61,11 +79,11 @@ func validateSelectors(selectors []Selector, selectorType string) validators.Val
 		case RegexSelectorType:
 			_, err := regexp.Compile(selector.Match)
 			if err != nil {
-				verr.AddViolation(path.String(), "invalid regex")
+				verr.AddViolation(path.Field("match").String(), "invalid regex")
 			}
 		case PrefixSelectorType,ExactSelectorType:
 		default:
-			verr.AddViolation("type", "unrecognized type: 'regex', 'prefix', 'exact' are supported")
+			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'regex', 'prefix', 'exact' are supported", selector.Type))
 		}
 	}
 
