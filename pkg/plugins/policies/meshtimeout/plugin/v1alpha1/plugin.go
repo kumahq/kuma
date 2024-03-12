@@ -193,13 +193,21 @@ func applyToGateway(
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
-			if conf != nil && ok {
+			if ok {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
+						routeConf := getConf(toRules, core_rules.MeshSubset().WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
+						if routeConf == nil {
+							if conf == nil {
+								continue
+							}
+							// use the common configuration for all routes
+							routeConf = conf
+						}
 						plugin_xds.ConfigureRouteAction(
 							r.GetRoute(),
-							pointer.Deref(conf.Http).RequestTimeout,
-							pointer.Deref(conf.Http).StreamIdleTimeout,
+							pointer.Deref(routeConf.Http).RequestTimeout,
+							pointer.Deref(routeConf.Http).StreamIdleTimeout,
 						)
 					}
 				}
