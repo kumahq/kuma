@@ -68,6 +68,7 @@ const (
 type Selector struct {
 	// Type defined the type of selector, one of: prefix, regex, exact
 	Type  SelectorType `json:"type"`
+	// Match is the value used to match using particular Type
 	Match string       `json:"match"`
 }
 
