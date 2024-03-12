@@ -183,7 +183,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   transparentProxying:
                     redirectPortOutbound: 15001
                     redirectPortInbound: 15006
-                    ipv6Enabled: false
+                    ipv6Disabled: true
                   address: 192.168.0.1
                   inbound:
                     - port: 80
@@ -200,7 +200,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   transparentProxying:
                     redirectPortOutbound: 15001
                     redirectPortInbound: 15006
-                    ipv6Enabled: false
+                    ipv6Disabled: true
                   address: 192.168.0.1
                   inbound:
                     - port: 80

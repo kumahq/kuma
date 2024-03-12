@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = FDescribe("TransparentProxyGenerator", func() {
+var _ = Describe("TransparentProxyGenerator", func() {
 	type testCase struct {
 		proxy    *model.Proxy
 		expected string
@@ -89,7 +89,6 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
-								Ipv6Enabled:          true,
 							},
 						},
 					},
@@ -119,7 +118,6 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
-								Ipv6Enabled:          true,
 							},
 						},
 					},
@@ -150,7 +148,6 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 								RedirectPortOutbound:  15001,
 								RedirectPortInbound:   15006,
 								RedirectPortInboundV6: 15010,
-								Ipv6Enabled:           true,
 							},
 						},
 					},
@@ -181,7 +178,6 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 								RedirectPortOutbound:  15001,
 								RedirectPortInbound:   15006,
 								RedirectPortInboundV6: 15066,
-								Ipv6Enabled:           true,
 							},
 						},
 					},
@@ -211,8 +207,8 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
-								Ipv6Enabled:          false,
-								// this value here is actually invalid, it should be always 0 when Ipv6Enabled is false
+								Ipv6Disabled:         true,
+								// this value here is actually invalid, it should be always 0 when Ipv6Disabled is true
 								// we will assert this value should be ignored even it's set in this case
 								RedirectPortInboundV6: 15066,
 							},
@@ -236,7 +232,7 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 
 	Describe("TransparentProxyGenerator GetIPv6InboundRedirectPort", func() {
 		It("should use ipv4 redirect port for ipv6", func() {
-			p := createDataplaneProxy(15006, 0, true)
+			p := createDataplaneProxy(15006, 0, false)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -244,7 +240,7 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 		})
 
 		It("should use user customized ipv6 redirect port when ipv6 not disabled", func() {
-			p := createDataplaneProxy(15006, 15088, true)
+			p := createDataplaneProxy(15006, 15088, false)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -252,7 +248,7 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 		})
 
 		It("should get ipv6 redirect port as 0 when ipv6 disabled", func() {
-			p := createDataplaneProxy(15006, 15088, false)
+			p := createDataplaneProxy(15006, 15088, true)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -261,7 +257,7 @@ var _ = FDescribe("TransparentProxyGenerator", func() {
 	})
 })
 
-func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipv6Enabled bool) *model.Proxy {
+func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipv6Disabled bool) *model.Proxy {
 	return &model.Proxy{
 		Id: *model.BuildProxyId("", "sidecar"),
 		Dataplane: &core_mesh.DataplaneResource{
@@ -274,7 +270,7 @@ func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPor
 						RedirectPortOutbound:  15001,
 						RedirectPortInbound:   ipv4InboundRedirectPort,
 						RedirectPortInboundV6: ipv6InboundRedirectPort,
-						Ipv6Enabled:           ipv6Enabled,
+						Ipv6Disabled:          ipv6Disabled,
 					},
 				},
 			},

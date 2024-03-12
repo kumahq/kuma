@@ -512,14 +512,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	}
 
 	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
-		i.cfg.SidecarContainer.Ipv6Enabled = false
+		i.cfg.SidecarContainer.DisableIPv6 = true
 	}
-	if !i.cfg.SidecarContainer.Ipv6Enabled {
-		annotations[metadata.KumaTransparentProxyingIPv6Enabled] = "false"
+	if i.cfg.SidecarContainer.DisableIPv6 {
+		annotations[metadata.KumaTransparentProxyingDisableIPv6] = "true"
 	}
 	defaultTPCfg := tp_cfg.DefaultConfig()
 	if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
-		// if user did not change the default port for ipv6 inbound traffic, we ignore it and use the same port as ipv4
 		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&
 		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.Port) {
 		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)

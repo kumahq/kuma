@@ -269,10 +269,10 @@ runtime:
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
         # Redirect port for inbound traffic.
-        # Deprecated: Use RedirectPortInbound or Ipv6Enabled instead.
+        # Deprecated: Use RedirectPortInbound or DisableIPv6 instead.
         redirectPortInboundV6: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
-        # Set if ipv6 traffic redirection is enabled
-        ipv6Enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IPV6_ENABLED
+        # Disable ipv6 traffic redirection
+        disableIPv6: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DISABLE_IPV6
         # Redirect port for outbound traffic.
         redirectPortOutbound: 15001 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND
         # User ID.

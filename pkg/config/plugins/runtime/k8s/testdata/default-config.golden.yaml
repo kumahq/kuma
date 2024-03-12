@@ -33,7 +33,6 @@ injector:
     envVars: {}
     gid: 5678
     image: kuma/kuma-dp:latest
-    ipv6Enabled: true
     livenessProbe:
       failureThreshold: 12
       initialDelaySeconds: 60

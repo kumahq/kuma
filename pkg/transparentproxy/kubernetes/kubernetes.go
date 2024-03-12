@@ -38,7 +38,7 @@ type PodRedirect struct {
 	ExcludeInboundPorts                      string
 	RedirectPortInbound                      uint32
 	RedirectPortInboundV6                    uint32
-	IPv6Enabled                              bool
+	IPv6Disabled                             bool
 	UID                                      string
 	TransparentProxyEnableEbpf               bool
 	TransparentProxyEbpfBPFFSPath            string
@@ -109,7 +109,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		return nil, err
 	}
 
-	podRedirect.IPv6Enabled, _, err = metadata.Annotations(pod.Annotations).GetEnabledWithDefault(true, metadata.KumaTransparentProxyingIPv6Enabled)
+	podRedirect.IPv6Disabled, _, err = metadata.Annotations(pod.Annotations).GetBooleanWithDefault(false, false, metadata.KumaTransparentProxyingDisableIPv6)
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +174,8 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		)
 	}
 
-	if !pr.IPv6Enabled {
-		result = append(result, "--ipv6-enabled", "false")
+	if pr.IPv6Disabled {
+		result = append(result, "--disable-ipv6")
 	} else if pr.RedirectPortInboundV6 > 0 {
 		result = append(result,
 			"--redirect-inbound-port-v6",

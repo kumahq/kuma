@@ -137,7 +137,10 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 	}
 
 	var ipv6 bool
-	if tpConfig.IPv6Enabled {
+	if tpConfig.IPv6Disabled {
+		ipv6 = false
+		redirectInboundPortIPv6 = 0
+	} else {
 		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
 			redirectInboundPortIPv6 = redirectInboundPort
 		}
@@ -146,9 +149,6 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		if err != nil {
 			return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
 		}
-	} else {
-		ipv6 = false
-		redirectInboundPortIPv6 = 0
 	}
 
 	cfg := config.Config{

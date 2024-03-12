@@ -107,12 +107,12 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	ipv6Enabled, err := GetBoolean(intermediateConfig.ipv6Enabled)
+	ipv6Disabled, err := GetBoolean(intermediateConfig.ipv6Disabled)
 	if err != nil {
 		return nil, err
 	}
 	var inboundPortV6 uint16
-	if !ipv6Enabled {
+	if ipv6Disabled {
 		inboundPortV6 = 0
 	} else {
 		inboundPortV6, err = convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)

@@ -12,7 +12,7 @@ const (
 	defaultOutboundPort        = "15001"
 	defaultInboundPort         = "15006"
 	defaultInboundPortV6       = "15010"
-	defaultIPv6Enabled         = "true"
+	defaultIPv6Disabled        = "false"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
 	defaultRedirectExcludePort = defaultProxyStatusPort
@@ -25,7 +25,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
 	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
 	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
-	"ipv6Enabled":                 {"kuma.io/ipv6-enabled", defaultIPv6Enabled, validateEnabled},
+	"ipv6Disabled":                {"kuma.io/disable-ipv6", defaultIPv6Disabled, validateBool},
 	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
 	"builtinDNS":                  {"kuma.io/builtin-dns", "false", alwaysValidFunc},
@@ -41,7 +41,7 @@ type IntermediateConfig struct {
 	targetPort                  string
 	inboundPort                 string
 	inboundPortV6               string
-	ipv6Enabled                 string
+	ipv6Disabled                string
 	noRedirectUID               string
 	excludeInboundPorts         string
 	excludeOutboundPorts        string
@@ -97,12 +97,12 @@ func validatePortList(ports string) error {
 	return nil
 }
 
-func validateEnabled(val string) error {
+func validateBool(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
 	}
 
-	validValues := []string{"enabled", "disabled", "true", "false"}
+	validValues := []string{"yes", "no", "true", "false"}
 	for _, valid := range validValues {
 		if valid == val {
 			return nil
@@ -134,7 +134,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
 		"inboundPort":                 &intermediateConfig.inboundPort,
-		"ipv6Enabled":                 &intermediateConfig.ipv6Enabled,
+		"ipv6Disabled":                &intermediateConfig.ipv6Disabled,
 		"inboundPortV6":               &intermediateConfig.inboundPortV6,
 		"excludeInboundPorts":         &intermediateConfig.excludeInboundPorts,
 		"excludeOutboundPorts":        &intermediateConfig.excludeOutboundPorts,
@@ -166,9 +166,9 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 }
 
 func assignIPv6InboundRedirectPort(allFields map[string]*string) {
-	enabledAnno := *allFields["ipv6Enabled"]
 	fieldPointer := allFields["inboundPortV6"]
-	if enabledAnno == "disabled" || enabledAnno == "false" {
+	disabledAnno := *allFields["ipv6Disabled"]
+	if disabledAnno == "yes" || disabledAnno == "true" {
 		*fieldPointer = "0"
 	} else if *fieldPointer == defaultInboundPortV6 {
 		*fieldPointer = *allFields["inboundPort"]

@@ -5,7 +5,7 @@ metadata:
   labels:
     run: busybox
   annotations:
-    kuma.io/ipv6-enabled: "false"
+    kuma.io/disable-ipv6: "true"
 spec:
   volumes:
   - name: default-token-w7dxf

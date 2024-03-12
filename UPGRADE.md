@@ -6,16 +6,6 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upgrade to `2.7.x`
-
-### Deprecation of `--redirect-inbound-port-v6` flag and `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` configuration option.
-
-The `--redirect-inbound-port-v6` flag and the corresponding configuration option `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` are deprecated and will be removed in a future release of Kuma. These flags and configuration options were used to configure the port used for redirecting IPv6 traffic to Kuma.
-
-In the upcoming release, Kuma will redirect IPv6 traffic to the same port as IPv4 traffic (15006). This means that you no longer need to configure a separate port for IPv6 traffic. If you want to disable traffic redirection for IPv6 traffic, you can use the `--ipv6-enabled` flag and set its value to `false`. We have also added a new configuration option `runtime.kubernetes.injector.sidecarContainer.ipv6Enabled` which defaults to `true`, you may set its value to `false` to disable IPv6 traffic redirection.
-
-We recommend that you update your configurations to use the new defaults for IPv6 traffic redirection. If you need to retain separate ports for IPv4 and IPv6 traffic, you can continue to use the deprecated flags and configuration options until they are removed.
-
 ## Upgrade to `2.6.x`
 
 ### Policy
@@ -105,6 +95,14 @@ these invalid units convert them into `kbps` prior to upgrade to avoid invalid f
 
 The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
 Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
+
+### Deprecation of `--redirect-inbound-port-v6` flag and `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` configuration option. 
+
+The `--redirect-inbound-port-v6` flag and the corresponding configuration option `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` are deprecated and will be removed in a future release of Kuma. These flags and configuration options were used to configure the port used for redirecting IPv6 traffic to Kuma.
+
+In the upcoming release, Kuma will redirect IPv6 traffic to the same port as IPv4 traffic (15006). This means that you no longer need to configure a separate port for IPv6 traffic. If you want to disable traffic redirection for IPv6 traffic, you can use the `--disable-ipv6` flag. We have also added a new configuration option `runtime.kubernetes.injector.sidecarContainer.disableIpv6` for disabling IPv6 traffic redirection.
+
+We recommend that you update your configurations to use the new defaults for IPv6 traffic redirection. If you need to retain separate ports for IPv4 and IPv6 traffic, you can continue to use the deprecated flags and configuration options until they are removed.
 
 ## Upgrade to `2.5.x`
 

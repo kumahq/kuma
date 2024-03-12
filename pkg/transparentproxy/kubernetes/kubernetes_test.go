@@ -53,7 +53,7 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs:     "11001:1;11002:2",
 						metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs:     "11003:3",
 						metadata.KumaTrafficExcludeOutboundPortsForUIDs:        "0;12",
-						metadata.KumaTransparentProxyingIPv6Enabled:            "false",
+						metadata.KumaTransparentProxyingDisableIPv6:            "true",
 					},
 				},
 			},
@@ -72,7 +72,7 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-ports-for-uids", "udp:11002:2",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
-				"--ipv6-enabled", "false",
+				"--disable-ipv6",
 			},
 		}),
 		Entry("should generate with deprecated dns annotation", testCaseKumactl{

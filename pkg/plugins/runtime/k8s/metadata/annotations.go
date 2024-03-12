@@ -151,7 +151,7 @@ const (
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
 	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
-	KumaTransparentProxyingIPv6Enabled                 = "kuma.io/ipv6-enabled"
+	KumaTransparentProxyingDisableIPv6                 = "kuma.io/disable-ipv6"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
@@ -199,14 +199,30 @@ func (a Annotations) GetEnabled(keys ...string) (bool, bool, error) {
 	return a.GetEnabledWithDefault(false, keys...)
 }
 
+func (a Annotations) GetBoolean(keys ...string) (bool, bool, error) {
+	return a.GetBooleanWithDefault(false, false, keys...)
+}
+
 func (a Annotations) GetEnabledWithDefault(def bool, keys ...string) (bool, bool, error) {
+	return a.GetBooleanWithDefault(def, true, keys...)
+}
+
+func (a Annotations) GetBooleanWithDefault(def bool, supportEnabled bool, keys ...string) (bool, bool, error) {
 	v, exists, err := a.getWithDefault(def, func(key, value string) (interface{}, error) {
 		switch value {
-		case AnnotationEnabled, AnnotationTrue:
+		case AnnotationTrue, AnnotationYes:
 			return true, nil
-		case AnnotationDisabled, AnnotationFalse:
+		case AnnotationFalse, AnnotationNo:
 			return false, nil
 		default:
+			if supportEnabled {
+				switch value {
+				case AnnotationEnabled:
+					return true, nil
+				case AnnotationDisabled:
+					return false, nil
+				}
+			}
 			return false, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
 		}
 	}, keys...)
