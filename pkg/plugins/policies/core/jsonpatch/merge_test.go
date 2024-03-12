@@ -56,7 +56,7 @@ var _ = Describe("Json Patch merge", func() {
 		Expect(mergedOtel.CommonConfig.LogName).To(Equal("y"))
 	})
 
-	It("should map snake_case to camelCase path", func() {
+	It("should not merge for snake_case", func() {
 		// given
 		patches := []common_api.JsonPatchBlock{
 			{
@@ -67,17 +67,9 @@ var _ = Describe("Json Patch merge", func() {
 		}
 
 		// when
-		hcmAny := util_proto.MustMarshalAny(hcm)
-		mergedHcmAny, err := jsonpatch.MergeJsonPatchAny(hcmAny, patches)
+		_, err := jsonpatch.MergeJsonPatchAny(util_proto.MustMarshalAny(hcm), patches)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		mergedHcm := &envoy_hcm.HttpConnectionManager{}
-		err = util_proto.UnmarshalAnyTo(mergedHcmAny, mergedHcm)
-		Expect(err).ToNot(HaveOccurred())
-		mergedOtel := &open_telemetryv3.OpenTelemetryAccessLogConfig{}
-		err = util_proto.UnmarshalAnyTo(mergedHcm.AccessLog[0].GetTypedConfig(), mergedOtel)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(mergedOtel.CommonConfig.LogName).To(Equal("y"))
+		Expect(err).To(HaveOccurred())
 	})
 })

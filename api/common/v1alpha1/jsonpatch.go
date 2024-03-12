@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/evanphx/json-patch/v5"
-	"github.com/gobeam/stringy"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"go.uber.org/multierr"
 )
 
@@ -44,8 +43,7 @@ func ToJsonPatch(in []JsonPatchBlock) (jsonpatch.Patch, error) {
 
 		op := json.RawMessage(strconv.Quote(o.Op))
 		from := json.RawMessage(strconv.Quote(fromString))
-		str := stringy.New(*o.Path)
-		path := json.RawMessage(strconv.Quote(str.CamelCase()))
+		path := json.RawMessage(strconv.Quote(*o.Path))
 		value := o.Value
 
 		res = append(res, jsonpatch.Operation{
