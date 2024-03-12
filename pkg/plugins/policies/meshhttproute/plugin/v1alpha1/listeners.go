@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"reflect"
 
 	"golang.org/x/exp/slices"
@@ -23,6 +24,88 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+func generateFromService(
+	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
+	clusterCache map[common_api.TargetRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	rules rules.Rules,
+	svc meshroute_xds.DestinationService,
+) (*core_xds.ResourceSet, error) {
+	tags := svc.TargetRef.Tags
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
+
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
+			StatsName:                svc.ServiceName,
+			ForwardClientCertDetails: false,
+			NormalizePath:            true,
+		}))
+
+	var routes []xds.OutboundRoute
+	for _, route := range prepareRoutes(rules, svc) {
+		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
+		if split == nil {
+			continue
+		}
+		for _, filter := range route.Filters {
+			if filter.Type == api.RequestMirrorType {
+				// we need to create a split for the mirror backend
+				_ = meshroute_xds.MakeHTTPSplit(
+					clusterCache, servicesAcc,
+					[]common_api.BackendRef{{
+						TargetRef: filter.RequestMirror.BackendRef,
+						Weight:    pointer.To[uint](1), // any non-zero value
+					}},
+					meshCtx,
+				)
+			}
+		}
+		routes = append(routes, xds.OutboundRoute{
+			Hash:                    route.Hash,
+			Match:                   route.Match,
+			Filters:                 route.Filters,
+			Split:                   split,
+			BackendRefToClusterName: clusterCache,
+		})
+	}
+
+	if len(routes) == 0 {
+		return nil, nil
+	}
+
+	outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
+		Service: svc.ServiceName,
+		Routes:  routes,
+		DpTags:  proxy.Dataplane.Spec.TagSet(),
+	}
+
+	filterChainBuilder.
+		Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
+
+	// TODO: https://github.com/kumahq/kuma/issues/3325
+	switch svc.Protocol {
+	case core_mesh.ProtocolGRPC:
+		filterChainBuilder.Configure(envoy_listeners.GrpcStats())
+	}
+	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+	listener, err := listenerBuilder.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	resources := core_xds.NewResourceSet().Add(
+		&core_xds.Resource{
+			Name:     listener.GetName(),
+			Origin:   generator.OriginOutbound,
+			Resource: listener,
+		})
+
+	return resources, nil
+}
+
 func generateListeners(
 	proxy *core_xds.Proxy,
 	rules rules.Rules,
@@ -35,78 +118,20 @@ func generateListeners(
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[common_api.BackendRefHash]string{}
 
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		serviceName := outbound.GetService()
-		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-
-		listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, oface.DataplaneIP, oface.DataplanePort, core_xds.SocketAddressProtocolTCP).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-			Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(outbound.GetTags()).WithoutTags(mesh_proto.MeshTag)))
-
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-				StatsName:                serviceName,
-				ForwardClientCertDetails: false,
-				NormalizePath:            true,
-			}))
-
-		protocol := meshCtx.GetServiceProtocol(serviceName)
-		var routes []xds.OutboundRoute
-		for _, route := range prepareRoutes(rules, serviceName, protocol, outbound.GetTags()) {
-			split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-			if split == nil {
-				continue
-			}
-			for _, filter := range route.Filters {
-				if filter.Type == api.RequestMirrorType {
-					// we need to create a split for the mirror backend
-					_ = meshroute_xds.MakeHTTPSplit(
-						clusterCache, servicesAcc,
-						[]common_api.BackendRef{{
-							TargetRef: filter.RequestMirror.BackendRef,
-							Weight:    pointer.To[uint](1), // any non-zero value
-						}},
-						meshCtx,
-					)
-				}
-			}
-			routes = append(routes, xds.OutboundRoute{
-				Hash:                    route.Hash,
-				Match:                   route.Match,
-				Filters:                 route.Filters,
-				Split:                   split,
-				BackendRefToClusterName: clusterCache,
-			})
-		}
-
-		if len(routes) == 0 {
-			continue
-		}
-
-		outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
-			Service: serviceName,
-			Routes:  routes,
-			DpTags:  proxy.Dataplane.Spec.TagSet(),
-		}
-
-		filterChainBuilder.
-			Configure(envoy_listeners.AddFilterChainConfigurer(outboundRouteConfigurer))
-
-		// TODO: https://github.com/kumahq/kuma/issues/3325
-		switch protocol {
-		case core_mesh.ProtocolGRPC:
-			filterChainBuilder.Configure(envoy_listeners.GrpcStats())
-		}
-		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
-		listener, err := listenerBuilder.Build()
+	for _, svc := range meshroute_xds.CollectServices(proxy, meshCtx) {
+		fmt.Println(svc.ServiceName)
+		rs, err := generateFromService(
+			meshCtx,
+			proxy,
+			clusterCache,
+			servicesAcc,
+			rules,
+			svc,
+		)
 		if err != nil {
 			return nil, err
 		}
-		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   generator.OriginOutbound,
-			Resource: listener,
-		})
+		resources.AddSet(rs)
 	}
 
 	return resources, nil
@@ -115,11 +140,9 @@ func generateListeners(
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(
 	toRules rules.Rules,
-	serviceName string,
-	protocol core_mesh.Protocol,
-	tags map[string]string,
+	svc meshroute_xds.DestinationService,
 ) []api.Route {
-	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(serviceName))
+	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(svc.ServiceName))
 
 	var apiRules []api.Rule
 	if conf != nil {
@@ -127,7 +150,7 @@ func prepareRoutes(
 	}
 
 	if len(apiRules) == 0 {
-		switch protocol {
+		switch svc.Protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		default:
 			return nil
@@ -165,16 +188,14 @@ func prepareRoutes(
 		}
 
 		if len(route.BackendRefs) == 0 {
-			route.BackendRefs = []common_api.BackendRef{
-				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.MeshService,
-						Name: serviceName,
-						Tags: tags,
-					},
-					Weight: pointer.To(uint(100)),
-				},
+			defaultBackend := common_api.BackendRef{
+				TargetRef: svc.TargetRef,
+				Weight:    pointer.To(uint(100)),
 			}
+			if svc.Port != nil {
+				defaultBackend.Port = svc.Port
+			}
+			route.BackendRefs = []common_api.BackendRef{defaultBackend}
 		}
 	}
 
