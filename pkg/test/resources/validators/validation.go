@@ -86,7 +86,7 @@ func ErrorCase(description string, err validators.Violation, yaml string) TableE
 
 // FErrorCase is a helper that generates a focused table entry for DescribeErrorCases.
 func FErrorCase(description string, err validators.Violation, yaml string) TableEntry {
-	return FEntry(
+	return Entry(
 		description,
 		ResourceValidationCase{
 			Violations: []validators.Violation{err},
