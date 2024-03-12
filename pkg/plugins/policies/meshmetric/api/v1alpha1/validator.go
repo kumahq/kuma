@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/asaskevich/govalidator"
@@ -41,11 +42,55 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 	if sidecar == nil {
 		return verr
 	}
-
 	if sidecar.Regex != nil {
 		_, err := regexp.Compile(*sidecar.Regex)
 		if err != nil {
 			verr.AddViolation("regex", "invalid regex")
+		}
+	}
+	if sidecar.Profiles != nil {
+		profiles := sidecar.Profiles
+		if profiles.Exclude != nil {
+			verr.AddError("profiles", validateSelectors(*profiles.Exclude, "exclude"))
+		}
+		if profiles.Include != nil {
+			verr.AddError("profiles", validateSelectors(*profiles.Include, "include"))
+		}
+		if profiles.AppendProfiles != nil {
+			verr.AddError("profiles.appendProfiles", validateAppendProfiles(*profiles.AppendProfiles))
+		}
+	}
+	return verr
+}
+
+func validateAppendProfiles(profiles []Profile) validators.ValidationError {
+	var verr validators.ValidationError
+	for i, profile := range profiles {
+		path := validators.Root().Index(i)
+
+		switch profile.Name {
+		case AllProfileName, NoneProfileName, BasicProfileName:
+		default:
+			verr.AddViolation(path.Field("name").String(), fmt.Sprintf("unrecognized profile name '%s' - 'All', 'None', 'Basic' are supported", profile.Name))
+		}
+	}
+	return verr
+}
+
+func validateSelectors(selectors []Selector, selectorType string) validators.ValidationError {
+	var verr validators.ValidationError
+
+	for i, selector := range selectors {
+		path := validators.RootedAt(selectorType).Index(i)
+		switch selector.Type {
+		case RegexSelectorType:
+			_, err := regexp.Compile(selector.Match)
+			if err != nil {
+				verr.AddViolation(path.Field("match").String(), "invalid regex")
+			}
+		case PrefixSelectorType, ExactSelectorType:
+		default:
+			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'Regex', 'Prefix', 'Exact' are supported", selector.Type))
 		}
 	}
 
