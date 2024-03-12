@@ -266,6 +266,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshService",
+   "path": "meshservices",
+   "pluralDisplayName": "Mesh Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Service"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshTCPRoute",
    "path": "meshtcproutes",
    "pluralDisplayName": "Mesh TCP Routes",
