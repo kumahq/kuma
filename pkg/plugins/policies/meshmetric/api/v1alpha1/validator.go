@@ -1,9 +1,8 @@
 package v1alpha1
 
 import (
-	"regexp"
-
 	"github.com/asaskevich/govalidator"
+	"regexp"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -42,11 +41,33 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 		return verr
 	}
 
-	if sidecar.Regex != nil {
-		_, err := regexp.Compile(*sidecar.Regex)
-		if err != nil {
-			verr.AddViolation("regex", "invalid regex")
+	if sidecar.Profiles != nil {
+		profiles := sidecar.Profiles
+		path := validators.RootedAt("profiles")
+
+		if profiles.Exclude != nil {
+			verr.AddError(path.Field("exclude").String(), validateSelector(*profiles.Exclude))
 		}
+		if profiles.Include != nil {
+			verr.AddError(path.Field("include").String(), validateSelector(*profiles.Include))
+		}
+	}
+
+	return verr
+}
+
+func validateSelector(selector Selector) validators.ValidationError {
+	var verr validators.ValidationError
+
+	switch selector.Type {
+	case RegexSelectorType:
+		_, err := regexp.Compile(selector.Match)
+		if err != nil {
+			verr.AddViolation("match", "invalid regex")
+		}
+	case PrefixSelectorType,ExactSelectorType:
+	default:
+		verr.AddViolation("match", "unrecognized type")
 	}
 
 	return verr
