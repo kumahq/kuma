@@ -42,6 +42,12 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 	if sidecar == nil {
 		return verr
 	}
+	if sidecar.Regex != nil {
+		_, err := regexp.Compile(*sidecar.Regex)
+		if err != nil {
+			verr.AddViolation("regex", "invalid regex")
+		}
+	}
 	if sidecar.Profiles != nil {
 		profiles := sidecar.Profiles
 		if profiles.Exclude != nil {

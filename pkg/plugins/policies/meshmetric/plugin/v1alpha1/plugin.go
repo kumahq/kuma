@@ -207,6 +207,9 @@ func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
 		values.Set("usedonly", "")
 		return values
 	}
+	if pointer.Deref(sidecar.Regex) != "" {
+		values.Set("filter", pointer.Deref(sidecar.Regex))
+	}
 	if !pointer.Deref(sidecar.IncludeUnused) {
 		values.Set("usedonly", "")
 	}
