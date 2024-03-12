@@ -14,8 +14,6 @@ import (
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/soheilhy/cmux"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -30,18 +28,12 @@ import (
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
-const (
-	grpcMaxConcurrentStreams = 1000000
-	grpcKeepAliveTime        = 15 * time.Second
-)
-
 var log = core.Log.WithName("mads-server")
 
 // muxServer is a runtime component.Component that
-// multiplexes all MADs resources over HTTP and gRPC
+// serves MADs resources over HTTP
 type muxServer struct {
 	httpServices []HttpService
-	grpcServices []GrpcService
 	config       *mads_config.MonitoringAssignmentServerConfig
 	metrics      core_metrics.Metrics
 	mesh_proto.UnimplementedMultiplexServiceServer
@@ -51,36 +43,7 @@ type HttpService interface {
 	RegisterRoutes(ws *restful.WebService)
 }
 
-type GrpcService interface {
-	RegisterWithGrpcServer(server *grpc.Server)
-}
-
 var _ component.Component = &muxServer{}
-
-func (s *muxServer) createGRPCServer() *grpc.Server {
-	grpcOptions := []grpc.ServerOption{
-		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
-		grpc.KeepaliveParams(keepalive.ServerParameters{
-			Time:    grpcKeepAliveTime,
-			Timeout: grpcKeepAliveTime,
-		}),
-		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             grpcKeepAliveTime,
-			PermitWithoutStream: true,
-		}),
-	}
-	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
-	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
-	server := grpc.NewServer(grpcOptions...)
-
-	for _, service := range s.grpcServices {
-		service.RegisterWithGrpcServer(server)
-	}
-
-	s.metrics.RegisterGRPC(server)
-
-	return server
-}
 
 func (s *muxServer) createHttpServicesHandler() http.Handler {
 	container := restful.NewContainer()
@@ -132,25 +95,6 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	}
 	m := cmux.New(l)
 
-	grpcL := m.MatchWithWriters(
-		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
-		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc+proto"),
-	)
-	grpcS := s.createGRPCServer()
-	errChanGrpc := make(chan error)
-	go func() {
-		defer close(errChanGrpc)
-		if err := grpcS.Serve(grpcL); err != nil {
-			switch err {
-			case cmux.ErrServerClosed:
-				log.Info("shutting down a GRPC Server")
-			default:
-				log.Error(err, "could not start an GRPC Server")
-				errChanGrpc <- err
-			}
-		}
-	}()
-
 	httpL := m.Match(cmux.Any())
 	httpS := &http.Server{
 		ReadHeaderTimeout: time.Second,
@@ -193,8 +137,6 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	case <-stop:
 		log.Info("stopping gracefully")
 		return nil
-	case err := <-errChanGrpc:
-		return err
 	case err := <-errChanHttp:
 		return err
 	case err := <-errChan:
@@ -214,19 +156,16 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	rm := rt.ReadOnlyResourceManager()
 
-	var grpcServices []GrpcService
 	var httpServices []HttpService
 
 	if config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
 		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1), rt.MeshCache())
-		grpcServices = append(grpcServices, svc)
 		httpServices = append(httpServices, svc)
 	}
 
 	return rt.Add(&muxServer{
 		httpServices: httpServices,
-		grpcServices: grpcServices,
 		config:       config,
 		metrics:      rt.Metrics(),
 	})

@@ -12,13 +12,6 @@ import "validate/validate.proto";
 //
 // xDS API that is meant for consumption by monitoring systems, e.g. Prometheus.
 service MonitoringAssignmentDiscoveryService {
-  // GRPC
-  rpc DeltaMonitoringAssignments(
-      stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
-      returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {}
-  rpc StreamMonitoringAssignments(
-      stream envoy.service.discovery.v3.DiscoveryRequest)
-      returns (stream envoy.service.discovery.v3.DiscoveryResponse) {}
   // HTTP
   rpc FetchMonitoringAssignments(envoy.service.discovery.v3.DiscoveryRequest)
       returns (envoy.service.discovery.v3.DiscoveryResponse) {
