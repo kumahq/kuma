@@ -60,25 +60,25 @@ type Profile struct {
 type ProfileName string
 
 const (
-	AllProfileName   ProfileName = "all"
-	BasicProfileName ProfileName = "basic"
-	NoneProfileName  ProfileName = "none"
+	AllProfileName   ProfileName = "All"
+	BasicProfileName ProfileName = "Basic"
+	NoneProfileName  ProfileName = "None"
 )
 
 type Selector struct {
 	// Type defined the type of selector, one of: prefix, regex, exact
-	Type  SelectorType `json:"type"`
+	Type SelectorType `json:"type"`
 	// Match is the value used to match using particular Type
-	Match string       `json:"match"`
+	Match string `json:"match"`
 }
 
 // +kubebuilder:validation:Enum=Prefix;Regex;Exact
 type SelectorType string
 
 const (
-	PrefixSelectorType SelectorType = "prefix"
-	RegexSelectorType  SelectorType = "regex"
-	ExactSelectorType  SelectorType = "exact"
+	PrefixSelectorType SelectorType = "Prefix"
+	RegexSelectorType  SelectorType = "Regex"
+	ExactSelectorType  SelectorType = "Exact"
 )
 
 type Application struct {

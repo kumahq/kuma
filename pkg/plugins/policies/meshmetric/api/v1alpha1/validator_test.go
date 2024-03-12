@@ -22,12 +22,12 @@ default:
     regex: "http2_.*"
     profiles:
       appendProfiles:
-        - name: basic
+        - name: Basic
       exclude:
-        - type: regex
+        - type: Regex
           match: "my_match.*"
       include:
-        - type: prefix
+        - type: Prefix
           match: "my_match"
     includeUnused: true
   applications:
@@ -135,7 +135,7 @@ default:
   sidecar:
     profiles:
       exclude:
-        - type: regex
+        - type: Regex
           match: "())(!("
     includeUnused: true
 `),
@@ -143,7 +143,7 @@ default:
 			"invalid include types",
 			validators.Violation{
 				Field:   "spec.default.sidecar.profiles.include[0].type",
-				Message: "unrecognized type 'not_supported' - 'regex', 'prefix', 'exact' are supported",
+				Message: "unrecognized type 'not_supported' - 'Regex', 'Prefix', 'Exact' are supported",
 			},
 			`
 type: MeshMetric
@@ -162,7 +162,7 @@ default:
 			"invalid profile",
 			validators.Violation{
 				Field:   "spec.default.sidecar.profiles.appendProfiles[0].name",
-				Message: "unrecognized profile name 'not_supported' - 'all', 'none', 'basic' are supported",
+				Message: "unrecognized profile name 'not_supported' - 'All', 'None', 'Basic' are supported",
 			},
 			`
 type: MeshMetric

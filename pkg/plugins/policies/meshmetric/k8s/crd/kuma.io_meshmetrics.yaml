@@ -180,6 +180,8 @@ spec:
                             items:
                               properties:
                                 match:
+                                  description: Match is the value used to match using
+                                    particular Type
                                   type: string
                                 type:
                                   description: 'Type defined the type of selector,
@@ -201,6 +203,8 @@ spec:
                             items:
                               properties:
                                 match:
+                                  description: Match is the value used to match using
+                                    particular Type
                                   type: string
                                 type:
                                   description: 'Type defined the type of selector,

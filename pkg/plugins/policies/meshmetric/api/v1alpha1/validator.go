@@ -71,7 +71,7 @@ func validateAppendProfiles(profiles []Profile) validators.ValidationError {
 		switch profile.Name {
 		case AllProfileName, NoneProfileName, BasicProfileName:
 		default:
-			verr.AddViolation(path.Field("name").String(), fmt.Sprintf("unrecognized profile name '%s' - 'all', 'none', 'basic' are supported", profile.Name))
+			verr.AddViolation(path.Field("name").String(), fmt.Sprintf("unrecognized profile name '%s' - 'All', 'None', 'Basic' are supported", profile.Name))
 		}
 	}
 	return verr
@@ -90,7 +90,7 @@ func validateSelectors(selectors []Selector, selectorType string) validators.Val
 			}
 		case PrefixSelectorType, ExactSelectorType:
 		default:
-			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'regex', 'prefix', 'exact' are supported", selector.Type))
+			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'Regex', 'Prefix', 'Exact' are supported", selector.Type))
 		}
 	}
 

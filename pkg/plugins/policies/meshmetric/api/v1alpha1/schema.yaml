@@ -137,6 +137,7 @@ properties:
                     items:
                       properties:
                         match:
+                          description: Match is the value used to match using particular Type
                           type: string
                         type:
                           description: 'Type defined the type of selector, one of: prefix, regex, exact'
@@ -157,6 +158,7 @@ properties:
                     items:
                       properties:
                         match:
+                          description: Match is the value used to match using particular Type
                           type: string
                         type:
                           description: 'Type defined the type of selector, one of: prefix, regex, exact'
