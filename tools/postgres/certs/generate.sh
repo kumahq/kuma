@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 openssl genrsa -out rootCA.key 4096
 openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 10024 -out rootCA.crt -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=kuma-ca"
 

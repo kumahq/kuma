@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 LABEL_TO_CHECK="$1"
 # CIRCLE_PULL_REQUEST looks like: https://github.com/kumahq/kuma/pull/2949 the api is at: https://api.github.com/kumahq/kuma/pulls/2949
