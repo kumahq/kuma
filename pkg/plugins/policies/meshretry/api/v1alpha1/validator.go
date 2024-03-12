@@ -29,6 +29,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.MeshHTTPRoute,
 		},
 		GatewayListenerTagsAllowed: true,
 	})
@@ -42,7 +43,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 
 		var supportedKinds []common_api.TargetRefKind
 		switch topLevelKind.Kind {
-		case common_api.MeshGateway:
+		case common_api.MeshGateway, common_api.MeshHTTPRoute:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 			}

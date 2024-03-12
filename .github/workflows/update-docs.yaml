@@ -61,14 +61,14 @@ jobs:
           rm ${{ env.OUTPUT_PATH }}/raw/versions.yml
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@e8e39f73bb84fdf315a015fa3104f314c0a258b4 # v1.8.1
+        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ env.DOCS_REPO }}
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@b1ddad2c994a25fbc81a28b3ec0e368bb2021c50 # v6.0.0
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc # v6.0.1
         with:
           path: docs
           commit-message: "chore(deps): update docs from repo source"

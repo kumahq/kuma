@@ -10,16 +10,23 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+  id-token: write
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 jobs:
   check:
+    permissions:
+      contents: read
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    outputs:
+    env:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -28,7 +35,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        with:
+          args: --fix=false --verbose
+          version: v1.56.1
+          skip-pkg-cache: true
+      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -37,46 +49,42 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make dev/tools
-      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
-        with:
-          args: --fix=false --verbose
-          version: v1.56.1
-          skip-pkg-cache: true
       - run: |
           make clean
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/sca@60c9b136104671b7091b2306c599d80fec34ae3f
         with:
           dir: .
           config: .syft.yaml
+      - id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
   test:
+    permissions:
+      contents: read
     needs: ["check"]
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
     secrets: inherit
-  build:
-    needs: ["check"]
-    uses: ./.github/workflows/_build.yaml
-    with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      IMAGE_ARTIFACT_NAME: "image_artifacts"
-      BINARY_ARTIFACT_NAME: "binary_artifacts"
-    secrets: inherit
-  publish:
-    needs: ["check", "build", "test"]
-    uses: ./.github/workflows/_publish.yaml
+  build_publish:
+    permissions:
+      contents: read
+      id-token: write
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
       IMAGE_ARTIFACT_NAME: "image_artifacts"
       BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
     secrets: inherit
   distributions:
-    needs: ["publish", "check", "build", "test"]
+    needs: ["build_publish", "check", "test"]
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest

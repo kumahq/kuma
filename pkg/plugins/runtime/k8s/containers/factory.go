@@ -25,12 +25,13 @@ func (a EnvVarsByName) Less(i, j int) bool {
 }
 
 type DataplaneProxyFactory struct {
-	ControlPlaneURL    string
-	ControlPlaneCACert string
-	DefaultAdminPort   uint32
-	ContainerConfig    runtime_k8s.DataplaneContainer
-	BuiltinDNS         runtime_k8s.BuiltinDNS
-	WaitForDataplane   bool
+	ControlPlaneURL          string
+	ControlPlaneCACert       string
+	DefaultAdminPort         uint32
+	ContainerConfig          runtime_k8s.DataplaneContainer
+	BuiltinDNS               runtime_k8s.BuiltinDNS
+	WaitForDataplane         bool
+	sidecarContainersEnabled bool
 }
 
 func NewDataplaneProxyFactory(
@@ -40,14 +41,16 @@ func NewDataplaneProxyFactory(
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
+	sidecarContainersEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
-		ControlPlaneURL:    controlPlaneURL,
-		ControlPlaneCACert: controlPlaneCACert,
-		DefaultAdminPort:   defaultAdminPort,
-		ContainerConfig:    containerConfig,
-		BuiltinDNS:         builtinDNS,
-		WaitForDataplane:   waitForDataplane,
+		ControlPlaneURL:          controlPlaneURL,
+		ControlPlaneCACert:       controlPlaneCACert,
+		DefaultAdminPort:         defaultAdminPort,
+		ContainerConfig:          containerConfig,
+		BuiltinDNS:               builtinDNS,
+		WaitForDataplane:         waitForDataplane,
+		sidecarContainersEnabled: sidecarContainersEnabled,
 	}
 }
 
@@ -169,6 +172,23 @@ func (i *DataplaneProxyFactory) NewContainer(
 				kube_core.ResourceEphemeralStorage: pointer.Deref(kube_api.NewScaledQuantity(1, kube_api.Giga)),
 			},
 		},
+	}
+	if i.sidecarContainersEnabled {
+		container.StartupProbe = &kube_core.Probe{
+			ProbeHandler: kube_core.ProbeHandler{
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(adminPort),
+					},
+				},
+			},
+			InitialDelaySeconds: i.ContainerConfig.StartupProbe.InitialDelaySeconds,
+			TimeoutSeconds:      i.ContainerConfig.StartupProbe.TimeoutSeconds,
+			PeriodSeconds:       i.ContainerConfig.StartupProbe.PeriodSeconds,
+			SuccessThreshold:    1,
+			FailureThreshold:    i.ContainerConfig.StartupProbe.FailureThreshold,
+		}
 	}
 	if waitForDataplaneReady {
 		container.Lifecycle = &kube_core.Lifecycle{

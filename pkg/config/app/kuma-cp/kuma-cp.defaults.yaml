@@ -300,6 +300,16 @@ runtime:
           periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_PERIOD_SECONDS
           # Minimum consecutive failures for the probe to be considered failed after having succeeded.
           failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_FAILURE_THRESHOLD
+        # Startup probe (if sidecar containers feature is enabled).
+        startupProbe:
+          # Number of seconds after the container has started before startup probes are initiated.
+          initialDelaySeconds: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_INITIAL_DELAY_SECONDS
+          # Number of seconds after which the probe times out.
+          timeoutSeconds: 3 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_TIMEOUT_SECONDS
+          # How often (in seconds) to perform the probe.
+          periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_PERIOD_SECONDS
+          # Minimum consecutive failures for the probe to be considered failed after having succeeded.
+          failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_FAILURE_THRESHOLD
         # Compute resource requirements.
         resources:
           # Minimum amount of compute resources required.
@@ -558,12 +568,6 @@ dpServer:
   # Tokens e2e tests, which started flaking a lot after introducing explicit
   # 1s timeout)
   readHeaderTimeout: 5s # ENV: KUMA_DP_SERVER_READ_HEADER_TIMEOUT
-  # Auth defines an authentication configuration for the DP Server
-  # DEPRECATED: use "authn" section.
-  auth:
-    # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
-    # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
-    type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
   # Authn defines an authentication configuration for the DP Server
   authn:
     # Configuration for data plane proxy authentication.

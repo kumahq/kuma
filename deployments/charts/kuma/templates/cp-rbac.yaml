@@ -152,6 +152,11 @@ rules:
       - {{ $policy }}
   {{- end}}
   {{- end}}
+  {{- range $policy, $v := .Values.plugins.resources }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
     verbs:
       - get
       - list

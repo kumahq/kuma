@@ -183,7 +183,6 @@ func NewApiServer(
 	container.Add(tokens_server.NewWebservice(
 		path+"tokens",
 		tokenIssuers.DataplaneToken,
-		tokenIssuers.ZoneIngressToken,
 		tokenIssuers.ZoneToken,
 		access.DataplaneTokenAccess,
 		access.ZoneTokenAccess,

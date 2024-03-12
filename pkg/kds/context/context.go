@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -30,9 +31,11 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/util/rsa"
+	"github.com/kumahq/kuma/pkg/version"
 )
+
+const VersionHeader = "version"
 
 var log = core.Log.WithName("kds")
 
@@ -94,6 +97,7 @@ func DefaultContext(
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
+	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
 
 	return &Context{
 		ZoneClientCtx:        ctx,
@@ -232,7 +236,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return configs[resName]
 		case r.Descriptor().Name == system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
-				zoneingress.ZoneIngressSigningKeyPrefix,
 				zone_tokens.SigningKeyPrefix,
 			}...)
 		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):

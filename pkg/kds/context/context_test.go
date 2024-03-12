@@ -28,7 +28,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -307,14 +306,6 @@ var _ = Describe("Context", func() {
 				// then
 				Expect(ok).To(Equal(given.expect))
 			},
-			Entry("should not filter out zone ingress token signing key", testCase{
-				resource: &core_system.GlobalSecretResource{
-					Meta: &test_model.ResourceMeta{
-						Name: zoneingress.ZoneIngressSigningKeyPrefix + "-1",
-					},
-				},
-				expect: true,
-			}),
 			Entry("should not filter out zone token signing key", testCase{
 				resource: &core_system.GlobalSecretResource{
 					Meta: &test_model.ResourceMeta{

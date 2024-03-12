@@ -81,8 +81,10 @@ func (i *TestRuntimeInfo) GetStartTime() time.Time {
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
-	if cfg.DpServer.Auth.Type == "" { // for test, autoconfigure to dp token
+	if cfg.DpServer.Authn.DpProxy.Type == "" {
 		cfg.DpServer.Authn.DpProxy.Type = dp_server.DpServerAuthDpToken
+	}
+	if cfg.DpServer.Authn.ZoneProxy.Type == "" {
 		cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthZoneToken
 	}
 	builder, err := core_runtime.BuilderFor(appCtx, cfg)
@@ -141,9 +143,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
-		DataplaneToken:   tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
-		ZoneIngressToken: tokens_builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-		ZoneToken:        tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
+		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
+		ZoneToken:      tokens_builtin.NewZoneTokenIssuer(builder.ResourceManager()),
 	})
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 	builder.WithMultitenancy(multitenant.SingleTenant)

@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
@@ -191,4 +192,15 @@ func ServiceTag(name kube_types.NamespacedName, svcPort *int32) string {
 		port = fmt.Sprintf("_%d", *svcPort)
 	}
 	return fmt.Sprintf("%s_%s_svc%s", name.Name, name.Namespace, port)
+}
+
+func NamespacesNameFromServiceTag(serviceName string) (kube_types.NamespacedName, error) {
+	split := strings.Split(serviceName, "_")
+	if len(split) >= 2 {
+		return kube_types.NamespacedName{
+			Name:      split[0],
+			Namespace: split[1],
+		}, nil
+	}
+	return kube_types.NamespacedName{}, fmt.Errorf("incorrect service name: %s", serviceName)
 }
