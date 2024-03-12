@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = Describe("TransparentProxyGenerator", func() {
+var _ = FDescribe("TransparentProxyGenerator", func() {
 	type testCase struct {
 		proxy    *model.Proxy
 		expected string

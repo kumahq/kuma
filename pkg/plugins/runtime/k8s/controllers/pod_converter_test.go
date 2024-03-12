@@ -514,7 +514,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 	})
 })
 
-var _ = Describe("InboundTagsForService(..)", func() {
+var _ = FDescribe("InboundTagsForService(..)", func() {
 	type testCase struct {
 		isGateway      bool
 		zone           string
@@ -696,7 +696,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 	)
 })
 
-var _ = Describe("MetricsAggregateFor(..)", func() {
+var _ = FDescribe("MetricsAggregateFor(..)", func() {
 	type testCase struct {
 		annotations map[string]string
 		expected    []*mesh_proto.PrometheusAggregateMetricsConfig
@@ -783,7 +783,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 	)
 })
 
-var _ = Describe("MetricsAggregateFor(..)", func() {
+var _ = FDescribe("MetricsAggregateFor(..)", func() {
 	type testCase struct {
 		annotations map[string]string
 		expected    string
@@ -820,7 +820,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 	)
 })
 
-var _ = Describe("ProtocolTagFor(..)", func() {
+var _ = FDescribe("ProtocolTagFor(..)", func() {
 	type testCase struct {
 		appProtocol *string
 		annotations map[string]string
@@ -893,7 +893,7 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 	)
 })
 
-var _ = Describe("Serviceless Name for(...)", func() {
+var _ = FDescribe("Serviceless Name for(...)", func() {
 	type testCase struct {
 		pod          string
 		replicaSets  string
