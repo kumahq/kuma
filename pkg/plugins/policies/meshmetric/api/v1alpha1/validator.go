@@ -40,34 +40,33 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 	if sidecar == nil {
 		return verr
 	}
-
 	if sidecar.Profiles != nil {
 		profiles := sidecar.Profiles
-		path := validators.RootedAt("profiles")
-
 		if profiles.Exclude != nil {
-			verr.AddError(path.Field("exclude").String(), validateSelector(*profiles.Exclude))
+			verr.AddError("profiles", validateSelectors(*profiles.Exclude, "exclude"))
 		}
 		if profiles.Include != nil {
-			verr.AddError(path.Field("include").String(), validateSelector(*profiles.Include))
+			verr.AddError("profiles", validateSelectors(*profiles.Include, "include"))
 		}
 	}
-
 	return verr
 }
 
-func validateSelector(selector Selector) validators.ValidationError {
+func validateSelectors(selectors []Selector, selectorType string) validators.ValidationError {
 	var verr validators.ValidationError
 
-	switch selector.Type {
-	case RegexSelectorType:
-		_, err := regexp.Compile(selector.Match)
-		if err != nil {
-			verr.AddViolation("match", "invalid regex")
+	for i, selector := range selectors {
+		path := validators.RootedAt(selectorType).Index(i)
+		switch selector.Type {
+		case RegexSelectorType:
+			_, err := regexp.Compile(selector.Match)
+			if err != nil {
+				verr.AddViolation(path.String(), "invalid regex")
+			}
+		case PrefixSelectorType,ExactSelectorType:
+		default:
+			verr.AddViolation("type", "unrecognized type: 'regex', 'prefix', 'exact' are supported")
 		}
-	case PrefixSelectorType,ExactSelectorType:
-	default:
-		verr.AddViolation("match", "unrecognized type")
 	}
 
 	return verr

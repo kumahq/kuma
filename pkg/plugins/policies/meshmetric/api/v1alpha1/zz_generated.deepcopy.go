@@ -171,13 +171,21 @@ func (in *Profiles) DeepCopyInto(out *Profiles) {
 	}
 	if in.Exclude != nil {
 		in, out := &in.Exclude, &out.Exclude
-		*out = new(Selector)
-		**out = **in
+		*out = new([]Selector)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Selector, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Include != nil {
 		in, out := &in.Include, &out.Include
-		*out = new(Selector)
-		**out = **in
+		*out = new([]Selector)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Selector, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 

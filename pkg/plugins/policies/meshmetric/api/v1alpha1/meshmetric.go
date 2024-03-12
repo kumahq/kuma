@@ -43,10 +43,10 @@ type Profiles struct {
 	AppendProfiles *[]Profile `json:"profiles,omitempty"`
 	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
 	// Exclude is subordinate to Include.
-	Exclude *Selector `json:"exclude,omitempty"`
+	Exclude *[]Selector `json:"exclude,omitempty"`
 	// Include makes it possible to include additional metrics in a selected profiles.
 	// Include takes precedence over Exclude.
-	Include *Selector `json:"include,omitempty"`
+	Include *[]Selector `json:"include,omitempty"`
 }
 
 type Profile struct {

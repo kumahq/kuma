@@ -19,7 +19,15 @@ targetRef:
   name: svc-1
 default:
   sidecar:
-    regex: "http2_.*"
+    profiles:
+      appendProfiles:
+        - name: basic
+      exclude:
+        - type: regex
+          match: "my_match.*"
+      include:
+        - type: prefix
+          match: "my_match"
     includeUnused: true
   applications:
     - path: "metrics/prometheus"
@@ -94,7 +102,7 @@ default:
 		ErrorCase(
 			"invalid regex",
 			validators.Violation{
-				Field:   "spec.default.sidecar.regex",
+				Field:   "spec.default.sidecar.profiles.exclude[0].match",
 				Message: "invalid regex",
 			},
 			`
@@ -106,7 +114,30 @@ targetRef:
   name: svc-1
 default:
   sidecar:
-    regex: "())(!("
+    profiles:
+      exclude:
+        - type: regex
+          match: "())(!("
+    includeUnused: true
+`),
+		ErrorCase(
+			"invalid selector type",
+			validators.Violation{
+				Field:   "spec.default.sidecar.profiles.exclude[0].type",
+				Message: "unrecognized type: 'regex', 'prefix', 'exact' are supported",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      exclude:
+        - type: not_supported
     includeUnused: true
 `),
 		ErrorCase(
