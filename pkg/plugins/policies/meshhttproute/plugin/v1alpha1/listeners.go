@@ -27,7 +27,7 @@ import (
 func generateFromService(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
-	clusterCache map[common_api.TargetRefHash]string,
+	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	rules rules.Rules,
 	svc meshroute_xds.DestinationService,
@@ -55,10 +55,7 @@ func generateFromService(
 				// we need to create a split for the mirror backend
 				_ = meshroute_xds.MakeHTTPSplit(
 					clusterCache, servicesAcc,
-					[]common_api.BackendRef{{
-						TargetRef: filter.RequestMirror.BackendRef,
-						Weight:    pointer.To[uint](1), // any non-zero value
-					}},
+					[]common_api.BackendRef{filter.RequestMirror.BackendRef},
 					meshCtx,
 				)
 			}
