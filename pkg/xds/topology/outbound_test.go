@@ -204,7 +204,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items,
+				defaultMeshWithMTLS, "zone-1", nil, dataplanes.Items, nil, nil, externalServices.Items,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -293,7 +293,7 @@ var _ = Describe("TrafficRoute", func() {
 			func(given testCase) {
 				// when
 				endpoints := BuildEdsEndpointMap(
-					given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
+					given.mesh, "zone-1", nil, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
