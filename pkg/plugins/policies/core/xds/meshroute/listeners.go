@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -55,9 +56,59 @@ func MakeHTTPSplit(
 	)
 }
 
+type DestinationService struct {
+	Outbound    mesh_proto.OutboundInterface
+	Port        *uint32
+	Protocol    core_mesh.Protocol
+	ServiceName string
+	TargetRef   common_api.TargetRef
+}
+
+func CollectServices(
+	proxy *core_xds.Proxy,
+	meshCtx xds_context.MeshContext,
+) []DestinationService {
+	var dests []DestinationService
+	for _, svc := range meshCtx.Resources.MeshServices().Items {
+		if len(svc.Spec.Status.VIPs) == 0 {
+			continue
+		}
+		for _, port := range svc.Spec.Ports {
+			dests = append(dests, DestinationService{
+				Outbound: mesh_proto.OutboundInterface{
+					DataplaneIP:   svc.Spec.Status.VIPs[0].IP,
+					DataplanePort: port.Port,
+				},
+				Port:        pointer.To(port.Port),
+				Protocol:    port.Protocol,
+				ServiceName: fmt.Sprintf("%s_svc_%d", svc.GetMeta().GetName(), port.Port),
+				TargetRef: common_api.TargetRef{
+					Kind: common_api.MeshService,
+					Name: svc.GetMeta().GetName(),
+				},
+			})
+		}
+	}
+	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
+		serviceName := outbound.GetService()
+		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
+		dests = append(dests, DestinationService{
+			Outbound:    oface,
+			Protocol:    meshCtx.GetServiceProtocol(serviceName),
+			ServiceName: serviceName,
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+				Tags: outbound.GetTags(),
+			},
+		})
+	}
+	return dests
+}
+
 func makeSplit(
 	protocols map[core_mesh.Protocol]struct{},
-	clusterCache map[common_api.TargetRefHash]string,
+	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
 	refs []common_api.BackendRef,
 	meshCtx xds_context.MeshContext,
@@ -75,6 +126,9 @@ func makeSplit(
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
+		if ref.Port != nil {
+			service = fmt.Sprintf("%s_svc_%d", ref.Name, *ref.Port)
+		}
 
 		protocol := meshCtx.GetServiceProtocol(service)
 		if _, ok := protocols[protocol]; !ok {
@@ -82,7 +136,7 @@ func makeSplit(
 		}
 
 		clusterName, _ := tags.Tags(ref.Tags).
-			WithTags(mesh_proto.ServiceTag, ref.Name).
+			WithTags(mesh_proto.ServiceTag, service).
 			DestinationClusterName(nil)
 
 		// The mesh tag is present here if this destination is generated
@@ -94,7 +148,7 @@ func makeSplit(
 		}
 
 		isExternalService := meshCtx.IsExternalService(service)
-		refHash := ref.TargetRef.Hash()
+		refHash := ref.Hash()
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
