@@ -3,10 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"regexp"
-
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	"regexp"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -110,7 +109,21 @@ func (p *PodConverter) dataplaneFor(
 		}
 
 		inboundPortV6, _, _ := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
-		ipv6Disabled, _, _ := annotations.GetBooleanWithDefault(false, false, metadata.KumaTransparentProxyingDisableIPv6)
+		tpEnabledIPMode, ipModeExists := annotations.GetStringWithDefault(metadata.IpFamilyModeDualStack,
+			metadata.KumaTransparentProxyingEnabledIPFamilyMode)
+		ipMode := mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+		if ipModeExists {
+			switch tpEnabledIPMode {
+			case metadata.IpFamilyModeDualStack:
+				ipMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+			case metadata.IpFamilyModeIPv4:
+				ipMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+			case metadata.IpFamilyModeIPv6:
+				fallthrough
+			default:
+				return nil, errors.Errorf("invalid ip family mode '%s'", ipMode)
+			}
+		}
 
 		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 		if err != nil {
@@ -123,7 +136,7 @@ func (p *PodConverter) dataplaneFor(
 			RedirectPortInbound:   inboundPort,
 			RedirectPortOutbound:  outboundPort,
 			RedirectPortInboundV6: inboundPortV6,
-			Ipv6Disabled:          ipv6Disabled,
+			IpFamilyMode:          ipMode,
 		}
 
 		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {

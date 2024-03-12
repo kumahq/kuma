@@ -220,6 +220,14 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
+      enum IpFamilyMode {
+        // Enables transparent proxying for both IPv4 and IPv6 traffic, This is the default.
+        DualStack = 0;
+        // Enables transparent proxying for IPv4 traffic only.
+        IPv4 = 1;
+        // Enables transparent proxying for IPv6 traffic only. This mode is to be supported in the future.
+        IPv6 = 2;
+      }
 
       // Port on which all inbound traffic is being transparently redirected.
       uint32 redirect_port_inbound = 1
@@ -246,8 +254,8 @@ message Dataplane {
       // all services in the mesh are reachable.
       repeated string reachable_services = 5;
 
-      // Set if IPv6 traffic redirection is disabled by the user for the data plane proxy
-      bool ipv6_disabled = 6;
+      // The IP family mode to enable for. Can be "IPv4" or "DualStack".
+      IpFamilyMode ip_family_mode  = 6;
     }
 
     // Gateway describes a configuration of the gateway of the data plane proxy.

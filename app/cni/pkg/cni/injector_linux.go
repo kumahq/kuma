@@ -107,12 +107,8 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	ipv6Disabled, err := GetBoolean(intermediateConfig.ipv6Disabled)
-	if err != nil {
-		return nil, err
-	}
 	var inboundPortV6 uint16
-	if ipv6Disabled {
+	if intermediateConfig.ipFamilyMode == "ipv4" {
 		inboundPortV6 = 0
 	} else {
 		inboundPortV6, err = convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
@@ -171,16 +167,5 @@ func GetEnabled(value string) (bool, error) {
 		return false, nil
 	default:
 		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
-	}
-}
-
-func GetBoolean(value string) (bool, error) {
-	switch strings.ToLower(value) {
-	case "yes", "true":
-		return true, nil
-	case "no", "false":
-		return false, nil
-	default:
-		return false, errors.Errorf(`wrong value "%s", available values are: "yes", "no", "true", "false"`, value)
 	}
 }

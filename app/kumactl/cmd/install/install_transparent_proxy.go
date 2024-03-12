@@ -23,7 +23,7 @@ type transparentProxyArgs struct {
 	Verbose                        bool
 	RedirectPortOutBound           string
 	RedirectInbound                bool
-	IPv6Disabled                   bool
+	RedirectIpFamilyMode           string
 	RedirectPortInBound            string
 	RedirectPortInBoundV6          string
 	ExcludeInboundPorts            string
@@ -62,7 +62,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		// this argument is to be deprecated, it now defaults to the same port with ipv4 (instead of 15010)
 		// before deprecation, the user can still change it as needed
 		RedirectPortInBoundV6:          "15006",
-		IPv6Disabled:                   false,
+		RedirectIpFamilyMode:           "dualstack",
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
 		ExcludeOutboundTCPPortsForUIDs: []string{},
@@ -204,7 +204,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&args.RedirectInbound, "redirect-inbound", args.RedirectInbound, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().BoolVar(&args.IPv6Disabled, "disable-ipv6", args.IPv6Disabled, "disable ipv6 traffic redirection, on both inbound and outbound directions")
+	cmd.Flags().StringVar(&args.RedirectIpFamilyMode, "redirect-ip-family-mode", args.RedirectIpFamilyMode, "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
 	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "[DEPRECATED (use --redirect-inbound-port and --disable-ipv6)] IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
@@ -272,7 +272,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		RedirectInBound:           args.RedirectInbound,
 		RedirectPortInBound:       args.RedirectPortInBound,
 		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
-		IPv6Disabled:              args.IPv6Disabled,
+		RedirectIpFamilyMode:      args.RedirectIpFamilyMode,
 		ExcludeInboundPorts:       args.ExcludeInboundPorts,
 		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
 		ExcludedOutboundsForUIDs:  args.ExcludeOutboundPortsForUIDs,

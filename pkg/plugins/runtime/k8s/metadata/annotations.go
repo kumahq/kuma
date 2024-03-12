@@ -151,7 +151,7 @@ const (
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
 	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
-	KumaTransparentProxyingDisableIPv6                 = "kuma.io/disable-ipv6"
+	KumaTransparentProxyingEnabledIPFamilyMode         = "kuma.io/transparent-proxying-ip-family-mode"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
@@ -183,6 +183,14 @@ const (
 	AnnotationFalse    = "false"
 	AnnotationYes      = "yes"
 	AnnotationNo       = "no"
+)
+
+// these values are defined for users to specify in configuration:
+// values comes from mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode_name
+const (
+	IpFamilyModeDualStack = "dualstack"
+	IpFamilyModeIPv4      = "ipv4"
+	IpFamilyModeIPv6      = "ipv6"
 )
 
 func BoolToEnabled(b bool) string {

@@ -512,11 +512,9 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	}
 
 	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
-		i.cfg.SidecarContainer.DisableIPv6 = true
+		i.cfg.SidecarContainer.RedirectEnabledIpFamilyMode = metadata.IpFamilyModeIPv4
 	}
-	if i.cfg.SidecarContainer.DisableIPv6 {
-		annotations[metadata.KumaTransparentProxyingDisableIPv6] = "true"
-	}
+	annotations[metadata.KumaTransparentProxyingEnabledIPFamilyMode] = i.cfg.SidecarContainer.RedirectEnabledIpFamilyMode
 	defaultTPCfg := tp_cfg.DefaultConfig()
 	if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
 		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&

@@ -53,7 +53,7 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs:     "11001:1;11002:2",
 						metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs:     "11003:3",
 						metadata.KumaTrafficExcludeOutboundPortsForUIDs:        "0;12",
-						metadata.KumaTransparentProxyingDisableIPv6:            "true",
+						metadata.KumaTransparentProxyingEnabledIPFamilyMode:    "ipv4",
 					},
 				},
 			},

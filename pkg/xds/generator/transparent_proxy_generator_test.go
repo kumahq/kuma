@@ -207,8 +207,8 @@ var _ = Describe("TransparentProxyGenerator", func() {
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
-								Ipv6Disabled:         true,
-								// this value here is actually invalid, it should be always 0 when Ipv6Disabled is true
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_IPv4,
+								// this value here is actually invalid, it should be always 0 when IpFamilyMode is ipv4
 								// we will assert this value should be ignored even it's set in this case
 								RedirectPortInboundV6: 15066,
 							},
@@ -232,7 +232,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 
 	Describe("TransparentProxyGenerator GetIPv6InboundRedirectPort", func() {
 		It("should use ipv4 redirect port for ipv6", func() {
-			p := createDataplaneProxy(15006, 0, false)
+			p := createDataplaneProxy(15006, 0, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -240,7 +240,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		})
 
 		It("should use user customized ipv6 redirect port when ipv6 not disabled", func() {
-			p := createDataplaneProxy(15006, 15088, false)
+			p := createDataplaneProxy(15006, 15088, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -248,7 +248,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		})
 
 		It("should get ipv6 redirect port as 0 when ipv6 disabled", func() {
-			p := createDataplaneProxy(15006, 15088, true)
+			p := createDataplaneProxy(15006, 15088, mesh_proto.Dataplane_Networking_TransparentProxying_IPv4)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -257,7 +257,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 	})
 })
 
-func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipv6Disabled bool) *model.Proxy {
+func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipFamilyMode mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode) *model.Proxy {
 	return &model.Proxy{
 		Id: *model.BuildProxyId("", "sidecar"),
 		Dataplane: &core_mesh.DataplaneResource{
@@ -270,7 +270,7 @@ func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPor
 						RedirectPortOutbound:  15001,
 						RedirectPortInbound:   ipv4InboundRedirectPort,
 						RedirectPortInboundV6: ipv6InboundRedirectPort,
-						Ipv6Disabled:          ipv6Disabled,
+						IpFamilyMode:          ipFamilyMode,
 					},
 				},
 			},
