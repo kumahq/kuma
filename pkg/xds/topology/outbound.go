@@ -2,6 +2,7 @@ package topology
 
 import (
 	"context"
+	"maps"
 	"net"
 	"strconv"
 
@@ -118,7 +119,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := cloneTags(inbound.GetTags())
+			inboundTags := maps.Clone(inbound.GetTags())
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -309,7 +310,7 @@ func fillIngressOutbounds(
 			}
 
 			// deep copy map to not modify tags in BuildRemoteEndpointMap
-			serviceTags := cloneTags(service.GetTags())
+			serviceTags := maps.Clone(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
@@ -413,7 +414,7 @@ func fillExternalServicesOutboundsThroughEgress(
 ) {
 	for _, externalService := range externalServices {
 		// deep copy map to not modify tags in ExternalService.
-		serviceTags := cloneTags(externalService.Spec.GetTags())
+		serviceTags := maps.Clone(externalService.Spec.GetTags())
 		serviceName := serviceTags[mesh_proto.ServiceTag]
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
@@ -450,7 +451,7 @@ func NewExternalServiceEndpoint(
 	tls := spec.GetNetworking().GetTls()
 	meshName := mesh.GetMeta().GetName()
 	// deep copy map to not modify tags in ExternalService.
-	tags := cloneTags(spec.GetTags())
+	tags := maps.Clone(spec.GetTags())
 
 	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
 	if err != nil {
@@ -490,14 +491,6 @@ func NewExternalServiceEndpoint(
 		ExternalService: es,
 		Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 	}, nil
-}
-
-func cloneTags(tags map[string]string) map[string]string {
-	result := map[string]string{}
-	for tag, value := range tags {
-		result[tag] = value
-	}
-	return result
 }
 
 func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {

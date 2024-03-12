@@ -10,11 +10,16 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+  id-token: write
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 jobs:
   check:
+    permissions:
+      contents: read
+      # golangci-lint-action
+      checks: write
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
@@ -51,7 +56,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@b0ef627fa71528272d1daa9257b71dc90246cc46
+        uses: Kong/public-shared-actions/security-actions/sca@60c9b136104671b7091b2306c599d80fec34ae3f
         with:
           dir: .
           config: .syft.yaml
@@ -59,6 +64,8 @@ jobs:
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
   test:
+    permissions:
+      contents: read
     needs: ["check"]
     if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     uses: ./.github/workflows/_test.yaml
@@ -66,6 +73,9 @@ jobs:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
     secrets: inherit
   build_publish:
+    permissions:
+      contents: read
+      id-token: write
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     with:

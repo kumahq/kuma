@@ -1,7 +1,7 @@
 package policies
 
 type Config struct {
-	PluginPoliciesEnabled []string `json:"pluginPoliciesEnabled" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED" default:""`
+	Enabled []string `json:"pluginPoliciesEnabled" envconfig:"KUMA_PLUGIN_POLICIES_ENABLED" default:""`
 }
 
 func (c *Config) PostProcess() error {

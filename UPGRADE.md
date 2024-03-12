@@ -6,6 +6,94 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.7.x`
+
+### Setting `kuma.io/service` in tags of `MeshGatewayInstance` is deprecated
+
+To increase security, since version 2.7.x, setting a `kuma.io/service` tag for the `MeshGatewayInstance` is deprecated. If the tag is not provided, we generate the `kuma.io/service` tag based on the `MeshGatewayInstance` resource. The service name is constructed as `{MeshGatewayInstance name}_{MeshGatewayInstance namespace}_svc`.
+
+E.g.:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayInstance
+metadata:
+  name: demo-app
+  namespace: kuma-demo
+  labels:
+    kuma.io/mesh: default
+```
+
+The generated `kuma.io/service` value is `demo-app_kuma-demo_svc`.
+
+#### Migration
+
+The migration process requires updating all policies and `MeshGateway` resources using the old `kuma.io/service` value to adopt the new one.
+
+Migration step:
+1. Create a copy of policies using the new `kuma.io/service` and the new resource name to avoid overwriting previous policies.
+2. Duplicate the `MeshGateway` resource with a selector using the new `kuma.io/service` value.
+3. Deploy the gateway and verify if traffic works correctly.
+4. Remove the old resources.
+
+### ZoneIngress Token support removed
+
+The control-plane does not support tokens generated with `kumactl generate zone-ingress-token`. If you are running Kuma ingress with a zone ingress token generated using the deprecated method, before upgrading, verify if you are still using the old token.
+
+#### How to validate if I am using `zone-ingress-token`?
+
+1. Obtain the ingress token value
+2. Run the following command
+```bash
+jq -R 'split(".") | .[0],.[1] | @base64d | fromjson' <<< $YOUR_TOKEN
+```
+
+Example output of a zone token:
+```json
+{
+  "alg": "RS256",
+  "kid": "1",
+  "typ": "JWT"
+}
+{
+  "Zone": "test",
+  "Scope": [
+    "ingress",
+    "egress",
+    "cp",
+    "ratelimit"
+  ],
+  "exp": 1712414035,
+  "nbf": 1709821735,
+  "iat": 1709822035,
+  "jti": "efeb8cca-2341-47a4-b4f2-daf49290e481"
+}
+```
+
+Example output of a zone ingress token:
+```json
+{
+  "alg": "RS256",
+  "kid": "1",
+  "typ": "JWT"
+}
+{
+  "Zone": "test",
+  "exp": 1709822002,
+  "nbf": 1709821702,
+  "iat": 1709822002,
+  "jti": "c4cf30c5-ca30-42ec-b08d-de56fba75e7b"
+}
+```
+3. If the output does not have the `Scope` field, you need to generate a new zone token using `kumactl generate zone-token` for your ingress before upgrading.
+4. Restart the Ingress with the new token.
+5. Now, you can safely upgrade the control-plane.
+
+### Configuration option `KUMA_DP_SERVER_AUTH_*`, `dpServer.auth.*` was removed
+
+The option to configure authentication was deprecated and has been removed in release `2.7.x`. If you are still using `KUMA_DP_SERVER_AUTH_*`
+environment variables or `dpServer.auth.*` configuration, please migrate your configuration to use `dpServer.authn` before upgrade.
+
 ## Upgrade to `2.6.x`
 
 ### Policy

@@ -206,12 +206,6 @@ func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, e
 	return c.generateToken("/zone", data)
 }
 
-func (c *UniversalControlPlane) GenerateZoneIngressLegacyToken(zone string) (string, error) {
-	data := fmt.Sprintf(`'{"zone": "%s"}'`, zone)
-
-	return c.generateToken("/zone-ingress", data)
-}
-
 func (c *UniversalControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
 	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["egress"]}'`, zone)
 

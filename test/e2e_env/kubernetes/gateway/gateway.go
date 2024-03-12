@@ -4,11 +4,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -28,7 +30,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     listeners:
     - port: 8080
@@ -110,7 +112,7 @@ type: system.kuma.io/secret
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(MkGatewayInstance("simple-gateway", namespace, meshName))).
+			Install(YamlK8s(MkGatewayInstanceNoServiceTag("simple-gateway", namespace, meshName))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -144,7 +146,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       rules:
@@ -175,7 +177,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       hostnames:
@@ -213,7 +215,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
       hostname: otherexample.kuma.io
   conf:
     http:
@@ -474,7 +476,7 @@ mesh: simple-gateway
 spec:
   sources:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   destinations:
   - match:
       kuma.io/service: rt-echo-server_simple-gateway_svc_80
@@ -519,6 +521,125 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))
 			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshRateLimit per route", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/rate-limited"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		httpRoute2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/non-rate-limited"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		mrl := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshRateLimit
+metadata:
+  name: mesh-rate-limit-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 1
+              interval: 10s
+            onRateLimit:
+              status: 428
+              headers:
+                add:
+                - name: "x-kuma-rate-limited"
+                  value: "true"`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute, httpRoute2)).
+				Install(YamlK8s(mrl)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(mrl)).
+				Install(DeleteYamlK8s(httpRoute, httpRoute2)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should rate limit only specific path", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/rate-limited",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.NoFail(),
+					client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(428))
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			Consistently(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/non-rate-limited",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	})
 
@@ -574,6 +695,258 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(HavePrefix("test-tcp-server"))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshRetry per route", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/with-retry"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		httpRoute2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/no-retry"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		meshFaultInjection := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshFaultInjection
+metadata:
+  namespace: %s
+  name: mesh-fault-injecton
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshService
+    name: echo-server_simple-gateway_svc_80
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: "50.0"
+`, Config.KumaNamespace, meshName)
+		mr := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: mesh-retry-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			// remove default MeshRetry
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
+
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute, httpRoute2)).
+				Install(YamlK8s(mr)).
+				Install(YamlK8s(meshFaultInjection)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(mr)).
+				Install(DeleteYamlK8s(httpRoute, httpRoute2)).
+				Install(DeleteYamlK8s(meshFaultInjection)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should retry only specific path", func() {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/no-retry",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(500))
+			}, "30s", "1s").Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/with-retry",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
+	Context("MeshTimeout per route", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/timeout"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		httpRoute2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/no-timeout"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+		mt := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mesh-timeout-1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: http-route-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 2s
+          streamIdleTimeout: 10s`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute, httpRoute2)).
+				Install(YamlK8s(mt)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(mt)).
+				Install(DeleteYamlK8s(httpRoute, httpRoute2)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should timeout only on one route", func() {
+			// timeout on specific route
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/timeout",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("host", "example.kuma.io"),
+					client.WithHeader("x-set-response-delay-ms", "3000"), // delay response by 3 seconds
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				// check that request timed out
+				g.Expect(response.ResponseCode).To(Equal(504))
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+			// no timeout on another route
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "http://simple-gateway.simple-gateway:8080/no-timeout",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("host", "example.kuma.io"),
+					client.WithHeader("x-set-response-delay-ms", "3000"), // delay response by 3 seconds
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				// check that resonse was received after more than 3 seconds
+				g.Expect(time.Since(start)).To(BeNumerically(">", 3*time.Second))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
@@ -670,7 +1043,7 @@ mesh: simple-gateway
 spec:
   selectors:
   - match:
-      kuma.io/service: simple-gateway
+      kuma.io/service: simple-gateway_simple-gateway_svc
   conf:
     http:
       rules:
