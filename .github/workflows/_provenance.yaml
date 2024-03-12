@@ -18,4 +18,5 @@ jobs:
       base64-subjects: ${{ inputs.binary_artifacts_hashes_as_file }}
       upload-assets: ${{ github.ref_type == 'tag' }}
       upload-tag-name: ${{ github.ref_name }}
+      provenance-name: ${{ github.event.repository.name }}.intoto.jsonl
       continue-on-error: true
