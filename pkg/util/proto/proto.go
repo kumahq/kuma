@@ -46,7 +46,7 @@ func ToJSON(pb proto.Message) ([]byte, error) {
 func ToJSONIndent(pb proto.Message, indent string) ([]byte, error) {
 	var buf bytes.Buffer
 	marshaler := &jsonpb.Marshaler{
-		Indent: indent,
+		Indent:   indent,
 		OrigName: true,
 	}
 	if err := marshaler.Marshal(&buf, protov1.MessageV1(pb)); err != nil {
