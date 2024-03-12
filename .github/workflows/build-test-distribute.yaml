@@ -18,6 +18,8 @@ jobs:
   check:
     permissions:
       contents: read
+      # golangci-lint-action
+      checks: write
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
