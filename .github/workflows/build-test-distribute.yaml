@@ -27,9 +27,11 @@ jobs:
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -79,6 +81,7 @@ jobs:
       id-token: write
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
@@ -88,6 +91,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["build_publish"]
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     uses: ./.github/workflows/_provenance.yaml
     permissions:
       contents: write
