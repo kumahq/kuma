@@ -1,4 +1,7 @@
 #/meshes/default/meshtrafficpermissions/foo/_resources/dataplanes?name=dp-&offset=1&size=1 200
+type: Mesh
+name: default
+---
 type: MeshTrafficPermission
 name: foo
 mesh: default

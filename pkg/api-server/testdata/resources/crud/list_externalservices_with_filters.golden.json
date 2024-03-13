@@ -1,0 +1,32 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "ExternalService",
+   "mesh": "default",
+   "name": "es-1",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "networking": {
+    "address": "httpbin.org:443"
+   },
+   "tags": {
+    "kuma.io/service": "my-svc"
+   }
+  },
+  {
+   "type": "ExternalService",
+   "mesh": "default",
+   "name": "es-2",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "networking": {
+    "address": "httpbin.org:443"
+   },
+   "tags": {
+    "kuma.io/service": "my-svc"
+   }
+  }
+ ],
+ "next": null
+}

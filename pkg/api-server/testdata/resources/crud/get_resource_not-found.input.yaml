@@ -1,0 +1,15 @@
+#/meshes/default/meshtrafficpermissions/mtp-2 404
+type: Mesh
+name: default
+---
+type: MeshTrafficPermission
+name: mtp-1
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
