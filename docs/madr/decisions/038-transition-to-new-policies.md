@@ -428,7 +428,7 @@ type: MeshProxyPatch
 mesh: default
 name: custom-template-1
 labels:
-  kuma.io/dryrun: yesplease
+  kuma.io/effect: shadow
 spec:
   targetRef:
     kind: MeshService
