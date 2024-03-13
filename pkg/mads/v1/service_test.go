@@ -415,6 +415,8 @@ var _ = Describe("MADS http service", func() {
 
 			// and given the same version
 			discoveryReq.VersionInfo = discoveryRes.VersionInfo
+			// simulate restarted prometheus
+			discoveryReq.Node.Id = "new-prome"
 			reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 
