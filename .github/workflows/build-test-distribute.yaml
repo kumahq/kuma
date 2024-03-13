@@ -9,8 +9,10 @@ concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 permissions:
-  contents: read
-  id-token: write
+  contents: write # To upload assets
+  id-token: write # For using token to sign images
+  actions: read # For getting workflow run info to build provenance
+  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
@@ -67,7 +69,6 @@ jobs:
     permissions:
       contents: read
     needs: ["check"]
-    if: ${{ ! contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
@@ -85,8 +86,18 @@ jobs:
       BINARY_ARTIFACT_NAME: "binary_artifacts"
       IMAGES: ${{ needs.check.outputs.IMAGES }}
     secrets: inherit
+  provenance:
+    needs: ["build_publish"]
+    uses: ./.github/workflows/_provenance.yaml
+    permissions:
+      contents: write
+      id-token: write # For using token to sign images
+      actions: read # For getting workflow run info to build provenance
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+    with:
+      binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
   distributions:
-    needs: ["build_publish", "check", "test"]
+    needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
