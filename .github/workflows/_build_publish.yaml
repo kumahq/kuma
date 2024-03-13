@@ -20,7 +20,7 @@ on:
       IMAGE_MANIFESTS:
         value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
       BINARY_ARTIFACT_DIGEST_BASE64:
-        value: ${{ jobs.build.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+        value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
 permissions:
   contents: read
   id-token: write # Required for image signing
@@ -65,6 +65,8 @@ jobs:
       - id: inspect-binary-output
         run: |
           for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+          echo "Artifact digest:"
+          cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
       - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         id: binary-artifacts
