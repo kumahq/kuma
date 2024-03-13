@@ -3,7 +3,9 @@
 
 package apis
 
-var DefaultEnabled = []string{}
+var DefaultEnabled = []string{
+	"meshservices",
+}
 
 func Default() *Config {
 	return &Config{

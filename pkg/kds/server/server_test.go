@@ -63,7 +63,7 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 		// Do not forget to update this test after updating protobuf `KumaKdsOptions`.
 		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
-			To(HaveLen(40)) // old policies plus plugins
+			To(HaveLen(41)) // old policies plus plugins
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.
