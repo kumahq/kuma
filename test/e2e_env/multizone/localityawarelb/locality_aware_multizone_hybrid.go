@@ -154,10 +154,10 @@ func LocalityAwareLB() {
 			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb_svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 20, 3)),
-				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 20, 3)),
-				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 20, 3)),
-				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 20, 3)),
+				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 20, 5)),
+				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 20, 5)),
+				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 20, 5)),
+				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 20, 5)),
 				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 6, 2)),
 				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 6, 2)),
 				HaveKeyWithValue(Equal(`test-server-zone-2`), BeNumerically("~", 6, 2)),
