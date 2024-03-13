@@ -7,29 +7,29 @@
           "id": "default.backend-1",
           "cluster": "backend",
           "metadata": {
-              "dataplane.admin.port": "6606",
-              "dataplane.dns.empty.port": "15055",
-              "dataplane.dns.port": "15054",
-              "dataplane.proxyType": "dataplane",
-              "dataplane.resource": "{\"type\":\"Dataplane\",\"mesh\":\"default\",\"name\":\"backend-1\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\",\"networking\":{\"address\":\"127.0.0.1\",\"inbound\":[{\"port\":10010,\"servicePort\":10011,\"tags\":{\"kuma.io/protocol\":\"tcp\",\"kuma.io/region\":\"reg1\",\"kuma.io/service\":\"backend\",\"kuma.io/sub-zone\":\"subzone1\",\"version\":\"1\"}}],\"outbound\":[{\"port\":10006,\"tags\":{\"kuma.io/service\":\"gateway\"}}],\"admin\":{\"port\":6606}}}",
-              "dynamicMetadata": {
-                    "version.dependencies.coredns": "1.8.3"
-                  },
-              "version": {
-                    "dependencies": {
-                        },
-                    "envoy": {
-                          "build": "68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL",
-                          "version": "1.19.0"
-                        },
-                    "kumaDp": {
-                          "buildDate": "2022-02-03T17:18:11Z",
-                          "gitCommit": "9fd12f2f3adbb13dc8a724e4bd76ea149faf6c0c",
-                          "gitTag": "1.4.0-rc1-265-g9fd12f2f3",
-                          "version": "dev-9fd12f2f3"
-                        }
-                  }
+            "dataplane.proxyType": "dataplane",
+            "version": {
+              "envoy": {
+                "version": "1.19.0",
+                "build": "68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL"
+              },
+              "dependencies": {},
+              "kumaDp": {
+                "version": "dev-9fd12f2f3",
+                "buildDate": "2022-02-03T17:18:11Z",
+                "gitTag": "1.4.0-rc1-265-g9fd12f2f3",
+                "gitCommit": "9fd12f2f3adbb13dc8a724e4bd76ea149faf6c0c"
+              }
             },
+            "dataplane.dns.port": "15054",
+            "dynamicMetadata": {
+              "version.dependencies.coredns": "1.8.3"
+            },
+            "dataplane.dns.empty.port": "15055",
+            "dataplane.admin.port": "6606",
+            "dataplane.resource": "{\"type\":\"Dataplane\",\"mesh\":\"default\",\"name\":\"backend-1\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\",\"networking\":{\"address\":\"127.0.0.1\",\"inbound\":[{\"port\":10010,\"servicePort\":10011,\"tags\":{\"kuma.io/protocol\":\"tcp\",\"kuma.io/region\":\"reg1\",\"kuma.io/service\":\"backend\",\"kuma.io/sub-zone\":\"subzone1\",\"version\":\"1\"}}],\"outbound\":[{\"port\":10006,\"tags\":{\"kuma.io/service\":\"gateway\"}}],\"admin\":{\"port\":6606}}}"
+          },
+          "hidden_envoy_deprecated_build_version": "68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL",
           "user_agent_name": "envoy",
           "user_agent_build_version": {
             "version": {
@@ -37,11 +37,11 @@
               "minor_number": 19
             },
             "metadata": {
-                "build.type": "RELEASE",
-                "revision.sha": "68fe53a889416fd8570506232052b06f5a531541",
-                "revision.status": "Modified",
-                "ssl.version": "BoringSSL"
-              }
+              "build.type": "RELEASE",
+              "revision.sha": "68fe53a889416fd8570506232052b06f5a531541",
+              "revision.status": "Modified",
+              "ssl.version": "BoringSSL"
+            }
           },
           "extensions": [
             {
@@ -948,6 +948,14 @@
               "name": "access_log_sink",
               "type": "STATIC",
               "connect_timeout": "1s",
+              "http2_protocol_options": {},
+              "upstream_connection_options": {
+                "tcp_keepalive": {
+                  "keepalive_probes": 3,
+                  "keepalive_time": 10,
+                  "keepalive_interval": 10
+                }
+              },
               "load_assignment": {
                 "cluster_name": "access_log_sink",
                 "endpoints": [
@@ -965,44 +973,13 @@
                     ]
                   }
                 ]
-              },
-              "http2_protocol_options": {
-
-              },
-              "upstream_connection_options": {
-                "tcp_keepalive": {
-                  "keepalive_probes": 3,
-                  "keepalive_time": 10,
-                  "keepalive_interval": 10
-                }
               }
             },
             {
               "name": "ads_cluster",
               "type": "STRICT_DNS",
               "connect_timeout": "1s",
-              "load_assignment": {
-                "cluster_name": "ads_cluster",
-                "endpoints": [
-                  {
-                    "lb_endpoints": [
-                      {
-                        "endpoint": {
-                          "address": {
-                            "socket_address": {
-                              "address": "localhost",
-                              "port_value": 5678
-                            }
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              "http2_protocol_options": {
-
-              },
+              "http2_protocol_options": {},
               "transport_socket": {
                 "name": "envoy.transport_sockets.tls",
                 "typed_config": {
@@ -1024,6 +1001,25 @@
                   "keepalive_time": 10,
                   "keepalive_interval": 10
                 }
+              },
+              "load_assignment": {
+                "cluster_name": "ads_cluster",
+                "endpoints": [
+                  {
+                    "lb_endpoints": [
+                      {
+                        "endpoint": {
+                          "address": {
+                            "socket_address": {
+                              "address": "localhost",
+                              "port_value": 5678
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             }
           ],
@@ -1045,20 +1041,15 @@
         },
         "dynamic_resources": {
           "lds_config": {
-            "ads": {
-
-            },
+            "ads": {},
             "resource_api_version": "V3"
           },
           "cds_config": {
-            "ads": {
-
-            },
+            "ads": {},
             "resource_api_version": "V3"
           },
           "ads_config": {
             "api_type": "GRPC",
-            "transport_api_version": "V3",
             "grpc_services": [
               {
                 "envoy_grpc": {
@@ -1072,26 +1063,18 @@
                 ]
               }
             ],
-            "set_node_on_first_message_only": true
+            "set_node_on_first_message_only": true,
+            "transport_api_version": "V3"
           }
         },
-        "hds_config": {
-          "api_type": "GRPC",
-          "transport_api_version": "V3",
-          "grpc_services": [
-            {
-              "envoy_grpc": {
-                "cluster_name": "ads_cluster"
-              },
-              "initial_metadata": [
-                {
-                  "key": "authorization",
-                  "value": "[redacted]"
-                }
-              ]
+        "admin": {
+          "access_log_path": "/dev/null",
+          "address": {
+            "socket_address": {
+              "address": "127.0.0.1",
+              "port_value": 6606
             }
-          ],
-          "set_node_on_first_message_only": true
+          }
         },
         "stats_config": {
           "stats_tags": [
@@ -1121,26 +1104,35 @@
             }
           ]
         },
+        "hds_config": {
+          "api_type": "GRPC",
+          "grpc_services": [
+            {
+              "envoy_grpc": {
+                "cluster_name": "ads_cluster"
+              },
+              "initial_metadata": [
+                {
+                  "key": "authorization",
+                  "value": "[redacted]"
+                }
+              ]
+            }
+          ],
+          "set_node_on_first_message_only": true,
+          "transport_api_version": "V3"
+        },
         "layered_runtime": {
           "layers": [
             {
               "name": "kuma",
               "static_layer": {
-                  "envoy.restart_features.use_apple_api_for_dns_lookups": false,
-                  "re2.max_program_size.error_level": "4294967295",
-                  "re2.max_program_size.warn_level": 1000
-                }
+                "re2.max_program_size.error_level": "4294967295",
+                "re2.max_program_size.warn_level": 1000,
+                "envoy.restart_features.use_apple_api_for_dns_lookups": false
+              }
             }
           ]
-        },
-        "admin": {
-          "access_log_path": "/dev/null",
-          "address": {
-            "socket_address": {
-              "address": "127.0.0.1",
-              "port_value": 6606
-            }
-          }
         }
       },
       "last_updated": "2022-02-03T17:48:08.328Z"
@@ -1155,6 +1147,14 @@
             "name": "access_log_sink",
             "type": "STATIC",
             "connect_timeout": "1s",
+            "http2_protocol_options": {},
+            "upstream_connection_options": {
+              "tcp_keepalive": {
+                "keepalive_probes": 3,
+                "keepalive_time": 10,
+                "keepalive_interval": 10
+              }
+            },
             "load_assignment": {
               "cluster_name": "access_log_sink",
               "endpoints": [
@@ -1172,16 +1172,6 @@
                   ]
                 }
               ]
-            },
-            "http2_protocol_options": {
-
-            },
-            "upstream_connection_options": {
-              "tcp_keepalive": {
-                "keepalive_probes": 3,
-                "keepalive_time": 10,
-                "keepalive_interval": 10
-              }
             }
           },
           "last_updated": "2022-02-03T17:48:08.373Z"
@@ -1192,28 +1182,7 @@
             "name": "ads_cluster",
             "type": "STRICT_DNS",
             "connect_timeout": "1s",
-            "load_assignment": {
-              "cluster_name": "ads_cluster",
-              "endpoints": [
-                {
-                  "lb_endpoints": [
-                    {
-                      "endpoint": {
-                        "address": {
-                          "socket_address": {
-                            "address": "localhost",
-                            "port_value": 5678
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            "http2_protocol_options": {
-
-            },
+            "http2_protocol_options": {},
             "transport_socket": {
               "name": "envoy.transport_sockets.tls",
               "typed_config": {
@@ -1235,6 +1204,25 @@
                 "keepalive_time": 10,
                 "keepalive_interval": 10
               }
+            },
+            "load_assignment": {
+              "cluster_name": "ads_cluster",
+              "endpoints": [
+                {
+                  "lb_endpoints": [
+                    {
+                      "endpoint": {
+                        "address": {
+                          "socket_address": {
+                            "address": "localhost",
+                            "port_value": 5678
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           },
           "last_updated": "2022-02-03T17:48:08.394Z"
@@ -1249,9 +1237,7 @@
             "type": "EDS",
             "eds_cluster_config": {
               "eds_config": {
-                "ads": {
-
-                },
+                "ads": {},
                 "resource_api_version": "V3"
               }
             },
@@ -1266,22 +1252,20 @@
                 }
               ]
             },
-            "typed_extension_protocol_options": {
-              "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
-                "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
-                "explicit_http_config": {
-                  "http2_protocol_options": {
-
-                  }
-                }
-              }
-            },
             "outlier_detection": {
               "enforcing_consecutive_5xx": 0,
               "enforcing_success_rate": 0,
               "enforcing_consecutive_gateway_failure": 0,
               "enforcing_consecutive_local_origin_failure": 0,
               "enforcing_failure_percentage": 0
+            },
+            "typed_extension_protocol_options": {
+              "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+                "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+                "explicit_http_config": {
+                  "http2_protocol_options": {}
+                }
+              }
             }
           },
           "last_updated": "2022-02-03T17:48:09.517Z"
@@ -1291,9 +1275,9 @@
           "cluster": {
             "@type": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
             "name": "kuma:envoy:admin",
-            "alt_stat_name": "kuma_envoy_admin",
             "type": "STATIC",
             "connect_timeout": "10s",
+            "alt_stat_name": "kuma_envoy_admin",
             "load_assignment": {
               "cluster_name": "kuma:envoy:admin",
               "endpoints": [
@@ -1321,9 +1305,9 @@
           "cluster": {
             "@type": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
             "name": "localhost:10011",
-            "alt_stat_name": "localhost_10011",
             "type": "STATIC",
             "connect_timeout": "10s",
+            "alt_stat_name": "localhost_10011",
             "load_assignment": {
               "cluster_name": "localhost:10011",
               "endpoints": [
@@ -1406,8 +1390,8 @@
                         "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                         "stat_prefix": "gateway",
                         "cluster": "gateway",
-                        "idle_timeout": "3600s",
-                        "max_connect_attempts": 5
+                        "max_connect_attempts": 5,
+                        "idle_timeout": "3600s"
                       }
                     }
                   ]

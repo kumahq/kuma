@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"time"
 
-	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -19,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	envoy_admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type EnvoyAdminClient interface {
@@ -148,16 +146,12 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 		return nil, err
 	}
 
-	cd := &envoy_admin_v3.ConfigDump{}
-	if err := util_proto.FromJSON(configDump, cd); err != nil {
+	var value []byte
+	if value, err = Sanitize(configDump); err != nil {
 		return nil, err
 	}
 
-	if err := Sanitize(cd); err != nil {
-		return nil, err
-	}
-
-	return util_proto.ToJSONIndent(cd, " ")
+	return value, nil
 }
 
 func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.ResourceWithAddress, path string) ([]byte, error) {

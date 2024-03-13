@@ -41,20 +41,6 @@ func ToJSON(pb proto.Message) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Method used exclusively for 'config_dump'; sets 'OrigName' to true, causing
-// the preservation of original proto names.
-func ToJSONIndent(pb proto.Message, indent string) ([]byte, error) {
-	var buf bytes.Buffer
-	marshaler := &jsonpb.Marshaler{
-		Indent:   indent,
-		OrigName: true,
-	}
-	if err := marshaler.Marshal(&buf, protov1.MessageV1(pb)); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
 func MustMarshalJSON(in proto.Message) []byte {
 	content, err := ToJSON(in)
 	if err != nil {
