@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var log = core.Log.WithName("tokens-validator")
@@ -19,14 +18,6 @@ func NewDataplaneTokenIssuer(resManager manager.ResourceManager) issuer.Dataplan
 			tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName),
 		)
 	})
-}
-
-func NewZoneIngressTokenIssuer(resManager manager.ResourceManager) zoneingress.TokenIssuer {
-	return zoneingress.NewTokenIssuer(
-		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
-		),
-	)
 }
 
 func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
@@ -63,17 +54,6 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 			storeType,
 		), nil
 	}), nil
-}
-
-func NewZoneIngressTokenValidator(resManager manager.ReadOnlyResourceManager, storeType store_config.StoreType) zoneingress.Validator {
-	return zoneingress.NewValidator(
-		tokens.NewValidator(
-			log.WithName("zone-ingress-token"),
-			[]tokens.SigningKeyAccessor{tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix)},
-			tokens.NewRevocations(resManager, zoneingress.ZoneIngressTokenRevocationsGlobalSecretKey),
-			storeType,
-		),
-	)
 }
 
 func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederatedZone bool, storeType store_config.StoreType, cfg dp_server.ZoneTokenValidatorConfig) (zone.Validator, error) {

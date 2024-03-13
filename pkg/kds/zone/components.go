@@ -25,7 +25,6 @@ import (
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var (
@@ -213,7 +212,6 @@ func Callbacks(
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
-						zoneingress.ZoneIngressSigningKeyPrefix,
 						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))

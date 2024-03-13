@@ -40,9 +40,6 @@ type DpServerConfig struct {
 	// Tokens e2e tests, which started flaking a lot after introducing explicit
 	// 1s timeout)
 	ReadHeaderTimeout config_types.Duration `json:"readHeaderTimeout" envconfig:"kuma_dp_server_read_header_timeout"`
-	// Auth defines an authentication configuration for the DP Server
-	// Deprecated: use "authn" section.
-	Auth DpServerAuthConfig `json:"auth"`
 	// Authn defines authentication configuration for the DP Server.
 	Authn DpServerAuthnConfig `json:"authn"`
 	// Hds defines a Health Discovery Service configuration
@@ -58,24 +55,6 @@ const (
 	DpServerAuthNone                = "none"
 )
 
-// Authentication configuration for Dataplane Server
-type DpServerAuthConfig struct {
-	config.BaseConfig
-
-	// Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
-	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
-	Type string `json:"type" envconfig:"kuma_dp_server_auth_type"`
-	// UseTokenPath define if should use config for ads with path to token that can be reloaded.
-	UseTokenPath bool `json:"useTokenPath" envconfig:"kuma_dp_server_auth_use_token_path"`
-}
-
-func (a *DpServerAuthConfig) Validate() error {
-	if a.Type != "" && a.Type != DpServerAuthNone && a.Type != DpServerAuthDpToken && a.Type != DpServerAuthServiceAccountToken {
-		return errors.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
-	}
-	return nil
-}
-
 func (a *DpServerConfig) PostProcess() error {
 	return multierr.Combine(a.Hds.PostProcess())
 }
@@ -84,9 +63,6 @@ func (a *DpServerConfig) Validate() error {
 	var errs error
 	if a.Port < 0 {
 		errs = multierr.Append(errs, errors.New(".Port cannot be negative"))
-	}
-	if err := a.Auth.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
 	}
 	if err := a.Authn.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is invalid"))
@@ -222,10 +198,6 @@ func (d DpTokenValidatorConfig) Validate() error {
 func DefaultDpServerConfig() *DpServerConfig {
 	return &DpServerConfig{
 		Port: 5678,
-		Auth: DpServerAuthConfig{
-			Type:         "", // autoconfigured from the environment
-			UseTokenPath: false,
-		},
 		Authn: DpServerAuthnConfig{
 			DpProxy: DpProxyAuthnConfig{
 				Type: "", // autoconfigured from the environment

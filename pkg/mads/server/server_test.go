@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/mads/server"
-	mads_v1_client "github.com/kumahq/kuma/pkg/mads/v1/client"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
@@ -93,24 +92,6 @@ var _ = Describe("MADS Server", func() {
 		close(stopCh)
 		err := <-errCh
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("should serve GRPC requests", func() {
-		client, err := mads_v1_client.New(fmt.Sprintf("grpc://127.0.0.1:%d", port))
-		Expect(err).ToNot(HaveOccurred())
-
-		var stream *mads_v1_client.Stream
-		Eventually(func() bool {
-			stream, err = client.StartStream()
-			return err == nil
-		}, "10s", "100ms").Should(BeTrue())
-
-		err = stream.RequestAssignments("client-1")
-		Expect(err).ToNot(HaveOccurred())
-
-		assignments, err := stream.WaitForAssignments()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(assignments).To(BeEmpty())
 	})
 
 	It("should serve HTTP/1.1 requests", func() {

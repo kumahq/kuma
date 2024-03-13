@@ -57,7 +57,6 @@ type RootRuntime struct {
 	NewZoneOverviewClient        func(util_http.Client) kumactl_resources.ZoneOverviewClient
 	NewServiceOverviewClient     func(util_http.Client) kumactl_resources.ServiceOverviewClient
 	NewDataplaneTokenClient      func(util_http.Client) tokens.DataplaneTokenClient
-	NewZoneIngressTokenClient    func(util_http.Client) tokens.ZoneIngressTokenClient
 	NewZoneTokenClient           func(util_http.Client) tokens.ZoneTokenClient
 	NewAPIServerClient           func(util_http.Client) kumactl_resources.ApiServerClient
 	NewKubernetesResourcesClient func(util_http.Client) client.KubernetesResourcesClient
@@ -113,7 +112,6 @@ func DefaultRootContext() *RootContext {
 			NewZoneOverviewClient:        kumactl_resources.NewZoneOverviewClient,
 			NewServiceOverviewClient:     kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
-			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
 			NewZoneTokenClient:           tokens.NewZoneTokenClient,
 			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
 			NewKubernetesResourcesClient: func(c util_http.Client) client.KubernetesResourcesClient {
@@ -310,14 +308,6 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		return nil, err
 	}
 	return rc.Runtime.NewDataplaneTokenClient(client), nil
-}
-
-func (rc *RootContext) CurrentZoneIngressTokenClient() (tokens.ZoneIngressTokenClient, error) {
-	client, err := rc.BaseAPIServerClient()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewZoneIngressTokenClient(client), nil
 }
 
 func (rc *RootContext) CurrentZoneTokenClient() (tokens.ZoneTokenClient, error) {

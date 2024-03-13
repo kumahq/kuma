@@ -290,9 +290,8 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 		builtin.TokenIssuers{
-			DataplaneToken:   builtin.NewDataplaneTokenIssuer(resManager),
-			ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(resManager),
-			ZoneToken:        builtin.NewZoneTokenIssuer(resManager),
+			DataplaneToken: builtin.NewDataplaneTokenIssuer(resManager),
+			ZoneToken:      builtin.NewZoneTokenIssuer(resManager),
 		},
 		func(*restful.WebService) error { return nil },
 		globalinsight.NewDefaultGlobalInsightService(t.store),

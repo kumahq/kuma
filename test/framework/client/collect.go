@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,14 +26,15 @@ import (
 )
 
 type CollectResponsesOpts struct {
-	numberOfRequests      int
-	maxConcurrentRequests int
-	maxTime               int
-	verbose               bool
-	cacert                string
-	URL                   string
-	Method                string
-	Headers               map[string]string
+	numberOfRequests            uint
+	maxConcurrentRequests       uint
+	maxConcurrentRequestDelayMs uint
+	maxTime                     uint
+	verbose                     bool
+	cacert                      string
+	URL                         string
+	Method                      string
+	Headers                     map[string]string
 
 	Flags        []string
 	ShellEscaped func(string) string
@@ -45,13 +47,14 @@ type CollectResponsesOpts struct {
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
 	return CollectResponsesOpts{
-		numberOfRequests:      10,
-		maxConcurrentRequests: 10,
-		maxTime:               5,
-		verbose:               false,
-		Method:                "GET",
-		Headers:               map[string]string{},
-		ShellEscaped:          utils.ShellEscape,
+		numberOfRequests:            10,
+		maxConcurrentRequests:       5,
+		maxConcurrentRequestDelayMs: 100,
+		maxTime:                     5,
+		verbose:                     false,
+		Method:                      "GET",
+		Headers:                     map[string]string{},
+		ShellEscaped:                utils.ShellEscape,
 		Flags: []string{
 			"--fail",
 		},
@@ -60,13 +63,13 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 
 type CollectResponsesOptsFn func(opts *CollectResponsesOpts)
 
-func WithNumberOfRequests(numberOfRequests int) CollectResponsesOptsFn {
+func WithNumberOfRequests(numberOfRequests uint) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.numberOfRequests = numberOfRequests
 	}
 }
 
-func WithMaxTime(seconds int) CollectResponsesOptsFn {
+func WithMaxTime(seconds uint) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.maxTime = seconds
 	}
@@ -84,9 +87,16 @@ func WithCACert(cacert string) CollectResponsesOptsFn {
 	}
 }
 
-func WithMaxConcurrentReqeusts(maxConcurrentRequests int) CollectResponsesOptsFn {
+func WithMaxConcurrentRequests(maxConcurrentRequests uint) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.maxConcurrentRequests = maxConcurrentRequests
+	}
+}
+
+// Number of milliseconds as an int
+func WithMaxConcurrentRequestDelayMs(maxConcurrentRequestDelayMs uint) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.maxConcurrentRequestDelayMs = maxConcurrentRequestDelayMs
 	}
 }
 
@@ -219,7 +229,7 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 		cmd = append(cmd, "--cacert", opts.cacert)
 	}
 
-	cmd = append(cmd, "--max-time", strconv.Itoa(opts.maxTime))
+	cmd = append(cmd, "--max-time", strconv.Itoa(int(opts.maxTime)))
 	cmd = append(cmd, opts.Flags...)
 	cmd = append(cmd, args...)
 
@@ -510,7 +520,7 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 }
 
 type result struct {
-	idx int
+	idx uint
 	res interface{}
 	err error
 }
@@ -523,7 +533,9 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 	defer cancel()
 	inJobs := make(chan result, opts.numberOfRequests)
 	results := make(chan result, opts.numberOfRequests)
-	for i := 0; i < opts.maxConcurrentRequests; i++ {
+	for i := uint(0); i < opts.maxConcurrentRequests; i++ {
+		// #nosec G404 - math rand is enough
+		delay := time.Duration(rand.Intn(int(opts.maxConcurrentRequestDelayMs))) * time.Millisecond
 		go func() {
 			for {
 				select {
@@ -532,6 +544,8 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 						return
 					}
 					res.res, res.err = call()
+					// delay between requests
+					time.Sleep(delay)
 					results <- res
 				case <-ctx.Done():
 					return
@@ -539,11 +553,11 @@ func callConcurrently(destination string, call func() (interface{}, error), fn .
 			}
 		}()
 	}
-	for i := 0; i < opts.numberOfRequests; i++ {
+	for i := uint(0); i < opts.numberOfRequests; i++ {
 		inJobs <- result{idx: i}
 	}
 	close(inJobs)
-	for i := 0; i < opts.numberOfRequests; i++ {
+	for i := uint(0); i < opts.numberOfRequests; i++ {
 		res := <-results
 		if res.err != nil {
 			framework.Logf("got error", "idx", res.idx, "err", res.err)

@@ -176,6 +176,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - meshservices
     verbs:
       - get
       - list
@@ -354,7 +355,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 156efbf2f5cd28ce50a274a587b09baf0b2c04e677d227b5c71f2ff693953678
+        checksum/tls-secrets: 78426437c5cfc1153b8cbb96647d3d8cb2c7e189a62b31a080c5bbe4b360dc25
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -579,6 +580,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshservices
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -631,6 +633,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshservices
   
       
     sideEffects: None
@@ -756,6 +759,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshservices
     
       
     sideEffects: None

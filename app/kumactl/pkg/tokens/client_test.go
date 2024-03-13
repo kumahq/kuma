@@ -37,7 +37,6 @@ var _ = Describe("Tokens Client", func() {
 		container.Add(tokens_server.NewWebservice(
 			"/tokens",
 			&staticTokenIssuer{},
-			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 			zone_access.NoopZoneTokenAccess{},

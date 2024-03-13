@@ -36,7 +36,6 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 		container.Add(tokens_server.NewWebservice(
 			"/tokens",
 			&staticTokenIssuer{},
-			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 			zone_access.NoopZoneTokenAccess{},

@@ -75,8 +75,8 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	core_plugins.InitAll(core_apis.NameToModule)
-	core_plugins.Init(cfg.Policies.PluginPoliciesEnabled, policies.NameToModule)
+	core_plugins.Init(cfg.CoreResources.Enabled, core_apis.NameToModule)
+	core_plugins.Init(cfg.Policies.Enabled, policies.NameToModule)
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
@@ -525,9 +525,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 }
 
 func initializeTokenIssuers(builder *core_runtime.Builder) {
-	issuers := builtin.TokenIssuers{
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-	}
+	issuers := builtin.TokenIssuers{}
 	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
 		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
 	} else {
