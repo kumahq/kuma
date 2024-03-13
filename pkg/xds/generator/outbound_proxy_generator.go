@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/maps"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -471,7 +472,7 @@ func buildOutboundsWithMultipleIPs(dataplane *core_mesh.DataplaneResource, outbo
 
 	tagsToOutbounds := map[string]OutboundWithMultipleIPs{}
 	for _, outbound := range outbounds {
-		tags := outbound.GetTags()
+		tags := maps.Clone(outbound.GetTags())
 		tags[mesh_proto.ServiceTag] = outbound.GetService()
 		tagsStr := mesh_proto.SingleValueTagSet(tags).String()
 		owmi := tagsToOutbounds[tagsStr]
@@ -488,7 +489,7 @@ func buildOutboundsWithMultipleIPs(dataplane *core_mesh.DataplaneResource, outbo
 
 	// return sorted outbounds for a stable XDS config
 	var result []OutboundWithMultipleIPs
-	for _, key := range maps.SortedKeys(tagsToOutbounds) {
+	for _, key := range util_maps.SortedKeys(tagsToOutbounds) {
 		result = append(result, tagsToOutbounds[key])
 	}
 	return result
