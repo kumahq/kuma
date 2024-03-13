@@ -48,6 +48,10 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 	if !knownClients[node.Id] {
 		node.Id = mads_reconcile.DefaultKumaClientId
 	}
+
+	if r.reconciler.NeedsReconciliation(node) {
+		return r.reconciler.Reconcile(ctx)
+	}
 	return nil
 }
 
