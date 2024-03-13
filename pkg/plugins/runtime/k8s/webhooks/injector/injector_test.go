@@ -691,7 +691,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("33. kuma.io/disable-ipv6", testCase{
+		Entry("33. kuma.io/transparent-proxying-ip-family-mode", testCase{
 			num: "33",
 			mesh: `
               apiVersion: kuma.io/v1alpha1

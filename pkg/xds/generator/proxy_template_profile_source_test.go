@@ -253,7 +253,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
-                ipFamilyMode: ipv4
+                ipFamilyMode: IPv4
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "2-envoy-config.golden.yaml",
@@ -331,7 +331,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
-                ipFamilyMode: ipv4
+                ipFamilyMode: IPv4
 `,
 			profile:  core_mesh.ProfileDefaultProxy,
 			expected: "4-envoy-config.golden.yaml",

@@ -110,7 +110,7 @@ func (p *PodConverter) dataplaneFor(
 
 		inboundPortV6, _, _ := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 		tpEnabledIPMode, ipModeExists := annotations.GetStringWithDefault(metadata.IpFamilyModeDualStack,
-			metadata.KumaTransparentProxyingEnabledIPFamilyMode)
+			metadata.KumaTransparentProxyingIPFamilyMode)
 		ipMode := mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
 		if ipModeExists {
 			switch tpEnabledIPMode {

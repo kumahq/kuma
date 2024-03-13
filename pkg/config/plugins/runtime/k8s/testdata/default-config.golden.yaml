@@ -33,6 +33,7 @@ injector:
     envVars: {}
     gid: 5678
     image: kuma/kuma-dp:latest
+    ipFamilyMode: dualstack
     livenessProbe:
       failureThreshold: 12
       initialDelaySeconds: 60

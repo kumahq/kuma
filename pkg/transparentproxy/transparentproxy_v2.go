@@ -137,7 +137,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 	}
 
 	var ipv6 bool
-	if tpConfig.RedirectIpFamilyMode == "ipv4" {
+	if tpConfig.IpFamilyMode == "ipv4" {
 		ipv6 = false
 		redirectInboundPortIPv6 = 0
 	} else {

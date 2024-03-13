@@ -17,7 +17,7 @@ type TransparentProxyConfig struct {
 	RedirectInBound           bool
 	RedirectPortInBound       string
 	RedirectPortInBoundV6     string
-	RedirectIpFamilyMode      string
+	IpFamilyMode              string
 	ExcludeInboundPorts       string
 	ExcludeOutboundPorts      string
 	ExcludedOutboundsForUIDs  []string

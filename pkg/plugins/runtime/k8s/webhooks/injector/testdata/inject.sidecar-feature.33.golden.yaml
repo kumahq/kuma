@@ -10,9 +10,9 @@ metadata:
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-ip-family-mode: dualstack
+    kuma.io/transparent-proxying-ip-family-mode: ipv4
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: disabled
+    kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
@@ -21,31 +21,20 @@ metadata:
 spec:
   containers:
   - image: busybox
-    livenessProbe:
-      httpGet:
-        path: /metrics
-        port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
     name: busybox
-    readinessProbe:
-      httpGet:
-        path: /metrics
-        port: 3001
-      initialDelaySeconds: 3
-      periodSeconds: 3
     resources: {}
-    startupProbe:
-      httpGet:
-        path: /ready
-        port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
   initContainers:
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   - args:
     - --redirect-outbound-port
     - "15001"
@@ -60,7 +49,7 @@ spec:
     - ""
     - --verbose
     - --ip-family-mode
-    - dualstack
+    - ipv4
     command:
     - /usr/bin/kumactl
     - install

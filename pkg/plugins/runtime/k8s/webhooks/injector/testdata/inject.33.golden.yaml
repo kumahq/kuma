@@ -3,7 +3,6 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
-    kuma.io/disable-ipv6: "true"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -11,6 +10,7 @@ metadata:
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-ip-family-mode: ipv4
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -140,7 +140,8 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
-    - --disable-ipv6
+    - --ip-family-mode
+    - ipv4
     command:
     - /usr/bin/kumactl
     - install

@@ -15,6 +15,7 @@ metadata:
     kuma.io/transparent-proxying-ebpf-programs-source-path: /kuma/ebpf
     kuma.io/transparent-proxying-ebpf-tc-attach-iface: eth0
     kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -130,6 +131,8 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     - --ebpf-enabled
     - --ebpf-instance-ip
     - $(INSTANCE_IP)

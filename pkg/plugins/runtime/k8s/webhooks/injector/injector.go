@@ -511,16 +511,15 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
 
-	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
-		i.cfg.SidecarContainer.RedirectEnabledIpFamilyMode = metadata.IpFamilyModeIPv4
-	}
-	annotations[metadata.KumaTransparentProxyingEnabledIPFamilyMode] = i.cfg.SidecarContainer.RedirectEnabledIpFamilyMode
 	defaultTPCfg := tp_cfg.DefaultConfig()
-	if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
+	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
+		i.cfg.SidecarContainer.IpFamilyMode = metadata.IpFamilyModeIPv4
+	} else if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
 		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&
 		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.Port) {
 		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
 	}
+	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
 
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
