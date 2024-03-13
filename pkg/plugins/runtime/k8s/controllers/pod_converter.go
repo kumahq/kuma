@@ -3,9 +3,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"regexp"
+
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
-	"regexp"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
