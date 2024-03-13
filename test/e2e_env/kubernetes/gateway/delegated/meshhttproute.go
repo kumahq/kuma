@@ -79,7 +79,7 @@ spec:
                 weight: 50
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 
-			// then receive responses from 'test-server_meshhttproute_svc_80'
+			// then receive responses from 'test-server_delegated-gateway_svc_80'
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(
 					kubernetes.Cluster,

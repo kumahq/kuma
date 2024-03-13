@@ -29,12 +29,57 @@ type Conf struct {
 type Sidecar struct {
 	// Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
 	Regex *string `json:"regex,omitempty"`
+	// Profiles allows to customize which metrics are published.
+	Profiles *Profiles `json:"profiles,omitempty"`
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
 	// least once). If true will scrape all metrics (even the ones with zeros).
 	// +kubebuilder:default=false
 	IncludeUnused *bool `json:"includeUnused,omitempty"`
 }
+
+type Profiles struct {
+	// AppendProfiles allows to combine the metrics from multiple predefined profiles.
+	// Currently, it's only possible to define one profile.
+	// +kubebuilder:validation:MaxItems=1
+	AppendProfiles *[]Profile `json:"appendProfiles,omitempty"`
+	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
+	// Exclude is subordinate to Include.
+	Exclude *[]Selector `json:"exclude,omitempty"`
+	// Include makes it possible to include additional metrics in a selected profiles.
+	// Include takes precedence over Exclude.
+	Include *[]Selector `json:"include,omitempty"`
+}
+
+type Profile struct {
+	// Name of the predefined profile, one of: all, basic, none
+	Name ProfileName `json:"name"`
+}
+
+// +kubebuilder:validation:Enum=All;Basic;None
+type ProfileName string
+
+const (
+	AllProfileName   ProfileName = "All"
+	BasicProfileName ProfileName = "Basic"
+	NoneProfileName  ProfileName = "None"
+)
+
+type Selector struct {
+	// Type defined the type of selector, one of: prefix, regex, exact
+	Type SelectorType `json:"type"`
+	// Match is the value used to match using particular Type
+	Match string `json:"match"`
+}
+
+// +kubebuilder:validation:Enum=Prefix;Regex;Exact
+type SelectorType string
+
+const (
+	PrefixSelectorType SelectorType = "Prefix"
+	RegexSelectorType  SelectorType = "Regex"
+	ExactSelectorType  SelectorType = "Exact"
+)
 
 type Application struct {
 	// Name of the application to scrape
