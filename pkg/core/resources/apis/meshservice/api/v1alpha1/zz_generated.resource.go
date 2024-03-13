@@ -135,7 +135,7 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsExperimental:      false,
 	SingularDisplayName: "Mesh Service",
 	PluralDisplayName:   "Mesh Services",
-	IsPluginOriginated:  false,
+	IsPluginOriginated:  true,
 	IsTargetRefBased:    false,
 	HasToTargetRef:      false,
 	HasFromTargetRef:    false,
