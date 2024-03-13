@@ -1,6 +1,7 @@
 package cni
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -25,7 +26,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
 	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
 	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
-	"ipFamilyMode":                {"kuma.io/transparent-proxying-ip-family-mode", defaultIPFamilyMode, validateBool},
+	"ipFamilyMode":                {"kuma.io/transparent-proxying-ip-family-mode", defaultIPFamilyMode, validateIpFamilyMode},
 	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
 	"builtinDNS":                  {"kuma.io/builtin-dns", "false", alwaysValidFunc},
@@ -97,18 +98,18 @@ func validatePortList(ports string) error {
 	return nil
 }
 
-func validateBool(val string) error {
+func validateIpFamilyMode(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
 	}
 
-	validValues := []string{"yes", "no", "true", "false"}
+	validValues := []string{"dualstack", "ipv4", "ipv6"}
 	for _, valid := range validValues {
 		if valid == val {
 			return nil
 		}
 	}
-	return errors.New("value is not valid")
+	return errors.New(fmt.Sprintf("value '%s' is not a valid IP family mode", val))
 }
 
 func getAnnotationOrDefault(name string, annotations map[string]string) (string, error) {

@@ -172,7 +172,7 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	}
 
 	result = append(result, "--ip-family-mode", pr.IpFamilyMode)
-	if pr.IpFamilyMode == metadata.IpFamilyModeDualStack &&
+	if pr.IpFamilyMode != metadata.IpFamilyModeIPv4 &&
 		pr.RedirectPortInboundV6 > 0 &&
 		pr.RedirectPortInboundV6 != pr.RedirectPortInbound {
 		result = append(result,
