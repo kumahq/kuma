@@ -5,13 +5,19 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+=======
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
+>>>>>>> b839cadb8 (fix(kuma-cp): clone outbound tags (#9592))
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -438,3 +444,49 @@ func (OutboundProxyGenerator) determineRoutes(
 
 	return routes
 }
+<<<<<<< HEAD
+=======
+
+type OutboundWithMultipleIPs struct {
+	Tags      map[string]string
+	Addresses []mesh_proto.OutboundInterface
+}
+
+func (o OutboundWithMultipleIPs) AdditionalAddresses() []mesh_proto.OutboundInterface {
+	if len(o.Addresses) > 1 {
+		return o.Addresses[1:]
+	}
+	return nil
+}
+
+func buildOutboundsWithMultipleIPs(dataplane *core_mesh.DataplaneResource, outbounds []*mesh_proto.Dataplane_Networking_Outbound, meshVIPDomains []model.VIPDomains) []OutboundWithMultipleIPs {
+	kumaVIPs := map[string]bool{}
+	for _, vipDomain := range meshVIPDomains {
+		kumaVIPs[vipDomain.Address] = true
+	}
+
+	tagsToOutbounds := map[string]OutboundWithMultipleIPs{}
+	for _, outbound := range outbounds {
+		tags := maps.Clone(outbound.GetTags())
+		tags[mesh_proto.ServiceTag] = outbound.GetService()
+		tagsStr := mesh_proto.SingleValueTagSet(tags).String()
+		owmi := tagsToOutbounds[tagsStr]
+		owmi.Tags = tags
+		address := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+		// add Kuma VIPs down the list, so if there is a non Kuma VIP (i.e. Kube Cluster IP), it goes as primary address.
+		if kumaVIPs[address.DataplaneIP] {
+			owmi.Addresses = append(owmi.Addresses, address)
+		} else {
+			owmi.Addresses = append([]mesh_proto.OutboundInterface{address}, owmi.Addresses...)
+		}
+		tagsToOutbounds[tagsStr] = owmi
+	}
+
+	// return sorted outbounds for a stable XDS config
+	var result []OutboundWithMultipleIPs
+	for _, key := range util_maps.SortedKeys(tagsToOutbounds) {
+		result = append(result, tagsToOutbounds[key])
+	}
+	return result
+}
+>>>>>>> b839cadb8 (fix(kuma-cp): clone outbound tags (#9592))
