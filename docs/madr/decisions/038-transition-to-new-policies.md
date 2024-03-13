@@ -5,7 +5,7 @@
 ## Context and Problem Statement
 
 The current state of the policies as of Kuma 2.6.x:
-* new policies are in GA, they're a recommended way to configure new deployments in Kuma
+* new policies are in GA, they're the recommended way to configure new deployments in Kuma
 * old policies are not deprecated, they're still in use by majority of Kuma users
 
 The goal is to provide a way to transition from old policies to new policies. Having a smooth transition is going to enable 
