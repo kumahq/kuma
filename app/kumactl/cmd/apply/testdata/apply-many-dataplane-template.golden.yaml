@@ -1,8 +1,8 @@
-creationTime: "0001-01-01T00:00:00Z"
+type: Dataplane
 mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
 name: sample
-type: Dataplane
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 networking:
   address: 2.2.2.2
   inbound:
@@ -10,11 +10,11 @@ networking:
     tags:
       kuma.io/service: web
 ---
-creationTime: "0001-01-01T00:00:00Z"
+type: Dataplane
 mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
 name: sample-2
-type: Dataplane
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 networking:
   address: 2.2.2.2
   inbound:
@@ -22,11 +22,11 @@ networking:
     tags:
       kuma.io/service: web
 ---
-creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: sample-3
 type: Dataplane
+mesh: default
+name: sample-3
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 networking:
   address: 2.2.2.2
   inbound:
