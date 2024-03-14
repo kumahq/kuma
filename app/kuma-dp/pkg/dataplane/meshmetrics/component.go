@@ -34,6 +34,7 @@ type ConfigFetcher struct {
 	envoyAdminPort        uint32
 	openTelemetryProducer *metrics.AggregatedProducer
 	runningBackends       map[string]*runningBackend
+	drainTime             time.Duration
 }
 
 const unixDomainSocket = "unix"
@@ -42,7 +43,7 @@ var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string) component.Component {
+func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) component.Component {
 	return &ConfigFetcher{
 		httpClient: http.Client{
 			Timeout: 5 * time.Second,
@@ -60,6 +61,7 @@ func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker
 		envoyAdminAddress:     envoyAdminAddress,
 		envoyAdminPort:        envoyAdminPort,
 		runningBackends:       map[string]*runningBackend{},
+		drainTime:             drainTime,
 	}
 }
 
@@ -69,6 +71,12 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	)
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-stop:
+			ctxCancel()
+		}
+	}()
 
 	for {
 		select {
@@ -92,8 +100,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			}
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
-			cf.shutDownMetricsExporters(ctx)
-			ctxCancel()
+			cf.shutDownMetricsExporters()
 			return nil
 		}
 	}
@@ -289,7 +296,9 @@ func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backend
 	return nil
 }
 
-func (cf *ConfigFetcher) shutDownMetricsExporters(ctx context.Context) {
+func (cf *ConfigFetcher) shutDownMetricsExporters() {
+	ctx, cancel := context.WithTimeout(context.Background(), cf.drainTime)
+	defer cancel()
 	for _, exporter := range cf.runningBackends {
 		err := exporter.exporter.Shutdown(ctx)
 		if err != nil {
