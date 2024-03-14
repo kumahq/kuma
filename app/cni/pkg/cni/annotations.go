@@ -13,7 +13,8 @@ const (
 	defaultOutboundPort        = "15001"
 	defaultInboundPort         = "15006"
 	defaultInboundPortV6       = "15010"
-	defaultIPFamilyMode        = "dualstack"
+	zeroInboundPortV6          = "0"
+	defaultIPFamilyMode        = "unspecified"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
 	defaultRedirectExcludePort = defaultProxyStatusPort
@@ -167,11 +168,21 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 }
 
 func assignIPv6InboundRedirectPort(allFields map[string]*string) {
-	fieldPointer := allFields["inboundPortV6"]
-	ipFamilyModeAnno := *allFields["ipFamilyMode"]
-	if ipFamilyModeAnno == "ipv4" {
-		*fieldPointer = "0"
-	} else if *fieldPointer == defaultInboundPortV6 {
-		*fieldPointer = *allFields["inboundPort"]
+	v6PortFieldPointer := allFields["inboundPortV6"]
+	ipFamilyModeAnno := allFields["ipFamilyMode"]
+
+	if *ipFamilyModeAnno == defaultIPFamilyMode {
+		defaultIpMode := "dualstack"
+		// an existing pod can disable ipv6 by setting inboundPortV6 to 0, and they don't have ipFamilyMode set
+		if *v6PortFieldPointer == zeroInboundPortV6 {
+			defaultIpMode = "ipv4"
+		}
+		*ipFamilyModeAnno = defaultIpMode
+	}
+
+	if *ipFamilyModeAnno == "ipv4" {
+		*v6PortFieldPointer = "0"
+	} else if *v6PortFieldPointer == defaultInboundPortV6 {
+		*v6PortFieldPointer = *allFields["inboundPort"]
 	}
 }

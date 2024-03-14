@@ -283,12 +283,14 @@
                 },
                 "ip_family_mode": {
                     "enum": [
-                        "DualStack",
+                        "UnSpecified",
                         0,
-                        "IPv4",
+                        "DualStack",
                         1,
+                        "IPv4",
+                        2,
                         "IPv6",
-                        2
+                        3
                     ],
                     "oneOf": [
                         {

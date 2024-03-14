@@ -87,6 +87,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
 							},
@@ -116,6 +117,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
 							},
@@ -205,9 +207,9 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_IPv4,
 								RedirectPortOutbound: 15001,
 								RedirectPortInbound:  15006,
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_IPv4,
 								// this value here is actually invalid, it should be always 0 when IpFamilyMode is ipv4
 								// we will assert this value should be ignored even it's set in this case
 								RedirectPortInboundV6: 15066,
@@ -232,7 +234,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 
 	Describe("TransparentProxyGenerator GetIPv6InboundRedirectPort", func() {
 		It("should use ipv4 redirect port for ipv6", func() {
-			p := createDataplaneProxy(15006, 0, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
+			p := createDataplaneProxy(0, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -240,7 +242,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		})
 
 		It("should use user customized ipv6 redirect port when ipv6 not disabled", func() {
-			p := createDataplaneProxy(15006, 15088, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
+			p := createDataplaneProxy(15088, mesh_proto.Dataplane_Networking_TransparentProxying_DualStack)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -248,7 +250,15 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		})
 
 		It("should get ipv6 redirect port as 0 when ipv6 disabled", func() {
-			p := createDataplaneProxy(15006, 15088, mesh_proto.Dataplane_Networking_TransparentProxying_IPv4)
+			p := createDataplaneProxy(15088, mesh_proto.Dataplane_Networking_TransparentProxying_IPv4)
+
+			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
+
+			Expect(ipv6RedirectPort).To(Equal(uint32(0)))
+		})
+
+		It("should get ipv6 redirect port as 0 when ipv6 disabled with unspecified ipFamilyMode", func() {
+			p := createDataplaneProxy(0, mesh_proto.Dataplane_Networking_TransparentProxying_UnSpecified)
 
 			ipv6RedirectPort := generator.GetIPv6InboundRedirectPort(p)
 
@@ -257,7 +267,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 	})
 })
 
-func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPort uint32, ipFamilyMode mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode) *model.Proxy {
+func createDataplaneProxy(ipv6InboundRedirectPort uint32, ipFamilyMode mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode) *model.Proxy {
 	return &model.Proxy{
 		Id: *model.BuildProxyId("", "sidecar"),
 		Dataplane: &core_mesh.DataplaneResource{
@@ -268,7 +278,7 @@ func createDataplaneProxy(ipv4InboundRedirectPort uint32, ipv6InboundRedirectPor
 				Networking: &mesh_proto.Dataplane_Networking{
 					TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 						RedirectPortOutbound:  15001,
-						RedirectPortInbound:   ipv4InboundRedirectPort,
+						RedirectPortInbound:   15006,
 						RedirectPortInboundV6: ipv6InboundRedirectPort,
 						IpFamilyMode:          ipFamilyMode,
 					},

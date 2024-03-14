@@ -144,23 +144,25 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 }
 
 func GetIPv6InboundRedirectPort(proxy *model.Proxy) uint32 {
-	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
 	ipFamilyMode := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpFamilyMode()
-	if ipFamilyMode == mesh_proto.Dataplane_Networking_TransparentProxying_IPv4 {
-		return 0
-	}
-
-	// here when a redirectPortInboundV6 is zero and 'IpFamilyMode == DualStack' simply means this value is not set anywhere
-	// because if redirectPortInboundV6 is set to zero by user, the field IpFamilyMode will also be set to IPv4 by a pre-processing rule at injector.go
+	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
 	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
-	if redirectPortInboundV6 == 0 {
+
+	switch ipFamilyMode {
+	case mesh_proto.Dataplane_Networking_TransparentProxying_IPv4:
+		return 0
+	case mesh_proto.Dataplane_Networking_TransparentProxying_UnSpecified:
+		// an existing data plane can have UnSpecified ipFamilyMode
+		if redirectPortInboundV6 == 0 {
+			return redirectPortInboundV6
+		}
+		fallthrough
+	default:
+		// we only support this customization when explicitly set by user
+		// this is for backward compatibility until the deprecation period ends
+		if redirectPortInboundV6 > 0 && redirectPortInboundV6 != defaultInboundPortV6 && redirectPortInboundV6 != redirectPortInbound {
+			return redirectPortInboundV6
+		}
 		return redirectPortInbound
 	}
-
-	// we only support this customization when explicitly set by user, this is for backward compatibility until the deprecation period ends
-	if redirectPortInboundV6 != defaultInboundPortV6 && redirectPortInboundV6 != redirectPortInbound {
-		return redirectPortInboundV6
-	}
-
-	return redirectPortInbound
 }

@@ -199,7 +199,14 @@ func (d *DataplaneResource) IsUsingTransparentProxy() bool {
 	isUsingTransparentProxy := tproxy.RedirectPortInbound != 0 && tproxy.RedirectPortOutbound != 0
 
 	if d.IsIPv6() {
-		isUsingTransparentProxy = tproxy.RedirectPortInboundV6 != 0
+		// for data planes created earlier than when `IpFamilyMode` is added,
+		// we use the presence of `RedirectPortInboundV6` to determine
+		if tproxy.GetIpFamilyMode() == mesh_proto.Dataplane_Networking_TransparentProxying_UnSpecified {
+			isUsingTransparentProxy = tproxy.RedirectPortInboundV6 != 0
+		} else {
+			isUsingTransparentProxy = isUsingTransparentProxy &&
+				tproxy.GetIpFamilyMode() != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+		}
 	}
 
 	return isUsingTransparentProxy

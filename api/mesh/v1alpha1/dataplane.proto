@@ -221,12 +221,14 @@ message Dataplane {
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
       enum IpFamilyMode {
+        // This value is to support backward compatibility and should not be used in new data plane objects.
+        UnSpecified = 0;
         // Enables transparent proxying for both IPv4 and IPv6 traffic, This is the default.
-        DualStack = 0;
+        DualStack = 1;
         // Enables transparent proxying for IPv4 traffic only.
-        IPv4 = 1;
+        IPv4 = 2;
         // Enables transparent proxying for IPv6 traffic only. This mode is to be supported in the future.
-        IPv6 = 2;
+        IPv6 = 3;
       }
 
       // Port on which all inbound traffic is being transparently redirected.
