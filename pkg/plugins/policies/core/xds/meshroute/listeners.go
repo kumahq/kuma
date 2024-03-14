@@ -58,7 +58,6 @@ func MakeHTTPSplit(
 
 type DestinationService struct {
 	Outbound    mesh_proto.OutboundInterface
-	Port        *uint32 // todo(jakubdyszkiewicz): move to TargetRef when we introduce port in TargetRef
 	Protocol    core_mesh.Protocol
 	ServiceName string
 	BackendRef  common_api.BackendRef
