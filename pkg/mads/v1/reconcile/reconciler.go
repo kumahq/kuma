@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -33,11 +34,7 @@ type reconciler struct {
 func (r *reconciler) KnownClientIds() map[string]bool {
 	r.knownClientIdsMutex.Lock()
 	defer r.knownClientIdsMutex.Unlock()
-	knownClientIds := make(map[string]bool, len(r.knownClientIds))
-	for k, v := range r.knownClientIds {
-		knownClientIds[k] = v
-	}
-	return knownClientIds
+	return maps.Clone(r.knownClientIds)
 }
 
 func (r *reconciler) Reconcile(ctx context.Context) error {
