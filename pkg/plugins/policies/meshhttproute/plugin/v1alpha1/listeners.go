@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
 	"reflect"
 
 	"golang.org/x/exp/slices"
@@ -116,7 +115,6 @@ func generateListeners(
 	clusterCache := map[common_api.BackendRefHash]string{}
 
 	for _, svc := range meshroute_xds.CollectServices(proxy, meshCtx) {
-		fmt.Println(svc.ServiceName)
 		rs, err := generateFromService(
 			meshCtx,
 			proxy,
@@ -139,6 +137,7 @@ func prepareRoutes(
 	toRules rules.Rules,
 	svc meshroute_xds.DestinationService,
 ) []api.Route {
+	// policy matching for real MeshService is not yet ready
 	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(svc.ServiceName))
 
 	var apiRules []api.Rule
@@ -188,9 +187,7 @@ func prepareRoutes(
 			defaultBackend := common_api.BackendRef{
 				TargetRef: svc.TargetRef,
 				Weight:    pointer.To(uint(100)),
-			}
-			if svc.Port != nil {
-				defaultBackend.Port = svc.Port
+				Port:      svc.Port,
 			}
 			route.BackendRefs = []common_api.BackendRef{defaultBackend}
 		}

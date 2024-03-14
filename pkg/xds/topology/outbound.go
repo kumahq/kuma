@@ -150,6 +150,7 @@ func fillLocalMeshServices(
 	endpointWeight uint32,
 	localZone string,
 ) {
+	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
 	for _, dataplane := range dataplanes {
 		dpNetworking := dataplane.Spec.GetNetworking()
 
@@ -160,22 +161,26 @@ func fillLocalMeshServices(
 				if !tagSelector.Matches(inbound.GetTags()) {
 					continue
 				}
+				for _, port := range meshSvc.Spec.Ports {
+					if port.TargetPort != inbound.Port {
+						continue
+					}
 
-				inboundTags := maps.Clone(inbound.GetTags())
-				serviceName := inboundTags[mesh_proto.ServiceTag]
-				inboundInterface := dpNetworking.ToInboundInterface(inbound)
-				inboundAddress := inboundInterface.DataplaneAdvertisedIP
-				inboundPort := inboundInterface.DataplanePort
+					inboundTags := maps.Clone(inbound.GetTags())
+					serviceName := meshSvc.DestinationName(port.Port)
+					if serviceName == inboundTags[mesh_proto.ServiceTag] {
+						continue // it was already added by fillDataplaneOutbounds
+					}
+					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
-				// TODO(yskopets): do we need to dedup?
-				// TODO(yskopets): sort ?
-				outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-					Target:   inboundAddress,
-					Port:     inboundPort,
-					Tags:     inboundTags,
-					Weight:   endpointWeight,
-					Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
-				})
+					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Port:     inboundInterface.DataplanePort,
+						Tags:     inboundTags,
+						Weight:   endpointWeight,
+						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+					})
+				}
 			}
 		}
 	}

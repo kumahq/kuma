@@ -58,7 +58,7 @@ func MakeHTTPSplit(
 
 type DestinationService struct {
 	Outbound    mesh_proto.OutboundInterface
-	Port        *uint32
+	Port        *uint32 // todo(jakubdyszkiewicz): move to TargetRef when we introduce port in TargetRef
 	Protocol    core_mesh.Protocol
 	ServiceName string
 	TargetRef   common_api.TargetRef
@@ -81,7 +81,7 @@ func CollectServices(
 				},
 				Port:        pointer.To(port.Port),
 				Protocol:    port.Protocol,
-				ServiceName: fmt.Sprintf("%s_svc_%d", svc.GetMeta().GetName(), port.Port),
+				ServiceName: svc.DestinationName(port.Port),
 				TargetRef: common_api.TargetRef{
 					Kind: common_api.MeshService,
 					Name: svc.GetMeta().GetName(),
@@ -122,15 +122,26 @@ func makeSplit(
 			continue
 		}
 
-		service := ref.Name
+		var service string
+		var protocol core_mesh.Protocol
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
-		if ref.Port != nil {
-			service = fmt.Sprintf("%s_svc_%d", ref.Name, *ref.Port)
+		if ref.Port != nil { // in this case, reference real MeshService instead of kuma.io/service tag
+			ms, ok := meshCtx.MeshServiceByName[ref.Name]
+			if !ok {
+				continue
+			}
+			port, ok := ms.FindPort(*ref.Port)
+			if !ok {
+				continue
+			}
+			service = ms.DestinationName(*ref.Port)
+			protocol = port.Protocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		} else {
+			service = ref.Name
+			protocol = meshCtx.GetServiceProtocol(service)
 		}
-
-		protocol := meshCtx.GetServiceProtocol(service)
 		if _, ok := protocols[protocol]; !ok {
 			return nil
 		}
