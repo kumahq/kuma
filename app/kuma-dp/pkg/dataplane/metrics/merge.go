@@ -21,14 +21,8 @@ const (
 
 const MeshTrafficLabelName = "kuma_io_mesh_traffic"
 
-func MergeClusters(in io.Reader, out io.Writer) error {
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(in)
-	if err != nil {
-		return err
-	}
-
-	for _, metricFamily := range metricFamilies {
+func MergeClustersForPrometheus(in map[string]*io_prometheus_client.MetricFamily) error {
+	for _, metricFamily := range in {
 		switch {
 		case isClusterMetricFamily(metricFamily):
 			if err := handleClusterMetric(metricFamily); err != nil {
@@ -39,15 +33,7 @@ func MergeClusters(in io.Reader, out io.Writer) error {
 				return err
 			}
 		}
-
-		if _, err := expfmt.MetricFamilyToText(out, metricFamily); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
-		}
 	}
-
 	return nil
 }
 

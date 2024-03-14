@@ -321,7 +321,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		Port:          envoyAdminPort,
 		IsIPv6:        false,
 		QueryModifier: metrics.AddPrometheusFormat,
-		Mutator:       metrics.MergeClusters,
+		Mutator:       metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
 		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
 	})
 	return applicationsToScrape

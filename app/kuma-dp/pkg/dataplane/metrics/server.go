@@ -60,7 +60,6 @@ var (
 var _ component.Component = &Hijacker{}
 
 type (
-	MetricsMutator func(in io.Reader, out io.Writer) error
 	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
 )
 
