@@ -92,6 +92,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			}
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
+			cf.shutDownMetricsExporters(ctx)
 			ctxCancel()
 			return nil
 		}
@@ -286,6 +287,15 @@ func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backend
 		cf.runningBackends[backendName] = exporter
 	}
 	return nil
+}
+
+func (cf *ConfigFetcher) shutDownMetricsExporters(ctx context.Context) {
+	for _, exporter := range cf.runningBackends {
+		err := exporter.exporter.Shutdown(ctx)
+		if err != nil {
+			logger.Error(err, "Failed shutting down metric exporter")
+		}
+	}
 }
 
 func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
