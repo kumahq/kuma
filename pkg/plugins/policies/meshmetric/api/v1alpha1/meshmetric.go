@@ -72,13 +72,14 @@ type Selector struct {
 	Match string `json:"match"`
 }
 
-// +kubebuilder:validation:Enum=Prefix;Regex;Exact
+// +kubebuilder:validation:Enum=Prefix;Regex;Exact;Contains
 type SelectorType string
 
 const (
 	PrefixSelectorType SelectorType = "Prefix"
 	RegexSelectorType  SelectorType = "Regex"
 	ExactSelectorType  SelectorType = "Exact"
+	ContainsSelectorType SelectorType = "Contains"
 )
 
 type Application struct {
