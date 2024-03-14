@@ -165,7 +165,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        pointer.To[int32](10),
-							HealthyPanicThreshold:        pointer.To[intstr.IntOrString](intstr.FromString("62.9")),
+							HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
 							FailTrafficOnPanic:           pointer.To(true),
 							EventLogPath:                 pointer.To("/tmp/log.txt"),
 							AlwaysLogHealthCheckFailures: pointer.To(false),
