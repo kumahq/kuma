@@ -61,7 +61,7 @@ type DestinationService struct {
 	Port        *uint32 // todo(jakubdyszkiewicz): move to TargetRef when we introduce port in TargetRef
 	Protocol    core_mesh.Protocol
 	ServiceName string
-	TargetRef   common_api.TargetRef
+	BackendRef  common_api.BackendRef
 }
 
 func CollectServices(
@@ -79,12 +79,14 @@ func CollectServices(
 					DataplaneIP:   svc.Spec.Status.VIPs[0].IP,
 					DataplanePort: port.Port,
 				},
-				Port:        pointer.To(port.Port),
 				Protocol:    port.Protocol,
 				ServiceName: svc.DestinationName(port.Port),
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: svc.GetMeta().GetName(),
+				BackendRef: common_api.BackendRef{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: svc.GetMeta().GetName(),
+					},
+					Port: pointer.To(port.Port),
 				},
 			})
 		}
@@ -96,10 +98,12 @@ func CollectServices(
 			Outbound:    oface,
 			Protocol:    meshCtx.GetServiceProtocol(serviceName),
 			ServiceName: serviceName,
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-				Tags: outbound.GetTags(),
+			BackendRef: common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind: common_api.MeshService,
+					Name: serviceName,
+					Tags: outbound.GetTags(),
+				},
 			},
 		})
 	}

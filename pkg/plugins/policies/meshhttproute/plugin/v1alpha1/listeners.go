@@ -31,7 +31,7 @@ func generateFromService(
 	rules rules.Rules,
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
-	tags := svc.TargetRef.Tags
+	tags := svc.BackendRef.Tags
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
@@ -184,11 +184,8 @@ func prepareRoutes(
 		}
 
 		if len(route.BackendRefs) == 0 {
-			defaultBackend := common_api.BackendRef{
-				TargetRef: svc.TargetRef,
-				Weight:    pointer.To(uint(100)),
-				Port:      svc.Port,
-			}
+			defaultBackend := svc.BackendRef
+			defaultBackend.Weight = pointer.To(uint(100))
 			route.BackendRefs = []common_api.BackendRef{defaultBackend}
 		}
 	}

@@ -32,7 +32,7 @@ func generateFromService(
 	serviceName := svc.ServiceName
 	protocol := meshCtx.GetServiceProtocol(serviceName)
 
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.TargetRef.Tags)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.BackendRef.Tags)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
@@ -87,7 +87,7 @@ func buildOutboundListener(
 	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	tags := svc.TargetRef.Tags
+	tags := svc.BackendRef.Tags
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
