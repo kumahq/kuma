@@ -76,9 +76,9 @@ type Selector struct {
 type SelectorType string
 
 const (
-	PrefixSelectorType SelectorType = "Prefix"
-	RegexSelectorType  SelectorType = "Regex"
-	ExactSelectorType  SelectorType = "Exact"
+	PrefixSelectorType   SelectorType = "Prefix"
+	RegexSelectorType    SelectorType = "Regex"
+	ExactSelectorType    SelectorType = "Exact"
 	ContainsSelectorType SelectorType = "Contains"
 )
 

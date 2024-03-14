@@ -2,12 +2,15 @@ package metrics
 
 import (
 	"bytes"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"os"
 	"path"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
 var _ = Describe("Profiles", func() {

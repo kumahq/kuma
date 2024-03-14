@@ -5737,6 +5737,7 @@ components:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                 type: string
                             required:
                               - match
@@ -5764,6 +5765,7 @@ components:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                 type: string
                             required:
                               - match

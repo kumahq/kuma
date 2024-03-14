@@ -60,7 +60,7 @@ var (
 var _ component.Component = &Hijacker{}
 
 type (
-	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
+	OtelMutator func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
 )
 
 type QueryParametersModifier func(queryParameters url.Values) url.Values

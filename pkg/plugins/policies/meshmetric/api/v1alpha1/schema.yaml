@@ -145,6 +145,7 @@ properties:
                             - Prefix
                             - Regex
                             - Exact
+                            - Contains
                           type: string
                       required:
                         - match
@@ -166,6 +167,7 @@ properties:
                             - Prefix
                             - Regex
                             - Exact
+                            - Contains
                           type: string
                       required:
                         - match
