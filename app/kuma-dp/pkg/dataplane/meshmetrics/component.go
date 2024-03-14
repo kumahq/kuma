@@ -68,7 +68,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 		"socketPath", fmt.Sprintf("unix://%s", cf.socketPath),
 	)
 
-	ctx := context.Background()
+	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	for {
 		select {
@@ -92,6 +92,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			}
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
+			ctxCancel()
 			return nil
 		}
 	}
