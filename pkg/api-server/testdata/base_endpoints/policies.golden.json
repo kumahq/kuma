@@ -67,17 +67,6 @@
    "isOutbound": true
   },
   {
-   "name": "MeshGateway",
-   "readOnly": false,
-   "path": "meshgateways",
-   "singularDisplayName": "Mesh Gateway",
-   "pluralDisplayName": "Mesh Gateways",
-   "isExperimental": false,
-   "isTargetRefBased": false,
-   "isInbound": false,
-   "isOutbound": false
-  },
-  {
    "name": "MeshGatewayRoute",
    "readOnly": false,
    "path": "meshgatewayroutes",
