@@ -72,10 +72,8 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	go func() {
-		select {
-		case <-stop:
-			ctxCancel()
-		}
+		<-stop
+		ctxCancel()
 	}()
 
 	for {
