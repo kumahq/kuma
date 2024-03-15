@@ -38,10 +38,20 @@ var _ = Describe("Profiles", func() {
 
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))
 		},
-		Entry("should not filter on All profile", testCase{
+		Entry("for All profile should not filter anything", testCase{
 			input:    "all.in",
 			expected: "all.golden",
 			profiles: "all.yaml",
+		}),
+		Entry("for Basic profile should not filter dashboard metrics", testCase{
+			input:    "dashboards.in",
+			expected: "dashboards.golden",
+			profiles: "dashboards.yaml",
+		}),
+		Entry("for None profile should not show any metrics", testCase{
+			input:    "none.in",
+			expected: "none.golden",
+			profiles: "none.yaml",
 		}),
 	)
 })

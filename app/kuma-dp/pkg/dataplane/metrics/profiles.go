@@ -13,15 +13,16 @@ type (
 	selectorFunction = func(value string) bool
 )
 
-var filterAll = func(value string) bool {
-	return true
+var neverSelect = func(value string) bool {
+	return false
 }
 
-var filterNone = func(value string) bool {
+var alwaysSelect = func(value string) bool {
 	return true
 }
 
 var basicProfile = []selectorFunction{
+	// start of golden signals
 	selectorToFilterFunction(v1alpha1.Selector{
 		Type:  v1alpha1.ContainsSelectorType,
 		Match: "rq_time",
@@ -118,6 +119,37 @@ var basicProfile = []selectorFunction{
 		Type:  v1alpha1.ContainsSelectorType,
 		Match: "days_until_first_cert_expiring",
 	}),
+	// end of golden signals
+	// start of dashboards
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: "envoy_server",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: "envoy_control_plane",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "rbac",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "cx_active",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ContainsSelectorType,
+		Match: "cx_connect",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: "envoy_cluster_ssl_handshake",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: "envoy_cluster_membership_total",
+	}),
+	// end of dashboards
 }
 
 func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
@@ -126,9 +158,9 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 		profile := (*sidecar.Profiles.AppendProfiles)[0].Name
 		switch profile {
 		case v1alpha1.AllProfileName:
-			effectiveSelectors = []selectorFunction{filterNone}
+			effectiveSelectors = []selectorFunction{alwaysSelect}
 		case v1alpha1.NoneProfileName:
-			effectiveSelectors = []selectorFunction{filterAll}
+			effectiveSelectors = []selectorFunction{neverSelect}
 		case v1alpha1.BasicProfileName:
 			effectiveSelectors = basicProfile
 		}
@@ -188,7 +220,7 @@ func selectorToFilterFunction(selector v1alpha1.Selector) selectorFunction {
 		compiled, err := regexp.Compile(selector.Match)
 		if err != nil {
 			// validation prevents compilation errors
-			return filterAll
+			return neverSelect
 		}
 		return func(value string) bool {
 			return compiled.MatchString(value)
@@ -198,5 +230,5 @@ func selectorToFilterFunction(selector v1alpha1.Selector) selectorFunction {
 			return value == selector.Match
 		}
 	}
-	return filterAll
+	return neverSelect
 }
