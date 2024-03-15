@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -972,8 +973,10 @@ func (c *K8sCluster) CreateNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteNamespace(namespace string) error {
-	err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
-	if err != nil {
+	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -984,6 +987,9 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	// speed up namespace termination by terminating pods without grace period.

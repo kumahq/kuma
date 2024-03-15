@@ -24,6 +24,7 @@ type config struct {
 	generateTargetRef bool
 	generateTo        bool
 	generateFrom      bool
+	isPolicy          bool
 }
 
 func (c config) policyPath() string {
@@ -57,12 +58,14 @@ var rootCmd = &cobra.Command{
 		if err := generateType(cfg); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generating plugin file\n")
-		if err := generatePlugin(cfg); err != nil {
-			return err
+		if cfg.isPolicy {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generating plugin file\n")
+			if err := generatePlugin(cfg); err != nil {
+				return err
+			}
 		}
 		path := fmt.Sprintf("generate/policy/%s", cfg.lowercase())
-		if err := exec.Command("make", path).Run(); err != nil {
+		if err := exec.Command("make", path, "POLICIES_DIR="+cfg.basePath).Run(); err != nil {
 			return err
 		}
 		_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf(`
@@ -100,6 +103,7 @@ func generateType(c config) error {
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
+		"isPolicy":          c.isPolicy,
 	})
 	if err != nil {
 		return err
@@ -117,6 +121,7 @@ func generateType(c config) error {
 		"generateTargetRef": c.generateTargetRef,
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
+		"isPolicy":          c.isPolicy,
 	})
 }
 
@@ -158,6 +163,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.generateTargetRef, "generate-target-ref", true, "Generate top-level TargetRef for dataplane proxy matching")
 	rootCmd.Flags().BoolVar(&cfg.generateTo, "generate-to", false, "Generate 'to' array for outgoing traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
+	rootCmd.Flags().BoolVar(&cfg.isPolicy, "is-policy", false, "Resource is a policy")
 }
 
 var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -172,6 +178,7 @@ import (
 
 // {{ .name }}
 // +kuma:policy:skip_registration=true
+// +kuma:policy:is_policy={{ .isPolicy }}
 type {{ .name }} struct {
 	{{- if .generateTargetRef }}
 	// TargetRef is a reference to the resource the policy takes an effect on.
@@ -213,9 +220,11 @@ type From struct {
 
 {{- end}}
 
+{{- if .isPolicy }}
 type Conf struct {
 	// TODO add configuration fields
 }
+{{- end}}
 `))
 
 var pluginTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -342,9 +351,11 @@ func validateTo(to []To) validators.ValidationError {
 }
 {{- end }}
 
+{{- if .isPolicy }}
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr
 }
+{{- end }}
 `))

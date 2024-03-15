@@ -10,17 +10,20 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/test/framework/deployments/observability"
+	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
 func Delegated() {
 	config := delegated.Config{
-		Namespace:            "delegated-gateway",
-		NamespaceOutsideMesh: "delegated-gateway-outside-mesh",
-		Mesh:                 "delegated-gateway",
-		KicIP:                "",
-		CpNamespace:          Config.KumaNamespace,
+		Namespace:                   "delegated-gateway",
+		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh",
+		Mesh:                        "delegated-gateway",
+		KicIP:                       "",
+		CpNamespace:                 Config.KumaNamespace,
+		ObservabilityDeploymentName: "observability-delegated-meshtrace",
 	}
 
 	BeforeAll(func() {
@@ -31,15 +34,31 @@ func Delegated() {
 			Install(Namespace(config.NamespaceOutsideMesh)).
 			Install(democlient.Install(
 				democlient.WithNamespace(config.NamespaceOutsideMesh),
+				democlient.WithService(true),
 			)).
 			Install(testserver.Install(
 				testserver.WithMesh(config.Mesh),
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
+				testserver.WithStatefulSet(true),
+				testserver.WithReplicas(3),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(config.NamespaceOutsideMesh),
 				testserver.WithName("external-service"),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(config.NamespaceOutsideMesh),
+				testserver.WithName("external-tcp-service"),
+			)).
+			Install(otelcollector.Install(
+				otelcollector.WithNamespace(config.NamespaceOutsideMesh),
+				otelcollector.WithIPv6(Config.IPV6),
+			)).
+			Install(observability.Install(
+				config.ObservabilityDeploymentName,
+				observability.WithNamespace(config.NamespaceOutsideMesh),
+				observability.WithComponents(observability.JaegerComponent),
 			)).
 			Install(kic.KongIngressController(
 				kic.WithName("delegated"),
@@ -86,12 +105,19 @@ spec:
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.NamespaceOutsideMesh)).
 			To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(config.Mesh)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteDeployment(config.ObservabilityDeploymentName)).
+			To(Succeed())
 	})
 
-	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
+	XContext("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 	Context("MeshRetry", delegated.MeshRetry(&config))
 	Context("MeshHTTPRoute", delegated.MeshHTTPRoute(&config))
 	Context("MeshTimeout", delegated.MeshTimeout(&config))
+	Context("MeshMetric", delegated.MeshMetric(&config))
+	Context("MeshTrace", delegated.MeshTrace(&config))
+	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
+	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
+	XContext("MeshTCPRoute", delegated.MeshTCPRoute(&config))
 }

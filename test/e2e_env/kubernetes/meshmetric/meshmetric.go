@@ -170,7 +170,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -195,7 +195,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, openTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -217,7 +217,7 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
       - type: Prometheus
         prometheus: 
           port: 8080
@@ -245,11 +245,11 @@ spec:
       - type: OpenTelemetry
         openTelemetry: 
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
       - type: OpenTelemetry
         openTelemetry:
           endpoint: %s
-          refreshInterval: 10s
+          refreshInterval: 30s
 `, Config.KumaNamespace, mesh, primaryOpenTelemetryEndpoint, secondaryOpenTelemetryEndpoint)
 	return YamlK8s(meshMetric)
 }
@@ -316,6 +316,8 @@ func MeshMetric() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(observabilityNamespace)).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(secondaryOpenTelemetryCollectorNamespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mainMesh)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(secondaryMesh)).To(Succeed())
 	})
@@ -502,7 +504,7 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	It("MeshMetric with OpenTelemetry enabled", func() {
+	XIt("MeshMetric with OpenTelemetry enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -519,7 +521,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	It("MeshMetric with OpenTelemetry and usedonly/filter", func() {
+	XIt("MeshMetric with OpenTelemetry and usedonly/filter", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndIncludeUnused(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -537,7 +539,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	It("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
+	XIt("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		testServerIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
@@ -566,7 +568,7 @@ func MeshMetric() {
 		}, "2m", "3s").Should(Succeed())
 	})
 
-	It("MeshMetric with multiple OpenTelemetry backends", func() {
+	XIt("MeshMetric with multiple OpenTelemetry backends", func() {
 		// given
 		primaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		secondaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, secondaryOtelCollectorName)

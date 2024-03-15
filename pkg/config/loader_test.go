@@ -209,6 +209,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.InitialDelaySeconds).To(Equal(int32(11)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.PeriodSeconds).To(Equal(int32(9)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.FailureThreshold).To(Equal(int32(32)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.StartupProbe.TimeoutSeconds).To(Equal(int32(52)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.WaitForDataplaneReady).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
@@ -303,7 +307,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
-			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Authn.DpProxy.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.EnableIssuer).To(BeFalse())
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.Validator.UseSecrets).To(BeFalse())
@@ -519,6 +522,11 @@ runtime:
           periodSeconds: 18
           failureThreshold: 22
           timeoutSeconds: 24
+        startupProbe:
+          initialDelaySeconds: 11
+          periodSeconds: 9
+          failureThreshold: 32
+          timeoutSeconds: 52
         envVars:
           a: b
           c: d
@@ -638,8 +646,6 @@ dpServer:
   tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
   readHeaderTimeout: 11s
   port: 9876
-  auth:
-    type: dpToken
   authn:
     dpProxy:
       type: dpToken
@@ -717,6 +723,9 @@ proxy:
     globalDownstreamMaxConnections: 1
 eventBus:
   bufferSize: 30
+coreResources:
+  enabled:
+  - meshservice
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -844,6 +853,10 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_INITIAL_DELAY_SECONDS":   "11",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_PERIOD_SECONDS":          "9",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_FAILURE_THRESHOLD":       "32",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_STARTUP_PROBE_TIMEOUT_SECONDS":         "52",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_WAIT_FOR_DATAPLANE_READY":              "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
@@ -938,8 +951,6 @@ tracing:
 				"KUMA_DP_SERVER_TLS_MAX_VERSION":                                                           "TLSv1_3",
 				"KUMA_DP_SERVER_TLS_CIPHER_SUITES":                                                         "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_DP_SERVER_READ_HEADER_TIMEOUT":                                                       "11s",
-				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
-				"KUMA_DP_SERVER_AUTH_USE_TOKEN_PATH":                                                       "true",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
@@ -993,6 +1004,7 @@ tracing:
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
+				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
 			},
 			yamlFileConfig: "",
 		}),

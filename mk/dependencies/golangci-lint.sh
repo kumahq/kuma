@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 OUTPUT_BIN_DIR=$1/bin

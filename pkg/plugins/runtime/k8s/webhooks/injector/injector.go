@@ -60,8 +60,9 @@ func New(
 		sidecarContainersEnabled: sidecarContainersEnabled,
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
-		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
-			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady),
+		proxyFactory: containers.NewDataplaneProxyFactory(
+			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
+		),
 		systemNamespace: systemNamespace,
 	}, nil
 }

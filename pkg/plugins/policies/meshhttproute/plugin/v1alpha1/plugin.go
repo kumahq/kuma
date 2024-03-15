@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -22,12 +21,6 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-
-type Route struct {
-	Matches     []api.Match
-	Filters     []api.Filter
-	BackendRefs []common_api.BackendRef
-}
 
 type ToRouteRule struct {
 	Subset    rules.Subset

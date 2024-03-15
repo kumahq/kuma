@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 
@@ -70,7 +71,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
-	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
+	orig := gatewayInstance.DeepCopy()
 	svc, gateway, err := r.createOrUpdateService(ctx, mesh, gatewayInstance)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
@@ -100,6 +101,20 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
+func (r *GatewayInstanceReconciler) resolveGatewayInstanceServiceTag(gatewayInstance *mesh_k8s.MeshGatewayInstance) {
+	tags := maps.Clone(gatewayInstance.Spec.Tags)
+	if tags == nil {
+		tags = map[string]string{}
+	}
+	if _, ok := tags[mesh_proto.ServiceTag]; ok {
+		r.Log.Info("WARNING: Setting kuma.io/service tag is deprecated for this object kind, control-plane creates a name based on the resource name and namespace",
+			"name", gatewayInstance.GetName(), "namespace", gatewayInstance.GetNamespace(), "kind", gatewayInstance.GetObjectKind().GroupVersionKind().Kind)
+	} else {
+		tags[mesh_proto.ServiceTag] = k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(gatewayInstance), nil)
+	}
+	gatewayInstance.Spec.Tags = tags
+}
+
 // createOrUpdateService can either return an error, a created Service or
 // neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateService(
@@ -112,6 +127,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, nil, err
 	}
 	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
+		r.resolveGatewayInstanceServiceTag(gatewayInstance)
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
@@ -421,20 +437,32 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 
 		var req []kube_reconcile.Request
 		for _, serviceName := range serviceNames {
+			// TODO: remove in version 2.9.x
+			// get MeshGatewayInstance by kuma.io/service name and map to requests
 			instances := &mesh_k8s.MeshGatewayInstanceList{}
-			if err := client.List(
-				ctx, instances, kube_client.MatchingFields{serviceKey: serviceName},
-			); err != nil {
+			err := client.List(ctx, instances, kube_client.MatchingFields{serviceKey: serviceName})
+			if err != nil && !kube_apierrs.IsNotFound(err) {
 				l.Error(err, "failed to fetch GatewayInstances")
 			}
-
-			for _, instance := range instances.Items {
-				req = append(req, kube_reconcile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: instance.Namespace, Name: instance.Name},
-				})
+			if len(instances.Items) > 0 {
+				for _, instance := range instances.Items {
+					req = append(req, kube_reconcile.Request{
+						NamespacedName: kube_types.NamespacedName{Namespace: instance.Namespace, Name: instance.Name},
+					})
+				}
+				continue
 			}
-		}
 
+			// map generated kuma.io/service to namespaced name
+			name, err := k8s_util.NamespacesNameFromServiceTag(serviceName)
+			if err != nil {
+				l.Error(err, "failed to fetch GatewayInstances")
+				continue
+			}
+			req = append(req, kube_reconcile.Request{
+				NamespacedName: name,
+			})
+		}
 		return req
 	}
 }
@@ -454,6 +482,7 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		return err
 	}
 
+	// TODO: remove in version 2.9.x
 	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &mesh_k8s.MeshGatewayInstance{}, serviceKey, func(obj kube_client.Object) []string {
 		instance := obj.(*mesh_k8s.MeshGatewayInstance)
 

@@ -15,18 +15,18 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Matches                 []api.Match
+	Hash                    string
+	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
 	BackendRefToClusterName map[common_api.TargetRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
-	matches := c.routeMatch(c.Matches)
+	matches := c.routeMatch(c.Match)
 
-	h := api.HashMatches(c.Matches)
 	for _, match := range matches {
-		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, h).
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, c.Hash).
 			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				// todo: create configurers for Match and Action
 				envoyRoute.Match = match.routeMatch
@@ -72,31 +72,29 @@ type routeMatch struct {
 // routeMatch returns a list of RouteMatches given a list of MeshHTTPRoute matches
 // Note that some MeshHTTPRoute matches result in multiple Envoy matches because
 // of prefix + rewrite handling. That's why we return the wrapper type as well.
-func (c RoutesConfigurer) routeMatch(matches []api.Match) []routeMatch {
+func (c RoutesConfigurer) routeMatch(match api.Match) []routeMatch {
 	var allEnvoyMatches []routeMatch
 
-	for _, match := range matches {
-		var envoyMatches []*envoy_route.RouteMatch
+	var envoyMatches []*envoy_route.RouteMatch
 
-		if match.Path != nil {
-			envoyMatches = c.routePathMatch(*match.Path)
-		} else {
-			envoyMatches = []*envoy_route.RouteMatch{{}}
+	if match.Path != nil {
+		envoyMatches = c.routePathMatch(*match.Path)
+	} else {
+		envoyMatches = []*envoy_route.RouteMatch{{}}
+	}
+
+	for _, envoyMatch := range envoyMatches {
+		if match.Method != nil {
+			c.routeMethodMatch(envoyMatch, *match.Method)
 		}
-
-		for _, envoyMatch := range envoyMatches {
-			if match.Method != nil {
-				c.routeMethodMatch(envoyMatch, *match.Method)
-			}
-			if match.QueryParams != nil {
-				routeQueryParamsMatch(envoyMatch, match.QueryParams)
-			}
-			routeHeadersMatch(envoyMatch, match.Headers)
-			if match.Path != nil && match.Path.Type == api.PathPrefix {
-				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
-			} else {
-				allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
-			}
+		if match.QueryParams != nil {
+			routeQueryParamsMatch(envoyMatch, match.QueryParams)
+		}
+		routeHeadersMatch(envoyMatch, match.Headers)
+		if match.Path != nil && match.Path.Type == api.PathPrefix {
+			allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
+		} else {
+			allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, false})
 		}
 	}
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -o errexit
 set -o pipefail
@@ -8,8 +8,8 @@ set -e
 POLICY=$1
 VERSION=$2
 TOOLS_LOCATION=$3
+POLICIES_DIR=$4
 
-POLICIES_DIR=pkg/plugins/policies
 POLICIES_API_DIR="${POLICIES_DIR}/${POLICY}/api/${VERSION}"
 POLICIES_CRD_DIR="${POLICIES_DIR}/${POLICY}/k8s/crd"
 

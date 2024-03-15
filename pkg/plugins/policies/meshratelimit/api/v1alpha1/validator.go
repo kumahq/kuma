@@ -24,6 +24,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		common_api.MeshGateway,
 		common_api.MeshService,
 		common_api.MeshServiceSubset,
+		common_api.MeshHTTPRoute,
 	}
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds:             supportedKinds,
@@ -35,6 +36,10 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
+		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		return verr
+	}
+	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(from) != 0 {
 		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
 		return verr
 	}

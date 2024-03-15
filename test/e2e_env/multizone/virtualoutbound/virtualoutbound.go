@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
@@ -57,6 +58,10 @@ func virtualOutbound(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
+	})
+
+	BeforeEach(func() {
+		Expect(DeleteMeshResources(multizone.Global, meshName, mesh.VirtualOutboundResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("simple virtual outbound", func() {

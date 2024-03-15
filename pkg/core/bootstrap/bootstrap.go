@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
+	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -74,7 +75,8 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err != nil {
 		return nil, err
 	}
-	policies.InitPolicies(cfg.Policies.PluginPoliciesEnabled)
+	core_plugins.Init(cfg.CoreResources.Enabled, core_apis.NameToModule)
+	core_plugins.Init(cfg.Policies.Enabled, policies.NameToModule)
 	builder.WithMultitenancy(multitenant.SingleTenant)
 	builder.WithPgxConfigCustomizationFn(config.NoopPgxConfigCustomizationFn)
 	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
@@ -523,9 +525,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 }
 
 func initializeTokenIssuers(builder *core_runtime.Builder) {
-	issuers := builtin.TokenIssuers{
-		ZoneIngressToken: builtin.NewZoneIngressTokenIssuer(builder.ResourceManager()),
-	}
+	issuers := builtin.TokenIssuers{}
 	if builder.Config().DpServer.Authn.DpProxy.DpToken.EnableIssuer {
 		issuers.DataplaneToken = builtin.NewDataplaneTokenIssuer(builder.ResourceManager())
 	} else {

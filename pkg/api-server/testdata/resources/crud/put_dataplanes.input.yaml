@@ -1,0 +1,29 @@
+#/meshes/default/dataplanes/dp-2 201 method=PUT
+# Name too long and name not the same as request path
+#/meshes/default/dataplanes/foo 400 method=PUT
+# Mesh is not the same in the request
+#/meshes/default/dataplanes/dp-3 400 method=PUT
+# Type is not the same in the request
+#/meshes/default/dataplanes/dp-4 400 method=PUT
+# Invalid resource content
+#/meshes/default/dataplanes/dp-5 400 method=PUT
+# Body is not a valid json
+#/meshes/default/dataplanes/dp-5 400 method=PUT
+# Invalid mesh and name
+#/meshes/default/dataplanes/dp-5 400 method=PUT
+# Empty resource type
+#/meshes/default/dataplanes/dp-5 400 method=PUT
+# Name is a number
+#/meshes/default/dataplanes/dp-5 400 method=PUT
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
