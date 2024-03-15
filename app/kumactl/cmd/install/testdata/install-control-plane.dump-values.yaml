@@ -696,6 +696,9 @@ experimental:
     programsSourcePath: /kuma/ebpf
   # -- If false, it uses legacy API for resource synchronization
   deltaKds: true
+  # -- If true, enable native Kubernetes sidecars. This requires at least
+  # Kubernetes v1.29
+  sidecarContainers: false
 
 # Postgres' settings for universal control plane on k8s
 postgres:
