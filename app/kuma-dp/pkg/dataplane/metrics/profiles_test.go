@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"bytes"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"os"
 	"path"
 
@@ -15,20 +16,24 @@ var _ = Describe("Profiles", func() {
 	type testCase struct {
 		input    string
 		expected string
-		profiles *v1alpha1.Profiles
+		profiles string
 	}
 	DescribeTable("should filter according to profiles data",
 		func(given testCase) {
+			// setup
+			mm := v1alpha1.NewMeshMetricResource()
+			policy, err := os.ReadFile(path.Join("testdata", "profiles", given.profiles))
+			Expect(err).ToNot(HaveOccurred())
+			err = core_model.FromYAML(policy, &mm.Spec)
+			Expect(err).ToNot(HaveOccurred())
+
 			expected, err := os.Open(path.Join("testdata", "profiles", given.expected))
 			Expect(err).ToNot(HaveOccurred())
 			input, err := os.Open(path.Join("testdata", "profiles", given.input))
 			Expect(err).ToNot(HaveOccurred())
-			sidecar := &v1alpha1.Sidecar{
-				Profiles: given.profiles,
-			}
 
 			actual := new(bytes.Buffer)
-			err = AggregatedMetricsMutator(ProfileMutatorGenerator(sidecar))(input, actual)
+			err = AggregatedMetricsMutator(ProfileMutatorGenerator(mm.Spec.Default.Sidecar))(input, actual)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))
@@ -36,11 +41,7 @@ var _ = Describe("Profiles", func() {
 		Entry("should not filter on All profile", testCase{
 			input:    "all.in",
 			expected: "all.golden",
-			profiles: &v1alpha1.Profiles{
-				AppendProfiles: &[]v1alpha1.Profile{{Name: v1alpha1.AllProfileName}},
-				Exclude:        nil,
-				Include:        nil,
-			},
+			profiles: "all.yaml",
 		}),
 	)
 })
