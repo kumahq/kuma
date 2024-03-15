@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
+	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	mads_reconcile "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -46,7 +47,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 
 	knownClients := r.reconciler.KnownClientIds()
 	if !knownClients[node.Id] {
-		node.Id = mads_reconcile.DefaultKumaClientId
+		node.Id = meshmetrics_generator.DefaultKumaClientId
 	}
 
 	if r.reconciler.NeedsReconciliation(node) {
