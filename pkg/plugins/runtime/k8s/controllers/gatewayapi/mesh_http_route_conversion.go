@@ -339,9 +339,11 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
-				BackendRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: ref[mesh_proto.ServiceTag],
+				BackendRef: common_api.BackendRef{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: ref[mesh_proto.ServiceTag],
+					},
 				},
 			},
 		}, conditions, true

@@ -228,7 +228,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef)
+			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}

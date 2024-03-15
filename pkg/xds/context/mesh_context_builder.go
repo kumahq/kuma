@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -156,6 +157,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, dp := range dataplanes {
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
+	meshServices := resources.MeshServices().Items
+	meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(dataplanes))
+	for _, ms := range meshServices {
+		meshServicesByName[ms.Meta.GetName()] = ms
+	}
 
 	virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
 	if err != nil {
@@ -169,7 +175,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -190,6 +196,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		Resource:                    mesh,
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
+		MeshServiceByName:           meshServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,

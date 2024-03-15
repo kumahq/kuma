@@ -4363,6 +4363,12 @@ components:
 
                                       `MeshServiceSubset` and `MeshGatewayRoute`
                                     type: string
+                                  port:
+                                    description: >-
+                                      Port is only supported when this ref
+                                      refers to a real MeshService object
+                                    format: int32
+                                    type: integer
                                   proxyTypes:
                                     description: >-
                                       ProxyTypes specifies the data plane types
@@ -4454,9 +4460,7 @@ components:
                                   requestMirror:
                                     properties:
                                       backendRef:
-                                        description: >-
-                                          TargetRef defines structure that allows
-                                          attaching policy to various objects
+                                        description: TODO forbid weight
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
@@ -4481,6 +4485,12 @@ components:
                                               `MeshServiceSubset` and
                                               `MeshGatewayRoute`
                                             type: string
+                                          port:
+                                            description: >-
+                                              Port is only supported when this ref
+                                              refers to a real MeshService object
+                                            format: int32
+                                            type: integer
                                           proxyTypes:
                                             description: >-
                                               ProxyTypes specifies the data plane
@@ -4505,6 +4515,10 @@ components:
 
                                               `MeshSubset` and `MeshServiceSubset`
                                             type: object
+                                          weight:
+                                            default: 1
+                                            minimum: 0
+                                            type: integer
                                         type: object
                                       percentage:
                                         anyOf:
@@ -7673,6 +7687,12 @@ components:
 
                                       `MeshServiceSubset` and `MeshGatewayRoute`
                                     type: string
+                                  port:
+                                    description: >-
+                                      Port is only supported when this ref
+                                      refers to a real MeshService object
+                                    format: int32
+                                    type: integer
                                   proxyTypes:
                                     description: >-
                                       ProxyTypes specifies the data plane types
