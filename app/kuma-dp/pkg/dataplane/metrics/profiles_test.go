@@ -53,10 +53,15 @@ var _ = Describe("Profiles", func() {
 			expected: "none.golden",
 			profiles: "none.yaml",
 		}),
-		FEntry("for None profile with include should include the metrics", testCase{
+		Entry("for None profile with include should include the metrics", testCase{
 			input:    "include.in",
 			expected: "include.golden",
 			profiles: "include.yaml",
+		}),
+		Entry("for All profile with exclude should exclude the metrics", testCase{
+			input:    "exclude.in",
+			expected: "exclude.golden",
+			profiles: "exclude.yaml",
 		}),
 	)
 })
