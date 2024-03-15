@@ -34,8 +34,8 @@ var _ = Describe("Profiles", func() {
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))
 		},
 		Entry("should not filter on All profile", testCase{
-			input:    "counter.in",
-			expected: "counter.golden",
+			input:    "all.in",
+			expected: "all.golden",
 			profiles: &v1alpha1.Profiles{
 				AppendProfiles: &[]v1alpha1.Profile{{Name: v1alpha1.AllProfileName}},
 				Exclude:        nil,
