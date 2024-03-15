@@ -22,8 +22,6 @@ import (
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
-const DefaultKumaClientId = "_kuma-default-client"
-
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
 	return &SnapshotGenerator{
 		resourceManager:   resourceManager,
@@ -76,7 +74,7 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]ut
 		if err != nil {
 			return nil, err
 		}
-		resourcesPerClientId[DefaultKumaClientId] = createSnapshot(resources)
+		resourcesPerClientId[meshmetrics_generator.DefaultKumaClientId] = createSnapshot(resources)
 	} else {
 		for clientId, meshes := range meshesWithMeshMetrics {
 			meshMetricConfToDataplanes, err := s.getMatchingDataplanes(ctx, meshes)
@@ -110,7 +108,7 @@ func (s *SnapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context) (map[s
 		for _, backend := range *meshMetric.Spec.Default.Backends { // can backends be nil?
 			// match against client ID or fallback to "" when specified by user
 			if backend.Type == v1alpha1.PrometheusBackendType {
-				client := pointer.DerefOr(backend.Prometheus.ClientId, DefaultKumaClientId)
+				client := pointer.DerefOr(backend.Prometheus.ClientId, meshmetrics_generator.DefaultKumaClientId)
 				clientToMeshes[client] = append(clientToMeshes[client], meshName)
 			}
 		}

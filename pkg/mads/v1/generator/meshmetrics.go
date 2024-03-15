@@ -12,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
+const DefaultKumaClientId = "_kuma-default-client"
+
 func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResource, clientId string) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
@@ -22,7 +24,7 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 			}
 			prometheusEndpoint := backend.Prometheus
 
-			if pointer.Deref(prometheusEndpoint.ClientId) != "" && pointer.Deref(prometheusEndpoint.ClientId) != clientId {
+			if pointer.DerefOr(prometheusEndpoint.ClientId, DefaultKumaClientId) != clientId {
 				continue
 			}
 
