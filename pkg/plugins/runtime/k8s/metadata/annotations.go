@@ -115,6 +115,9 @@ const (
 	KumaInitFirst = "kuma.io/init-first"
 	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
+	// KumaInitContainerMeshAccess allows init containers to use the mesh, only
+	// if the sidecarContainers feature is activated.
+	KumaInitContainerMeshAccess = "kuma.io/init-container-mesh-access"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
