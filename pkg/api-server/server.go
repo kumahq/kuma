@@ -372,6 +372,8 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	select {
 	case <-stop:
 		log.Info("stopping down API Server")
+		a.httpReady.Store(false)
+		a.httpsReady.Store(false)
 		if httpServer != nil {
 			return httpServer.Shutdown(context.Background())
 		}
