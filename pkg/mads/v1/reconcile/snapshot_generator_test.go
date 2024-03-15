@@ -675,7 +675,7 @@ var _ = Describe("snapshotGenerator", func() {
 					}),
 				},
 			}),
-			Entry("no Meshes with Prometheus enabled, multiple MeshMetrics with Prometheus and merging", testCase{
+			Entry("no Meshes with Prometheus enabled, MeshMetric targeting Mesh with override for backend-02 with Prometheus metrics backend", testCase{
 				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
