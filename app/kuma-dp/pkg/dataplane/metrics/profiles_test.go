@@ -63,5 +63,10 @@ var _ = Describe("Profiles", func() {
 			expected: "exclude.golden",
 			profiles: "exclude.yaml",
 		}),
+		Entry("for Basic profile with exclude and include should exclude the metrics", testCase{
+			input:    "mixed.in",
+			expected: "mixed.golden",
+			profiles: "mixed.yaml",
+		}),
 	)
 })

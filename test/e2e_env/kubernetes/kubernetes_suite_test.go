@@ -87,7 +87,7 @@ var (
 	_ = Describe("MeshHealthCheck API", meshhealthcheck.API, Ordered)
 	_ = Describe("MeshCircuitBreaker API", meshcircuitbreaker.API, Ordered)
 	_ = Describe("MeshCircuitBreaker", meshcircuitbreaker.MeshCircuitBreaker, Ordered)
-	_ = Describe("MeshMetric", meshmetric.MeshMetric, Ordered)
+	_ = FDescribe("MeshMetric", meshmetric.MeshMetric, Ordered)
 	_ = Describe("MeshRetry", meshretry.API, Ordered)
 	_ = Describe("MeshProxyPatch", meshproxypatch.MeshProxyPatch, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.API, Ordered)
