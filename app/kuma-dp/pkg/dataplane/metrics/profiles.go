@@ -153,7 +153,7 @@ var basicProfile = []selectorFunction{
 }
 
 func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
-	var effectiveSelectors []selectorFunction
+	effectiveSelectors := []selectorFunction{alwaysSelect} // default is All
 	if sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.AppendProfiles != nil && len(*sidecar.Profiles.AppendProfiles) == 1 {
 		profile := (*sidecar.Profiles.AppendProfiles)[0].Name
 		switch profile {
