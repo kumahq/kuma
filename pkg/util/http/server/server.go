@@ -20,6 +20,7 @@ func StartServer(log logr.Logger, server *http.Server, ready *atomic.Bool, errCh
 		listener = tls.NewListener(listener, server.TLSConfig)
 	}
 
+	l.Info("starting server")
 	go func() {
 		ready.Store(true)
 		if err := server.Serve(listener); err != nil {
@@ -31,6 +32,5 @@ func StartServer(log logr.Logger, server *http.Server, ready *atomic.Bool, errCh
 			}
 		}
 	}()
-	l.Info("starting server")
 	return nil
 }
