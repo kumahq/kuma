@@ -269,6 +269,10 @@ env:
 - name: KUMA_EXPERIMENTAL_GATEWAY_API
   value: "true"
 {{- end }}
+{{- if .Values.experimental.sidecarContainers }}
+- name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
+  value: "true"
+{{- end }}
 {{- if .Values.cni.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
