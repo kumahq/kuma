@@ -157,10 +157,7 @@ func (cf *ConfigFetcher) reconfigureBackends(ctx context.Context, openTelemetryB
 	for backendName, backend := range openTelemetryBackends {
 		// backend already running, in the future we can reconfigure it here
 		if cf.runningBackends[backendName] != nil {
-			err := cf.reconfigureBackendIfNeeded(ctx, backendName, backend)
-			if err != nil {
-				return err
-			}
+			return cf.reconfigureBackendIfNeeded(ctx, backendName, backend)
 		}
 		// start backend as it is not running yet
 		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
