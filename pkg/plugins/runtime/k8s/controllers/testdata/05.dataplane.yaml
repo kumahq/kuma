@@ -31,6 +31,7 @@ spec:
       tags:
         kuma.io/service: test-app_playground_svc_80
     transparentProxying:
+      ipFamilyMode: DualStack
       directAccessServices:
       - test-app_playground_svc_80
       - test-app_playground_svc_443

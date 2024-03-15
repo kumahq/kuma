@@ -33,6 +33,7 @@ injector:
     envVars: {}
     gid: 5678
     image: kuma/kuma-dp:latest
+    ipFamilyMode: dualstack
     livenessProbe:
       failureThreshold: 12
       initialDelaySeconds: 60
@@ -45,7 +46,7 @@ injector:
       successThreshold: 1
       timeoutSeconds: 3
     redirectPortInbound: 15006
-    redirectPortInboundV6: 15010
+    redirectPortInboundV6: 15006
     redirectPortOutbound: 15001
     resources:
       limits:

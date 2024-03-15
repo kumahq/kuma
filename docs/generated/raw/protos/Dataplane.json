@@ -264,6 +264,27 @@
                     },
                     "type": "array",
                     "description": "List of reachable services (represented by the value of `kuma.io/service`) via transparent proxying. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                },
+                "ip_family_mode": {
+                    "enum": [
+                        "UnSpecified",
+                        0,
+                        "DualStack",
+                        1,
+                        "IPv4",
+                        2,
+                        "IPv6",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Ip Family Mode"
                 }
             },
             "additionalProperties": true,

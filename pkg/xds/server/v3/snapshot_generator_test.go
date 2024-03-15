@@ -205,7 +205,7 @@ var _ = Describe("GenerateSnapshot", func() {
 						WithServicePort(8443).
 						WithService("backend-4"),
 				).
-				WithTransparentProxying(15001, 15006).
+				WithTransparentProxying(15001, 15006, "ipv4").
 				Build(),
 		)
 
@@ -298,7 +298,7 @@ var _ = Describe("GenerateSnapshot", func() {
 						WithService("backend-4"),
 				).
 				AddOutboundToService("es-with-tls").
-				WithTransparentProxying(15001, 15006).
+				WithTransparentProxying(15001, 15006, "ipv4").
 				Build(),
 		)
 

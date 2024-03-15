@@ -10,7 +10,7 @@ metadata:
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-inbound-v6-port: "15010"
+    kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -120,8 +120,6 @@ spec:
     - --redirect-inbound=true
     - --redirect-inbound-port
     - "15006"
-    - --redirect-inbound-port-v6
-    - "15010"
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
@@ -129,6 +127,8 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     command:
     - /usr/bin/kumactl
     - install
