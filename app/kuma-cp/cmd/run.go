@@ -86,7 +86,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 
 			if limit, _ := os.CurrentFileLimit(); limit < minOpenFileLimit {
 				runLog.Info("for better performance, raise the open file limit",
-					"minimim-open-files", minOpenFileLimit)
+					"minimum-open-files", minOpenFileLimit)
 			}
 
 			if err := mads_server.SetupServer(rt); err != nil {

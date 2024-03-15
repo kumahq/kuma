@@ -47,7 +47,6 @@ require (
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/shopspring/decimal v1.3.1
 	github.com/slok/go-http-metrics v0.11.0
-	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.8.0
 	github.com/spiffe/go-spiffe/v2 v2.1.7
 	github.com/testcontainers/testcontainers-go v0.29.1
