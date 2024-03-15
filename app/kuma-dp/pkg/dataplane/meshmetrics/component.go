@@ -194,7 +194,7 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, 
 
 func (cf *ConfigFetcher) shutdownBackend(ctx context.Context, backendName string) error {
 	err := cf.runningBackends[backendName].exporter.Shutdown(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, sdkmetric.ErrReaderShutdown) {
 		return err
 	}
 	delete(cf.runningBackends, backendName)
