@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -128,8 +129,14 @@ func validateBackend(backends *[]Backend) validators.ValidationError {
 		case OpenTelemetryBackendType:
 			if backend.OpenTelemetry == nil {
 				verr.AddViolationAt(path.Field("openTelemetry"), validators.MustBeDefined)
-			} else if !govalidator.IsURL(backend.OpenTelemetry.Endpoint) {
-				verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
+			} else {
+				endpoint := backend.OpenTelemetry.Endpoint
+				if !govalidator.IsURL(endpoint) {
+					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must be a valid url")
+				}
+				if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+					verr.AddViolationAt(path.Field("openTelemetry").Field("endpoint"), "must not use schema")
+				}
 			}
 		default:
 			verr.AddViolationAt(path, "unrecognized type")
