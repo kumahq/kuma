@@ -375,6 +375,16 @@ sources:
 destinations:
   - match:
       kuma.io/service: redis_kuma-demo_svc_6379
+---
+type: TrafficPermission
+name: on-frontend
+mesh: default
+sources:
+  - match:
+      kuma.io/service: *
+destinations:
+  - match:
+      kuma.io/service: frontend_kuma-demo_svc_8080
 ```
 
 ```yaml
@@ -396,9 +406,26 @@ spec:
         name: backend_kuma-demo_svc_3001
       default:
         action: Allow
+---
+type: MeshTrafficPermission
+name: on-frontend
+mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: frontend_kuma-demo_svc_8080
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
 ```
 
+Since we rename the policy name in envoy (from having the actual policy name to having a hardcoded value "MeshTrafficPermission")
+the diff is not really useful:
+
 ```yaml
+# on Redis DPPs
 - value:
     permissions:
       - any: true
@@ -413,6 +440,57 @@ spec:
   path: envoy.config.listener.v3.Listener/inbound:10.42.0.28:6379/filterChains/0/filters/0/typedConfig/rules/policies/MeshTrafficPermission
 - op: remove
   path: envoy.config.listener.v3.Listener/inbound:10.42.0.28:6379/filterChains/0/filters/0/typedConfig/rules/policies/backend-to-httpbin-4b4zbcc4422zz784
+```
+
+It doesn't get any better with HTTP either. Previously TrafficPermission was always applied on TCP level, by applying it on HTTP 
+level for HTTP services we're getting a lot of noise in the diff:
+
+```yaml
+# on Frontend DPPs
+- value:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        forwardClientCertDetails: SANITIZE_SET
+        httpFilters:
+          - name: envoy.filters.http.rbac
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                      - any: true
+                    principals:
+                      - any: true
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        requestHeadersTimeout: 0s
+        routeConfig:
+          name: inbound:frontend_kuma-demo_svc_8080
+          requestHeadersToRemove:
+            - x-kuma-tags
+          validateClusters: false
+          virtualHosts:
+            - domains:
+                - '*'
+              name: frontend_kuma-demo_svc_8080
+              routes:
+                - match:
+                    prefix: /
+                  route:
+                    cluster: localhost:8080
+                    idleTimeout: 3600s
+                    timeout: 0s
+        setCurrentClientCertDetails:
+          uri: true
+        statPrefix: localhost_8080
+        streamIdleTimeout: 3600s
+  op: replace
+  path: /type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:10.42.0.16:8080/filterChains/0/filters
 ```
 
 ## TrafficRoute -> MeshHTTPRoute(MeshTCPRoute)
