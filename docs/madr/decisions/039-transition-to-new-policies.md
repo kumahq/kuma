@@ -50,6 +50,14 @@ it doesn't apply on the real proxies. Instead, by using a special endpoint we ca
 $ curl :5681/meshes/defaults/dataplane/dpp-1/xds?shadow=true # show potential changes for a dpp-1 in the "default" mesh
 ```
 
+We can use a CLI tool like [jd](https://github.com/josephburnett/jd?tab=readme-ov-file#examples) to visualize the structural diff.
+The goal is to avoid dependencies on `jd` in the codebase, but to provide examples in the documentation that enable users to see diffs conveniently, i.e:
+
+```shell
+kumactl inspect dataplane dpp-1 --config-dump --shadow > with-shadow.json && jd <(kumactl inspect dataplane dpp-1 --config-dump) with-shadow.json
+```
+
+
 Implementation wise, shadow mode requires generating 2 snapshots: one with and without the new policy. 
 By comparing these snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
 
