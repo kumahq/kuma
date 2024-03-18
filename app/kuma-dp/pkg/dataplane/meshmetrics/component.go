@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -109,17 +110,22 @@ func (cf *ConfigFetcher) NeedLeaderElection() bool {
 }
 
 func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
+	conf := xds.MeshMetricDpConfig{}
 	// since we use socket for communication "localhost" is ignored but this is needed for this
 	// http call to work
 	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
 	if err != nil {
+		// this error can only occur when we configured policy once and then remove it. Listener is removed but socket file
+		// is still present since Envoy does not clean it.
+		if strings.Contains(err.Error(), "connection refused") {
+			logger.V(1).Info("Failed to scrape config, Envoy not listening on socket")
+			return &conf, nil
+		}
 		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
 		return nil, errors.Wrap(err, "failed to scrape /meshmetric endpoint")
 	}
 
 	defer configuration.Body.Close()
-	conf := xds.MeshMetricDpConfig{}
-
 	respBytes, err := io.ReadAll(configuration.Body)
 	if err != nil {
 		logger.Info("failed to read bytes of the response", "err", err)
@@ -298,8 +304,8 @@ func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backend
 func (cf *ConfigFetcher) shutDownMetricsExporters() {
 	ctx, cancel := context.WithTimeout(context.Background(), cf.drainTime)
 	defer cancel()
-	for _, exporter := range cf.runningBackends {
-		err := exporter.exporter.Shutdown(ctx)
+	for backendName := range cf.runningBackends {
+		err := cf.shutdownBackend(ctx, backendName)
 		if err != nil {
 			logger.Error(err, "Failed shutting down metric exporter")
 		}
