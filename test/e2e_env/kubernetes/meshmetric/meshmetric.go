@@ -504,7 +504,7 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry enabled", func() {
+	It("MeshMetric with OpenTelemetry enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -518,10 +518,10 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and usedonly/filter", func() {
+	It("MeshMetric with OpenTelemetry and usedonly/filter", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndIncludeUnused(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
@@ -536,10 +536,10 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_client_ssl_socket_factory_upstream_context_secrets_not_ready"))) // unused
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))                                  // used
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
+	It("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		testServerIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
@@ -565,10 +565,10 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with multiple OpenTelemetry backends", func() {
+	It("MeshMetric with multiple OpenTelemetry backends", func() {
 		// given
 		primaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		secondaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, secondaryOtelCollectorName)
@@ -593,7 +593,7 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 }
 
