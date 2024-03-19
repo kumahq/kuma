@@ -609,7 +609,7 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
-		}, "3m", "5s").Should(Succeed())
+		}, "2m", "5s").Should(Succeed())
 	})
 }
 
