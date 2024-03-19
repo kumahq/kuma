@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mads "github.com/kumahq/kuma/api/observability/v1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -310,6 +312,20 @@ func MeshMetric() {
 	})
 
 	E2EAfterEach(func() {
+		if err := k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
+			framework.Logf("could not retrieve kube pods")
+		}
+		details := framework.ExtractDeploymentDetails(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(observabilityNamespace), primaryOtelCollectorName)
+		framework.Logf("OTEL LOG collector")
+		for k, v := range details.Pods[0].Logs {
+			framework.Logf(" OTEL LOG container: %s, logs: %s", k, v)
+		}
+
+		testServerDetails := framework.ExtractDeploymentDetails(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "test-server-0")
+		framework.Logf("OTEL LOG test server")
+		for k, v := range testServerDetails.Pods[0].Logs {
+			framework.Logf("OTEL LOG container: %s, logs: %s", k, v)
+		}
 		Expect(DeleteMeshResources(kubernetes.Cluster, mainMesh, v1alpha1.MeshMetricResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(kubernetes.Cluster, secondaryMesh, v1alpha1.MeshMetricResourceTypeDescriptor)).To(Succeed())
 	})
