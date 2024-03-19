@@ -1,0 +1,3 @@
+import{d as u,a as t,o as _,b as l,w as e,Z as m,f as a,t as f,e as o,m as w}from"./index-VS3FVx2q.js";const v={class:"stack-with-borders"},b=u({__name:"ConnectionOutboundSummaryOverviewView",props:{data:{}},setup(n){const s=n;return(V,h)=>{const c=t("KBadge"),i=t("AppView"),p=t("RouteView");return _(),l(p,{name:"connection-outbound-summary-overview-view"},{default:e(({t:r})=>[o(i,null,{default:e(()=>[w("div",v,[o(m,{layout:"horizontal"},{title:e(()=>[a(`
+            Protocol
+          `)]),body:e(()=>[o(c,{appearance:"info"},{default:e(()=>[a(f(r(`http.api.value.${["grpc","http","tcp"].find(d=>typeof s.data[d]<"u")}`)),1)]),_:2},1024)]),_:2},1024)])]),_:2},1024)]),_:1})}}});export{b as default};
