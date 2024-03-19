@@ -64,6 +64,14 @@ func (t *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *CircuitBreakerResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *CircuitBreakerResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *CircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
 	return CircuitBreakerResourceTypeDescriptor
 }
@@ -171,6 +179,14 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *DataplaneResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *DataplaneResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *DataplaneResource) Descriptor() model.ResourceTypeDescriptor {
@@ -284,6 +300,14 @@ func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *DataplaneInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *DataplaneInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *DataplaneInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneInsightResourceTypeDescriptor
 }
@@ -391,6 +415,14 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *DataplaneOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *DataplaneOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
@@ -512,6 +544,14 @@ func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ExternalServiceResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ExternalServiceResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
 	return ExternalServiceResourceTypeDescriptor
 }
@@ -627,6 +667,14 @@ func (t *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *FaultInjectionResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *FaultInjectionResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *FaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
@@ -746,6 +794,14 @@ func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *HealthCheckResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *HealthCheckResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *HealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
 	return HealthCheckResourceTypeDescriptor
 }
@@ -853,6 +909,14 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *MeshResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *MeshResource) Descriptor() model.ResourceTypeDescriptor {
@@ -968,6 +1032,14 @@ func (t *MeshGatewayResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *MeshGatewayResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshGatewayResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *MeshGatewayResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshGatewayResourceTypeDescriptor
 }
@@ -1081,6 +1153,14 @@ func (t *MeshGatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *MeshGatewayRouteResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshGatewayRouteResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *MeshGatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshGatewayRouteResourceTypeDescriptor
 }
@@ -1188,6 +1268,14 @@ func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *MeshInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *MeshInsightResource) Descriptor() model.ResourceTypeDescriptor {
@@ -1300,6 +1388,14 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ProxyTemplateResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ProxyTemplateResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ProxyTemplateResource) Descriptor() model.ResourceTypeDescriptor {
@@ -1419,6 +1515,14 @@ func (t *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *RateLimitResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *RateLimitResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *RateLimitResource) Descriptor() model.ResourceTypeDescriptor {
 	return RateLimitResourceTypeDescriptor
 }
@@ -1536,6 +1640,14 @@ func (t *RetryResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *RetryResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *RetryResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *RetryResource) Descriptor() model.ResourceTypeDescriptor {
 	return RetryResourceTypeDescriptor
 }
@@ -1645,6 +1757,14 @@ func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ServiceInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ServiceInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ServiceInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ServiceInsightResourceTypeDescriptor
 }
@@ -1752,6 +1872,14 @@ func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ServiceOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ServiceOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ServiceOverviewResource) Descriptor() model.ResourceTypeDescriptor {
@@ -1864,6 +1992,14 @@ func (t *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *TimeoutResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *TimeoutResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *TimeoutResource) Descriptor() model.ResourceTypeDescriptor {
@@ -1983,6 +2119,14 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *TrafficLogResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *TrafficLogResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *TrafficLogResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficLogResourceTypeDescriptor
 }
@@ -2098,6 +2242,14 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *TrafficPermissionResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *TrafficPermissionResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *TrafficPermissionResource) Descriptor() model.ResourceTypeDescriptor {
@@ -2217,6 +2369,14 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *TrafficRouteResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *TrafficRouteResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *TrafficRouteResource) Descriptor() model.ResourceTypeDescriptor {
 	return TrafficRouteResourceTypeDescriptor
 }
@@ -2328,6 +2488,14 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *TrafficTraceResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *TrafficTraceResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *TrafficTraceResource) Descriptor() model.ResourceTypeDescriptor {
@@ -2443,6 +2611,14 @@ func (t *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *VirtualOutboundResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *VirtualOutboundResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *VirtualOutboundResource) Descriptor() model.ResourceTypeDescriptor {
 	return VirtualOutboundResourceTypeDescriptor
 }
@@ -2550,6 +2726,14 @@ func (t *ZoneEgressResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ZoneEgressResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneEgressResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ZoneEgressResource) Descriptor() model.ResourceTypeDescriptor {
@@ -2663,6 +2847,14 @@ func (t *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ZoneEgressInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneEgressInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ZoneEgressInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneEgressInsightResourceTypeDescriptor
 }
@@ -2770,6 +2962,14 @@ func (t *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ZoneEgressOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneEgressOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
@@ -2891,6 +3091,14 @@ func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ZoneIngressResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneIngressResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ZoneIngressResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneIngressResourceTypeDescriptor
 }
@@ -3002,6 +3210,14 @@ func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ZoneIngressInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneIngressInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ZoneIngressInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneIngressInsightResourceTypeDescriptor
 }
@@ -3109,6 +3325,14 @@ func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ZoneIngressOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneIngressOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor {

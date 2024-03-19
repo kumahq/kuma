@@ -30,6 +30,10 @@ func (r *Resource) GetSpec() core_model.ResourceSpec {
 	return r.Spec
 }
 
+func (r *Resource) GetStatus() core_model.ResourceStatus {
+	return nil // there is no status in old resources
+}
+
 var (
 	_ json.Marshaler   = &Resource{}
 	_ json.Unmarshaler = &Resource{}

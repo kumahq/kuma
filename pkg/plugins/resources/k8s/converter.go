@@ -33,6 +33,11 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (k8s_model.K
 		return nil, err
 	}
 	obj.SetSpec(r.GetSpec())
+	if r.Descriptor().HasStatus {
+		if err := obj.SetStatus(r.GetStatus()); err != nil {
+			return nil, err
+		}
+	}
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
 			obj.SetMesh(adapter.Mesh)
@@ -50,6 +55,15 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
 	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
+	if out.Descriptor().HasStatus {
+		status, err := obj.GetStatus()
+		if err != nil {
+			return err
+		}
+		if err := out.SetStatus(status); err != nil {
+			return err
+		}
+	}
 	spec, err := obj.GetSpec()
 	if err != nil {
 		return err

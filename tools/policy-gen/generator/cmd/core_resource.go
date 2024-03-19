@@ -46,6 +46,9 @@ package {{.Package}}
 
 import (
 	_ "embed"
+{{- if not .HasStatus }}
+	"errors"
+{{- end }}
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -75,11 +78,17 @@ var _ model.Resource = &{{.Name}}Resource{}
 type {{.Name}}Resource struct {
 	Meta model.ResourceMeta
 	Spec *{{.Name}}
+{{- if .HasStatus }}
+	Status *{{.Name}}Status
+{{- end }}
 }
 
 func New{{.Name}}Resource() *{{.Name}}Resource {
 	return &{{.Name}}Resource{
 		Spec: &{{.Name}}{},
+{{- if .HasStatus }}
+		Status: &{{.Name}}Status{},
+{{- end }}
 	}
 }
 
@@ -108,6 +117,34 @@ func (t *{{.Name}}Resource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
+{{ if .HasStatus }}
+func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
+	return t.Status
+}
+
+func (t *{{.Name}}Resource) SetStatus(spec model.ResourceStatus) error {
+	protoType, ok := spec.(*{{.Name}}Status)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", spec)
+	} else {
+		if protoType == nil {
+			t.Status = &{{.Name}}Status{}
+		} else  {
+			t.Status = protoType
+		}
+		return nil
+	}
+}
+{{ else }}
+func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *{{.Name}}Resource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+{{ end }}
 
 func (t *{{.Name}}Resource) Descriptor() model.ResourceTypeDescriptor {
 	return {{.Name}}ResourceTypeDescriptor 
@@ -179,5 +216,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		IsTargetRefBased: {{.IsPolicy}},
 		HasToTargetRef: {{.HasTo}},
 		HasFromTargetRef: {{.HasFrom}},
+		HasStatus: {{.HasStatus}},
 	}
 `))

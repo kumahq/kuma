@@ -64,6 +64,9 @@ var customResourceTemplate = template.Must(template.New("custom-resource").Parse
 package {{.Package}}
 
 import (
+{{- if not .HasStatus }}
+	"errors"
+{{- end }}
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,6 +93,12 @@ type {{.Name}} struct {
 	// Spec is the specification of the Kuma {{ .Name }} resource.
     // +kubebuilder:validation:Optional
 	Spec   *policy.{{.Name}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
+
+{{- if .HasStatus }}
+	// Status is the current status of the Kuma {{ .Name }} resource.
+    // +kubebuilder:validation:Optional
+	Status *policy.{{.Name}}Status {{ $tk }}json:"status,omitempty"{{ $tk }}
+{{- end }}
 }
 
 // +kubebuilder:object:root=true
@@ -139,6 +148,34 @@ func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
 
 	cb.Spec = spec.(*policy.{{.Name}})
 }
+
+{{ if .HasStatus }}
+func (cb *{{.Name}}) GetStatus() (core_model.ResourceStatus, error) {
+	return cb.Status, nil
+}
+
+func (cb *{{.Name}}) SetStatus(status core_model.ResourceStatus) error {
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.{{.Name}}Status); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.{{.Name}}Status)
+	return nil
+}
+{{ else }}
+func (cb *{{.Name}}) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *{{.Name}}) SetStatus(status core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+{{ end }}
 
 func (cb *{{.Name}}) Scope() model.Scope {
 	return model.ScopeNamespace

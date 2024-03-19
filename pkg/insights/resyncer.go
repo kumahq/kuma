@@ -465,7 +465,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 	}
 
 	for _, dpOverview := range dpOverviews {
-		status, _ := dpOverview.GetStatus()
+		status, _ := dpOverview.Status()
 		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
 
@@ -576,7 +576,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
 		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
 
-		status, _ := dpOverview.GetStatus()
+		status, _ := dpOverview.Status()
 
 		statByType := insight.GetDataplanesByType().GetStandard()
 		if networking.GetGateway() != nil {

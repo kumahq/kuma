@@ -40,17 +40,6 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		obj.GetResourceVersion(),
 		obj.GetObjectKind().GroupVersionKind().String(),
 	}, ":")
-	if obj.GetResourceVersion() == "" {
-		// an absent of the ResourceVersion means we decode 'obj' from webhook request,
-		// all webhooks use SimpleConverter, so this is not supposed to happen
-		spec, err := obj.GetSpec()
-		if err != nil {
-			return err
-		}
-		if err := out.SetSpec(spec); err != nil {
-			return err
-		}
-	}
 	if v, ok := c.cache.Get(key); ok {
 		return out.SetSpec(v.(core_model.ResourceSpec))
 	}
@@ -61,6 +50,19 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	c.cache.SetDefault(key, out.GetSpec())
+	if out.Descriptor().HasStatus {
+		status, err := obj.GetStatus()
+		if err != nil {
+			return err
+		}
+		if err := out.SetStatus(status); err != nil {
+			return err
+		}
+	}
+	if obj.GetResourceVersion() != "" {
+		// an absent of the ResourceVersion means we decode 'obj' from webhook request,
+		// all webhooks use SimpleConverter, so this is not supposed to happen
+		c.cache.SetDefault(key, out.GetSpec())
+	}
 	return nil
 }

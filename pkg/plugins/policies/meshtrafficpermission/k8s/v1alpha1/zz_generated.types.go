@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,6 +76,14 @@ func (cb *MeshTrafficPermission) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = spec.(*policy.MeshTrafficPermission)
+}
+
+func (cb *MeshTrafficPermission) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *MeshTrafficPermission) SetStatus(status core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *MeshTrafficPermission) Scope() model.Scope {

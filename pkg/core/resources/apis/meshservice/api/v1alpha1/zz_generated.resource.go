@@ -33,13 +33,15 @@ const (
 var _ model.Resource = &MeshServiceResource{}
 
 type MeshServiceResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshService
+	Meta   model.ResourceMeta
+	Spec   *MeshService
+	Status *MeshServiceStatus
 }
 
 func NewMeshServiceResource() *MeshServiceResource {
 	return &MeshServiceResource{
-		Spec: &MeshService{},
+		Spec:   &MeshService{},
+		Status: &MeshServiceStatus{},
 	}
 }
 
@@ -64,6 +66,24 @@ func (t *MeshServiceResource) SetSpec(spec model.ResourceSpec) error {
 			t.Spec = &MeshService{}
 		} else {
 			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *MeshServiceResource) GetStatus() model.ResourceStatus {
+	return t.Status
+}
+
+func (t *MeshServiceResource) SetStatus(spec model.ResourceStatus) error {
+	protoType, ok := spec.(*MeshServiceStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", spec)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshServiceStatus{}
+		} else {
+			t.Status = protoType
 		}
 		return nil
 	}
@@ -139,4 +159,5 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:    false,
 	HasToTargetRef:      false,
 	HasFromTargetRef:    false,
+	HasStatus:           true,
 }
