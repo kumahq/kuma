@@ -208,11 +208,13 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		case gatewayapi_v1.QueryParamMatchExact:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.ExactQueryMatch,
+				Name:  string(gapiParam.Name),
 				Value: gapiParam.Value,
 			}
 		case gatewayapi_v1.QueryParamMatchRegularExpression:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.RegularExpressionQueryMatch,
+				Name:  string(gapiParam.Name),
 				Value: gapiParam.Value,
 			}
 		default:
