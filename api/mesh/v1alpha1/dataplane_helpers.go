@@ -127,6 +127,26 @@ func (i OutboundInterface) String() string {
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
+func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef == nil
+}
+
+func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
+	var result []*Dataplane_Networking_Outbound
+	for _, outbound := range n.GetOutbound() {
+		add := true
+		for _, filter := range filters {
+			if !filter(outbound) {
+				add = false
+			}
+		}
+		if add {
+			result = append(result, outbound)
+		}
+	}
+	return result
+}
+
 func (n *Dataplane_Networking) GetOutboundInterfaces() []OutboundInterface {
 	if n == nil {
 		return nil

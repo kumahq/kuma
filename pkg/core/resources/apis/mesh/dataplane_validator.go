@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/maps"
 )
+
+var allowedKinds = map[string]struct{}{
+	"MeshService": {},
+}
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
@@ -218,12 +224,21 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		result.AddViolation("address", "address has to be valid IP address")
 	}
 
-	if len(outbound.Tags) == 0 {
+	switch {
+	case outbound.BackendRef != nil:
+		if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
+			result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
+		}
+		if outbound.BackendRef.Name == "" {
+			result.AddViolation("backendRef.name", "cannot be empty")
+		}
+		result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
+	case len(outbound.Tags) == 0:
 		// nolint:staticcheck
 		if outbound.GetService() == "" {
 			result.AddViolationAt(validators.RootedAt("tags"), `mandatory tag "kuma.io/service" is missing`)
 		}
-	} else {
+	default:
 		result.Add(ValidateTags(validators.RootedAt("tags"), outbound.Tags, ValidateTagsOpts{
 			RequireService: true,
 		}))

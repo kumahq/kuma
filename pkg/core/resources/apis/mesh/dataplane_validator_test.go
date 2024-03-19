@@ -279,6 +279,24 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: redis
                 metrics:
                   type: prometheus`),
+		Entry("dataplane with backend ref", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  backendRef:
+                    kind: MeshService
+                    name: xyz
+                    port: 80`,
+		),
 	)
 
 	type testCase struct {
@@ -1157,6 +1175,32 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: metrics.type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
+		}),
+		Entry("dataplane with empty backend ref", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  backendRef: {}`,
+			expected: `
+                violations:
+                - field: networking.outbound[0].backendRef.kind
+                  message: 'invalid value. Available values are: MeshService'
+                - field: networking.outbound[0].backendRef.name
+                  message: cannot be empty
+                - field: networking.outbound[0].backendRef.port
+                  message: port must be in the range [1, 65535]`,
 		}),
 	)
 })

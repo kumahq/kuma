@@ -120,23 +120,25 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		service := outbound.GetService()
-		if len(reachableServices) != 0 {
-			if !reachableServices[service] {
-				// ignore VIP outbound if reachableServices is defined and not specified
-				// Reachable services takes precedence over reachable services graph.
+		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
+			service := outbound.GetService()
+			if len(reachableServices) != 0 {
+				if !reachableServices[service] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+			} else {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
+					continue
+				}
+			}
+			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+				// Skip overlapping outbound interface with inbound.
+				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 				continue
 			}
-		} else {
-			// static reachable services takes precedence over the graph
-			if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
-				continue
-			}
-		}
-		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
-			// Skip overlapping outbound interface with inbound.
-			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
-			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}

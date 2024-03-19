@@ -183,7 +183,21 @@ message Dataplane {
       // specific data plane proxy of a service (for example: `version=v2`) the
       // better practice is to use TrafficRoute.
       map<string, string> tags = 5;
+
+      // BackendRef is a way to target MeshService.
+      // Experimental. Do not use on production yet.
+      BackendRef backendRef = 6;
+
+      message BackendRef {
+        // Kind is a type of the object to target. Allowed: MeshService
+        string kind = 1;
+        // Name of the targeted object
+        string name = 2;
+        // Port of the targeted object. Required when kind is MeshService.
+        uint32 port = 3;
+      }
     }
+
 
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
