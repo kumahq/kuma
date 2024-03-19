@@ -1,0 +1,131 @@
+resources:
+- name: outbound:127.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          routeConfig:
+            name: outbound:backend
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/protocol=http&&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  path: /v1
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
+                redirect:
+                  schemeRedirect: other
+=======
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
+                requestHeadersToAdd:
+                - append: false
+                  header:
+                    key: request-set-header
+                    value: set-value
+                - append: false
+                  header:
+                    key: request-set-header-multiple
+                    value: one-value
+                - append: true
+                  header:
+                    key: request-set-header-multiple
+                    value: second-value
+                - append: true
+                  header:
+                    key: request-add-header
+                    value: add-value
+                requestHeadersToRemove:
+                - request-header-to-remove
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
+                responseHeadersToAdd:
+                - append: false
+                  header:
+                    key: response-set-header
+                    value: set-value
+                - append: true
+                  header:
+                    key: response-add-header
+                    value: add-value
+                responseHeadersToRemove:
+                - response-header-to-remove
+              - match:
+                  prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                redirect:
+                  schemeRedirect: other
+=======
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
+                requestHeadersToAdd:
+                - append: false
+                  header:
+                    key: request-set-header
+                    value: set-value
+                - append: false
+                  header:
+                    key: request-set-header-multiple
+                    value: one-value
+                - append: true
+                  header:
+                    key: request-set-header-multiple
+                    value: second-value
+                - append: true
+                  header:
+                    key: request-add-header
+                    value: add-value
+                requestHeadersToRemove:
+                - request-header-to-remove
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
+                responseHeadersToAdd:
+                - append: false
+                  header:
+                    key: response-set-header
+                    value: set-value
+                - append: true
+                  header:
+                    key: response-add-header
+                    value: add-value
+                responseHeadersToRemove:
+                - response-header-to-remove
+=======
+                route:
+                  cluster: backend
+                  timeout: 0s
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: backend
+                  timeout: 0s
+          statPrefix: backend
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:127.0.0.1:10001
+    trafficDirection: OUTBOUND
