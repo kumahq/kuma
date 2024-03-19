@@ -31,9 +31,6 @@ resources:
               - match:
                   path: /v1
                 name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
-                redirect:
-                  responseCode: FOUND
-                  schemeRedirect: other
                 requestHeadersToAdd:
                 - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
@@ -51,22 +48,12 @@ resources:
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
-                responseHeadersToAdd:
-                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-                  header:
-                    key: response-set-header
-                    value: set-value
-                - header:
-                    key: response-add-header
-                    value: add-value
-                responseHeadersToRemove:
-                - response-header-to-remove
+                route:
+                  cluster: backend
+                  timeout: 0s
               - match:
                   prefix: /v1/
                 name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
-                redirect:
-                  responseCode: FOUND
-                  schemeRedirect: other
                 requestHeadersToAdd:
                 - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
@@ -84,16 +71,9 @@ resources:
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
-                responseHeadersToAdd:
-                - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
-                  header:
-                    key: response-set-header
-                    value: set-value
-                - header:
-                    key: response-add-header
-                    value: add-value
-                responseHeadersToRemove:
-                - response-header-to-remove
+                route:
+                  cluster: backend
+                  timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
