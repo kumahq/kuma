@@ -116,8 +116,6 @@ func ReconcileLabelledObject(
 			return errors.Wrapf(err, "could not get new %T from registry", ownedType)
 		}
 
-		owned.SetMesh(ownerMesh)
-
 		owned.SetObjectMeta(
 			&kube_meta.ObjectMeta{
 				Name:      ownedName,
@@ -127,6 +125,7 @@ func ReconcileLabelledObject(
 				},
 			},
 		)
+		owned.SetMesh(ownerMesh)
 		owned.SetSpec(ownedSpec)
 
 		if err := client.Create(ctx, owned); err != nil {
