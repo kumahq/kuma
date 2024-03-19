@@ -260,12 +260,12 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 
 			for _, s := range h.Set {
 				entry.ResponseHeaders.Replace = append(
-					entry.RequestHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
+					entry.ResponseHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			for _, s := range h.Add {
 				entry.ResponseHeaders.Append = append(
-					entry.RequestHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
+					entry.ResponseHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			entry.ResponseHeaders.Delete = append(
