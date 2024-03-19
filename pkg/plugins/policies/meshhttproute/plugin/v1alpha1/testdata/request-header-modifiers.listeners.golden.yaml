@@ -30,8 +30,12 @@ resources:
               routes:
               - match:
                   path: /v1
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
                 redirect:
                   schemeRedirect: other
+=======
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
                 requestHeadersToAdd:
                 - append: false
                   header:
@@ -51,6 +55,7 @@ resources:
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
                 responseHeadersToAdd:
                 - append: false
                   header:
@@ -66,6 +71,14 @@ resources:
                   prefix: /v1/
                 redirect:
                   schemeRedirect: other
+=======
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
                 requestHeadersToAdd:
                 - append: false
                   header:
@@ -85,6 +98,7 @@ resources:
                     value: add-value
                 requestHeadersToRemove:
                 - request-header-to-remove
+<<<<<<< HEAD:pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/header-modifiers.listeners.golden.yaml
                 responseHeadersToAdd:
                 - append: false
                   header:
@@ -96,6 +110,11 @@ resources:
                     value: add-value
                 responseHeadersToRemove:
                 - response-header-to-remove
+=======
+                route:
+                  cluster: backend
+                  timeout: 0s
+>>>>>>> c579544d4 (fix(MeshHTTPRoute): fix response headers filter in gateway route generation (#9652)):pkg/plugins/policies/meshhttproute/plugin/v1alpha1/testdata/request-header-modifiers.listeners.golden.yaml
               - match:
                   prefix: /
                 route:
