@@ -119,13 +119,13 @@ var _ = Describe("MADS Server", func() {
 		request.Header.Add("Content-Type", "application/json")
 		request.Header.Add("Accept", "application/json")
 
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			response, err := client.Do(request)
-			ok := err == nil && response.StatusCode == 200
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response).To(HaveHTTPStatus(200))
 			if response != nil {
 				Expect(response.Body.Close()).To(Succeed())
 			}
-			return ok
-		}, "10s", "100ms").Should(BeTrue())
+		}, "10s", "100ms").Should(Succeed())
 	})
 })
