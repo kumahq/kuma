@@ -95,6 +95,14 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
+	initTmp := kube_core.Volume{
+		Name: "kuma-init-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
 	sidecarTmp := kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
 		VolumeSource: kube_core.VolumeSource{
@@ -103,7 +111,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			},
 		},
 	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, initTmp, sidecarTmp)
 
 	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
 		Name:      sidecarTmp.Name,
@@ -376,7 +384,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 					"NET_ADMIN",
 					"NET_RAW",
 				},
+				Drop: []kube_core.Capability{
+					"ALL",
+				},
 			},
+			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{
@@ -387,6 +399,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
+		},
+		VolumeMounts: []kube_core.VolumeMount{
+			{Name: "kuma-init-tmp", MountPath: "/tmp", ReadOnly: false},
 		},
 	}
 
@@ -412,10 +427,10 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
 		}
 
-		container.VolumeMounts = []kube_core.VolumeMount{
-			{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
-			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
-		}
+		container.VolumeMounts = append(container.VolumeMounts,
+			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
+			kube_core.VolumeMount{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
+		)
 	}
 
 	return container, nil

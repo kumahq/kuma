@@ -124,8 +124,14 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   - args:
     - run
     - --log-level=info
@@ -262,6 +268,9 @@ spec:
   - name: coredns-token-9gmrh
     secret:
       secretName: coredns-token-9gmrh
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

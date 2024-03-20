@@ -152,8 +152,14 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   volumes:
   - name: token
     projected:
@@ -162,6 +168,9 @@ spec:
           audience: https://kubernetes.default.svc.cluster.local
           expirationSeconds: 7200
           path: token
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

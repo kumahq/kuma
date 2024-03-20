@@ -166,15 +166,21 @@ spec:
     securityContext:
       capabilities: {}
       privileged: true
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
     - mountPath: /sys/fs/cgroup
       name: sys-fs-cgroup
     - mountPath: /sys/fs/bpf
       mountPropagation: Bidirectional
       name: bpf-fs
   volumes:
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp
