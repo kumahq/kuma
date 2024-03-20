@@ -139,6 +139,8 @@ spec:
       readOnly: true
   initContainers:
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
