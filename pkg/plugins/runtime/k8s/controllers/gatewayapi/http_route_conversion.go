@@ -18,8 +18,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	referencegrants "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -174,7 +174,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (map[string]string, *ResolvedRefsConditionFalse, error) {
 	unresolvedBackendTags := map[string]string{
-		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
+		mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
 	}
 
 	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
@@ -237,7 +237,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (map[string]string, *ResolvedRefsConditionFalse, error) {
 	unresolvedBackendTags := map[string]string{
-		mesh_proto.ServiceTag: gateway.UnresolvedBackendServiceTag,
+		mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
 	}
 
 	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
