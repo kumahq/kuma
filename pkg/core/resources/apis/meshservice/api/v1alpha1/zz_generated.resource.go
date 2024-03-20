@@ -75,10 +75,10 @@ func (t *MeshServiceResource) GetStatus() model.ResourceStatus {
 	return t.Status
 }
 
-func (t *MeshServiceResource) SetStatus(spec model.ResourceStatus) error {
-	protoType, ok := spec.(*MeshServiceStatus)
+func (t *MeshServiceResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshServiceStatus)
 	if !ok {
-		return fmt.Errorf("invalid type %T for Status", spec)
+		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
 			t.Status = &MeshServiceStatus{}

@@ -123,10 +123,10 @@ func (t *{{.Name}}Resource) GetStatus() model.ResourceStatus {
 	return t.Status
 }
 
-func (t *{{.Name}}Resource) SetStatus(spec model.ResourceStatus) error {
-	protoType, ok := spec.(*{{.Name}}Status)
+func (t *{{.Name}}Resource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*{{.Name}}Status)
 	if !ok {
-		return fmt.Errorf("invalid type %T for Status", spec)
+		return fmt.Errorf("invalid type %T for Status", status)
 	} else {
 		if protoType == nil {
 			t.Status = &{{.Name}}Status{}
