@@ -58,7 +58,7 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
 	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
-	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
+	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetimeJitter.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
 	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithAttributes(spanTypeSQLAttribute))
 	for _, customizer := range customizers {
