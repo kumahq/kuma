@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
@@ -9,6 +10,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshHTTPRouteResource) validate() error {
@@ -69,7 +71,11 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("matches"), validateMatches(rule.Matches))
 		errs.AddErrorAt(path.Field("default").Field("filters"), validateFilters(topTargetRef, rule.Default.Filters, rule.Matches))
-		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(topTargetRef, rule.Default.BackendRefs))
+		errs.AddErrorAt(path.Field("default").Field("backendRefs"), validateBackendRefs(
+			topTargetRef,
+			pointer.Deref(rule.Default.BackendRefs),
+			pointer.Deref(rule.Default.Filters),
+		))
 	}
 
 	return errs
@@ -320,20 +326,27 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 	return errs
 }
 
-func validateBackendRefs(topTargetRef common_api.TargetRef, backendRefs *[]common_api.BackendRef) validators.ValidationError {
+func validateBackendRefs(
+	topTargetRef common_api.TargetRef,
+	backendRefs []common_api.BackendRef,
+	filters []Filter,
+) validators.ValidationError {
 	var errs validators.ValidationError
 
-	if backendRefs == nil || len(*backendRefs) == 0 {
+	if len(backendRefs) == 0 {
 		if topTargetRef.Kind == common_api.MeshGateway {
-			errs.AddViolationAt(
-				validators.Root(),
-				validators.MustNotBeEmpty,
-			)
+			containsBackendlessFilter := slices.ContainsFunc(filters, func(filter Filter) bool {
+				return filter.Type == RequestRedirectType
+			})
+
+			// Rule doesn't need to contain any backendRefs when it contains RequestRedirectType filter
+			if !containsBackendlessFilter {
+				errs.AddViolationAt(validators.Root(), validators.MustNotBeEmpty)
+			}
 		}
-		return errs
 	}
 
-	for i, backendRef := range *backendRefs {
+	for i, backendRef := range backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
 			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
