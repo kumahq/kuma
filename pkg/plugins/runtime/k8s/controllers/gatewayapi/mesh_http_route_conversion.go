@@ -208,11 +208,13 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		case gatewayapi_v1.QueryParamMatchExact:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.ExactQueryMatch,
+				Name:  string(gapiParam.Name),
 				Value: gapiParam.Value,
 			}
 		case gatewayapi_v1.QueryParamMatchRegularExpression:
 			param = v1alpha1.QueryParamsMatch{
 				Type:  v1alpha1.RegularExpressionQueryMatch,
+				Name:  string(gapiParam.Name),
 				Value: gapiParam.Value,
 			}
 		default:
@@ -296,13 +298,26 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 			path = &meshPath
 		}
 
+		port := (*v1alpha1.PortNumber)(redirect.Port)
+		if redirect.Scheme != nil && redirect.Port == nil {
+			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
+			// this would have been a breaking change for MeshGateway, so handle
+			// it here.
+			switch *redirect.Scheme {
+			case "http":
+				port = (*v1alpha1.PortNumber)(pointer.To(int32(80)))
+			case "https":
+				port = (*v1alpha1.PortNumber)(pointer.To(int32(443)))
+			}
+		}
+
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestRedirectType,
 			RequestRedirect: &v1alpha1.RequestRedirect{
 				Scheme:     redirect.Scheme,
 				Hostname:   (*v1alpha1.PreciseHostname)(redirect.Hostname),
 				Path:       path,
-				Port:       (*v1alpha1.PortNumber)(redirect.Port),
+				Port:       port,
 				StatusCode: redirect.StatusCode,
 			},
 		}, nil, true
