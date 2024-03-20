@@ -376,6 +376,14 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args:            podRedirect.AsKumactlCommandLine(),
+		Env: []kube_core.EnvVar{
+			// iptables needs this lock file to be writable:
+			// source: https://git.netfilter.org/iptables/tree/iptables/xshared.c?h=v1.8.7#n258
+			{
+				Name:  "XTABLES_LOCKFILE",
+				Value: "/tmp/xtables.lock",
+			},
+		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
 			RunAsGroup: new(int64),

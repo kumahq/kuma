@@ -56,6 +56,9 @@ spec:
     - /usr/bin/kumactl
     - install
     - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
     image: kuma/kuma-init:latest
     imagePullPolicy: IfNotPresent
     name: kuma-init
