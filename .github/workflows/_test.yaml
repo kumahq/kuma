@@ -99,6 +99,7 @@ jobs:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     strategy:
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     uses: ./.github/workflows/_e2e.yaml
@@ -109,6 +110,7 @@ jobs:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     strategy:
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     uses: ./.github/workflows/_e2e.yaml
