@@ -60,7 +60,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@60c9b136104671b7091b2306c599d80fec34ae3f
+        uses: Kong/public-shared-actions/security-actions/sca@60c9b136104671b7091b2306c599d80fec34ae3f # v2.1.0
         with:
           dir: .
           config: .syft.yaml
