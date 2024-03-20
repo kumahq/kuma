@@ -55,8 +55,12 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 	} else {
 		pgxConfig.MaxConns = int32(postgresStoreConfig.MaxOpenConnections)
 	}
+	if postgresStoreConfig.ConnectionTimeout != config.DefaultConnectionTimeout {
+		pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
+	} else {
+		pgxConfig.MaxConnIdleTime = postgresStoreConfig.MaxConnectionIdleTime.Duration
+	}
 	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
-	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
