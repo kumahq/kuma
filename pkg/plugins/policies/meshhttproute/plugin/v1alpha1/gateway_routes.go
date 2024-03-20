@@ -185,7 +185,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		Route: name,
 	}
 
-	for _, b := range *rule.Default.BackendRefs {
+	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation
