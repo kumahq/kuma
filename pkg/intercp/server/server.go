@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -31,6 +33,7 @@ type InterCpServer struct {
 	config     intercp.InterCpServerConfig
 	grpcServer *grpc.Server
 	instanceId string
+	ready      atomic.Bool
 }
 
 var _ component.Component = &InterCpServer{}
@@ -85,6 +88,10 @@ func New(
 	}, nil
 }
 
+func (d *InterCpServer) Ready() bool {
+	return d.ready.Load()
+}
+
 func (d *InterCpServer) Start(stop <-chan struct{}) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", d.config.Port))
 	if err != nil {
@@ -95,27 +102,29 @@ func (d *InterCpServer) Start(stop <-chan struct{}) error {
 		d.instanceId,
 	)
 
+	log.Info("starting", "interface", "0.0.0.0", "port", d.config.Port, "tls", true)
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
+		d.ready.Store(true)
 		if err := d.grpcServer.Serve(lis); err != nil {
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				log.Error(err, "terminated with an error")
 				errChan <- err
-				return
 			}
 		}
-		log.Info("terminated normally")
+		log.Info("shutting down server")
 	}()
-	log.Info("starting", "interface", "0.0.0.0", "port", d.config.Port, "tls", true)
 
 	select {
 	case <-stop:
 		log.Info("stopping gracefully")
+		d.ready.Store(false)
 		d.grpcServer.GracefulStop()
 		log.Info("stopped")
 		return nil
 	case err := <-errChan:
+		d.ready.Store(false)
 		return err
 	}
 }

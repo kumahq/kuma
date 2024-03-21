@@ -106,6 +106,9 @@ spec:
         ephemeral-storage: 50M
         memory: 164Mi
     securityContext:
+      capabilities:
+        drop:
+        - ALL
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678

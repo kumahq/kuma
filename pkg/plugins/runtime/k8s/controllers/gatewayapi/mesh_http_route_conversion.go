@@ -192,6 +192,21 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		Value: *gapiMatch.Path.Value,
 	}
 
+	// Matches based on a URL path prefix split by `/`. Matching is
+	// case-sensitive and done on a path element by element basis. A
+	// path element refers to the list of labels in the path split by
+	// the `/` separator. When specified, a trailing `/` is ignored.
+	//
+	// For example, the paths `/abc`, `/abc/`, and `/abc/def` would all match
+	// the prefix `/abc`, but the path `/abcd` would not.
+	//
+	// ref. https://github.com/kubernetes-sigs/gateway-api/blob/50091d071226d4ab2dbdb115ae65e27cf3fd5b85/apis/v1/httproute_types.go#L357-L367
+	//
+	// Necessary as MehHTTPRoute validator won't allow value with trailing `/`
+	if match.Path.Type == v1alpha1.PathPrefix && match.Path.Value != "/" {
+		match.Path.Value = strings.TrimSuffix(match.Path.Value, "/")
+	}
+
 	for _, gapiHeader := range gapiMatch.Headers {
 		header := common_api.HeaderMatch{
 			Type: pointer.To(common_api.HeaderMatchType(*gapiHeader.Type)),
@@ -298,13 +313,26 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 			path = &meshPath
 		}
 
+		port := (*v1alpha1.PortNumber)(redirect.Port)
+		if redirect.Scheme != nil && redirect.Port == nil {
+			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
+			// this would have been a breaking change for MeshGateway, so handle
+			// it here.
+			switch *redirect.Scheme {
+			case "http":
+				port = (*v1alpha1.PortNumber)(pointer.To(int32(80)))
+			case "https":
+				port = (*v1alpha1.PortNumber)(pointer.To(int32(443)))
+			}
+		}
+
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestRedirectType,
 			RequestRedirect: &v1alpha1.RequestRedirect{
 				Scheme:     redirect.Scheme,
 				Hostname:   (*v1alpha1.PreciseHostname)(redirect.Hostname),
 				Path:       path,
-				Port:       (*v1alpha1.PortNumber)(redirect.Port),
+				Port:       port,
 				StatusCode: redirect.StatusCode,
 			},
 		}, nil, true

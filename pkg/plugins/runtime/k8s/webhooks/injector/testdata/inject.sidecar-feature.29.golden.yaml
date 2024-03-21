@@ -171,6 +171,9 @@ spec:
         memory: 164Mi
     restartPolicy: Always
     securityContext:
+      capabilities:
+        drop:
+        - ALL
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678

@@ -518,7 +518,7 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
 	XIt("MeshMetric with OpenTelemetry and usedonly/filter", func() {
@@ -536,7 +536,7 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_client_ssl_socket_factory_upstream_context_secrets_not_ready"))) // unused
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))                                  // used
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
 	XIt("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
@@ -565,7 +565,7 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 
 	XIt("MeshMetric with multiple OpenTelemetry backends", func() {
@@ -593,7 +593,7 @@ func MeshMetric() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_external_upstream_rq_time_bucket"))
-		}, "2m", "3s").Should(Succeed())
+		}, "3m", "5s").Should(Succeed())
 	})
 }
 
