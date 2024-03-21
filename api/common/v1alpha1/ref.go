@@ -42,6 +42,14 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 	return order[k] < order[o]
 }
 
+func AllTargetRefKinds() []TargetRefKind {
+	keys := make([]TargetRefKind, 0, len(order))
+	for k := range order {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
