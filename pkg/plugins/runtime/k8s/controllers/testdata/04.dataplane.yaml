@@ -31,8 +31,8 @@ spec:
       tags:
         kuma.io/service: test-app_playground_svc_80
     transparentProxying:
-      ipFamilyMode: DualStack
       directAccessServices:
       - '*'
+      ipFamilyMode: DualStack
       redirectPortInbound: 15006
       redirectPortOutbound: 15001

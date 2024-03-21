@@ -376,6 +376,8 @@ env:
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
+- name: KUMA_STORE_POSTGRES_TLS_MODE
+  value: {{ .Values.postgres.tls.mode }}
 {{- if or (eq .Values.postgres.tls.mode "verifyCa") (eq .Values.postgres.tls.mode "verifyFull") }}
 {{- if empty .Values.postgres.tls.caSecretName }}
 {{ fail "if mode is 'verifyCa' or 'verifyFull' then you must provide .Values.postgres.tls.caSecretName" }}
@@ -390,8 +392,6 @@ env:
 - name: KUMA_STORE_POSTGRES_TLS_CA_PATH
   value: /var/run/secrets/kuma.io/postgres-tls-cert/ca.crt
 {{- end }}
-- name: KUMA_STORE_POSTGRES_TLS_MODE
-  value: {{ .Values.postgres.tls.mode }}
 {{- if .Values.postgres.tls.disableSSLSNI }}
 - name: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
   value: {{ .Values.postgres.tls.disableSSLSNI }}
