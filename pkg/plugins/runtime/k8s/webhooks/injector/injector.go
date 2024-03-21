@@ -152,6 +152,14 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		})
 	}
 
+	var prependedInitContainers []kube_core.Container
+	var appendedInitContainers []kube_core.Container
+
+	initContainerMeshAccess, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitContainerMeshAccess)
+	if err != nil {
+		return err
+	}
+
 	// init container
 	if !i.cfg.CNIEnabled {
 		ic, err := i.NewInitContainer(pod)
@@ -162,26 +170,36 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
-		if err != nil {
+		if kumaInitFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst); err != nil {
 			return err
-		}
-		if enabled {
-			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
-			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+		} else if kumaInitFirst || (initContainerMeshAccess && i.sidecarContainersEnabled) {
+			prependedInitContainers = []kube_core.Container{patchedIc}
 		} else {
-			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
+			appendedInitContainers = []kube_core.Container{patchedIc}
 		}
 	}
 
+	var prependedContainers []kube_core.Container
+
 	if i.sidecarContainersEnabled {
-		// inject sidecar after init
+		// inject kuma-sidecar after kuma-init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+		if initContainerMeshAccess {
+			prependedInitContainers = append(prependedInitContainers, patchedContainer)
+		} else {
+			appendedInitContainers = append(appendedInitContainers, patchedContainer)
+		}
 	} else {
-		// inject sidecar as first container
-		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
+		// inject kuma-sidecar as first container
+		prependedContainers = []kube_core.Container{patchedContainer}
+		if initContainerMeshAccess {
+			log.Info(fmt.Sprintf("WARNING: %s has no effect without the sidecarContainers feature", metadata.KumaInitContainerMeshAccess))
+		}
 	}
+
+	pod.Spec.InitContainers = append(append(prependedInitContainers, pod.Spec.InitContainers...), appendedInitContainers...)
+
+	pod.Spec.Containers = append(prependedContainers, pod.Spec.Containers...)
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
 		return err
