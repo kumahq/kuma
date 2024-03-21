@@ -25,7 +25,6 @@ store:
     # Driver to use, one of: pgx, postgres
     driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
-    # Deprecated: it's used for MaxIdleConnectionTime (applied only when driverName=pgx), use `MaxConnectionIdleTime` instead.
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
     # MaxConnectionIdleTime (applied only when driverName=pgx) is the duration after which an idle connection will be automatically closed by the health check.
     maxConnectionIdleTime: "30m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME

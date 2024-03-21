@@ -99,24 +99,6 @@ var deprecations = []config.Deprecation{
 		},
 		ConfigValueMsg: "The config is specific to 'pq' driver which is marked as deprecated.",
 	},
-	{
-		Env:    "KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT",
-		EnvMsg: "Use KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME instead",
-		ConfigValuePath: func(cfg config.Config) (string, bool) {
-			kumaCPConfig, ok := cfg.(*Config)
-			if !ok {
-				panic("wrong config type")
-			}
-			if kumaCPConfig.Store == nil || kumaCPConfig.Store.Postgres == nil {
-				return "", false
-			}
-			if kumaCPConfig.Store.Postgres.MaxConnectionIdleTime.Duration == postgres.DefaultMaxConnectionLifetime.Duration {
-				return "", false
-			}
-			return "Store.Postgres.MaxConnectionIdleTime", true
-		},
-		ConfigValueMsg: "Use Store.Postgres.MaxConnectionIdleTime instead.",
-	},
 }
 
 func PrintDeprecations(cfg *Config, out io.Writer) {

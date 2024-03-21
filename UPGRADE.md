@@ -94,16 +94,6 @@ Example output of a zone ingress token:
 The option to configure authentication was deprecated and has been removed in release `2.7.x`. If you are still using `KUMA_DP_SERVER_AUTH_*`
 environment variables or `dpServer.auth.*` configuration, please migrate your configuration to use `dpServer.authn` before upgrade.
 
-### Configuration option `KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT`, `store.postgres.connectionTimeout` has been deprecated
-
-**Only when using pgx driver.**
-
-The configuration option wasn't functioning as its name suggests. Instead of setting the connection timeout, it was setting the idle connection time. As a solution, we've introduced a new variable: `store.postgres.maxConnectionIdleTime` (accessible via the environment variable `KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME`).
-
-If you explicitly set `store.postgres.connectionTimeout` (`KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT`), the provided configuration will be used. Otherwise, a new default value will be applied, which has been adjusted from the previous 5 seconds to 30 minutes.
-
-If you intend to modify this value, please ensure to set `store.postgres.connectionTimeout` (`KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT`).
-
 ## Upgrade to `2.6.x`
 
 ### Policy

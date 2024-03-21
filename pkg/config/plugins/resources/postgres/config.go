@@ -52,7 +52,6 @@ type PostgresStoreConfig struct {
 	// Driver to use, one of: pgx, postgres
 	DriverName string `json:"driverName" envconfig:"kuma_store_postgres_driver_name"`
 	// Connection Timeout to the DB in seconds
-	// Deprecated: it's used for MaxIdleConnectionTime (applied only when driverName=pgx), use `MaxConnectionIdleTime` instead.
 	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
 	// MaxConnectionIdleTime (applied only when driverName=pgx) is the duration after which an idle connection will be automatically closed by the health check.
 	MaxConnectionIdleTime config_types.Duration `json:"maxConnectionIdleTime" envconfig:"kuma_store_postgres_max_connection_idle_time"`
