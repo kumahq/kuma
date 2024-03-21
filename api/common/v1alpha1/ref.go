@@ -43,11 +43,7 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 }
 
 func AllTargetRefKinds() []TargetRefKind {
-	keys := make([]TargetRefKind, 0, len(order))
-	for k := range order {
-		keys = append(keys, k)
-	}
-	return keys
+	return maps.Keys(order)
 }
 
 // TargetRef defines structure that allows attaching policy to various objects
