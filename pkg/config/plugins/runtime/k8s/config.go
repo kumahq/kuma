@@ -98,6 +98,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				ProgramsSourcePath:   "/kuma/ebpf",
 			},
 			IgnoredServiceSelectorLabels: []string{},
+			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
+			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region"},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -221,6 +223,8 @@ type Injector struct {
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
+	// NodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
+	NodeLabelsToCopy []string `json:"nodeLabelsToCopy" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection

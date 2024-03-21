@@ -121,10 +121,10 @@ var _ = Describe("MADS Server", func() {
 
 		Eventually(func(g Gomega) {
 			response, err := client.Do(request)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response).To(HaveHTTPStatus(200))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response).To(HaveHTTPStatus(200))
 			if response != nil {
-				Expect(response.Body.Close()).To(Succeed())
+				g.Expect(response.Body.Close()).To(Succeed())
 			}
 		}, "10s", "100ms").Should(Succeed())
 	})

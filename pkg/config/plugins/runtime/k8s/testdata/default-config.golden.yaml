@@ -28,6 +28,9 @@ injector:
   ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
+  nodeLabelsToCopy:
+  - topology.kubernetes.io/zone
+  - topology.kubernetes.io/region
   sidecarContainer:
     drainTime: 30s
     envVars: {}
