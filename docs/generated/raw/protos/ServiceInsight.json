@@ -74,6 +74,12 @@
                 },
                 "addressPort": {
                     "type": "string"
+                },
+                "zones": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
                 }
             },
             "additionalProperties": true,

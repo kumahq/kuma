@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"math"
-	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -55,8 +54,8 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 	} else {
 		pgxConfig.MaxConns = int32(postgresStoreConfig.MaxOpenConnections)
 	}
+	pgxConfig.MaxConnIdleTime = postgresStoreConfig.MaxConnectionIdleTime.Duration
 	pgxConfig.MinConns = int32(postgresStoreConfig.MinOpenConnections)
-	pgxConfig.MaxConnIdleTime = time.Duration(postgresStoreConfig.ConnectionTimeout) * time.Second
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetimeJitter.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
