@@ -20,7 +20,7 @@ injector:
     cgroupPath: /sys/fs/cgroup
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP
-    programsSourcePath: /kuma/ebpf
+    programsSourcePath: /tmp/kuma-ebpf
   exceptions:
     labels:
       openshift.io/build.name: '*'

@@ -260,7 +260,7 @@ func defaultConfig() Config {
 		Ebpf: Ebpf{
 			Enabled:            false,
 			BPFFSPath:          "/run/kuma/bpf",
-			ProgramsSourcePath: "/kuma/ebpf",
+			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
 		IPv6:               false,
