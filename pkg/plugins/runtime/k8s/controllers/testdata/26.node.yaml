@@ -4,6 +4,7 @@ metadata:
   name: sample-node
   labels:
     topology.kubernetes.io/region: us
+    custom.label.io/do-not-copy: true
 status:
   addresses:
     - address: 10.128.15.193
