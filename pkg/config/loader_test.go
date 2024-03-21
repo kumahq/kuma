@@ -107,6 +107,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
 			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
+			Expect(cfg.Store.Postgres.MaxConnectionIdleTime.Duration).To(Equal(99 * time.Second))
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
@@ -392,6 +393,7 @@ store:
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
     maxListQueryElements: 111
+    maxConnectionIdleTime: 99s
     tls:
       mode: verifyFull
       certPath: /path/to/cert
@@ -774,6 +776,7 @@ tracing:
 				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_RATIO":                                                   "80",
+				"KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME":                                             "99s",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
