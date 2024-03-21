@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
@@ -49,6 +50,7 @@ import (
 	secrets_k8s "github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
+	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 	"github.com/kumahq/kuma/pkg/version"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -58,8 +60,10 @@ import (
 var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
-	mux    *http.ServeMux
-	config api_server.ApiServerConfig
+	mux        *http.ServeMux
+	config     api_server.ApiServerConfig
+	httpReady  atomic.Bool
+	httpsReady atomic.Bool
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -326,23 +330,50 @@ func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
 	return false
 }
 
+func (a *ApiServer) Ready() bool {
+	return a.httpReady.Load() && a.httpsReady.Load()
+}
+
 func (a *ApiServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 
 	var httpServer, httpsServer *http.Server
 	if a.config.HTTP.Enabled {
-		httpServer = a.startHttpServer(errChan)
+		httpServer = &http.Server{
+			ReadHeaderTimeout: time.Second,
+			Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
+			Handler:           a.mux,
+			ErrorLog:          adapter.ToStd(log),
+		}
+		if err := kuma_srv.StartServer(log, httpServer, &a.httpReady, errChan); err != nil {
+			return err
+		}
+	} else {
+		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
-		var err error
-		httpsServer, err = a.startHttpsServer(errChan)
+		tlsConfig, err := configureTLS(a.config)
 		if err != nil {
 			return err
 		}
+		httpsServer = &http.Server{
+			ReadHeaderTimeout: time.Second,
+			Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
+			Handler:           a.mux,
+			TLSConfig:         tlsConfig,
+			ErrorLog:          adapter.ToStd(log),
+		}
+		if err := kuma_srv.StartServer(log, httpsServer, &a.httpsReady, errChan); err != nil {
+			return err
+		}
+	} else {
+		a.httpsReady.Store(true)
 	}
 	select {
 	case <-stop:
 		log.Info("stopping down API Server")
+		a.httpReady.Store(false)
+		a.httpsReady.Store(false)
 		if httpServer != nil {
 			return httpServer.Shutdown(context.Background())
 		}
@@ -355,80 +386,29 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	return nil
 }
 
-func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
-	server := &http.Server{
-		ReadHeaderTimeout: time.Second,
-		Addr:              net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
-		Handler:           a.mux,
-		ErrorLog:          adapter.ToStd(log),
+func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
+	cert, err := tls.LoadX509KeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load TLS certificate")
 	}
-
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				log.Info("shutting down server")
-			default:
-				log.Error(err, "could not start an HTTP Server")
-				errChan <- err
-			}
-		}
-	}()
-	log.Info("starting", "interface", a.config.HTTP.Interface, "port", a.config.HTTP.Port)
-	return server
-}
-
-func (a *ApiServer) startHttpsServer(errChan chan error) (*http.Server, error) {
 	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
-	var err error
-	tlsConfig.MinVersion, err = config_types.TLSVersion(a.config.HTTPS.TlsMinVersion)
+	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig.CipherSuites, err = config_types.TLSCiphers(a.config.HTTPS.TlsCipherSuites)
+	tlsConfig.CipherSuites, err = config_types.TLSCiphers(cfg.HTTPS.TlsCipherSuites)
 	if err != nil {
 		return nil, err
 	}
-
-	err = configureMTLS(tlsConfig, a.config)
-	if err != nil {
-		return nil, err
-	}
-
-	server := &http.Server{
-		ReadHeaderTimeout: time.Second,
-		Addr:              net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
-		Handler:           a.mux,
-		TLSConfig:         tlsConfig,
-		ErrorLog:          adapter.ToStd(log),
-	}
-
-	go func() {
-		err := server.ListenAndServeTLS(a.config.HTTPS.TlsCertFile, a.config.HTTPS.TlsKeyFile)
-		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				log.Info("shutting down server")
-			default:
-				log.Error(err, "could not start an HTTPS Server")
-				errChan <- err
-			}
-		}
-	}()
-	log.Info("starting", "interface", a.config.HTTPS.Interface, "port", a.config.HTTPS.Port, "tls", true)
-	return server, nil
-}
-
-func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error {
 	clientCertPool := x509.NewCertPool()
 	if cfg.Auth.ClientCertsDir != "" {
 		log.Info("loading client certificates")
 		files, err := os.ReadDir(cfg.Auth.ClientCertsDir)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, file := range files {
 			if file.IsDir() {
@@ -442,20 +422,20 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 			path := filepath.Join(cfg.Auth.ClientCertsDir, file.Name())
 			caCert, err := os.ReadFile(path)
 			if err != nil {
-				return errors.Wrapf(err, "could not read certificate %q", path)
+				return nil, errors.Wrapf(err, "could not read certificate %q", path)
 			}
 			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return errors.Errorf("failed to load PEM client certificate from %q", path)
+				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
 			}
 		}
 	}
 	if cfg.HTTPS.TlsCaFile != "" {
 		file, err := os.ReadFile(cfg.HTTPS.TlsCaFile)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !clientCertPool.AppendCertsFromPEM(file) {
-			return errors.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
+			return nil, errors.Errorf("failed to load PEM client certificate from %q", cfg.HTTPS.TlsCaFile)
 		}
 	}
 
@@ -465,7 +445,7 @@ func configureMTLS(tlsConfig *tls.Config, cfg api_server.ApiServerConfig) error 
 	} else if cfg.Authn.Type == certs.PluginName {
 		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
 	}
-	return nil
+	return tlsConfig, nil
 }
 
 func SetupServer(rt runtime.Runtime) error {
