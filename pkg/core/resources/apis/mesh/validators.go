@@ -50,6 +50,18 @@ type ValidateSelectorsOpts struct {
 type ValidateTargetRefOpts struct {
 	SupportedKinds             []common_api.TargetRefKind
 	GatewayListenerTagsAllowed bool
+	// AllowedInvalidNames field allows to provide names that deviate from
+	// standard naming conventions in specific scenarios. I.e. normally,
+	// service names cannot contain forward slashes ("/"). However, there
+	// are exceptions during resource conversion:
+	// * Gateway API to Kuma HTTPRoute Conversion
+	//   When converting an HTTPRoute from Gateway API to a MeshHTTPRoute
+	//   (Kuma's resource definition), there might be situations where the
+	//   targeted backend reference cannot be found. In such cases, Kuma
+	//   sets the service name to "kuma.io/unresolved-backend". This name
+	//   includes a forward slash, but it's allowed as an exception to
+	//   handle unresolved references.
+	AllowedInvalidNames []string
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -358,13 +370,13 @@ func ValidateTargetRef(
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
-		err.Add(validateName(ref.Name))
+		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 	case common_api.MeshServiceSubset, common_api.MeshGateway:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
-		err.Add(validateName(ref.Name))
+		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
@@ -376,10 +388,10 @@ func ValidateTargetRef(
 	return err
 }
 
-func validateName(value string) validators.ValidationError {
+func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
 	var err validators.ValidationError
 
-	if !nameCharacterSet.MatchString(value) {
+	if !slices.Contains(allowedInvalidNames, value) && !nameCharacterSet.MatchString(value) {
 		err.AddViolation(
 			"name",
 			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",
