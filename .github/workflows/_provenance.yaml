@@ -42,7 +42,7 @@ jobs:
       fail-fast: true
       matrix:
         IMAGE: ${{ fromJSON(inputs.images) }}
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@07e64b653f10a80b6510f4568f685f8b7b9ea830 #v1.9.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@c747fe7769adf3656dc7d588b161cb614d7abfee # v1.10.0
     with:
       image: ${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.image_digests)[matrix.IMAGE] }}
