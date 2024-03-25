@@ -393,9 +393,9 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active")) // from basic
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active"))        // from basic
 			g.Expect(stdout).To(ContainSubstring("envoy_cluster_default_total_match_count")) // from include
-			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic"))) // from exclude
+			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic")))     // from exclude
 		}).Should(Succeed())
 	})
 
