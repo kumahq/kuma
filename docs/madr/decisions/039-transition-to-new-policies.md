@@ -46,8 +46,57 @@ spec:
 
 it doesn't apply on the real proxies. Instead, by using a special endpoint we can get a list of jsonPatches that would be applied to the Envoy configuration
 
-```shell
-$ curl :5681/meshes/defaults/dataplane/dpp-1/xds?shadow=true # show potential changes for a dpp-1 in the "default" mesh
+```yaml
+openapi: 3.0.3
+info:
+  title: Shadow Policies Inspector
+  description: API for getting a diff in JSON Patch format as if shadow policies were applied
+  version: 1.0.0
+paths:
+  /meshes/{mesh}/dataplanes/{name}/_shadow:
+    get:
+      summary: Get a list of changes to config dump
+      description: Returns a diff in a JSON Patch format that shows what modifications are going to be applied to the config dump if we take into account shadow policies
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved the JSON patch.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: 
+                    - op
+                    - path
+                  properties:
+                    op:
+                      type: string
+                      description: Operation to be performed.
+                      enum: [add, remove, replace, move, copy, test]
+                    path:
+                      type: string
+                      description: A JSON Pointer path indicating the part of the document to operate on.
+                    value:
+                      type: object
+                      description: The value to be used within the operations.
+        '400':
+          description: Bad request. Parameters were invalid.
+        '404':
+          description: The specified mesh/name combination was not found.
 ```
 
 We can use a CLI tool like [jd](https://github.com/josephburnett/jd?tab=readme-ov-file#examples) to visualize the structural diff.
@@ -56,7 +105,6 @@ The goal is to avoid dependencies on `jd` in the codebase, but to provide exampl
 ```shell
 kumactl inspect dataplane dpp-1 --config-dump --shadow > with-shadow.json && jd <(kumactl inspect dataplane dpp-1 --config-dump) with-shadow.json
 ```
-
 
 Implementation wise, shadow mode requires generating 2 snapshots: one with and without the new policy. 
 By comparing these snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
