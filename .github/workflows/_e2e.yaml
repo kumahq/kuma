@@ -63,6 +63,15 @@ jobs:
       - if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/tools
+      - name: "Github Actions: Free up disk space for the Runner"
+        if: steps.eval-params.outputs.run-type == 'github'
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Pruning images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
       - name: "Github Actions: build"
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
