@@ -42,6 +42,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 	namespace := &kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: req.Namespace}, namespace); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			// MeshService will be deleted automatically.
+			return kube_ctrl.Result{}, nil
+		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace for Service")
 	}
 	injectedLabel, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
@@ -55,6 +59,11 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			return kube_ctrl.Result{}, nil
 		}
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
+	}
+
+	if svc.Spec.ClusterIP == "" { // todo(jakubdyszkiewicz) headless service support will come later
+		log.V(1).Info("service has no cluster IP. Ignoring.")
+		return kube_ctrl.Result{}, nil
 	}
 
 	_, ok := svc.GetLabels()[mesh_proto.MeshTag]
@@ -107,17 +116,15 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		for _, port := range svc.Spec.Ports {
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
 				Port:       uint32(port.Port),
-				TargetPort: uint32(port.TargetPort.IntVal), // todo(jakubdyszkiewicz): what to do about named ports?
+				TargetPort: uint32(port.TargetPort.IntVal), // todo(jakubdyszkiewicz): update after API changes
 				Protocol:   core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
 
-		if svc.Spec.ClusterIP != "" {
-			ms.Spec.Status.VIPs = []meshservice_api.VIP{
-				{
-					IP: svc.Spec.ClusterIP,
-				},
-			}
+		ms.Spec.Status.VIPs = []meshservice_api.VIP{
+			{
+				IP: svc.Spec.ClusterIP,
+			},
 		}
 		return nil
 	})
