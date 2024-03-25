@@ -14,4 +14,4 @@ default:
           match: "envoy_cluster_lb_.*"
       include:
         - type: Exact
-          match: "envoy_cluster_lb_subsets_active"
+          match: "envoy_cluster_default_total_match_count"
