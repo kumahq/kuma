@@ -2,14 +2,12 @@ package metrics
 
 import (
 	"fmt"
-	"io"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/expfmt"
 
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
@@ -37,30 +35,21 @@ func MergeClustersForPrometheus(in map[string]*io_prometheus_client.MetricFamily
 	return nil
 }
 
-func MergeClustersForOpenTelemetry(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(in)
-	if err != nil {
-		return nil, err
-	}
-
-	metrics := make(map[string]*io_prometheus_client.MetricFamily)
-	for key, metricFamily := range metricFamilies {
+func MergeClustersForOpenTelemetry(metricFamilies map[string]*io_prometheus_client.MetricFamily) error {
+	for _, metricFamily := range metricFamilies {
 		switch {
 		case isClusterMetricFamily(metricFamily):
 			if err := handleClusterMetric(metricFamily); err != nil {
-				return nil, err
+				return err
 			}
 		case isHttpMetricFamily(metricFamily):
 			if err := handleHttpMetricFamily(metricFamily); err != nil {
-				return nil, err
+				return err
 			}
 		}
-
-		metrics[key] = metricFamily
 	}
 
-	return metrics, nil
+	return nil
 }
 
 func handleClusterMetric(metricFamily *io_prometheus_client.MetricFamily) error {

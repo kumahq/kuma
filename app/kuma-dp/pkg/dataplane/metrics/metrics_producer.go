@@ -2,13 +2,10 @@ package metrics
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/url"
 	"sync"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/expfmt"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -124,13 +121,4 @@ func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request
 	} else {
 		return ap.httpClientIPv4.Do(req)
 	}
-}
-
-func ParsePrometheusMetrics(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(in)
-	if err != nil {
-		return nil, err
-	}
-	return metricFamilies, nil
 }

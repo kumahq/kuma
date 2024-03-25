@@ -252,7 +252,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			Port:              application.Port,
 			IsIPv6:            utilnet.IsAddressIPv6(address),
 			QueryModifier:     metrics.RemoveQueryParameters,
-			MeshMetricMutator: metrics.ParsePrometheusMetrics,
+			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
 	}
 
@@ -264,7 +264,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		IsIPv6:            false,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		Mutator:           metrics.AggregatedMetricsMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForPrometheus),
-		MeshMetricMutator: metrics.MergeClustersForOpenTelemetry,
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForOpenTelemetry),
 	})
 
 	return applicationsToScrape

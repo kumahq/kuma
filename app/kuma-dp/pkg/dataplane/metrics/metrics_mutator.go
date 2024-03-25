@@ -13,6 +13,25 @@ type (
 	OtelMutator       func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error)
 )
 
+func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) OtelMutator {
+	return func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
+		var parser expfmt.TextParser
+		metricFamilies, err := parser.TextToMetricFamilies(in)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, m := range metricsMutators {
+			err := m(metricFamilies)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		return metricFamilies, nil
+	}
+}
+
 func AggregatedMetricsMutator(metricsMutators ...PrometheusMutator) MetricsMutator {
 	return func(in io.Reader, out io.Writer) error {
 		var parser expfmt.TextParser
