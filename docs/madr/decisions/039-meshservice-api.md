@@ -62,11 +62,14 @@ spec:
       kuma.io/zone: east-1 # added automatically
   ports:
   - port: 6739
-    targetPort: 6739
-    protocol: tcp
-  - port: 16739
-    targetPort: 16739
-    protocol: tcp
+    targetPort:
+      value: 6739
+    appProtocol: tcp
+  - name: some-port
+    port: 16739
+    targetPort:
+      name: target-port-from-container # name of the inbound
+    appProtocol: tcp
 status: # managed by CP. Not shared cross zone, but synced to global
   availability: Online # | Offline | NotAvailable | PartialyDegraded
   tls:
@@ -86,6 +89,10 @@ status: # managed by CP. Not shared cross zone, but synced to global
   - ip: <kube_cluster_ip> # or kuma VIP
     type: Kubernetes # | Kuma
 ```
+
+Ports in Service can be named, so we can also name ports in MeshService. 
+Target port can reference port in container by name. To avoid trying to resolve this port to a real port, we also support `targetPort#name`.
+To support this, we'll also enhance our Dataplane model, so it's possible to name the inbound. 
 
 To try to keep this MADR reasonable when it comes to length, next MADRs will cover
 * Multizone strategy.
