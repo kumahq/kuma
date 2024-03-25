@@ -7,6 +7,8 @@
 The current state of the policies as of Kuma 2.6.x:
 * new policies are in GA, they're the recommended way to configure new deployments in Kuma
 * old policies are not deprecated, they're still in use by majority of Kuma users
+* as long as there is at least 1 new policy a type, the old policies of the same type are not applied
+  (i.e. if there is a MeshTimeout policy, the Timeout policies is not applied)
 
 The goal is to provide a way to transition from old policies to new policies. Having a smooth transition is going to enable 
 us to deprecate old policies in the future.
