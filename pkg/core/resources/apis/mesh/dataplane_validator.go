@@ -244,6 +244,10 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		}))
 	}
 
+	if outbound.BackendRef != nil && (len(outbound.Tags) != 0 || outbound.GetService() != "") {
+		result.AddViolationAt(validators.RootedAt("backendRef"), "both backendRef and tags/service cannot be defined")
+	}
+
 	return result
 }
 

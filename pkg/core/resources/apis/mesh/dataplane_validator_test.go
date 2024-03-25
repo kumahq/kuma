@@ -1202,5 +1202,41 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.outbound[0].backendRef.port
                   message: port must be in the range [1, 65535]`,
 		}),
+		Entry("backend ref clashes with tags or service", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: xyz
+                  backendRef:
+                    kind: MeshService
+                    name: xyz
+                    port: 8080
+                - port: 3334
+                  tags:
+                    service: xyz
+                  backendRef:
+                    kind: MeshService
+                    name: xyz
+                    port: 8080`,
+			expected: `
+                violations:
+                - field: networking.outbound[0].backendRef
+                  message: both backendRef and tags/service cannot be defined
+                - field: networking.outbound[1].backendRef
+                  message: both backendRef and tags/service cannot be defined`,
+		}),
 	)
 })
