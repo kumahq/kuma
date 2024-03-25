@@ -230,12 +230,36 @@
                     },
                     "type": "object",
                     "description": "Tags of consumed data plane proxies. `kuma.io/service` tag is required. These tags can then be referenced in `destinations` section of policies like TrafficRoute or in `to` section in policies like MeshAccessLog. It is recommended to only use `kuma.io/service`. If you need to consume specific data plane proxy of a service (for example: `version=v2`) the better practice is to use TrafficRoute."
+                },
+                "backendRef": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef",
+                    "additionalProperties": true,
+                    "description": "BackendRef is a way to target MeshService. Experimental. Do not use on production yet."
                 }
             },
             "additionalProperties": true,
             "type": "object",
             "title": "Outbound",
             "description": "Outbound describes a service consumed by the data plane proxy. For every defined Outbound there is a corresponding Envoy Listener."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef": {
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "description": "Kind is a type of the object to target. Allowed: MeshService"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the targeted object"
+                },
+                "port": {
+                    "type": "integer",
+                    "description": "Port of the targeted object. Required when kind is MeshService."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Backend Ref"
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying": {
             "properties": {

@@ -77,7 +77,7 @@ func (p plugin) configureDPP(
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
-	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutbound() {
+	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		serviceName := outbound.GetService()
 
