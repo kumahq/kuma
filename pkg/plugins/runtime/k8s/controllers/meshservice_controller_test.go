@@ -34,7 +34,7 @@ var _ = Describe("MeshServiceController", func() {
 		outputFile string
 	}
 
-	FDescribeTable("should reconcile service",
+	DescribeTable("should reconcile service",
 		func(given testCase) {
 			// given
 			bytes, err := os.ReadFile(filepath.Join("testdata", "meshservice", given.inputFile))

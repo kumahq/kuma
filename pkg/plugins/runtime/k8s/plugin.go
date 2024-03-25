@@ -81,8 +81,10 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
-	if err := addMeshServiceReconciler(mgr); err != nil {
-		return err
+	if rt.Config().Experimental.GenerateMeshServices {
+		if err := addMeshServiceReconciler(mgr); err != nil {
+			return err
+		}
 	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
