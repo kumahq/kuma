@@ -209,7 +209,7 @@ jobs:
       - id: compute-digests
         run: |
           # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
-          echo "digests=<<EOF" >> $GITHUB_OUTPUT
+          echo "digests<<EOF" >> $GITHUB_OUTPUT
           jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
   publish-helm:
