@@ -44,7 +44,19 @@ spec:
   to: [...]
 ```
 
-it doesn't apply on the real proxies. Instead, by using a special endpoint we can get a list of jsonPatches that would be applied to the Envoy configuration
+it doesn't apply on the real proxies. Instead, by using Inspect API we can inspect what config dump would look like if the shadow policies was applied.
+
+### Changes in the Inspect API
+
+Existing endpoints will get a new query parameter `effect`:
+
+* `GET /meshes/{mesh}/dataplanes/{name}/xds` -> `GET /meshes/{mesh}/dataplanes/{name}/xds?effect=shadow`
+* `GET /meshes/{mesh}/dataplanes/{name}/_rules` -> `GET /meshes/{mesh}/dataplanes/{name}/_rules?effect=shadow`
+
+when `effect=shadow` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
+Please note, the response DOES NOT contain the json patch diff. These endpoints are useful when calculating the diff on the client side.
+
+Additionally, we're going to introduce a new non-physical endpoint `_xds-diff`:
 
 ```yaml
 openapi: 3.0.3
@@ -53,7 +65,7 @@ info:
   description: API for getting a diff in JSON Patch format as if shadow policies were applied
   version: 1.0.0
 paths:
-  /meshes/{mesh}/dataplanes/{name}/_shadow:
+  /meshes/{mesh}/dataplanes/{name}/_xds-diff:
     get:
       summary: Get a list of changes to config dump
       description: Returns a diff in a JSON Patch format that shows what modifications are going to be applied to the config dump if we take into account shadow policies
@@ -99,12 +111,16 @@ paths:
           description: The specified mesh/name combination was not found.
 ```
 
+### UX
+
 We can use a CLI tool like [jd](https://github.com/josephburnett/jd?tab=readme-ov-file#examples) to visualize the structural diff.
 The goal is to avoid dependencies on `jd` in the codebase, but to provide examples in the documentation that enable users to see diffs conveniently, i.e:
 
 ```shell
 kumactl inspect dataplane dpp-1 --config-dump --shadow > with-shadow.json && jd <(kumactl inspect dataplane dpp-1 --config-dump) with-shadow.json
 ```
+
+### Implementation
 
 Implementation wise, shadow mode requires generating 2 snapshots: one with and without the new policy. 
 By comparing these snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
