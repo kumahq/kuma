@@ -377,7 +377,7 @@ func MeshMetric() {
 		}).Should(Succeed())
 	})
 
-	FIt("Basic MeshMetric policy with profiles exposes correct Envoy metrics", func() {
+	It("Basic MeshMetric policy with profiles exposes correct Envoy metrics", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(BasicMeshMetricWithProfileForMesh("mesh-policy", mainMesh))).To(Succeed())
 		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
@@ -393,8 +393,8 @@ func MeshMetric() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active")) // from basic
-			g.Expect(stdout).To(ContainSubstring("envoy_cluster_lb_subsets_active")) // from include
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active"))    // from basic
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_lb_subsets_active"))     // from include
 			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic"))) // from exclude
 		}).Should(Succeed())
 	})

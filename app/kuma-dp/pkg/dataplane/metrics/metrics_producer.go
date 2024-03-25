@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/core"
 )
@@ -105,7 +104,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 	}
 	defer resp.Body.Close()
 
-	metricsFromApplication, err := app.OtelMutator(resp.Body)
+	metricsFromApplication, err := app.MeshMetricMutator(resp.Body)
 	if err != nil {
 		log.Error(err, "failed to mutate metrics")
 		return nil
@@ -127,11 +126,11 @@ func (ap *AggregatedProducer) makeRequest(ctx context.Context, req *http.Request
 	}
 }
 
-func ParsePrometheusMetrics(in io.Reader) ([]*io_prometheus_client.MetricFamily, error) {
+func ParsePrometheusMetrics(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
 	var parser expfmt.TextParser
 	metricFamilies, err := parser.TextToMetricFamilies(in)
 	if err != nil {
 		return nil, err
 	}
-	return maps.Values(metricFamilies), nil
+	return metricFamilies, nil
 }

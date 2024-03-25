@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service)
 
 	var openTelemetryMetrics []metricdata.Metrics

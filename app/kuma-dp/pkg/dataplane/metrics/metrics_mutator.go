@@ -10,6 +10,7 @@ import (
 type (
 	MetricsMutator    func(in io.Reader, out io.Writer) error
 	PrometheusMutator func(in map[string]*io_prometheus_client.MetricFamily) error
+	OtelMutator       func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error)
 )
 
 func AggregatedMetricsMutator(metricsMutators ...PrometheusMutator) MetricsMutator {
