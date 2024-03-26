@@ -90,9 +90,10 @@ jobs:
       IMAGES: ${{ needs.check.outputs.IMAGES }}
     secrets: inherit
   provenance:
-    needs: ["build_publish"]
+    needs: ["check", "build_publish"]
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     uses: ./.github/workflows/_provenance.yaml
+    secrets: inherit
     permissions:
       contents: write
       id-token: write # For using token to sign images
@@ -100,6 +101,8 @@ jobs:
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
       binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      images: ${{ needs.check.outputs.IMAGES }}
+      image_digests: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
     needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10

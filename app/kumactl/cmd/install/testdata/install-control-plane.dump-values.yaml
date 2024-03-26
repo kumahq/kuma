@@ -693,7 +693,7 @@ experimental:
     # -- Name of the network interface which TC programs should be attached to, we'll try to automatically determine it if empty
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
-    programsSourcePath: /kuma/ebpf
+    programsSourcePath: /tmp/kuma-ebpf
   # -- If false, it uses legacy API for resource synchronization
   deltaKds: true
   # -- If true, enable native Kubernetes sidecars. This requires at least
