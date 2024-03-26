@@ -126,10 +126,8 @@ build/artifacts-$(1)-$(2)/test-server:
 .PHONY: build/artifacts-$(1)-$(2)/iptables-wrapper
 build/artifacts-$(1)-$(2)/iptables-wrapper:
 	mkdir -p $$(@)
-	[ -f $$(@)/iptables-wrapper ] || \
-	curl --silent --fail --location --output $$(@)/iptables-wrapper https://github.com/kumahq/iptables-wrappers/releases/download/v0.1.0/iptables-wrapper-$(1)-$(2)
-	[ -f $$(@)/iptables-wrapper-installer.sh ] || \
-	curl --silent --fail --location --output $$(@)/iptables-wrapper-installer.sh https://github.com/kumahq/iptables-wrappers/releases/download/v0.1.0/iptables-wrapper-installer.sh
+	[ -f $$(@)/iptables-wrapper ] && [ -f $$(@)/iptables-wrapper-installer.sh ] || \
+	curl -s --fail --location https://github.com/kumahq/iptables-wrappers/releases/download/v0.1.0/iptables-wrapper-$(1)-$(2).tar.gz | tar -C $$(@) -xz
 
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
