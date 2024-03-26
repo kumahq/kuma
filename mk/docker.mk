@@ -54,7 +54,7 @@ image/kumactl/$(1): image/base/$(1) build/artifacts-linux-$(1)/kumactl ## Dev: R
 	docker build -t $$(call build_image,kumactl,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kumactl.Dockerfile .
 
 .PHONY: image/kuma-init/$(1)
-image/kuma-init/$(1): build/artifacts-linux-$(1)/kumactl ## Dev: Rebuild `kuma-init` Docker image
+image/kuma-init/$(1): build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/iptables-wrapper ## Dev: Rebuild `kuma-init` Docker image
 	docker build -t $$(call build_image,kuma-init,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-init.Dockerfile .
 
 .PHONY: image/kuma-cni/$(1)
