@@ -290,5 +290,6 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 }
 
 func backendNameFrom(endpoint string) string {
-	return strings.ReplaceAll(endpoint, ":", "")
+	// we need to remove "/" as this name will be used as directory name
+	return strings.ReplaceAll(strings.ReplaceAll(endpoint, "/", ""), ":", "-")
 }

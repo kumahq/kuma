@@ -12,10 +12,10 @@ metadata:
     kuma.io/transparent-proxying-ebpf: enabled
     kuma.io/transparent-proxying-ebpf-bpf-fs-path: /sys/fs/bpf
     kuma.io/transparent-proxying-ebpf-cgroup-path: /sys/fs/cgroup
-    kuma.io/transparent-proxying-ebpf-programs-source-path: /kuma/ebpf
+    kuma.io/transparent-proxying-ebpf-programs-source-path: /tmp/kuma-ebpf
     kuma.io/transparent-proxying-ebpf-tc-attach-iface: eth0
     kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-inbound-v6-port: "15010"
+    kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -30,13 +30,13 @@ spec:
     resources: {}
   initContainers:
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
     - --redirect-inbound-port
     - "15006"
-    - --redirect-inbound-port-v6
-    - "15010"
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
@@ -44,6 +44,8 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     - --ebpf-enabled
     - --ebpf-instance-ip
     - $(INSTANCE_IP)
@@ -54,7 +56,7 @@ spec:
     - --ebpf-tc-attach-iface
     - eth0
     - --ebpf-programs-source-path
-    - /kuma/ebpf
+    - /tmp/kuma-ebpf
     command:
     - /usr/bin/kumactl
     - install
@@ -77,9 +79,12 @@ spec:
     securityContext:
       capabilities: {}
       privileged: true
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
     - mountPath: /sys/fs/cgroup
       name: sys-fs-cgroup
     - mountPath: /sys/fs/bpf
@@ -169,6 +174,9 @@ spec:
         memory: 164Mi
     restartPolicy: Always
     securityContext:
+      capabilities:
+        drop:
+        - ALL
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
@@ -181,6 +189,9 @@ spec:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
   volumes:
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

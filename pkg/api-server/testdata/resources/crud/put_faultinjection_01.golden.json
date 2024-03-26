@@ -1,0 +1,40 @@
+{
+ "type": "FaultInjection",
+ "mesh": "default",
+ "name": "web-to-backend",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/origin": "zone"
+ },
+ "sources": [
+  {
+   "match": {
+    "kuma.io/protocol": "http",
+    "service": "web"
+   }
+  }
+ ],
+ "destinations": [
+  {
+   "match": {
+    "kuma.io/protocol": "http",
+    "service": "backend"
+   }
+  }
+ ],
+ "conf": {
+  "delay": {
+   "percentage": 50,
+   "value": "0.010s"
+  },
+  "abort": {
+   "percentage": 40,
+   "httpStatus": 500
+  },
+  "responseBandwidth": {
+   "percentage": 40,
+   "limit": "50kbps"
+  }
+ }
+}

@@ -1,0 +1,25 @@
+{
+  "type": "MeshTrafficPermission",
+  "name": "sample",
+  "mesh": "default",
+  "labels": {
+    "foo/bar/baz": "bar",
+    "": "bar",
+    "foo": "^*bar"
+  },
+  "spec": {
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "from": [
+      {
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "default": {
+          "action": "Allow"
+        }
+      }
+    ]
+  }
+}

@@ -42,6 +42,10 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 	return order[k] < order[o]
 }
 
+func AllTargetRefKinds() []TargetRefKind {
+	return maps.Keys(order)
+}
+
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
@@ -61,19 +65,6 @@ type TargetRef struct {
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
 }
 
-type TargetRefHash string
-
-// Hash returns a hash of the TargetRef
-func (in TargetRef) Hash() TargetRefHash {
-	keys := maps.Keys(in.Tags)
-	sort.Strings(keys)
-	orderedTags := make([]string, len(keys))
-	for _, k := range keys {
-		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
-	}
-	return TargetRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, in.Name, strings.Join(orderedTags, "/"), in.Mesh))
-}
-
 func IncludesGateways(ref TargetRef) bool {
 	isGateway := ref.Kind == MeshGateway
 	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
@@ -90,4 +81,23 @@ type BackendRef struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:default=1
 	Weight *uint `json:"weight,omitempty"`
+	// Port is only supported when this ref refers to a real MeshService object
+	Port *uint32 `json:"port,omitempty"`
+}
+
+type BackendRefHash string
+
+// Hash returns a hash of the BackendRef
+func (in BackendRef) Hash() BackendRefHash {
+	keys := maps.Keys(in.Tags)
+	sort.Strings(keys)
+	orderedTags := make([]string, len(keys))
+	for _, k := range keys {
+		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
+	}
+	name := in.Name
+	if in.Port != nil {
+		name = fmt.Sprintf("%s_svc_%d", in.Name, *in.Port)
+	}
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), in.Mesh))
 }

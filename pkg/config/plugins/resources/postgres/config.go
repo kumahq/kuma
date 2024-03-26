@@ -15,6 +15,7 @@ import (
 const (
 	DriverNamePgx             = "pgx"
 	DriverNamePq              = "postgres"
+	DefaultConnectionTimeout  = 5
 	DefaultMaxIdleConnections = 50
 	DefaultMinOpenConnections = 0
 )
@@ -30,6 +31,7 @@ var (
 	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
 	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 1 * time.Minute}
 	DefaultHealthCheckInterval         = config_types.Duration{Duration: 30 * time.Second}
+	DefaultMaxConnectionIdleTime       = config_types.Duration{Duration: 30 * time.Minute}
 	// some of the above settings taken from pgx https://github.com/jackc/pgx/blob/ca022267dbbfe7a8ba7070557352a5cd08f6cb37/pgxpool/pool.go#L18-L22
 )
 
@@ -51,6 +53,8 @@ type PostgresStoreConfig struct {
 	DriverName string `json:"driverName" envconfig:"kuma_store_postgres_driver_name"`
 	// Connection Timeout to the DB in seconds
 	ConnectionTimeout int `json:"connectionTimeout" envconfig:"kuma_store_postgres_connection_timeout"`
+	// MaxConnectionIdleTime (applied only when driverName=pgx) is the duration after which an idle connection will be automatically closed by the health check.
+	MaxConnectionIdleTime config_types.Duration `json:"maxConnectionIdleTime" envconfig:"kuma_store_postgres_max_connection_idle_time"`
 	// MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
 	MaxConnectionLifetime config_types.Duration `json:"maxConnectionLifetime" envconfig:"kuma_store_postgres_max_connection_lifetime"`
 	// MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after MaxConnectionLifetime to randomly decide to close a connection.
@@ -292,7 +296,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		Password:                    "kuma",
 		DbName:                      "kuma",
 		DriverName:                  DriverNamePgx,
-		ConnectionTimeout:           5,
+		ConnectionTimeout:           DefaultConnectionTimeout,
 		MaxOpenConnections:          50,                        // 0 for unlimited
 		MaxIdleConnections:          DefaultMaxIdleConnections, // 0 for unlimited
 		TLS:                         DefaultTLSPostgresStoreConfig(),
@@ -307,6 +311,7 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 			Port:  5432,
 			Ratio: 100,
 		},
+		MaxConnectionIdleTime: DefaultMaxConnectionIdleTime,
 	}
 }
 

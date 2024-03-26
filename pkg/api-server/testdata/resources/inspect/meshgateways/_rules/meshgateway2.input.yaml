@@ -1,0 +1,99 @@
+# Currently the output of the rules API to not include `matchers` for listener selection which doesn't make this
+# powerful enough. Once https://github.com/kumahq/kuma/issues/9589 is resolved, we should update the output of the test
+# should include matchers for listener selection.
+#/meshes/default/meshgateways/gw-1/_rules 200
+type: Mesh
+name: default
+---
+type: MeshGateway
+name: gw-1
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gw-1
+conf:
+  listeners:
+    - port: 80
+      protocol: HTTP
+      tags:
+        listener: bar
+    - port: 81
+      protocol: HTTP
+      hostname: bar.com
+      tags:
+        listener: foo
+---
+type: MeshHTTPRoute
+name: http-route-1
+mesh: default
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gw-1
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - headers:
+                - type: Exact
+                  name: foo
+                  value: bar
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: v0
+---
+type: MeshHTTPRoute
+name: http-route-2
+mesh: default
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gw-1
+    tags:
+      listener: foo
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - headers:
+                - type: Exact
+                  name: foo
+                  value: baz
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: v0
+
+---
+type: MeshHTTPRoute
+name: http-route-3
+mesh: default
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gw-1
+    tags:
+      listener: foo
+  to:
+    - targetRef:
+        kind: Mesh
+      hostnames: ["foo.com"]
+      rules:
+        - matches:
+            - headers:
+                - type: Exact
+                  name: foo
+                  value: bazz
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend_kuma-demo_svc_3001
+                tags:
+                  version: v0

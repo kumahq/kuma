@@ -56,7 +56,7 @@ var _ = Describe("Json Patch merge", func() {
 		Expect(mergedOtel.CommonConfig.LogName).To(Equal("y"))
 	})
 
-	It("should should not merge for snake_case", func() {
+	It("should not merge for snake_case", func() {
 		// given
 		patches := []common_api.JsonPatchBlock{
 			{

@@ -1,11 +1,11 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
-	"net"
 	"net/http"
-	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
-	"github.com/soheilhy/cmux"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -25,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/mads"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
@@ -36,6 +36,7 @@ type muxServer struct {
 	httpServices []HttpService
 	config       *mads_config.MonitoringAssignmentServerConfig
 	metrics      core_metrics.Metrics
+	ready        atomic.Bool
 	mesh_proto.UnimplementedMultiplexServiceServer
 }
 
@@ -65,23 +66,18 @@ func (s *muxServer) createHttpServicesHandler() http.Handler {
 	return container
 }
 
-func (s *muxServer) Start(stop <-chan struct{}) error {
-	l, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Port))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := l.Close(); err != nil {
-			log.Error(err, "unable to close the listener")
-		}
-	}()
+func (s *muxServer) Ready() bool {
+	return s.ready.Load()
+}
 
+func (s *muxServer) Start(stop <-chan struct{}) error {
+	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return errors.Wrap(err, "failed to load TLS certificate")
 		}
-		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
+		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12} // To make gosec happy
 		if tlsConfig.MinVersion, err = config_types.TLSVersion(s.config.TlsMinVersion); err != nil {
 			return err
 		}
@@ -91,55 +87,25 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		if tlsConfig.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
 			return err
 		}
-		l = tls.NewListener(l, tlsConfig)
 	}
-	m := cmux.New(l)
-
-	httpL := m.Match(cmux.Any())
+	errChan := make(chan error)
 	httpS := &http.Server{
+		Addr:              fmt.Sprintf(":%d", s.config.Port),
 		ReadHeaderTimeout: time.Second,
+		TLSConfig:         tlsConfig,
 		Handler:           s.createHttpServicesHandler(),
 		ErrorLog:          adapter.ToStd(log),
 	}
-	errChanHttp := make(chan error)
-	go func() {
-		defer close(errChanHttp)
-		if err := httpS.Serve(httpL); err != nil {
-			switch err {
-			case cmux.ErrServerClosed:
-				log.Info("shutting down an HTTP Server")
-			default:
-				log.Error(err, "could not start an HTTP Server")
-				errChanHttp <- err
-			}
-		}
-	}()
-
-	errChan := make(chan error)
-	go func() {
-		defer close(errChan)
-		err := m.Serve()
-		if err != nil {
-			if strings.Contains(err.Error(), "use of closed network connection") {
-				log.Info("shutting down a mux server")
-			} else {
-				log.Error(err, "could not start a mux Server")
-				errChan <- err
-			}
-		}
-	}()
-
-	log.Info("starting", "interface", "0.0.0.0", "port", s.config.Port)
-
-	defer m.Close()
-
+	if err := kuma_srv.StartServer(log, httpS, &s.ready, errChan); err != nil {
+		return err
+	}
 	select {
 	case <-stop:
 		log.Info("stopping gracefully")
-		return nil
-	case err := <-errChanHttp:
-		return err
+		s.ready.Store(false)
+		return httpS.Shutdown(context.Background())
 	case err := <-errChan:
+		s.ready.Store(false)
 		return err
 	}
 }

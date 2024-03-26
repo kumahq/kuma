@@ -27,18 +27,13 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	var resourceStore store.ResourceStore
 	stop := func() {}
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
-	BeforeEach(func() {
-		resourceStore = store.NewPaginationStore(memory.NewStore())
-		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+	BeforeAll(func() {
+		resourceStore = memory.NewStore()
+		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(store.NewPaginationStore(resourceStore)))
 	})
 
-	AfterEach(func() {
+	AfterAll(func() {
 		stop()
-	})
-
-	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane) {
@@ -66,6 +61,9 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	}
 
 	BeforeEach(func() {
+		memory.ClearStore(resourceStore)
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
+		Expect(err).ToNot(HaveOccurred())
 		// given
 		createDpWithInsights("gateway-delegated", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
@@ -122,7 +120,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		}
-		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp-no-insights", "mesh1"), store.CreatedAt(t1))
+		err = resourceStore.Create(context.Background(), &dpResource, store.CreateByKey("dp-no-insights", "mesh1"), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -167,96 +165,94 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	}
 }`
 
-	Describe("On GET", func() {
-		It("should return an existing resource", func() {
-			// when
-			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp-1")
-			Expect(err).ToNot(HaveOccurred())
+	It("should return an existing resource", func() {
+		// when
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp-1")
+		Expect(err).ToNot(HaveOccurred())
 
-			// then
-			Expect(response.StatusCode).To(Equal(200))
-			body, err := io.ReadAll(response.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(MatchJSON(dp1Json))
-		})
-
-		type testCase struct {
-			url string
-		}
-
-		DescribeTable("Listing resources filtering by tag",
-			func(tc testCase) {
-				// given
-				url := fmt.Sprintf("http://%s/%s", apiServer.Address(), tc.url)
-				goldenFileName := fmt.Sprintf(
-					"%s.json",
-					regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(tc.url, "_"),
-				)
-
-				// when
-				response, err := http.Get(url) // #nosec G107 -- these are just tests
-				Expect(err).ToNot(HaveOccurred())
-
-				// then
-				Expect(response.StatusCode).To(Equal(200))
-				body, err := io.ReadAll(response.Body)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(body).To(matchers.MatchGoldenJSON("testdata", goldenFileName))
-			},
-			Entry("should list all when no tag is provided", testCase{
-				url: "meshes/mesh1/dataplanes+insights",
-			}),
-			Entry("should list with only one matching tag", testCase{
-				url: "meshes/mesh1/dataplanes+insights?tag=service:backend",
-			}),
-			Entry("should list with only subset tag", testCase{
-				url: "meshes/mesh1/dataplanes+insights?tag=service:ck",
-			}),
-			Entry("should list all with all matching tags", testCase{
-				url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
-			}),
-			Entry("should list all with all matching tags with value with a column", testCase{
-				url: "meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
-			}),
-			Entry("should not list when any tag is not matching", testCase{
-				url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
-			}),
-			Entry("should list only gateway dataplanes", testCase{
-				url: "meshes/mesh1/dataplanes+insights?gateway=true",
-			}),
-			Entry("should list only gateway builtin", testCase{
-				url: "meshes/mesh1/dataplanes+insights?gateway=builtin",
-			}),
-			Entry("should list only gateway delegated", testCase{
-				url: "meshes/mesh1/dataplanes+insights?gateway=delegated",
-			}),
-			Entry("should list only dataplanes that starts with gateway", testCase{
-				url: "meshes/mesh1/dataplanes+insights?name=gateway",
-			}),
-			Entry("should list only dataplanes that contains with tew", testCase{
-				url: "meshes/mesh1/dataplanes+insights?name=tew",
-			}),
-			Entry("should list only dataplanes that contains with tew using _overview", testCase{
-				url: "meshes/mesh1/dataplanes/_overview?name=tew",
-			}),
-		)
-
-		It("should paginate correctly", func() {
-			// when
-			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?size=1")
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			Expect(response.StatusCode).To(Equal(200))
-			body, err := io.ReadAll(response.Body)
-			Expect(err).ToNot(HaveOccurred())
-			overviewList := rest.ResourceListReceiver{
-				NewResource: func() model.Resource {
-					return core_mesh.NewDataplaneOverviewResource()
-				},
-			}
-			Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
-			Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1`, apiServer.Address())))
-		})
+		// then
+		Expect(response.StatusCode).To(Equal(200))
+		body, err := io.ReadAll(response.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(body).To(MatchJSON(dp1Json))
 	})
-})
+
+	type testCase struct {
+		url string
+	}
+
+	DescribeTable("Listing resources filtering by tag",
+		func(tc testCase) {
+			// given
+			url := fmt.Sprintf("http://%s/%s", apiServer.Address(), tc.url)
+			goldenFileName := fmt.Sprintf(
+				"%s.json",
+				regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(tc.url, "_"),
+			)
+
+			// when
+			response, err := http.Get(url) // #nosec G107 -- these are just tests
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			Expect(response.StatusCode).To(Equal(200))
+			body, err := io.ReadAll(response.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(matchers.MatchGoldenJSON("testdata", goldenFileName))
+		},
+		Entry("should list all when no tag is provided", testCase{
+			url: "meshes/mesh1/dataplanes+insights",
+		}),
+		Entry("should list with only one matching tag", testCase{
+			url: "meshes/mesh1/dataplanes+insights?tag=service:backend",
+		}),
+		Entry("should list with only subset tag", testCase{
+			url: "meshes/mesh1/dataplanes+insights?tag=service:ck",
+		}),
+		Entry("should list all with all matching tags", testCase{
+			url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
+		}),
+		Entry("should list all with all matching tags with value with a column", testCase{
+			url: "meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
+		}),
+		Entry("should not list when any tag is not matching", testCase{
+			url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
+		}),
+		Entry("should list only gateway dataplanes", testCase{
+			url: "meshes/mesh1/dataplanes+insights?gateway=true",
+		}),
+		Entry("should list only gateway builtin", testCase{
+			url: "meshes/mesh1/dataplanes+insights?gateway=builtin",
+		}),
+		Entry("should list only gateway delegated", testCase{
+			url: "meshes/mesh1/dataplanes+insights?gateway=delegated",
+		}),
+		Entry("should list only dataplanes that starts with gateway", testCase{
+			url: "meshes/mesh1/dataplanes+insights?name=gateway",
+		}),
+		Entry("should list only dataplanes that contains with tew", testCase{
+			url: "meshes/mesh1/dataplanes+insights?name=tew",
+		}),
+		Entry("should list only dataplanes that contains with tew using _overview", testCase{
+			url: "meshes/mesh1/dataplanes/_overview?name=tew",
+		}),
+	)
+
+	It("should paginate correctly", func() {
+		// when
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?size=1")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(response.StatusCode).To(Equal(200))
+		body, err := io.ReadAll(response.Body)
+		Expect(err).ToNot(HaveOccurred())
+		overviewList := rest.ResourceListReceiver{
+			NewResource: func() model.Resource {
+				return core_mesh.NewDataplaneOverviewResource()
+			},
+		}
+		Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
+		Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1`, apiServer.Address())))
+	})
+}, Ordered)

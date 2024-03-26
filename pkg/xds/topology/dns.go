@@ -6,6 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 )
@@ -75,4 +76,24 @@ func VIPOutbounds(
 		}
 	}
 	return vipDomains, outbounds
+}
+
+func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) []*mesh_proto.Dataplane_Networking_Outbound {
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	for _, svc := range meshServices {
+		for _, vip := range svc.Spec.Status.VIPs {
+			for _, port := range svc.Spec.Ports {
+				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+					Address: vip.IP,
+					Port:    port.Port,
+					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+						Kind: string(meshservice_api.MeshServiceType),
+						Name: svc.Meta.GetName(),
+						Port: port.Port,
+					},
+				})
+			}
+		}
+	}
+	return outbounds
 }

@@ -3,6 +3,7 @@ controlPlane:
     url: http://kuma-control-plane.kuma-system:5681
 sidecarContainer:
   image: kuma/kuma-sidecar:latest
+  ipFamilyMode: dualstack
   redirectPortOutbound: 15001
   redirectPortInbound: 15006
   redirectPortInboundV6: 15010
@@ -43,4 +44,4 @@ ebpf:
   bpffsPath: "/sys/fs/bpf"
   cgroupPath: "/sys/fs/cgroup"
   tcAttachIface: "eth0"
-  programsSourcePath: "/kuma/ebpf"
+  programsSourcePath: "/tmp/kuma-ebpf"

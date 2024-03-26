@@ -1,0 +1,7 @@
+#/meshes/default 200
+#/meshes/non-existent 404
+#/meshes/new-mesh 201 method=PUT
+# Update works
+#/meshes/new-mesh 200 method=PUT
+type: Mesh
+name: default

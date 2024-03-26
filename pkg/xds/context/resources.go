@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -135,6 +136,18 @@ func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
 
 func (r Resources) OtherMeshes() *core_mesh.MeshResourceList {
 	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
+}
+
+func (r Resources) MeshServices() *meshsvc.MeshServiceResourceList {
+	list, ok := r.MeshLocalResources[meshsvc.MeshServiceType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(meshsvc.MeshServiceType)
+		if err != nil {
+			return &meshsvc.MeshServiceResourceList{}
+		}
+	}
+	return list.(*meshsvc.MeshServiceResourceList)
 }
 
 type MeshGatewayDataplanes struct {

@@ -1,19 +1,30 @@
 package admin
 
-import envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+import (
+	"strings"
 
-func Sanitize(configDump *envoy_admin_v3.ConfigDump) error {
-	for _, config := range configDump.Configs {
+	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+)
+
+func Sanitize(configDump []byte) ([]byte, error) {
+	toReplace := []string{}
+	cd := &envoy_admin_v3.ConfigDump{}
+	if err := util_proto.FromJSON(configDump, cd); err != nil {
+		return nil, err
+	}
+	for _, config := range cd.Configs {
 		if config.MessageIs(&envoy_admin_v3.BootstrapConfigDump{}) {
 			bootstrapConfigDump := &envoy_admin_v3.BootstrapConfigDump{}
 			if err := config.UnmarshalTo(bootstrapConfigDump); err != nil {
-				return err
+				return nil, err
 			}
 
 			for _, grpcService := range bootstrapConfigDump.GetBootstrap().GetDynamicResources().GetAdsConfig().GetGrpcServices() {
 				for i, initMeta := range grpcService.InitialMetadata {
 					if initMeta.Key == "authorization" {
-						grpcService.InitialMetadata[i].Value = "[redacted]"
+						toReplace = append(toReplace, grpcService.InitialMetadata[i].Value, "[redacted]")
 					}
 				}
 			}
@@ -21,15 +32,11 @@ func Sanitize(configDump *envoy_admin_v3.ConfigDump) error {
 			for _, grpcService := range bootstrapConfigDump.GetBootstrap().GetHdsConfig().GetGrpcServices() {
 				for i, initMeta := range grpcService.InitialMetadata {
 					if initMeta.Key == "authorization" {
-						grpcService.InitialMetadata[i].Value = "[redacted]"
+						toReplace = append(toReplace, grpcService.InitialMetadata[i].Value, "[redacted]")
 					}
 				}
 			}
-
-			if err := config.MarshalFrom(bootstrapConfigDump); err != nil {
-				return err
-			}
 		}
 	}
-	return nil
+	return []byte(strings.NewReplacer(toReplace...).Replace(string(configDump))), nil
 }

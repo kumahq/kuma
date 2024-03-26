@@ -266,8 +266,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			)
 
 			container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
+			container.SecurityContext.Capabilities.Add = []kube_core.Capability{
+				"NET_BIND_SERVICE",
+			}
 
-			securityContext := &kube_core.PodSecurityContext{
+			podSecurityContext := &kube_core.PodSecurityContext{
 				Sysctls: []kube_core.Sysctl{{
 					Name:  "net.ipv4.ip_unprivileged_port_start",
 					Value: "0",
@@ -275,7 +278,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 
 			if fsGroup := gatewayInstance.Spec.PodTemplate.Spec.PodSecurityContext.FSGroup; fsGroup != nil {
-				securityContext.FSGroup = fsGroup
+				podSecurityContext.FSGroup = fsGroup
 			}
 
 			container.SecurityContext.ReadOnlyRootFilesystem = gatewayInstance.Spec.PodTemplate.Spec.Container.SecurityContext.ReadOnlyRootFilesystem
@@ -288,7 +291,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 
 			podSpec := kube_core.PodSpec{
-				SecurityContext: securityContext,
+				SecurityContext: podSecurityContext,
 				Containers:      []kube_core.Container{container},
 			}
 			podSpec.ServiceAccountName = gatewayInstance.Spec.PodTemplate.Spec.ServiceAccountName

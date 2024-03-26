@@ -1,0 +1,183 @@
+{
+ "httpMatches": [
+  {
+   "hash": "7AL18PkCPj3JAlwamTpzmVg7/sLnT8IXWtQljrRqs+4=",
+   "match": [
+    {
+     "headers": [
+      {
+       "type": "Exact",
+       "name": "foo",
+       "value": "baz"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "hash": "tX9tfbEoFumfHilx1E5h3KWj9aB7Zbw0+bi2Mq2yRaw=",
+   "match": [
+    {
+     "headers": [
+      {
+       "type": "Exact",
+       "name": "foo",
+       "value": "bazz"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "hash": "yM0/dbXyGi3nh/16+QCWa0maH7RkPXftZ4fkR+vFOjA=",
+   "match": [
+    {
+     "headers": [
+      {
+       "type": "Exact",
+       "name": "foo",
+       "value": "bar"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "resource": {
+  "mesh": "default",
+  "name": "gw-1",
+  "type": "MeshGateway"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "toRules": [
+    {
+     "conf": {
+      "rules": [
+       {
+        "matches": [
+         {
+          "headers": [
+           {
+            "type": "Exact",
+            "name": "foo",
+            "value": "baz"
+           }
+          ]
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "v0"
+           }
+          }
+         ]
+        }
+       },
+       {
+        "matches": [
+         {
+          "headers": [
+           {
+            "type": "Exact",
+            "name": "foo",
+            "value": "bar"
+           }
+          ]
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "v0"
+           }
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "matchers": [],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "http-route-1",
+       "type": "MeshHTTPRoute"
+      },
+      {
+       "mesh": "default",
+       "name": "http-route-2",
+       "type": "MeshHTTPRoute"
+      },
+      {
+       "mesh": "default",
+       "name": "http-route-3",
+       "type": "MeshHTTPRoute"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "rules": [
+       {
+        "matches": [
+         {
+          "headers": [
+           {
+            "type": "Exact",
+            "name": "foo",
+            "value": "bazz"
+           }
+          ]
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "v0"
+           }
+          }
+         ]
+        }
+       }
+      ],
+      "hostnames": [
+       "foo.com"
+      ]
+     },
+     "matchers": [],
+     "origin": [
+      {
+       "mesh": "default",
+       "name": "http-route-1",
+       "type": "MeshHTTPRoute"
+      },
+      {
+       "mesh": "default",
+       "name": "http-route-2",
+       "type": "MeshHTTPRoute"
+      },
+      {
+       "mesh": "default",
+       "name": "http-route-3",
+       "type": "MeshHTTPRoute"
+      }
+     ]
+    }
+   ],
+   "type": "MeshHTTPRoute",
+   "warnings": []
+  }
+ ]
+}

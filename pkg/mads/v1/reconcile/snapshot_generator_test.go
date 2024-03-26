@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
+	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	"github.com/kumahq/kuma/pkg/metrics"
 	// to match custom policy resource type like you need to register them manually in tests
@@ -31,6 +31,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -42,7 +43,6 @@ var _ = Describe("snapshotGenerator", func() {
 		var resourceManager core_manager.ResourceManager
 		var store core_store.ResourceStore
 		node1Id := "one"
-		node2Id := "two"
 		snapshotWithTwoAssignments := mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
 			"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
 				Mesh:    "demo",
@@ -102,11 +102,10 @@ var _ = Describe("snapshotGenerator", func() {
 		})
 
 		type testCase struct {
-			meshes           []*core_mesh.MeshResource
-			meshMetrics      []*v1alpha1.MeshMetricResource
-			dataplanes       []*core_mesh.DataplaneResource
-			expectedForNode1 *mads_cache.Snapshot
-			expectedForNode2 *mads_cache.Snapshot
+			meshes            []*core_mesh.MeshResource
+			meshMetrics       []*v1alpha1.MeshMetricResource
+			dataplanes        []*core_mesh.DataplaneResource
+			expectedSnapshots map[string]v3.Snapshot
 		}
 
 		DescribeTable("",
@@ -130,8 +129,6 @@ var _ = Describe("snapshotGenerator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				ctx := context.Background()
-				node1 := corev3.Node{Id: node1Id}
-				node2 := corev3.Node{Id: node2Id}
 				for _, mesh := range given.meshes {
 					// when
 					err := resourceManager.Create(ctx, mesh, core_store.CreateBy(core_model.MetaToResourceKey(mesh.GetMeta())))
@@ -154,22 +151,16 @@ var _ = Describe("snapshotGenerator", func() {
 				// given
 				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, cache)
 				// when
-				snapshot, err := snapshotter.GenerateSnapshot(context.Background(), &node1)
+				snapshotPerClient, err := snapshotter.GenerateSnapshot(context.Background())
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(snapshot).To(Equal(given.expectedForNode1))
-
-				// when
-				snapshot2, err := snapshotter.GenerateSnapshot(context.Background(), &node2)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(snapshot2).To(Equal(given.expectedForNode2))
+				Expect(snapshotPerClient).To(Equal(given.expectedSnapshots))
 			},
 			Entry("no Meshes, no Dataplanes, no MeshMetrics", testCase{
-				expectedForNode1: mads_cache.NewSnapshot("", nil),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: mads_cache.NewSnapshot("", nil),
+				},
 			}),
 			Entry("no Meshes with Prometheus enabled, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -185,8 +176,9 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-01").
 						Build(),
 				},
-				expectedForNode1: mads_cache.NewSnapshot("", nil),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: mads_cache.NewSnapshot("", nil),
+				},
 			}),
 			Entry("Mesh with Prometheus enabled but no Dataplanes, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -222,8 +214,9 @@ var _ = Describe("snapshotGenerator", func() {
 						WithName("backend-01").
 						Build(),
 				},
-				expectedForNode1: mads_cache.NewSnapshot("", nil),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: mads_cache.NewSnapshot("", nil),
+				},
 			}),
 			Entry("Mesh with Prometheus enabled and some Dataplanes, no MeshMetrics", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -276,11 +269,9 @@ var _ = Describe("snapshotGenerator", func() {
 						}).
 						Build(),
 				},
-				// TODO: generate this resource map on the fly using the mads/v1/generator pkg
-				expectedForNode1: snapshotWithTwoAssignments,
-				// The pre-MeshMetric "mesh.metrics" code configures all prometheus clients (recognized as nodes here)
-				// the same way, that's why we have the same assignments for both nodes
-				expectedForNode2: snapshotWithTwoAssignments,
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: snapshotWithTwoAssignments,
+				},
 			}),
 			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for all nodes", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -325,8 +316,9 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expectedForNode1: meshMetricSnapshot,
-				expectedForNode2: meshMetricSnapshot,
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: meshMetricSnapshot,
+				},
 			}),
 			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for node 1", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -371,25 +363,118 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expectedForNode1: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
-						Mesh:    "default",
-						Service: "backend",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "backend-01",
-							Address:     "192.168.0.1:1234",
-							MetricsPath: "/custom",
-							Scheme:      "http",
-							Labels: map[string]string{
-								"env":              "intg",
-								"envs":             ",intg,",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,",
-							},
-						}},
+				expectedSnapshots: map[string]v3.Snapshot{
+					node1Id: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"env":              "intg",
+									"envs":             ",intg,",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
+								},
+							}},
+						},
+					}),
+				},
+			}),
+			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus enabled for node 1 and default client for rest", testCase{
+				meshes: []*core_mesh.MeshResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{},
 					},
-				}),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					samples.DataplaneBackendBuilder().
+						WithName("backend-01").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
+						Build(),
+				},
+				meshMetrics: []*v1alpha1.MeshMetricResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+							Mesh: "default",
+						},
+						Spec: &v1alpha1.MeshMetric{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.Mesh,
+							},
+							Default: v1alpha1.Conf{
+								Backends: &[]v1alpha1.Backend{
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											ClientId: &node1Id,
+											Port:     1234,
+											Path:     "/custom",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.Disabled,
+											},
+										},
+									},
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											Port: 1234,
+											Path: "/custom",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.Disabled,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				expectedSnapshots: map[string]v3.Snapshot{
+					node1Id: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"env":              "intg",
+									"envs":             ",intg,",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
+								},
+							}},
+						},
+					}),
+					meshmetrics_generator.DefaultKumaClientId: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
+									"env":              "intg",
+									"envs":             ",intg,",
+								},
+							}},
+						},
+					}),
+				},
 			}),
 			Entry("no Meshes with Prometheus enabled, MeshMetric with Prometheus for some dataplanes", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -442,23 +527,24 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expectedForNode1: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
-						Mesh:    "default",
-						Service: "backend-01",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "backend-01",
-							Address:     "192.168.0.1:1234",
-							MetricsPath: "/custom",
-							Scheme:      "http",
-							Labels: map[string]string{
-								"kuma_io_service":  "backend-01",
-								"kuma_io_services": ",backend-01,",
-							},
-						}},
-					},
-				}),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+				expectedSnapshots: map[string]v3.Snapshot{
+					node1Id: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-01",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-01",
+									"kuma_io_services": ",backend-01,",
+								},
+							}},
+						},
+					}),
+				},
 			}),
 			Entry("no Meshes with Prometheus enabled, multiple MeshMetrics with Prometheus and merging", testCase{
 				meshes: []*core_mesh.MeshResource{
@@ -542,51 +628,182 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
-				expectedForNode1: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
-						Mesh:    "default",
-						Service: "backend-01",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "backend-01",
-							Address:     "192.168.0.1:1234",
-							MetricsPath: "/custom",
-							Scheme:      "http",
-							Labels: map[string]string{
-								"kuma_io_service":  "backend-01",
-								"kuma_io_services": ",backend-01,",
-							},
-						}},
+				expectedSnapshots: map[string]v3.Snapshot{
+					node1Id: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-01",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-01",
+									"kuma_io_services": ",backend-01,",
+								},
+							}},
+						},
+						"/meshes/default/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-02",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-02",
+								Address:     "192.168.0.2:5678",
+								MetricsPath: "/other",
+								Scheme:      "https",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-02",
+									"kuma_io_services": ",backend-02,",
+								},
+							}},
+						},
+						"/meshes/default/dataplanes/backend-03": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-03",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-03",
+								Address:     "192.168.0.3:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-03",
+									"kuma_io_services": ",backend-03,",
+								},
+							}},
+						},
+					}),
+				},
+			}),
+			Entry("no Meshes with Prometheus enabled, MeshMetric targeting Mesh with override for backend-02 with Prometheus metrics backend", testCase{
+				meshes: []*core_mesh.MeshResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{},
 					},
-					"/meshes/default/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
-						Mesh:    "default",
-						Service: "backend-02",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "backend-02",
-							Address:     "192.168.0.2:5678",
-							MetricsPath: "/other",
-							Scheme:      "https",
-							Labels: map[string]string{
-								"kuma_io_service":  "backend-02",
-								"kuma_io_services": ",backend-02,",
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					builders.Dataplane().
+						WithName("backend-01").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
+						WithServices("backend-01").
+						WithAddress("192.168.0.1").
+						Build(),
+					builders.Dataplane().
+						WithName("backend-02").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
+						WithAddress("192.168.0.2").
+						Build(),
+					builders.Dataplane().
+						WithName("backend-03").
+						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
+						WithAddress("192.168.0.3").
+						Build(),
+				},
+				meshMetrics: []*v1alpha1.MeshMetricResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+							Mesh: "default",
+						},
+						Spec: &v1alpha1.MeshMetric{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.Mesh,
 							},
-						}},
-					},
-					"/meshes/default/dataplanes/backend-03": &observability_v1.MonitoringAssignment{
-						Mesh:    "default",
-						Service: "backend-03",
-						Targets: []*observability_v1.MonitoringAssignment_Target{{
-							Name:        "backend-03",
-							Address:     "192.168.0.3:1234",
-							MetricsPath: "/custom",
-							Scheme:      "http",
-							Labels: map[string]string{
-								"kuma_io_service":  "backend-03",
-								"kuma_io_services": ",backend-03,",
+							Default: v1alpha1.Conf{
+								Backends: &[]v1alpha1.Backend{
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											ClientId: &node1Id,
+											Port:     1234,
+											Path:     "/custom",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.Disabled,
+											},
+										},
+									},
+								},
 							},
-						}},
+						},
 					},
-				}),
-				expectedForNode2: mads_cache.NewSnapshot("", nil),
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "override",
+							Mesh: "default",
+						},
+						Spec: &v1alpha1.MeshMetric{
+							TargetRef: common_api.TargetRef{
+								Kind: common_api.MeshService,
+								Name: "backend-02",
+							},
+							Default: v1alpha1.Conf{
+								Backends: &[]v1alpha1.Backend{
+									{
+										Type: v1alpha1.PrometheusBackendType,
+										Prometheus: &v1alpha1.PrometheusBackend{
+											Port: 5678,
+											Path: "/other",
+											Tls: &v1alpha1.PrometheusTls{
+												Mode: v1alpha1.ProvidedTLS,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				expectedSnapshots: map[string]v3.Snapshot{
+					meshmetrics_generator.DefaultKumaClientId: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-02",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-02",
+								Address:     "192.168.0.2:5678",
+								MetricsPath: "/other",
+								Scheme:      "https",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-02",
+									"kuma_io_services": ",backend-02,",
+								},
+							}},
+						},
+					}),
+					node1Id: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
+						"/meshes/default/dataplanes/backend-01": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-01",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-01",
+									"kuma_io_services": ",backend-01,",
+								},
+							}},
+						},
+						"/meshes/default/dataplanes/backend-03": &observability_v1.MonitoringAssignment{
+							Mesh:    "default",
+							Service: "backend-03",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-03",
+								Address:     "192.168.0.3:1234",
+								MetricsPath: "/custom",
+								Scheme:      "http",
+								Labels: map[string]string{
+									"kuma_io_service":  "backend-03",
+									"kuma_io_services": ",backend-03,",
+								},
+							}},
+						},
+					}),
+				},
 			}),
 		)
 	})

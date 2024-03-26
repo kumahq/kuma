@@ -42,6 +42,9 @@ default:
         path: /metrics
         tls:
           mode: "ProvidedTLS"
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: otel-collector:4778
 `),
 	)
 
@@ -195,6 +198,25 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         endpoint: "asdasd123"
+`),
+		ErrorCase(
+			"invalid url",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
+				Message: "must not use schema",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "http://endpoint:8023"
 `),
 		ErrorCase(
 			"undefined openTelemetry backend when type is OpenTelemetry",

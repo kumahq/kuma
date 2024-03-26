@@ -1,0 +1,5 @@
+resources:
+- name: backend_svc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend_svc_80

@@ -18,6 +18,7 @@ spec:
         kuma.io/zone: zone-1
         version: "0.1"
     transparentProxying:
+      ipFamilyMode: DualStack
       redirectPortInbound: 15006
-      redirectPortInboundV6: 15010
+      redirectPortInboundV6: 15099
       redirectPortOutbound: 15001

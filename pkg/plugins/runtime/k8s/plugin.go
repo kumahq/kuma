@@ -168,6 +168,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 					ReplicaSetGetter: mgr.GetClient(),
 					JobGetter:        mgr.GetClient(),
 				},
+				NodeGetter:       mgr.GetClient(),
+				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
 			ResourceConverter:   converter,

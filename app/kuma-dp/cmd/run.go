@@ -368,6 +368,7 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 			kumaSidecarConfiguration.Networking.Address,
 			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
 			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+			cfg.Dataplane.DrainTime.Duration,
 		),
 	)
 

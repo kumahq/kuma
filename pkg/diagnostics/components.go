@@ -7,6 +7,7 @@ import (
 func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(
 		&diagnosticsServer{
+			isReady: rt.Ready,
 			config:  rt.Config().Diagnostics,
 			metrics: rt.Metrics(),
 		},

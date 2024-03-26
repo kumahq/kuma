@@ -185,7 +185,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		Route: name,
 	}
 
-	for _, b := range *rule.Default.BackendRefs {
+	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation
@@ -228,7 +228,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef)
+			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}
@@ -262,12 +262,12 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 
 			for _, s := range h.Set {
 				entry.ResponseHeaders.Replace = append(
-					entry.RequestHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
+					entry.ResponseHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			for _, s := range h.Add {
 				entry.ResponseHeaders.Append = append(
-					entry.RequestHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
+					entry.ResponseHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			entry.ResponseHeaders.Delete = append(

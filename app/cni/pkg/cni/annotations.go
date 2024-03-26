@@ -1,6 +1,7 @@
 package cni
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,8 @@ const (
 	defaultOutboundPort        = "15001"
 	defaultInboundPort         = "15006"
 	defaultInboundPortV6       = "15010"
+	zeroInboundPortV6          = "0"
+	defaultIPFamilyMode        = "unspecified"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
 	defaultRedirectExcludePort = defaultProxyStatusPort
@@ -24,6 +27,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
 	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
 	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
+	"ipFamilyMode":                {"kuma.io/transparent-proxying-ip-family-mode", defaultIPFamilyMode, validateIpFamilyMode},
 	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
 	"builtinDNS":                  {"kuma.io/builtin-dns", "false", alwaysValidFunc},
@@ -39,6 +43,7 @@ type IntermediateConfig struct {
 	targetPort                  string
 	inboundPort                 string
 	inboundPortV6               string
+	ipFamilyMode                string
 	noRedirectUID               string
 	excludeInboundPorts         string
 	excludeOutboundPorts        string
@@ -94,6 +99,20 @@ func validatePortList(ports string) error {
 	return nil
 }
 
+func validateIpFamilyMode(val string) error {
+	if val == "" {
+		return errors.New("value is empty")
+	}
+
+	validValues := []string{"dualstack", "ipv4", "ipv6"}
+	for _, valid := range validValues {
+		if valid == val {
+			return nil
+		}
+	}
+	return errors.New(fmt.Sprintf("value '%s' is not a valid IP family mode", val))
+}
+
 func getAnnotationOrDefault(name string, annotations map[string]string) (string, error) {
 	if _, ok := annotationRegistry[name]; !ok {
 		return "", errors.Errorf("no registered annotation with name %s", name)
@@ -117,6 +136,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
 		"inboundPort":                 &intermediateConfig.inboundPort,
+		"ipFamilyMode":                &intermediateConfig.ipFamilyMode,
 		"inboundPortV6":               &intermediateConfig.inboundPortV6,
 		"excludeInboundPorts":         &intermediateConfig.excludeInboundPorts,
 		"excludeOutboundPorts":        &intermediateConfig.excludeOutboundPorts,
@@ -133,6 +153,8 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
+	// defaults to the ipv4 port if ipv6 port is not set
+	assignIPv6InboundRedirectPort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -143,4 +165,24 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	}
 	*field = val
 	return nil
+}
+
+func assignIPv6InboundRedirectPort(allFields map[string]*string) {
+	v6PortFieldPointer := allFields["inboundPortV6"]
+	ipFamilyModeAnno := allFields["ipFamilyMode"]
+
+	if *ipFamilyModeAnno == defaultIPFamilyMode {
+		defaultIpMode := "dualstack"
+		// an existing pod can disable ipv6 by setting inboundPortV6 to 0, and they don't have ipFamilyMode set
+		if *v6PortFieldPointer == zeroInboundPortV6 {
+			defaultIpMode = "ipv4"
+		}
+		*ipFamilyModeAnno = defaultIpMode
+	}
+
+	if *ipFamilyModeAnno == "ipv4" {
+		*v6PortFieldPointer = "0"
+	} else if *v6PortFieldPointer == defaultInboundPortV6 {
+		*v6PortFieldPointer = *allFields["inboundPort"]
+	}
 }

@@ -58,17 +58,14 @@ var _ = Describe("Auth test", func() {
 		Expect(http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")).To(Succeed())
 
 		// wait for both http and https server
-		Eventually(func() bool {
+		Eventually(func(g Gomega) {
 			resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
-			if err != nil || resp.StatusCode != 200 {
-				return false
-			}
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp).To(HaveHTTPStatus(200))
 			resp, err = http.Get(fmt.Sprintf("http://localhost:%d/secrets", httpPort))
-			if err != nil || resp.StatusCode != 200 {
-				return false
-			}
-			return true
-		}, "5s", "100ms").Should(BeTrue())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp).To(HaveHTTPStatus(200))
+		}, "5s", "100ms").Should(Succeed())
 	})
 
 	AfterEach(func() {

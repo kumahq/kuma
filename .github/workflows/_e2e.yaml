@@ -43,7 +43,7 @@ jobs:
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
@@ -53,7 +53,7 @@ jobs:
           go-version-file: go.mod
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -68,8 +68,6 @@ jobs:
         run: |
           echo "Disk usage before cleanup"
           sudo df -h
-          echo "Removing big directories"
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           echo "Pruning images"
           docker system prune --all -f
           echo "Disk usage after cleanup"
@@ -130,6 +128,9 @@ jobs:
             export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
           fi
           env
+          if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
+            export KUMA_DEFAULT_RETRIES=60
+          fi
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else

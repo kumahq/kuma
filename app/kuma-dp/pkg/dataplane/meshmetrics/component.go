@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ type ConfigFetcher struct {
 	envoyAdminPort        uint32
 	openTelemetryProducer *metrics.AggregatedProducer
 	runningBackends       map[string]*runningBackend
+	drainTime             time.Duration
 }
 
 const unixDomainSocket = "unix"
@@ -42,7 +44,7 @@ var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string) component.Component {
+func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) component.Component {
 	return &ConfigFetcher{
 		httpClient: http.Client{
 			Timeout: 5 * time.Second,
@@ -60,6 +62,7 @@ func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker
 		envoyAdminAddress:     envoyAdminAddress,
 		envoyAdminPort:        envoyAdminPort,
 		runningBackends:       map[string]*runningBackend{},
+		drainTime:             drainTime,
 	}
 }
 
@@ -67,6 +70,12 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	logger.Info("starting Dynamic Mesh Metrics Configuration Scraper",
 		"socketPath", fmt.Sprintf("unix://%s", cf.socketPath),
 	)
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	go func() {
+		<-stop
+		ctxCancel()
+	}()
 
 	for {
 		select {
@@ -83,13 +92,14 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
 			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
-			err = cf.configureOpenTelemetryExporter(newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
+			err = cf.configureOpenTelemetryExporter(ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 			if err != nil {
 				logger.Error(err, "Configuring OpenTelemetry Exporter failed")
 				continue
 			}
 		case <-stop:
 			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
+			cf.shutDownMetricsExporters()
 			return nil
 		}
 	}
@@ -100,17 +110,22 @@ func (cf *ConfigFetcher) NeedLeaderElection() bool {
 }
 
 func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
+	conf := xds.MeshMetricDpConfig{}
 	// since we use socket for communication "localhost" is ignored but this is needed for this
 	// http call to work
 	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
 	if err != nil {
+		// this error can only occur when we configured policy once and then remove it. Listener is removed but socket file
+		// is still present since Envoy does not clean it.
+		if strings.Contains(err.Error(), "connection refused") {
+			logger.V(1).Info("Failed to scrape config, Envoy not listening on socket")
+			return &conf, nil
+		}
 		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
 		return nil, errors.Wrap(err, "failed to scrape /meshmetric endpoint")
 	}
 
 	defer configuration.Body.Close()
-	conf := xds.MeshMetricDpConfig{}
-
 	respBytes, err := io.ReadAll(configuration.Body)
 	if err != nil {
 		logger.Info("failed to read bytes of the response", "err", err)
@@ -131,12 +146,12 @@ func (cf *ConfigFetcher) configurePrometheus(applicationsToScrape []metrics.Appl
 	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
 }
 
-func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
-	err := cf.reconfigureBackends(openTelemetryBackends)
+func (cf *ConfigFetcher) configureOpenTelemetryExporter(ctx context.Context, applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+	err := cf.reconfigureBackends(ctx, openTelemetryBackends)
 	if err != nil {
 		return err
 	}
-	err = cf.shutdownBackendsRemovedFromConfig(openTelemetryBackends)
+	err = cf.shutdownBackendsRemovedFromConfig(ctx, openTelemetryBackends)
 	if err != nil {
 		return err
 	}
@@ -144,17 +159,18 @@ func (cf *ConfigFetcher) configureOpenTelemetryExporter(applicationsToScrape []m
 	return nil
 }
 
-func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+func (cf *ConfigFetcher) reconfigureBackends(ctx context.Context, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
 	for backendName, backend := range openTelemetryBackends {
 		// backend already running, in the future we can reconfigure it here
 		if cf.runningBackends[backendName] != nil {
-			err := cf.reconfigureBackendIfNeeded(backendName, backend)
+			err := cf.reconfigureBackendIfNeeded(ctx, backendName, backend)
 			if err != nil {
 				return err
 			}
+			continue
 		}
 		// start backend as it is not running yet
-		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
+		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
 		if err != nil {
 			return err
 		}
@@ -163,7 +179,7 @@ func (cf *ConfigFetcher) reconfigureBackends(openTelemetryBackends map[string]*x
 	return nil
 }
 
-func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
 	var backendsToRemove []string
 	for backendName := range cf.runningBackends {
 		// backend still configured in policy
@@ -174,7 +190,7 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends
 	}
 	for _, backendName := range backendsToRemove {
 		logger.Info("Shutting down OpenTelemetry exporter", "backend", backendName)
-		err := cf.shutdownBackend(backendName)
+		err := cf.shutdownBackend(ctx, backendName)
 		if err != nil {
 			return err
 		}
@@ -182,22 +198,22 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(openTelemetryBackends
 	return nil
 }
 
-func (cf *ConfigFetcher) shutdownBackend(backendName string) error {
-	err := cf.runningBackends[backendName].exporter.Shutdown(context.Background())
-	if err != nil {
+func (cf *ConfigFetcher) shutdownBackend(ctx context.Context, backendName string) error {
+	err := cf.runningBackends[backendName].exporter.Shutdown(ctx)
+	if err != nil && !errors.Is(err, sdkmetric.ErrReaderShutdown) {
 		return err
 	}
 	delete(cf.runningBackends, backendName)
 	return nil
 }
 
-func startExporter(backend *xds.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
+func startExporter(ctx context.Context, backend *xds.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
 	if backend == nil {
 		return nil, nil
 	}
 	logger.Info("Starting OpenTelemetry exporter", "backend", backendName)
 	exporter, err := otlpmetricgrpc.New(
-		context.Background(),
+		ctx,
 		otlpmetricgrpc.WithEndpoint(backend.Endpoint),
 		otlpmetricgrpc.WithInsecure(),
 		otlpmetricgrpc.WithDialOption(dialOptions()...),
@@ -270,19 +286,30 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 	return applicationsToScrape
 }
 
-func (cf *ConfigFetcher) reconfigureBackendIfNeeded(backendName string, backend *xds.OpenTelemetryBackend) error {
+func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backendName string, backend *xds.OpenTelemetryBackend) error {
 	if configChanged(cf.runningBackends[backendName].appliedConfig, backend) {
-		err := cf.shutdownBackend(backendName)
+		err := cf.shutdownBackend(ctx, backendName)
 		if err != nil {
 			return err
 		}
-		exporter, err := startExporter(backend, cf.openTelemetryProducer, backendName)
+		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
 		if err != nil {
 			return err
 		}
 		cf.runningBackends[backendName] = exporter
 	}
 	return nil
+}
+
+func (cf *ConfigFetcher) shutDownMetricsExporters() {
+	ctx, cancel := context.WithTimeout(context.Background(), cf.drainTime)
+	defer cancel()
+	for backendName := range cf.runningBackends {
+		err := cf.shutdownBackend(ctx, backendName)
+		if err != nil {
+			logger.Error(err, "Failed shutting down metric exporter")
+		}
+	}
 }
 
 func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {

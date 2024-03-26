@@ -1024,7 +1024,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	KumactlArg:          "meshgateway",
 	KumactlListArg:      "meshgateways",
 	AllowToInspect:      false,
-	IsPolicy:            true,
+	IsPolicy:            false,
 	SingularDisplayName: "Mesh Gateway",
 	PluralDisplayName:   "Mesh Gateways",
 	IsExperimental:      false,
