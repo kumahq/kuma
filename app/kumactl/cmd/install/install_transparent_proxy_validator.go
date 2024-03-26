@@ -15,12 +15,14 @@ import (
 const defaultLogName = "validator"
 
 type transparentProxyValidatorArgs struct {
-	IpFamilyMode string
+	IpFamilyMode         string
+	ValidationServerPort uint16
 }
 
 func newInstallTransparentProxyValidator() *cobra.Command {
 	args := transparentProxyValidatorArgs{
-		IpFamilyMode: "dualstack",
+		IpFamilyMode:         "dualstack",
+		ValidationServerPort: validate.ValidationServerPort,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy-validator",
@@ -37,16 +39,16 @@ The result will be shown as text in stdout as well as the exit code
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			log := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
 
-			// todo: make sure this checking does not require additional Linux capabilities
-			ipv6Supported, _ := transparentproxy.ShouldEnableIPv6(uint16(validate.ValidationServerPort))
-			useIPv6 := ipv6Supported && args.IpFamilyMode == "dualstack"
+			ipv6Supported, _ := transparentproxy.HasLocalIPv6()
+			useIPv6 := ipv6Supported && args.IpFamilyMode == "ipv6"
 
-			validator := validate.NewValidator(useIPv6, log)
+			validator := validate.NewValidator(useIPv6, args.ValidationServerPort, log)
 
 			return validator.Run()
 		},
 	}
 
 	cmd.Flags().StringVar(&args.IpFamilyMode, "ip-family-mode", args.IpFamilyMode, "The IP family mode that has enabled traffic redirection for when setting up transparent proxy. Can be 'dualstack' or 'ipv4'")
+	cmd.Flags().Uint16Var(&args.ValidationServerPort, "validation-server-port", args.ValidationServerPort, "The port that the validation server will listen")
 	return cmd
 }

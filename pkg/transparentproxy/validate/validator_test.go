@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"fmt"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,11 +18,8 @@ var _ = Describe("Should Validate iptables rules", func() {
 			validator := createValidator(false)
 
 			// then
-			Expect(validator.Config.ServerListenAddress).To(Equal("127.0.0.1:15010"))
-
-			lastIdxOfColon := strings.LastIndex(validator.Config.ServerListenAddress, ":")
-			serverIP := validator.Config.ServerListenAddress[0:lastIdxOfColon]
-			Expect(serverIP).ToNot(Equal(validator.Config.ClientConnectIP.String()))
+			Expect(validator.Config.ServerListenIP.String()).To(Equal("127.0.0.1"))
+			Expect(validator.Config.ServerListenPort).To(Equal(uint16(15006)))
 		})
 
 		It("ipv6", func() {
@@ -31,9 +27,10 @@ var _ = Describe("Should Validate iptables rules", func() {
 			validator := createValidator(true)
 
 			// then
-			Expect(validator.Config.ServerListenAddress).To(Equal("[::1]:15010"))
+			serverIP := validator.Config.ServerListenIP.String()
+			Expect(serverIP).To(Equal("::1"))
 
-			splitByCon := strings.Split(validator.Config.ServerListenAddress, ":")
+			splitByCon := strings.Split(serverIP, ":")
 			Expect(len(splitByCon) > 2).To(BeTrue())
 		})
 	})
@@ -43,8 +40,8 @@ var _ = Describe("Should Validate iptables rules", func() {
 		validator := createValidator(false)
 		ipAddr := "127.0.0.1"
 		addr, _ := netip.ParseAddr(ipAddr)
-		validator.Config.ServerListenAddress = fmt.Sprintf("%s:%d", ipAddr, ValidationServerPort)
-		validator.Config.ClientConnectIP = addr
+		validator.Config.ServerListenIP = addr
+		validator.Config.ClientConnectPort = ValidationServerPort
 
 		err := validator.Run()
 
@@ -62,10 +59,10 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("i/o timeout"))
+		Expect(err.Error()).To(ContainSubstring("connection refused"))
 	})
 })
 
 func createValidator(ipv6Enabled bool) *Validator {
-	return NewValidator(ipv6Enabled, core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName("validator"))
+	return NewValidator(ipv6Enabled, ValidationServerPort, core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName("validator"))
 }
