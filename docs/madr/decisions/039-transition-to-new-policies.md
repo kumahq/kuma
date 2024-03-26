@@ -50,15 +50,23 @@ it doesn't apply on the real proxies. Instead, by using Inspect API we can inspe
 
 ### Changes in the Inspect API
 
-Existing endpoints will get a new query parameter `effect`:
+Introduce a new non-physical endpoint `/_snapshot` that returns a config dump of a DPP without the actual `/config_dump` call to Envoy.
+If we want to be able to compute diff on the client side we can't use `xds` endpoint as its response lightly diverges from what CP has in SnapshotCache.
 
-* `GET /meshes/{mesh}/dataplanes/{name}/xds` -> `GET /meshes/{mesh}/dataplanes/{name}/xds?effect=shadow`
+Add a query parameter `effect=shadow`:
+
+* `GET /meshes/{mesh}/dataplanes/{name}/_snapshot` -> `GET /meshes/{mesh}/dataplanes/{name}/_snapshot?effect=shadow`
 * `GET /meshes/{mesh}/dataplanes/{name}/_rules` -> `GET /meshes/{mesh}/dataplanes/{name}/_rules?effect=shadow`
 
 when `effect=shadow` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
-Please note, the response DOES NOT contain the json patch diff. These endpoints are useful when calculating the diff on the client side.
+Please note, the response DOES NOT yet contain the json patch diff. These endpoints are only useful when calculating the diff on the client side.
 
-Additionally, we're going to introduce a new non-physical endpoint `_xds-diff`:
+Introduce a new non-physical endpoint `/_snapshot-diff`. This endpoint will return a list of changes in a JSON Patch format
+that shows what modifications are going to be applied to the config dump if we take into account shadow policies.
+
+We don't want to introduce `/_rules-diff` at this point, as `/_rules` API is rarely used without the client and heavily depends on the visualization in GUI.
+
+OpenAPI spec for new endpoints:
 
 ```yaml
 openapi: 3.0.3
@@ -67,7 +75,36 @@ info:
   description: API for getting a diff in JSON Patch format as if shadow policies were applied
   version: 1.0.0
 paths:
-  /meshes/{mesh}/dataplanes/{name}/_xds-diff:
+  /meshes/{mesh}/dataplanes/{name}/_snapshot:
+    get:
+      summary: Get a DPP snapshot on a CP
+      description: Returns a DPP snapshot computed by the CP without the actual Envoy call.
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The value to be used within the operations.
+        '400':
+          description: Bad request. Parameters were invalid.
+        '404':
+          description: The specified mesh/name combination was not found.
+  /meshes/{mesh}/dataplanes/{name}/_snapshot-diff:
     get:
       summary: Get a list of changes to config dump
       description: Returns a diff in a JSON Patch format that shows what modifications are going to be applied to the config dump if we take into account shadow policies
