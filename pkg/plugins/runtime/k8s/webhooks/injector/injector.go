@@ -177,7 +177,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 		}
 	} else {
-		ic := i.NewValidationContainer(podRedirect.IpFamilyMode)
+		ic := i.NewValidationContainer(podRedirect.IpFamilyMode, sidecarTmp.Name)
 		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)
 		if err != nil {
 			return err
@@ -436,14 +436,16 @@ func (i *KumaInjector) NewInitContainer(podRedirect *tp_k8s.PodRedirect) (kube_c
 	return container, nil
 }
 
-func (i *KumaInjector) NewValidationContainer(ipFamilyMode string) kube_core.Container {
+func (i *KumaInjector) NewValidationContainer(ipFamilyMode string, tmpVolumeName string) kube_core.Container {
 	container := kube_core.Container{
 		Name:            k8s_util.KumaCniValidationContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy-validator"},
-		Args:            []string{"--ip-family-mode", ipFamilyMode},
+		Args:            []string{"--config-file", "/tmp/.kumactl", "--ip-family-mode", ipFamilyMode},
 		SecurityContext: &kube_core.SecurityContext{
+			RunAsUser:  &i.cfg.SidecarContainer.DataplaneContainer.UID,
+			RunAsGroup: &i.cfg.SidecarContainer.DataplaneContainer.GID,
 			Capabilities: &kube_core.Capabilities{
 				Drop: []kube_core.Capability{
 					"ALL",
@@ -461,6 +463,11 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode string) kube_core.Con
 			},
 		},
 	}
+	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
+		Name:      tmpVolumeName,
+		MountPath: "/tmp",
+		ReadOnly:  false,
+	})
 
 	return container
 }

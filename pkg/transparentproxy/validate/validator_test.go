@@ -41,6 +41,7 @@ var _ = Describe("Should Validate iptables rules", func() {
 		ipAddr := "127.0.0.1"
 		addr, _ := netip.ParseAddr(ipAddr)
 		validator.Config.ServerListenIP = addr
+		validator.Config.ClientConnectIP = addr
 		validator.Config.ClientConnectPort = ValidationServerPort
 
 		err := validator.Run()
@@ -59,7 +60,7 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("connection refused"))
+		Expect(err.Error()).To(ContainSubstring("i/o timeout"))
 	})
 })
 

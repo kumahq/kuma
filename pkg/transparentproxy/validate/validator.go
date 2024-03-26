@@ -25,23 +25,28 @@ type Validator struct {
 type Config struct {
 	ServerListenIP      netip.Addr
 	ServerListenPort    uint16
+	ClientConnectIP     netip.Addr
 	ClientConnectPort   uint16
 	ClientRetryInterval time.Duration
 }
 
 func NewValidator(useIpv6 bool, port uint16, logger logr.Logger) *Validator {
-	// Connect to 127.0.0.6 should be redirected to 127.0.0.1
-	// Connect to ::6       should be redirected to ::1
+	// Traffic to lo (but not 127.0.0.1) by sidecar will be redirected to  KUMA_MESH_INBOUND_REDIRECT, so:
+	// connect to 127.0.0.6 should be redirected to 127.0.0.1
+	// connect to ::6       should be redirected to ::1
 	serverListenIP, _ := netip.AddrFromSlice([]byte{127, 0, 0, 1})
+	clientConnectIP, _ := netip.AddrFromSlice([]byte{127, 0, 0, 6})
 
 	if useIpv6 {
 		serverListenIP, _ = netip.AddrFromSlice([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+		clientConnectIP, _ = netip.AddrFromSlice([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6})
 	}
 
 	return &Validator{
 		Config: &Config{
 			ServerListenIP:      serverListenIP,
 			ServerListenPort:    port,
+			ClientConnectIP:     clientConnectIP,
 			ClientRetryInterval: validationInterval,
 		},
 		Logger: logger,
@@ -137,7 +142,7 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 }
 
 func (validator *Validator) runClient() error {
-	c := LocalClient{ServerIP: validator.Config.ServerListenIP, ServerPort: validator.Config.ClientConnectPort}
+	c := LocalClient{ServerIP: validator.Config.ClientConnectIP, ServerPort: validator.Config.ClientConnectPort}
 	backoff := retry.WithMaxRetries(validationRetries, retry.NewConstant(validator.Config.ClientRetryInterval))
 	return retry.Do(context.TODO(), backoff, func(ctx context.Context) error {
 		e := c.Run()
