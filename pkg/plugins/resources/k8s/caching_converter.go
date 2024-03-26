@@ -60,7 +60,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		}
 	}
 	if obj.GetResourceVersion() != "" {
-		// an absent of the ResourceVersion means we decode 'obj' from webhook request,
+		// an absence of the ResourceVersion means we decode 'obj' from webhook request,
 		// all webhooks use SimpleConverter, so this is not supposed to happen
 		c.cache.SetDefault(key, out.GetSpec())
 	}
