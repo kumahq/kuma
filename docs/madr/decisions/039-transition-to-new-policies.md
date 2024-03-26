@@ -25,10 +25,10 @@ without applying for real
 
 ## Considered Options
 
-- Introduce a shadow mode for policies on Zone CP ✅ / ❌
-- Introduce a shadow mode for policies on Global CP ✅ / ❌
-  - Show potential changes for a specific DPP ✅ / ❌
-  - Show potential changes for all affected DPPs ✅ / ❌
+- Introduce a shadow mode for policies on Zone CP ✅
+- Introduce a shadow mode for policies on Global CP
+  - Show potential changes for a specific DPP
+  - Show potential changes for all affected DPPs
 
 ## Shadow mode for policies
 
@@ -603,23 +603,3 @@ spec:
   op: add
   path: /type.googleapis.com~1envoy.config.cluster.v3.Cluster/test-cluster
 ```
-
-## HealthCheck -> MeshHealthCheck
-
-TBD
-
-## RateLimit -> MeshRateLimit
-
-TBD
-
-## Retry -> MeshRetry
-
-TBD
-
-## TrafficLog -> MeshTrafficLog
-
-TBD
-
-## TrafficTrace -> MeshTrafficTrace
-
-TBD
