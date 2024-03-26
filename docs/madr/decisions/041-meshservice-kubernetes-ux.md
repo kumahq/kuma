@@ -47,6 +47,35 @@ including supporting named `targetPorts`.
 Note that we only support `Service.ports[].protocol: TCP`, which is also the
 default.
 
+### Headless Service with selectors
+
+In Kubernetes, a headless Service with selectors is used to create a DNS record
+for every Pod selected by the Service that points directly to the Pod's IP.
+
+To support this with Kuma, we will create a `MeshService` per Pod, each
+represented by the hostname allocated by the headless Service and the Pod
+IP as the "VIP" and single endpoint.
+
+In order to do this we need to have a list of all the Pods selected by the
+Service, which we can get by looking at `EndpointSlices`. These resources hold a
+list of endpoints, each of which has a `targetRef`. If the `targetRef` is `kind:
+Pod`, we can rely on the naming of `Dataplane` objects and directly select a
+given `Dataplane` by setting `spec.selector.dataplaneName` to the name of the
+`Pod`.
+
+```
+kind: MeshService
+spec:
+  selector:
+    dataplaneName: pod-1
+    # dataplaneTags: ...
+```
+
+#### Policy matching
+
+Note that this prevents using `kind: MeshService` to select all Pods of a
+StatefulSet. In another MADR, we will cover this use case.
+
 ### Positive Consequences
 
 * Users don't have to think about creating `MeshService`
