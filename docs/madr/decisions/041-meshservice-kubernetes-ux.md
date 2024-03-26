@@ -41,8 +41,8 @@ Note this happens asynchronously.
 
 ### `ports`
 
-The `MeshService` ports are derived from the `ports` field on `Service`. Note
-that `meshservice_api.Port.Protocol` is derived from `ServicePort.AppProtocol`.
+The `MeshService` ports are derived from the `ports` field on `Service`,
+including supporting named `targetPorts`.
 
 Note that we only support `Service.ports[].protocol: TCP`, which is also the
 default.
