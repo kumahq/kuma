@@ -38,7 +38,10 @@ COPY /build/artifacts-linux-$ARCH/iptables-wrapper/iptables-wrapper-installer.sh
      /build/artifacts-linux-$ARCH/iptables-wrapper/iptables-wrapper \
      /
 
-RUN /iptables-wrapper-installer.sh
+# We pass --no-sanity-check to the script because of multiarch/qemu-user-static#191
+# Note that this bypasses checks that `iptables-{nft,legacy}` are installed and
+# that no broken versions are installed.
+RUN /iptables-wrapper-installer.sh --no-sanity-check
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]
