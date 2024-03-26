@@ -55,7 +55,11 @@ func applyToOutbounds(
 	dataplane *core_mesh.DataplaneResource,
 	meshCtx xds_context.MeshContext,
 ) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
+	targetedClusters := policies_xds.GatherTargetedClusters(
+		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outboundSplitClusters,
+		outboundClusters,
+	)
 
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {

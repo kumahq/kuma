@@ -3,6 +3,7 @@ package topology
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -35,7 +36,7 @@ func BuildTimeoutMap(dataplane *core_mesh.DataplaneResource, timeouts []*core_me
 	policyMap := core_policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
 	timeoutMap := core_xds.TimeoutMap{}
-	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
+	for _, oface := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		serviceName := oface.GetService()
 		if policy, exists := policyMap[serviceName]; exists {
 			outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)

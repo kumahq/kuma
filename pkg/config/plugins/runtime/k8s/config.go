@@ -95,7 +95,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				InstanceIPEnvVarName: "INSTANCE_IP",
 				BPFFSPath:            "/sys/fs/bpf",
 				CgroupPath:           "/sys/fs/cgroup",
-				ProgramsSourcePath:   "/kuma/ebpf",
+				ProgramsSourcePath:   "/tmp/kuma-ebpf",
 			},
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.

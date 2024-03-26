@@ -68,43 +68,50 @@ func CollectServices(
 	meshCtx xds_context.MeshContext,
 ) []DestinationService {
 	var dests []DestinationService
-	for _, svc := range meshCtx.Resources.MeshServices().Items {
-		if len(svc.Spec.Status.VIPs) == 0 {
-			continue
-		}
-		for _, port := range svc.Spec.Ports {
+	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
+		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
+		if outbound.BackendRef != nil {
+			ms, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
+			if !ok {
+				// we want to ignore service which is not found. Logging might be excessive here.
+				// We don't have other mechanism to bubble up warnings yet.
+				continue
+			}
+			port, ok := ms.FindPort(outbound.BackendRef.Port)
+			if !ok {
+				continue
+			}
+			protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
+			if port.Protocol != "" {
+				protocol = port.Protocol
+			}
 			dests = append(dests, DestinationService{
-				Outbound: mesh_proto.OutboundInterface{
-					DataplaneIP:   svc.Spec.Status.VIPs[0].IP,
-					DataplanePort: port.Port,
-				},
-				Protocol:    port.Protocol,
-				ServiceName: svc.DestinationName(port.Port),
+				Outbound:    oface,
+				Protocol:    protocol,
+				ServiceName: ms.DestinationName(outbound.BackendRef.Port),
 				BackendRef: common_api.BackendRef{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.MeshService,
-						Name: svc.GetMeta().GetName(),
+						Name: ms.GetMeta().GetName(),
 					},
-					Port: pointer.To(port.Port),
+					Port: &port.Port,
+				},
+			})
+		} else {
+			serviceName := outbound.GetService()
+			dests = append(dests, DestinationService{
+				Outbound:    oface,
+				Protocol:    meshCtx.GetServiceProtocol(serviceName),
+				ServiceName: serviceName,
+				BackendRef: common_api.BackendRef{
+					TargetRef: common_api.TargetRef{
+						Kind: common_api.MeshService,
+						Name: serviceName,
+						Tags: outbound.GetTags(),
+					},
 				},
 			})
 		}
-	}
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		serviceName := outbound.GetService()
-		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-		dests = append(dests, DestinationService{
-			Outbound:    oface,
-			Protocol:    meshCtx.GetServiceProtocol(serviceName),
-			ServiceName: serviceName,
-			BackendRef: common_api.BackendRef{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
-					Tags: outbound.GetTags(),
-				},
-			},
-		})
 	}
 	return dests
 }
