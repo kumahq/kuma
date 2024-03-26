@@ -83,10 +83,6 @@ $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call 
 # Build_Go_Application is a build command for the Kuma Go applications.
 Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $$(LD_FLAGS) -o $$@/$$(notdir $$@)
 
-build/iptables-wrapper:
-	git clone https://github.com/kubernetes-sigs/iptables-wrappers.git --single-branch $(@)
-	git -C $(@) checkout 5792812d9e5a5bb7f22d79d557bbfeece253343d # latest commit on master (March 25, 2024)
-
 # create targets to build binaries for each OS/ARCH combination
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
@@ -128,10 +124,12 @@ build/artifacts-$(1)-$(2)/test-server:
 	$(Build_Go_Application) ./test/server
 
 .PHONY: build/artifacts-$(1)-$(2)/iptables-wrapper
-build/artifacts-$(1)-$(2)/iptables-wrapper: build/iptables-wrapper
+build/artifacts-$(1)-$(2)/iptables-wrapper:
 	mkdir -p $$(@)
-	cp build/iptables-wrapper/iptables-wrapper-installer.sh $(BUILD_DIR)/artifacts-$(1)-$(2)/iptables-wrapper/
-	$(MAKE) -C build/iptables-wrapper build GOOS=$(1) GOARCH=$(2) BIN_DIR=$(BUILD_DIR)/artifacts-$(1)-$(2)/iptables-wrapper
+	[ -f $$(@)/iptables-wrapper ] || \
+	curl --silent --fail --location --output $$(@)/iptables-wrapper https://github.com/kumahq/iptables-wrappers/releases/download/v0.1.0/iptables-wrapper-$(1)-$(2)
+	[ -f $$(@)/iptables-wrapper-installer.sh ] || \
+	curl --silent --fail --location --output $$(@)/iptables-wrapper-installer.sh https://github.com/kumahq/iptables-wrappers/releases/download/v0.1.0/iptables-wrapper-installer.sh
 
 endef
 $(foreach goos,$(SUPPORTED_GOOSES),$(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call BUILD_TARGET,$(goos),$(goarch)))))
