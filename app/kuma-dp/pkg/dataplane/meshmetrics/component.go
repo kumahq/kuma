@@ -80,7 +80,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 			if err != nil {
 				continue
 			}
-			logger.Info("updating hijacker configuration", "conf", configuration)
+			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
 			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
 			err = cf.configureOpenTelemetryExporter(newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
