@@ -128,6 +128,8 @@ spec:
     securityContext:
       runAsUser: 5678
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
@@ -146,6 +148,9 @@ spec:
     - /usr/bin/kumactl
     - install
     - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
     image: kuma/kuma-init:latest
     imagePullPolicy: IfNotPresent
     name: kuma-init
@@ -161,9 +166,18 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   volumes:
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp
