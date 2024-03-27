@@ -17,10 +17,10 @@ on:
         required: true
         type: string
     outputs:
-      IMAGE_MANIFESTS:
-        value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGE_DIGESTS:
+        value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
   contents: read
   id-token: write # Required for image signing
@@ -51,7 +51,7 @@ jobs:
           cache-dependency-path: |
             .build-info
             go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -76,6 +76,7 @@ jobs:
             ./build/distributions/out/*.tar.gz
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -86,8 +87,6 @@ jobs:
   build-images:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
     strategy:
       fail-fast: false
       matrix:
@@ -106,7 +105,7 @@ jobs:
           cache-dependency-path: |
             .build-info
             go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -133,12 +132,6 @@ jobs:
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
           make test/container-structure/${{ matrix.image }}
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        id: image-artifacts
-        with:
-          name: images_${{ matrix.image }}
-          path: |
-            ./build/docker/*.tar
       - name: scan amd64 image
         id: scan_image-amd64
         uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
@@ -177,6 +170,21 @@ jobs:
           digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
+          echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        id: image-artifacts
+        with:
+          name: image_${{ matrix.image }}
+          path: |
+            ./build/docker/*.tar
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        id: image-digest-artifacts
+        with:
+          name: image_${{ matrix.image }}.digest.json
+          path: |
+            ./build/docker/${{ matrix.image }}.digest.json
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
@@ -187,6 +195,23 @@ jobs:
           signature_registry: ${{ steps.image_meta.outputs.registry }}/notary${{ contains(steps.image_meta.outputs.tag, 'preview') && '-internal' }}
           registry_username: ${{ vars.DOCKER_USERNAME }}
           registry_password: ${{ secrets.DOCKER_API_KEY }}
+  digest-images:
+    needs: [build-images]
+    runs-on: ubuntu-latest
+    outputs:
+      DIGESTS: ${{ steps.compute-digests.outputs.digests }}
+    steps:
+      - uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+        with:
+          pattern: "image_*.digest.json"
+          path: ./digests
+          merge-multiple: true
+      - id: compute-digests
+        run: |
+          # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
+          echo "digests<<EOF" >> $GITHUB_OUTPUT
+          jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
@@ -204,7 +229,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}

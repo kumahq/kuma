@@ -76,7 +76,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 		EbpfEnabled:                    false,
-		EbpfProgramsSourcePath:         "/kuma/ebpf",
+		EbpfProgramsSourcePath:         "/tmp/kuma-ebpf",
 		EbpfBPFFSPath:                  "/sys/fs/bpf",
 		EbpfCgroupPath:                 "/sys/fs/cgroup",
 		EbpfTCAttachIface:              "",
