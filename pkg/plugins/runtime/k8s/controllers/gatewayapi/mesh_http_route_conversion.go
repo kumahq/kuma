@@ -2,14 +2,12 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
 	kube_core "k8s.io/api/core/v1"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -18,37 +16,22 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type ServiceAndPorts struct {
-	Name  kube_types.NamespacedName
-	Ports []int32
-}
-
-func serviceAndPorts(svc *kube_core.Service, port *gatewayapi.PortNumber) ServiceAndPorts {
-	var ports []int32
-	for _, port := range svc.Spec.Ports {
-		ports = append(ports, port.Port)
-	}
-	if port != nil {
-		ports = []int32{int32(*port)}
-	}
-	return ServiceAndPorts{
-		Name:  kube_client.ObjectKeyFromObject(svc),
-		Ports: ports,
-	}
-}
-
-func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
-	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, svcs []ServiceAndPorts,
-) (map[string]core_model.ResourceSpec, []kube_meta.Condition, error) {
+func (r *HTTPRouteReconciler) gapiToMeshRules(
+	ctx context.Context,
+	mesh string,
+	route *gatewayapi.HTTPRoute,
+	parentRefAttachmentKind attachment.Kind,
+) ([]v1alpha1.Rule, []kube_meta.Condition, error) {
+	var rules []v1alpha1.Rule
 	var conditions []kube_meta.Condition
 
-	var rules []v1alpha1.Rule
 	for _, rule := range route.Spec.Rules {
-		kumaRule, ruleConditions, err := r.gapiToKumaMeshRule(ctx, mesh, route, rule)
+		kumaRule, ruleConditions, err := r.gapiToKumaMeshRule(ctx, mesh, route, rule, parentRefAttachmentKind)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -62,59 +45,84 @@ func (r *HTTPRouteReconciler) gapiToMeshRouteSpecs(
 		rules = append(rules, kumaRule)
 	}
 
-	conditions = prepareConditions(conditions)
+	return rules, prepareConditions(conditions), nil
+}
 
-	routes := map[string]core_model.ResourceSpec{}
+func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
+	route *gatewayapi.HTTPRoute,
+	rules []v1alpha1.Rule,
+	svc *kube_core.Service,
+	refPort *gatewayapi_v1.PortNumber,
+) core_model.ResourceSpec {
+	// consumer route
+	targetRef := common_api.TargetRef{
+		Kind: common_api.MeshSubset,
+		Tags: map[string]string{
+			mesh_proto.KubeNamespaceTag: route.Namespace,
+		},
+	}
 
-	for _, svcRef := range svcs {
-		// consumer route
-		targetRef := common_api.TargetRef{
-			Kind: common_api.MeshSubset,
-			Tags: map[string]string{
-				mesh_proto.KubeNamespaceTag: route.Namespace,
-			},
-		}
-		// producer route
-		if route.Namespace == svcRef.Name.Namespace {
-			targetRef = common_api.TargetRef{
-				Kind: common_api.Mesh,
-			}
-		}
-
-		var tos []v1alpha1.To
-
-		for _, port := range svcRef.Ports {
-			p := port
-
-			serviceName := k8s_util.ServiceTag(
-				svcRef.Name,
-				&p,
-			)
-
-			tos = append(tos, v1alpha1.To{
-				TargetRef: common_api.TargetRef{
-					Kind: common_api.MeshService,
-					Name: serviceName,
-				},
-				Rules: rules,
-			})
-		}
-
-		routeSubName := fmt.Sprintf(
-			"%s-%s-%s.%s",
-			route.Name, route.Namespace, svcRef.Name.Name, svcRef.Name.Namespace,
-		)
-		routes[routeSubName] = &v1alpha1.MeshHTTPRoute{
-			TargetRef: targetRef,
-			To:        tos,
+	// producer route
+	if route.Namespace == svc.GetNamespace() {
+		targetRef = common_api.TargetRef{
+			Kind: common_api.Mesh,
 		}
 	}
 
-	return routes, conditions, nil
+	var tos []v1alpha1.To
+
+	var ports []int32
+	if refPort != nil {
+		ports = []int32{int32(*refPort)}
+	} else {
+		for _, port := range svc.Spec.Ports {
+			ports = append(ports, port.Port)
+		}
+	}
+
+	for _, port := range ports {
+		serviceName := k8s_util.ServiceTag(
+			kube_client.ObjectKeyFromObject(svc),
+			pointer.To(port),
+		)
+
+		tos = append(tos, v1alpha1.To{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: serviceName,
+			},
+			Rules: rules,
+		})
+	}
+
+	return &v1alpha1.MeshHTTPRoute{
+		TargetRef: targetRef,
+		To:        tos,
+	}
+}
+
+// During conversion of GatewayAPI's `backendRefs` to our own `backendRefs`, we need
+// to consider the scope of the referenced resource.
+//   - Kubernetes Services: These have cluster-wide scope. When referencing a Kubernetes
+//     Service, our `backendRef` should be restricted to the mesh service within the same
+//     zone.
+//   - Future Support: In the future, we might support Multi-Cluster Services (MCS)
+//     (https://gateway-api.sigs.k8s.io/geps/gep-1748/). This will allow targeting
+//     services across multiple zones.
+func kumaLocalTargetRef(name, zone string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.MeshServiceSubset,
+		Name: name,
+		Tags: map[string]string{mesh_proto.ZoneTag: zone},
+	}
 }
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
-	ctx context.Context, mesh string, route *gatewayapi.HTTPRoute, rule gatewayapi.HTTPRouteRule,
+	ctx context.Context,
+	mesh string,
+	route *gatewayapi.HTTPRoute,
+	rule gatewayapi.HTTPRouteRule,
+	parentRefAttachmentKind attachment.Kind,
 ) (v1alpha1.Rule, []kube_meta.Condition, error) {
 	var conditions []kube_meta.Condition
 
@@ -132,7 +140,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}
 
 	for _, gapiFilter := range rule.Filters {
-		filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, mesh, route.Namespace, gapiFilter)
+		filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, mesh, route.Namespace, gapiFilter, parentRefAttachmentKind)
 		if !ok {
 			// TODO use err
 			continue
@@ -158,8 +166,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	}
 
 	for _, gapiBackendRef := range rule.BackendRefs {
-		// ReferenceGrants don't need to be taken into account for Mesh
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, mesh, route.Namespace, gapiBackendRef.BackendObjectReference)
+		ref, refCondition, err := r.gapiToKumaRef(ctx, mesh, route.Namespace, gapiBackendRef.BackendObjectReference, parentRefAttachmentKind)
 		if err != nil {
 			return v1alpha1.Rule{}, nil, err
 		}
@@ -167,11 +174,8 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		refCondition.AddIfFalseAndNotPresent(&conditions)
 
 		backendRefs = append(backendRefs, common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: ref[mesh_proto.ServiceTag],
-			},
-			Weight: pointer.To(uint(*gapiBackendRef.Weight)),
+			TargetRef: kumaLocalTargetRef(ref[mesh_proto.ServiceTag], r.Zone),
+			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
 		})
 	}
 
@@ -276,9 +280,9 @@ func fromGAPIPath(gapiPath gatewayapi.HTTPPathModifier) (v1alpha1.PathRewrite, b
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	ctx context.Context,
-	mesh,
-	routeNamespace string,
+	mesh, routeNamespace string,
 	gapiFilter gatewayapi.HTTPRouteFilter,
+	refAttachmentKind attachment.Kind,
 ) (v1alpha1.Filter, []kube_meta.Condition, bool) {
 	switch gapiFilter.Type {
 	case gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier:
@@ -358,7 +362,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 	case gatewayapi_v1.HTTPRouteFilterRequestMirror:
 		mirror := gapiFilter.RequestMirror
 
-		ref, refCondition, err := r.uncheckedGapiToKumaRef(ctx, mesh, routeNamespace, mirror.BackendRef)
+		ref, refCondition, err := r.gapiToKumaRef(ctx, mesh, routeNamespace, mirror.BackendRef, refAttachmentKind)
 		if err != nil {
 			return v1alpha1.Filter{}, nil, false
 		}
@@ -370,10 +374,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
 				BackendRef: common_api.BackendRef{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.MeshService,
-						Name: ref[mesh_proto.ServiceTag],
-					},
+					TargetRef: kumaLocalTargetRef(ref[mesh_proto.ServiceTag], r.Zone),
 				},
 			},
 		}, conditions, true
