@@ -176,8 +176,8 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		} else {
 			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 		}
-	} else {
-		ic := i.NewValidationContainer(podRedirect.IpFamilyMode, sidecarTmp.Name)
+	} else if podRedirect.RedirectInbound {
+		ic := i.NewValidationContainer(podRedirect.IpFamilyMode, fmt.Sprintf("%d", podRedirect.RedirectPortInbound), sidecarTmp.Name)
 		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)
 		if err != nil {
 			return err
@@ -436,13 +436,17 @@ func (i *KumaInjector) NewInitContainer(podRedirect *tp_k8s.PodRedirect) (kube_c
 	return container, nil
 }
 
-func (i *KumaInjector) NewValidationContainer(ipFamilyMode string, tmpVolumeName string) kube_core.Container {
+func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort string, tmpVolumeName string) kube_core.Container {
 	container := kube_core.Container{
 		Name:            k8s_util.KumaCniValidationContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy-validator"},
-		Args:            []string{"--config-file", "/tmp/.kumactl", "--ip-family-mode", ipFamilyMode},
+		Args: []string{
+			"--config-file", "/tmp/.kumactl",
+			"--ip-family-mode", ipFamilyMode,
+			"--validation-server-port", inboundRedirectPort,
+		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.DataplaneContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.DataplaneContainer.GID,
