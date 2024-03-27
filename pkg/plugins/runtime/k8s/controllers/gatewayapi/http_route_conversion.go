@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	errors2 "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
 	kube_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,7 +21,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	v1alpha12 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/referencegrants"
@@ -427,7 +427,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 
 		svc := &kube_core.Service{}
 		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
-			if errors.IsNotFound(err) {
+			if kube_apierrs.IsNotFound(err) {
 				return unresolvedBackendTags,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
@@ -441,7 +441,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		return map[string]string{
 			mesh_proto.ServiceTag: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
 		}, nil, nil
-	case gk.Kind == "ExternalService" && gk.Group == v1alpha12.GroupVersion.Group:
+	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
 		resource := core_mesh.NewExternalServiceResource()
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
 			if store.IsResourceNotFound(err) {
@@ -490,7 +490,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		namespacedName := policyRef.NamespacedNameReferredTo()
 
 		if permitted, err := referencegrants.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
-			return nil, nil, errors2.Wrap(err, "couldn't determine if backend reference is permitted")
+			return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
 		} else if !permitted {
 			return unresolvedBackendTags,
 				&ResolvedRefsConditionFalse{
