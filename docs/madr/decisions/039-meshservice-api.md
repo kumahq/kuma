@@ -79,7 +79,6 @@ status: # managed by CP. Not shared cross zone, but synced to global
   proxies:
     offline: 3
     online: 5
-    total: 8
   addresses:
   - hostname: xyz.com
     status: Available # | NotAvailable
