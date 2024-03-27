@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -85,6 +86,14 @@ func (cb *CircuitBreaker) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *CircuitBreaker) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *CircuitBreaker) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
@@ -188,6 +197,14 @@ func (cb *Dataplane) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *Dataplane) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *Dataplane) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *Dataplane) Scope() model.Scope {
 	return model.ScopeNamespace
 }
@@ -283,6 +300,14 @@ func (cb *DataplaneInsight) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *DataplaneInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *DataplaneInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *DataplaneInsight) Scope() model.Scope {
@@ -382,6 +407,14 @@ func (cb *ExternalService) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *ExternalService) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ExternalService) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *ExternalService) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -477,6 +510,14 @@ func (cb *FaultInjection) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *FaultInjection) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *FaultInjection) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *FaultInjection) Scope() model.Scope {
@@ -576,6 +617,14 @@ func (cb *HealthCheck) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *HealthCheck) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *HealthCheck) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *HealthCheck) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -671,6 +720,14 @@ func (cb *Mesh) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *Mesh) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *Mesh) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *Mesh) Scope() model.Scope {
@@ -770,6 +827,14 @@ func (cb *MeshGateway) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *MeshGateway) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *MeshGateway) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *MeshGateway) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -865,6 +930,14 @@ func (cb *MeshGatewayRoute) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *MeshGatewayRoute) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *MeshGatewayRoute) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *MeshGatewayRoute) Scope() model.Scope {
@@ -964,6 +1037,14 @@ func (cb *MeshInsight) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *MeshInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *MeshInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *MeshInsight) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1059,6 +1140,14 @@ func (cb *ProxyTemplate) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *ProxyTemplate) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ProxyTemplate) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *ProxyTemplate) Scope() model.Scope {
@@ -1158,6 +1247,14 @@ func (cb *RateLimit) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *RateLimit) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *RateLimit) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *RateLimit) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1253,6 +1350,14 @@ func (cb *Retry) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *Retry) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *Retry) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *Retry) Scope() model.Scope {
@@ -1352,6 +1457,14 @@ func (cb *ServiceInsight) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *ServiceInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ServiceInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *ServiceInsight) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1447,6 +1560,14 @@ func (cb *Timeout) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *Timeout) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *Timeout) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *Timeout) Scope() model.Scope {
@@ -1546,6 +1667,14 @@ func (cb *TrafficLog) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *TrafficLog) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *TrafficLog) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *TrafficLog) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1641,6 +1770,14 @@ func (cb *TrafficPermission) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *TrafficPermission) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *TrafficPermission) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *TrafficPermission) Scope() model.Scope {
@@ -1740,6 +1877,14 @@ func (cb *TrafficRoute) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *TrafficRoute) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *TrafficRoute) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *TrafficRoute) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1837,6 +1982,14 @@ func (cb *TrafficTrace) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *TrafficTrace) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *TrafficTrace) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *TrafficTrace) Scope() model.Scope {
 	return model.ScopeCluster
 }
@@ -1932,6 +2085,14 @@ func (cb *VirtualOutbound) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *VirtualOutbound) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *VirtualOutbound) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *VirtualOutbound) Scope() model.Scope {
@@ -2032,6 +2193,14 @@ func (cb *ZoneEgress) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *ZoneEgress) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ZoneEgress) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *ZoneEgress) Scope() model.Scope {
 	return model.ScopeNamespace
 }
@@ -2127,6 +2296,14 @@ func (cb *ZoneEgressInsight) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *ZoneEgressInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ZoneEgressInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *ZoneEgressInsight) Scope() model.Scope {
@@ -2227,6 +2404,14 @@ func (cb *ZoneIngress) SetSpec(spec core_model.ResourceSpec) {
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
 }
 
+func (cb *ZoneIngress) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ZoneIngress) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *ZoneIngress) Scope() model.Scope {
 	return model.ScopeNamespace
 }
@@ -2322,6 +2507,14 @@ func (cb *ZoneIngressInsight) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *ZoneIngressInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ZoneIngressInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *ZoneIngressInsight) Scope() model.Scope {

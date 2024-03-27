@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -85,6 +86,14 @@ func (cb *Zone) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *Zone) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *Zone) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *Zone) Scope() model.Scope {
@@ -182,6 +191,14 @@ func (cb *ZoneInsight) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+}
+
+func (cb *ZoneInsight) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *ZoneInsight) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *ZoneInsight) Scope() model.Scope {

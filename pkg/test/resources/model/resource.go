@@ -14,7 +14,17 @@ var (
 type Resource struct {
 	Meta           core_model.ResourceMeta
 	Spec           core_model.ResourceSpec
+	Status         core_model.ResourceStatus
 	TypeDescriptor core_model.ResourceTypeDescriptor
+}
+
+func (r *Resource) GetStatus() core_model.ResourceStatus {
+	return r.Status
+}
+
+func (r *Resource) SetStatus(status core_model.ResourceStatus) error {
+	r.Status = status
+	return nil
 }
 
 func (r *Resource) SetMeta(meta core_model.ResourceMeta) {

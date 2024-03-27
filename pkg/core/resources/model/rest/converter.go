@@ -44,6 +44,7 @@ func (f *from) Resource(r core_model.Resource) Resource {
 		return &v1alpha1.Resource{
 			ResourceMeta: meta,
 			Spec:         r.GetSpec(),
+			Status:       r.GetStatus(),
 		}
 	} else {
 		return &unversioned.Resource{
@@ -98,6 +99,11 @@ func (t *to) Core(r Resource) (core_model.Resource, error) {
 	resource.SetMeta(r.GetMeta())
 	if err := resource.SetSpec(r.GetSpec()); err != nil {
 		return nil, err
+	}
+	if resource.Descriptor().HasStatus {
+		if err := resource.SetStatus(r.GetStatus()); err != nil {
+			return nil, err
+		}
 	}
 	return resource, nil
 }
