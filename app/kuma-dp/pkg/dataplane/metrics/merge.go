@@ -2,14 +2,12 @@ package metrics
 
 import (
 	"fmt"
-	"io"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/expfmt"
 
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
@@ -21,14 +19,8 @@ const (
 
 const MeshTrafficLabelName = "kuma_io_mesh_traffic"
 
-func MergeClusters(in io.Reader, out io.Writer) error {
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(in)
-	if err != nil {
-		return err
-	}
-
-	for _, metricFamily := range metricFamilies {
+func MergeClustersForPrometheus(in map[string]*io_prometheus_client.MetricFamily) error {
+	for _, metricFamily := range in {
 		switch {
 		case isClusterMetricFamily(metricFamily):
 			if err := handleClusterMetric(metricFamily); err != nil {
@@ -39,42 +31,25 @@ func MergeClusters(in io.Reader, out io.Writer) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
 
-		if _, err := expfmt.MetricFamilyToText(out, metricFamily); err != nil {
-			return err
-		}
-		if _, err := out.Write([]byte("\n")); err != nil {
-			return err
+func MergeClustersForOpenTelemetry(metricFamilies map[string]*io_prometheus_client.MetricFamily) error {
+	for _, metricFamily := range metricFamilies {
+		switch {
+		case isClusterMetricFamily(metricFamily):
+			if err := handleClusterMetric(metricFamily); err != nil {
+				return err
+			}
+		case isHttpMetricFamily(metricFamily):
+			if err := handleHttpMetricFamily(metricFamily); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
-}
-
-func MergeClustersForOpenTelemetry(in io.Reader) ([]*io_prometheus_client.MetricFamily, error) {
-	var parser expfmt.TextParser
-	metricFamilies, err := parser.TextToMetricFamilies(in)
-	if err != nil {
-		return nil, err
-	}
-
-	var metrics []*io_prometheus_client.MetricFamily
-	for _, metricFamily := range metricFamilies {
-		switch {
-		case isClusterMetricFamily(metricFamily):
-			if err := handleClusterMetric(metricFamily); err != nil {
-				return nil, err
-			}
-		case isHttpMetricFamily(metricFamily):
-			if err := handleHttpMetricFamily(metricFamily); err != nil {
-				return nil, err
-			}
-		}
-
-		metrics = append(metrics, metricFamily)
-	}
-
-	return metrics, nil
 }
 
 func handleClusterMetric(metricFamily *io_prometheus_client.MetricFamily) error {
