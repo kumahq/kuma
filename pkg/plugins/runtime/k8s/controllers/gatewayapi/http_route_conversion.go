@@ -395,7 +395,7 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
-	unresolvedRargerRef := common_api.TargetRef{
+	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
 		Name: metadata.UnresolvedBackendServiceTag,
 	}
@@ -413,7 +413,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		svc := &kube_core.Service{}
 		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				return unresolvedRargerRef,
+				return unresolvedTargetRef,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
@@ -442,7 +442,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		resource := core_mesh.NewExternalServiceResource()
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
 			if store.IsResourceNotFound(err) {
-				return unresolvedRargerRef,
+				return unresolvedTargetRef,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
@@ -458,7 +458,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}, nil, nil
 	}
 
-	return unresolvedRargerRef,
+	return unresolvedTargetRef,
 		&ResolvedRefsConditionFalse{
 			Reason:  string(gatewayapi.RouteReasonInvalidKind),
 			Message: "backend reference must be Service or externalservice.kuma.io",
@@ -478,7 +478,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	// ReferenceGrants don't need to be taken into account for Mesh
 	if refAttachmentKind != attachment.Service {
-		unresolvedRargerRef := common_api.TargetRef{
+		unresolvedTargetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Name: metadata.UnresolvedBackendServiceTag,
 		}
@@ -491,7 +491,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		if permitted, err := referencegrants.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
 			return common_api.TargetRef{}, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
 		} else if !permitted {
-			return unresolvedRargerRef,
+			return unresolvedTargetRef,
 				&ResolvedRefsConditionFalse{
 					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
 					Message: fmt.Sprintf("reference to %s %q not permitted by any ReferenceGrant", gk, namespacedName),
