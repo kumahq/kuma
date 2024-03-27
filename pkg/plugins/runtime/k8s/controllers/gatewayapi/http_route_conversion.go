@@ -17,7 +17,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh2 "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -442,7 +442,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			mesh_proto.ServiceTag: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
 		}, nil, nil
 	case gk.Kind == "ExternalService" && gk.Group == v1alpha12.GroupVersion.Group:
-		resource := mesh2.NewExternalServiceResource()
+		resource := core_mesh.NewExternalServiceResource()
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
 			if store.IsResourceNotFound(err) {
 				return unresolvedBackendTags,
