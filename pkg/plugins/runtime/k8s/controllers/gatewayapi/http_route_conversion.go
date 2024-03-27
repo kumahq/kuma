@@ -109,22 +109,6 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	}
 }
 
-// During conversion of GatewayAPI's `backendRefs` to our own `backendRefs`, we need
-// to consider the scope of the referenced resource.
-//   - Kubernetes Services: These have cluster-wide scope. When referencing a Kubernetes
-//     Service, our `backendRef` should be restricted to the mesh service within the same
-//     zone.
-//   - Future Support: In the future, we might support Multi-Cluster Services (MCS)
-//     (https://gateway-api.sigs.k8s.io/geps/gep-1748/). This will allow targeting
-//     services across multiple zones.
-func kumaLocalTargetRef(name, zone string) common_api.TargetRef {
-	return common_api.TargetRef{
-		Kind: common_api.MeshServiceSubset,
-		Name: name,
-		Tags: map[string]string{mesh_proto.ZoneTag: zone},
-	}
-}
-
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 	ctx context.Context,
 	mesh string,
@@ -182,7 +166,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		refCondition.AddIfFalseAndNotPresent(&conditions)
 
 		backendRefs = append(backendRefs, common_api.BackendRef{
-			TargetRef: kumaLocalTargetRef(ref[mesh_proto.ServiceTag], r.Zone),
+			TargetRef: ref,
 			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
 		})
 	}
@@ -382,7 +366,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
 				BackendRef: common_api.BackendRef{
-					TargetRef: kumaLocalTargetRef(ref[mesh_proto.ServiceTag], r.Zone),
+					TargetRef: ref,
 				},
 			},
 		}, conditions, true
@@ -410,9 +394,10 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
-) (map[string]string, *ResolvedRefsConditionFalse, error) {
-	unresolvedBackendTags := map[string]string{
-		mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
+	unresolvedRargerRef := common_api.TargetRef{
+		Kind: common_api.MeshService,
+		Name: metadata.UnresolvedBackendServiceTag,
 	}
 
 	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
@@ -428,39 +413,52 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		svc := &kube_core.Service{}
 		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
 			if kube_apierrs.IsNotFound(err) {
-				return unresolvedBackendTags,
+				return unresolvedRargerRef,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
 					},
 					nil
 			}
-			return nil, nil, err
+			return common_api.TargetRef{}, nil, err
 		}
 
-		return map[string]string{
-			mesh_proto.ServiceTag: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
+		// During conversion of GatewayAPI's `backendRefs` to our own `backendRefs`, we need
+		// to consider the scope of the referenced resource.
+		//   - Kubernetes Services: These have cluster-wide scope. When referencing a Kubernetes
+		//     Service, our `backendRef` should be restricted to the mesh service within the same
+		//     zone.
+		//   - Future Support: In the future, we might support Multi-Cluster Services (MCS)
+		//     (https://gateway-api.sigs.k8s.io/geps/gep-1748/). This will allow targeting
+		//     services across multiple zones.
+		return common_api.TargetRef{
+			Kind: common_api.MeshServiceSubset,
+			Name: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
+			Tags: map[string]string{
+				mesh_proto.ZoneTag: r.Zone,
+			},
 		}, nil, nil
 	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
 		resource := core_mesh.NewExternalServiceResource()
 		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
 			if store.IsResourceNotFound(err) {
-				return unresolvedBackendTags,
+				return unresolvedRargerRef,
 					&ResolvedRefsConditionFalse{
 						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
 						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
 					},
 					nil
 			}
-			return nil, nil, err
+			return common_api.TargetRef{}, nil, err
 		}
 
-		return map[string]string{
-			mesh_proto.ServiceTag: resource.Spec.GetService(),
+		return common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Name: resource.Spec.GetService(),
 		}, nil, nil
 	}
 
-	return unresolvedBackendTags,
+	return unresolvedRargerRef,
 		&ResolvedRefsConditionFalse{
 			Reason:  string(gatewayapi.RouteReasonInvalidKind),
 			Message: "backend reference must be Service or externalservice.kuma.io",
@@ -477,11 +475,12 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	objectNamespace string,
 	ref gatewayapi.BackendObjectReference,
 	refAttachmentKind attachment.Kind,
-) (map[string]string, *ResolvedRefsConditionFalse, error) {
+) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	// ReferenceGrants don't need to be taken into account for Mesh
 	if refAttachmentKind != attachment.Service {
-		unresolvedBackendTags := map[string]string{
-			mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+		unresolvedRargerRef := common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Name: metadata.UnresolvedBackendServiceTag,
 		}
 
 		policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
@@ -490,9 +489,9 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		namespacedName := policyRef.NamespacedNameReferredTo()
 
 		if permitted, err := referencegrants.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
-			return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
+			return common_api.TargetRef{}, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
 		} else if !permitted {
-			return unresolvedBackendTags,
+			return unresolvedRargerRef,
 				&ResolvedRefsConditionFalse{
 					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
 					Message: fmt.Sprintf("reference to %s %q not permitted by any ReferenceGrant", gk, namespacedName),
