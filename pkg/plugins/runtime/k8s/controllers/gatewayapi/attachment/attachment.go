@@ -30,6 +30,14 @@ const (
 	Allowed
 )
 
+type Kind int
+
+const (
+	UnknownKind Kind = iota
+	Gateway
+	Service
+)
+
 // findRouteListenerAttachment reports whether this ref is allowed to attach to
 // the Gateway or specific Listener.
 // refSectionName is nil if the ref refers to the whole Gateway.
@@ -219,14 +227,15 @@ func EvaluateParentRefAttachment(
 	routeHostnames []gatewayapi.Hostname,
 	routeNs *kube_core.Namespace,
 	ref gatewayapi.ParentReference,
-) (Attachment, error) {
+) (Attachment, Kind, error) {
 	switch {
 	case *ref.Kind == "Gateway" && *ref.Group == gatewayapi.GroupName:
-		return evaluateGatewayAttachment(ctx, client, routeHostnames, routeNs, ref)
+		attachment, err := evaluateGatewayAttachment(ctx, client, routeHostnames, routeNs, ref)
+		return attachment, Gateway, err
 	case *ref.Kind == "Service" && (*ref.Group == kube_core.GroupName || *ref.Group == gatewayapi.GroupName):
 		// Attaching to a Service can only affect requests coming from Services
 		// in the same Namespace or requests going to the Service.
-		return Allowed, nil
+		return Allowed, Service, nil
 	}
-	return Unknown, nil
+	return Unknown, UnknownKind, nil
 }
