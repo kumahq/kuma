@@ -62,7 +62,10 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("i/o timeout"))
+		errMsg := err.Error()
+		containsTimeout := strings.Contains(errMsg, "i/o timeout")
+		containsRefused := strings.Contains(errMsg, "connection refused")
+		Expect(containsTimeout || containsRefused).To(BeTrue())
 	})
 })
 

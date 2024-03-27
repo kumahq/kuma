@@ -174,5 +174,8 @@ spec:
       secretName: default-token-w7dxf
   - emptyDir:
       sizeLimit: 10M
+    name: kuma-init-tmp
+  - emptyDir:
+      sizeLimit: 10M
     name: kuma-sidecar-tmp
 status: {}
