@@ -30,6 +30,22 @@ metadata:
     app.kubernetes.io/instance: kuma
 ---
 apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: kuma-tls-cert
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    "foo": "bar"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  tls.crt: RedactedGeneratedCertForTests
+  tls.key: RedactedGeneratedCertKeyForTests
+  ca.crt: RedactedGeneratedCAForTests
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
@@ -394,7 +410,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 2f113fa37a7e14ba1e46472f1f935a27406262785eb9e4e87f1149ea616f25a1
+        checksum/tls-secrets: 56668f0d91c7dfd6a1dd988d0555337fb46e278874fa0a85749a5985368cff96
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -534,7 +550,7 @@ spec:
       volumes:
         - name: general-tls-cert
           secret:
-            secretName: general-tls-secret
+            secretName: kuma-tls-cert
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
@@ -667,7 +683,7 @@ spec:
       volumes:
         - name: control-plane-ca
           secret:
-            secretName: "general-tls-secret"
+            secretName: "kuma-tls-cert"
             items:
               - key: ca.crt
                 path: ca.crt
@@ -718,7 +734,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -758,7 +774,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -816,7 +832,7 @@ webhooks:
           operator: In
           values: ["enabled", "true"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -843,7 +859,7 @@ webhooks:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -879,7 +895,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -940,7 +956,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -963,7 +979,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -989,7 +1005,7 @@ webhooks:
           operator: NotIn
           values: ["kube-system"]
     clientConfig:
-      caBundle: XYZ
+      caBundle: RedactedGeneratedCAForTests
       service:
         namespace: kuma-system
         name: kuma-control-plane

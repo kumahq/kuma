@@ -4,6 +4,7 @@ controlPlane:
   kdsGlobalAddress: "grpcs://foo.com:3456"
   tls:
     general:
+      secretName: my-certs
       caSecretName: my-custom-ca-name
 ingress:
   enabled: true
