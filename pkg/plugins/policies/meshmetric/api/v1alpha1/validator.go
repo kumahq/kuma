@@ -89,7 +89,7 @@ func validateSelectors(selectors []Selector, selectorType string) validators.Val
 			if err != nil {
 				verr.AddViolation(path.Field("match").String(), "invalid regex")
 			}
-		case PrefixSelectorType, ExactSelectorType:
+		case PrefixSelectorType, ExactSelectorType, ContainsSelectorType:
 		default:
 			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'Regex', 'Prefix', 'Exact' are supported", selector.Type))
 		}

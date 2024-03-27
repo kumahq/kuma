@@ -262,25 +262,25 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			address = application.Address
 		}
 		applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-			Name:          pointer.Deref(application.Name),
-			Address:       address,
-			Path:          application.Path,
-			Port:          application.Port,
-			IsIPv6:        utilnet.IsAddressIPv6(address),
-			QueryModifier: metrics.RemoveQueryParameters,
-			OtelMutator:   metrics.ParsePrometheusMetrics,
+			Name:              pointer.Deref(application.Name),
+			Address:           address,
+			Path:              application.Path,
+			Port:              application.Port,
+			IsIPv6:            utilnet.IsAddressIPv6(address),
+			QueryModifier:     metrics.RemoveQueryParameters,
+			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
 	}
 
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-		Name:          "envoy",
-		Path:          "/stats",
-		Address:       cf.envoyAdminAddress,
-		Port:          cf.envoyAdminPort,
-		IsIPv6:        false,
-		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		Mutator:       metrics.MergeClusters,
-		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
+		Name:              "envoy",
+		Path:              "/stats",
+		Address:           cf.envoyAdminAddress,
+		Port:              cf.envoyAdminPort,
+		IsIPv6:            false,
+		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
+		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForOpenTelemetry),
 	})
 
 	return applicationsToScrape

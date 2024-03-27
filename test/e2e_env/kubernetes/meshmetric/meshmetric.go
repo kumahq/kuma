@@ -42,6 +42,41 @@ spec:
 	return YamlK8s(meshMetric)
 }
 
+func BasicMeshMetricWithProfileForMesh(policyName string, mesh string) InstallFunc {
+	meshMetric := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshMetric
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  default:
+    sidecar:
+      includeUnused: true
+      profiles:
+        appendProfiles:
+          - name: Basic
+        exclude:
+          - type: Regex
+            match: "envoy_cluster_lb_.*"
+        include:
+          - type: Exact
+            match: "envoy_cluster_default_total_match_count"
+    backends:
+      - type: Prometheus
+        prometheus: 
+          port: 8080
+          path: /metrics
+          tls:
+            mode: Disabled
+`, policyName, Config.KumaNamespace, mesh)
+	return YamlK8s(meshMetric)
+}
+
 func MeshMetricMultiplePrometheusBackends(policyName string, mesh string, firstPrometheus string, secondPrometheus string) InstallFunc {
 	meshMetric := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -339,6 +374,28 @@ func MeshMetric() {
 			g.Expect(stdout).ToNot(BeNil())
 			// metric from envoy
 			g.Expect(stdout).To(ContainSubstring("envoy_http_downstream_rq_xx"))
+		}).Should(Succeed())
+	})
+
+	It("Basic MeshMetric policy with profiles exposes correct Envoy metrics", func() {
+		// given
+		Expect(kubernetes.Cluster.Install(BasicMeshMetricWithProfileForMesh("mesh-policy", mainMesh))).To(Succeed())
+		podIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			stdout, _, err := client.CollectResponse(
+				kubernetes.Cluster, "test-server-0", "http://"+net.JoinHostPort(podIp, "8080")+"/metrics",
+				client.FromKubernetesPod(namespace, "test-server-0"),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).ToNot(BeNil())
+			// metric from envoy
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_upstream_cx_active"))        // from basic
+			g.Expect(stdout).To(ContainSubstring("envoy_cluster_default_total_match_count")) // from include
+			g.Expect(stdout).To(Not(ContainSubstring("envoy_cluster_lb_healthy_panic")))     // from exclude
 		}).Should(Succeed())
 	})
 
