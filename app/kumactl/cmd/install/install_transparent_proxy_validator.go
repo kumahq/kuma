@@ -4,12 +4,14 @@
 package install
 
 import (
+	"os"
+
+	"github.com/spf13/cobra"
+
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/validate"
-	"github.com/spf13/cobra"
-	"os"
 )
 
 const defaultLogName = "validator"

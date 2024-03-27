@@ -1,14 +1,16 @@
 package validate
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"net/netip"
 	"os"
 	"strings"
 	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var _ = Describe("Should Validate iptables rules", func() {
@@ -31,7 +33,7 @@ var _ = Describe("Should Validate iptables rules", func() {
 			Expect(serverIP).To(Equal("::1"))
 
 			splitByCon := strings.Split(serverIP, ":")
-			Expect(len(splitByCon) > 2).To(BeTrue())
+			Expect(len(splitByCon)).To(BeNumerically(">", 2))
 		})
 	})
 

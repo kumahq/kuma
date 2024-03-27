@@ -2,13 +2,15 @@ package validate
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/gruntwork-io/terratest/modules/random"
-	"github.com/sethvargo/go-retry"
+	"math/big"
 	"net"
 	"net/netip"
 	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/sethvargo/go-retry"
 )
 
 const (
@@ -70,13 +72,12 @@ func (validator *Validator) Run() error {
 
 	clientErr := validator.runClient()
 	if clientErr != nil {
-		validator.Logger.Error(clientErr,
-			fmt.Sprintf("Validation failed, client failed to connect to the verification server"))
+		validator.Logger.Error(clientErr, "Validation failed, client failed to connect to the verification server")
 		close(sExit)
 		return clientErr
 	} else {
 		close(sExit)
-		validator.Logger.Info("Validation passed, iptables rules established")
+		validator.Logger.Info("Validation passed, iptables rules applied correctly")
 		return nil
 	}
 }
@@ -150,7 +151,7 @@ func (validator *Validator) runClient() error {
 			validator.Logger.Error(e, "Client failed to connect to server")
 			return retry.RetryableError(e)
 		}
-		validator.Logger.Error(e, "Client: connection established")
+		validator.Logger.Info("Client: connection established")
 		return nil
 	})
 }
@@ -172,9 +173,11 @@ func (c *LocalClient) Run() error {
 		}
 	}
 
+	// connections to all ports should be redirected to the server
+	// we support a pre-configured port for testing purposes
 	if c.ServerPort == 0 {
-		// connections to all ports should be redirected to the server
-		c.ServerPort = uint16(random.Random(20000, 30000))
+		randPort, _ := rand.Int(rand.Reader, big.NewInt(10000))
+		c.ServerPort = uint16(20000 + randPort.Int64())
 	}
 	serverAddr := net.JoinHostPort(c.ServerIP.String(), fmt.Sprintf("%d", c.ServerPort))
 
