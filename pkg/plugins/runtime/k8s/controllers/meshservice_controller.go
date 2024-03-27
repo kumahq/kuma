@@ -114,6 +114,9 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 		ms.Spec.Ports = []meshservice_api.Port{}
 		for _, port := range svc.Spec.Ports {
+			if port.Protocol != kube_core.ProtocolTCP {
+				continue
+			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
 				Port:       uint32(port.Port),
 				TargetPort: uint32(port.TargetPort.IntVal), // todo(jakubdyszkiewicz): update after API changes

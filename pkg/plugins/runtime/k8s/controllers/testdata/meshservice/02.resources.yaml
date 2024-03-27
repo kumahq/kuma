@@ -11,8 +11,10 @@ spec:
     - appProtocol: http
       port: 80
       targetPort: 8080
+      protocol: TCP
     - port: 443
       targetPort: 8443
+      protocol: TCP
 ---
 apiVersion: v1
 kind: Namespace
