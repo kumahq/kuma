@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -67,6 +68,14 @@ func (t *MeshLoadBalancingStrategyResource) SetSpec(spec model.ResourceSpec) err
 		}
 		return nil
 	}
+}
+
+func (t *MeshLoadBalancingStrategyResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshLoadBalancingStrategyResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *MeshLoadBalancingStrategyResource) Descriptor() model.ResourceTypeDescriptor {
@@ -139,4 +148,5 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	IsTargetRefBased:    true,
 	HasToTargetRef:      true,
 	HasFromTargetRef:    false,
+	HasStatus:           false,
 }

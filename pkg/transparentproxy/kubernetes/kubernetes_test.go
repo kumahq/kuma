@@ -58,6 +58,7 @@ var _ = Describe("kubernetes", func() {
 				},
 			},
 			commandLine: []string{
+				"--config-file", "/tmp/kumactl/config",
 				"--redirect-outbound-port", "25100",
 				"--redirect-inbound=" + "true",
 				"--redirect-inbound-port", "25204",
@@ -89,6 +90,7 @@ var _ = Describe("kubernetes", func() {
 				},
 			},
 			commandLine: []string{
+				"--config-file", "/tmp/kumactl/config",
 				"--redirect-outbound-port", "25100",
 				"--redirect-inbound=" + "true",
 				"--redirect-inbound-port", "25204",
@@ -115,6 +117,7 @@ var _ = Describe("kubernetes", func() {
 				},
 			},
 			commandLine: []string{
+				"--config-file", "/tmp/kumactl/config",
 				"--redirect-outbound-port", "25100",
 				"--redirect-inbound=" + "true",
 				"--redirect-inbound-port", "25204",
@@ -143,6 +146,7 @@ var _ = Describe("kubernetes", func() {
 				},
 			},
 			commandLine: []string{
+				"--config-file", "/tmp/kumactl/config",
 				"--redirect-outbound-port", "25100",
 				"--redirect-inbound=" + "false",
 				"--redirect-inbound-port", "25204",
@@ -178,6 +182,7 @@ var _ = Describe("kubernetes", func() {
 				},
 			},
 			commandLine: []string{
+				"--config-file", "/tmp/kumactl/config",
 				"--redirect-outbound-port", "25100",
 				"--redirect-inbound=" + "false",
 				"--redirect-inbound-port", "25204",

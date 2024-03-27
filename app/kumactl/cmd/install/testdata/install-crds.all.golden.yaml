@@ -4214,6 +4214,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match
@@ -4237,6 +4238,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match
@@ -5853,6 +5855,32 @@ spec:
                       type: object
                     type: array
                 type: object
+            type: object
+          status:
+            description: Status is the current status of the Kuma MeshService resource.
+            properties:
+              addresses:
+                items:
+                  properties:
+                    hostname:
+                      type: string
+                  type: object
+                type: array
+              tls:
+                properties:
+                  status:
+                    enum:
+                    - Ready
+                    - NotReady
+                    type: string
+                type: object
+              vips:
+                items:
+                  properties:
+                    ip:
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true
