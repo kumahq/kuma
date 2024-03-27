@@ -117,12 +117,12 @@ var _ = Describe("Envoy", func() {
 			// and
 			if runtime.GOOS == "linux" {
 				Expect(strings.TrimSpace(buf.String())).To(Equal(
-					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --cpuset-threads",
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --drain-strategy immediate --disable-hot-restart --log-level off --cpuset-threads",
 						expectedConfigFile)),
 				)
 			} else {
 				Expect(strings.TrimSpace(buf.String())).To(Equal(
-					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off",
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --drain-strategy immediate --disable-hot-restart --log-level off",
 						expectedConfigFile)),
 				)
 			}
@@ -178,7 +178,7 @@ var _ = Describe("Envoy", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(strings.TrimSpace(buf.String())).To(Equal(
-				fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --concurrency 9",
+				fmt.Sprintf("--config-path %s --drain-time-s 15 --drain-strategy immediate --disable-hot-restart --log-level off --concurrency 9",
 					expectedConfigFile)),
 			)
 		}))
