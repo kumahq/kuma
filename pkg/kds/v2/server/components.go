@@ -63,7 +63,7 @@ func New(
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
-		newKdsRetryForcer(log, cache, hasher),
+		newKdsRetryForcer(log, cache, hasher, nackBackoff),
 		syncTracker,
 		status.DefaultStatusTracker(rt, log),
 	}
