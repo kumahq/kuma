@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+  labels:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  creationTimestamp: null
+  labels:
+    kuma.io/mesh: default
+  name: example
+  namespace: demo
+  ownerReferences:
+    - apiVersion: v1
+      kind: Service
+      name: example
+      uid: ""
+  resourceVersion: "1"
+spec:
+  ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+  selector: {}
+  status:
+    tls: {}
+    vips:
+      - ip: 192.168.0.1

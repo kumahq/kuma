@@ -29,6 +29,7 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			context.AnyToAnyReachableServicesGraphBuilder,
+			cfg.Experimental.SkipPersistedVIPs,
 		),
 		runtime.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

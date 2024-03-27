@@ -117,6 +117,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			cfg.Experimental.SkipPersistedVIPs,
 		)
 
 		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, envoy_common.APIV3)
