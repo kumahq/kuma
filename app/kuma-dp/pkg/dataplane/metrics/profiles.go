@@ -164,12 +164,11 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 		case v1alpha1.BasicProfileName:
 			effectiveSelectors = basicProfile
 		}
-		logger.Info("selected profile", "name", profile)
+		logger.V(1).Info("selected profile", "name", profile)
 	}
 
 	hasInclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Include != nil
 	hasExclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Exclude != nil
-	logger.Info("exclude/include", "exclude", hasExclude, "include", hasInclude)
 
 	return func(in map[string]*io_prometheus_client.MetricFamily) error {
 		for key, metricFamily := range in {
