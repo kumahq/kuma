@@ -2,6 +2,7 @@ package server
 
 import (
 	"sync"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -42,16 +43,18 @@ type kdsRetryForcer struct {
 	cache   envoy_cache.SnapshotCache
 	log     logr.Logger
 	nodeIDs map[xds.StreamID]string
+	backoff time.Duration
 
 	sync.Mutex
 }
 
-func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash) *kdsRetryForcer {
+func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash, backoff time.Duration) *kdsRetryForcer {
 	return &kdsRetryForcer{
 		cache:   cache,
 		hasher:  hasher,
 		log:     log,
 		nodeIDs: map[xds.StreamID]string{},
+		backoff: backoff,
 	}
 }
 
@@ -79,7 +82,8 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 		r.nodeIDs[streamID] = nodeID
 	}
 	r.Unlock()
-	r.log.Info("received NACK", "nodeID", nodeID, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage())
+	r.log.Info("received NACK will retry", "nodeID", nodeID, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "delay", r.backoff)
+	time.Sleep(r.backoff)
 	snapshot, err := r.cache.GetSnapshot(nodeID)
 	if err != nil {
 		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot
