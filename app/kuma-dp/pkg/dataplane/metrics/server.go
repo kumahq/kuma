@@ -98,7 +98,7 @@ type ApplicationToScrape struct {
 	IsIPv6            bool
 	QueryModifier     QueryParametersModifier
 	Mutator           MetricsMutator
-	MeshMetricMutator OtelMutator
+	MeshMetricMutator MeshMetricMutator
 }
 
 type Hijacker struct {

@@ -10,10 +10,10 @@ import (
 type (
 	MetricsMutator    func(in io.Reader, out io.Writer) error
 	PrometheusMutator func(in map[string]*io_prometheus_client.MetricFamily) error
-	OtelMutator       func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error)
+	MeshMetricMutator func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error)
 )
 
-func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) OtelMutator {
+func AggregatedOtelMutator(metricsMutators ...PrometheusMutator) MeshMetricMutator {
 	return func(in io.Reader) (map[string]*io_prometheus_client.MetricFamily, error) {
 		var parser expfmt.TextParser
 		metricFamilies, err := parser.TextToMetricFamilies(in)
