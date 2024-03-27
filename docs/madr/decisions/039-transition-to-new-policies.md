@@ -25,10 +25,14 @@ without applying for real
 
 ## Considered Options
 
-- Introduce a shadow mode for policies on Zone CP ✅
+- Introduce a shadow mode for policies on Zone CP
 - Introduce a shadow mode for policies on Global CP
   - Show potential changes for a specific DPP
   - Show potential changes for all affected DPPs
+
+## Decision Outcome
+
+- Introduce a shadow mode for policies only on Zone CP
 
 ## Shadow mode for policies
 
