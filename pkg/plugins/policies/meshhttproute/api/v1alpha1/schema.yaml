@@ -104,6 +104,10 @@ properties:
                                 Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                 `MeshServiceSubset` and `MeshGatewayRoute`
                               type: string
+                            port:
+                              description: Port is only supported when this ref refers to a real MeshService object
+                              format: int32
+                              type: integer
                             proxyTypes:
                               description: |-
                                 ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
@@ -184,7 +188,7 @@ properties:
                             requestMirror:
                               properties:
                                 backendRef:
-                                  description: TargetRef defines structure that allows attaching policy to various objects
+                                  description: TODO forbid weight
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
@@ -204,6 +208,10 @@ properties:
                                         Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                         `MeshServiceSubset` and `MeshGatewayRoute`
                                       type: string
+                                    port:
+                                      description: Port is only supported when this ref refers to a real MeshService object
+                                      format: int32
+                                      type: integer
                                     proxyTypes:
                                       description: |-
                                         ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
@@ -222,6 +230,10 @@ properties:
                                         Tags used to select a subset of proxies by tags. Can only be used with kinds
                                         `MeshSubset` and `MeshServiceSubset`
                                       type: object
+                                    weight:
+                                      default: 1
+                                      minimum: 0
+                                      type: integer
                                   type: object
                                 percentage:
                                   anyOf:

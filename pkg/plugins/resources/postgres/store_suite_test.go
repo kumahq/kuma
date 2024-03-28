@@ -15,7 +15,7 @@ import (
 var c test_postgres.PostgresContainer
 
 const (
-	dbVersion plugins.DbVersion = 1701180642
+	dbVersion plugins.DbVersion = 1710856785
 )
 
 func TestPostgresStore(t *testing.T) {

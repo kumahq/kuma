@@ -17,6 +17,7 @@ type TransparentProxyConfig struct {
 	RedirectInBound           bool
 	RedirectPortInBound       string
 	RedirectPortInBoundV6     string
+	IpFamilyMode              string
 	ExcludeInboundPorts       string
 	ExcludeOutboundPorts      string
 	ExcludedOutboundsForUIDs  []string
@@ -259,7 +260,7 @@ func defaultConfig() Config {
 		Ebpf: Ebpf{
 			Enabled:            false,
 			BPFFSPath:          "/run/kuma/bpf",
-			ProgramsSourcePath: "/kuma/ebpf",
+			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
 		IPv6:               false,
@@ -278,6 +279,10 @@ func defaultConfig() Config {
 			SleepBetweenReties: 2 * time.Second,
 		},
 	}
+}
+
+func DefaultConfig() Config {
+	return defaultConfig()
 }
 
 func MergeConfigWithDefaults(cfg Config) Config {

@@ -129,6 +129,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.ContainerConfig.UID,
 			RunAsGroup: &i.ContainerConfig.GID,
+			Capabilities: &kube_core.Capabilities{
+				Drop: []kube_core.Capability{
+					"ALL",
+				},
+			},
 		},
 		LivenessProbe: &kube_core.Probe{
 			ProbeHandler: kube_core.ProbeHandler{

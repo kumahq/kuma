@@ -19,7 +19,7 @@ type RoutesConfigurer struct {
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[common_api.TargetRefHash]string
+	BackendRefToClusterName map[common_api.BackendRefHash]string
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -119,7 +119,25 @@ func (c RoutesConfigurer) routePathMatch(match api.PathMatch) []*envoy_route.Rou
 			}}
 		}
 		// This case forces us to create two different envoy matches to
-		// replicate the "path-separated prefixes only" semantics
+		// replicate the "path-separated prefixes only" semantics.
+		//
+		// It needs to be replicated instead of using envoy's native
+		// `path_separated_prefix` (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routematch-path-separated-prefix)
+		// because of an edge case, when if we want to drop the prefix:
+		//
+		//   ```
+		//   - match:
+		//       path_separated_prefix: "/prefix"
+		//     route:
+		//       prefix_rewrite: "/"
+		//   ```
+		//
+		// results in the rewrites:
+		//
+		//   * `/prefix` -> `/`
+		//   * `/prefix/path` -> `//path`
+		//
+		// ref. https://github.com/envoyproxy/envoy/issues/23130
 		trimmed := strings.TrimSuffix(match.Value, "/")
 		return []*envoy_route.RouteMatch{{
 			PathSpecifier: &envoy_route.RouteMatch_Path{

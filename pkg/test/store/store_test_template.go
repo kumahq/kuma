@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -38,6 +39,14 @@ func ExecuteStoreTests(
 		err := s.List(context.Background(), &list)
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range list.Items {
+			err := s.Delete(context.Background(), item, store.DeleteByKey(item.Meta.GetName(), item.Meta.GetMesh()))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		msList := core_mesh.MeshResourceList{}
+		err = s.List(context.Background(), &msList)
+		Expect(err).ToNot(HaveOccurred())
+		for _, item := range msList.Items {
 			err := s.Delete(context.Background(), item, store.DeleteByKey(item.Meta.GetName(), item.Meta.GetMesh()))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -102,6 +111,46 @@ func ExecuteStoreTests(
 
 				// then
 				Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(resource.Descriptor().Name, name, mesh)))
+			})
+
+			It("should create a new resource with status", func() {
+				// given
+				created := meshservice_api.MeshServiceResource{
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{
+							DataplaneTags: map[string]string{
+								"a": "b",
+							},
+						},
+						Ports: []meshservice_api.Port{
+							{
+								Port:       80,
+								TargetPort: 80,
+								Protocol:   "http",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{
+							{
+								IP: "10.0.0.1",
+							},
+						},
+					},
+				}
+
+				// when
+				err := s.Create(context.Background(), &created, store.CreateByKey("ms-1.demo", mesh))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// and
+				ms := meshservice_api.NewMeshServiceResource()
+				err = s.Get(context.Background(), ms, store.GetByKey("ms-1.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ms.Status).To(Equal(created.Status))
+				Expect(ms.Spec).To(Equal(created.Spec))
 			})
 		})
 
@@ -172,6 +221,50 @@ func ExecuteStoreTests(
 					Expect(res.Meta.GetModificationTime()).ToNot(Equal(res.Meta.GetCreationTime()))
 					Expect(res.Meta.GetModificationTime().Round(time.Millisecond).Nanosecond() / 1e6).To(Equal(modificationTime.Round(time.Millisecond).Nanosecond() / 1e6))
 				}
+			})
+
+			It("should update resource with status", func() {
+				// given
+				updated := meshservice_api.MeshServiceResource{
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{
+							DataplaneTags: map[string]string{
+								"a": "b",
+							},
+						},
+						Ports: []meshservice_api.Port{
+							{
+								Port:       80,
+								TargetPort: 80,
+								Protocol:   "http",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{
+							{
+								IP: "10.0.0.1",
+							},
+						},
+					},
+				}
+				err := s.Create(context.Background(), &updated, store.CreateByKey("ms-2.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				updated.Status.VIPs[0].IP = "10.0.0.2"
+				updated.Spec.Ports[0].Port = 81
+				err = s.Update(context.Background(), &updated)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// and
+				ms := meshservice_api.NewMeshServiceResource()
+				err = s.Get(context.Background(), ms, store.GetByKey("ms-2.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ms.Status).To(Equal(updated.Status))
+				Expect(ms.Spec).To(Equal(updated.Spec))
 			})
 
 			// todo(jakubdyszkiewicz) write tests for optimistic locking

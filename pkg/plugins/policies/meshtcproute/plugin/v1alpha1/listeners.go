@@ -16,6 +16,43 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+func generateFromService(
+	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAccumulator envoy_common.ServicesAccumulator,
+	toRulesTCP rules.Rules,
+	svc meshroute_xds.DestinationService,
+) (*core_xds.ResourceSet, error) {
+	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
+		ToRules.Rules
+
+	resources := core_xds.NewResourceSet()
+
+	serviceName := svc.ServiceName
+	protocol := meshCtx.GetServiceProtocol(serviceName)
+
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.BackendRef.Tags)
+	if len(backendRefs) == 0 {
+		return nil, nil
+	}
+
+	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
+	filterChain := buildFilterChain(proxy, serviceName, splits, protocol)
+
+	listener, err := buildOutboundListener(proxy, svc, filterChain)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot build listener")
+	}
+
+	resources.Add(&core_xds.Resource{
+		Name:     listener.GetName(),
+		Origin:   generator.OriginOutbound,
+		Resource: listener,
+	})
+	return resources, nil
+}
+
 func generateListeners(
 	proxy *core_xds.Proxy,
 	toRulesTCP rules.Rules,
@@ -26,33 +63,20 @@ func generateListeners(
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[common_api.TargetRefHash]string{}
-	networking := proxy.Dataplane.Spec.GetNetworking()
-	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
-		ToRules.Rules
-
-	for _, outbound := range networking.GetOutbound() {
-		serviceName := outbound.GetService()
-		protocol := meshCtx.GetServiceProtocol(serviceName)
-
-		backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, outbound.GetTags())
-		if len(backendRefs) == 0 {
-			continue
-		}
-
-		splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
-		filterChain := buildFilterChain(proxy, serviceName, splits, protocol)
-
-		listener, err := buildOutboundListener(proxy, outbound, filterChain)
+	clusterCache := map[common_api.BackendRefHash]string{}
+	for _, svc := range meshroute_xds.CollectServices(proxy, meshCtx) {
+		rs, err := generateFromService(
+			meshCtx,
+			proxy,
+			clusterCache,
+			servicesAccumulator,
+			toRulesTCP,
+			svc,
+		)
 		if err != nil {
-			return nil, errors.Wrap(err, "cannot build listener")
+			return nil, err
 		}
-
-		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   generator.OriginOutbound,
-			Resource: listener,
-		})
+		resources.AddSet(rs)
 	}
 
 	return resources, nil
@@ -60,18 +84,17 @@ func generateListeners(
 
 func buildOutboundListener(
 	proxy *core_xds.Proxy,
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
+	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	oface := proxy.Dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
-	tags := outbound.GetTags()
+	tags := svc.BackendRef.Tags
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(
 		proxy.APIVersion,
-		oface.DataplaneIP,
-		oface.DataplanePort,
+		svc.Outbound.DataplaneIP,
+		svc.Outbound.DataplanePort,
 		core_xds.SocketAddressProtocolTCP,
 	)
 

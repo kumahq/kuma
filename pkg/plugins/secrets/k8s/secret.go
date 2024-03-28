@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/api/core/v1"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,6 +78,14 @@ func (s *Secret) SetSpec(spec core_model.ResourceSpec) {
 	s.Data = map[string][]byte{
 		"value": spec.(*system_proto.Secret).GetData().GetValue(),
 	}
+}
+
+func (s *Secret) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (s *Secret) SetStatus(status core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (s *Secret) Scope() model.Scope {

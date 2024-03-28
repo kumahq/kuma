@@ -10,7 +10,7 @@ metadata:
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
-    kuma.io/transparent-proxying-inbound-v6-port: "15010"
+    kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -104,6 +104,9 @@ spec:
         ephemeral-storage: 50M
         memory: 164Mi
     securityContext:
+      capabilities:
+        drop:
+        - ALL
       readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
@@ -122,13 +125,13 @@ spec:
       readOnly: true
   initContainers:
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
     - --redirect-inbound-port
     - "15006"
-    - --redirect-inbound-port-v6
-    - "15010"
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
@@ -136,10 +139,15 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     command:
     - /usr/bin/kumactl
     - install
     - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
     image: kuma/kuma-init:latest
     imagePullPolicy: IfNotPresent
     name: kuma-init
@@ -155,12 +163,21 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   volumes:
   - name: default-token-w7dxf
     secret:
       secretName: default-token-w7dxf
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

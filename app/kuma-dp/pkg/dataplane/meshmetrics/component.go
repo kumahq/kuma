@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -109,17 +110,22 @@ func (cf *ConfigFetcher) NeedLeaderElection() bool {
 }
 
 func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
+	conf := xds.MeshMetricDpConfig{}
 	// since we use socket for communication "localhost" is ignored but this is needed for this
 	// http call to work
 	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
 	if err != nil {
+		// this error can only occur when we configured policy once and then remove it. Listener is removed but socket file
+		// is still present since Envoy does not clean it.
+		if strings.Contains(err.Error(), "connection refused") {
+			logger.V(1).Info("Failed to scrape config, Envoy not listening on socket")
+			return &conf, nil
+		}
 		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
 		return nil, errors.Wrap(err, "failed to scrape /meshmetric endpoint")
 	}
 
 	defer configuration.Body.Close()
-	conf := xds.MeshMetricDpConfig{}
-
 	respBytes, err := io.ReadAll(configuration.Body)
 	if err != nil {
 		logger.Info("failed to read bytes of the response", "err", err)
@@ -161,6 +167,7 @@ func (cf *ConfigFetcher) reconfigureBackends(ctx context.Context, openTelemetryB
 			if err != nil {
 				return err
 			}
+			continue
 		}
 		// start backend as it is not running yet
 		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
@@ -193,7 +200,7 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, 
 
 func (cf *ConfigFetcher) shutdownBackend(ctx context.Context, backendName string) error {
 	err := cf.runningBackends[backendName].exporter.Shutdown(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, sdkmetric.ErrReaderShutdown) {
 		return err
 	}
 	delete(cf.runningBackends, backendName)
@@ -255,25 +262,25 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			address = application.Address
 		}
 		applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-			Name:          pointer.Deref(application.Name),
-			Address:       address,
-			Path:          application.Path,
-			Port:          application.Port,
-			IsIPv6:        utilnet.IsAddressIPv6(address),
-			QueryModifier: metrics.RemoveQueryParameters,
-			OtelMutator:   metrics.ParsePrometheusMetrics,
+			Name:              pointer.Deref(application.Name),
+			Address:           address,
+			Path:              application.Path,
+			Port:              application.Port,
+			IsIPv6:            utilnet.IsAddressIPv6(address),
+			QueryModifier:     metrics.RemoveQueryParameters,
+			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
 	}
 
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-		Name:          "envoy",
-		Path:          "/stats",
-		Address:       cf.envoyAdminAddress,
-		Port:          cf.envoyAdminPort,
-		IsIPv6:        false,
-		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		Mutator:       metrics.MergeClusters,
-		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
+		Name:              "envoy",
+		Path:              "/stats",
+		Address:           cf.envoyAdminAddress,
+		Port:              cf.envoyAdminPort,
+		IsIPv6:            false,
+		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
+		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForOpenTelemetry),
 	})
 
 	return applicationsToScrape
@@ -297,8 +304,8 @@ func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backend
 func (cf *ConfigFetcher) shutDownMetricsExporters() {
 	ctx, cancel := context.WithTimeout(context.Background(), cf.drainTime)
 	defer cancel()
-	for _, exporter := range cf.runningBackends {
-		err := exporter.exporter.Shutdown(ctx)
+	for backendName := range cf.runningBackends {
+		err := cf.shutdownBackend(ctx, backendName)
 		if err != nil {
 			logger.Error(err, "Failed shutting down metric exporter")
 		}

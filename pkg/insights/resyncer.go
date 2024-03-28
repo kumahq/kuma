@@ -464,8 +464,18 @@ func (r *resyncer) createOrUpdateServiceInsight(
 		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
 
+	zonesMap := map[string]map[string]struct{}{}
+	addSvcToZones := func(svc, zone string) {
+		if zone == "" {
+			return
+		}
+		if _, ok := zonesMap[svc]; !ok {
+			zonesMap[svc] = map[string]struct{}{}
+		}
+		zonesMap[svc][zone] = struct{}{}
+	}
 	for _, dpOverview := range dpOverviews {
-		status, _ := dpOverview.GetStatus()
+		status, _ := dpOverview.Status()
 		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 		backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
 
@@ -478,6 +488,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 				svcType = mesh_proto.ServiceInsight_Service_gateway_delegated
 			}
 			populateInsight(svcType, insight, gw.GetTags()[mesh_proto.ServiceTag], status, backend, "")
+			addSvcToZones(gw.GetTags()[mesh_proto.ServiceTag], gw.GetTags()[mesh_proto.ZoneTag])
 		}
 
 		for _, inbound := range networking.GetInbound() {
@@ -486,14 +497,16 @@ func (r *resyncer) createOrUpdateServiceInsight(
 			}
 			// address port is empty to save space in the resource. It will be filled by the server on API response
 			populateInsight(mesh_proto.ServiceInsight_Service_internal, insight, inbound.GetService(), status, backend, "")
+			addSvcToZones(inbound.GetService(), inbound.GetTags()[mesh_proto.ZoneTag])
 		}
 	}
 
 	for _, es := range externalServices {
 		populateInsight(mesh_proto.ServiceInsight_Service_external, insight, es.Spec.GetService(), "", "", es.Spec.Networking.GetAddress())
+		addSvcToZones(es.Spec.GetService(), es.Spec.GetTags()[mesh_proto.ZoneTag])
 	}
 
-	for _, svc := range insight.Services {
+	for svcName, svc := range insight.Services {
 		online := svc.Dataplanes.Online
 		total := svc.Dataplanes.Online + svc.Dataplanes.Offline
 
@@ -506,6 +519,9 @@ func (r *resyncer) createOrUpdateServiceInsight(
 			svc.Status = mesh_proto.ServiceInsight_Service_online
 		case online < total:
 			svc.Status = mesh_proto.ServiceInsight_Service_partially_degraded
+		}
+		if zones, ok := zonesMap[svcName]; ok {
+			svc.Zones = util_maps.SortedKeys(zones)
 		}
 	}
 
@@ -576,7 +592,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
 		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
 
-		status, _ := dpOverview.GetStatus()
+		status, _ := dpOverview.Status()
 
 		statByType := insight.GetDataplanesByType().GetStandard()
 		if networking.GetGateway() != nil {

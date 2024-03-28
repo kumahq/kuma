@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	samples2 "github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
 var _ = Describe("Insight Persistence", func() {
@@ -1035,6 +1036,43 @@ var _ = Describe("Insight Persistence", func() {
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
 			g.Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		}).Should(Succeed())
+	})
+
+	It("should return zones in service insights", func() {
+		// given
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = samples2.DataplaneBackendBuilder().
+			WithName("dp-east-1").
+			WithInboundOfTags("kuma.io/service", "backend", "kuma.io/zone", "east").
+			Create(rm)
+		Expect(err).ToNot(HaveOccurred())
+		err = samples2.DataplaneBackendBuilder().
+			WithName("dp-west-1").
+			WithInboundOfTags("kuma.io/service", "backend", "kuma.io/zone", "west").
+			Create(rm)
+		Expect(err).ToNot(HaveOccurred())
+		err = samples2.DataplaneBackendBuilder().
+			WithName("dp-west-2").
+			WithInboundOfTags("kuma.io/service", "backend", "kuma.io/zone", "west").
+			Create(rm)
+		Expect(err).ToNot(HaveOccurred())
+		err = samples2.DataplaneWebBuilder().Create(rm)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		step(stepsToResync)
+
+		// then
+		Eventually(func(g Gomega) {
+			serviceInsight := core_mesh.NewServiceInsightResource()
+			err := rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("default")))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(serviceInsight.Spec.Services).To(HaveKey("backend"))
+			g.Expect(serviceInsight.Spec.Services["backend"].Zones).To(Equal([]string{"east", "west"}))
+			g.Expect(serviceInsight.Spec.Services["web"].Zones).To(BeEmpty())
 		}).Should(Succeed())
 	})
 

@@ -20,7 +20,7 @@ injector:
     cgroupPath: /sys/fs/cgroup
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP
-    programsSourcePath: /kuma/ebpf
+    programsSourcePath: /tmp/kuma-ebpf
   exceptions:
     labels:
       openshift.io/build.name: '*'
@@ -28,11 +28,15 @@ injector:
   ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
+  nodeLabelsToCopy:
+  - topology.kubernetes.io/zone
+  - topology.kubernetes.io/region
   sidecarContainer:
     drainTime: 30s
     envVars: {}
     gid: 5678
     image: kuma/kuma-dp:latest
+    ipFamilyMode: dualstack
     livenessProbe:
       failureThreshold: 12
       initialDelaySeconds: 60
@@ -45,7 +49,7 @@ injector:
       successThreshold: 1
       timeoutSeconds: 3
     redirectPortInbound: 15006
-    redirectPortInboundV6: 15010
+    redirectPortInboundV6: 15006
     redirectPortOutbound: 15001
     resources:
       limits:

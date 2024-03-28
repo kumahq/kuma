@@ -22,6 +22,14 @@ type Component interface {
 	NeedLeaderElection() bool
 }
 
+type ReadyComponent interface {
+	Component
+
+	// Ready returns true if the component is ready to serve traffic.
+	// This is useful to read this for a readiness probe
+	Ready() bool
+}
+
 // GracefulComponent is a component that supports waiting until it's finished.
 // It's useful if there is cleanup logic that has to be executed before the process exits
 // (i.e. sending SIGTERM signals to subprocesses started by this component).
@@ -66,6 +74,8 @@ type Manager interface {
 	// Returns an error if there is an error starting any component.
 	// If there are any GracefulComponent, it waits until all components are done.
 	Start(<-chan struct{}) error
+
+	Ready() bool
 }
 
 var _ Manager = &manager{}
@@ -86,6 +96,20 @@ type manager struct {
 	started    bool
 	stopCh     <-chan struct{}
 	errCh      chan error
+}
+
+func (cm *manager) Ready() bool {
+	cm.Lock()
+	defer cm.Unlock()
+
+	for _, component := range cm.components {
+		if ready, ok := component.(ReadyComponent); ok {
+			if !ready.Ready() {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (cm *manager) Add(c ...Component) error {

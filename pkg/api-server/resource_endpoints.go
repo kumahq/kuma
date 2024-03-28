@@ -335,9 +335,9 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
+		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest.GetSpec(), response, resourceRest.GetMeta().GetLabels())
+		r.updateResource(request.Request.Context(), resource, resourceRest, response)
 	}
 }
 
@@ -345,14 +345,13 @@ func (r *resourceEndpoints) createResource(
 	ctx context.Context,
 	name string,
 	meshName string,
-	spec model.ResourceSpec,
+	resRest rest.Resource,
 	response *restful.Response,
-	labels map[string]string,
 ) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		model.ResourceKey{Mesh: meshName, Name: name},
-		spec,
+		resRest.GetSpec(),
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
@@ -360,6 +359,7 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
+	labels := resRest.GetMeta().GetLabels()
 	if r.mode == config_core.Zone {
 		if labels == nil {
 			labels = map[string]string{}
@@ -368,7 +368,10 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	res := r.descriptor.NewObject()
-	_ = res.SetSpec(spec)
+	_ = res.SetSpec(resRest.GetSpec())
+	if r.descriptor.HasStatus {
+		_ = res.SetStatus(resRest.GetStatus())
+	}
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
 	} else {
@@ -379,15 +382,14 @@ func (r *resourceEndpoints) createResource(
 func (r *resourceEndpoints) updateResource(
 	ctx context.Context,
 	currentRes model.Resource,
-	newSpec model.ResourceSpec,
+	newResRest rest.Resource,
 	response *restful.Response,
-	labels map[string]string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
 		model.ResourceKey{Mesh: currentRes.GetMeta().GetMesh(), Name: currentRes.GetMeta().GetName()},
 		currentRes.GetSpec(),
-		newSpec,
+		newResRest.GetSpec(),
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
@@ -395,9 +397,12 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	_ = currentRes.SetSpec(newSpec)
+	_ = currentRes.SetSpec(newResRest.GetSpec())
+	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
+		_ = currentRes.SetStatus(newResRest.GetStatus())
+	}
 
-	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 	} else {
 		response.WriteHeader(200)

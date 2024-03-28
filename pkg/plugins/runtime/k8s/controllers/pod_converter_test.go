@@ -73,6 +73,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		node              string
 		dataplane         string
 		existingDataplane string
+		nodeLabelsToCopy  []string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -113,6 +114,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 				serviceGetter = reader
 			}
 
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
 			// other ReplicaSets
 			var replicaSetGetter kube_client.Reader
 			if given.otherReplicaSets != "" {
@@ -141,6 +150,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 						ReplicaSetGetter: replicaSetGetter,
 						JobGetter:        jobGetter,
 					},
+					NodeGetter:       nodeGetter,
+					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
 				ResourceConverter: k8s.NewSimpleConverter(),
@@ -282,6 +293,28 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "23.services-for-pod.yaml",
 			dataplane:      "23.dataplane.yaml",
 		}),
+		Entry("24. Pod with transparent proxy enabled, with ipv6 disabled", testCase{
+			pod:            "24.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "24.dataplane.yaml",
+		}),
+		Entry("25. Pod with transparent proxy enabled, with no ip-family-mode and ipv6 disabled", testCase{
+			pod:            "25.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "25.dataplane.yaml",
+		}),
+		Entry("26. Should copy node label to the dataplane", testCase{
+			pod:              "26.pod.yaml",
+			node:             "26.node.yaml",
+			dataplane:        "26.dataplane.yaml",
+			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
+		}),
+		Entry("27. Should not copy label to the dataplane if there is no node label", testCase{
+			pod:              "27.pod.yaml",
+			node:             "27.node.yaml",
+			dataplane:        "27.dataplane.yaml",
+			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
@@ -314,6 +347,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
+				InboundConverter: InboundConverter{
+					NodeGetter: nodeGetter,
+				},
 			}
 
 			// when
@@ -404,6 +440,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 				NodeGetter:        nodeGetter,
 				ResourceConverter: k8s.NewSimpleConverter(),
 				Zone:              "zone-1",
+				InboundConverter: InboundConverter{
+					NodeGetter: nodeGetter,
+				},
 			}
 
 			// when
@@ -516,6 +555,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 		podLabels      map[string]string
 		svcAnnotations map[string]string
 		appProtocol    *string
+		nodeLabels     map[string]string
 		expected       map[string]string
 	}
 
@@ -526,6 +566,9 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Labels:    given.podLabels,
+				},
+				Spec: kube_core.PodSpec{
+					NodeName: "test-node",
 				},
 			}
 			// and
@@ -552,9 +595,10 @@ var _ = Describe("InboundTagsForService(..)", func() {
 					},
 				},
 			}
+			nodeLabels := given.nodeLabels
 
 			// expect
-			Expect(InboundTagsForService(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
+			Expect(InboundTagsForService(given.zone, pod, svc, &svc.Spec.Ports[0], nodeLabels)).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
@@ -581,6 +625,28 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
 				"k8s.kuma.io/namespace":    "demo",
+			},
+		}),
+		Entry("Pod with node's topology labels", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			nodeLabels: map[string]string{
+				kube_core.LabelTopologyRegion: "east",
+				kube_core.LabelTopologyZone:   "east-2a",
+			},
+			expected: map[string]string{
+				"app":                         "example",
+				"version":                     "0.1",
+				"kuma.io/service":             "example_demo_svc_80",
+				"kuma.io/protocol":            "tcp", // we want Kuma's default behavior to be explicit to a user
+				"k8s.kuma.io/service-name":    "example",
+				"k8s.kuma.io/service-port":    "80",
+				"k8s.kuma.io/namespace":       "demo",
+				kube_core.LabelTopologyRegion: "east",
+				kube_core.LabelTopologyZone:   "east-2a",
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
@@ -998,8 +1064,12 @@ func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList
 
 type fakeNodeReader string
 
-func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
-	return errors.New("not implemented")
+func (f fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object, _ ...kube_client.GetOption) error {
+	err := yaml.Unmarshal([]byte(f), &obj)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f fakeNodeReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {

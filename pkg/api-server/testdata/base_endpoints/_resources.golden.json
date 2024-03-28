@@ -134,11 +134,6 @@
    "name": "MeshGateway",
    "path": "meshgateways",
    "pluralDisplayName": "Mesh Gateways",
-   "policy": {
-    "hasFromTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": false
-   },
    "readOnly": false,
    "scope": "Mesh",
    "singularDisplayName": "Mesh Gateway"

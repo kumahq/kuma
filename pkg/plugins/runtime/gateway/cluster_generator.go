@@ -19,8 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-const UnresolvedBackendServiceTag = "kuma.io/unresolved-backend"
-
 // ClusterGenerator generates Envoy clusters and their corresponding
 // load assignments for both mesh services and external services.
 type ClusterGenerator struct {
@@ -42,8 +40,8 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	for _, dest := range RouteDestinationsMutable(hostEntries) {
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		if service == UnresolvedBackendServiceTag {
-			dest.Name = UnresolvedBackendServiceTag
+		if service == metadata.UnresolvedBackendServiceTag {
+			dest.Name = metadata.UnresolvedBackendServiceTag
 			continue
 		}
 
