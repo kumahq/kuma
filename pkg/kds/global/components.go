@@ -115,16 +115,32 @@ func Setup(rt runtime.Runtime) error {
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
-			errChan <- errors.Wrap(err, "Global CP could not create a zone")
+			err = errors.Wrap(err, "Global CP could not create a zone")
+			select {
+			case errChan <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+			return
 		} else {
 			log.V(1).Info("GlobalToZoneSync finished gracefully")
 		}
@@ -133,7 +149,12 @@ func Setup(rt runtime.Runtime) error {
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
@@ -147,7 +168,12 @@ func Setup(rt runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
+				err = errors.Wrap(err, "KDSSyncClient finished with an error")
+				select {
+				case errChan <- err:
+				default:
+					log.Error(err, "failed to write error to closed channel")
+				}
 			} else {
 				log.V(1).Info("KDSSyncClient finished gracefully")
 			}
