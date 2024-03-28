@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -59,6 +60,7 @@ type BuilderContext interface {
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
 	TokenIssuers() builtin.TokenIssuers
+	MeshContextBuilderComponent() xds_context.MeshContextBuilderComponent
 	MeshCache() *mesh.Cache
 	InterCPClientPool() *client.Pool
 	PgxConfigCustomizationFn() config.PgxConfigCustomization
@@ -69,37 +71,38 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg            kuma_cp.Config
-	cm             component.Manager
-	rs             core_store.CustomizableResourceStore
-	ss             store.SecretStore
-	cs             core_store.ResourceStore
-	txs            core_store.Transactions
-	rm             core_manager.CustomizableResourceManager
-	rom            core_manager.ReadOnlyResourceManager
-	gis            globalinsight.GlobalInsightService
-	cam            core_ca.Managers
-	dsl            datasource.Loader
-	ext            context.Context
-	configm        config_manager.ConfigManager
-	leadInfo       component.LeaderInfo
-	lif            lookup.LookupIPFunc
-	eac            admin.EnvoyAdminClient
-	metrics        metrics.Metrics
-	erf            events.EventBus
-	apim           api_server.APIManager
-	xds            xds_runtime.XDSRuntimeContext
-	cap            secrets.CaProvider
-	dps            *dp_server.DpServer
-	kdsctx         *kds_context.Context
-	rv             ResourceValidators
-	au             authn.Authenticator
-	acc            Access
-	appCtx         context.Context
-	extraReportsFn ExtraReportsFn
-	tokenIssuers   builtin.TokenIssuers
-	meshCache      *mesh.Cache
-	interCpPool    *client.Pool
+	cfg                kuma_cp.Config
+	cm                 component.Manager
+	rs                 core_store.CustomizableResourceStore
+	ss                 store.SecretStore
+	cs                 core_store.ResourceStore
+	txs                core_store.Transactions
+	rm                 core_manager.CustomizableResourceManager
+	rom                core_manager.ReadOnlyResourceManager
+	gis                globalinsight.GlobalInsightService
+	cam                core_ca.Managers
+	dsl                datasource.Loader
+	ext                context.Context
+	configm            config_manager.ConfigManager
+	leadInfo           component.LeaderInfo
+	lif                lookup.LookupIPFunc
+	eac                admin.EnvoyAdminClient
+	metrics            metrics.Metrics
+	erf                events.EventBus
+	apim               api_server.APIManager
+	xds                xds_runtime.XDSRuntimeContext
+	cap                secrets.CaProvider
+	dps                *dp_server.DpServer
+	kdsctx             *kds_context.Context
+	rv                 ResourceValidators
+	au                 authn.Authenticator
+	acc                Access
+	appCtx             context.Context
+	extraReportsFn     ExtraReportsFn
+	tokenIssuers       builtin.TokenIssuers
+	meshContextBuilderComponent xds_context.MeshContextBuilderComponent
+	meshCache          *mesh.Cache
+	interCpPool        *client.Pool
 	*runtimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
@@ -270,6 +273,11 @@ func (b *Builder) WithTokenIssuers(tokenIssuers builtin.TokenIssuers) *Builder {
 	return b
 }
 
+func (b *Builder) WithMeshContextBuilderComponent(meshContextBuilderComponent xds_context.MeshContextBuilderComponent) *Builder {
+	b.meshContextBuilderComponent = meshContextBuilderComponent
+	return b
+}
+
 func (b *Builder) WithMeshCache(meshCache *mesh.Cache) *Builder {
 	b.meshCache = meshCache
 	return b
@@ -358,6 +366,9 @@ func (b *Builder) Build() (Runtime, error) {
 	}
 	if b.tokenIssuers == (builtin.TokenIssuers{}) {
 		return nil, errors.Errorf("TokenIssuers has not been configured")
+	}
+	if b.meshContextBuilderComponent == nil {
+		return nil, errors.Errorf("MeshContextBuilderComponent has not been configured")
 	}
 	if b.meshCache == nil {
 		return nil, errors.Errorf("MeshCache has not been configured")
@@ -521,6 +532,10 @@ func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 
 func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return b.eac
+}
+
+func (b *Builder) MeshContextBuilderComponent() xds_context.MeshContextBuilderComponent {
+	return b.meshContextBuilderComponent
 }
 
 func (b *Builder) MeshCache() *mesh.Cache {
