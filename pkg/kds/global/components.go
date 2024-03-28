@@ -35,6 +35,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/util/channels"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -115,16 +116,17 @@ func Setup(rt runtime.Runtime) error {
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			channels.NonBlockingErrorWrite(errChan, err)
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
-			errChan <- errors.Wrap(err, "Global CP could not create a zone")
+			channels.NonBlockingErrorWrite(errChan, errors.Wrap(err, "Global CP could not create a zone"))
 		}
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
-			errChan <- err
+			channels.NonBlockingErrorWrite(errChan, err)
 		} else {
 			log.V(1).Info("GlobalToZoneSync finished gracefully")
 		}
@@ -133,7 +135,8 @@ func Setup(rt runtime.Runtime) error {
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			channels.NonBlockingErrorWrite(errChan, err)
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
@@ -147,7 +150,7 @@ func Setup(rt runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
-				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
+				channels.NonBlockingErrorWrite(errChan, errors.Wrap(err, "KDSSyncClient finished with an error"))
 			} else {
 				log.V(1).Info("KDSSyncClient finished gracefully")
 			}
