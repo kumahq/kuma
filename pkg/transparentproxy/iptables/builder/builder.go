@@ -2,6 +2,7 @@ package builder
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -134,6 +135,16 @@ func runRestoreCmd(cmdName string, params []string) (string, error) {
 }
 
 func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
+	executables, legacy, err := findIptables(context.TODO(), cfg, ipv6)
+	if err != nil {
+		return "", fmt.Errorf("unable to detect iptables restore binaries: %s", err)
+	}
+
+	// TODO(bartsmykla): this is very inelegant
+	if executables.foundDockerOutputChain {
+		cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
+	}
+
 	rulesFile, err := createRulesFile(ipv6)
 	if err != nil {
 		return "", err
@@ -155,20 +166,28 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	return restoreIPTablesWithRetry(cfg, rulesFile, ipv6)
+	return restoreIPTablesWithRetry(cfg, rulesFile, executables, legacy)
 }
 
-func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) (string, error) {
-	restoreLegacy, err := checkForIptablesRestoreLegacy(ipv6)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
-	}
+func restoreIPTablesWithRetry(
+	cfg config.Config,
+	rulesFile *os.File,
+	e *executables,
+	legacy bool,
+) (string, error) {
+	// restoreLegacy, err := checkForIptablesRestoreLegacy(ipv6)
+	// if err != nil {
+	// 	return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
+	// }
 
-	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy, ipv6)
+	params := buildRestoreParameters(cfg, rulesFile, legacy)
 
 	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
 	for i := 0; i <= maxRetries; i++ {
-		output, err := runRestoreCmd(cmdName, params)
+		fullCmd := strings.Join(append([]string{e.restore.path}, params...), " ")
+		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf("# running: %s\n", fullCmd)))
+
+		output, err := runRestoreCmd(e.restore.path, params)
 		if err == nil {
 			return output, nil
 		}
@@ -177,7 +196,7 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 			"# [%d/%d] %s returned error: %q",
 			i+1,
 			maxRetries+1,
-			strings.Join(append([]string{cmdName}, params...), " "),
+			strings.Join(append([]string{e.restore.path}, params...), " "),
 			err.Error(),
 		)))
 
@@ -195,7 +214,7 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 
 	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
 
-	return "", errors.Errorf("%s failed", cmdName)
+	return "", errors.Errorf("%s failed", e.restore.path)
 }
 
 // checkForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is
