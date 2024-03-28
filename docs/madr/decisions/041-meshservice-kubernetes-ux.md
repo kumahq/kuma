@@ -23,6 +23,7 @@ We will convert `Services` to `MeshServices` in a Kubernetes controller,
 assuming:
 
 1. The namespace is part of the mesh with `kuma.io/sidecar-injection: "true"`
+  or the `Service` is labelled with `kuma.io/mesh`.
 1. The `Mesh` of the `Service` or its namespace exists.
 1. The `Service` hasn't opted out via `kuma.io/ignore: "true"`
 
