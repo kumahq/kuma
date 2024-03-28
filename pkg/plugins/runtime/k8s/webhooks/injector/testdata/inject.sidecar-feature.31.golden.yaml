@@ -26,15 +26,6 @@ spec:
     securityContext:
       runAsUser: 10000
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
-    securityContext:
-      runAsUser: 5678
   - args:
     - --config-file
     - /tmp/kumactl/config
@@ -184,6 +175,15 @@ spec:
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
+    securityContext:
+      runAsUser: 5678
   volumes:
   - emptyDir:
       sizeLimit: 10M

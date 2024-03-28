@@ -160,6 +160,9 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		})
 	}
 
+	var prependInitContainers []kube_core.Container
+	var appendInitContainers []kube_core.Container
+
 	// init container
 	if !i.cfg.CNIEnabled {
 		ic, err := i.NewInitContainer(pod)
@@ -170,26 +173,25 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
-		if err != nil {
+		if initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst); err != nil {
 			return err
-		}
-		if enabled {
-			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
-			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
+		} else if initFirst || i.sidecarContainersEnabled {
+			prependInitContainers = append(prependInitContainers, patchedIc)
 		} else {
-			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
+			appendInitContainers = append(appendInitContainers, patchedIc)
 		}
 	}
 
 	if i.sidecarContainersEnabled {
 		// inject sidecar after init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+		prependInitContainers = append(prependInitContainers, patchedContainer)
 	} else {
 		// inject sidecar as first container
 		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
+
+	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
 		return err
