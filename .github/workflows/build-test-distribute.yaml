@@ -91,7 +91,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: ${{ github.ref_type == 'tag' }}
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
