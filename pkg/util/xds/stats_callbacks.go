@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -14,6 +15,12 @@ import (
 var statsLogger = core.Log.WithName("stats-callbacks")
 
 const ConfigInFlightThreshold = 100_000
+
+type VersionExtractor = func(metadata *structpb.Struct) string
+
+var NoopVersionExtractor = func(metadata *structpb.Struct) string {
+	return ""
+}
 
 type StatsCallbacks interface {
 	// ConfigReadyForDelivery marks a configuration as a ready to be delivered.
@@ -31,10 +38,13 @@ type statsCallbacks struct {
 	NoopCallbacks
 	responsesSentMetric    *prometheus.CounterVec
 	requestsReceivedMetric *prometheus.CounterVec
+	versions               *prometheus.GaugeVec
 	deliveryMetric         prometheus.Summary
 	deliveryMetricName     string
 	streamsActive          int
 	configsQueue           map[string]time.Time
+	versionsForStream      map[int64]string
+	versionExtractor       VersionExtractor
 	sync.RWMutex
 }
 
@@ -61,9 +71,11 @@ func (s *statsCallbacks) DiscardConfig(configVersion string) {
 
 var _ StatsCallbacks = &statsCallbacks{}
 
-func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (StatsCallbacks, error) {
+func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtractor VersionExtractor) (StatsCallbacks, error) {
 	stats := &statsCallbacks{
-		configsQueue: map[string]time.Time{},
+		configsQueue:      map[string]time.Time{},
+		versionsForStream: map[int64]string{},
+		versionExtractor:  versionExtractor,
 	}
 
 	stats.responsesSentMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -104,6 +116,14 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (StatsCallb
 		return nil, err
 	}
 
+	stats.versions = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: dsType + "_client_versions",
+		Help: "Number of clients for each version. It only counts connections where they sent at least one request",
+	}, []string{"version"})
+	if err := metrics.Register(stats.versions); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -114,15 +134,28 @@ func (s *statsCallbacks) OnStreamOpen(context.Context, int64, string) error {
 	return nil
 }
 
-func (s *statsCallbacks) OnStreamClosed(int64) {
+func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.streamsActive--
+	if ver, ok := s.versionsForStream[streamID]; ok {
+		s.versions.WithLabelValues(ver).Dec()
+		delete(s.versionsForStream, streamID)
+	}
 }
 
-func (s *statsCallbacks) OnStreamRequest(_ int64, request DiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryRequest) error {
 	if request.VersionInfo() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
+	}
+
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versions.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
 	}
 
 	if request.HasErrors() {
@@ -156,15 +189,28 @@ func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error
 	return nil
 }
 
-func (s *statsCallbacks) OnDeltaStreamClosed(int64) {
+func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.streamsActive--
+	if ver, ok := s.versionsForStream[streamID]; ok {
+		s.versions.WithLabelValues(ver).Dec()
+		delete(s.versionsForStream, streamID)
+	}
 }
 
-func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDiscoveryRequest) error {
 	if request.GetResponseNonce() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
+	}
+
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versions.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
 	}
 
 	if request.HasErrors() {

@@ -129,7 +129,7 @@ var _ = Describe("Reconcile", func() {
 
 			metrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
-			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds")
+			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds", util_xds.NoopVersionExtractor)
 			Expect(err).ToNot(HaveOccurred())
 
 			// setup
