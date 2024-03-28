@@ -114,7 +114,7 @@ func Setup(rt runtime.Runtime) error {
 
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			select {
 			case errChan <- err:
 			default:
@@ -125,7 +125,8 @@ func Setup(rt runtime.Runtime) error {
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
+		err = createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager())
+		if err != nil && !errors.Is(err, context.Canceled) {
 			err = errors.Wrap(err, "Global CP could not create a zone")
 			select {
 			case errChan <- err:
@@ -134,7 +135,9 @@ func Setup(rt runtime.Runtime) error {
 			}
 			return
 		}
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
+
+		err = kdsServerV2.GlobalToZoneSync(stream)
+		if err != nil && !errors.Is(err, context.Canceled) {
 			select {
 			case errChan <- err:
 			default:
@@ -148,7 +151,7 @@ func Setup(rt runtime.Runtime) error {
 
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			select {
 			case errChan <- err:
 			default:
@@ -167,7 +170,8 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			if err := sink.Receive(); err != nil {
+			err := sink.Receive()
+			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {
 				case errChan <- err:
