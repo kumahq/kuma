@@ -1,0 +1,3 @@
+import{d as u,a as t,o as l,b as m,w as e,e as o,m as a,R as r,f as n}from"./index-BvBYCJa7.js";const d={class:"overview"},f=a("p",null,"The page or entity you were looking for does not exist.",-1),x=u({__name:"KumaNotFoundView",setup(w){return(V,h)=>{const s=t("RouteTitle"),c=t("KButton"),_=t("KEmptyState"),i=t("AppView"),p=t("RouteView");return l(),m(p,{name:"kuma-not-found-view"},{default:e(()=>[o(i,null,{default:e(()=>[a("div",d,[o(_,null,{icon:e(()=>[o(r,{class:"mb-3"})]),title:e(()=>[a("h1",null,[o(s,{title:"Page Not Found"})])]),action:e(()=>[o(c,{appearance:"primary",to:{name:"home"}},{default:e(()=>[n(`
+              Go Home
+            `)]),_:1})]),default:e(()=>[n(),n(),f,n()]),_:1})])]),_:1})]),_:1})}}});export{x as default};
