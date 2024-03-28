@@ -26,6 +26,7 @@ type memoryStoreRecord struct {
 	resourceKey
 	Version          memoryVersion
 	Spec             string
+	Status           string
 	CreationTime     time.Time
 	ModificationTime time.Time
 	Children         []*resourceKey
@@ -137,10 +138,7 @@ func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...sto
 	r.SetMeta(meta)
 
 	// convert into storage representation
-	record, err := c.marshalRecord(
-		string(r.Descriptor().Name),
-		meta,
-		r.GetSpec())
+	record, err := c.marshalRecord(string(r.Descriptor().Name), meta, r.GetSpec(), r.GetStatus())
 	if err != nil {
 		return err
 	}
@@ -198,6 +196,13 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 		return err
 	}
 	record.Spec = string(content)
+	if r.Descriptor().HasStatus {
+		content, err := core_model.ToJSON(r.GetStatus())
+		if err != nil {
+			return err
+		}
+		record.Status = string(content)
+	}
 
 	if c.eventWriter != nil {
 		go func() {
@@ -329,9 +334,18 @@ func (c *memoryStore) findRecords(resourceType string, mesh string, contains str
 	return res
 }
 
-func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec core_model.ResourceSpec) (*memoryStoreRecord, error) {
+func (c *memoryStore) marshalRecord(
+	resourceType string,
+	meta memoryMeta,
+	spec core_model.ResourceSpec,
+	status core_model.ResourceStatus,
+) (*memoryStoreRecord, error) {
 	// convert spec into storage representation
 	content, err := core_model.ToJSON(spec)
+	if err != nil {
+		return nil, err
+	}
+	statusContent, err := core_model.ToJSON(status)
 	if err != nil {
 		return nil, err
 	}
@@ -344,6 +358,7 @@ func (c *memoryStore) marshalRecord(resourceType string, meta memoryMeta, spec c
 		},
 		Version:          meta.Version,
 		Spec:             string(content),
+		Status:           string(statusContent),
 		CreationTime:     meta.CreationTime,
 		ModificationTime: meta.ModificationTime,
 		Labels:           meta.Labels,
@@ -359,5 +374,10 @@ func (c *memoryStore) unmarshalRecord(s *memoryStoreRecord, r core_model.Resourc
 		ModificationTime: s.ModificationTime,
 		Labels:           s.Labels,
 	})
+	if r.Descriptor().HasStatus {
+		if err := core_model.FromJSON([]byte(s.Status), r.GetStatus()); err != nil {
+			return err
+		}
+	}
 	return core_model.FromJSON([]byte(s.Spec), r.GetSpec())
 }

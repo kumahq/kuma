@@ -2,6 +2,8 @@ package reconcile
 
 import (
 	"context"
+	"maps"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -9,36 +11,55 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner,
-) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator *SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
 	return &reconciler{
-		hasher:    hasher,
-		cache:     cache,
-		generator: generator,
-		versioner: versioner,
+		hasher:              hasher,
+		cache:               cache,
+		generator:           generator,
+		versioner:           versioner,
+		knownClientIds:      map[string]bool{},
+		knownClientIdsMutex: &sync.Mutex{},
 	}
 }
 
 type reconciler struct {
-	hasher    envoy_cache.NodeHash
-	cache     util_xds_v3.SnapshotCache
-	generator util_xds_v3.SnapshotGenerator
-	versioner util_xds_v3.SnapshotVersioner
+	hasher              envoy_cache.NodeHash
+	cache               util_xds_v3.SnapshotCache
+	generator           *SnapshotGenerator
+	versioner           util_xds_v3.SnapshotVersioner
+	knownClientIds      map[string]bool
+	knownClientIdsMutex *sync.Mutex
 }
 
-func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
-	newSnapshot, err := r.generator.GenerateSnapshot(ctx, node)
+func (r *reconciler) KnownClientIds() map[string]bool {
+	r.knownClientIdsMutex.Lock()
+	defer r.knownClientIdsMutex.Unlock()
+	return maps.Clone(r.knownClientIds)
+}
+
+func (r *reconciler) Reconcile(ctx context.Context) error {
+	newSnapshotPerClient, err := r.generator.GenerateSnapshot(ctx)
 	if err != nil {
 		return err
 	}
-	if err := newSnapshot.Consistent(); err != nil {
-		return err
+	knownClients := map[string]bool{}
+	for clientId, newSnapshot := range newSnapshotPerClient {
+		knownClients[clientId] = true
+		if err := newSnapshot.Consistent(); err != nil {
+			return err
+		}
+		old, _ := r.cache.GetSnapshot(clientId)
+		newSnapshot = r.versioner.Version(newSnapshot, old)
+		err := r.cache.SetSnapshot(clientId, newSnapshot)
+		if err != nil {
+			return err
+		}
 	}
-	id := r.hasher.ID(node)
-	old, _ := r.cache.GetSnapshot(id)
-	newSnapshot = r.versioner.Version(newSnapshot, old)
-	return r.cache.SetSnapshot(id, newSnapshot)
+
+	r.knownClientIdsMutex.Lock()
+	r.knownClientIds = knownClients
+	r.knownClientIdsMutex.Unlock()
+	return nil
 }
 
 func (r *reconciler) NeedsReconciliation(node *envoy_core.Node) bool {

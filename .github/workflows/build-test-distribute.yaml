@@ -27,12 +27,14 @@ jobs:
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
@@ -44,7 +46,7 @@ jobs:
           args: --fix=false --verbose
           version: v1.56.1
           skip-pkg-cache: true
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -58,7 +60,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@60c9b136104671b7091b2306c599d80fec34ae3f
+        uses: Kong/public-shared-actions/security-actions/sca@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
         with:
           dir: .
           config: .syft.yaml
@@ -79,6 +81,7 @@ jobs:
       id-token: write
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
@@ -87,8 +90,10 @@ jobs:
       IMAGES: ${{ needs.check.outputs.IMAGES }}
     secrets: inherit
   provenance:
-    needs: ["build_publish"]
+    needs: ["check", "build_publish"]
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     uses: ./.github/workflows/_provenance.yaml
+    secrets: inherit
     permissions:
       contents: write
       id-token: write # For using token to sign images
@@ -96,6 +101,8 @@ jobs:
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
       binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      images: ${{ needs.check.outputs.IMAGES }}
+      image_digests: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
     needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10

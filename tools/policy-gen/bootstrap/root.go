@@ -25,6 +25,7 @@ type config struct {
 	generateTo        bool
 	generateFrom      bool
 	isPolicy          bool
+	hasStatus         bool
 }
 
 func (c config) policyPath() string {
@@ -104,6 +105,7 @@ func generateType(c config) error {
 		"generateTo":        c.generateTo,
 		"generateFrom":      c.generateFrom,
 		"isPolicy":          c.isPolicy,
+		"hasStatus":         c.hasStatus,
 	})
 	if err != nil {
 		return err
@@ -164,6 +166,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&cfg.generateTo, "generate-to", false, "Generate 'to' array for outgoing traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.generateFrom, "generate-from", false, "Generate 'from' array for incoming traffic configuration")
 	rootCmd.Flags().BoolVar(&cfg.isPolicy, "is-policy", false, "Resource is a policy")
+	rootCmd.Flags().BoolVar(&cfg.hasStatus, "has-status", false, "Resource has a status field")
 }
 
 var typeTemplate = template.Must(template.New("").Option("missingkey=error").Parse(
@@ -223,6 +226,12 @@ type From struct {
 {{- if .isPolicy }}
 type Conf struct {
 	// TODO add configuration fields
+}
+{{- end}}
+
+{{- if .hasStatus }}
+type {{ .name }}Status struct {
+	// TODO add status fields
 }
 {{- end}}
 `))

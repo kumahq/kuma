@@ -190,6 +190,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match
@@ -213,6 +214,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match

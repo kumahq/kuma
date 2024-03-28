@@ -28,8 +28,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
+				IpFamilyMode:          "dualstack",
 				RedirectPortInbound:   15006,
-				RedirectPortInboundV6: 15010,
+				RedirectPortInboundV6: 15006,
 				RedirectPortOutbound:  15001,
 				DataplaneContainer: DataplaneContainer{
 					Image:     "kuma/kuma-dp:latest",
@@ -94,9 +95,11 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				InstanceIPEnvVarName: "INSTANCE_IP",
 				BPFFSPath:            "/sys/fs/bpf",
 				CgroupPath:           "/sys/fs/cgroup",
-				ProgramsSourcePath:   "/kuma/ebpf",
+				ProgramsSourcePath:   "/tmp/kuma-ebpf",
 			},
 			IgnoredServiceSelectorLabels: []string{},
+			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
+			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region"},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -220,6 +223,8 @@ type Injector struct {
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
+	// NodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
+	NodeLabelsToCopy []string `json:"nodeLabelsToCopy" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -267,7 +272,10 @@ type SidecarContainer struct {
 	// Redirect port for inbound traffic.
 	RedirectPortInbound uint32 `json:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
 	// Redirect port for inbound IPv6 traffic.
+	// Deprecated: Use RedirectPortInbound or IpFamilyMode instead.
 	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
+	// The IP family mode to enable traffic redirection for. Can be "ipv4" or "dualstack".
+	IpFamilyMode string `json:"ipFamilyMode,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_ip_family_mode"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `json:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 	// WaitForDataplaneReady enables a script that waits until Envoy is ready.
@@ -484,6 +492,9 @@ func (c *SidecarContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+	}
+	if c.IpFamilyMode != "" && c.IpFamilyMode != "ipv4" && c.IpFamilyMode != "dualstack" {
+		errs = multierr.Append(errs, errors.Errorf(".IpFamilyMode must be either 'ipv4' or 'dualstack'"))
 	}
 	if 65535 < c.RedirectPortInbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))

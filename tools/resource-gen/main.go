@@ -29,6 +29,7 @@ var CustomResourceTemplate = template.Must(template.New("custom-resource").Parse
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -146,6 +147,14 @@ func (cb *{{.ResourceType}}) SetSpec(spec core_model.ResourceSpec) {
 {{- end}}
 }
 
+func (cb *{{.ResourceType}}) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *{{.ResourceType}}) SetStatus(_ core_model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (cb *{{.ResourceType}}) Scope() model.Scope {
 {{- if .ScopeNamespace }}
 	return model.ScopeNamespace
@@ -252,6 +261,14 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *{{.ResourceName}}) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *{{.ResourceName}}) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {

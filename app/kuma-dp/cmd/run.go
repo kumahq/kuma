@@ -303,26 +303,26 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
 			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-				Address:       item.Address,
-				Name:          item.Name,
-				Path:          item.Path,
-				Port:          item.Port,
-				IsIPv6:        net.IsAddressIPv6(item.Address),
-				QueryModifier: metrics.RemoveQueryParameters,
-				OtelMutator:   metrics.ParsePrometheusMetrics,
+				Address:           item.Address,
+				Name:              item.Name,
+				Path:              item.Path,
+				Port:              item.Port,
+				IsIPv6:            net.IsAddressIPv6(item.Address),
+				QueryModifier:     metrics.RemoveQueryParameters,
+				MeshMetricMutator: metrics.AggregatedOtelMutator(),
 			})
 		}
 	}
 	// by default add envoy configuration
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-		Name:          "envoy",
-		Path:          "/stats",
-		Address:       "127.0.0.1",
-		Port:          envoyAdminPort,
-		IsIPv6:        false,
-		QueryModifier: metrics.AddPrometheusFormat,
-		Mutator:       metrics.MergeClusters,
-		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
+		Name:              "envoy",
+		Path:              "/stats",
+		Address:           "127.0.0.1",
+		Port:              envoyAdminPort,
+		IsIPv6:            false,
+		QueryModifier:     metrics.AddPrometheusFormat,
+		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.MergeClustersForOpenTelemetry),
 	})
 	return applicationsToScrape
 }
@@ -368,6 +368,7 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 			kumaSidecarConfiguration.Networking.Address,
 			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
 			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+			cfg.Dataplane.DrainTime.Duration,
 		),
 	)
 

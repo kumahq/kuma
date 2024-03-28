@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -65,6 +66,7 @@ func BuildEgressEndpointMap(
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
+	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
@@ -79,6 +81,8 @@ func BuildEdsEndpointMap(
 	}
 
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone)
+
+	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, endpointWeight, localZone)
 
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh, localZone)
@@ -134,6 +138,50 @@ func fillDataplaneOutbounds(
 				Weight:   endpointWeight,
 				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 			})
+		}
+	}
+}
+
+func fillLocalMeshServices(
+	outbound core_xds.EndpointMap,
+	meshServices []*meshservice_api.MeshServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource,
+	endpointWeight uint32,
+	localZone string,
+) {
+	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
+	for _, dataplane := range dataplanes {
+		dpNetworking := dataplane.Spec.GetNetworking()
+
+		for _, meshSvc := range meshServices {
+			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
+
+			for _, inbound := range dpNetworking.GetHealthyInbounds() {
+				if !tagSelector.Matches(inbound.GetTags()) {
+					continue
+				}
+				for _, port := range meshSvc.Spec.Ports {
+					if port.TargetPort != inbound.Port {
+						continue
+					}
+
+					inboundTags := maps.Clone(inbound.GetTags())
+					serviceName := meshSvc.DestinationName(port.Port)
+					if serviceName == inboundTags[mesh_proto.ServiceTag] {
+						continue // it was already added by fillDataplaneOutbounds
+					}
+					inboundInterface := dpNetworking.ToInboundInterface(inbound)
+
+					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Port:     inboundInterface.DataplanePort,
+						Tags:     inboundTags,
+						Weight:   endpointWeight,
+						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+					})
+				}
+			}
 		}
 	}
 }

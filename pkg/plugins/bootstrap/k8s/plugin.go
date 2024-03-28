@@ -185,7 +185,7 @@ func (p *plugin) Order() int {
 
 type kubeComponentManager struct {
 	kube_ctrl.Manager
-	gracefulComponents []component.GracefulComponent
+	components []component.Component
 }
 
 var _ component.Manager = &kubeComponentManager{}
@@ -212,9 +212,7 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
-		if gc, ok := c.(component.GracefulComponent); ok {
-			k.gracefulComponents = append(k.gracefulComponents, gc)
-		}
+		k.components = append(k.components, c)
 		if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 			return err
 		}
@@ -222,9 +220,20 @@ func (k *kubeComponentManager) Add(components ...component.Component) error {
 	return nil
 }
 
+func (k *kubeComponentManager) Ready() bool {
+	for _, c := range k.components {
+		if rc, ok := c.(component.ReadyComponent); ok && !rc.Ready() {
+			return false
+		}
+	}
+	return true
+}
+
 func (k *kubeComponentManager) waitForDone() {
-	for _, gc := range k.gracefulComponents {
-		gc.WaitForDone()
+	for _, c := range k.components {
+		if gc, ok := c.(component.GracefulComponent); ok {
+			gc.WaitForDone()
+		}
 	}
 }
 
@@ -239,6 +248,13 @@ func (c componentRunnableAdaptor) Start(ctx context.Context) error {
 
 func (c componentRunnableAdaptor) NeedLeaderElection() bool {
 	return c.Component.NeedLeaderElection()
+}
+
+func (c componentRunnableAdaptor) Ready() bool {
+	if ready, ok := c.Component.(component.ReadyComponent); ok {
+		return ready.Ready()
+	}
+	return true
 }
 
 var (

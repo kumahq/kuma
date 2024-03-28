@@ -1,0 +1,35 @@
+{
+ "type": "MeshService",
+ "mesh": "default",
+ "name": "redis",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/origin": "zone"
+ },
+ "spec": {
+  "selector": {
+   "dataplaneTags": {
+    "app": "redis"
+   }
+  },
+  "ports": [
+   {
+    "port": 6379,
+    "targetPort": 6379,
+    "protocol": "tcp"
+   }
+  ],
+  "status": {
+   "tls": {}
+  }
+ },
+ "status": {
+  "vips": [
+   {
+    "ip": "10.0.0.1"
+   }
+  ],
+  "tls": {}
+ }
+}

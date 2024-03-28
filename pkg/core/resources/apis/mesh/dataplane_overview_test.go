@@ -65,7 +65,7 @@ var _ = Describe("DataplaneOverview", func() {
 				resource.Spec = given.overview
 
 				// when
-				status, errReasons := resource.GetStatus()
+				status, errReasons := resource.Status()
 
 				// then
 				Expect(status).To(Equal(given.status))

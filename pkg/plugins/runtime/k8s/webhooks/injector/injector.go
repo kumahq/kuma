@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	tp_cfg "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -94,6 +95,14 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
+	initTmp := kube_core.Volume{
+		Name: "kuma-init-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
 	sidecarTmp := kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
 		VolumeSource: kube_core.VolumeSource{
@@ -102,7 +111,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			},
 		},
 	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, initTmp, sidecarTmp)
 
 	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
 		Name:      sidecarTmp.Name,
@@ -367,6 +376,14 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args:            podRedirect.AsKumactlCommandLine(),
+		Env: []kube_core.EnvVar{
+			// iptables needs this lock file to be writable:
+			// source: https://git.netfilter.org/iptables/tree/iptables/xshared.c?h=v1.8.7#n258
+			{
+				Name:  "XTABLES_LOCKFILE",
+				Value: "/tmp/xtables.lock",
+			},
+		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
 			RunAsGroup: new(int64),
@@ -375,7 +392,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 					"NET_ADMIN",
 					"NET_RAW",
 				},
+				Drop: []kube_core.Capability{
+					"ALL",
+				},
 			},
+			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{
@@ -386,6 +407,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
+		},
+		VolumeMounts: []kube_core.VolumeMount{
+			{Name: "kuma-init-tmp", MountPath: "/tmp", ReadOnly: false},
 		},
 	}
 
@@ -411,10 +435,10 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
 		}
 
-		container.VolumeMounts = []kube_core.VolumeMount{
-			{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
-			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
-		}
+		container.VolumeMounts = append(container.VolumeMounts,
+			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
+			kube_core.VolumeMount{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
+		)
 	}
 
 	return container, nil
@@ -422,13 +446,12 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                             mesh, // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
-		metadata.KumaSidecarUID:                                 fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
-		metadata.KumaTransparentProxyingAnnotation:              metadata.AnnotationEnabled,
-		metadata.KumaTransparentProxyingInboundPortAnnotation:   fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-		metadata.KumaTransparentProxyingInboundPortAnnotationV6: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
-		metadata.KumaTransparentProxyingOutboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+		metadata.KumaMeshAnnotation:                            mesh, // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
+		metadata.KumaSidecarUID:                                fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
+		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
@@ -511,6 +534,17 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts), metadata.KumaTrafficExcludeOutboundPorts); val != "" {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
+
+	defaultTPCfg := tp_cfg.DefaultConfig()
+	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
+		i.cfg.SidecarContainer.IpFamilyMode = metadata.IpFamilyModeIPv4
+	} else if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.Port) {
+		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
+	}
+	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
+
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err

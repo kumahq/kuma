@@ -691,6 +691,23 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("33. kuma.io/transparent-proxying-ip-family-mode", testCase{
+			num: "33",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config-ipv6-disabled.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

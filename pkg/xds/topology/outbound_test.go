@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -204,7 +205,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, nil, externalServices.Items,
+				defaultMeshWithMTLS, "zone-1", nil, dataplanes.Items, nil, nil, externalServices.Items,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -283,6 +284,7 @@ var _ = Describe("TrafficRoute", func() {
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
 			dataplanes       []*core_mesh.DataplaneResource
+			meshServices     []*v1alpha1.MeshServiceResource
 			zoneIngresses    []*core_mesh.ZoneIngressResource
 			zoneEgresses     []*core_mesh.ZoneEgressResource
 			externalServices []*core_mesh.ExternalServiceResource
@@ -293,7 +295,7 @@ var _ = Describe("TrafficRoute", func() {
 			func(given testCase) {
 				// when
 				endpoints := BuildEdsEndpointMap(
-					given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
+					given.mesh, "zone-1", given.meshServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
@@ -1133,6 +1135,130 @@ var _ = Describe("TrafficRoute", func() {
 							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin"},
 							Weight:          1,
 							ExternalService: &core_xds.ExternalService{},
+						},
+					},
+				},
+			}),
+			Entry("uses MeshService", testCase{
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.2",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+										Port:        8080,
+										ServicePort: 18080,
+									},
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+										Port:        8001,
+										ServicePort: 18001,
+									},
+								},
+							},
+						},
+					},
+				},
+				meshServices: []*v1alpha1.MeshServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "kong.kong-system",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneTags: map[string]string{
+									"app": "kong",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:       80,
+									TargetPort: 8080,
+									Protocol:   "http",
+								},
+								{
+									Port:       8081,
+									TargetPort: 8081,
+									Protocol:   "http",
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "redis",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneTags: map[string]string{
+									mesh_proto.ServiceTag: "redis",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:       6379,
+									TargetPort: 6379,
+								},
+							},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.1",
+							Port:     6379,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"redis_svc_6379": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.1",
+							Port:     6379,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_svc_80": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8080,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8001,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
 						},
 					},
 				},

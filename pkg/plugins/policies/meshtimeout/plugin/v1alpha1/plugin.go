@@ -118,7 +118,7 @@ func applyToOutbounds(
 	dataplane *core_mesh.DataplaneResource,
 	meshCtx xds_context.MeshContext,
 ) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listener, ok := outboundListeners[oface]

@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -67,6 +68,14 @@ func (t *MeshTimeoutResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *MeshTimeoutResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshTimeoutResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *MeshTimeoutResource) Descriptor() model.ResourceTypeDescriptor {
@@ -139,4 +148,5 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:    true,
 	HasToTargetRef:      true,
 	HasFromTargetRef:    true,
+	HasStatus:           false,
 }

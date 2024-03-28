@@ -88,7 +88,7 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 }
 
 func applyToOutbounds(rules core_rules.ToRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listener, ok := outboundListeners[oface]

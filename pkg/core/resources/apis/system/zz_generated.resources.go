@@ -56,6 +56,14 @@ func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ConfigResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ConfigResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ConfigResource) Descriptor() model.ResourceTypeDescriptor {
 	return ConfigResourceTypeDescriptor
 }
@@ -165,6 +173,14 @@ func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *SecretResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *SecretResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *SecretResource) Descriptor() model.ResourceTypeDescriptor {
 	return SecretResourceTypeDescriptor
 }
@@ -272,6 +288,14 @@ func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ZoneResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ZoneResource) Descriptor() model.ResourceTypeDescriptor {
@@ -384,6 +408,14 @@ func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *ZoneInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *ZoneInsightResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneInsightResourceTypeDescriptor
 }
@@ -490,6 +522,14 @@ func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *ZoneOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {

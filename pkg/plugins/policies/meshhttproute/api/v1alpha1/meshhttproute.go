@@ -204,8 +204,9 @@ type URLRewrite struct {
 type RequestMirror struct {
 	// Percentage of requests to mirror. If not specified, all requests
 	// to the target cluster will be mirrored.
-	Percentage *intstr.IntOrString  `json:"percentage,omitempty"`
-	BackendRef common_api.TargetRef `json:"backendRef"`
+	Percentage *intstr.IntOrString `json:"percentage,omitempty"`
+	// TODO forbid weight
+	BackendRef common_api.BackendRef `json:"backendRef"`
 }
 
 type Filter struct {

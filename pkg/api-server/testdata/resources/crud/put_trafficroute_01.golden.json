@@ -1,0 +1,45 @@
+{
+ "type": "TrafficRoute",
+ "mesh": "default",
+ "name": "web-to-backend",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/origin": "zone"
+ },
+ "sources": [
+  {
+   "match": {
+    "kuma.io/service": "web",
+    "region": "us-east-1",
+    "version": "v10"
+   }
+  }
+ ],
+ "destinations": [
+  {
+   "match": {
+    "kuma.io/service": "backend"
+   }
+  }
+ ],
+ "conf": {
+  "split": [
+   {
+    "weight": 90,
+    "destination": {
+     "kuma.io/service": "backend",
+     "region": "us-east-1",
+     "version": "v2"
+    }
+   },
+   {
+    "weight": 10,
+    "destination": {
+     "kuma.io/service": "backend",
+     "version": "v3"
+    }
+   }
+  ]
+ }
+}

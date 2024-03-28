@@ -24,6 +24,8 @@ type KubernetesObject interface {
 	SetMesh(string)
 	GetSpec() (model.ResourceSpec, error)
 	SetSpec(model.ResourceSpec)
+	GetStatus() (model.ResourceStatus, error)
+	SetStatus(status model.ResourceStatus) error
 	Scope() Scope
 }
 

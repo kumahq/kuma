@@ -1,4 +1,7 @@
 #/meshes/default/meshgateways/gw-1/_rules 200
+type: Mesh
+name: default
+---
 type: MeshGateway
 name: gw-1
 mesh: default

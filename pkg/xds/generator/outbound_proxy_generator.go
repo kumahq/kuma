@@ -35,7 +35,7 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, _ *model.ResourceS
 		return nil, nil
 	}
 
-	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
+	outbounds := proxy.Dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) // backend refs work only with new policies.
 	resources := model.NewResourceSet()
 	if len(outbounds) == 0 {
 		return resources, nil

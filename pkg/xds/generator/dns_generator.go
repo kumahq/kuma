@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -24,7 +25,7 @@ func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xds
 	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
-	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortInboundV6() != 0
+	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().IpFamilyMode != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
 
 	outboundIPs := map[string]bool{}
 	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutboundInterfaces() {

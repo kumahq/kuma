@@ -1,0 +1,29 @@
+#/meshes/default/traffic-routes 200
+type: Mesh
+name: default
+---
+type: TrafficRoute
+mesh: default
+name: tr-1
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  destination:
+    kuma.io/service: sample-path
+---
+type: TrafficRoute
+mesh: default
+name: tr-2
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  destination:
+    kuma.io/service: sample-path

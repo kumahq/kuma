@@ -26,6 +26,8 @@ store:
     driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
+    # MaxConnectionIdleTime (applied only when driverName=pgx) is the duration after which an idle connection will be automatically closed by the health check.
+    maxConnectionIdleTime: "30m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME
     # MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
     maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
     # MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after maxConnectionLifetime to randomly decide to close a connection.
@@ -269,7 +271,10 @@ runtime:
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
         # Redirect port for inbound traffic.
-        redirectPortInboundV6: 15010 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
+        # Deprecated: Use redirectPortInbound or ipFamilyMode instead.
+        redirectPortInboundV6: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
+        # IP family mode enabled for traffic redirection, can be 'dualstack' or 'ipv4'
+        ipFamilyMode: dualstack # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE
         # Redirect port for outbound traffic.
         redirectPortOutbound: 15001 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND
         # User ID.
@@ -366,12 +371,14 @@ runtime:
         # when not specified, we will try to automatically determine it
         tcAttachIface: "" # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_TC_ATTACH_IFACE
         # Path where compiled eBPF programs are placed
-        programsSourcePath: /kuma/ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
+        programsSourcePath: /tmp/kuma-ebpf # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
       # IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
       # If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
       # It is useful when you change Service selector and expect traffic to be sent immediately.
       # An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
       ignoredServiceSelectorLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS
+      # nodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
+      nodeLabelsToCopy: ["topology.kubernetes.io/zone", "topology.kubernetes.io/region"] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
     # Kubernetes's resources reconciliation concurrency configuration
     controllersConcurrency:

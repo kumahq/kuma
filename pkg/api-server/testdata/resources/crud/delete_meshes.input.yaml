@@ -1,0 +1,8 @@
+# absent resource
+#/meshes/not-a-mesh 404 method=DELETE
+# Actually deletes
+#/meshes/mesh-1 200 method=DELETE
+# No longer find the entry
+#/meshes/mesh-1 404 method=GET
+type: Mesh
+name: mesh-1

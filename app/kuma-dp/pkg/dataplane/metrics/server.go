@@ -19,7 +19,6 @@ import (
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -59,11 +58,6 @@ var (
 
 var _ component.Component = &Hijacker{}
 
-type (
-	MetricsMutator func(in io.Reader, out io.Writer) error
-	OtelMutator    func(in io.Reader) ([]*io_prometheus_client.MetricFamily, error)
-)
-
 type QueryParametersModifier func(queryParameters url.Values) url.Values
 
 func RemoveQueryParameters(_ url.Values) url.Values {
@@ -97,14 +91,14 @@ func AggregatedQueryParametersModifier(modifiers ...QueryParametersModifier) Que
 }
 
 type ApplicationToScrape struct {
-	Name          string
-	Address       string
-	Path          string
-	Port          uint32
-	IsIPv6        bool
-	QueryModifier QueryParametersModifier
-	Mutator       MetricsMutator
-	OtelMutator   OtelMutator
+	Name              string
+	Address           string
+	Path              string
+	Port              uint32
+	IsIPv6            bool
+	QueryModifier     QueryParametersModifier
+	Mutator           MetricsMutator
+	MeshMetricMutator MeshMetricMutator
 }
 
 type Hijacker struct {
