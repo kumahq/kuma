@@ -5699,6 +5699,41 @@ _kumactl_install_transparent-proxy()
     noun_aliases=()
 }
 
+_kumactl_install_transparent-proxy-validator()
+{
+    last_command="kumactl_install_transparent-proxy-validator"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--ip-family-mode=")
+    two_word_flags+=("--ip-family-mode")
+    local_nonpersistent_flags+=("--ip-family-mode")
+    local_nonpersistent_flags+=("--ip-family-mode=")
+    flags+=("--validation-server-port=")
+    two_word_flags+=("--validation-server-port")
+    local_nonpersistent_flags+=("--validation-server-port")
+    local_nonpersistent_flags+=("--validation-server-port=")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_install()
 {
     last_command="kumactl_install"
@@ -5712,6 +5747,7 @@ _kumactl_install()
     commands+=("gateway")
     commands+=("observability")
     commands+=("transparent-proxy")
+    commands+=("transparent-proxy-validator")
 
     flags=()
     two_word_flags=()
