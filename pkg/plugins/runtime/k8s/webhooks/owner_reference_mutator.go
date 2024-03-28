@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -45,6 +46,8 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 
 	var owner k8s_model.KubernetesObject
 	switch resType {
+	case meshservice_api.MeshServiceType:
+		return admission.Allowed("ignored. MeshService has a reference for Service")
 	case core_mesh.DataplaneInsightType:
 		owner = &mesh_k8s.Dataplane{}
 		if err := m.Client.Get(ctx, kube_client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, owner); err != nil {
