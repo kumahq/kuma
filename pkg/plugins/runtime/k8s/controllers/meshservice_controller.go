@@ -147,14 +147,13 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 }
 
 func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_types.NamespacedName) error {
-	ms := &meshservice_k8s.MeshService{}
-	if err := r.Client.Get(ctx, key, ms); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrap(err, "could not get mesh service")
+	ms := &meshservice_k8s.MeshService{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      key.Name,
+			Namespace: key.Namespace,
+		},
 	}
-	if err := r.Client.Delete(ctx, ms); err != nil {
+	if err := r.Client.Delete(ctx, ms); err != nil && !kube_apierrs.IsNotFound(err) {
 		return errors.Wrap(err, "could not delete mesh service")
 	}
 	return nil
@@ -179,9 +178,9 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 			return nil
 		}
 		var req []kube_reconcile.Request
-		for _, pod := range services.Items {
+		for _, svc := range services.Items {
 			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
 			})
 		}
 		return req
@@ -197,9 +196,9 @@ func MeshToMeshService(l logr.Logger, client kube_client.Client) kube_handler.Ma
 			return nil
 		}
 		var req []kube_reconcile.Request
-		for _, pod := range services.Items {
+		for _, svc := range services.Items {
 			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
 			})
 		}
 		return req
