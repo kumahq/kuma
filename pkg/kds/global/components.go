@@ -118,6 +118,7 @@ func Setup(rt runtime.Runtime) error {
 			select {
 			case errChan <- err:
 			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
 			}
 			return
 		}
@@ -125,10 +126,11 @@ func Setup(rt runtime.Runtime) error {
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
+			err = errors.Wrap(err, "Global CP could not create a zone")
 			select {
 			case errChan <- err:
 			default:
-				log.Error(errors.Wrap(err, "Global CP could not create a zone"), "failed to write error to closed channel")
+				log.Error(err, "failed to write error to closed channel")
 			}
 			return
 		}
@@ -150,6 +152,7 @@ func Setup(rt runtime.Runtime) error {
 			select {
 			case errChan <- err:
 			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
 			}
 			return
 		}
@@ -165,10 +168,11 @@ func Setup(rt runtime.Runtime) error {
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
+				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {
 				case errChan <- err:
 				default:
-					log.Error(errors.Wrap(err, "KDSSyncClient finished with an error"), "failed to write error to closed channel")
+					log.Error(err, "failed to write error to closed channel")
 				}
 			} else {
 				log.V(1).Info("KDSSyncClient finished gracefully")
