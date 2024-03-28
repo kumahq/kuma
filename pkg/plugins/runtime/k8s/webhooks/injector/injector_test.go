@@ -708,6 +708,23 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ipv6-disabled.yaml",
 		}),
+		Entry("34. cni enabled", testCase{
+			num: "34",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config-cni.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

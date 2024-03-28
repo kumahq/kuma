@@ -20,7 +20,7 @@ func V2() TransparentProxy {
 	return &TransparentProxyV2{}
 }
 
-func hasLocalIPv6() (bool, error) {
+func HasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, err
@@ -44,7 +44,7 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 		return false, nil
 	}
 
-	hasIPv6Address, err := hasLocalIPv6()
+	hasIPv6Address, err := HasLocalIPv6()
 	if !hasIPv6Address || err != nil {
 		return false, err
 	}

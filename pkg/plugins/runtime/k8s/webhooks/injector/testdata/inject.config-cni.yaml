@@ -1,12 +1,12 @@
 controlPlane:
   apiServer:
     url: http://kuma-control-plane.kuma-system:5681
+cniEnabled: true
 sidecarContainer:
   image: kuma/kuma-sidecar:latest
-  ipFamilyMode: dualstack
+  ipFamilyMode: ipv4
   redirectPortOutbound: 15001
-  redirectPortInbound: 15006
-  redirectPortInboundV6: 15010
+  redirectPortInbound: 15055
   uid: 5678
   gid: 5678
   adminPort: 9901
@@ -34,10 +34,6 @@ initContainer:
   image: kuma/kuma-init:latest
 virtualProbesEnabled: true
 virtualProbesPort: 9000
-sidecarTraffic:
-  excludeInboundPorts:
-    - 1234
-    - 5678
-  excludeOutboundPorts:
-    - 4321
-    - 7654
+exceptions:
+  labels:
+    "openshift.io/deployer-pod-for.name": "*"

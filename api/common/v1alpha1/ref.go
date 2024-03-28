@@ -43,8 +43,16 @@ func (k TargetRefKind) Less(o TargetRefKind) bool {
 }
 
 func AllTargetRefKinds() []TargetRefKind {
-	return maps.Keys(order)
+	keys := maps.Keys(order)
+	sort.Sort(TargetRefKindSlice(keys))
+	return keys
 }
+
+type TargetRefKindSlice []TargetRefKind
+
+func (x TargetRefKindSlice) Len() int           { return len(x) }
+func (x TargetRefKindSlice) Less(i, j int) bool { return string(x[i]) < string(x[j]) }
+func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
