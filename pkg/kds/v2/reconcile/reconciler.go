@@ -106,26 +106,22 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache
 	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		version := new.GetVersion(typ)
-		if version != "" {
-			// favor a version assigned by resource generator
-			continue
+		if version == "" {
+			if old != nil && r.equal(new.GetResources(typ), old.GetResources(typ)) {
+				version = old.GetVersion(typ)
+			} else {
+				version = core.NewUUID()
+			}
 		}
 
-		if old != nil && r.equal(new.GetResources(typ), old.GetResources(typ)) {
-			version = old.GetVersion(typ)
+		newResources[core_model.ResourceType(typ)] = envoy_cache.Resources{
+			Version: version,
+			Items:   new.GetResourcesAndTTL(typ), // do we really need to clone this?
 		}
-		if version == "" {
-			version = core.NewUUID()
+
+		if old.GetVersion(typ) != new.GetVersion(typ) {
+			changed = true
 		}
-		if new.GetVersion(typ) == version {
-			continue
-		}
-		n := map[string]envoy_types.ResourceWithTTL{}
-		changed = true
-		for k, v := range new.GetResourcesAndTTL(typ) {
-			n[k] = v
-		}
-		newResources[core_model.ResourceType(typ)] = envoy_cache.Resources{Version: version, Items: n}
 	}
 	return &cache_v2.Snapshot{
 		Resources: newResources,
