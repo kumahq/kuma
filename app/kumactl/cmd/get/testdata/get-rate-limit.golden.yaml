@@ -1,17 +1,17 @@
-creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: rate-limit-1
 type: RateLimit
-conf:
-  http:
-    interval: 10s
-    requests: 5
-destinations:
-- match:
-    env: dev
-    kuma.io/service: backend1
+mesh: default
+name: rate-limit-1
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 sources:
 - match:
     kuma.io/service: web1
     version: "1.0"
+destinations:
+- match:
+    env: dev
+    kuma.io/service: backend1
+conf:
+  http:
+    requests: 5
+    interval: 10s

@@ -1,29 +1,29 @@
+total: 3
 items:
-- creationTime: "0001-01-01T00:00:00Z"
-  dataplanes:
-    online: 5
-    total: 10
+- type: ServiceOverview
   mesh: mesh-1
-  modificationTime: "0001-01-01T00:00:00Z"
   name: backend
-  status: partially_degraded
-  type: ServiceOverview
-- creationTime: "0001-01-01T00:00:00Z"
-  dataplanes:
-    online: 20
-    total: 20
-  mesh: mesh-1
+  creationTime: "0001-01-01T00:00:00Z"
   modificationTime: "0001-01-01T00:00:00Z"
+  status: partially_degraded
+  dataplanes:
+    total: 10
+    online: 5
+- type: ServiceOverview
+  mesh: mesh-1
   name: web
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
   status: online
-  type: ServiceOverview
-- creationTime: "0001-01-01T00:00:00Z"
+  dataplanes:
+    total: 20
+    online: 20
+- type: ServiceOverview
+  mesh: mesh-1
+  name: orders
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  status: offline
   dataplanes:
     total: 5
-  mesh: mesh-1
-  modificationTime: "0001-01-01T00:00:00Z"
-  name: orders
-  status: offline
-  type: ServiceOverview
 next: null
-total: 3

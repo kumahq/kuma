@@ -1,11 +1,13 @@
+total: 2
 items:
-- creationTime: "0001-01-01T00:00:00Z"
-  dataplanes:
-    offline: 10
-    online: 90
-    total: 100
-  modificationTime: "0001-01-01T00:00:00Z"
+- type: MeshInsight
   name: default
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  dataplanes:
+    total: 100
+    online: 90
+    offline: 10
   policies:
     CircuitBreaker:
       total: 5
@@ -27,14 +29,14 @@ items:
       total: 2
     TrafficTrace:
       total: 1
-  type: MeshInsight
-- creationTime: "0001-01-01T00:00:00Z"
-  dataplanes:
-    offline: 10
-    online: 90
-    total: 100
-  modificationTime: "0001-01-01T00:00:00Z"
+- type: MeshInsight
   name: mesh-1
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  dataplanes:
+    total: 100
+    online: 90
+    offline: 10
   policies:
     CircuitBreaker:
       total: 50
@@ -56,6 +58,4 @@ items:
       total: 20
     TrafficTrace:
       total: 10
-  type: MeshInsight
 next: null
-total: 2

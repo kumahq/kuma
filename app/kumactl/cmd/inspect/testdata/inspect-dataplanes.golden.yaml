@@ -1,5 +1,10 @@
+total: 4
 items:
-- creationTime: "2018-07-17T16:05:36.995Z"
+- type: DataplaneOverview
+  mesh: default
+  name: experiment
+  creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
   dataplane:
     networking:
       address: 127.0.0.1
@@ -15,185 +20,185 @@ items:
           kuma.io/service: metrics
           version: v1
   dataplaneInsight:
+    subscriptions:
+    - id: "1"
+      controlPlaneInstanceId: node-001
+      connectTime: "2018-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "10"
+          responsesRejected: "1"
+      version:
+        kumaDp:
+          version: 1.0.0
+          gitTag: v1.0.0
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          buildDate: "2019-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.0
+          build: hash/1.16.0/RELEASE
+        dependencies:
+          coredns: 1.8.3
+    - id: "2"
+      controlPlaneInstanceId: node-002
+      connectTime: "2019-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "20"
+          responsesRejected: "2"
+      version:
+        kumaDp:
+          version: 1.0.2
+          gitTag: v1.0.2
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          buildDate: "2020-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.1
+          build: hash/1.16.1/RELEASE
+        dependencies:
+          coredns: 1.8.3
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
+      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
       certificateRegenerations: 10
       issuedBackend: ca-1
-      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
       supportedBackends:
       - ca-1
       - ca-2
-    subscriptions:
-    - connectTime: "2018-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-001
-      id: "1"
-      status:
-        total:
-          responsesRejected: "1"
-          responsesSent: "10"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.0/RELEASE
-          version: 1.16.0
-        kumaDp:
-          buildDate: "2019-08-07T11:26:06Z"
-          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-          gitTag: v1.0.0
-          version: 1.0.0
-    - connectTime: "2019-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-002
-      id: "2"
-      status:
-        total:
-          responsesRejected: "2"
-          responsesSent: "20"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.1/RELEASE
-          version: 1.16.1
-        kumaDp:
-          buildDate: "2020-08-07T11:26:06Z"
-          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
-          gitTag: v1.0.2
-          version: 1.0.2
+- type: DataplaneOverview
   mesh: default
-  modificationTime: "2019-07-17T18:08:41Z"
-  name: experiment
-  type: DataplaneOverview
-- creationTime: "2018-07-17T16:05:36.995Z"
-  dataplane:
-    networking:
-      address: 127.0.0.1
-      inbound:
-      - port: 8080
-        servicePort: 80
-        tags:
-          kuma.io/service: example
-      - health: {}
-        port: 9001
-        servicePort: 81
-        tags:
-          kuma.io/service: example
-  dataplaneInsight:
-    mTLS:
-      certificateExpirationTime: "2020-05-08T08:28:22Z"
-      certificateRegenerations: 10
-      issuedBackend: ca-1
-      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
-      supportedBackends:
-      - ca-1
-      - ca-2
-    subscriptions:
-    - connectTime: "2018-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-001
-      id: "1"
-      status:
-        total:
-          responsesRejected: "1"
-          responsesSent: "10"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.0/RELEASE
-          version: 1.16.0
-        kumaDp:
-          buildDate: "2019-08-07T11:26:06Z"
-          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-          gitTag: v1.0.0
-          version: 1.0.0
-    - connectTime: "2019-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-002
-      id: "2"
-      status:
-        total:
-          responsesRejected: "2"
-          responsesSent: "20"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.1/RELEASE
-          version: 1.16.1
-        kumaDp:
-          buildDate: "2020-08-07T11:26:06Z"
-          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
-          gitTag: v1.0.2
-          version: 1.0.2
-  mesh: default
-  modificationTime: "2019-07-17T18:08:41Z"
   name: degraded-dp
-  type: DataplaneOverview
-- creationTime: "2018-07-17T16:05:36.995Z"
+  creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
   dataplane:
     networking:
       address: 127.0.0.1
       inbound:
-      - health: {}
-        port: 8080
+      - port: 8080
         servicePort: 80
         tags:
           kuma.io/service: example
-      - health: {}
-        port: 9001
+      - port: 9001
         servicePort: 81
         tags:
           kuma.io/service: example
+        health: {}
   dataplaneInsight:
+    subscriptions:
+    - id: "1"
+      controlPlaneInstanceId: node-001
+      connectTime: "2018-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "10"
+          responsesRejected: "1"
+      version:
+        kumaDp:
+          version: 1.0.0
+          gitTag: v1.0.0
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          buildDate: "2019-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.0
+          build: hash/1.16.0/RELEASE
+        dependencies:
+          coredns: 1.8.3
+    - id: "2"
+      controlPlaneInstanceId: node-002
+      connectTime: "2019-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "20"
+          responsesRejected: "2"
+      version:
+        kumaDp:
+          version: 1.0.2
+          gitTag: v1.0.2
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          buildDate: "2020-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.1
+          build: hash/1.16.1/RELEASE
+        dependencies:
+          coredns: 1.8.3
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
+      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
       certificateRegenerations: 10
       issuedBackend: ca-1
-      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
       supportedBackends:
       - ca-1
       - ca-2
-    subscriptions:
-    - connectTime: "2018-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-001
-      id: "1"
-      status:
-        total:
-          responsesRejected: "1"
-          responsesSent: "10"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.0/RELEASE
-          version: 1.16.0
-        kumaDp:
-          buildDate: "2019-08-07T11:26:06Z"
-          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-          gitTag: v1.0.0
-          version: 1.0.0
-    - connectTime: "2019-07-17T16:05:36.995Z"
-      controlPlaneInstanceId: node-002
-      id: "2"
-      status:
-        total:
-          responsesRejected: "2"
-          responsesSent: "20"
-      version:
-        dependencies:
-          coredns: 1.8.3
-        envoy:
-          build: hash/1.16.1/RELEASE
-          version: 1.16.1
-        kumaDp:
-          buildDate: "2020-08-07T11:26:06Z"
-          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
-          gitTag: v1.0.2
-          version: 1.0.2
+- type: DataplaneOverview
   mesh: default
-  modificationTime: "2019-07-17T18:08:41Z"
   name: offline-dp
-  type: DataplaneOverview
-- creationTime: "2018-07-17T16:05:36.995Z"
+  creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  dataplane:
+    networking:
+      address: 127.0.0.1
+      inbound:
+      - port: 8080
+        servicePort: 80
+        tags:
+          kuma.io/service: example
+        health: {}
+      - port: 9001
+        servicePort: 81
+        tags:
+          kuma.io/service: example
+        health: {}
+  dataplaneInsight:
+    subscriptions:
+    - id: "1"
+      controlPlaneInstanceId: node-001
+      connectTime: "2018-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "10"
+          responsesRejected: "1"
+      version:
+        kumaDp:
+          version: 1.0.0
+          gitTag: v1.0.0
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          buildDate: "2019-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.0
+          build: hash/1.16.0/RELEASE
+        dependencies:
+          coredns: 1.8.3
+    - id: "2"
+      controlPlaneInstanceId: node-002
+      connectTime: "2019-07-17T16:05:36.995Z"
+      status:
+        total:
+          responsesSent: "20"
+          responsesRejected: "2"
+      version:
+        kumaDp:
+          version: 1.0.2
+          gitTag: v1.0.2
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          buildDate: "2020-08-07T11:26:06Z"
+        envoy:
+          version: 1.16.1
+          build: hash/1.16.1/RELEASE
+        dependencies:
+          coredns: 1.8.3
+    mTLS:
+      certificateExpirationTime: "2020-05-08T08:28:22Z"
+      lastCertificateRegeneration: "2019-07-16T19:48:08Z"
+      certificateRegenerations: 10
+      issuedBackend: ca-1
+      supportedBackends:
+      - ca-1
+      - ca-2
+- type: DataplaneOverview
+  mesh: default
+  name: example
+  creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
   dataplane:
     networking:
       address: 127.0.0.1
@@ -204,15 +209,10 @@ items:
           kuma.io/service: example
   dataplaneInsight:
     subscriptions:
-    - controlPlaneInstanceId: node-001
-      id: "1"
-    - controlPlaneInstanceId: node-002
-      id: "2"
-    - controlPlaneInstanceId: node-003
-      id: "3"
-  mesh: default
-  modificationTime: "2019-07-17T18:08:41Z"
-  name: example
-  type: DataplaneOverview
+    - id: "1"
+      controlPlaneInstanceId: node-001
+    - id: "2"
+      controlPlaneInstanceId: node-002
+    - id: "3"
+      controlPlaneInstanceId: node-003
 next: null
-total: 4

@@ -1,14 +1,12 @@
 package yaml
 
 import (
-	"bytes"
+	"encoding/json"
 	"io"
 
-	"sigs.k8s.io/yaml"
+	"sigs.k8s.io/yaml/goyaml.v2"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 func NewPrinter() output.Printer {
@@ -32,35 +30,34 @@ func print(obj interface{}, out io.Writer) error {
 }
 
 func (p *printer) Print(obj interface{}, out io.Writer) error {
-	// The common case is printing a single Kuma resource, in which
-	// case showing the meta and then the spec is more readable than
-	// showing fields in an arbitrary order. This partially addresses
-	// https://github.com/kumahq/kuma/issues/679.
 	if p.hasPrinted {
 		if _, err := out.Write([]byte("---\n")); err != nil {
 			return err
 		}
 	}
 	p.hasPrinted = true
-	switch obj := obj.(type) {
-	case rest.Resource:
-		if err := print(obj.GetMeta(), out); err != nil {
-			return err
-		}
 
-		b, err := model.ToYAML(obj.GetSpec())
-		if err != nil {
-			return err
-		}
+	// The common case is printing a single Kuma resource, in which
+	// case showing the meta and then the spec is more readable than
+	// showing fields in an arbitrary order. This partially addresses
+	// https://github.com/kumahq/kuma/issues/679.
 
-		// Don't emit an empty YAML object that would cause a
-		// subsequent parse failure.
-		if len(b) == 0 || bytes.HasPrefix(b, []byte("{}")) {
-			return nil
-		}
-		_, err = out.Write(b)
+	b, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
 		return err
-	default:
-		return print(obj, out)
 	}
+
+	if obj == nil {
+		var m interface{}
+		if err := yaml.Unmarshal(b, &m); err != nil {
+			return err
+		}
+		return print(m, out)
+	}
+
+	var m yaml.MapSlice
+	if err := yaml.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	return print(m, out)
 }

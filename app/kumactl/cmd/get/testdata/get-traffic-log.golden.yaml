@@ -1,13 +1,13 @@
-creationTime: "0001-01-01T00:00:00Z"
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: traffic-log-1
 type: TrafficLog
-conf:
-  backend: file
-destinations:
-- match:
-    kuma.io/service: backend1
+mesh: default
+name: traffic-log-1
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 sources:
 - match:
     kuma.io/service: web1
+destinations:
+- match:
+    kuma.io/service: backend1
+conf:
+  backend: file
