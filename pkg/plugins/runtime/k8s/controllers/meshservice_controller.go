@@ -61,6 +61,13 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
 	}
 
+	if len(svc.GetAnnotations()) > 0 {
+		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+			log.V(1).Info("service is for gateway. Ignoring.")
+			return kube_ctrl.Result{}, nil
+		}
+	}
+
 	if svc.Spec.ClusterIP == "" { // todo(jakubdyszkiewicz) headless service support will come later
 		log.V(1).Info("service has no cluster IP. Ignoring.")
 		return kube_ctrl.Result{}, nil

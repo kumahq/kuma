@@ -103,5 +103,9 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "04.resources.yaml",
 			outputFile: "04.meshservice.yaml",
 		}),
+		Entry("service for kuma gateway", testCase{
+			inputFile:  "05.resources.yaml",
+			outputFile: "05.meshservice.yaml",
+		}),
 	)
 })
