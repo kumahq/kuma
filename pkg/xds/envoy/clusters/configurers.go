@@ -155,6 +155,12 @@ func PassThroughCluster() ClusterBuilderOpt {
 	})
 }
 
+func BlackHoleCluster() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.BlackHoleClusterConfigurer{})
+	})
+}
+
 func UpstreamBindConfig(address string, port uint32) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.UpstreamBindConfigConfigurer{

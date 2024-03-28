@@ -172,3 +172,45 @@ func AddFilterChains(
 
 	return servicesAcc.Services()
 }
+
+const blackHoleClusterName = "kuma:blackhole"
+
+func GenerateBlackHoleResources(apiVersion core_xds.APIVersion, address string, port uint32) (envoy_common.NamedResource, envoy_common.NamedResource, error) {
+	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(apiVersion, address, port, core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TLSInspector())
+
+	addBlackHoleFilterChain(apiVersion, listenerBuilder)
+	listener, err := listenerBuilder.Build()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cluster, err := getBlackHoleCluster(apiVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return listener, cluster, nil
+}
+
+func addBlackHoleFilterChain(apiVersion core_xds.APIVersion,
+	listenerBuilder *envoy_listeners.ListenerBuilder) {
+
+	filterChain := envoy_listeners.FilterChain(
+		envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.BlackHole(blackHoleClusterName)))
+
+	listenerBuilder.Configure(filterChain)
+}
+
+func getBlackHoleCluster(apiVersion core_xds.APIVersion) (envoy_common.NamedResource, error) {
+	cluster, err := envoy_clusters.NewClusterBuilder(apiVersion, blackHoleClusterName).
+		Configure(envoy_clusters.BlackHoleCluster()).
+		Build()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cluster, nil
+}

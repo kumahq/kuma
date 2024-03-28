@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"sort"
 
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -70,13 +71,26 @@ func (i IngressGenerator) Generate(
 	if err != nil {
 		return nil, err
 	}
-	if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
+
+	hasFilterChain := len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0
+	if !hasFilterChain {
+		var blackHoleCluster envoy_common.NamedResource
+		listener, blackHoleCluster, err = zoneproxy.GenerateBlackHoleResources(proxy.APIVersion, address, port)
+		if err != nil {
+			return nil, err
+		}
+
 		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   OriginIngress,
-			Resource: listener,
+			Name:     blackHoleCluster.GetName(),
+			Origin:   OriginOutbound,
+			Resource: blackHoleCluster,
 		})
 	}
 
+	resources.Add(&core_xds.Resource{
+		Name:     listener.GetName(),
+		Origin:   OriginIngress,
+		Resource: listener,
+	})
 	return resources, nil
 }
