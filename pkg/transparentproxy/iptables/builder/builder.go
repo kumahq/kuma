@@ -125,7 +125,7 @@ func restoreIPTables(
 	dnsServers []string,
 	ipv6 bool,
 ) (string, error) {
-	executables, legacy, err := detectIptablesExecutables(context.TODO(), cfg, ipv6)
+	executables, legacy, err := detectIptablesExecutables(ctx, cfg, ipv6)
 	if err != nil {
 		return "", fmt.Errorf("unable to detect iptables restore binaries: %s", err)
 	}
