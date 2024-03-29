@@ -185,8 +185,8 @@ var basicProfileLabels = []selectorFunction{
 }
 
 func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
-	effectiveSelectors := []selectorFunction{alwaysSelect}       // default is All
-	effectiveLabelsSelectors := []selectorFunction{alwaysSelect} // default is All
+	effectiveSelectors := basicProfile             // default is Basic
+	effectiveLabelsSelectors := basicProfileLabels // default is Basic
 	profile := v1alpha1.BasicProfileName
 	if sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.AppendProfiles != nil && len(*sidecar.Profiles.AppendProfiles) == 1 {
 		profile = (*sidecar.Profiles.AppendProfiles)[0].Name
