@@ -7,6 +7,8 @@ targetRef:
 default:
   sidecar:
     profiles:
+      appendProfiles:
+        - name: All
       exclude:
         - type: Regex
           match: "envoy_rbac.*"
