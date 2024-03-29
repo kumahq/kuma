@@ -65,6 +65,10 @@ func GetMetricsHijackerClusterName() string {
 	return Join("kuma", "metrics", "hijacker")
 }
 
+func GetInternalClusterNamePrefix() string {
+	return "_"
+}
+
 func GetAdsClusterName() string {
 	return "ads_cluster"
 }
