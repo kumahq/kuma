@@ -55,20 +55,19 @@ it doesn't apply on the real proxies. Instead, by using Inspect API we can inspe
 ### Changes in the Inspect API
 
 Introduce a new non-physical endpoint `/_snapshot` that returns a config dump of a DPP without the actual `/config_dump` call to Envoy.
-If we want to be able to compute diff on the client side we can't use `xds` endpoint as its response lightly diverges from what CP has in SnapshotCache.
+If we want to be able to compute diff on the client side we can't use `xds` endpoint as its response slightly diverges from what CP has in the SnapshotCache.
 
-Add a query parameter `effect=shadow`:
+Add a query parameter `shadow=true`:
 
-* `GET /meshes/{mesh}/dataplanes/{name}/_snapshot` -> `GET /meshes/{mesh}/dataplanes/{name}/_snapshot?effect=shadow`
-* `GET /meshes/{mesh}/dataplanes/{name}/_rules` -> `GET /meshes/{mesh}/dataplanes/{name}/_rules?effect=shadow`
+* `GET /meshes/{mesh}/dataplanes/{name}/_snapshot` -> `GET /meshes/{mesh}/dataplanes/{name}/_snapshot?shadow=true`
+* `GET /meshes/{mesh}/dataplanes/{name}/_rules` -> `GET /meshes/{mesh}/dataplanes/{name}/_rules?shadow=true`
 
-when `effect=shadow` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
-Please note, the response DOES NOT yet contain the json patch diff. These endpoints are only useful when calculating the diff on the client side.
+when `shadow=true` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
 
-Introduce a new non-physical endpoint `/_snapshot-diff`. This endpoint will return a list of changes in a JSON Patch format
-that shows what modifications are going to be applied to the config dump if we take into account shadow policies.
-
-We don't want to introduce `/_rules-diff` at this point, as `/_rules` API is rarely used without the client and heavily depends on the visualization in GUI.
+For the debugging purposes it makes sense to represent the shadow snapshot as the original snapshot + jsonPatch that can be applied to it.
+Kuma GUI and kumactl also can benefit from such representation. To make server produce such response we can introduce a query parameter `include=diff`.
+Query param `include` contains a list of fields that should be included in the response. By default, only `xds` field is set by the API server. 
+From the validation point of view the request `_snapshot?shadow=true&include=diff` makes no sense and should be rejected.  
 
 OpenAPI spec for new endpoints:
 
@@ -111,7 +110,7 @@ paths:
             type: array
             items:
               type: string
-              enum: ["diff"]
+              enum: [diff]
       responses:
         '200':
           description: Successfully retrieved snapshot.
@@ -119,7 +118,7 @@ paths:
             application/json:
               schema:
                 type: object
-                description: TODO
+                required: [xds]
                 properties:
                   xds:
                     description: The raw XDS config as an inline JSON object
