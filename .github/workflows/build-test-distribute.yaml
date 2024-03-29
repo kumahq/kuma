@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: ["master", "release-*"]
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
 permissions:
   contents: write # To upload assets
   id-token: write # For using token to sign images
@@ -91,7 +91,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: ${{ github.ref_type == 'tag' }}
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:

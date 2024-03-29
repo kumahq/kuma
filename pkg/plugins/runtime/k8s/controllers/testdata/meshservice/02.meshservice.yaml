@@ -1,0 +1,25 @@
+metadata:
+  creationTimestamp: null
+  labels:
+    kuma.io/mesh: default
+  name: example
+  namespace: demo
+  ownerReferences:
+  - apiVersion: v1
+    kind: Service
+    name: example
+    uid: ""
+  resourceVersion: "1"
+spec:
+  ports:
+  - port: 80
+    protocol: http
+    targetPort: 8080
+  - port: 443
+    protocol: tcp
+    targetPort: 8443
+  selector: {}
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.1
