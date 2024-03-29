@@ -1,0 +1,21 @@
+* nat
+-N KUMA_MESH_INBOUND
+-N KUMA_MESH_OUTBOUND
+-N KUMA_MESH_INBOUND_REDIRECT
+-N KUMA_MESH_OUTBOUND_REDIRECT
+-A PREROUTING -p tcp -j KUMA_MESH_INBOUND
+-I OUTPUT 1 -p udp --dport 53 -m owner --uid-owner 0 -j RETURN
+-I OUTPUT 2 -p udp --dport 53 -j REDIRECT --to-ports 12345
+-A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -s subnetPlaceholder/mask -o ifPlaceholder -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp ! --dport 53 -o ifPlaceholder ! -d subnetPlaceholder/mask -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -p tcp ! --dport 53 -o ifPlaceholder -m owner ! --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -m owner --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp --dport 53 -j REDIRECT --to-ports 12345
+-A KUMA_MESH_OUTBOUND -d subnetPlaceholder/mask -j RETURN
+-A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
+-A KUMA_MESH_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports inboundPort
+-A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001
+COMMIT
+# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.

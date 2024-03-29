@@ -1,11 +1,17 @@
 package iptables
 
 import (
+<<<<<<< HEAD
+=======
+	"context"
+	"errors"
+
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
 )
 
-func Setup(cfg config.Config) (string, error) {
+func Setup(ctx context.Context, cfg config.Config) (string, error) {
 	if cfg.DryRun {
 		// TODO (bartsmykla): we should generate IPv4 and IPv6 when cfg.IPv6 is
 		//  set, but currently in DryRun mode we would just display IPv6
@@ -22,5 +28,5 @@ func Setup(cfg config.Config) (string, error) {
 		return output, nil
 	}
 
-	return builder.RestoreIPTables(cfg)
+	return builder.RestoreIPTables(ctx, cfg)
 }

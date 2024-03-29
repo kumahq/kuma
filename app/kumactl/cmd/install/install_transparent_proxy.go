@@ -62,7 +62,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectDNS:                    false,
 		RedirectAllDNSTraffic:          false,
 		AgentDNSListenerPort:           "15053",
-		DNSUpstreamTargetChain:         "RETURN",
+		DNSUpstreamTargetChain:         "",
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 		UseTransparentProxyEngineV1:    false,
@@ -208,6 +208,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "udp outbound ports to exclude for specific UIDs in a format of ports:uids where both ports and uids can be a single value, a list, a range or a combination of all, e.g. 3000-5000:103,104,106-108 would mean exclude ports from 3000 to 5000 for UIDs 103, 104, 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.VnetNetworks, "vnet", []string{}, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 
+	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
+
 	return cmd
 }
 
@@ -240,6 +242,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 
 	cfg := &config.TransparentProxyConfig{
+<<<<<<< HEAD
 		DryRun:                         args.DryRun,
 		Verbose:                        args.Verbose,
 		RedirectPortOutBound:           args.RedirectPortOutBound,
@@ -278,9 +281,41 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		}
 	} else {
 		tp = transparentproxy.V2()
+=======
+		DryRun:                    args.DryRun,
+		Verbose:                   args.Verbose,
+		RedirectPortOutBound:      args.RedirectPortOutBound,
+		RedirectInBound:           args.RedirectInbound,
+		RedirectPortInBound:       args.RedirectPortInBound,
+		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
+		IpFamilyMode:              args.IpFamilyMode,
+		ExcludeInboundPorts:       args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
+		ExcludedOutboundsForUIDs:  args.ExcludeOutboundPortsForUIDs,
+		UID:                       uid,
+		GID:                       gid,
+		RedirectDNS:               args.RedirectDNS,
+		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:      args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain:    "RETURN",
+		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
+		EbpfEnabled:               args.EbpfEnabled,
+		EbpfInstanceIP:            args.EbpfInstanceIP,
+		EbpfBPFFSPath:             args.EbpfBPFFSPath,
+		EbpfCgroupPath:            args.EbpfCgroupPath,
+		EbpfTCAttachIface:         args.EbpfTCAttachIface,
+		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
+		VnetNetworks:              args.VnetNetworks,
+		Stdout:                    cmd.OutOrStdout(),
+		Stderr:                    cmd.ErrOrStderr(),
+		Wait:                      args.Wait,
+		WaitInterval:              args.WaitInterval,
+		MaxRetries:                pointer.To(args.MaxRetries),
+		SleepBetweenRetries:       args.SleepBetweenRetries,
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	}
 
-	output, err := tp.Setup(cfg)
+	output, err := tp.Setup(cmd.Context(), cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
