@@ -279,7 +279,6 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Port:              cf.envoyAdminPort,
 		IsIPv6:            false,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForOpenTelemetry),
 	})
 
