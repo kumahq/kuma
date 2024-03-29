@@ -299,7 +299,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 	tp = transparentproxy.V2()
 
-	output, err := tp.Setup(cfg)
+	output, err := tp.Setup(cmd.Context(), cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}

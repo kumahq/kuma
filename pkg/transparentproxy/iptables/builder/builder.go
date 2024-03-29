@@ -199,7 +199,7 @@ func restoreIPTablesWithRetry(
 	return "", errors.Errorf("%s failed", e.restore.path)
 }
 
-func RestoreIPTables(cfg config.Config) (string, error) {
+func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
@@ -216,13 +216,13 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		}
 	}
 
-	output, err := restoreIPTables(context.TODO(), cfg, dnsIpv4, false)
+	output, err := restoreIPTables(ctx, cfg, dnsIpv4, false)
 	if err != nil {
 		return "", fmt.Errorf("cannot restore ipv4 iptable rules: %s", err)
 	}
 
 	if cfg.IPv6 {
-		ipv6Output, err := restoreIPTables(context.TODO(), cfg, dnsIpv6, true)
+		ipv6Output, err := restoreIPTables(ctx, cfg, dnsIpv6, true)
 		if err != nil {
 			return "", fmt.Errorf("cannot restore ipv6 iptable rules: %s", err)
 		}
