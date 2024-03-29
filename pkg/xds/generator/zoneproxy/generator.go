@@ -1,6 +1,8 @@
 package zoneproxy
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -171,4 +173,22 @@ func AddFilterChains(
 	}
 
 	return servicesAcc.Services()
+}
+
+func GenerateEmptyDirectResponseListener(proxy *core_xds.Proxy, address string, port uint32) (envoy_common.NamedResource, error) {
+	response := fmt.Sprintf(`{"proxy":"%s","zone":"%s"}`, proxy.Id.String(), proxy.Zone)
+	filterChain := envoy_listeners.FilterChain(
+		envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.NetworkDirectResponse(response)))
+
+	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, address, port, core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TLSInspector()).
+		Configure(filterChain)
+
+	listener, err := listenerBuilder.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return listener, nil
 }
