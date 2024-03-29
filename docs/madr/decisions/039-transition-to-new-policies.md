@@ -76,7 +76,7 @@ OpenAPI spec for new endpoints:
 openapi: 3.0.3
 info:
   title: Shadow Policies Inspector
-  description: API for getting a diff in JSON Patch format as if shadow policies were applied
+  description: API for inspecting policies' effect on the Data Plane Proxy configurations
   version: 1.0.0
 paths:
   /meshes/{mesh}/dataplanes/{name}/_snapshot:
@@ -96,6 +96,22 @@ paths:
           description: The name of the DPP within the mesh to get the diff for.
           schema:
             type: string
+        - in: query
+          name: shadow
+          description: |
+            When computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: include
+          description: |
+            An array of field names that also should be included in the response. By default, only 'xds' field is set by the API server. 
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ["diff"]
       responses:
         '200':
           description: Successfully retrieved snapshot.
@@ -103,51 +119,32 @@ paths:
             application/json:
               schema:
                 type: object
-                description: The value to be used within the operations.
-        '400':
-          description: Bad request. Parameters were invalid.
-        '404':
-          description: The specified mesh/name combination was not found.
-  /meshes/{mesh}/dataplanes/{name}/_snapshot-diff:
-    get:
-      summary: Get a list of changes to config dump
-      description: Returns a diff in a JSON Patch format that shows what modifications are going to be applied to the config dump if we take into account shadow policies
-      parameters:
-        - in: path
-          name: mesh
-          required: true
-          description: The mesh of the DPP to get the diff for.
-          schema:
-            type: string
-        - in: path
-          name: name
-          required: true
-          description: The name of the DPP within the mesh to get the diff for.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successfully retrieved the JSON patch.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  required: 
-                    - op
-                    - path
-                  properties:
-                    op:
-                      type: string
-                      description: Operation to be performed.
-                      enum: [add, remove, replace, move, copy, test]
-                    path:
-                      type: string
-                      description: A JSON Pointer path indicating the part of the document to operate on.
-                    value:
+                description: TODO
+                properties:
+                  xds:
+                    description: The raw XDS config as an inline JSON object
+                    type: object
+                  diff:
+                    description: |
+                      When '?include=diff' is specified, the field is set to an array of json patches between the current XDS config
+                      and XDS config that takes into account policies with 'kuma.io/effect: shadow'.
+                    type: array
+                    items:
                       type: object
-                      description: The value to be used within the operations.
+                      required:
+                        - op
+                        - path
+                      properties:
+                        op:
+                          type: string
+                          description: Operation to be performed.
+                          enum: [add, remove, replace, move, copy, test]
+                        path:
+                          type: string
+                          description: A JSON Pointer path indicating the part of the document to operate on.
+                        value:
+                          type: object
+                          description: The value to be used within the operations.
         '400':
           description: Bad request. Parameters were invalid.
         '404':
