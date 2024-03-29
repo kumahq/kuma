@@ -1,6 +1,8 @@
 package transparentproxy
 
 import (
+	"context"
+
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
@@ -15,7 +17,7 @@ type IptablesTranslator interface {
 type TransparentProxy interface {
 	// Setup returns the stdout and stderr as string and an error if such
 	// has occurred
-	Setup(cfg *config.TransparentProxyConfig) (string, error)
+	Setup(ctx context.Context, cfg *config.TransparentProxyConfig) (string, error)
 
 	// Cleanup returns the stdout and stderr as string and an error if such
 	// has occurred
