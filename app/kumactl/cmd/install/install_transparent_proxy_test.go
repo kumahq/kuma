@@ -71,17 +71,40 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
+<<<<<<< HEAD
 			goldenFile:   "install-transparent-proxy.dns.golden.txt",
 			errorMessage: "# [WARNING] `--redirect-dns-upstream-target-chain` is deprecated, please avoid using it",
+=======
+			skip: func(stdout, stderr *bytes.Buffer) bool {
+				return strings.HasPrefix(
+					stderr.String(),
+					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+				)
+			},
+			errorMatcher: HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"),
+			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
+		}),
+		Entry("should generate defaults with user id and DNS redirected", testCase{
+			extraArgs: []string{
+				"--kuma-dp-uid", "0",
+				"--redirect-all-dns-traffic",
+				"--redirect-dns-port", "12345",
+			},
+			skip: func(stdout, stderr *bytes.Buffer) bool {
+				return !strings.HasPrefix(
+					stderr.String(),
+					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+				)
+			},
+			goldenFile: "install-transparent-proxy.dns.golden.txt",
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 		}),
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 				"--skip-dns-conntrack-zone-split",
 			},
 			goldenFile:   "install-transparent-proxy.dns.golden.txt",

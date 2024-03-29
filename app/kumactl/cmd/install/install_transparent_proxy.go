@@ -67,7 +67,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectDNS:                    false,
 		RedirectAllDNSTraffic:          false,
 		AgentDNSListenerPort:           "15053",
-		DNSUpstreamTargetChain:         "RETURN",
+		DNSUpstreamTargetChain:         "",
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 		UseTransparentProxyEngineV1:    false,
@@ -221,6 +221,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
 
+	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
+
 	return cmd
 }
 
@@ -253,6 +255,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 
 	cfg := &config.TransparentProxyConfig{
+<<<<<<< HEAD
 		DryRun:                         args.DryRun,
 		Verbose:                        args.Verbose,
 		RedirectPortOutBound:           args.RedirectPortOutBound,
@@ -295,9 +298,41 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		}
 	} else {
 		tp = transparentproxy.V2()
+=======
+		DryRun:                    args.DryRun,
+		Verbose:                   args.Verbose,
+		RedirectPortOutBound:      args.RedirectPortOutBound,
+		RedirectInBound:           args.RedirectInbound,
+		RedirectPortInBound:       args.RedirectPortInBound,
+		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
+		IpFamilyMode:              args.IpFamilyMode,
+		ExcludeInboundPorts:       args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
+		ExcludedOutboundsForUIDs:  args.ExcludeOutboundPortsForUIDs,
+		UID:                       uid,
+		GID:                       gid,
+		RedirectDNS:               args.RedirectDNS,
+		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:      args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain:    "RETURN",
+		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
+		EbpfEnabled:               args.EbpfEnabled,
+		EbpfInstanceIP:            args.EbpfInstanceIP,
+		EbpfBPFFSPath:             args.EbpfBPFFSPath,
+		EbpfCgroupPath:            args.EbpfCgroupPath,
+		EbpfTCAttachIface:         args.EbpfTCAttachIface,
+		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
+		VnetNetworks:              args.VnetNetworks,
+		Stdout:                    cmd.OutOrStdout(),
+		Stderr:                    cmd.ErrOrStderr(),
+		Wait:                      args.Wait,
+		WaitInterval:              args.WaitInterval,
+		MaxRetries:                pointer.To(args.MaxRetries),
+		SleepBetweenRetries:       args.SleepBetweenRetries,
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	}
 
-	output, err := tp.Setup(cfg)
+	output, err := tp.Setup(cmd.Context(), cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
