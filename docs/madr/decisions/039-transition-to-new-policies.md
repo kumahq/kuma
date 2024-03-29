@@ -81,7 +81,7 @@ paths:
   /meshes/{mesh}/dataplanes/{name}/_snapshot:
     get:
       summary: Get a DPP snapshot on a CP
-      description: Returns a DPP snapshot computed by the CP without the actual Envoy call.
+      description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
       parameters:
         - in: path
           name: mesh
