@@ -5,10 +5,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 )
 
 const (
-	backoffTime = 5 * time.Second
+	backoffBaseTime = 5 * time.Second
+	backoffMaxTime  = 1 * time.Minute
 )
 
 type resilientComponent struct {
@@ -25,6 +27,7 @@ func NewResilientComponent(log logr.Logger, component Component) Component {
 
 func (r *resilientComponent) Start(stop <-chan struct{}) error {
 	r.log.Info("starting resilient component ...")
+	backoff := retry.WithCappedDuration(backoffMaxTime, retry.NewExponential(backoffBaseTime))
 	for generationID := uint64(1); ; generationID++ {
 		errCh := make(chan error, 1)
 		go func(errCh chan<- error) {
@@ -51,7 +54,8 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
 			}
 		}
-		<-time.After(backoffTime)
+		dur, _ := backoff.Next()
+		<-time.After(dur)
 	}
 }
 
