@@ -79,7 +79,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return strings.HasPrefix(
@@ -95,7 +94,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return !strings.HasPrefix(
@@ -110,7 +108,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 				"--skip-dns-conntrack-zone-split",
 			},
 			goldenFile: "install-transparent-proxy.dns.no-conntrack.golden.txt",
