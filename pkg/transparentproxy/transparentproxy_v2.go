@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -88,7 +89,10 @@ func splitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
+func (tp *TransparentProxyV2) Setup(
+	ctx context.Context,
+	tpConfig *config.TransparentProxyConfig,
+) (string, error) {
 	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
@@ -195,7 +199,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		DryRun:        tpConfig.DryRun,
 	}
 
-	return Setup(cfg)
+	return Setup(ctx, cfg)
 }
 
 func parseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string, protocol string) ([]config.UIDsToPorts, error) {

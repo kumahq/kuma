@@ -2,11 +2,15 @@ package builder
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"os"
+<<<<<<< HEAD
 	"os/exec"
+=======
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	"strings"
 	"time"
 
@@ -14,6 +18,15 @@ import (
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+<<<<<<< HEAD
+=======
+	"github.com/kumahq/kuma/pkg/util/pointer"
+)
+
+const (
+	iptables  = "iptables"
+	ip6tables = "ip6tables"
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 )
 
 type IPTables struct {
@@ -112,19 +125,34 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 	return f, nil
 }
 
+<<<<<<< HEAD
 func runRestoreCmd(cmdName string, f *os.File) (string, error) {
 	// #nosec G204
 	cmd := exec.Command(cmdName, "--noflush", f.Name())
 	output, err := cmd.CombinedOutput()
+=======
+func restoreIPTables(
+	ctx context.Context,
+	cfg config.Config,
+	dnsServers []string,
+	ipv6 bool,
+) (string, error) {
+	executables, legacy, err := detectIptablesExecutables(ctx, cfg, ipv6)
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	if err != nil {
-		return "", fmt.Errorf("executing command failed: %s (with output: %q)", err, output)
+		return "", fmt.Errorf("unable to detect iptables restore binaries: %s", err)
 	}
 
-	return string(output), nil
-}
+	if executables.foundDockerOutputChain {
+		cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
+	}
 
+<<<<<<< HEAD
 func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
 	rulesFile, err := createRulesFile(cfg.IPv6)
+=======
+	rulesFile, err := createRulesFile(ipv6)
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	if err != nil {
 		return "", err
 	}
@@ -145,6 +173,7 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
+<<<<<<< HEAD
 	cmdName := "iptables-restore"
 	if ipv6 {
 		cmdName = "ip6tables-restore"
@@ -156,6 +185,53 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 // RestoreIPTables
 // TODO (bartsmykla): add validation if ip{,6}tables are available
 func RestoreIPTables(cfg config.Config) (string, error) {
+=======
+	return restoreIPTablesWithRetry(ctx, cfg, rulesFile, executables, legacy)
+}
+
+func restoreIPTablesWithRetry(
+	ctx context.Context,
+	cfg config.Config,
+	rulesFile *os.File,
+	e *executables,
+	legacy bool,
+) (string, error) {
+	params := buildRestoreParameters(cfg, rulesFile, legacy)
+
+	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
+	for i := 0; i <= maxRetries; i++ {
+		output, err := e.restore.exec(ctx, params...)
+		if err == nil {
+			return output.String(), nil
+		}
+
+		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
+			"# [%d/%d] %s returned error: %q",
+			i+1,
+			maxRetries+1,
+			strings.Join(append([]string{e.restore.path}, params...), " "),
+			err.Error(),
+		)))
+
+		if i < maxRetries {
+			_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
+				" will try again in %s",
+				cfg.Retry.SleepBetweenReties.String(),
+			)))
+
+			time.Sleep(cfg.Retry.SleepBetweenReties)
+		}
+
+		_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+	}
+
+	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+
+	return "", errors.Errorf("%s failed", e.restore.path)
+}
+
+func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	_, _ = cfg.RuntimeStdout.Write([]byte("kumactl is about to apply the " +
@@ -172,13 +248,13 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		}
 	}
 
-	output, err := restoreIPTables(cfg, dnsIpv4, false)
+	output, err := restoreIPTables(ctx, cfg, dnsIpv4, false)
 	if err != nil {
 		return "", fmt.Errorf("cannot restore ipv4 iptable rules: %s", err)
 	}
 
 	if cfg.IPv6 {
-		ipv6Output, err := restoreIPTables(cfg, dnsIpv6, true)
+		ipv6Output, err := restoreIPTables(ctx, cfg, dnsIpv6, true)
 		if err != nil {
 			return "", fmt.Errorf("cannot restore ipv6 iptable rules: %s", err)
 		}
