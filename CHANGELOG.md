@@ -9,6 +9,13 @@
 * fix(xds): duplicated listeners (backport of #9542) [#9552](https://github.com/kumahq/kuma/pull/9552) @kumahq
 
 
+## 2.5.5
+> Released on 2024/03/29
+
+* chore(deps): security update [#9682](https://github.com/kumahq/kuma/pull/9682) [#9698](https://github.com/kumahq/kuma/pull/9698) @kumahq
+* feat(transparent-proxy): add automatic iptables type detection (backport of #9750) [#9764](https://github.com/kumahq/kuma/pull/9764) @kumahq
+
+
 ## 2.5.4
 > Released on 2024/03/15
 
