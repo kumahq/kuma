@@ -126,6 +126,9 @@ func Setup(rt runtime.Runtime) error {
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			err = errors.Wrap(err, "Global CP could not create a zone")
 			select {
 			case errChan <- err:
@@ -134,7 +137,8 @@ func Setup(rt runtime.Runtime) error {
 			}
 			return
 		}
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
+
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && !errors.Is(err, context.Canceled) {
 			select {
 			case errChan <- err:
 			default:
@@ -167,7 +171,8 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			if err := sink.Receive(); err != nil {
+			err := sink.Receive()
+			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {
 				case errChan <- err:
