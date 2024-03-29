@@ -79,7 +79,6 @@ kumactl install transparent-proxy [flags]
       --redirect-all-dns-traffic                                                        redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf
       --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")
-      --redirect-dns-upstream-target-chain string                                       (optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care. (default "RETURN")
       --redirect-inbound                                                                redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies. (default true)
       --redirect-inbound-port networking.transparentProxying.redirectPortInbound        inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInbound (default "15006")
       --redirect-inbound-port-v6 networking.transparentProxying.redirectPortInboundV6   IPv6 inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInboundV6 (default "15010")
