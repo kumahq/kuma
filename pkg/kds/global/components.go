@@ -114,7 +114,7 @@ func Setup(rt runtime.Runtime) error {
 
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil {
 			select {
 			case errChan <- err:
 			default:
@@ -151,7 +151,7 @@ func Setup(rt runtime.Runtime) error {
 
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil {
 			select {
 			case errChan <- err:
 			default:
