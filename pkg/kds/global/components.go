@@ -125,8 +125,10 @@ func Setup(rt runtime.Runtime) error {
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
-		err = createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager())
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			err = errors.Wrap(err, "Global CP could not create a zone")
 			select {
 			case errChan <- err:
