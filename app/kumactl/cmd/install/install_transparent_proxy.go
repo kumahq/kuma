@@ -72,7 +72,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectDNS:                    false,
 		RedirectAllDNSTraffic:          false,
 		AgentDNSListenerPort:           "15053",
-		DNSUpstreamTargetChain:         "RETURN",
+		DNSUpstreamTargetChain:         "",
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 		EbpfEnabled:                    false,
@@ -234,6 +234,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
 
+	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
+
 	return cmd
 }
 
@@ -281,7 +283,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		RedirectDNS:               args.RedirectDNS,
 		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
 		AgentDNSListenerPort:      args.AgentDNSListenerPort,
-		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
+		DNSUpstreamTargetChain:    "RETURN",
 		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
 		EbpfEnabled:               args.EbpfEnabled,
 		EbpfInstanceIP:            args.EbpfInstanceIP,
