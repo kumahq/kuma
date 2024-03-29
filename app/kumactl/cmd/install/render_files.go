@@ -15,10 +15,6 @@ type templateFilter interface {
 	Filter(name string) bool
 }
 
-func renderFiles(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error)) ([]data.File, error) {
-	return renderFilesWithFilter(templates, args, newRenderer, NoneFilter{})
-}
-
 func renderFilesWithFilter(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error), filter templateFilter) ([]data.File, error) {
 	renderedFiles := make([]data.File, len(templates))
 
