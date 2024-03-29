@@ -1,10 +1,4 @@
 resources:
-- name: kuma:blackhole
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
-    name: kuma:blackhole
-    type: STATIC
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -15,11 +9,11 @@ resources:
     enableReusePort: false
     filterChains:
     - filters:
-      - name: envoy.filters.network.tcp_proxy
+      - name: envoy.filters.network.direct_response
         typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: kuma:blackhole
-          statPrefix: kuma_blackhole
+          '@type': type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
+          response:
+            inlineBytes: eyJwcm94eSI6ImRlZmF1bHQuaW5ncmVzcyIsInpvbmUiOiJ6b25lLW1haW4ifQ==
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

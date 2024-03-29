@@ -5,6 +5,7 @@ import (
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -53,6 +54,12 @@ func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoin
 	return AddFilterChainConfigurer(&v3.DirectResponseConfigurer{
 		VirtualHostName: virtualHostName,
 		Endpoints:       endpoints,
+	})
+}
+
+func NetworkDirectResponse(response string) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.NetworkDirectResponseConfigurer{
+		Response: []byte(response),
 	})
 }
 
@@ -329,17 +336,5 @@ func DefaultCompressorFilter() FilterChainBuilderOpt {
 
 			hcm.HttpFilters = append(hcm.HttpFilters, gzip)
 		}),
-	)
-}
-
-func BlackHole(clusterName string) FilterChainBuilderOpt {
-	return TCPProxy(
-		clusterName,
-		&splitAdapter{
-			clusterName:        clusterName,
-			weight:             100,
-			lbMetadata:         make(tags.Tags),
-			hasExternalService: false,
-		},
 	)
 }

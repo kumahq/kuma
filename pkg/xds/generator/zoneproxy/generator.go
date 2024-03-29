@@ -1,6 +1,8 @@
 package zoneproxy
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -173,44 +175,20 @@ func AddFilterChains(
 	return servicesAcc.Services()
 }
 
-const blackHoleClusterName = "kuma:blackhole"
-
-func GenerateBlackHoleResources(apiVersion core_xds.APIVersion, address string, port uint32) (envoy_common.NamedResource, envoy_common.NamedResource, error) {
-	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(apiVersion, address, port, core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TLSInspector())
-
-	addBlackHoleFilterChain(apiVersion, listenerBuilder)
-	listener, err := listenerBuilder.Build()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cluster, err := getBlackHoleCluster(apiVersion)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return listener, cluster, nil
-}
-
-func addBlackHoleFilterChain(apiVersion core_xds.APIVersion,
-	listenerBuilder *envoy_listeners.ListenerBuilder) {
-
+func GenerateEmptyDirectResponseListener(proxy *core_xds.Proxy, address string, port uint32) (envoy_common.NamedResource, error) {
+	response := fmt.Sprintf(`{"proxy":"%s","zone":"%s"}`, proxy.Id.String(), proxy.Zone)
 	filterChain := envoy_listeners.FilterChain(
-		envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.BlackHole(blackHoleClusterName)))
+		envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+			Configure(envoy_listeners.NetworkDirectResponse(response)))
 
-	listenerBuilder.Configure(filterChain)
-}
+	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, address, port, core_xds.SocketAddressProtocolTCP).
+		Configure(envoy_listeners.TLSInspector()).
+		Configure(filterChain)
 
-func getBlackHoleCluster(apiVersion core_xds.APIVersion) (envoy_common.NamedResource, error) {
-	cluster, err := envoy_clusters.NewClusterBuilder(apiVersion, blackHoleClusterName).
-		Configure(envoy_clusters.BlackHoleCluster()).
-		Build()
-
+	listener, err := listenerBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	return cluster, nil
+	return listener, nil
 }
