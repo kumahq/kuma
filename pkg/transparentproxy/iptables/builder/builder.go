@@ -166,14 +166,8 @@ func restoreIPTablesWithRetry(
 ) (string, error) {
 	params := buildRestoreParameters(cfg, rulesFile, legacy)
 
-<<<<<<< HEAD
 	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
-		output, err := runRestoreCmd(cmdName, params)
-=======
-	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
-	for i := 0; i <= maxRetries; i++ {
 		output, err := e.restore.exec(ctx, params...)
->>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 		if err == nil {
 			return output.String(), nil
 		}
@@ -181,13 +175,8 @@ func restoreIPTablesWithRetry(
 		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
 			"# [%d/%d] %s returned error: '%s'",
 			i+1,
-<<<<<<< HEAD
 			cfg.Retry.MaxRetries+1,
-			strings.Join(append([]string{cmdName}, params...), " "),
-=======
-			maxRetries+1,
 			strings.Join(append([]string{e.restore.path}, params...), " "),
->>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 			err.Error(),
 		)))
 
