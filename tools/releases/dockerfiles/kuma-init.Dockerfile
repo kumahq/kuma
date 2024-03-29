@@ -15,8 +15,7 @@ COPY /tools/releases/templates/LICENSE \
 
 COPY /tools/releases/templates/NOTICE /kuma/NOTICE
 
-RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
-    adduser --system --disabled-password --group kumactl --uid 5678
+RUN adduser --system --disabled-password --group kumactl --uid 5678
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]
