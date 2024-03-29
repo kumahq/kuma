@@ -116,7 +116,7 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache
 
 		newResources[core_model.ResourceType(typ)] = envoy_cache.Resources{
 			Version: version,
-			Items:   new.GetResourcesAndTTL(typ), // do we really need to clone this?
+			Items:   new.GetResourcesAndTTL(typ),
 		}
 
 		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
