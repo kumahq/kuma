@@ -119,7 +119,7 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache
 			Items:   new.GetResourcesAndTTL(typ), // do we really need to clone this?
 		}
 
-		if old.GetVersion(typ) != new.GetVersion(typ) {
+		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
 			changed = true
 		}
 	}
