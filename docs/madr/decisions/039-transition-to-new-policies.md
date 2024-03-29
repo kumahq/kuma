@@ -609,7 +609,7 @@ level for HTTP services we're getting a lot of noise in the diff:
 
 Covered by [036-route-transition.md](036-route-transition.md)
 
-## ProxyTemplate -> MeshProxyTemplate
+## ProxyTemplate -> MeshProxyPatch
 
 This is where shadow mode shines the most even not in the context of the transition but for a regular usage.
 
