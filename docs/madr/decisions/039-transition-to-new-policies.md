@@ -150,6 +150,8 @@ paths:
           description: The specified mesh/name combination was not found.
 ```
 
+Endpoint `/_rules` is getting the same `shadow` and `include` query parameters.
+
 ### UX
 
 We can use a CLI tool like [jd](https://github.com/josephburnett/jd?tab=readme-ov-file#examples) to visualize the structural diff.
