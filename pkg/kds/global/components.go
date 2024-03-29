@@ -138,8 +138,7 @@ func Setup(rt runtime.Runtime) error {
 			return
 		}
 
-		err = kdsServerV2.GlobalToZoneSync(stream)
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && !errors.Is(err, context.Canceled) {
 			select {
 			case errChan <- err:
 			default:
