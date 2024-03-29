@@ -491,11 +491,6 @@ func (s *UniversalApp) setupTransparent(builtindns bool) {
 			"--redirect-dns",
 		)
 	}
-	if builtindns && Config.OS != "darwin" {
-		args = append(args,
-			"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
-		)
-	}
 
 	app := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, args)
 	err := app.Run()
