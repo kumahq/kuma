@@ -1,6 +1,7 @@
 package blackbox_network_tests_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -61,7 +62,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -140,7 +141,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -224,7 +225,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -314,7 +315,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -404,7 +405,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -496,7 +497,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -577,7 +578,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -653,7 +654,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then

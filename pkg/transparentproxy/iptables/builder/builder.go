@@ -2,12 +2,11 @@ package builder
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,10 +18,8 @@ import (
 )
 
 const (
-	iptables         = "iptables"
-	ip6tables        = "ip6tables"
-	iptablesRestore  = "iptables-restore"
-	ip6tablesRestore = "ip6tables-restore"
+	iptables  = "iptables"
+	ip6tables = "ip6tables"
 )
 
 type IPTables struct {
@@ -121,18 +118,21 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 	return f, nil
 }
 
-func runRestoreCmd(cmdName string, params []string) (string, error) {
-	// #nosec G204
-	cmd := exec.Command(cmdName, params...)
-	output, err := cmd.CombinedOutput()
+func restoreIPTables(
+	ctx context.Context,
+	cfg config.Config,
+	dnsServers []string,
+	ipv6 bool,
+) (string, error) {
+	executables, legacy, err := detectIptablesExecutables(ctx, cfg, ipv6)
 	if err != nil {
-		return "", fmt.Errorf("executing command failed: %s (with output: %q)", err, output)
+		return "", fmt.Errorf("unable to detect iptables restore binaries: %s", err)
 	}
 
-	return string(output), nil
-}
+	if executables.foundDockerOutputChain {
+		cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
+	}
 
-func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
 	rulesFile, err := createRulesFile(ipv6)
 	if err != nil {
 		return "", err
@@ -154,28 +154,40 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	return restoreIPTablesWithRetry(cfg, rulesFile, ipv6)
+	return restoreIPTablesWithRetry(ctx, cfg, rulesFile, executables, legacy)
 }
 
-func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) (string, error) {
-	restoreLegacy, err := checkForIptablesRestoreLegacy(ipv6)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
-	}
+func restoreIPTablesWithRetry(
+	ctx context.Context,
+	cfg config.Config,
+	rulesFile *os.File,
+	e *executables,
+	legacy bool,
+) (string, error) {
+	params := buildRestoreParameters(cfg, rulesFile, legacy)
 
-	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy, ipv6)
-
+<<<<<<< HEAD
 	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
 		output, err := runRestoreCmd(cmdName, params)
+=======
+	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
+	for i := 0; i <= maxRetries; i++ {
+		output, err := e.restore.exec(ctx, params...)
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 		if err == nil {
-			return output, nil
+			return output.String(), nil
 		}
 
 		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
 			"# [%d/%d] %s returned error: '%s'",
 			i+1,
+<<<<<<< HEAD
 			cfg.Retry.MaxRetries+1,
 			strings.Join(append([]string{cmdName}, params...), " "),
+=======
+			maxRetries+1,
+			strings.Join(append([]string{e.restore.path}, params...), " "),
+>>>>>>> 8f00873c8 (feat(transparent-proxy): add automatic iptables type detection (#9750))
 			err.Error(),
 		)))
 
@@ -193,35 +205,10 @@ func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) 
 
 	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
 
-	return "", errors.Errorf("%s failed", cmdName)
+	return "", errors.Errorf("%s failed", e.restore.path)
 }
 
-// checkForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is
-// legacy (non-nftables). The --wait and --wait-interval flags are only valid
-// with legacy ip{6}tables-restore. These flags are invalid with nftables
-// because nftables back end transactions are atomic and there is no need for
-// the global xtables lock, which has proven problematic in environments with
-// large and/or rapidly changing rulesets.
-func checkForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
-	cmdName := iptablesRestore
-	if ipv6 {
-		cmdName = ip6tablesRestore
-	}
-
-	output, err := exec.Command(cmdName, "--version").Output()
-	if err != nil {
-		return false, err
-	}
-
-	r := regexp.MustCompile(`ip6?tables-restore v.*? \((.*?)\)`)
-	match := r.FindStringSubmatch(string(output))
-
-	return len(match) == 2 && match[1] == "legacy", nil
-}
-
-// RestoreIPTables
-// TODO (bartsmykla): add validation if ip{,6}tables are available
-func RestoreIPTables(cfg config.Config) (string, error) {
+func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
@@ -238,13 +225,13 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		}
 	}
 
-	output, err := restoreIPTables(cfg, dnsIpv4, false)
+	output, err := restoreIPTables(ctx, cfg, dnsIpv4, false)
 	if err != nil {
 		return "", fmt.Errorf("cannot restore ipv4 iptable rules: %s", err)
 	}
 
 	if cfg.IPv6 {
-		ipv6Output, err := restoreIPTables(cfg, dnsIpv6, true)
+		ipv6Output, err := restoreIPTables(ctx, cfg, dnsIpv6, true)
 		if err != nil {
 			return "", fmt.Errorf("cannot restore ipv6 iptable rules: %s", err)
 		}
