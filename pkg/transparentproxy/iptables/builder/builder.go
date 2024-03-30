@@ -120,7 +120,6 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 
 type restorer struct {
 	cfg          config.Config
-	stderrPrefix string
 	ipv6         bool
 	dnsServers   []string
 	executables  *executables
