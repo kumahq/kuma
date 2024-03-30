@@ -91,7 +91,7 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 // in tests to not obfuscate the other, more relevant logs
 func (r *restorer) saveIPTablesRestoreFile(f *os.File, content string) error {
 	fmt.Fprintf(r.cfg.RuntimeStdout, "# writing following contents to rules file: %s\n", f.Name())
-	fmt.Fprintf(r.cfg.RuntimeStdout, content)
+	fmt.Fprint(r.cfg.RuntimeStdout, content)
 
 	writer := bufio.NewWriter(f)
 	_, err := writer.WriteString(content)
