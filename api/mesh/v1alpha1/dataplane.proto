@@ -198,6 +198,7 @@ message Dataplane {
       }
     }
 
+
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
       enum GatewayType {
@@ -234,16 +235,13 @@ message Dataplane {
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
       enum IpFamilyMode {
-        // This value is to support backward compatibility and should not be
-        // used in new data plane objects.
+        // This value is to support backward compatibility and should not be used in new data plane objects.
         UnSpecified = 0;
-        // Enables transparent proxying for both IPv4 and IPv6 traffic, This is
-        // the default.
+        // Enables transparent proxying for both IPv4 and IPv6 traffic, This is the default.
         DualStack = 1;
         // Enables transparent proxying for IPv4 traffic only.
         IPv4 = 2;
-        // Enables transparent proxying for IPv6 traffic only. This mode is to
-        // be supported in the future.
+        // Enables transparent proxying for IPv6 traffic only. This mode is to be supported in the future.
         IPv6 = 3;
       }
 
@@ -273,7 +271,7 @@ message Dataplane {
       repeated string reachable_services = 5;
 
       // The IP family mode to enable for. Can be "IPv4" or "DualStack".
-      IpFamilyMode ip_family_mode = 6;
+      IpFamilyMode ip_family_mode  = 6;
     }
 
     // Gateway describes a configuration of the gateway of the data plane proxy.
