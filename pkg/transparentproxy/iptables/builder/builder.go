@@ -119,10 +119,10 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 }
 
 type restorer struct {
-	cfg          config.Config
-	ipv6         bool
-	dnsServers   []string
-	executables  *executables
+	cfg         config.Config
+	ipv6        bool
+	dnsServers  []string
+	executables *executables
 }
 
 func newIPTablesRestorer(
