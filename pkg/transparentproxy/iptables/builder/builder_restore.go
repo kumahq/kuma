@@ -88,8 +88,11 @@ func (e executable) exec(ctx context.Context, args ...string) (*bytes.Buffer, er
 }
 
 type executables struct {
+	iptables               executable
 	save                   executable
 	restore                executable
+	fallback               *executables
+	legacy                 bool
 	foundDockerOutputChain bool
 }
 
@@ -99,16 +102,25 @@ func newExecutables(ipv6 bool, mode string) *executables {
 		prefix = ip6tables
 	}
 
-	save := fmt.Sprintf("%s-%s-%s", prefix, mode, "save")
-	restore := fmt.Sprintf("%s-%s-%s", prefix, mode, "restore")
+	iptables := fmt.Sprintf("%s-%s", prefix, mode)
+	iptablesSave := fmt.Sprintf("%s-%s-%s", prefix, mode, "save")
+	iptablesRestore := fmt.Sprintf("%s-%s-%s", prefix, mode, "restore")
 
 	return &executables{
-		save:    findExecutable(save),
-		restore: findExecutable(restore),
+		iptables: findExecutable(iptables),
+		save:     findExecutable(iptablesSave),
+		restore:  findExecutable(iptablesRestore),
+		legacy:   mode == "legacy",
 	}
 }
 
-func (e *executables) verify(ctx context.Context, cfg config.Config) error {
+var necessaryMatchExtensions = []string{
+	"owner",
+	"tcp",
+	"udp",
+}
+
+func (e *executables) verify(ctx context.Context, cfg config.Config) (*executables, error) {
 	var missing []string
 
 	if e.save.path == "" {
@@ -120,46 +132,66 @@ func (e *executables) verify(ctx context.Context, cfg config.Config) error {
 	}
 
 	if len(missing) > 0 {
-		return errors.Errorf("couldn't find executables: [%s]", strings.Join(missing, ","))
+		return nil, errors.Errorf("couldn't find executables: [%s]", strings.Join(missing, ","))
 	}
 
 	// We always need to have access to the "nat" table
 	if stdout, err := e.save.exec(ctx, "-t", "nat"); err != nil {
-		return errors.Wrap(err, "couldn't verify if table: 'nat' is available")
+		return nil, errors.Wrap(err, "couldn't verify if table: 'nat' is available")
 	} else if cfg.ShouldRedirectDNS() || cfg.ShouldCaptureAllDNS() {
 		e.foundDockerOutputChain = dockerOutputChainRegex.Match(stdout.Bytes())
 	}
 
-	if cfg.ShouldConntrackZoneSplit() {
-		if _, err := e.save.exec(ctx, "-t", "raw"); err != nil {
-			return errors.Wrap(err, "couldn't verify if table: 'raw' is available")
+	// It seems in some cases (GKE with ContainerOS), even if "iptables-nft" is available
+	// there are some kernel modules with iptables match extensions missing.
+	for _, matchExtension := range necessaryMatchExtensions {
+		if _, err := e.iptables.exec(ctx, "-m", matchExtension, "--help"); err != nil {
+			return nil, errors.Wrapf(err, "verification if match: %q exist failed", matchExtension)
 		}
 	}
 
-	return nil
+	if cfg.ShouldConntrackZoneSplit() {
+		if _, err := e.save.exec(ctx, "-t", "raw"); err != nil {
+			return nil, errors.Wrap(err, "couldn't verify if table: 'raw' is available")
+		}
+	}
+
+	return e, nil
 }
 
-func detectIptablesExecutables(ctx context.Context, cfg config.Config, ipv6 bool) (*executables, bool, error) {
-	nft := newExecutables(ipv6, "nft")
-	legacy := newExecutables(ipv6, "legacy")
+func (e *executables) withFallback(fallback *executables) *executables {
+	if fallback != nil {
+		e.fallback = fallback
+	}
 
-	if err := nft.verify(ctx, cfg); err != nil {
-		return legacy, true, legacy.verify(ctx, cfg)
+	return e
+}
+
+func detectIptablesExecutables(ctx context.Context, cfg config.Config, ipv6 bool) (*executables, error) {
+	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)
+	legacy, legacyVerifyErr := newExecutables(ipv6, "legacy").verify(ctx, cfg)
+
+	if nftVerifyErr != nil && legacyVerifyErr != nil {
+		return nil, fmt.Errorf("no valid iptables executable found: %s, %s", nftVerifyErr, legacyVerifyErr)
+	}
+
+	if nftVerifyErr != nil {
+		return legacy, nil
 	}
 
 	// Found DOCKER_OUTPUT chain in iptables-nft
 	if nft.foundDockerOutputChain {
-		return nft, false, nil
+		return nft.withFallback(legacy), nil
 	}
 
-	if err := legacy.verify(ctx, cfg); err != nil {
-		return nft, false, nil
+	if legacyVerifyErr != nil {
+		return nft, nil
 	}
 
 	// Found DOCKER_OUTPUT chain in iptables-legacy
 	if legacy.foundDockerOutputChain {
-		return legacy, true, nil
+		return legacy.withFallback(nft), nil
 	}
 
-	return nft, false, nil
+	return nft.withFallback(legacy), nil
 }
