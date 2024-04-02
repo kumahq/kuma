@@ -1,0 +1,33 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: web-to-backend
+type: TrafficRoute
+sources:
+  - match:
+      kuma.io/service: "*"
+destinations:
+  - match:
+      kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: backend-to-db
+type: TrafficRoute
+sources:
+  - match:
+      kuma.io/service: "*"
+destinations:
+  - match:
+      kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"

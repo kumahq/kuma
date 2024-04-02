@@ -1,0 +1,29 @@
+creationTime: "0001-01-01T00:00:00Z"
+type: RateLimit
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: web1-to-backend1
+sources:
+  - match:
+      kuma.io/service: web1
+      version: "1.0"
+destinations:
+  - match:
+      env: dev
+      kuma.io/service: backend1
+conf: {}
+---
+creationTime: "0001-01-01T00:00:00Z"
+type: RateLimit
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: web2-to-backend2
+sources:
+  - match:
+      kuma.io/service: web2
+      version: "1.0"
+conf: {}
+destinations:
+  - match:
+      env: dev
+      kuma.io/service: backend2
