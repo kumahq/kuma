@@ -1,9 +1,0 @@
-import{O as w,a as h,b as C}from"./OnboardingPage-BgFrQ5Eg.js";import{d as G,u as x,L as O,M as R,N as T,C as K,J as M,a as r,o as u,b as i,w as e,e as o,f as n,m as d,D as P,_ as N}from"./index-Dmhk95Ov.js";const k={class:"graph-list mb-6"},U={class:"radio-button-group"},A=G({__name:"OnboardingConfigurationTypesView",setup(B){const p=x(),m=O(),c=R(),g={postgres:T(),memory:c,kubernetes:m},t=K(p("KUMA_STORE_TYPE")),_=M(()=>g[t.value]);return(z,a)=>{const v=r("RouteTitle"),l=r("KRadio"),b=r("AppView"),f=r("RouteView");return u(),i(f,{name:"onboarding-configuration-types-view"},{default:e(({can:V,t:y})=>[o(v,{title:y("onboarding.routes.configuration-types.title"),render:!1},null,8,["title"]),n(),o(b,null,{default:e(()=>[o(w,{"with-image":""},{header:e(()=>[o(h,null,{title:e(()=>[n(`
-              Learn about configuration storage
-            `)]),_:1})]),content:e(()=>[d("div",k,[(u(),i(P(_.value)))]),n(),d("div",U,[o(l,{modelValue:t.value,"onUpdate:modelValue":a[0]||(a[0]=s=>t.value=s),name:"deployment","selected-value":"kubernetes"},{default:e(()=>[n(`
-              Kubernetes
-            `)]),_:1},8,["modelValue"]),n(),o(l,{modelValue:t.value,"onUpdate:modelValue":a[1]||(a[1]=s=>t.value=s),name:"deployment","selected-value":"postgres"},{default:e(()=>[n(`
-              Postgres
-            `)]),_:1},8,["modelValue"]),n(),o(l,{modelValue:t.value,"onUpdate:modelValue":a[2]||(a[2]=s=>t.value=s),name:"deployment","selected-value":"memory"},{default:e(()=>[n(`
-              Memory
-            `)]),_:1},8,["modelValue"])])]),navigation:e(()=>[o(C,{"next-step":V("use zones")?"onboarding-multi-zone-view":"onboarding-create-mesh-view","previous-step":"onboarding-deployment-types-view"},null,8,["next-step"])]),_:2},1024)]),_:2},1024)]),_:1})}}}),H=N(A,[["__scopeId","data-v-12112a8a"]]);export{H as default};
