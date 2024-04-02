@@ -8,15 +8,16 @@ labels:
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: meshtimeout-1
-type: MeshTimeout
-targetRef:
-  kind: Mesh
-  proxyTypes:
-  - Gateway
-to:
-- default:
-    http:
-      requestTimeout: 4s
+spec:
   targetRef:
-    kind: MeshService
-    name: api-play-000_microservice-mesh_svc_8080
+    kind: Mesh
+    proxyTypes:
+    - Gateway
+  to:
+  - default:
+      http:
+        requestTimeout: 4s
+    targetRef:
+      kind: MeshService
+      name: api-play-000_microservice-mesh_svc_8080
+type: MeshTimeout
