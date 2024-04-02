@@ -150,7 +150,33 @@ paths:
           description: The specified mesh/name combination was not found.
 ```
 
-Endpoint `/_rules` is getting the same `shadow` and `include` query parameters.
+Endpoint `/_rules` is getting the same `shadow` and `include` query parameters. 
+The new `diff` field is going to be placed at the root level of [InspectRules](https://github.com/kumahq/kuma/blob/9d93621900c57c3569a53924f0ec836c88eba559/api/openapi/specs/api.yaml#L148-L163) object:
+
+```yaml
+InspectRules:
+  type: object
+  title: InspectRules
+  description: A list of rules for a dataplane
+  required: [rules, resource, httpMatches]
+  properties:
+    resource:
+      $ref: './common/resource.yaml#/components/schemas/Meta'
+    rules:
+      type: array
+      items:
+        $ref: './common/resource.yaml#/components/schemas/InspectRule'
+    httpMatches:
+      type: array
+      items:
+        $ref: './common/resource.yaml#/components/schemas/HttpMatch'
+    diff:
+      description: |
+        When 'include=diff' query parameter is specified, the field contains a diff in JSONPatch format
+        between the rules returned in 'rules' field and the current proxy rules.
+      type: array
+      items: [...]
+```
 
 ### UX
 
@@ -167,8 +193,9 @@ Implementation wise, shadow mode requires generating 2 snapshots: one with and w
 By comparing these snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
 
 Depending on how much time do we want to spend on the implementation, we can choose to implement shadow mode for Zone CP or Global CP.
-Implementing shadow mode for Global CP requires either generating snapshots on Global CPs or forwarding the request to Zone CPs.
-This option is more time-consuming, but it can provide a better UX, i.e. showing potential changes for all affected DPPs (not only for a specific DPP).
+Global CP support is more time-consuming, but it can provide a better UX, i.e. showing potential changes for all affected DPPs (not only for a specific DPP).
+Implementing shadow mode for Global CP should be done by forwarding the request to Zone CPs. 
+Computing the snapshot right on Global CP requires gathering all DPPs from all zones which can be a performance bottleneck.
 
 ## Rolling out the new policies
 
