@@ -38,7 +38,7 @@ type statsCallbacks struct {
 	NoopCallbacks
 	responsesSentMetric    *prometheus.CounterVec
 	requestsReceivedMetric *prometheus.CounterVec
-	versions               *prometheus.GaugeVec
+	versionsMetric         *prometheus.GaugeVec
 	deliveryMetric         prometheus.Summary
 	deliveryMetricName     string
 	streamsActive          int
@@ -116,11 +116,11 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 		return nil, err
 	}
 
-	stats.versions = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	stats.versionsMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: dsType + "_client_versions",
 		Help: "Number of clients for each version. It only counts connections where they sent at least one request",
 	}, []string{"version"})
-	if err := metrics.Register(stats.versions); err != nil {
+	if err := metrics.Register(stats.versionsMetric); err != nil {
 		return nil, err
 	}
 
@@ -139,7 +139,7 @@ func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	defer s.Unlock()
 	s.streamsActive--
 	if ver, ok := s.versionsForStream[streamID]; ok {
-		s.versions.WithLabelValues(ver).Dec()
+		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
 	}
 }
@@ -153,7 +153,7 @@ func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryReques
 		s.Lock()
 		if _, ok := s.versionsForStream[streamID]; !ok {
 			s.versionsForStream[streamID] = ver
-			s.versions.WithLabelValues(ver).Inc()
+			s.versionsMetric.WithLabelValues(ver).Inc()
 		}
 		s.Unlock()
 	}
@@ -194,7 +194,7 @@ func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	defer s.Unlock()
 	s.streamsActive--
 	if ver, ok := s.versionsForStream[streamID]; ok {
-		s.versions.WithLabelValues(ver).Dec()
+		s.versionsMetric.WithLabelValues(ver).Dec()
 		delete(s.versionsForStream, streamID)
 	}
 }
@@ -208,7 +208,7 @@ func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDisco
 		s.Lock()
 		if _, ok := s.versionsForStream[streamID]; !ok {
 			s.versionsForStream[streamID] = ver
-			s.versions.WithLabelValues(ver).Inc()
+			s.versionsMetric.WithLabelValues(ver).Inc()
 		}
 		s.Unlock()
 	}
