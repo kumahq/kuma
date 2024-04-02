@@ -8,7 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 )
 
 func NewPrinter() output.Printer {
@@ -22,7 +22,7 @@ type printer struct {
 	hasPrinted bool
 }
 
-func print(obj interface{}, out io.Writer) error {
+func printObj(obj interface{}, out io.Writer) error {
 	b, err := yaml.Marshal(obj)
 	if err != nil {
 		return err
@@ -43,8 +43,8 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 	}
 	p.hasPrinted = true
 	switch obj := obj.(type) {
-	case rest.Resource:
-		if err := print(obj.GetMeta(), out); err != nil {
+	case *unversioned.Resource:
+		if err := printObj(obj.GetMeta(), out); err != nil {
 			return err
 		}
 
@@ -61,6 +61,6 @@ func (p *printer) Print(obj interface{}, out io.Writer) error {
 		_, err = out.Write(b)
 		return err
 	default:
-		return print(obj, out)
+		return printObj(obj, out)
 	}
 }
