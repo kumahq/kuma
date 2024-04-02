@@ -160,10 +160,8 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	maxRetries := pointer.Deref(r.cfg.Retry.MaxRetries)
-
-	for i := 0; i <= maxRetries; i++ {
-		fmt.Fprintf(r.cfg.RuntimeStderr, "\n# [%d/%d] ", i+1, maxRetries+1)
+	for i := 0; i <= r.cfg.Retry.MaxRetries; i++ {
+		fmt.Fprintf(r.cfg.RuntimeStderr, "\n# [%d/%d] ", i+1, r.cfg.Retry.MaxRetries+1)
 
 		output, err := r.tryRestoreIPTables(ctx, r.executables, rulesFile)
 		if err == nil {
@@ -179,7 +177,7 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 			}
 		}
 
-		if i < maxRetries {
+		if i < r.cfg.Retry.MaxRetries {
 			fmt.Fprintf(r.cfg.RuntimeStderr, " will try again in %s", r.cfg.Retry.SleepBetweenReties)
 
 			time.Sleep(r.cfg.Retry.SleepBetweenReties)
@@ -213,36 +211,9 @@ func (r *restorer) tryRestoreIPTables(
 
 	fmt.Fprintf(r.cfg.RuntimeStderr, "%s %s", executables.Restore.Path, strings.Join(params, " "))
 
-<<<<<<< HEAD
-	for i := 0; i <= cfg.Retry.MaxRetries; i++ {
-		output, err := e.restore.exec(ctx, params...)
-		if err == nil {
-			return output.String(), nil
-		}
-
-		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
-			"# [%d/%d] %s returned error: '%s'",
-			i+1,
-			cfg.Retry.MaxRetries+1,
-			strings.Join(append([]string{e.restore.path}, params...), " "),
-			err.Error(),
-		)))
-
-		if i < cfg.Retry.MaxRetries {
-			_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
-				" will try again in %s",
-				cfg.Retry.SleepBetweenReties.String(),
-			)))
-
-			time.Sleep(cfg.Retry.SleepBetweenReties)
-		}
-
-		_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
-=======
 	output, err := executables.Restore.exec(ctx, params...)
 	if err == nil {
 		return output.String(), nil
->>>>>>> fdebf4b7d (fix(transparent-proxy): make iptables mode detection more defensive (#9776))
 	}
 
 	fmt.Fprintf(r.cfg.RuntimeStderr, " failed with error: '%s'", err)
