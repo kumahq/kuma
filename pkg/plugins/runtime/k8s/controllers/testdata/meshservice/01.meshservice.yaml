@@ -19,7 +19,7 @@ spec:
     protocol: tcp
     targetPort: 8443
   selector: {}
-  status:
-    tls: {}
-    vips:
-    - ip: 192.168.0.1
+status:
+  tls: {}
+  vips:
+  - ip: 192.168.0.1

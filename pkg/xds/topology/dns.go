@@ -81,7 +81,7 @@ func VIPOutbounds(
 func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) []*mesh_proto.Dataplane_Networking_Outbound {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, svc := range meshServices {
-		for _, vip := range svc.Spec.Status.VIPs {
+		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
 				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 					Address: vip.IP,

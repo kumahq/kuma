@@ -19,10 +19,7 @@
     "targetPort": 6379,
     "protocol": "tcp"
    }
-  ],
-  "status": {
-   "tls": {}
-  }
+  ]
  },
  "status": {
   "vips": [
