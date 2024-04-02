@@ -174,17 +174,27 @@ func (c Config) ShouldCaptureAllDNS() bool {
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
 // the DNS conntrack zone splitting iptables rules
-func (c Config) ShouldConntrackZoneSplit() bool {
+func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
 		return false
+	}
+
+	if iptablesExecutable == "" {
+		iptablesExecutable = "iptables"
 	}
 
 	// There are situations where conntrack extension is not present (WSL2)
 	// instead of failing the whole iptables application, we can log the warning,
 	// skip conntrack related rules and move forward
+<<<<<<< HEAD
 	if err := exec.Command("iptables", "-m", "conntrack", "--help").Run(); err != nil {
 		_, _ = fmt.Fprintf(c.RuntimeStdout,
 			"[WARNING] error occurred when validating if 'conntrack' iptables "+
+=======
+	if err := exec.Command(iptablesExecutable, "-m", "conntrack", "--help").Run(); err != nil {
+		_, _ = fmt.Fprintf(c.RuntimeStderr,
+			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
+>>>>>>> fdebf4b7d (fix(transparent-proxy): make iptables mode detection more defensive (#9776))
 				"module is present. Rules for DNS conntrack zone "+
 				"splitting won't be applied: %s\n", err,
 		)
