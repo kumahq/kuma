@@ -131,7 +131,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			})
 		}
 
-		ms.Spec.Status.VIPs = []meshservice_api.VIP{
+		if ms.Status == nil {
+			ms.Status = &meshservice_api.MeshServiceStatus{}
+		}
+		ms.Status.VIPs = []meshservice_api.VIP{
 			{
 				IP: svc.Spec.ClusterIP,
 			},
