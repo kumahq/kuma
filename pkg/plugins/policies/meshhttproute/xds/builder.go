@@ -18,7 +18,7 @@ type OutboundRoute struct {
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
-	BackendRefToClusterName map[common_api.TargetRefHash]string
+	BackendRefToClusterName map[common_api.BackendRefHash]string
 }
 
 type HttpOutboundRouteConfigurer struct {

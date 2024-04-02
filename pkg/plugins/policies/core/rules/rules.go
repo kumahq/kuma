@@ -85,8 +85,13 @@ func InboundListenerHostnameFromGatewayListener(
 }
 
 type GatewayToRules struct {
+	// ByListener contains rules that are not specific to hostnames
+	// If the policy supports `GatewayListenerTagsAllowed: true`
+	// then it likely should use ByListenerAndHostname
+	ByListener map[InboundListener]Rules
+	// ByListenerAndHostname contains rules for policies that are specific to hostnames
+	// This only relevant if the policy has `GatewayListenerTagsAllowed: true`
 	ByListenerAndHostname map[InboundListenerHostname]Rules
-	ByListener            map[InboundListener]Rules
 }
 
 type GatewayRules struct {

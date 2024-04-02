@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,6 +73,14 @@ func (cb *DoNothingResource) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = spec.(*policy.DoNothingResource)
+}
+
+func (cb *DoNothingResource) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *DoNothingResource) SetStatus(status core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *DoNothingResource) Scope() model.Scope {

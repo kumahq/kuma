@@ -8,6 +8,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
@@ -54,7 +55,11 @@ func applyToOutbounds(
 	dataplane *core_mesh.DataplaneResource,
 	meshCtx xds_context.MeshContext,
 ) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
+	targetedClusters := policies_xds.GatherTargetedClusters(
+		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outboundSplitClusters,
+		outboundClusters,
+	)
 
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
@@ -71,15 +76,17 @@ func applyToGateways(
 	proxy *core_xds.Proxy,
 ) error {
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
-		rules, ok := gatewayRules.ToRules.ByListener[core_rules.InboundListener{
-			Address: proxy.Dataplane.Spec.GetNetworking().Address,
-			Port:    listenerInfo.Listener.Port,
-		}]
-		if !ok {
-			continue
-		}
-		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
-			for _, hostInfo := range listenerHostnames.HostInfos {
+		for _, listenerHostname := range listenerInfo.ListenerHostnames {
+			inboundListener := rules.NewInboundListenerHostname(
+				proxy.Dataplane.Spec.GetNetworking().Address,
+				listenerInfo.Listener.Port,
+				listenerHostname.Hostname,
+			)
+			rules, ok := gatewayRules.ToRules.ByListenerAndHostname[inboundListener]
+			if !ok {
+				continue
+			}
+			for _, hostInfo := range listenerHostname.HostInfos {
 				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
 				for _, dest := range destinations {
 					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)

@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "MeshService"
+
+paths:
+  /meshes/{mesh}/meshservices/{name}:
+    get:
+      summary: Returns MeshService entity
+      tags: [ "MeshService" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshServiceItem"
+
+    put:
+      summary: Creates or Updates MeshService entity
+      tags: [ "MeshService" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshServiceItem'
+      responses:
+        '200':
+          description: Updated
+        '201':
+          description: Created
+
+    delete:
+      summary: Deletes MeshService entity
+      tags: [ "MeshService" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshService
+      responses:
+        '200':
+          description: Successful response
+
+
+  /meshes/{mesh}/meshservices:
+    get:
+      summary: Returns a list of MeshService in the mesh.
+      tags: [ "MeshService" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshServiceList"
+
+components:
+  schemas:
+    MeshServiceItem:
+      $ref: 'schema.yaml'
+  responses:
+    MeshServiceItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshServiceItem'
+    MeshServiceList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshServiceItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

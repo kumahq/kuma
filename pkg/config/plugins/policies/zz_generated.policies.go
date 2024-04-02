@@ -3,9 +3,7 @@
 
 package policies
 
-import "golang.org/x/exp/slices"
-
-var DefaultPluginPoliciesEnabled = []string{
+var DefaultEnabled = []string{
 	"meshaccesslogs",
 	"meshcircuitbreakers",
 	"meshfaultinjections",
@@ -22,9 +20,8 @@ var DefaultPluginPoliciesEnabled = []string{
 	"meshtrafficpermissions",
 }
 
-func DefaultPoliciesConfig() *Config {
-	slices.Sort(DefaultPluginPoliciesEnabled)
+func Default() *Config {
 	return &Config{
-		PluginPoliciesEnabled: DefaultPluginPoliciesEnabled,
+		Enabled: DefaultEnabled,
 	}
 }

@@ -161,12 +161,26 @@ func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *Dataplane
 	return d
 }
 
-func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32) *DataplaneBuilder {
+func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32, ipFamilyMode string) *DataplaneBuilder {
 	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
 		RedirectPortInbound:  redirectPortInbound,
 		RedirectPortOutbound: redirectPortOutbound,
+		IpFamilyMode:         ipFamilyModeEnumValue(ipFamilyMode),
 	}
 	return d
+}
+
+func ipFamilyModeEnumValue(mode string) mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode {
+	switch mode {
+	case "ipv4":
+		return mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+	case "dualstack":
+		fallthrough
+	case "ipv6":
+		fallthrough
+	default:
+		return mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+	}
 }
 
 func TagsKVToMap(tagsKV []string) map[string]string {
@@ -287,6 +301,16 @@ func (b *OutboundBuilder) WithTags(tags map[string]string) *OutboundBuilder {
 
 func (b *OutboundBuilder) WithService(name string) *OutboundBuilder {
 	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
+	return b
+}
+
+func (b *OutboundBuilder) WithMeshService(name string, port uint32) *OutboundBuilder {
+	b.res.Tags = nil
+	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+		Kind: "MeshService",
+		Name: name,
+		Port: port,
+	}
 	return b
 }
 

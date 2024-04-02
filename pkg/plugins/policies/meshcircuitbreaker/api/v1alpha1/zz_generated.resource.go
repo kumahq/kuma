@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -67,6 +68,14 @@ func (t *MeshCircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *MeshCircuitBreakerResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *MeshCircuitBreakerResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *MeshCircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
@@ -139,4 +148,5 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:    true,
 	HasToTargetRef:      true,
 	HasFromTargetRef:    true,
+	HasStatus:           false,
 }

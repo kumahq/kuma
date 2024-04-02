@@ -1,0 +1,18 @@
+{
+ "total": 3,
+ "items": [
+  {
+   "type": "Mesh",
+   "name": "m2",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z"
+  },
+  {
+   "type": "Mesh",
+   "name": "m3",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z"
+  }
+ ],
+ "next": null
+}

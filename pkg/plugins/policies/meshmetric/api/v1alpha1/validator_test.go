@@ -20,6 +20,15 @@ targetRef:
 default:
   sidecar:
     regex: "http2_.*"
+    profiles:
+      appendProfiles:
+        - name: Basic
+      exclude:
+        - type: Regex
+          match: "my_match.*"
+      include:
+        - type: Prefix
+          match: "my_match"
     includeUnused: true
   applications:
     - path: "metrics/prometheus"
@@ -33,6 +42,9 @@ default:
         path: /metrics
         tls:
           mode: "ProvidedTLS"
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: otel-collector:4778
 `),
 	)
 
@@ -110,6 +122,65 @@ default:
     includeUnused: true
 `),
 		ErrorCase(
+			"invalid exclude regexes",
+			validators.Violation{
+				Field:   "spec.default.sidecar.profiles.exclude[0].match",
+				Message: "invalid regex",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      exclude:
+        - type: Regex
+          match: "())(!("
+    includeUnused: true
+`),
+		ErrorCase(
+			"invalid include types",
+			validators.Violation{
+				Field:   "spec.default.sidecar.profiles.include[0].type",
+				Message: "unrecognized type 'not_supported' - 'Regex', 'Prefix', 'Exact' are supported",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      include:
+        - type: not_supported
+`),
+		ErrorCase(
+			"invalid profile",
+			validators.Violation{
+				Field:   "spec.default.sidecar.profiles.appendProfiles[0].name",
+				Message: "unrecognized profile name 'not_supported' - 'All', 'None', 'Basic' are supported",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  sidecar:
+    profiles:
+      appendProfiles:
+        - name: not_supported
+`),
+		ErrorCase(
 			"invalid url",
 			validators.Violation{
 				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
@@ -127,6 +198,25 @@ default:
     - type: OpenTelemetry
       openTelemetry:
         endpoint: "asdasd123"
+`),
+		ErrorCase(
+			"invalid url",
+			validators.Violation{
+				Field:   "spec.default.backends.backend[0].openTelemetry.endpoint",
+				Message: "must not use schema",
+			},
+			`
+type: MeshMetric
+mesh: mesh-1
+name: metrics-1
+targetRef:
+  kind: MeshService
+  name: svc-1
+default:
+  backends:
+    - type: OpenTelemetry
+      openTelemetry:
+        endpoint: "http://endpoint:8023"
 `),
 		ErrorCase(
 			"undefined openTelemetry backend when type is OpenTelemetry",

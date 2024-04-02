@@ -79,7 +79,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return strings.HasPrefix(
@@ -95,7 +94,6 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return !strings.HasPrefix(
@@ -110,17 +108,28 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--kuma-dp-uid", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
-				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 				"--skip-dns-conntrack-zone-split",
 			},
 			goldenFile: "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
-		Entry("should generate defaults with overrides", testCase{
+		Entry("should generate defaults with overrides and log deprecate", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--redirect-outbound-port", "12345",
 				"--redirect-inbound-port", "12346",
 				"--redirect-inbound-port-v6", "12346",
+				"--exclude-outbound-ports", "2000,2001",
+				"--exclude-inbound-ports", "1000,1001",
+			},
+			errorMatcher: Equal("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead\n"),
+			goldenFile:   "install-transparent-proxy.overrides.golden.txt",
+		}),
+		Entry("should generate when ipv6 disabled", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--redirect-outbound-port", "12345",
+				"--redirect-inbound-port", "12346",
+				"--ip-family-mode", "ipv4",
 				"--exclude-outbound-ports", "2000,2001",
 				"--exclude-inbound-ports", "1000,1001",
 			},

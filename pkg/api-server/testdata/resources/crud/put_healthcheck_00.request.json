@@ -1,0 +1,27 @@
+{
+  "type": "HealthCheck",
+  "name": "web-to-backend",
+  "mesh": "default",
+  "creationTime": "2018-07-17T16:05:36.995Z",
+  "modificationTime": "2018-07-17T16:05:36.995Z",
+  "sources": [
+    {
+      "match": {
+        "kuma.io/service": "web"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "kuma.io/service": "backend"
+      }
+    }
+  ],
+  "conf": {
+    "interval": "10s",
+    "timeout": "2s",
+    "unhealthyThreshold": 3,
+    "healthyThreshold": 1
+  }
+}

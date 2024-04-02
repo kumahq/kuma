@@ -1,0 +1,27 @@
+#/meshes/default/external-services?tag=kuma.io/service:my-svc 200
+type: Mesh
+name: default
+---
+type: ExternalService
+mesh: default
+name: es-1
+tags:
+  kuma.io/service: my-svc
+networking:
+  address: httpbin.org:443
+---
+type: ExternalService
+mesh: default
+name: es-2
+tags:
+  kuma.io/service: my-svc
+networking:
+  address: httpbin.org:443
+---
+type: ExternalService
+mesh: default
+name: es-3
+tags:
+  kuma.io/service: other-svc
+networking:
+  address: httpbin.org:443

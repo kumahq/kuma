@@ -1,0 +1,7 @@
+{
+ "name": "mesh-system:admin",
+ "groups": [
+  "mesh-system:admin",
+  "mesh-system:authenticated"
+ ]
+}

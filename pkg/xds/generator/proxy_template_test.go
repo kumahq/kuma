@@ -183,6 +183,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   transparentProxying:
                     redirectPortOutbound: 15001
                     redirectPortInbound: 15006
+                    ipFamilyMode: IPv4
                   address: 192.168.0.1
                   inbound:
                     - port: 80
@@ -199,6 +200,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   transparentProxying:
                     redirectPortOutbound: 15001
                     redirectPortInbound: 15006
+                    ipFamilyMode: IPv4
                   address: 192.168.0.1
                   inbound:
                     - port: 80

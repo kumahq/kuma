@@ -128,6 +128,19 @@ var _ = Describe("OwnerReferenceMutator", func() {
             }`,
 			expectedMessage: `mesh: cannot be empty`,
 		}),
+		Entry("should not add patches to MeshService", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshService",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedMessage: "ignored. MeshService has a reference for Service",
+		}),
 	)
 
 	It("should add owner reference to resource owned by Dataplane", func() {

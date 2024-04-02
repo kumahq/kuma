@@ -94,6 +94,15 @@ Example output of a zone ingress token:
 The option to configure authentication was deprecated and has been removed in release `2.7.x`. If you are still using `KUMA_DP_SERVER_AUTH_*`
 environment variables or `dpServer.auth.*` configuration, please migrate your configuration to use `dpServer.authn` before upgrade.
 
+### Deprecation of `--redirect-inbound-port-v6` flag and `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` configuration option.
+
+The `--redirect-inbound-port-v6` flag and the corresponding configuration option `runtime.kubernetes.injector.sidecarContainer.redirectPortInboundV6` are deprecated and will be removed in a future release of Kuma. These flags and configuration options were used to configure the port used for redirecting IPv6 traffic to Kuma.
+
+In the upcoming release, Kuma will redirect IPv6 traffic to the same port as IPv4 traffic (15006). This means that you no longer need to configure a separate port for IPv6 traffic. If you want to disable traffic redirection for IPv6 traffic, you can set `--ip-family-mode ipv4`. We have also added a new configuration option `runtime.kubernetes.injector.sidecarContainer.ipFamilyMode` to switch traffic redirection for IP families.
+
+We recommend that you update your configurations to use the new defaults for IPv6 traffic redirection. If you need to retain separate ports for IPv4 and IPv6 traffic, you can continue to use the deprecated flags and configuration options until they are removed.
+
+
 ## Upgrade to `2.6.x`
 
 ### Policy
@@ -173,16 +182,16 @@ With the release of Kuma 2.6.0, we've made some changes to the implementation of
 
 To ensure a smooth transition to Kuma 2.6.0, carefully review your existing configuration files and make necessary adjustments related to denied request responses and RBAC-related Envoy stats.
 
-### Deprecation of postgres driverName=postgres (lib/pq)
-
-The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
-Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
-
-### Make format SI valid for bandwidth in MeshFaultInjection policy
+### Make SI format valid for bandwidth in MeshFaultInjection policy
 
 Prior to this upgrade `mbps` and `gbps` were used for units for parameter `conf.responseBandwidth.percentage`.
 These are not valid units according to the [International System of Units](https://en.wikipedia.org/wiki/International_System_of_Units) they are respectively corrected to `Gbps` and `Mbps` if using
 these invalid units convert them into `kbps` prior to upgrade to avoid invalid format.
+
+### Deprecation of postgres driverName=postgres (lib/pq)
+
+The postgres driver `postgres` (lib/pq) is deprecated and will be removed in the future.
+Please migrate to the new postgres driver `pgx` by setting `DriverName=pgx` configuration option or `KUMA_STORE_POSTGRES_DRIVER_NAME=pgx` env variable.
 
 ## Upgrade to `2.5.x`
 

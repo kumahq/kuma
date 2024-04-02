@@ -156,6 +156,8 @@ spec:
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_MODE
+              value: "disable"
             - name: KUMA_STORE_TYPE
               value: "postgres"
           args:
@@ -200,6 +202,8 @@ spec:
               value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_STORE_POSTGRES_PORT
               value: "5432"
+            - name: KUMA_STORE_POSTGRES_TLS_MODE
+              value: "disable"
             - name: KUMA_STORE_TYPE
               value: "postgres"
             - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS

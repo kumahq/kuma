@@ -165,7 +165,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							InitialJitter:                test.ParseDuration("13s"),
 							IntervalJitter:               test.ParseDuration("15s"),
 							IntervalJitterPercent:        pointer.To[int32](10),
-							HealthyPanicThreshold:        pointer.To[intstr.IntOrString](intstr.FromString("62.9")),
+							HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
 							FailTrafficOnPanic:           pointer.To(true),
 							EventLogPath:                 pointer.To("/tmp/log.txt"),
 							AlwaysLogHealthCheckFailures: pointer.To(false),
@@ -343,8 +343,8 @@ var _ = Describe("MeshHealthCheck", func() {
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
-						{Address: "192.168.0.1", Port: 8080}: {
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
@@ -437,8 +437,8 @@ var _ = Describe("MeshHealthCheck", func() {
 			},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
-						{Address: "192.168.0.1", Port: 8080}: {
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
@@ -477,7 +477,7 @@ var _ = Describe("MeshHealthCheck", func() {
 								},
 							},
 						},
-						{Address: "192.168.0.1", Port: 8081}: {
+						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
 							{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{

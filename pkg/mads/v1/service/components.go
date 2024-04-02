@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
+	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	mads_reconcile "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -20,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
-func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) util_xds_v3.SnapshotGenerator {
+func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) *mads_reconcile.SnapshotGenerator {
 	return mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{}, meshCache)
 }
 
@@ -28,9 +29,7 @@ func NewVersioner() util_xds_v3.SnapshotVersioner {
 	return util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 }
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner,
-) mads_reconcile.Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator *mads_reconcile.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) mads_reconcile.Reconciler {
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
@@ -46,13 +45,15 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 		return errors.Errorf("expecting a v3 Node, got: %v", nodei)
 	}
 
-	// TODO we need to reconcile on demand because if we us MeshMetric we will only reconcile in watchdog for single client
-	// that send request first because of watchdog callback implementation: pkg/util/xds/v3/watchdog_callbacks.go:48
-	// Moreover grpc sotw server is never used in real world scenario so we probably need to thing of different syncing cache mechanism
-	// if performance of ondemand reconcile will turn out to be poor.
-	// Also we probably can remove sync tracker since it will run and recompute MADS response that won't be used
-	// Issue: https://github.com/kumahq/kuma/issues/8764
-	return r.reconciler.Reconcile(ctx, node)
+	knownClients := r.reconciler.KnownClientIds()
+	if !knownClients[node.Id] {
+		node.Id = meshmetrics_generator.DefaultKumaClientId
+	}
+
+	if r.reconciler.NeedsReconciliation(node) {
+		return r.reconciler.Reconcile(ctx)
+	}
+	return nil
 }
 
 func (r *restReconcilerCallbacks) OnFetchResponse(request util_xds.DiscoveryRequest, response util_xds.DiscoveryResponse) {
@@ -71,7 +72,7 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 			},
 			OnTick: func(context.Context) error {
 				log.V(1).Info("on tick")
-				return reconciler.Reconcile(ctx, node)
+				return reconciler.Reconcile(ctx)
 			},
 			OnError: func(err error) {
 				log.Error(err, "OnTick() failed")

@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -31,14 +32,15 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
+	rm                manager.ReadOnlyResourceManager
+	typeSet           map[core_model.ResourceType]struct{}
+	ipFunc            lookup.LookupIPFunc
+	zone              string
+	vipsPersistence   *vips.Persistence
+	topLevelDomain    string
+	vipPort           uint32
+	rsGraphBuilder    ReachableServicesGraphBuilder
+	skipPersistedVIPs bool
 }
 
 // MeshContextBuilder
@@ -69,6 +71,7 @@ func NewMeshContextBuilder(
 	topLevelDomain string,
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
+	skipPersistedVIPs bool,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -76,14 +79,15 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
+		rm:                rm,
+		typeSet:           typeSet,
+		ipFunc:            ipFunc,
+		zone:              zone,
+		vipsPersistence:   vipsPersistence,
+		topLevelDomain:    topLevelDomain,
+		vipPort:           vipPort,
+		rsGraphBuilder:    rsGraphBuilder,
+		skipPersistedVIPs: skipPersistedVIPs,
 	}
 }
 
@@ -156,20 +160,30 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, dp := range dataplanes {
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
-
-	virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch vips")
+	meshServices := resources.MeshServices().Items
+	meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(dataplanes))
+	for _, ms := range meshServices {
+		meshServicesByName[ms.Meta.GetName()] = ms
 	}
-	// resolve all the domains
-	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+
+	var domains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	if !m.skipPersistedVIPs {
+		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not fetch vips")
+		}
+		// resolve all the domains
+		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+	}
+	outbounds = append(outbounds, xds_topology.MeshServiceOutbounds(meshServices)...)
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -190,6 +204,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		Resource:                    mesh,
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
+		MeshServiceByName:           meshServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,

@@ -11,3 +11,4 @@ networking:
   transparentProxying:
     redirectPortOutbound: 15001
     redirectPortInbound: 15003
+    ipFamilyMode: IPv4

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -7,7 +7,7 @@ VERSION="13.0.0"
 CLANG_FORMAT=${OUTPUT_DIR}/clang-format
 # No arm64 linux so let's do a dummy script
 if [ "${ARCH}" == "arm64" ] && [ "${OS}" == "linux" ]; then
-  printf "#!/bin/bash\necho clang-format not suported on arm linux" > "${CLANG_FORMAT}"
+  printf "#!/usr/bin/env bash\necho clang-format not suported on arm linux" > "${CLANG_FORMAT}"
   chmod u+x "${CLANG_FORMAT}"
   exit
 fi

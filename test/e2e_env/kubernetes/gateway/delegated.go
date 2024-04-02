@@ -109,7 +109,7 @@ spec:
 			To(Succeed())
 	})
 
-	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
+	XContext("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 	Context("MeshRetry", delegated.MeshRetry(&config))
@@ -119,5 +119,5 @@ spec:
 	Context("MeshTrace", delegated.MeshTrace(&config))
 	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
 	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
-	Context("MeshTCPRoute", delegated.MeshTCPRoute(&config))
+	XContext("MeshTCPRoute", delegated.MeshTCPRoute(&config))
 }

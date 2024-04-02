@@ -54,8 +54,8 @@ var inspectServiceTable = printers.Table{
 		}
 		overview := overviews.Items[i]
 		return []string{
-			overview.Meta.GetName(),       // SERVICE
-			overview.GetStatus().String(), // STATUS
+			overview.Meta.GetName(),    // SERVICE
+			overview.Status().String(), // STATUS
 			fmt.Sprintf("%d/%d", overview.Spec.Dataplanes.Online, overview.Spec.Dataplanes.Total), // DATAPLANES
 		}, nil
 	},

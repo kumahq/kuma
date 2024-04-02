@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/access"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
@@ -173,6 +174,8 @@ type Config struct {
 	EventBus eventbus.Config `json:"eventBus"`
 	// Policies is a configuration of plugin policies like MeshAccessLog, MeshTrace etc.
 	Policies *policies.Config `json:"policies"`
+	// CoreResources holds configuration for generated core resources like MeshService
+	CoreResources *apis.Config `json:"coreResources"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -270,10 +273,11 @@ var DefaultConfig = func() Config {
 			},
 			SidecarContainers: false,
 		},
-		Proxy:    xds.DefaultProxyConfig(),
-		InterCp:  intercp.DefaultInterCpConfig(),
-		EventBus: eventbus.Default(),
-		Policies: policies.DefaultPoliciesConfig(),
+		Proxy:         xds.DefaultProxyConfig(),
+		InterCp:       intercp.DefaultInterCpConfig(),
+		EventBus:      eventbus.Default(),
+		Policies:      policies.Default(),
+		CoreResources: apis.Default(),
 	}
 }
 
@@ -428,6 +432,11 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
+	// If true then it generates MeshServices from Kubernetes Service.
+	GenerateMeshServices bool `json:"generateMeshServices" envconfig:"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES"`
+	// If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
+	// Do not enable on production.
+	SkipPersistedVIPs bool `json:"skipPersistedVIPs" envconfig:"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

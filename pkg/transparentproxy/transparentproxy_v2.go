@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -88,7 +89,10 @@ func splitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
+func (tp *TransparentProxyV2) Setup(
+	ctx context.Context,
+	tpConfig *config.TransparentProxyConfig,
+) (string, error) {
 	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
@@ -136,9 +140,19 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		}
 	}
 
-	ipv6, err := ShouldEnableIPv6(redirectInboundPortIPv6)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
+	var ipv6 bool
+	if tpConfig.IpFamilyMode == "ipv4" {
+		ipv6 = false
+		redirectInboundPortIPv6 = 0
+	} else {
+		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
+			redirectInboundPortIPv6 = redirectInboundPort
+		}
+
+		ipv6, err = ShouldEnableIPv6(redirectInboundPortIPv6)
+		if err != nil {
+			return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
+		}
 	}
 
 	cfg := config.Config{
@@ -191,7 +205,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		},
 	}
 
-	return Setup(cfg)
+	return Setup(ctx, cfg)
 }
 
 func ParseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {

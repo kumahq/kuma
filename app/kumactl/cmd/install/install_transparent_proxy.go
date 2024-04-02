@@ -23,6 +23,7 @@ type transparentProxyArgs struct {
 	Verbose                        bool
 	RedirectPortOutBound           string
 	RedirectInbound                bool
+	IpFamilyMode                   string
 	RedirectPortInBound            string
 	RedirectPortInBoundV6          string
 	ExcludeInboundPorts            string
@@ -53,12 +54,15 @@ type transparentProxyArgs struct {
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparentProxyArgs{
-		DryRun:                         false,
-		Verbose:                        false,
-		RedirectPortOutBound:           "15001",
-		RedirectInbound:                true,
-		RedirectPortInBound:            "15006",
-		RedirectPortInBoundV6:          "15010",
+		DryRun:               false,
+		Verbose:              false,
+		RedirectPortOutBound: "15001",
+		RedirectInbound:      true,
+		RedirectPortInBound:  "15006",
+		// this argument is to be deprecated, it now defaults to the same port with ipv4 (instead of 15010)
+		// before deprecation, the user can still change it as needed
+		RedirectPortInBoundV6:          "15006",
+		IpFamilyMode:                   "dualstack",
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
 		ExcludeOutboundTCPPortsForUIDs: []string{},
@@ -68,11 +72,11 @@ func newInstallTransparentProxy() *cobra.Command {
 		RedirectDNS:                    false,
 		RedirectAllDNSTraffic:          false,
 		AgentDNSListenerPort:           "15053",
-		DNSUpstreamTargetChain:         "RETURN",
+		DNSUpstreamTargetChain:         "",
 		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 		EbpfEnabled:                    false,
-		EbpfProgramsSourcePath:         "/kuma/ebpf",
+		EbpfProgramsSourcePath:         "/tmp/kuma-ebpf",
 		EbpfBPFFSPath:                  "/sys/fs/bpf",
 		EbpfCgroupPath:                 "/sys/fs/cgroup",
 		EbpfTCAttachIface:              "",
@@ -163,7 +167,14 @@ runuser -u kuma-dp -- \
 					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used\n"))
 				}
 			}
+
+			defaultCfg := config.DefaultConfig()
 			// Backward compatibility
+			if args.RedirectPortInBoundV6 != "" &&
+				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.Port) /* new default value, identical to ipv4 port */ &&
+				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.PortIPv6) /* old default value, dedicated for ipv6 */ {
+				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead\n"))
+			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
 				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
 			}
@@ -190,10 +201,11 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
 	cmd.Flags().BoolVar(&args.Verbose, "verbose", args.Verbose, "verbose")
+	cmd.Flags().StringVar(&args.IpFamilyMode, "ip-family-mode", args.IpFamilyMode, "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&args.RedirectInbound, "redirect-inbound", args.RedirectInbound, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
+	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "[DEPRECATED (use --redirect-inbound-port or --ip-family-mode ipv4)] IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
@@ -221,6 +233,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().UintVar(&args.WaitInterval, "wait-interval", args.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
 	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
+
+	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 
 	return cmd
 }
@@ -260,6 +274,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		RedirectInBound:           args.RedirectInbound,
 		RedirectPortInBound:       args.RedirectPortInBound,
 		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
+		IpFamilyMode:              args.IpFamilyMode,
 		ExcludeInboundPorts:       args.ExcludeInboundPorts,
 		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
 		ExcludedOutboundsForUIDs:  args.ExcludeOutboundPortsForUIDs,
@@ -268,7 +283,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 		RedirectDNS:               args.RedirectDNS,
 		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
 		AgentDNSListenerPort:      args.AgentDNSListenerPort,
-		DNSUpstreamTargetChain:    args.DNSUpstreamTargetChain,
+		DNSUpstreamTargetChain:    "RETURN",
 		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
 		EbpfEnabled:               args.EbpfEnabled,
 		EbpfInstanceIP:            args.EbpfInstanceIP,
@@ -286,7 +301,7 @@ func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) e
 	}
 	tp = transparentproxy.V2()
 
-	output, err := tp.Setup(cfg)
+	output, err := tp.Setup(cmd.Context(), cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}

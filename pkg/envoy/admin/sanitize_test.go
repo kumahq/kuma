@@ -5,13 +5,11 @@ import (
 	"path"
 	"path/filepath"
 
-	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -27,17 +25,12 @@ var _ = Describe("Sanitize ConfigDump", func() {
 			rawConfigDump, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 			Expect(err).ToNot(HaveOccurred())
 
-			configDump := &envoy_admin_v3.ConfigDump{}
-			Expect(util_proto.FromJSON(rawConfigDump, configDump)).To(Succeed())
-
 			// when
-			Expect(admin.Sanitize(configDump)).To(Succeed())
-			// and when
-			sanitized, err := util_proto.ToJSONIndent(configDump, "  ")
+			sanitizedDump, err := admin.Sanitize(rawConfigDump)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(sanitized).To(matchers.MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
+			Expect(sanitizedDump).To(matchers.MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
 		},
 		Entry("full config", testCase{
 			configFile: "full_config.json",

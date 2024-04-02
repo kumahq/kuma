@@ -63,7 +63,7 @@ resources:
     address:
       socketAddress:
         address: '::'
-        portValue: 15010
+        portValue: 15006
     enableReusePort: false
     filterChains:
     - filters:

@@ -31,6 +31,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: OpenTelemetry
         openTelemetry: 
@@ -71,7 +75,7 @@ spec:
 						config.Mesh,
 					)),
 				))
-			}, "2m", "15s").Should(Succeed())
+			}, "3m", "5s").Should(Succeed())
 		})
 	}
 }

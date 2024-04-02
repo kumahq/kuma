@@ -2,6 +2,7 @@ package topology
 
 import (
 	"context"
+	"maps"
 	"net"
 	"strconv"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -64,6 +66,7 @@ func BuildEgressEndpointMap(
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
+	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
@@ -78,6 +81,8 @@ func BuildEdsEndpointMap(
 	}
 
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone)
+
+	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, endpointWeight, localZone)
 
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh, localZone)
@@ -118,7 +123,7 @@ func fillDataplaneOutbounds(
 		dpNetworking := dpSpec.GetNetworking()
 
 		for _, inbound := range dpNetworking.GetHealthyInbounds() {
-			inboundTags := cloneTags(inbound.GetTags())
+			inboundTags := maps.Clone(inbound.GetTags())
 			serviceName := inboundTags[mesh_proto.ServiceTag]
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
@@ -133,6 +138,50 @@ func fillDataplaneOutbounds(
 				Weight:   endpointWeight,
 				Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 			})
+		}
+	}
+}
+
+func fillLocalMeshServices(
+	outbound core_xds.EndpointMap,
+	meshServices []*meshservice_api.MeshServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource,
+	endpointWeight uint32,
+	localZone string,
+) {
+	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
+	for _, dataplane := range dataplanes {
+		dpNetworking := dataplane.Spec.GetNetworking()
+
+		for _, meshSvc := range meshServices {
+			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
+
+			for _, inbound := range dpNetworking.GetHealthyInbounds() {
+				if !tagSelector.Matches(inbound.GetTags()) {
+					continue
+				}
+				for _, port := range meshSvc.Spec.Ports {
+					if port.TargetPort != inbound.Port {
+						continue
+					}
+
+					inboundTags := maps.Clone(inbound.GetTags())
+					serviceName := meshSvc.DestinationName(port.Port)
+					if serviceName == inboundTags[mesh_proto.ServiceTag] {
+						continue // it was already added by fillDataplaneOutbounds
+					}
+					inboundInterface := dpNetworking.ToInboundInterface(inbound)
+
+					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+						Target:   inboundInterface.DataplaneAdvertisedIP,
+						Port:     inboundInterface.DataplanePort,
+						Tags:     inboundTags,
+						Weight:   endpointWeight,
+						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
+					})
+				}
+			}
 		}
 	}
 }
@@ -309,7 +358,7 @@ func fillIngressOutbounds(
 			}
 
 			// deep copy map to not modify tags in BuildRemoteEndpointMap
-			serviceTags := cloneTags(service.GetTags())
+			serviceTags := maps.Clone(service.GetTags())
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
@@ -413,7 +462,7 @@ func fillExternalServicesOutboundsThroughEgress(
 ) {
 	for _, externalService := range externalServices {
 		// deep copy map to not modify tags in ExternalService.
-		serviceTags := cloneTags(externalService.Spec.GetTags())
+		serviceTags := maps.Clone(externalService.Spec.GetTags())
 		serviceName := serviceTags[mesh_proto.ServiceTag]
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
@@ -450,7 +499,7 @@ func NewExternalServiceEndpoint(
 	tls := spec.GetNetworking().GetTls()
 	meshName := mesh.GetMeta().GetName()
 	// deep copy map to not modify tags in ExternalService.
-	tags := cloneTags(spec.GetTags())
+	tags := maps.Clone(spec.GetTags())
 
 	caCert, err := loadBytes(ctx, tls.GetCaCert(), meshName, loader)
 	if err != nil {
@@ -490,14 +539,6 @@ func NewExternalServiceEndpoint(
 		ExternalService: es,
 		Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 	}, nil
-}
-
-func cloneTags(tags map[string]string) map[string]string {
-	result := map[string]string{}
-	for tag, value := range tags {
-		result[tag] = value
-	}
-	return result
 }
 
 func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {

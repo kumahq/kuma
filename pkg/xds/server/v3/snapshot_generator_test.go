@@ -117,6 +117,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			cfg.Experimental.SkipPersistedVIPs,
 		)
 
 		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, envoy_common.APIV3)
@@ -205,7 +206,7 @@ var _ = Describe("GenerateSnapshot", func() {
 						WithServicePort(8443).
 						WithService("backend-4"),
 				).
-				WithTransparentProxying(15001, 15006).
+				WithTransparentProxying(15001, 15006, "ipv4").
 				Build(),
 		)
 
@@ -298,7 +299,7 @@ var _ = Describe("GenerateSnapshot", func() {
 						WithService("backend-4"),
 				).
 				AddOutboundToService("es-with-tls").
-				WithTransparentProxying(15001, 15006).
+				WithTransparentProxying(15001, 15006, "ipv4").
 				Build(),
 		)
 

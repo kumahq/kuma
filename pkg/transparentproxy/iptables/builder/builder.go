@@ -2,12 +2,10 @@ package builder
 
 import (
 	"bufio"
+	"context"
 	"fmt"
-	"io"
 	"net"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -20,10 +18,8 @@ import (
 )
 
 const (
-	iptables         = "iptables"
-	ip6tables        = "ip6tables"
-	iptablesRestore  = "iptables-restore"
-	ip6tablesRestore = "ip6tables-restore"
+	iptables  = "iptables"
+	ip6tables = "ip6tables"
 )
 
 type IPTables struct {
@@ -70,7 +66,12 @@ func (t *IPTables) Build(verbose bool) string {
 	return strings.Join(tables, separator) + "\n"
 }
 
-func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
+func BuildIPTables(
+	cfg config.Config,
+	dnsServers []string,
+	ipv6 bool,
+	iptablesExecutablePath string,
+) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	loopbackIface, err := getLoopback()
@@ -84,7 +85,7 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 	}
 
 	return newIPTables(
-		buildRawTable(cfg, dnsServers),
+		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
 		natTable,
 		buildMangleTable(cfg),
 	).Build(cfg.Verbose), nil
@@ -93,9 +94,9 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
 // rules for used to see and debug if something goes wrong, which can be overwritten
 // in tests to not obfuscate the other, more relevant logs
-func saveIPTablesRestoreFile(runtimeOutput io.Writer, f *os.File, content string) error {
-	_, _ = fmt.Fprintln(runtimeOutput, "# writing following contents to rules file: ", f.Name())
-	_, _ = fmt.Fprintln(runtimeOutput, content)
+func (r *restorer) saveIPTablesRestoreFile(f *os.File, content string) error {
+	fmt.Fprintf(r.cfg.RuntimeStdout, "# writing following contents to rules file: %s\n", f.Name())
+	fmt.Fprint(r.cfg.RuntimeStdout, content)
 
 	writer := bufio.NewWriter(f)
 	_, err := writer.WriteString(content)
@@ -122,108 +123,108 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 	return f, nil
 }
 
-func runRestoreCmd(cmdName string, params []string) (string, error) {
-	// #nosec G204
-	cmd := exec.Command(cmdName, params...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("executing command failed: %s (with output: %q)", err, output)
-	}
-
-	return string(output), nil
+type restorer struct {
+	cfg         config.Config
+	ipv6        bool
+	dnsServers  []string
+	executables *Executables
 }
 
-func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
-	rulesFile, err := createRulesFile(ipv6)
+func newIPTablesRestorer(
+	ctx context.Context,
+	cfg config.Config,
+	ipv6 bool,
+	dnsServers []string,
+) (*restorer, error) {
+	executables, err := DetectIptablesExecutables(ctx, cfg, ipv6)
+	if err != nil {
+		return nil, fmt.Errorf("unable to detect iptables restore binaries: %s", err)
+	}
+
+	return &restorer{
+		cfg:         cfg,
+		ipv6:        ipv6,
+		dnsServers:  dnsServers,
+		executables: executables,
+	}, nil
+}
+
+func (r *restorer) restore(ctx context.Context) (string, error) {
+	rulesFile, err := createRulesFile(r.ipv6)
 	if err != nil {
 		return "", err
 	}
 	defer rulesFile.Close()
 	defer os.Remove(rulesFile.Name())
 
-	err = configureIPv6Address(ipv6)
-	if err != nil {
+	if err := r.configureIPv6Address(); err != nil {
 		return "", err
 	}
 
-	rules, err := BuildIPTables(cfg, dnsServers, ipv6)
-	if err != nil {
-		return "", fmt.Errorf("unable to build iptable rules: %s", err)
-	}
+	maxRetries := pointer.Deref(r.cfg.Retry.MaxRetries)
 
-	if err := saveIPTablesRestoreFile(cfg.RuntimeStdout, rulesFile, rules); err != nil {
-		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
-	}
-
-	return restoreIPTablesWithRetry(cfg, rulesFile, ipv6)
-}
-
-func restoreIPTablesWithRetry(cfg config.Config, rulesFile *os.File, ipv6 bool) (string, error) {
-	restoreLegacy, err := checkForIptablesRestoreLegacy(ipv6)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot check if version of iptables-restore is legacy")
-	}
-
-	cmdName, params := buildRestore(cfg, rulesFile, restoreLegacy, ipv6)
-
-	maxRetries := pointer.Deref(cfg.Retry.MaxRetries)
 	for i := 0; i <= maxRetries; i++ {
-		output, err := runRestoreCmd(cmdName, params)
+		fmt.Fprintf(r.cfg.RuntimeStderr, "\n# [%d/%d] ", i+1, maxRetries+1)
+
+		output, err := r.tryRestoreIPTables(ctx, r.executables, rulesFile)
 		if err == nil {
 			return output, nil
 		}
 
-		_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
-			"# [%d/%d] %s returned error: %q",
-			i+1,
-			maxRetries+1,
-			strings.Join(append([]string{cmdName}, params...), " "),
-			err.Error(),
-		)))
+		if r.executables.fallback != nil {
+			fmt.Fprintf(r.cfg.RuntimeStderr, ", trying fallback: ")
 
-		if i < maxRetries {
-			_, _ = cfg.RuntimeStderr.Write([]byte(fmt.Sprintf(
-				" will try again in %s",
-				cfg.Retry.SleepBetweenReties.String(),
-			)))
-
-			time.Sleep(cfg.Retry.SleepBetweenReties)
+			output, err := r.tryRestoreIPTables(ctx, r.executables.fallback, rulesFile)
+			if err == nil {
+				return output, nil
+			}
 		}
 
-		_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+		if i < maxRetries {
+			fmt.Fprintf(r.cfg.RuntimeStderr, " will try again in %s", r.cfg.Retry.SleepBetweenReties)
+
+			time.Sleep(r.cfg.Retry.SleepBetweenReties)
+		}
 	}
 
-	_, _ = cfg.RuntimeStderr.Write([]byte("\n"))
+	fmt.Fprintln(r.cfg.RuntimeStderr)
 
-	return "", errors.Errorf("%s failed", cmdName)
+	return "", errors.Errorf("%s failed", r.executables.Restore.Path)
 }
 
-// checkForIptablesRestoreLegacy checks if the version of ip{6}tables-restore is
-// legacy (non-nftables). The --wait and --wait-interval flags are only valid
-// with legacy ip{6}tables-restore. These flags are invalid with nftables
-// because nftables back end transactions are atomic and there is no need for
-// the global xtables lock, which has proven problematic in environments with
-// large and/or rapidly changing rulesets.
-func checkForIptablesRestoreLegacy(ipv6 bool) (bool, error) {
-	cmdName := iptablesRestore
-	if ipv6 {
-		cmdName = ip6tablesRestore
+func (r *restorer) tryRestoreIPTables(
+	ctx context.Context,
+	executables *Executables,
+	rulesFile *os.File,
+) (string, error) {
+	if executables.foundDockerOutputChain {
+		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	output, err := exec.Command(cmdName, "--version").Output()
+	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
 	if err != nil {
-		return false, err
+		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
 
-	r := regexp.MustCompile(`ip6?tables-restore v.*? \((.*?)\)`)
-	match := r.FindStringSubmatch(string(output))
+	if err := r.saveIPTablesRestoreFile(rulesFile, rules); err != nil {
+		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
+	}
 
-	return len(match) == 2 && match[1] == "legacy", nil
+	params := buildRestoreParameters(r.cfg, rulesFile, executables.legacy)
+
+	fmt.Fprintf(r.cfg.RuntimeStderr, "%s %s", executables.Restore.Path, strings.Join(params, " "))
+
+	output, err := executables.Restore.exec(ctx, params...)
+	if err == nil {
+		return output.String(), nil
+	}
+
+	fmt.Fprintf(r.cfg.RuntimeStderr, " failed with error: '%s'", err)
+
+	return "", err
 }
 
-// RestoreIPTables
-// TODO (bartsmykla): add validation if ip{,6}tables are available
-func RestoreIPTables(cfg config.Config) (string, error) {
+func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
@@ -240,13 +241,23 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		}
 	}
 
-	output, err := restoreIPTables(cfg, dnsIpv4, false)
+	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false, dnsIpv4)
+	if err != nil {
+		return "", err
+	}
+
+	output, err := ipv4Restorer.restore(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot restore ipv4 iptable rules: %s", err)
 	}
 
 	if cfg.IPv6 {
-		ipv6Output, err := restoreIPTables(cfg, dnsIpv6, true)
+		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true, dnsIpv6)
+		if err != nil {
+			return "", err
+		}
+
+		ipv6Output, err := ipv6Restorer.restore(ctx)
 		if err != nil {
 			return "", fmt.Errorf("cannot restore ipv6 iptable rules: %s", err)
 		}
@@ -254,7 +265,7 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		output += ipv6Output
 	}
 
-	_, _ = cfg.RuntimeStdout.Write([]byte("# iptables set to diverge the traffic " +
+	_, _ = cfg.RuntimeStdout.Write([]byte("\n# iptables set to diverge the traffic " +
 		"to Envoy.\n"))
 
 	return output, nil
@@ -264,8 +275,8 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 // for IPv6 but not IPv4, as IPv4 defaults to `netmask 255.0.0.0`, which allows binding to addresses
 // in the 127.x.y.z range, while IPv6 defaults to `prefixlen 128` which allows binding only to ::1.
 // Equivalent to `ip -6 addr add "::6/128" dev lo`
-func configureIPv6Address(ipv6 bool) error {
-	if !ipv6 {
+func (r *restorer) configureIPv6Address() error {
+	if !r.ipv6 {
 		return nil
 	}
 	link, err := netlink.LinkByName("lo")

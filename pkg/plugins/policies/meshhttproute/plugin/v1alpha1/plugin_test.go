@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -111,6 +112,51 @@ var _ = Describe("MeshHTTPRoute", func() {
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder().
 						AddOutboundToService("external-service")).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					Build(),
+			}
+		}()),
+		Entry("default-meshservice", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend_svc_8084", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:       80,
+						TargetPort: 8084,
+						Protocol:   core_mesh.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder().
+						AddOutbound(builders.Outbound().
+							WithAddress("10.0.0.1").
+							WithPort(80).
+							WithMeshService("backend", 80),
+						),
+					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),
 			}
@@ -306,7 +352,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
-		Entry("header-modifiers", func() outboundsTestCase {
+		Entry("request-header-modifiers", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
@@ -353,7 +399,47 @@ var _ = Describe("MeshHTTPRoute", func() {
 																"request-header-to-remove",
 															},
 														},
-													}, {
+													}},
+												},
+											}},
+										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("response-header-modifiers", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
 														Type: api.ResponseHeaderModifierType,
 														ResponseHeaderModifier: &api.HeaderModifier{
 															Add: []api.HeaderKeyValue{{
@@ -368,7 +454,47 @@ var _ = Describe("MeshHTTPRoute", func() {
 																"response-header-to-remove",
 															},
 														},
-													}, {
+													}},
+												},
+											}},
+										},
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("request-redirect", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder()).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								Rules: core_rules.Rules{
+									{
+										Subset: core_rules.MeshService("backend"),
+										Conf: api.PolicyDefault{
+											Rules: []api.Rule{{
+												Matches: []api.Match{{
+													Path: &api.PathMatch{
+														Type:  api.PathPrefix,
+														Value: "/v1",
+													},
+												}},
+												Default: api.RuleConf{
+													Filters: &[]api.Filter{{
 														Type: api.RequestRedirectType,
 														RequestRedirect: &api.RequestRedirect{
 															Scheme: pointer.To("other"),
@@ -566,13 +692,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 															Type: api.RequestMirrorType,
 															RequestMirror: &api.RequestMirror{
 																Percentage: pointer.To(intstr.FromString("99.9")),
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshServiceSubset,
-																	Name: "payments",
-																	Tags: map[string]string{
-																		"version": "v1",
-																		"region":  "us",
-																		"env":     "dev",
+																BackendRef: common_api.BackendRef{
+																	TargetRef: common_api.TargetRef{
+																		Kind: common_api.MeshServiceSubset,
+																		Name: "payments",
+																		Tags: map[string]string{
+																			"version": "v1",
+																			"region":  "us",
+																			"env":     "dev",
+																		},
 																	},
 																},
 															},
@@ -580,9 +708,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 														{
 															Type: api.RequestMirrorType,
 															RequestMirror: &api.RequestMirror{
-																BackendRef: common_api.TargetRef{
-																	Kind: common_api.MeshService,
-																	Name: "backend",
+																BackendRef: common_api.BackendRef{
+																	TargetRef: common_api.TargetRef{
+																		Kind: common_api.MeshService,
+																		Name: "backend",
+																	},
 																},
 															},
 														},

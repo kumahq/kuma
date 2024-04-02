@@ -3,7 +3,6 @@ package reconcile
 import (
 	"context"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -16,28 +15,29 @@ import (
 	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("reconcile")
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) util_xds_v3.SnapshotGenerator {
-	return &snapshotGenerator{
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator, meshCache *mesh.Cache) *SnapshotGenerator {
+	return &SnapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
 		meshCache:         meshCache,
 	}
 }
 
-type snapshotGenerator struct {
+type SnapshotGenerator struct {
 	resourceManager   core_manager.ReadOnlyResourceManager
 	resourceGenerator generator.ResourceGenerator
 	meshCache         *mesh.Cache
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
-	meshesWithMeshMetrics, err := s.getMeshesWithMeshMetrics(ctx, node.Id)
+func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]util_xds_v3.Snapshot, error) {
+	meshesWithMeshMetrics, err := s.getMeshesWithMeshMetrics(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +52,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 	}
 
 	var resources []*core_xds.Resource
+	resourcesPerClientId := map[string]util_xds_v3.Snapshot{}
 	if len(meshesWithMeshMetrics) == 0 {
 		dataplanes, err := s.getDataplanes(ctx, meshes)
 		if err != nil {
@@ -73,45 +74,50 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		if err != nil {
 			return nil, err
 		}
+		resourcesPerClientId[meshmetrics_generator.DefaultKumaClientId] = createSnapshot(resources)
 	} else {
-		meshMetricConfToDataplanes, err := s.getMatchingDataplanes(ctx, meshesWithMeshMetrics)
-		if err != nil {
-			return nil, err
-		}
+		for clientId, meshes := range meshesWithMeshMetrics {
+			meshMetricConfToDataplanes, err := s.getMatchingDataplanes(ctx, meshes)
+			if err != nil {
+				return nil, err
+			}
 
-		resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, node.Id)
-		if err != nil {
-			return nil, err
+			resources, err = meshmetrics_generator.Generate(meshMetricConfToDataplanes, clientId)
+			if err != nil {
+				return nil, err
+			}
+			resourcesPerClientId[clientId] = createSnapshot(resources)
 		}
 	}
 
-	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
+	return resourcesPerClientId, nil
 }
 
-func (s *snapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context, clientId string) ([]string, error) {
+func (s *SnapshotGenerator) getMeshesWithMeshMetrics(ctx context.Context) (map[string][]string, error) {
 	meshMetricsList := v1alpha1.MeshMetricResourceList{}
 	if err := s.resourceManager.List(ctx, &meshMetricsList); err != nil {
 		return nil, err
 	}
 
-	var meshToMeshMetrics []string
+	clientToMeshes := map[string][]string{}
 	for _, meshMetric := range meshMetricsList.Items {
 		if meshMetric.Spec.Default.Backends == nil {
 			continue
 		}
+		meshName := meshMetric.GetMeta().GetMesh()
 		for _, backend := range *meshMetric.Spec.Default.Backends { // can backends be nil?
 			// match against client ID or fallback to "" when specified by user
-			if backend.Type == v1alpha1.PrometheusBackendType && (backend.Prometheus.ClientId == nil || *backend.Prometheus.ClientId == clientId || *backend.Prometheus.ClientId == "") {
-				meshName := meshMetric.GetMeta().GetMesh()
-				meshToMeshMetrics = append(meshToMeshMetrics, meshName)
+			if backend.Type == v1alpha1.PrometheusBackendType {
+				client := pointer.DerefOr(backend.Prometheus.ClientId, meshmetrics_generator.DefaultKumaClientId)
+				clientToMeshes[client] = append(clientToMeshes[client], meshName)
 			}
 		}
 	}
 
-	return meshToMeshMetrics, nil
+	return clientToMeshes, nil
 }
 
-func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWithMeshMetrics []string) (map[*v1alpha1.Conf]*core_mesh.DataplaneResource, error) {
+func (s *SnapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWithMeshMetrics []string) (map[*v1alpha1.Conf]*core_mesh.DataplaneResource, error) {
 	meshMetricConfToDataplanes := map[*v1alpha1.Conf]*core_mesh.DataplaneResource{}
 	for _, meshName := range meshesWithMeshMetrics {
 		meshContext, err := s.meshCache.GetMeshContext(ctx, meshName)
@@ -134,7 +140,7 @@ func (s *snapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWit
 	return meshMetricConfToDataplanes, nil
 }
 
-func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*core_mesh.MeshResource, error) {
+func (s *SnapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*core_mesh.MeshResource, error) {
 	meshList := &core_mesh.MeshResourceList{}
 	if err := s.resourceManager.List(ctx, meshList); err != nil {
 		return nil, err
@@ -149,7 +155,7 @@ func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) 
 	return meshes, nil
 }
 
-func (s *snapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.DataplaneResource, error) {
+func (s *SnapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.DataplaneResource, error) {
 	dataplanes := make([]*core_mesh.DataplaneResource, 0)
 	for _, mesh := range meshes {
 		dataplaneList := &core_mesh.DataplaneResourceList{}
@@ -161,7 +167,7 @@ func (s *snapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_me
 	return dataplanes, nil
 }
 
-func (s *snapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.MeshGatewayResource, error) {
+func (s *SnapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.MeshGatewayResource, error) {
 	meshGateways := make([]*core_mesh.MeshGatewayResource, 0)
 	for _, mesh := range meshes {
 		meshGatewayList := &core_mesh.MeshGatewayResourceList{}
@@ -171,4 +177,8 @@ func (s *snapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_
 		meshGateways = append(meshGateways, meshGatewayList.Items...)
 	}
 	return meshGateways, nil
+}
+
+func createSnapshot(resources []*core_xds.Resource) *mads_v1_cache.Snapshot {
+	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex())
 }

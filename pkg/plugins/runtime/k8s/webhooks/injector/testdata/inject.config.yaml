@@ -3,6 +3,7 @@ controlPlane:
     url: http://kuma-control-plane.kuma-system:5681
 sidecarContainer:
   image: kuma/kuma-sidecar:latest
+  ipFamilyMode: dualstack
   redirectPortOutbound: 15001
   redirectPortInbound: 15006
   redirectPortInboundV6: 15010
