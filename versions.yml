@@ -79,7 +79,6 @@
 - edition: kuma
   version: 2.6.3
   release: 2.6.x
-  latest: true
   releaseDate: "2024-02-01"
   endOfLifeDate: "2025-02-01"
   branch: release-2.6
