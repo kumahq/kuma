@@ -64,10 +64,9 @@ Add a query parameter `shadow=true`:
 
 when `shadow=true` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
 
-For the debugging purposes it makes sense to represent the shadow snapshot as the original snapshot + jsonPatch that can be applied to it.
-Kuma GUI and kumactl also can benefit from such representation. To make server produce such response we can introduce a query parameter `include=diff`.
-Query param `include` contains a list of fields that should be included in the response. By default, only `xds` field is set by the API server. 
-From the validation point of view the request `_snapshot?shadow=true&include=diff` makes no sense and should be rejected.  
+For visualization in GUI it would be nice to include the diff between the shadow snapshot and the current snapshot.
+When `include=diff` query parameter is set the response includes a JSONPatch that can be applied to the returned snapshot to get the current proxy snapshot.
+For `shadow=false&include=diff` the server should return an empty JSONPatch diff alongside the current snapshot.
 
 OpenAPI spec for new endpoints:
 
@@ -105,7 +104,8 @@ paths:
         - in: query
           name: include
           description: |
-            An array of field names that also should be included in the response. By default, only 'xds' field is set by the API server. 
+            An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
+            between the snapshot returned in 'xds' and the current proxy snapshot.
           schema:
             type: array
             items:
@@ -125,8 +125,8 @@ paths:
                     type: object
                   diff:
                     description: |
-                      When '?include=diff' is specified, the field is set to an array of json patches between the current XDS config
-                      and XDS config that takes into account policies with 'kuma.io/effect: shadow'.
+                      When 'include=diff' query parameter is specified, the field contains a diff in JSONPatch format
+                      between the snapshot returned in 'xds' and the current proxy snapshot.
                     type: array
                     items:
                       type: object
