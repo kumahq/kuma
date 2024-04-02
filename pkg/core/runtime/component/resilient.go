@@ -27,7 +27,7 @@ func NewResilientComponent(log logr.Logger, component Component) Component {
 
 func (r *resilientComponent) Start(stop <-chan struct{}) error {
 	r.log.Info("starting resilient component ...")
-	backoff := retry.WithCappedDuration(backoffMaxTime, retry.NewExponential(backoffBaseTime))
+	backoff := newBackoff()
 	for generationID := uint64(1); ; generationID++ {
 		errCh := make(chan error, 1)
 		go func(errCh chan<- error) {
@@ -42,21 +42,36 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 					}
 				}
 			}()
-
 			errCh <- r.component.Start(stop)
 		}(errCh)
-		select {
-		case <-stop:
-			r.log.Info("done")
-			return nil
-		case err := <-errCh:
-			if err != nil {
-				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
+
+		receivedErr := false
+		for !receivedErr {
+			select {
+			case <-stop:
+				r.log.Info("done")
+				return nil
+			case err := <-errCh:
+				if err != nil {
+					r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
+				}
+				receivedErr = true
+			case <-time.After(backoffMaxTime):
+				// reset backoff so in a case of events
+				// 1) Component is unhealthy until max backoff is reached
+				// 2) Component is healthy for at least backoff max time
+				// 3) Component is unhealthy
+				// We start backoff from the beginning
+				backoff = newBackoff()
 			}
 		}
 		dur, _ := backoff.Next()
 		<-time.After(dur)
 	}
+}
+
+func newBackoff() retry.Backoff {
+	return retry.WithJitter(backoffBaseTime, retry.WithCappedDuration(backoffMaxTime, retry.NewExponential(backoffBaseTime)))
 }
 
 func (r *resilientComponent) NeedLeaderElection() bool {
