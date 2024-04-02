@@ -32,7 +32,7 @@ func buildRestoreParameters(cfg config.Config, rulesFile *os.File, restoreLegacy
 		Build(cfg.Verbose, rulesFile.Name())
 }
 
-func findExecutable(name string) executable {
+func findExecutable(name string) Executable {
 	paths := append(
 		[]string{name},
 		fallbackPaths...,
@@ -53,26 +53,26 @@ func findExecutable(name string) executable {
 		}
 	}
 
-	return executable{name: name}
+	return Executable{Name: name}
 }
 
-type executable struct {
-	name string
-	path string
+type Executable struct {
+	Name string
+	Path string
 }
 
-func newExecutable(name string, path string) executable {
-	return executable{
-		name: name,
-		path: path,
+func newExecutable(name string, path string) Executable {
+	return Executable{
+		Name: name,
+		Path: path,
 	}
 }
 
-func (e executable) exec(ctx context.Context, args ...string) (*bytes.Buffer, error) {
+func (e Executable) exec(ctx context.Context, args ...string) (*bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	// #nosec G204
-	cmd := exec.CommandContext(ctx, e.path, args...)
+	cmd := exec.CommandContext(ctx, e.Path, args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
@@ -88,9 +88,9 @@ func (e executable) exec(ctx context.Context, args ...string) (*bytes.Buffer, er
 }
 
 type Executables struct {
-	iptables               executable
-	save                   executable
-	restore                executable
+	Iptables               Executable
+	Save                   Executable
+	Restore                Executable
 	fallback               *Executables
 	legacy                 bool
 	foundDockerOutputChain bool
@@ -107,9 +107,9 @@ func newExecutables(ipv6 bool, mode string) *Executables {
 	iptablesRestore := fmt.Sprintf("%s-%s-%s", prefix, mode, "restore")
 
 	return &Executables{
-		iptables: findExecutable(iptables),
-		save:     findExecutable(iptablesSave),
-		restore:  findExecutable(iptablesRestore),
+		Iptables: findExecutable(iptables),
+		Save:     findExecutable(iptablesSave),
+		Restore:  findExecutable(iptablesRestore),
 		legacy:   mode == "legacy",
 	}
 }
@@ -123,12 +123,12 @@ var necessaryMatchExtensions = []string{
 func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executables, error) {
 	var missing []string
 
-	if e.save.path == "" {
-		missing = append(missing, e.save.name)
+	if e.Save.Path == "" {
+		missing = append(missing, e.Save.Name)
 	}
 
-	if e.restore.path == "" {
-		missing = append(missing, e.restore.name)
+	if e.Restore.Path == "" {
+		missing = append(missing, e.Restore.Name)
 	}
 
 	if len(missing) > 0 {
@@ -136,7 +136,7 @@ func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executabl
 	}
 
 	// We always need to have access to the "nat" table
-	if stdout, err := e.save.exec(ctx, "-t", "nat"); err != nil {
+	if stdout, err := e.Save.exec(ctx, "-t", "nat"); err != nil {
 		return nil, errors.Wrap(err, "couldn't verify if table: 'nat' is available")
 	} else if cfg.ShouldRedirectDNS() || cfg.ShouldCaptureAllDNS() {
 		e.foundDockerOutputChain = dockerOutputChainRegex.Match(stdout.Bytes())
@@ -145,13 +145,13 @@ func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executabl
 	// It seems in some cases (GKE with ContainerOS), even if "iptables-nft" is available
 	// there are some kernel modules with iptables match extensions missing.
 	for _, matchExtension := range necessaryMatchExtensions {
-		if _, err := e.iptables.exec(ctx, "-m", matchExtension, "--help"); err != nil {
+		if _, err := e.Iptables.exec(ctx, "-m", matchExtension, "--help"); err != nil {
 			return nil, errors.Wrapf(err, "verification if match: %q exist failed", matchExtension)
 		}
 	}
 
-	if cfg.ShouldConntrackZoneSplit(e.iptables.path) {
-		if _, err := e.save.exec(ctx, "-t", "raw"); err != nil {
+	if cfg.ShouldConntrackZoneSplit(e.Iptables.Path) {
+		if _, err := e.Save.exec(ctx, "-t", "raw"); err != nil {
 			return nil, errors.Wrap(err, "couldn't verify if table: 'raw' is available")
 		}
 	}

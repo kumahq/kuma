@@ -70,7 +70,7 @@ func BuildIPTables(
 	cfg config.Config,
 	dnsServers []string,
 	ipv6 bool,
-	executables *Executables,
+	iptablesExecutablePath string,
 ) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
@@ -85,7 +85,7 @@ func BuildIPTables(
 	}
 
 	return newIPTables(
-		buildRawTable(cfg, dnsServers, executables),
+		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
 		natTable,
 		buildMangleTable(cfg),
 	).Build(cfg.Verbose), nil
@@ -189,7 +189,7 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 
 	fmt.Fprintln(r.cfg.RuntimeStderr)
 
-	return "", errors.Errorf("%s failed", r.executables.restore.path)
+	return "", errors.Errorf("%s failed", r.executables.Restore.Path)
 }
 
 func (r *restorer) tryRestoreIPTables(
@@ -201,7 +201,7 @@ func (r *restorer) tryRestoreIPTables(
 		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables)
+	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
@@ -212,9 +212,9 @@ func (r *restorer) tryRestoreIPTables(
 
 	params := buildRestoreParameters(r.cfg, rulesFile, executables.legacy)
 
-	fmt.Fprintf(r.cfg.RuntimeStderr, "%s %s", executables.restore.path, strings.Join(params, " "))
+	fmt.Fprintf(r.cfg.RuntimeStderr, "%s %s", executables.Restore.Path, strings.Join(params, " "))
 
-	output, err := executables.restore.exec(ctx, params...)
+	output, err := executables.Restore.exec(ctx, params...)
 	if err == nil {
 		return output.String(), nil
 	}
