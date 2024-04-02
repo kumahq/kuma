@@ -28,6 +28,7 @@ jobs:
       upload-assets: ${{ github.ref_type == 'tag' }}
       upload-tag-name: ${{ github.ref_name }}
       provenance-name: ${{ github.event.repository.name }}.intoto.jsonl
+      draft-release: "true"
 
   # Provenance job for all images manifests
   # SLSA generator is a reusable workflow
@@ -47,6 +48,6 @@ jobs:
     with:
       image: ${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.image_digests)[matrix.IMAGE] }}
+      registry-username: ${{ vars.DOCKER_USERNAME }}
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
-      registry-username: ${{ secrets.DOCKER_USERNAME }}
