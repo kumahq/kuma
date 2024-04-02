@@ -87,16 +87,16 @@ func (e executable) exec(ctx context.Context, args ...string) (*bytes.Buffer, er
 	return &stdout, nil
 }
 
-type executables struct {
+type Executables struct {
 	iptables               executable
 	save                   executable
 	restore                executable
-	fallback               *executables
+	fallback               *Executables
 	legacy                 bool
 	foundDockerOutputChain bool
 }
 
-func newExecutables(ipv6 bool, mode string) *executables {
+func newExecutables(ipv6 bool, mode string) *Executables {
 	prefix := iptables
 	if ipv6 {
 		prefix = ip6tables
@@ -106,7 +106,7 @@ func newExecutables(ipv6 bool, mode string) *executables {
 	iptablesSave := fmt.Sprintf("%s-%s-%s", prefix, mode, "save")
 	iptablesRestore := fmt.Sprintf("%s-%s-%s", prefix, mode, "restore")
 
-	return &executables{
+	return &Executables{
 		iptables: findExecutable(iptables),
 		save:     findExecutable(iptablesSave),
 		restore:  findExecutable(iptablesRestore),
@@ -120,7 +120,7 @@ var necessaryMatchExtensions = []string{
 	"udp",
 }
 
-func (e *executables) verify(ctx context.Context, cfg config.Config) (*executables, error) {
+func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executables, error) {
 	var missing []string
 
 	if e.save.path == "" {
@@ -150,7 +150,7 @@ func (e *executables) verify(ctx context.Context, cfg config.Config) (*executabl
 		}
 	}
 
-	if cfg.ShouldConntrackZoneSplit() {
+	if cfg.ShouldConntrackZoneSplit(e.iptables.path) {
 		if _, err := e.save.exec(ctx, "-t", "raw"); err != nil {
 			return nil, errors.Wrap(err, "couldn't verify if table: 'raw' is available")
 		}
@@ -159,7 +159,7 @@ func (e *executables) verify(ctx context.Context, cfg config.Config) (*executabl
 	return e, nil
 }
 
-func (e *executables) withFallback(fallback *executables) *executables {
+func (e *Executables) withFallback(fallback *Executables) *Executables {
 	if fallback != nil {
 		e.fallback = fallback
 	}
@@ -167,7 +167,11 @@ func (e *executables) withFallback(fallback *executables) *executables {
 	return e
 }
 
-func detectIptablesExecutables(ctx context.Context, cfg config.Config, ipv6 bool) (*executables, error) {
+func DetectIptablesExecutables(
+	ctx context.Context,
+	cfg config.Config,
+	ipv6 bool,
+) (*Executables, error) {
 	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)
 	legacy, legacyVerifyErr := newExecutables(ipv6, "legacy").verify(ctx, cfg)
 

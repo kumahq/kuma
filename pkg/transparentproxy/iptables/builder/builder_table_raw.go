@@ -10,10 +10,11 @@ import (
 func buildRawTable(
 	cfg config.Config,
 	dnsServers []string,
+	executables *Executables,
 ) *table.RawTable {
 	raw := table.Raw()
 
-	if cfg.ShouldConntrackZoneSplit() {
+	if cfg.ShouldConntrackZoneSplit(executables.iptables.path) {
 		raw.Output().
 			Append(
 				Protocol(Udp(DestinationPort(DNSPort))),

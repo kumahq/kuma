@@ -15,7 +15,12 @@ func Setup(ctx context.Context, cfg config.Config) (string, error) {
 		//  configuration when cfg.IPv6 is set
 		// TODO (bartsmykla): I think dns servers should be provided as a config
 		//  value instead of explicit function parameter here
-		output, err := builder.BuildIPTables(cfg, nil, cfg.IPv6)
+		executables, err := builder.DetectIptablesExecutables(ctx, cfg, cfg.IPv6)
+		if err != nil {
+			return "", err
+		}
+
+		output, err := builder.BuildIPTables(cfg, nil, cfg.IPv6, executables)
 		if err != nil {
 			return "", err
 		}

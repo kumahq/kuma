@@ -66,7 +66,12 @@ func (t *IPTables) Build(verbose bool) string {
 	return strings.Join(tables, separator) + "\n"
 }
 
-func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, error) {
+func BuildIPTables(
+	cfg config.Config,
+	dnsServers []string,
+	ipv6 bool,
+	executables *Executables,
+) (string, error) {
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	loopbackIface, err := getLoopback()
@@ -80,7 +85,7 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 	}
 
 	return newIPTables(
-		buildRawTable(cfg, dnsServers),
+		buildRawTable(cfg, dnsServers, executables),
 		natTable,
 		buildMangleTable(cfg),
 	).Build(cfg.Verbose), nil
@@ -122,7 +127,7 @@ type restorer struct {
 	cfg         config.Config
 	ipv6        bool
 	dnsServers  []string
-	executables *executables
+	executables *Executables
 }
 
 func newIPTablesRestorer(
@@ -131,7 +136,7 @@ func newIPTablesRestorer(
 	ipv6 bool,
 	dnsServers []string,
 ) (*restorer, error) {
-	executables, err := detectIptablesExecutables(ctx, cfg, ipv6)
+	executables, err := DetectIptablesExecutables(ctx, cfg, ipv6)
 	if err != nil {
 		return nil, fmt.Errorf("unable to detect iptables restore binaries: %s", err)
 	}
@@ -189,14 +194,14 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 
 func (r *restorer) tryRestoreIPTables(
 	ctx context.Context,
-	executables *executables,
+	executables *Executables,
 	rulesFile *os.File,
 ) (string, error) {
 	if executables.foundDockerOutputChain {
 		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6)
+	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables)
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
