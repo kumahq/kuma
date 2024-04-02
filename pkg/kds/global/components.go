@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -138,7 +140,7 @@ func Setup(rt runtime.Runtime) error {
 			return
 		}
 
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && !errors.Is(err, context.Canceled) {
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && status.Code(err) != codes.Canceled {
 			select {
 			case errChan <- err:
 			default:
@@ -172,7 +174,7 @@ func Setup(rt runtime.Runtime) error {
 		)
 		go func() {
 			err := sink.Receive()
-			if err != nil && !errors.Is(err, context.Canceled) {
+			if err != nil && status.Code(err) != codes.Canceled {
 				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {
 				case errChan <- err:
