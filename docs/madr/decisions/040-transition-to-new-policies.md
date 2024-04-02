@@ -54,19 +54,19 @@ it doesn't apply on the real proxies. Instead, by using Inspect API we can inspe
 
 ### Changes in the Inspect API
 
-Introduce a new non-physical endpoint `/_snapshot` that returns a config dump of a DPP without the actual `/config_dump` call to Envoy.
+Introduce a new non-physical endpoint `/_config` that returns a config dump of a DPP without the actual `/config_dump` call to Envoy.
 If we want to be able to compute diff on the client side we can't use `xds` endpoint as its response slightly diverges from what CP has in the SnapshotCache.
 
 Add a query parameter `shadow=true`:
 
-* `GET /meshes/{mesh}/dataplanes/{name}/_snapshot` -> `GET /meshes/{mesh}/dataplanes/{name}/_snapshot?shadow=true`
+* `GET /meshes/{mesh}/dataplanes/{name}/_config` -> `GET /meshes/{mesh}/dataplanes/{name}/_config?shadow=true`
 * `GET /meshes/{mesh}/dataplanes/{name}/_rules` -> `GET /meshes/{mesh}/dataplanes/{name}/_rules?shadow=true`
 
 when `shadow=true` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
 
-For visualization in GUI it would be nice to include the diff between the shadow snapshot and the current snapshot.
-When `include=diff` query parameter is set the response includes a JSONPatch that can be applied to the returned snapshot to get the current proxy snapshot.
-For `shadow=false&include=diff` the server should return an empty JSONPatch diff alongside the current snapshot.
+For visualization in GUI it would be nice to include the diff between the shadow XDS config and the current XDS config.
+When `include=diff` query parameter is set the response includes a JSONPatch that can be applied to the returned XDS config to get the current proxy XDS config.
+For `shadow=false&include=diff` the server should return an empty JSONPatch diff alongside the current XDS config.
 
 OpenAPI spec for new endpoints:
 
@@ -77,9 +77,9 @@ info:
   description: API for inspecting policies' effect on the Data Plane Proxy configurations
   version: 1.0.0
 paths:
-  /meshes/{mesh}/dataplanes/{name}/_snapshot:
+  /meshes/{mesh}/dataplanes/{name}/_config:
     get:
-      summary: Get a DPP snapshot on a CP
+      summary: Get a proxy XDS config on a CP
       description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
       parameters:
         - in: path
@@ -105,7 +105,7 @@ paths:
           name: include
           description: |
             An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
-            between the snapshot returned in 'xds' and the current proxy snapshot.
+            between the XDS config returned in 'xds' and the current proxy XDS config.
           schema:
             type: array
             items:
@@ -113,7 +113,7 @@ paths:
               enum: [diff]
       responses:
         '200':
-          description: Successfully retrieved snapshot.
+          description: Successfully retrieved proxy XDS config.
           content:
             application/json:
               schema:
@@ -126,7 +126,7 @@ paths:
                   diff:
                     description: |
                       When 'include=diff' query parameter is specified, the field contains a diff in JSONPatch format
-                      between the snapshot returned in 'xds' and the current proxy snapshot.
+                      between the XDS config returned in 'xds' and the current proxy XDS config.
                     type: array
                     items:
                       type: object
@@ -189,13 +189,13 @@ kumactl inspect dataplane dpp-1 --config-dump --shadow > with-shadow.json && jd 
 
 ### Implementation
 
-Implementation wise, shadow mode requires generating 2 snapshots: one with and without the new policy. 
-By comparing these snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
+Implementation wise, shadow mode requires generating 2 Snapshots: one with and without the new policy. 
+By comparing these Snapshots we can generate a list of jsonPatches that would be applied to the Envoy configuration. 
 
 Depending on how much time do we want to spend on the implementation, we can choose to implement shadow mode for Zone CP or Global CP.
 Global CP support is more time-consuming, but it can provide a better UX, i.e. showing potential changes for all affected DPPs (not only for a specific DPP).
 Implementing shadow mode for Global CP should be done by forwarding the request to Zone CPs. 
-Computing the snapshot right on Global CP requires gathering all DPPs from all zones which can be a performance bottleneck.
+Computing the Snapshot right on Global CP requires gathering all DPPs from all zones which can be a performance bottleneck.
 
 ## Rolling out the new policies
 
