@@ -35,23 +35,6 @@ func MergeClustersForPrometheus(in map[string]*io_prometheus_client.MetricFamily
 	return nil
 }
 
-func MergeClustersForOpenTelemetry(metricFamilies map[string]*io_prometheus_client.MetricFamily) error {
-	for _, metricFamily := range metricFamilies {
-		switch {
-		case isClusterMetricFamily(metricFamily):
-			if err := handleClusterMetric(metricFamily); err != nil {
-				return err
-			}
-		case isHttpMetricFamily(metricFamily):
-			if err := handleHttpMetricFamily(metricFamily); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func handleClusterMetric(metricFamily *io_prometheus_client.MetricFamily) error {
 	// metricsByClusterNames returns the data in the following format:
 	// 'cluster_name' ->
