@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+
 	"github.com/emicklei/go-restful/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -18,8 +19,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
@@ -146,7 +147,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &admin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
+	case errors.Is(err, &kds_envoyadmin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,

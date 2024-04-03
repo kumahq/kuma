@@ -1,4 +1,4 @@
-package admin_test
+package envoyadmin_test
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -47,7 +47,7 @@ var _ = Describe("KDS client", func() {
 		rpcs := service.NewEnvoyAdminRPCs()
 		resStore := memory.NewStore()
 		resManager := manager.NewResourceManager(resStore)
-		client := admin.NewKDSEnvoyAdminClient(rpcs, resManager)
+		client := envoyadmin.NewClient(rpcs, resManager)
 
 		zoneName := "zone-1"
 		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
@@ -76,7 +76,7 @@ var _ = Describe("KDS client", func() {
 			respCh := make(chan []byte)
 			go func() {
 				defer GinkgoRecover()
-				resp, err := client.ConfigDump(context.Background(), dpRes)
+				resp, err := client.ConfigDump(context.Background(), dpRes, false)
 				Expect(err).To(Succeed())
 				respCh <- resp
 			}()
@@ -119,7 +119,7 @@ var _ = Describe("KDS client", func() {
 			respCh := make(chan []byte)
 			go func() {
 				defer GinkgoRecover()
-				resp, err := client.ConfigDump(context.Background(), dpRes)
+				resp, err := client.ConfigDump(context.Background(), dpRes, false)
 				Expect(err).To(Succeed())
 				respCh <- resp
 			}()
@@ -150,7 +150,7 @@ var _ = Describe("KDS client", func() {
 			})
 
 			// when
-			_, err := client.ConfigDump(context.Background(), dpRes)
+			_, err := client.ConfigDump(context.Background(), dpRes, false)
 
 			// then
 			Expect(err).To(MatchError("could not send XDSConfigRequest: client not-connected is not connected"))
@@ -168,7 +168,7 @@ var _ = Describe("KDS client", func() {
 			defer cancel()
 
 			// when
-			_, err := client.ConfigDump(ctx, dpRes)
+			_, err := client.ConfigDump(ctx, dpRes, false)
 
 			// then
 			Expect(err).To(MatchError(context.DeadlineExceeded))
@@ -189,7 +189,7 @@ var _ = Describe("KDS client", func() {
 			errCh := make(chan error)
 			go func() {
 				defer GinkgoRecover()
-				_, err := client.ConfigDump(context.Background(), dpRes)
+				_, err := client.ConfigDump(context.Background(), dpRes, false)
 				errCh <- err
 			}()
 
@@ -215,7 +215,7 @@ var _ = Describe("KDS client", func() {
 		streams := service.NewEnvoyAdminRPCs()
 		resStore := memory.NewStore()
 		resManager := manager.NewResourceManager(resStore)
-		client := admin.NewKDSEnvoyAdminClient(streams, resManager)
+		client := envoyadmin.NewClient(streams, resManager)
 
 		zoneName := "zone-1"
 		tenantZoneID := service.TenantZoneClientIDFromCtx(context.Background(), zoneName)
@@ -244,7 +244,7 @@ var _ = Describe("KDS client", func() {
 			respCh := make(chan []byte)
 			go func() {
 				defer GinkgoRecover()
-				resp, err := client.ConfigDump(context.Background(), dpRes)
+				resp, err := client.ConfigDump(context.Background(), dpRes, false)
 				Expect(err).To(Succeed())
 				respCh <- resp
 			}()
@@ -288,7 +288,7 @@ var _ = Describe("KDS client", func() {
 			respCh := make(chan []byte)
 			go func() {
 				defer GinkgoRecover()
-				resp, err := client.ConfigDump(context.Background(), dpRes)
+				resp, err := client.ConfigDump(context.Background(), dpRes, false)
 				Expect(err).To(Succeed())
 				respCh <- resp
 			}()

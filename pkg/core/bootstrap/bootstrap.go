@@ -47,6 +47,7 @@ import (
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -140,7 +141,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
-		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
+		kdsEnvoyAdminClient := kds_envoyadmin.NewClient(
 			builder.KDSContext().EnvoyAdminRPCs,
 			builder.ReadOnlyResourceManager(),
 		)

@@ -22,10 +22,7 @@ func (r *ZoneIngressResource) UsesInboundInterface(address net.IP, port uint32) 
 }
 
 func (r *ZoneIngressResource) IsRemoteIngress(localZone string) bool {
-	if r.Spec.GetZone() == "" || r.Spec.GetZone() == localZone {
-		return false
-	}
-	return true
+	return r.Spec.GetZone() != "" && r.Spec.GetZone() != localZone
 }
 
 func (r *ZoneIngressResource) HasPublicAddress() bool {

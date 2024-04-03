@@ -1,10 +1,12 @@
-package admin
+package envoyadmin
 
 import (
 	"context"
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -24,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/util/grpc"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
@@ -38,7 +41,7 @@ type kdsEnvoyAdminClient struct {
 	tracer     trace.Tracer
 }
 
-func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceManager) EnvoyAdminClient {
+func NewClient(rpcs service.EnvoyAdminRPCs, resManager manager.ReadOnlyResourceManager) admin.EnvoyAdminClient {
 	tracer := otel.GetTracerProvider().Tracer(otelgrpc.ScopeName)
 	return &kdsEnvoyAdminClient{
 		rpcs:       rpcs,
@@ -47,7 +50,7 @@ func NewKDSEnvoyAdminClient(rpcs service.EnvoyAdminRPCs, resManager manager.Read
 	}
 }
 
-var _ EnvoyAdminClient = &kdsEnvoyAdminClient{}
+var _ admin.EnvoyAdminClient = &kdsEnvoyAdminClient{}
 
 func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
 	panic("not implemented")
@@ -133,7 +136,7 @@ func doRequest[T message]( // nolint:nonamedreturns
 	}
 }
 
-func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	requestType := "StatsRequest"
 	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
 		return &mesh_proto.StatsRequest{
@@ -141,6 +144,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 			ResourceType: typ,
 			ResourceName: name,
 			ResourceMesh: mesh,
+			Format:       format,
 		}
 	}
 	resp, err := doRequest[*mesh_proto.StatsResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Stats, mkMsg)
@@ -150,7 +154,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 	return resp.GetStats(), nil
 }
 
-func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
 	requestType := "XDSConfigRequest"
 	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
 		return &mesh_proto.XDSConfigRequest{
@@ -158,6 +162,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 			ResourceType: typ,
 			ResourceName: name,
 			ResourceMesh: mesh,
+			IncludeEds:   includeEds,
 		}
 	}
 	resp, err := doRequest[*mesh_proto.XDSConfigResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.XDSConfigDump, mkMsg)
@@ -167,7 +172,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 	return resp.GetConfig(), nil
 }
 
-func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	requestType := "ClustersRequest"
 	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
 		return &mesh_proto.ClustersRequest{
@@ -175,6 +180,7 @@ func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.Res
 			ResourceType: typ,
 			ResourceName: name,
 			ResourceMesh: mesh,
+			Format:       format,
 		}
 	}
 	resp, err := doRequest[*mesh_proto.ClustersResponse](ctx, k.tracer, k.resManager, proxy, requestType, k.rpcs.Clusters, mkMsg)

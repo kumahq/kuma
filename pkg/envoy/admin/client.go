@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -23,9 +24,9 @@ import (
 type EnvoyAdminClient interface {
 	PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error
 
-	Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
-	Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
-	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
+	Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error)
+	Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error)
+	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error)
 }
 
 type envoyAdminClient struct {
@@ -132,16 +133,28 @@ func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.Da
 	return nil
 }
 
-func (a *envoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	return a.executeRequest(ctx, proxy, "stats")
+func (a *envoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+	query := url.Values{}
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		query.Add("format", "json")
+	}
+	return a.executeRequest(ctx, proxy, "stats", query)
 }
 
-func (a *envoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	return a.executeRequest(ctx, proxy, "clusters")
+func (a *envoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
+	query := url.Values{}
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		query.Add("format", "json")
+	}
+	return a.executeRequest(ctx, proxy, "clusters", query)
 }
 
-func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	configDump, err := a.executeRequest(ctx, proxy, "config_dump")
+func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
+	query := url.Values{}
+	if includeEds {
+		query.Add("include_eds", "true")
+	}
+	configDump, err := a.executeRequest(ctx, proxy, "config_dump", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +167,7 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 	return value, nil
 }
 
-func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.ResourceWithAddress, path string) ([]byte, error) {
+func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.ResourceWithAddress, path string, query url.Values) ([]byte, error) {
 	var httpClient *http.Client
 	var err error
 	u := &url.URL{}
@@ -185,6 +198,7 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 
 	u.Host = proxy.AdminAddress(a.defaultAdminPort)
 	u.Path = path
+	u.RawQuery = query.Encode()
 	request, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err

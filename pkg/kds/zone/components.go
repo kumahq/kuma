@@ -177,9 +177,7 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),
-			rt.EnvoyAdminClient().ConfigDump,
-			rt.EnvoyAdminClient().Stats,
-			rt.EnvoyAdminClient().Clusters,
+			rt.EnvoyAdminClient(),
 		),
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))

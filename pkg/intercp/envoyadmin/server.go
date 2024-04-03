@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 )
 
 var serverLog = core.Log.WithName("intercp").WithName("catalog").WithName("server")
@@ -38,9 +39,9 @@ func (s *server) XDSConfig(ctx context.Context, req *mesh_proto.XDSConfigRequest
 	if err != nil {
 		return nil, err
 	}
-	configDump, err := s.adminClient.ConfigDump(ctx, resWithAddr)
+	configDump, err := s.adminClient.ConfigDump(ctx, resWithAddr, req.IncludeEds)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}) {
+		if errors.Is(err, &kds_envoyadmin.KDSTransportError{}) {
 			return &mesh_proto.XDSConfigResponse{
 				Result: &mesh_proto.XDSConfigResponse_Error{
 					Error: err.Error(),
@@ -63,9 +64,9 @@ func (s *server) Stats(ctx context.Context, req *mesh_proto.StatsRequest) (*mesh
 	if err != nil {
 		return nil, err
 	}
-	stats, err := s.adminClient.Stats(ctx, resWithAddr)
+	stats, err := s.adminClient.Stats(ctx, resWithAddr, req.Format)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}) {
+		if errors.Is(err, &kds_envoyadmin.KDSTransportError{}) {
 			return &mesh_proto.StatsResponse{
 				Result: &mesh_proto.StatsResponse_Error{
 					Error: err.Error(),
@@ -88,9 +89,9 @@ func (s *server) Clusters(ctx context.Context, req *mesh_proto.ClustersRequest) 
 	if err != nil {
 		return nil, err
 	}
-	clusters, err := s.adminClient.Clusters(ctx, resWithAddr)
+	clusters, err := s.adminClient.Clusters(ctx, resWithAddr, req.Format)
 	if err != nil {
-		if errors.Is(err, &admin.KDSTransportError{}) {
+		if errors.Is(err, &kds_envoyadmin.KDSTransportError{}) {
 			return &mesh_proto.ClustersResponse{
 				Result: &mesh_proto.ClustersResponse_Error{
 					Error: err.Error(),
