@@ -6,6 +6,30 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.8.x`
+
+### MeshMetric `sidecar.regex` is replaced by `sidecar.profiles.exclude`
+
+If you're using `sidecar.regex` field it is getting replaced by `sidecar.profiles.exclude`.
+Replace usages of:
+
+```yaml
+...
+  sidecar:
+    regex: "my_match.*"
+...
+```
+
+with:
+
+```yaml
+  sidecar:
+    profiles:
+      exclude:
+        - type: Regex
+          match: "my_match.*"
+```
+
 ## Upgrade to `2.7.x`
 
 ### Setting `kuma.io/service` in tags of `MeshGatewayInstance` is deprecated

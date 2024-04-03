@@ -252,7 +252,6 @@ spec:
         appendProfiles:
           - name: All
     sidecar:
-      regex: .*upstream.*
       includeUnused: false
     backends:
       - type: OpenTelemetry
