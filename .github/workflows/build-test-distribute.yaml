@@ -34,6 +34,9 @@ jobs:
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
       BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
+      REGISTRY: ${{ steps.metadata.outputs.registry }}
+      VERSION_NAME: ${{ steps.metadata.outputs.version }}
+      NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
@@ -73,6 +76,8 @@ jobs:
       - id: metadata
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+          echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
+          echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
   test:
     permissions:
       contents: read
@@ -94,6 +99,9 @@ jobs:
       IMAGE_ARTIFACT_NAME: "image_artifacts"
       BINARY_ARTIFACT_NAME: "binary_artifacts"
       IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      VERSION_NAME: ${{ needs.build_publish.outputs.VERSION_NAME }}
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
@@ -106,9 +114,11 @@ jobs:
       actions: read # For getting workflow run info to build provenance
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
-      binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
-      images: ${{ needs.check.outputs.IMAGES }}
-      image_digests: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
+      BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
     needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10

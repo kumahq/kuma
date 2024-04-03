@@ -2,18 +2,26 @@ name: Generate Provenance
 on:
   workflow_call:
     inputs:
-      binary_artifacts_hashes_as_file:
+      BINARY_ARTIFACTS_HASH_AS_FILE:
         required: true
         type: string
         description: file containing hash for all compressed binary artifacts
-      images:
+      IMAGES:
         required: true
         type: string
-        description: JSON string containing all images
-      image_digests:
+        description: JSON string containing all IMAGES
+      IMAGE_DIGESTS:
         required: true
         type: string
         description: JSON string containing all image digests
+      REGISTRY:
+        required: true
+        type: string
+        description: registry name
+      NOTARY_REPOSITORY:
+        required: true
+        type: string
+        description: notary repository
 permissions:
   contents: write
   id-token: write # needed for signing the images
@@ -24,7 +32,7 @@ jobs:
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
     with:
-      base64-subjects: ${{ inputs.binary_artifacts_hashes_as_file }}
+      base64-subjects: ${{ inputs.BINARY_ARTIFACTS_HASH_AS_FILE }}
       upload-assets: ${{ github.ref_type == 'tag' }}
       upload-tag-name: ${{ github.ref_name }}
       provenance-name: ${{ github.event.repository.name }}.intoto.jsonl
@@ -42,12 +50,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        IMAGE: ${{ fromJSON(inputs.images) }}
+        IMAGE: ${{ fromJSON(inputs.IMAGES) }}
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
     with:
       image: ${{ matrix.IMAGE }}
-      digest: ${{ fromJSON(inputs.image_digests)[matrix.IMAGE] }}
+      digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}
+      provenance-registry: ${{ inputs.REGISTRY }}/${{ inputs.NOTARY_REPOSITORY }}
       registry-username: ${{ vars.DOCKER_USERNAME }}
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
