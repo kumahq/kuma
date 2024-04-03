@@ -231,7 +231,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
-			Expect(cfg.Runtime.Kubernetes.SkipMeshOwnerReference).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.SkipMeshOwnerReference).To(BeTrue())
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
