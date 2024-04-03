@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -115,24 +114,21 @@ type ParentConditions map[gatewayapi.ParentReference][]kube_meta.Condition
 func generateMeshHTTPRouteName(route *gatewayapi.HTTPRoute, parentRef gatewayapi.ParentReference) string {
 	hash := fnv.New32()
 
-	parentRefElems := slices.DeleteFunc(
-		[]string{
-			// ref's port
-			strconv.Itoa(int(pointer.Deref(parentRef.Port))),
-			// ref's sectionName - gateway's litener name
-			string(pointer.Deref(parentRef.SectionName)),
-			// ref's name
-			string(parentRef.Name),
-			// ref's namespace if present else route's namespace
-			string(pointer.DerefOr(
-				parentRef.Namespace,
-				gatewayapi.Namespace(route.Namespace),
-			)),
-			string(pointer.Deref(parentRef.Kind)),
-			string(pointer.Deref(parentRef.Group)),
-		},
-		func(s string) bool { return s == "" || s == "0" },
-	)
+	parentRefElems := []string{
+		// ref's port
+		strconv.Itoa(int(pointer.Deref(parentRef.Port))),
+		// ref's sectionName - gateway's litener name
+		string(pointer.Deref(parentRef.SectionName)),
+		// ref's name
+		string(parentRef.Name),
+		// ref's namespace if present else route's namespace
+		string(pointer.DerefOr(
+			parentRef.Namespace,
+			gatewayapi.Namespace(route.Namespace),
+		)),
+		string(pointer.Deref(parentRef.Kind)),
+		string(pointer.Deref(parentRef.Group)),
+	}
 
 	_, _ = hash.Write([]byte(strings.Join(parentRefElems, "")))
 
