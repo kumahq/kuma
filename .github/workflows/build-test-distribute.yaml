@@ -35,7 +35,7 @@ jobs:
       IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
-        if: ${{ env.ALLOW_PUSH }} && ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        if: ${{ env.ALLOW_PUSH && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
