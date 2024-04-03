@@ -28,6 +28,7 @@ jobs:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
@@ -35,7 +36,7 @@ jobs:
       IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
-        if: ${{ fromJSON(env.ALLOW_PUSH) && github.event.pull_request.head.repo.full_name != github.repository }}
+        if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
