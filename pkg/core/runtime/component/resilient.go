@@ -29,6 +29,7 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 	r.log.Info("starting resilient component ...")
 	backoff := newBackoff()
 	for generationID := uint64(1); ; generationID++ {
+		lastStart := time.Now()
 		errCh := make(chan error, 1)
 		go func(errCh chan<- error) {
 			defer close(errCh)
@@ -42,28 +43,25 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 					}
 				}
 			}()
+
 			errCh <- r.component.Start(stop)
 		}(errCh)
-
-		receivedErr := false
-		for !receivedErr {
-			select {
-			case <-stop:
-				r.log.Info("done")
-				return nil
-			case err := <-errCh:
-				if err != nil {
-					r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
-				}
-				receivedErr = true
-			case <-time.After(backoffMaxTime):
-				// reset backoff so in a case of events
-				// 1) Component is unhealthy until max backoff is reached
-				// 2) Component is healthy for at least backoff max time
-				// 3) Component is unhealthy
-				// We start backoff from the beginning
-				backoff = newBackoff()
+		select {
+		case <-stop:
+			r.log.Info("done")
+			return nil
+		case err := <-errCh:
+			if err != nil {
+				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
 			}
+		}
+		if time.Since(lastStart) > backoffMaxTime {
+			// reset backoff so in a case of event with the following steps
+			// 1) Component is unhealthy until max backoff is reached
+			// 2) Component is healthy for at least backoff max time
+			// 3) Component is unhealthy
+			// We start backoff from the beginning
+			backoff = newBackoff()
 		}
 		dur, _ := backoff.Next()
 		<-time.After(dur)
