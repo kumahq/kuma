@@ -5,6 +5,8 @@ set -e
 command -v osv-scanner >/dev/null 2>&1 || { echo >&2 "osv-scanner not installed!"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo >&2 "jq not installed!"; exit 1; }
 
+SCRIPT_PATH="${BASH_SOURCE[0]:-$0}";
+SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
 
 for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
   name: $vulnerablePackage,
@@ -12,7 +14,7 @@ for dep in $(osv-scanner --lockfile=go.mod --json | jq -c '.results[].packages[]
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
   map(select(.fixed != null) | .fixed)] | map(select(length > 0)) } | select(.name != "github.com/kumahq/kuma")'); do
 
-  fixVersion=$(go run tools/ci/update-vulnerable-dependencies/main.go <<< "$dep")
+  fixVersion=$(go run "$SCRIPT_DIR"/main.go <<< "$dep")
 
   if [ "$fixVersion" != "null" ]; then
     package=$(jq -r .name <<< "$dep")
