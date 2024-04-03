@@ -24,16 +24,12 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
-<<<<<<< HEAD
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-=======
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ fromJSON(env.ALLOW_PUSH) && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
->>>>>>> 361ca951d (ci(check): fail CI wih `ci/force-publish` label on PRs from forks (#9801))
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
