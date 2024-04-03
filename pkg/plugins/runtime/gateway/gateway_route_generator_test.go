@@ -37,7 +37,7 @@ var _ = Describe("Gateway Route", func() {
 		GinkgoHelper()
 
 		serverCtx := xds_server.NewXdsContext()
-		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds", util_xds.NoopVersionExtractor)
 		if err != nil {
 			return nil, err
 		}

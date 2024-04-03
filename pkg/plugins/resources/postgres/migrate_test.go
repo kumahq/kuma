@@ -1,6 +1,8 @@
 package postgres_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -47,7 +49,7 @@ var _ = Describe("Migrate", func() {
 		_, err = postgres.MigrateDb(cfg)
 
 		// then
-		Expect(err).To(MatchError("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version 1701180642. Run newer version of Kuma"))
+		Expect(err).To(MatchError(fmt.Sprintf("DB is migrated to newer version than Kuma. DB migration version 9999999999. Kuma migration version %d. Run newer version of Kuma", dbVersion)))
 	})
 
 	It("should indicate if db is migrated", func() {

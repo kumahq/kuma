@@ -6,6 +6,7 @@ package v1alpha1
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -67,6 +68,14 @@ func (t *DoNothingResourceResource) SetSpec(spec model.ResourceSpec) error {
 		}
 		return nil
 	}
+}
+
+func (t *DoNothingResourceResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *DoNothingResourceResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (t *DoNothingResourceResource) Descriptor() model.ResourceTypeDescriptor {
@@ -139,4 +148,5 @@ var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:    false,
 	HasToTargetRef:      false,
 	HasFromTargetRef:    false,
+	HasStatus:           false,
 }

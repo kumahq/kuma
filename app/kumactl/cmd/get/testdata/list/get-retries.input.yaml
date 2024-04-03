@@ -1,0 +1,29 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: web-to-backend
+type: Retry
+conf:
+  http:
+    numRetries: 5
+destinations:
+  - match:
+      kuma.io/service: "*"
+sources:
+  - match:
+      kuma.io/service: "*"
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: backend-to-db
+type: Retry
+conf:
+  http:
+    numRetries: 5
+destinations:
+  - match:
+      kuma.io/service: "*"
+sources:
+  - match:
+      kuma.io/service: "*"

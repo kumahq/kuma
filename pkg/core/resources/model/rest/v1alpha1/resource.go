@@ -6,7 +6,8 @@ import (
 
 type Resource struct {
 	ResourceMeta
-	Spec core_model.ResourceSpec `json:"spec,omitempty"`
+	Spec   core_model.ResourceSpec   `json:"spec,omitempty"`
+	Status core_model.ResourceStatus `json:"status,omitempty"`
 }
 
 func (r *Resource) GetMeta() ResourceMeta {
@@ -21,4 +22,11 @@ func (r *Resource) GetSpec() core_model.ResourceSpec {
 		return nil
 	}
 	return r.Spec
+}
+
+func (r *Resource) GetStatus() core_model.ResourceStatus {
+	if r == nil {
+		return nil
+	}
+	return r.Status
 }

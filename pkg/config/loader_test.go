@@ -365,6 +365,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
+			Expect(cfg.Experimental.SkipPersistedVIPs).To(BeTrue())
+			Expect(cfg.Experimental.GenerateMeshServices).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -722,6 +724,8 @@ experimental:
     delayFullResync: true
   autoReachableServices: true
   sidecarContainers: true
+  generateMeshServices: true
+  skipPersistedVIPs: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -1005,6 +1009,8 @@ tracing:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
+				"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES":                                                 "true",
+				"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS":                                                    "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

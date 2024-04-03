@@ -7,6 +7,7 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 type (
@@ -152,10 +153,43 @@ var basicProfile = []selectorFunction{
 	// end of dashboards
 }
 
+var basicProfileLabels = []selectorFunction{
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: names.GetInternalClusterNamePrefix(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: names.GetAdsClusterName(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: names.GetAccessLogSinkClusterName(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: names.GetEnvoyAdminClusterName(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.ExactSelectorType,
+		Match: names.GetMetricsHijackerClusterName(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: names.GetOpenTelemetryClusterPrefix(),
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: names.GetTracingClusterPrefix(),
+	}),
+}
+
 func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
-	effectiveSelectors := []selectorFunction{alwaysSelect} // default is All
+	effectiveSelectors := basicProfile             // default is Basic
+	effectiveLabelsSelectors := basicProfileLabels // default is Basic
+	profile := v1alpha1.BasicProfileName
 	if sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.AppendProfiles != nil && len(*sidecar.Profiles.AppendProfiles) == 1 {
-		profile := (*sidecar.Profiles.AppendProfiles)[0].Name
+		profile = (*sidecar.Profiles.AppendProfiles)[0].Name
 		switch profile {
 		case v1alpha1.AllProfileName:
 			effectiveSelectors = []selectorFunction{alwaysSelect}
@@ -163,13 +197,13 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 			effectiveSelectors = []selectorFunction{neverSelect}
 		case v1alpha1.BasicProfileName:
 			effectiveSelectors = basicProfile
+			effectiveLabelsSelectors = basicProfileLabels
 		}
-		logger.Info("selected profile", "name", profile)
+		logger.V(1).Info("selected profile", "name", profile)
 	}
 
 	hasInclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Include != nil
 	hasExclude := sidecar != nil && sidecar.Profiles != nil && sidecar.Profiles.Exclude != nil
-	logger.Info("exclude/include", "exclude", hasExclude, "include", hasInclude)
 
 	return func(in map[string]*io_prometheus_client.MetricFamily) error {
 		for key, metricFamily := range in {
@@ -199,6 +233,31 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 				}
 			}
 
+			// filter out internal clusters
+			// only activate this on basic profile so there is no overhead on other profiles
+			if profile == v1alpha1.BasicProfileName {
+				var metrics []*io_prometheus_client.Metric
+				for _, m := range metricFamily.Metric {
+					includeMetric := true
+					for _, l := range m.Label {
+						if metricFromInternalCluster(l, effectiveLabelsSelectors) {
+							includeMetric = false
+							break
+						}
+					}
+					if includeMetric {
+						metrics = append(metrics, m)
+					}
+				}
+
+				// if after cleaning there is no metrics remove this metric family
+				if len(metrics) == 0 {
+					include = false
+				} else {
+					metricFamily.Metric = metrics
+				}
+			}
+
 			if !include {
 				delete(in, key)
 			}
@@ -206,6 +265,15 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 
 		return nil
 	}
+}
+
+func metricFromInternalCluster(l *io_prometheus_client.LabelPair, effectiveLabelsSelectors []selectorFunction) bool {
+	for _, selector := range effectiveLabelsSelectors {
+		if l.GetName() == EnvoyClusterLabelName && selector(l.GetValue()) {
+			return true
+		}
+	}
+	return false
 }
 
 func selectorToFilterFunction(selector v1alpha1.Selector) selectorFunction {

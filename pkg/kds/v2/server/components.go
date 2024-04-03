@@ -3,13 +3,16 @@ package server
 import (
 	"context"
 	"math/rand"
+	"strings"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -38,7 +41,7 @@ func New(
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile_v2.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), filter, mapper)
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta")
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds_delta", kdsVersionExtractor)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +155,18 @@ func newSyncTracker(
 			},
 		}, nil
 	}), nil
+}
+
+func kdsVersionExtractor(metadata *structpb.Struct) string {
+	version := system_proto.NewVersion()
+	if err := status.ReadVersion(metadata, version); err != nil {
+		return "unknown"
+	}
+	ver := version.GetKumaCp().GetVersion()
+	if strings.Contains(ver, "preview") {
+		return "preview" // avoid high cardinality metrics
+	}
+	return ver
 }
 
 func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
