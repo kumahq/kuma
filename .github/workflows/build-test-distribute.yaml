@@ -1,0 +1,122 @@
+name: "build-test-distribute"
+on:
+  push:
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
+  pull_request:
+    branches: ["master", "release-*"]
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
+permissions:
+  contents: write # To upload assets
+  id-token: write # For using token to sign images
+  actions: read # For getting workflow run info to build provenance
+  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+env:
+  KUMA_DIR: "."
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+jobs:
+  check:
+    permissions:
+      contents: read
+      # golangci-lint-action
+      checks: write
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      BUILD: ${{ env.BUILD }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
+    steps:
+      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
+        if: ${{ fromJSON(env.ALLOW_PUSH) && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
+          exit 1
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        with:
+          args: --fix=false --verbose
+          version: v1.56.1
+          skip-pkg-cache: true
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make clean
+      - run: |
+          make check
+      - id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        with:
+          dir: .
+          config: .syft.yaml
+      - id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+  test:
+    permissions:
+      contents: read
+    needs: ["check"]
+    uses: ./.github/workflows/_test.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+    secrets: inherit
+  build_publish:
+    permissions:
+      contents: read
+      id-token: write
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+    secrets: inherit
+  provenance:
+    needs: ["check", "build_publish"]
+    if: ${{ github.ref_type == 'tag' }}
+    uses: ./.github/workflows/_provenance.yaml
+    secrets: inherit
+    permissions:
+      contents: write
+      id-token: write # For using token to sign images
+      actions: read # For getting workflow run info to build provenance
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+    with:
+      binary_artifacts_hashes_as_file: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      images: ${{ needs.check.outputs.IMAGES }}
+      image_digests: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
+  distributions:
+    needs: ["build_publish", "check", "test", "provenance"]
+    timeout-minutes: 10
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Halt due to previous failures"
+        if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
+        run: |-
+          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
+          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
+          exit 1
