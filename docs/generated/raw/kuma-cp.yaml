@@ -401,6 +401,10 @@ runtime:
       # RenewDeadline is the duration that the acting controlplane will retry
       # refreshing leadership before giving up. Default is 10 seconds.
       renewDeadline: 10s # ENV: KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE
+    # SkipMeshOwnerReference is a flag that allows to skip adding Mesh owner reference to resources.
+    # If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
+    # This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
+    skipMeshOwnerReference: false # ENV: KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC

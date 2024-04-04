@@ -20,11 +20,12 @@ import (
 )
 
 type OwnerReferenceMutator struct {
-	Client       kube_client.Client
-	CoreRegistry core_registry.TypeRegistry
-	K8sRegistry  k8s_registry.TypeRegistry
-	Decoder      *admission.Decoder
-	Scheme       *kube_runtime.Scheme
+	Client                 kube_client.Client
+	CoreRegistry           core_registry.TypeRegistry
+	K8sRegistry            k8s_registry.TypeRegistry
+	Decoder                *admission.Decoder
+	Scheme                 *kube_runtime.Scheme
+	SkipMeshOwnerReference bool
 }
 
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -54,6 +55,9 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	default:
+		if m.SkipMeshOwnerReference {
+			return admission.Allowed("ignored. Configuration setup to ignore Mesh owner reference.")
+		}
 		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
 		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
