@@ -11,7 +11,6 @@ import (
 	"golang.org/x/exp/maps"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
@@ -49,7 +48,6 @@ func (r *reconciler) ForceVersion(node *envoy_core.Node, resourceType core_model
 	nodeID := r.hasher.ID(node)
 	r.forceVersionsLock.Lock()
 	r.forceVersions[nodeID] = append(r.forceVersions[nodeID], resourceType)
-	core.Log.Info("storing forced versions", "node", node.Id, "vers", r.forceVersions[nodeID])
 	r.forceVersionsLock.Unlock()
 }
 

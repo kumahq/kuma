@@ -85,7 +85,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 		r.nodes[streamID] = node
 	}
 	r.Unlock()
-	r.log.Info("received NACK will retry", "nodeID", node.Id, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "delay", r.backoff)
+	r.log.Info("received NACK, will retry", "nodeID", node.Id, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
 	time.Sleep(r.backoff)
 	r.forceFn(node, model.ResourceType(request.TypeUrl))
 	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
