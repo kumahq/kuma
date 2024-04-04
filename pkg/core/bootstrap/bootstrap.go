@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/core/access"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"

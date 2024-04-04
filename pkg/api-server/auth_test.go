@@ -10,12 +10,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/config/access"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/pkg/config/access"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test/matchers"

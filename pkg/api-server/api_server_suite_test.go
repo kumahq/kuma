@@ -16,9 +16,6 @@ import (
 	"testing"
 	"time"
 
-	config_access "github.com/kumahq/kuma/pkg/config/access"
-	"github.com/kumahq/kuma/pkg/core/access"
-
 	"github.com/emicklei/go-restful/v3"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

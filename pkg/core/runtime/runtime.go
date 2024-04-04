@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/access"
-
 	"github.com/emicklei/go-restful/v3"
 	"github.com/hashicorp/go-multierror"
 
