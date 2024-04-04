@@ -222,7 +222,7 @@ type DummyEnvoyAdminClient struct {
 func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.StatsCalled++
 	if format == v1alpha1.AdminOutputFormat_JSON {
-		return []byte(`{"server.live": 1}`), nil
+		return []byte("{\"server.live\": 1}\n"), nil
 	}
 	return []byte("server.live: 1\n"), nil
 }
@@ -230,7 +230,7 @@ func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Reso
 func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.ClustersCalled++
 	if format == v1alpha1.AdminOutputFormat_JSON {
-		return []byte(`{"kuma": "envoy:admin"}`), nil
+		return []byte("{\"kuma\": \"envoy:admin\"}\n"), nil
 	}
 	return []byte("kuma:envoy:admin\n"), nil
 }
