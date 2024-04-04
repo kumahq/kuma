@@ -16,15 +16,20 @@ import (
 	"testing"
 	"time"
 
+	config_access "github.com/kumahq/kuma/pkg/config/access"
+	"github.com/kumahq/kuma/pkg/core/access"
+
 	"github.com/emicklei/go-restful/v3"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	config_access "github.com/kumahq/kuma/pkg/config/access"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -33,7 +38,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
@@ -58,6 +63,7 @@ type testApiServerConfigurer struct {
 	zone                         string
 	global                       bool
 	disableOriginLabelValidation bool
+	accessConfigMutator          func(config *config_access.AccessConfig)
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
@@ -103,6 +109,11 @@ func (t *testApiServerConfigurer) WithMetrics(metricsFn func() core_metrics.Metr
 
 func (t *testApiServerConfigurer) WithConfigMutator(fn func(*config_api_server.ApiServerConfig)) *testApiServerConfigurer {
 	fn(t.config)
+	return t
+}
+
+func (t *testApiServerConfigurer) WithAccessConfigMutator(fn func(config *config_access.AccessConfig)) *testApiServerConfigurer {
+	t.accessConfigMutator = fn
 	return t
 }
 
@@ -154,6 +165,9 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	} else if t.global {
 		cfg.Mode = config_core.Global
 	}
+	if t.accessConfigMutator != nil {
+		t.accessConfigMutator(&cfg.Access)
+	}
 
 	cfg.Multizone.Zone.DisableOriginLabelValidation = t.disableOriginLabelValidation
 
@@ -181,11 +195,12 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		runtime.Access{
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
-			EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+			EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
 				cfg.Access.Static.ViewConfigDump,
 				cfg.Access.Static.ViewStats,
 				cfg.Access.Static.ViewClusters,
 			),
+			ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 		builtin.TokenIssuers{

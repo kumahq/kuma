@@ -164,7 +164,7 @@ func NewApiServer(
 		apiUrl = cfg.ApiServer.RootUrl
 	}
 
-	err := addConfigEndpoints(ws, cfg)
+	err := addConfigEndpoints(ws, access.ControlPlaneMetadataAccess, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}

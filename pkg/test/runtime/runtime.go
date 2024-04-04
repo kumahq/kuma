@@ -13,6 +13,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -31,7 +32,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
@@ -140,7 +141,12 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
-		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
+		EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
+			builder.Config().Access.Static.ViewConfigDump,
+			builder.Config().Access.Static.ViewStats,
+			builder.Config().Access.Static.ViewClusters,
+		),
+		ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(builder.Config().Access.Static.ControlPlaneMetadata),
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
 		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),

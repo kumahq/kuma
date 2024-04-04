@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/access"
+
 	"github.com/emicklei/go-restful/v3"
 	"github.com/hashicorp/go-multierror"
 
@@ -12,6 +14,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -25,7 +28,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp/client"
@@ -94,10 +97,11 @@ type RuntimeContext interface {
 }
 
 type Access struct {
-	ResourceAccess       resources_access.ResourceAccess
-	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
-	ZoneTokenAccess      zone_access.ZoneTokenAccess
-	EnvoyAdminAccess     access.EnvoyAdminAccess
+	ResourceAccess             resources_access.ResourceAccess
+	DataplaneTokenAccess       tokens_access.DataplaneTokenAccess
+	ZoneTokenAccess            zone_access.ZoneTokenAccess
+	EnvoyAdminAccess           envoyadmin_access.EnvoyAdminAccess
+	ControlPlaneMetadataAccess access.ControlPlaneMetadataAccess
 }
 
 type ResourceValidators struct {
