@@ -6,14 +6,11 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
@@ -32,28 +29,34 @@ import (
 // based on the xDS specification.
 //
 // The Solution:
-//
-// In case of NACK, we invalidate the version in VersionMap for all the resources of a specific
-// type to respond as soon as possible. Setting a different version of the snapshot is not possible
-// in this case because the delta server calculates the hash of the object and stores them in VersionMap.
-// The change of version in the map triggers update to be sent.
+// In case of NACK, we notify Reconciler to force set a new version for all resources of a NACK type
+// Because KDS do not send NACK for specific resource (it's always ResourceNamesSubscribe=*) we have to do this for all resources.
+// We cannot invalidate existing VersionMap of a Snapshot, because versions are also stored in StreamState.
+// The exchange looks like this:
+// 1) We send a resource with version="xyz". "xyz" is computed by Snapshot#ConstructVersionMap() and it's SHA of a resource.
+// 2) KDS client responds with NACK for "xyz"
+// 3) We send the same resource with version="" (set manually after ConstructVersionMap call)
+// 4) KDS client responds with NACK for ""
+// We loop those steps with a backoff until the client recovers. In this case we either see
+// 1) ACK for "xyz"
+// 2) ACK for "". In which case we will also send "xyz" and receive ACK for "xyz"
+// There is no easy way to force resource sending without changing its version.
+// We cannot simply invalidate existing snapshot because versions are also set in StreamState
 type kdsRetryForcer struct {
 	util_xds_v3.NoopCallbacks
-	hasher  envoy_cache.NodeHash
-	cache   envoy_cache.SnapshotCache
+	forceFn func(*envoy_core.Node, model.ResourceType)
 	log     logr.Logger
-	nodeIDs map[xds.StreamID]string
+	nodes   map[xds.StreamID]*envoy_core.Node
 	backoff time.Duration
 
 	sync.Mutex
 }
 
-func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash, backoff time.Duration) *kdsRetryForcer {
+func newKdsRetryForcer(log logr.Logger, forceFn func(*envoy_core.Node, model.ResourceType), backoff time.Duration) *kdsRetryForcer {
 	return &kdsRetryForcer{
-		cache:   cache,
-		hasher:  hasher,
+		forceFn: forceFn,
 		log:     log,
-		nodeIDs: map[xds.StreamID]string{},
+		nodes:   map[xds.StreamID]*envoy_core.Node{},
 		backoff: backoff,
 	}
 }
@@ -63,7 +66,7 @@ var _ envoy_xds.Callbacks = &kdsRetryForcer{}
 func (r *kdsRetryForcer) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
 	r.Lock()
 	defer r.Unlock()
-	delete(r.nodeIDs, streamID)
+	delete(r.nodes, streamID)
 }
 
 func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *envoy_sd.DeltaDiscoveryRequest) error {
@@ -76,26 +79,15 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	}
 
 	r.Lock()
-	nodeID := r.nodeIDs[streamID]
-	if nodeID == "" {
-		nodeID = r.hasher.ID(request.Node) // request.Node can be set only on first request therefore we need to save it
-		r.nodeIDs[streamID] = nodeID
+	node, ok := r.nodes[streamID]
+	if !ok {
+		node = request.Node
+		r.nodes[streamID] = node
 	}
 	r.Unlock()
-	r.log.Info("received NACK will retry", "nodeID", nodeID, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "delay", r.backoff)
+	r.log.Info("received NACK will retry", "nodeID", node.Id, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "delay", r.backoff)
 	time.Sleep(r.backoff)
-	snapshot, err := r.cache.GetSnapshot(nodeID)
-	if err != nil {
-		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot
-	}
-	cacheSnapshot, ok := snapshot.(*cache_v2.Snapshot)
-	if !ok {
-		return errors.New("couldn't convert snapshot from cache to envoy Snapshot")
-	}
-	for resourceName := range cacheSnapshot.VersionMap[model.ResourceType(request.TypeUrl)] {
-		cacheSnapshot.VersionMap[model.ResourceType(request.TypeUrl)][resourceName] = ""
-	}
-
-	r.log.V(1).Info("forced the new verion of resources", "nodeID", nodeID, "type", request.TypeUrl)
+	r.forceFn(node, model.ResourceType(request.TypeUrl))
+	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
 	return nil
 }
