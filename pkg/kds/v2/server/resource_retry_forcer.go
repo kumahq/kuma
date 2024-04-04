@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/events"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
@@ -48,16 +49,23 @@ type kdsRetryForcer struct {
 	log     logr.Logger
 	nodes   map[xds.StreamID]*envoy_core.Node
 	backoff time.Duration
+	emitter events.Emitter
 
 	sync.Mutex
 }
 
-func newKdsRetryForcer(log logr.Logger, forceFn func(*envoy_core.Node, model.ResourceType), backoff time.Duration) *kdsRetryForcer {
+func newKdsRetryForcer(
+	log logr.Logger,
+	forceFn func(*envoy_core.Node, model.ResourceType),
+	backoff time.Duration,
+	emitter events.Emitter,
+) *kdsRetryForcer {
 	return &kdsRetryForcer{
 		forceFn: forceFn,
 		log:     log,
 		nodes:   map[xds.StreamID]*envoy_core.Node{},
 		backoff: backoff,
+		emitter: emitter,
 	}
 }
 
@@ -88,6 +96,10 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	r.log.Info("received NACK, will retry", "nodeID", node.Id, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
 	time.Sleep(r.backoff)
 	r.forceFn(node, model.ResourceType(request.TypeUrl))
+	r.emitter.Send(events.TriggerKDSResyncEvent{
+		Type:   model.ResourceType(request.TypeUrl),
+		NodeID: node.Id,
+	})
 	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
 	return nil
 }

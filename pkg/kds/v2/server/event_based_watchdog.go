@@ -36,17 +36,14 @@ var _ util_watchdog.Watchdog = &EventBasedWatchdog{}
 func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 	tenantID, _ := multitenant.TenantFromCtx(e.Ctx)
 	listener := e.EventBus.Subscribe(func(event events.Event) bool {
-		resChange, ok := event.(events.ResourceChangedEvent)
-		if !ok {
-			return false
+		switch ev := event.(type) {
+		case events.ResourceChangedEvent:
+			_, ok := e.ProvidedTypes[ev.Type]
+			return ok && ev.TenantID == tenantID
+		case events.TriggerKDSResyncEvent:
+			return ev.NodeID == e.Node.Id
 		}
-		if resChange.TenantID != tenantID {
-			return false
-		}
-		if _, ok := e.ProvidedTypes[resChange.Type]; !ok {
-			return false
-		}
-		return true
+		return false
 	})
 	flushTicker := e.NewFlushTicker()
 	defer flushTicker.Stop()
@@ -95,10 +92,16 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			changedTypes = maps.Clone(e.ProvidedTypes)
 			reasons[ReasonResync] = struct{}{}
 		case event := <-listener.Recv():
-			resChange := event.(events.ResourceChangedEvent)
-			e.Log.V(1).Info("schedule sync for type", "typ", resChange.Type)
-			changedTypes[resChange.Type] = struct{}{}
-			reasons[ReasonEvent] = struct{}{}
+			switch ev := event.(type) {
+			case events.ResourceChangedEvent:
+				e.Log.V(1).Info("schedule sync for type", "typ", ev.Type, "event", "ResourceChanged")
+				changedTypes[ev.Type] = struct{}{}
+				reasons[ReasonEvent] = struct{}{}
+			case events.TriggerKDSResyncEvent:
+				e.Log.V(1).Info("schedule sync for type", "typ", ev.Type, "event", "TriggerKDSResync")
+				changedTypes[ev.Type] = struct{}{}
+				reasons[ReasonEvent] = struct{}{}
+			}
 		}
 	}
 }
