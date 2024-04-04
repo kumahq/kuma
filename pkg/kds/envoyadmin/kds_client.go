@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"

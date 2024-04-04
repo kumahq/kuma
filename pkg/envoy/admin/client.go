@@ -154,7 +154,7 @@ func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.Reso
 	if includeEds {
 		query.Add("include_eds", "true")
 	}
-	configDump, err := a.executeRequest(ctx, proxy, "config_dump", nil)
+	configDump, err := a.executeRequest(ctx, proxy, "config_dump", query)
 	if err != nil {
 		return nil, err
 	}

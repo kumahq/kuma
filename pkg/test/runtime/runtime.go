@@ -2,12 +2,10 @@ package runtime
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/pkg/errors"
 
@@ -223,11 +221,17 @@ type DummyEnvoyAdminClient struct {
 
 func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.StatsCalled++
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		return []byte(`{"server.live": 1}`), nil
+	}
 	return []byte("server.live: 1\n"), nil
 }
 
 func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.ClustersCalled++
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		return []byte(`{"kuma": "envoy:admin"}`), nil
+	}
 	return []byte("kuma:envoy:admin\n"), nil
 }
 
@@ -244,6 +248,12 @@ func (d *DummyEnvoyAdminClient) PostQuit(ctx context.Context, dataplane *core_me
 }
 
 func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
+	out := map[string]string{
+		"envoyAdminAddress": proxy.AdminAddress(9901),
+	}
 	d.ConfigDumpCalled++
-	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(9901))), nil
+	if includeEds {
+		out["eds"] = "eds"
+	}
+	return json.Marshal(out)
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-
 	"github.com/emicklei/go-restful/v3"
 	"go.opentelemetry.io/otel/trace"
 
@@ -29,7 +28,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
 	var kumaErr *types.Error
 	switch {
-	case store.IsResourceNotFound(err):
+	case store.IsResourceNotFound(err) || errors.Is(err, &NotFound{}):
 		kumaErr = &types.Error{
 			Status: 404,
 			Title:  title,
