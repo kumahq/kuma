@@ -723,7 +723,6 @@ access:
       users: [] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS
       # List of groups that are allowed to get control plane metadata
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
-
 # Configuration of experimental features of Kuma
 experimental:
   # If true, experimental Gateway API is enabled
