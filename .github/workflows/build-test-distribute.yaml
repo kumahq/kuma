@@ -101,7 +101,7 @@ jobs:
       IMAGES: ${{ needs.check.outputs.IMAGES }}
       REGISTRY: ${{ needs.check.outputs.REGISTRY }}
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
-      VERSION_NAME: ${{ needs.build_publish.outputs.VERSION_NAME }}
+      VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
