@@ -54,9 +54,8 @@ jobs:
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
     with:
-      image: ${{ matrix.IMAGE }}
+      image: ${{ inputs.REGISTRY }}/${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}
-      provenance-registry: ${{ inputs.REGISTRY }}/${{ inputs.NOTARY_REPOSITORY }}
       registry-username: ${{ vars.DOCKER_USERNAME }}
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
