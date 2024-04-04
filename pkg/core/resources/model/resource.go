@@ -84,11 +84,15 @@ func (kt KDSFlagType) Has(flag KDSFlagType) bool {
 
 type ResourceSpec interface{}
 
+type ResourceStatus interface{}
+
 type Resource interface {
 	GetMeta() ResourceMeta
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
+	GetStatus() ResourceStatus
+	SetStatus(ResourceStatus) error
 	Descriptor() ResourceTypeDescriptor
 }
 
@@ -172,6 +176,8 @@ type ResourceTypeDescriptor struct {
 	HasToTargetRef bool
 	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
 	HasFromTargetRef bool
+	// HasStatus indicates that the policy has a status field
+	HasStatus bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 	// Insight contains the insight type attached to this resourceType
@@ -191,6 +197,14 @@ func newObject(baseResource Resource) Resource {
 
 	if err := resource.SetSpec(newSpec); err != nil {
 		panic(errors.Wrap(err, "could not set spec on the new resource"))
+	}
+
+	if baseResource.Descriptor().HasStatus {
+		statusType := reflect.TypeOf(baseResource.GetStatus()).Elem()
+		newStatus := reflect.New(statusType).Interface().(ResourceSpec)
+		if err := resource.SetStatus(newStatus); err != nil {
+			panic(errors.Wrap(err, "could not set spec on the new resource"))
+		}
 	}
 
 	return resource

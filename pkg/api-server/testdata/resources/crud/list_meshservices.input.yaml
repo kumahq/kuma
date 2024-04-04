@@ -1,0 +1,33 @@
+#/meshes/default/meshservices 200
+type: Mesh
+name: default
+---
+type: MeshService
+name: redis-1
+mesh: default
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: tcp
+status:
+  vips:
+    - ip: 10.0.0.1
+---
+type: MeshService
+name: redis-2
+mesh: default
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: tcp
+status:
+  vips:
+    - ip: 10.0.0.2

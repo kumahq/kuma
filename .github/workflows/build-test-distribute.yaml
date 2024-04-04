@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: ["master", "release-*"]
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
 permissions:
   contents: write # To upload assets
   id-token: write # For using token to sign images
@@ -28,12 +28,18 @@ jobs:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
       BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
     steps:
+      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
+        if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
+        run: |
+          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
+          exit 1
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
@@ -91,7 +97,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: ${{ github.ref_type == 'tag' }}
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:

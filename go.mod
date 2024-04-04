@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma
 
-go 1.21.8
+go 1.21.9
 
 require (
 	cirello.io/pglock v1.14.2
@@ -9,7 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121
-	github.com/cilium/ebpf v0.13.2
+	github.com/cilium/ebpf v0.14.0
 	github.com/containernetworking/cni v1.1.2
 	github.com/containernetworking/plugins v1.4.1
 	github.com/emicklei/go-restful/v3 v3.12.0
@@ -66,7 +66,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
-	golang.org/x/net v0.22.0
+	golang.org/x/net v0.23.0
 	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	golang.org/x/time v0.5.0 // indirect

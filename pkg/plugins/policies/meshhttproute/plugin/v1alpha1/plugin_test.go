@@ -132,11 +132,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort: 8084,
 						Protocol:   core_mesh.ProtocolHTTP,
 					}},
-					Status: meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
-						}},
-					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
 				},
 			}
 			resources := xds_context.NewResources()

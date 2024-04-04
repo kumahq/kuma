@@ -47,6 +47,14 @@ func (t *GlobalSecretResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *GlobalSecretResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *GlobalSecretResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
 func (t *GlobalSecretResource) Validate() error {
 	return nil
 }

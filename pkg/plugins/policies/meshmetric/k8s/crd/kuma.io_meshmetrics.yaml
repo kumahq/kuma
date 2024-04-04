@@ -222,10 +222,6 @@ spec:
                               type: object
                             type: array
                         type: object
-                      regex:
-                        description: Regex that will be used to filter sidecar metrics.
-                          It uses Google RE2 engine https://github.com/google/re2
-                        type: string
                     type: object
                 type: object
               targetRef:

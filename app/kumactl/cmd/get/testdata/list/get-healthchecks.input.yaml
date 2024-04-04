@@ -1,0 +1,33 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: web-to-backend
+type: HealthCheck
+conf:
+  interval: 5s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1
+sources:
+  - match:
+      kuma.io/service: frontend
+destinations:
+  - match:
+      kuma.io/service: backend
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: backend-to-db
+type: HealthCheck
+sources:
+  - match:
+      kuma.io/service: frontend
+destinations:
+  - match:
+      kuma.io/service: backend
+conf:
+  interval: 5s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1

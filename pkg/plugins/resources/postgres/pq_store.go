@@ -64,15 +64,20 @@ func (r *postgresResourceStore) Create(_ context.Context, resource core_model.Re
 	}
 
 	version := 0
-	statement := `INSERT INTO resources (name, mesh, type, version, spec, creation_time, modification_time, owner_name, owner_mesh, owner_type, labels) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
+	statement := `INSERT INTO resources (name, mesh, type, version, spec, creation_time, modification_time, owner_name, owner_mesh, owner_type, labels, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`
 
 	labels, err := prepareLabels(opts.Labels)
 	if err != nil {
 		return err
 	}
 
+	status, err := prepareStatus(resource)
+	if err != nil {
+		return err
+	}
+
 	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
-		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType, labels)
+		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType, labels, status)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.Descriptor().Name, opts.Name, opts.Mesh)
@@ -110,13 +115,19 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		return err
 	}
 
-	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
+	status, err := prepareStatus(resource)
+	if err != nil {
+		return err
+	}
+
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4, status=$5 WHERE name=$6 AND mesh=$7 AND type=$8 AND version=$9;`
 	result, err := r.db.Exec(
 		statement,
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
 		labels,
+		status,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
@@ -159,14 +170,15 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource core_model.Re
 func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version, creation_time, modification_time, labels FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
+	statement := `SELECT spec, version, creation_time, modification_time, labels, status FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
 	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
 	var creationTime, modificationTime time.Time
 	var labels string
-	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels)
+	var status string
+	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels, &status)
 	if err == sql.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
@@ -176,6 +188,12 @@ func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resou
 
 	if err := core_model.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
 		return errors.Wrap(err, "failed to convert json to spec")
+	}
+
+	if resource.Descriptor().HasStatus {
+		if err := core_model.FromJSON([]byte(status), resource.GetStatus()); err != nil {
+			return errors.Wrap(err, "failed to convert json to status")
+		}
 	}
 
 	meta := &resourceMetaObject{
@@ -200,7 +218,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource core_model.Resou
 func (r *postgresResourceStore) List(_ context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels FROM resources WHERE type=$1`
+	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels, status FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
@@ -269,13 +287,20 @@ func pqRowToItem(resources core_model.ResourceList, rows *sql.Rows) (core_model.
 	var version int
 	var creationTime, modificationTime time.Time
 	var labels string
-	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime, &labels); err != nil {
+	var status string
+	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime, &labels, &status); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
 	item := resources.NewItem()
 	if err := core_model.FromJSON([]byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
+	}
+
+	if item.Descriptor().HasStatus {
+		if err := core_model.FromJSON([]byte(status), item.GetStatus()); err != nil {
+			return nil, errors.Wrap(err, "failed to convert json to status")
+		}
 	}
 
 	meta := &resourceMetaObject{

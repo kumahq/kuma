@@ -1,6 +1,7 @@
 package blackbox_network_tests_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -65,7 +66,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -147,7 +148,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -238,7 +239,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -323,7 +324,7 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -405,7 +406,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -484,7 +485,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -588,7 +589,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			results := udp.NewResultMap()
@@ -704,7 +705,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			results := udp.NewResultMap()
@@ -791,7 +792,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -867,7 +868,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -966,7 +967,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			results := udp.NewResultMap()
@@ -1081,7 +1082,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 
 			// when
 			Eventually(ns2.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and
@@ -1170,7 +1171,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 
 			// when
 			Eventually(ns2.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// and

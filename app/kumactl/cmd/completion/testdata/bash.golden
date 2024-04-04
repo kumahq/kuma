@@ -5410,106 +5410,6 @@ _kumactl_install_demo()
     noun_aliases=()
 }
 
-_kumactl_install_gateway_kong()
-{
-    last_command="kumactl_install_gateway_kong"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    local_nonpersistent_flags+=("--mesh")
-    local_nonpersistent_flags+=("--mesh=")
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_install_gateway_kong-enterprise()
-{
-    last_command="kumactl_install_gateway_kong-enterprise"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--license-path=")
-    two_word_flags+=("--license-path")
-    local_nonpersistent_flags+=("--license-path")
-    local_nonpersistent_flags+=("--license-path=")
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_flag+=("--license-path=")
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_install_gateway()
-{
-    last_command="kumactl_install_gateway"
-
-    command_aliases=()
-
-    commands=()
-    commands+=("kong")
-    commands+=("kong-enterprise")
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_install_observability()
 {
     last_command="kumactl_install_observability"
@@ -5646,10 +5546,6 @@ _kumactl_install_transparent-proxy()
     two_word_flags+=("--redirect-dns-port")
     local_nonpersistent_flags+=("--redirect-dns-port")
     local_nonpersistent_flags+=("--redirect-dns-port=")
-    flags+=("--redirect-dns-upstream-target-chain=")
-    two_word_flags+=("--redirect-dns-upstream-target-chain")
-    local_nonpersistent_flags+=("--redirect-dns-upstream-target-chain")
-    local_nonpersistent_flags+=("--redirect-dns-upstream-target-chain=")
     flags+=("--redirect-inbound")
     local_nonpersistent_flags+=("--redirect-inbound")
     flags+=("--redirect-inbound-port=")
@@ -5709,7 +5605,6 @@ _kumactl_install()
     commands+=("control-plane")
     commands+=("crds")
     commands+=("demo")
-    commands+=("gateway")
     commands+=("observability")
     commands+=("transparent-proxy")
 
