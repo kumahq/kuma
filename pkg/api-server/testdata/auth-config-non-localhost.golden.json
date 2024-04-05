@@ -2,6 +2,6 @@
  "type": "/std-errors",
  "status": 403,
  "title": "Access Denied",
- "detail": "user 'mesh-system:anonymous' cannot access control-plane metadata",
- "details": "user 'mesh-system:anonymous' cannot access control-plane metadata"
+ "detail": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access control-plane metadata",
+ "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access control-plane metadata"
 }

@@ -2,6 +2,6 @@
  "type": "/std-errors",
  "status": 403,
  "title": "Access Denied",
- "detail": "user 'mesh-system:anonymous' cannot access resource of type 'Secret'",
- "details": "user 'mesh-system:anonymous' cannot access resource of type 'Secret'"
+ "detail": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\"",
+ "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""
 }

@@ -55,5 +55,5 @@ func (r *adminResourceAccess) validateAdminAccess(_ context.Context, u user.User
 	if !descriptor.AdminOnly {
 		return nil
 	}
-	return access.Validate(r.usernames, r.groups, u, fmt.Sprintf("resource of type '%s'", descriptor.Name))
+	return access.Validate(r.usernames, r.groups, u, fmt.Sprintf("the resource of type %q", descriptor.Name))
 }

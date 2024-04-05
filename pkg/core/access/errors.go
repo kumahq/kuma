@@ -28,5 +28,5 @@ func Validate(usernames map[string]struct{}, groups map[string]struct{}, user us
 			return nil
 		}
 	}
-	return &AccessDeniedError{Reason: fmt.Sprintf("user '%s' cannot access %s", user.Name, action)}
+	return &AccessDeniedError{Reason: fmt.Sprintf("user %q cannot access %s", user, action)}
 }
