@@ -2,6 +2,7 @@ package access
 
 import (
 	"context"
+	"fmt"
 
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/access"
@@ -9,35 +10,26 @@ import (
 )
 
 type staticZoneTokenAccess struct {
-	usernames map[string]bool
-	groups    map[string]bool
+	usernames map[string]struct{}
+	groups    map[string]struct{}
 }
 
 var _ ZoneTokenAccess = &staticZoneTokenAccess{}
 
 func NewStaticZoneTokenAccess(cfg config_access.GenerateZoneTokenStaticAccessConfig) ZoneTokenAccess {
 	s := &staticZoneTokenAccess{
-		usernames: map[string]bool{},
-		groups:    map[string]bool{},
+		usernames: map[string]struct{}{},
+		groups:    map[string]struct{}{},
 	}
 	for _, user := range cfg.Users {
-		s.usernames[user] = true
+		s.usernames[user] = struct{}{}
 	}
 	for _, group := range cfg.Groups {
-		s.groups[group] = true
+		s.groups[group] = struct{}{}
 	}
 	return s
 }
 
 func (s *staticZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, zone string, user user.User) error {
-	allowed := s.usernames[user.Name]
-	for _, group := range user.Groups {
-		if s.groups[group] {
-			allowed = true
-		}
-	}
-	if !allowed {
-		return &access.AccessDeniedError{Reason: "action not allowed"}
-	}
-	return nil
+	return access.Validate(s.usernames, s.groups, user, fmt.Sprintf("generate zone token for zone '%s'", zone))
 }

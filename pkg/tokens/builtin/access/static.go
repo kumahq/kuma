@@ -9,43 +9,30 @@ import (
 )
 
 type staticGenerateDataplaneTokenAccess struct {
-	usernames map[string]bool
-	groups    map[string]bool
+	usernames map[string]struct{}
+	groups    map[string]struct{}
 }
 
 var _ DataplaneTokenAccess = &staticGenerateDataplaneTokenAccess{}
 
 func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStaticAccessConfig) DataplaneTokenAccess {
 	s := &staticGenerateDataplaneTokenAccess{
-		usernames: map[string]bool{},
-		groups:    map[string]bool{},
+		usernames: make(map[string]struct{}, len(cfg.Users)),
+		groups:    make(map[string]struct{}, len(cfg.Groups)),
 	}
-	for _, user := range cfg.Users {
-		s.usernames[user] = true
+	for _, u := range cfg.Users {
+		s.usernames[u] = struct{}{}
 	}
 	for _, group := range cfg.Groups {
-		s.groups[group] = true
+		s.groups[group] = struct{}{}
 	}
 	return s
 }
 
 func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error {
-	return s.validateAccess(user)
+	return access.Validate(s.usernames, s.groups, user, "generate dataplane token")
 }
 
 func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(ctx context.Context, zone string, user user.User) error {
-	return s.validateAccess(user)
-}
-
-func (s *staticGenerateDataplaneTokenAccess) validateAccess(user user.User) error {
-	allowed := s.usernames[user.Name]
-	for _, group := range user.Groups {
-		if s.groups[group] {
-			allowed = true
-		}
-	}
-	if !allowed {
-		return &access.AccessDeniedError{Reason: "action not allowed"}
-	}
-	return nil
+	return access.Validate(s.usernames, s.groups, user, "generate zone ingress token")
 }
