@@ -170,14 +170,14 @@ func kdsVersionExtractor(metadata *structpb.Struct) string {
 }
 
 func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
-	hasher := hasher{}
+	hasher := Hasher{}
 	logger := util_xds.NewLogger(log)
 	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
-type hasher struct{}
+type Hasher struct{}
 
-func (_ hasher) ID(node *envoy_core.Node) string {
+func (_ Hasher) ID(node *envoy_core.Node) string {
 	tenantID, found := util.TenantFromMetadata(node)
 	if !found {
 		return node.Id
