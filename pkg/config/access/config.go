@@ -40,6 +40,10 @@ func DefaultAccessConfig() AccessConfig {
 				Users:  []string{},
 				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
 			},
+			ControlPlaneMetadata: ControlPlaneMetadataStaticAccessConfig{
+				Users:  []string{},
+				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
+			},
 		},
 	}
 }
@@ -79,6 +83,8 @@ type StaticAccessConfig struct {
 	ViewStats ViewStatsStaticAccessConfig `json:"viewStats"`
 	// ViewClusters defines an access to getting envoy clusters
 	ViewClusters ViewClustersStaticAccessConfig `json:"viewClusters"`
+	// ControlPlaneMetadata defines an access for control-plane metadata (for example config)
+	ControlPlaneMetadata ControlPlaneMetadataStaticAccessConfig `json:"controlPlaneMetadata"`
 }
 
 type AdminResourcesStaticAccessConfig struct {
@@ -128,4 +134,11 @@ type ViewClustersStaticAccessConfig struct {
 	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS"`
 	// List of groups that are allowed to get envoy config clusters
 	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS"`
+}
+
+type ControlPlaneMetadataStaticAccessConfig struct {
+	// List of users that are allowed to access control-plane metadata
+	Users []string `json:"users" envconfig:"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS"`
+	// List of groups that are allowed to access control-plane metadata
+	Groups []string `json:"groups" envconfig:"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS"`
 }
