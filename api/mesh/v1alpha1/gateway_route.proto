@@ -4,18 +4,11 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
-import "kuma-doc/config.proto";
 import "google/protobuf/wrappers.proto";
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
 import "api/mesh/v1alpha1/http_method.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "MeshGatewayRoute",
-  file_name : "meshgatewayroute"
-};
 
 message MeshGatewayRoute {
 
@@ -34,12 +27,11 @@ message MeshGatewayRoute {
     //
     // A weight of 0 means that the destination will be ignored.
     uint32 weight = 1
-        [ (validate.rules).message = {required : true}, (doc.required) = true ];
+        [ (validate.rules).message = {required : true} ];
 
     // Destination is a selector to match the individual endpoints to
     // which the gateway will forward.
     map<string, string> destination = 2 [
-      (doc.required) = true,
       (validate.rules).map = {
         min_pairs : 1,
         keys : {string : {min_len : 1}},
@@ -54,11 +46,11 @@ message MeshGatewayRoute {
       // repeated Match matches = 1;
 
       repeated Backend backends = 2
-          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+          [ (validate.rules).repeated .min_items = 1 ];
     };
 
     repeated Rule rules = 1
-        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+        [ (validate.rules).repeated .min_items = 1 ];
   };
 
   // HTTP routes are valid for listeners that accept HTTP/1.1 and HTTP/2 over
@@ -87,7 +79,6 @@ message MeshGatewayRoute {
         // the entire path or is followed by a /. I.e. a prefix of the
         // path in terms of path elements.
         string value = 2 [
-          (doc.required) = true,
           (validate.rules).message = {required : true},
           (validate.rules).string.min_len = 1
         ];
@@ -108,13 +99,11 @@ message MeshGatewayRoute {
 
         // Name of the HTTP header containing the value to match.
         string name = 2 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
 
         // Value that the HTTP header value should be matched against.
         string value = 3 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
       };
@@ -130,13 +119,11 @@ message MeshGatewayRoute {
 
         // Name of the query parameter containing the value to match.
         string name = 2 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
 
         // Value that the query parameter value should be matched against.
         string value = 3 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
       };
@@ -151,11 +138,9 @@ message MeshGatewayRoute {
       message HeaderFilter {
         message Header {
           string name = 1 [
-            (doc.required) = true,
             (validate.rules).message = {required : true}
           ];
           string value = 2 [
-            (doc.required) = true,
             (validate.rules).message = {required : true}
           ];
         }
@@ -171,14 +156,13 @@ message MeshGatewayRoute {
         // Backend denotes the service to which requests will be mirrored. The
         // "weight" field must not be given.
         Backend backend = 1 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
 
         // Percentage specifies the percentage of requests to mirror to
         // the backend (in the range 0.0 - 100.0, inclusive).
         google.protobuf.DoubleValue percentage = 2
-            [ (doc.required) = true, (validate.rules).double.lte = 100.0 ];
+            [ (validate.rules).double.lte = 100.0 ];
       };
 
       message Rewrite {
@@ -204,13 +188,11 @@ message MeshGatewayRoute {
       message Redirect {
         // The scheme for the redirect URL. Usually "http" or "https".
         string scheme = 1 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
 
         // The hostname to redirect to.
         string hostname = 2 [
-          (doc.required) = true,
           (validate.rules).message = {required : true}
         ];
 
@@ -219,7 +201,6 @@ message MeshGatewayRoute {
 
         // The HTTP response status code. This must be in the range 300 - 308.
         uint32 status_code = 4 [
-          (doc.required) = true,
           (validate.rules).message = {required : true},
           (validate.rules).uint32.gte = 300,
           (validate.rules).uint32.lte = 308
@@ -241,7 +222,7 @@ message MeshGatewayRoute {
       // Matches are checked in order. If any match is successful, the
       // rule is selected (OR semantics).
       repeated Match matches = 1
-          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+          [ (validate.rules).repeated .min_items = 1 ];
 
       // Filters are request processing steps that are applied to
       // matched requests.
@@ -254,7 +235,7 @@ message MeshGatewayRoute {
       // forward requests. If a redirect filter is specified, no
       // backends are allowed. Otherwise, at least one backend
       // must be given.
-      repeated Backend backends = 3 [ (doc.required) = false ];
+      repeated Backend backends = 3;
     };
 
     // Hostnames lists the server names for which this route is valid. The
@@ -265,7 +246,7 @@ message MeshGatewayRoute {
 
     // Rules specifies how the gateway should match and process HTTP requests.
     repeated Rule rules = 2
-        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+        [ (validate.rules).repeated .min_items = 1 ];
   };
 
   message Conf {
@@ -284,9 +265,9 @@ message MeshGatewayRoute {
 
   // Selectors is used to match this resource to MeshGateway listener.
   repeated Selector selectors = 1
-      [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   // Conf specifies the route configuration.
   Conf conf = 2
-      [ (doc.required) = true, (validate.rules).message.required = true ];
+      [ (validate.rules).message.required = true ];
 }

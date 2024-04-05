@@ -8,13 +8,6 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "CircuitBreaker",
-  file_name : "circuit-breaker"
-};
 
 // CircuitBreaker defines circuit breaking policy for dataplane's outbound
 message CircuitBreaker {
@@ -27,10 +20,10 @@ message CircuitBreaker {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1 [ (doc.required) = true ];
+  repeated Selector sources = 1;
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2 [ (doc.required) = true ];
+  repeated Selector destinations = 2;
 
   message Conf {
     // Time interval between ejection analysis sweeps
@@ -103,5 +96,5 @@ message CircuitBreaker {
     Thresholds thresholds = 6;
   }
 
-  Conf conf = 3 [ (doc.required) = true ];
+  Conf conf = 3;
 }

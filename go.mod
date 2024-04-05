@@ -32,7 +32,6 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
-	github.com/kumahq/protoc-gen-kumadoc v0.3.1
 	github.com/lib/pq v1.10.9
 	github.com/miekg/dns v1.1.58
 	github.com/moby/sys/mountinfo v0.7.1
