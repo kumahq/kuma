@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -20,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
@@ -78,9 +79,10 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,
 		runtime.Access{
-			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-			DataplaneTokenAccess: nil,
-			EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
+			ResourceAccess:             resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+			DataplaneTokenAccess:       nil,
+			EnvoyAdminAccess:           envoyadmin_access.NewStaticEnvoyAdminAccess(cfg.Access.Static.ViewConfigDump, cfg.Access.Static.ViewStats, cfg.Access.Static.ViewClusters),
+			ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 		builtin.TokenIssuers{

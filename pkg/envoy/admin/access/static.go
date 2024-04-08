@@ -15,8 +15,12 @@ type staticEnvoyAdminAccess struct {
 }
 
 type accessMaps struct {
-	usernames map[string]bool
-	groups    map[string]bool
+	usernames map[string]struct{}
+	groups    map[string]struct{}
+}
+
+func (am accessMaps) Validate(user user.User) error {
+	return access.Validate(am.usernames, am.groups, user, "envoy proxy info")
 }
 
 var _ EnvoyAdminAccess = &staticEnvoyAdminAccess{}
@@ -35,39 +39,26 @@ func NewStaticEnvoyAdminAccess(
 
 func mapAccess(users []string, groups []string) accessMaps {
 	m := accessMaps{
-		usernames: map[string]bool{},
-		groups:    map[string]bool{},
+		usernames: make(map[string]struct{}, len(users)),
+		groups:    make(map[string]struct{}, len(groups)),
 	}
 	for _, usr := range users {
-		m.usernames[usr] = true
+		m.usernames[usr] = struct{}{}
 	}
 	for _, group := range groups {
-		m.groups[group] = true
+		m.groups[group] = struct{}{}
 	}
 	return m
 }
 
 func (s *staticEnvoyAdminAccess) ValidateViewConfigDump(ctx context.Context, user user.User) error {
-	return validateAccess(s.configDump, user)
+	return s.configDump.Validate(user)
 }
 
 func (s *staticEnvoyAdminAccess) ValidateViewStats(ctx context.Context, user user.User) error {
-	return validateAccess(s.stats, user)
+	return s.stats.Validate(user)
 }
 
 func (s *staticEnvoyAdminAccess) ValidateViewClusters(ctx context.Context, user user.User) error {
-	return validateAccess(s.clusters, user)
-}
-
-func validateAccess(maps accessMaps, user user.User) error {
-	allowed := maps.usernames[user.Name]
-	for _, group := range user.Groups {
-		if maps.groups[group] {
-			allowed = true
-		}
-	}
-	if !allowed {
-		return &access.AccessDeniedError{Reason: "action not allowed"}
-	}
-	return nil
+	return s.clusters.Validate(user)
 }

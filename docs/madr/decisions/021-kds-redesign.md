@@ -65,7 +65,7 @@ service GlobalKDSService {
 
 ```
 
-New RPCs are going to come with the new xDS implementation called [`Incremental xDS`](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). We don't want to create a breaking changes in the new api that's why we are going to use delta xDS since the begining.
+New RPCs are going to come with the new xDS implementation called [`Incremental xDS`](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). We don't want to create a breaking changes in the new api that's why we are going to use delta xDS since the beginning.
 
 ### Prioritize operational informations
 
