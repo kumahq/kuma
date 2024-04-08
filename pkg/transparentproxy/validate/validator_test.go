@@ -55,7 +55,7 @@ var _ = Describe("Should Validate iptables rules", func() {
 	It("should return fail when no iptables rules setup", func() {
 		// given
 		validator := createValidator(false)
-		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection 
+		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection
 
 		// when
 		err := validator.Run()
