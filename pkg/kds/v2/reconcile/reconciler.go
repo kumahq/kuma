@@ -119,9 +119,9 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_model.ResourceType {
 	var changed []core_model.ResourceType
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		if old == nil || !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ)) {
+		if (old == nil && len(new.GetVersionMap(typ)) > 0) ||
+			(old != nil && !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ))) {
 			changed = append(changed, core_model.ResourceType(typ))
-			break
 		}
 	}
 	return changed
