@@ -92,10 +92,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require (
-	github.com/josephburnett/jd v1.8.1
-	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
-)
+require github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
