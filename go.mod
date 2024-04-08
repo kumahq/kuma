@@ -93,6 +93,11 @@ require (
 )
 
 require (
+	github.com/josephburnett/jd v1.8.1
+	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
+)
+
+require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect

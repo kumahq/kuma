@@ -9,6 +9,11 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
+// Defines values for GetMeshesMeshDataplanesNameConfigParamsInclude.
+const (
+	Diff GetMeshesMeshDataplanesNameConfigParamsInclude = "diff"
+)
+
 // Defines values for InspectDataplanesRulesParamsResourceType.
 const (
 	Dataplanes   InspectDataplanesRulesParamsResourceType = "dataplanes"
@@ -60,6 +65,16 @@ type GlobalInsight struct {
 
 	// Zones Zones statistics
 	Zones ZonesStats `json:"zones"`
+}
+
+// InspectDataplanesConfig defines model for InspectDataplanesConfig.
+type InspectDataplanesConfig struct {
+	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
+	// By default, the field is empty. To include the diff in the response, use the `include=diff` query parameter.
+	Diff *[]externalRef0.JsonPatchItem `json:"diff,omitempty"`
+
+	// Xds The raw XDS config as an inline JSON object
+	Xds map[string]interface{} `json:"xds"`
 }
 
 // InspectDataplanesForPolicy A list of proxies
@@ -128,6 +143,9 @@ type BadRequest = externalRef0.Error
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsight
 
+// InspectDataplanesConfigResponse defines model for InspectDataplanesConfigResponse.
+type InspectDataplanesConfigResponse = InspectDataplanesConfig
+
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
 
@@ -139,6 +157,19 @@ type InternalServerError = externalRef0.Error
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
+
+// GetMeshesMeshDataplanesNameConfigParams defines parameters for GetMeshesMeshDataplanesNameConfig.
+type GetMeshesMeshDataplanesNameConfigParams struct {
+	// Shadow When computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label
+	Shadow *bool `form:"shadow,omitempty" json:"shadow,omitempty"`
+
+	// Include An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
+	// between the XDS config returned in 'xds' and the current proxy XDS config.
+	Include *[]GetMeshesMeshDataplanesNameConfigParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+}
+
+// GetMeshesMeshDataplanesNameConfigParamsInclude defines parameters for GetMeshesMeshDataplanesNameConfig.
+type GetMeshesMeshDataplanesNameConfigParamsInclude string
 
 // InspectResourcesParams defines parameters for InspectResources.
 type InspectResourcesParams struct {

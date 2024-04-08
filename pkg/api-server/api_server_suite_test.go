@@ -194,6 +194,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		},
 		func(*restful.WebService) error { return nil },
 		globalinsight.NewDefaultGlobalInsightService(t.store),
+		nil,
 	)
 	if err != nil {
 		return nil, cfg, stop, err
