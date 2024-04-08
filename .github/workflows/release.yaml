@@ -1,4 +1,6 @@
 name: "release"
+run-name: Release${{ inputs.check && ' and check' || '' }} ${{ inputs.release }}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
