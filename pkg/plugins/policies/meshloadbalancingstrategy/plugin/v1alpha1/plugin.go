@@ -187,12 +187,6 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		meshConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshSubset())
-
-		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
-			return err
-		}
-
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
 			for _, hostInfo := range listenerHostnames.HostInfos {
 				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
@@ -211,6 +205,10 @@ func (p plugin) configureGateway(
 					if localityConf == nil {
 						continue
 					}
+					if err := p.configureListener(listener, gatewayRoutes, localityConf); err != nil {
+						return err
+					}
+
 					if err := p.configureCluster(cluster, *localityConf); err != nil {
 						return err
 					}
