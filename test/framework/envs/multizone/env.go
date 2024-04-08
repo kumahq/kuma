@@ -55,7 +55,10 @@ type State struct {
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
-	globalOptions := append([]framework.KumaDeploymentOption{},
+	globalOptions := append(
+		[]framework.KumaDeploymentOption{
+			WithEnv("KUMA_XDS_SERVER_NACK_BACKOFF", "1s"),
+		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
@@ -65,6 +68,7 @@ func SetupAndGetState() []byte {
 	kubeZone1Options := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+			WithEnv("KUMA_XDS_SERVER_NACK_BACKOFF", "1s"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
@@ -90,6 +94,7 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
+			WithEnv("KUMA_XDS_SERVER_NACK_BACKOFF", "1s"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
@@ -112,7 +117,8 @@ func SetupAndGetState() []byte {
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
-			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			WithEnv("KUMA_XDS_SERVER_NACK_BACKOFF", "1s"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...,
 	)
@@ -134,7 +140,8 @@ func SetupAndGetState() []byte {
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
-			framework.WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			WithEnv("KUMA_XDS_SERVER_NACK_BACKOFF", "1s"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)
