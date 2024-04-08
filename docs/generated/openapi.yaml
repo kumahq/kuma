@@ -175,8 +175,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshAccessLog entity
       tags:
@@ -260,8 +278,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshCircuitBreaker entity
       tags:
@@ -345,8 +381,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshFaultInjection entity
       tags:
@@ -430,8 +484,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshHealthCheck entity
       tags:
@@ -515,8 +587,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshHTTPRoute entity
       tags:
@@ -600,8 +690,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshLoadBalancingStrategy entity
       tags:
@@ -685,8 +793,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshMetric entity
       tags:
@@ -770,8 +896,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshProxyPatch entity
       tags:
@@ -855,8 +999,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshRateLimit entity
       tags:
@@ -940,8 +1102,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshRetry entity
       tags:
@@ -1025,8 +1205,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshTCPRoute entity
       tags:
@@ -1110,8 +1308,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshTimeout entity
       tags:
@@ -1195,8 +1411,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshTrace entity
       tags:
@@ -1280,8 +1514,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
     delete:
       summary: Deletes MeshTrafficPermission entity
       tags:
@@ -8679,6 +8931,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshAccessLogCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshCircuitBreakerItem:
       description: Successful response
       content:
@@ -8702,6 +8971,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshCircuitBreakerCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshFaultInjectionItem:
       description: Successful response
       content:
@@ -8725,6 +9011,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshFaultInjectionCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshHealthCheckItem:
       description: Successful response
       content:
@@ -8748,6 +9051,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshHealthCheckCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshHTTPRouteItem:
       description: Successful response
       content:
@@ -8771,6 +9091,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshHTTPRouteCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshLoadBalancingStrategyItem:
       description: Successful response
       content:
@@ -8794,6 +9131,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshLoadBalancingStrategyCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshMetricItem:
       description: Successful response
       content:
@@ -8817,6 +9171,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshMetricCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshProxyPatchItem:
       description: Successful response
       content:
@@ -8840,6 +9211,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshProxyPatchCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshRateLimitItem:
       description: Successful response
       content:
@@ -8863,6 +9251,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRateLimitCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshRetryItem:
       description: Successful response
       content:
@@ -8886,6 +9291,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRetryCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshTCPRouteItem:
       description: Successful response
       content:
@@ -8909,6 +9331,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTCPRouteCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshTimeoutItem:
       description: Successful response
       content:
@@ -8932,6 +9371,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTimeoutCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshTraceItem:
       description: Successful response
       content:
@@ -8955,6 +9411,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTraceCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
     MeshTrafficPermissionItem:
       description: Successful response
       content:
@@ -8978,6 +9451,23 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTrafficPermissionCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
   examples:
     GlobalInsightExample:
       value:

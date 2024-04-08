@@ -53,8 +53,26 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    items:
+                      type: string
 
     delete:
       summary: Deletes MeshRateLimit entity
@@ -120,3 +138,17 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshRateLimitCreateOrUpdateResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
