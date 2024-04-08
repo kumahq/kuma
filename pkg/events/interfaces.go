@@ -23,6 +23,18 @@ type ResourceChangedEvent struct {
 	TenantID  string
 }
 
+<<<<<<< HEAD
+=======
+type TriggerInsightsComputationEvent struct {
+	TenantID string
+}
+
+type TriggerKDSResyncEvent struct {
+	Type   model.ResourceType
+	NodeID string
+}
+
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
