@@ -21,6 +21,9 @@ type staticReconciler struct {
 	changedResTypes chan map[core_model.ResourceType]struct{}
 }
 
+func (s staticReconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
+}
+
 func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, m map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
 	s.changedResTypes <- m
 	return nil, true
@@ -60,8 +63,10 @@ var _ = Describe("Event Based Watchdog", func() {
 			changedResTypes: make(chan map[core_model.ResourceType]struct{}, 1),
 		}
 		watchdog = &EventBasedWatchdog{
-			Ctx:        context.Background(),
-			Node:       nil,
+			Ctx: context.Background(),
+			Node: &envoy_core.Node{
+				Id: "1",
+			},
 			EventBus:   eventBus,
 			Reconciler: reconciler,
 			ProvidedTypes: map[core_model.ResourceType]struct{}{
@@ -106,8 +111,9 @@ var _ = Describe("Event Based Watchdog", func() {
 		eventBus.Send(events.ResourceChangedEvent{
 			Type: mesh.TrafficPermissionType,
 		})
-		eventBus.Send(events.ResourceChangedEvent{
-			Type: mesh.TrafficLogType,
+		eventBus.Send(events.TriggerKDSResyncEvent{
+			NodeID: "1",
+			Type:   mesh.TrafficLogType,
 		})
 		// Send is not blocking so there is no guarantee that we execute flush before watchdog consumed events
 		time.Sleep(500 * time.Millisecond)
