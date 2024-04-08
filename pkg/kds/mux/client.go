@@ -87,7 +87,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	default:
 		return errors.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
-	conn, err := grpc.Dial(u.Host, dialOpts...)
+	conn, err := grpc.NewClient(u.Host, dialOpts...)
 	if err != nil {
 		return err
 	}
