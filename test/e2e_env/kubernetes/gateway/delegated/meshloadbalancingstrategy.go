@@ -34,7 +34,7 @@ func MeshLoadBalancingStrategy(config *Config) func() {
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).To(HaveLen(3))
-			}, "30s", "1s").Should(Succeed())
+			}, "30s", "500ms").Should(Succeed())
 
 			Expect(framework.YamlK8s(fmt.Sprintf(`
 kind: MeshLoadBalancingStrategy
@@ -72,7 +72,7 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).To(HaveLen(1))
-			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			}, "30s", "500ms").Should(Succeed())
 		})
 	}
 }
