@@ -22,11 +22,6 @@ resources:
             terminal: true
           - connectionProperties:
               sourceIp: true
-          - queryParameter:
-              name: queryparam
-            terminal: true
-          - connectionProperties:
-              sourceIp: true
           idleTimeout: 5s
           weightedClusters:
             clusters:
@@ -41,11 +36,6 @@ resources:
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           hashPolicy:
-          - queryParameter:
-              name: queryparam
-            terminal: true
-          - connectionProperties:
-              sourceIp: true
           - queryParameter:
               name: queryparam
             terminal: true

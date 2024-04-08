@@ -190,6 +190,7 @@ func (p plugin) configureGateway(
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
 			for _, hostInfo := range listenerHostnames.HostInfos {
 				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
+				configuredServices := map[string]bool{}
 				for _, dest := range destinations {
 					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
 					if err != nil {
@@ -205,8 +206,11 @@ func (p plugin) configureGateway(
 					if localityConf == nil {
 						continue
 					}
-					if err := p.configureListener(listener, gatewayRoutes, localityConf); err != nil {
-						return err
+					if _, ok := configuredServices[serviceName]; !ok {
+						if err := p.configureListener(listener, gatewayRoutes, localityConf); err != nil {
+							return err
+						}
+						configuredServices[serviceName] = true
 					}
 
 					if err := p.configureCluster(cluster, *localityConf); err != nil {
