@@ -63,7 +63,7 @@ func New(
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
-		newKdsRetryForcer(log, cache, hasher),
+		newKdsRetryForcer(log, reconciler.ForceVersion, nackBackoff, rt.EventBus()),
 		syncTracker,
 		status.DefaultStatusTracker(rt, log),
 	}
@@ -155,14 +155,14 @@ func newSyncTracker(
 }
 
 func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
-	hasher := hasher{}
+	hasher := Hasher{}
 	logger := util_xds.NewLogger(log)
 	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
-type hasher struct{}
+type Hasher struct{}
 
-func (_ hasher) ID(node *envoy_core.Node) string {
+func (_ Hasher) ID(node *envoy_core.Node) string {
 	tenantID, found := util.TenantFromMetadata(node)
 	if !found {
 		return node.Id
