@@ -42,7 +42,7 @@ var _ = Describe("Reconciler", func() {
 		snapshotCache = envoy_cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(logr.Discard()))
 		metrics, err := core_metrics.NewMetrics("zone-1")
 		Expect(err).ToNot(HaveOccurred())
-		statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "kds_delta", util_xds.NoopVersionExtractor)
+		statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "kds_delta")
 		Expect(err).ToNot(HaveOccurred())
 		reconciler = reconcile.NewReconciler(hasher, snapshotCache, generator, config_core.Zone, statsCallbacks, multitenant.SingleTenant)
 	})
