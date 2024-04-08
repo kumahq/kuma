@@ -16,6 +16,15 @@ on:
       IMAGES:
         required: true
         type: string
+      REGISTRY:
+        required: true
+        type: string
+      VERSION_NAME:
+        required: true
+        type: string
+      NOTARY_REPOSITORY:
+        required: true
+        type: string
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
@@ -117,11 +126,7 @@ jobs:
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
-          registry=$(make docker/info/registry)
-          tag=$(make build/info/version)
-          echo "tag=${tag}" >> $GITHUB_OUTPUT
-          echo "registry=${registry}" >> $GITHUB_OUTPUT
-          echo "image=${registry}/${{ matrix.image }}:${tag}" >> $GITHUB_OUTPUT
+          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
           # Add matrix to .build/info to cache
           make build/info/short > .build-info
       - run: |
@@ -192,7 +197,7 @@ jobs:
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
-          signature_registry: ${{ steps.image_meta.outputs.registry }}/notary${{ contains(steps.image_meta.outputs.tag, 'preview') && '-internal' }}
+          signature_registry: ${{ inputs.REGISTRY }}/${{inputs.NOTARY_REPOSITORY}}
           registry_username: ${{ vars.DOCKER_USERNAME }}
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
@@ -267,7 +272,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

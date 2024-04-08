@@ -27,8 +27,6 @@ type Conf struct {
 }
 
 type Sidecar struct {
-	// Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
-	Regex *string `json:"regex,omitempty"`
 	// Profiles allows to customize which metrics are published.
 	Profiles *Profiles `json:"profiles,omitempty"`
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented

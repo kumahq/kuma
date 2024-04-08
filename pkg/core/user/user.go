@@ -18,6 +18,18 @@ func (u User) Authenticated() User {
 	return u
 }
 
+func (u User) IsPartOf(usernames map[string]bool, groups map[string]bool) bool {
+	if _, ok := usernames[u.Name]; ok {
+		return true
+	}
+	for _, group := range u.Groups {
+		if groups[group] {
+			return true
+		}
+	}
+	return false
+}
+
 // Admin is a static user that can be used when authn mechanism does not authenticate to specific user,
 // but authenticate to admin without giving credential (ex. authenticate as localhost, authenticate via legacy client certs).
 var Admin = User{

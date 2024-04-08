@@ -2,17 +2,19 @@ package runtime
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -31,7 +33,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
@@ -140,7 +142,12 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
-		EnvoyAdminAccess:     access.NoopEnvoyAdminAccess{},
+		EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
+			builder.Config().Access.Static.ViewConfigDump,
+			builder.Config().Access.Static.ViewStats,
+			builder.Config().Access.Static.ViewClusters,
+		),
+		ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(builder.Config().Access.Static.ControlPlaneMetadata),
 	})
 	builder.WithTokenIssuers(tokens_builtin.TokenIssuers{
 		DataplaneToken: tokens_builtin.NewDataplaneTokenIssuer(builder.ResourceManager()),
@@ -218,13 +225,19 @@ type DummyEnvoyAdminClient struct {
 	ClustersCalled   int
 }
 
-func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.StatsCalled++
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		return []byte("{\"server.live\": 1}\n"), nil
+	}
 	return []byte("server.live: 1\n"), nil
 }
 
-func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format v1alpha1.AdminOutputFormat) ([]byte, error) {
 	d.ClustersCalled++
+	if format == v1alpha1.AdminOutputFormat_JSON {
+		return []byte("{\"kuma\": \"envoy:admin\"}\n"), nil
+	}
 	return []byte("kuma:envoy:admin\n"), nil
 }
 
@@ -240,7 +253,13 @@ func (d *DummyEnvoyAdminClient) PostQuit(ctx context.Context, dataplane *core_me
 	return nil
 }
 
-func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
+	out := map[string]string{
+		"envoyAdminAddress": proxy.AdminAddress(9901),
+	}
 	d.ConfigDumpCalled++
-	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(9901))), nil
+	if includeEds {
+		out["eds"] = "eds"
+	}
+	return json.Marshal(out)
 }

@@ -173,7 +173,7 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 	// infer zone
 	if state.zone == "" {
 		state.zone = node.Id
-		if err := readVersion(node.GetMetadata(), state.subscription.Version); err != nil {
+		if err := ReadVersion(node.GetMetadata(), state.subscription.Version); err != nil {
 			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", node.GetMetadata())
 		}
 		go c.createStatusSink(state, c.log).Start(state.ctx, state.stop)
@@ -274,7 +274,7 @@ func (s *streamState) Close() {
 	close(s.stop)
 }
 
-func readVersion(metadata *structpb.Struct, version *system_proto.Version) error {
+func ReadVersion(metadata *structpb.Struct, version *system_proto.Version) error {
 	if metadata == nil {
 		return nil
 	}

@@ -62,7 +62,7 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 	panic("not implemented")
 }
 
-func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
 	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ConfigDumpRPC)
 	if err != nil {
@@ -70,7 +70,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	}
 	f.logIntendedAction(proxy, instanceID)
 	if instanceID == f.instanceID {
-		return f.fallbackClient.ConfigDump(ctx, proxy)
+		return f.fallbackClient.ConfigDump(ctx, proxy, includeEds)
 	}
 	client, err := f.clientForInstanceID(ctx, instanceID)
 	if err != nil {
@@ -91,7 +91,7 @@ func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy co
 	return resp.GetConfig(), nil
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.StatsRPC)
 	if err != nil {
@@ -99,7 +99,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 	}
 	f.logIntendedAction(proxy, instanceID)
 	if instanceID == f.instanceID {
-		return f.fallbackClient.Stats(ctx, proxy)
+		return f.fallbackClient.Stats(ctx, proxy, format)
 	}
 	client, err := f.clientForInstanceID(ctx, instanceID)
 	if err != nil {
@@ -120,7 +120,7 @@ func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_mo
 	return resp.GetStats(), nil
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	ctx = appendTenantMetadata(ctx)
 	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ClustersRPC)
 	if err != nil {
@@ -128,7 +128,7 @@ func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core
 	}
 	f.logIntendedAction(proxy, instanceID)
 	if instanceID == f.instanceID {
-		return f.fallbackClient.Clusters(ctx, proxy)
+		return f.fallbackClient.Clusters(ctx, proxy, format)
 	}
 	client, err := f.clientForInstanceID(ctx, instanceID)
 	if err != nil {

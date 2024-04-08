@@ -46,7 +46,7 @@ func MeshResourceTypes() []core_model.ResourceType {
 func RegisterXDS(rt core_runtime.Runtime) error {
 	// Build common dependencies for V2 and V3 servers.
 	// We want to have same metrics (we cannot register one metric twice) and same caches for both V2 and V3.
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds", util_xds.NoopVersionExtractor)
 	if err != nil {
 		return err
 	}

@@ -47,3 +47,22 @@ func (e *BadRequest) Error() string {
 func (e *BadRequest) Is(err error) bool {
 	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }
+
+func NewNotFoundError(msg string) error {
+	return &NotFound{msg: msg}
+}
+
+type NotFound struct {
+	msg string
+}
+
+func (e *NotFound) Error() string {
+	if e.msg == "" {
+		return "not found"
+	}
+	return fmt.Sprintf("not found: %s", e.msg)
+}
+
+func (e *NotFound) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
+}

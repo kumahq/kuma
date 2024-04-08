@@ -20,6 +20,7 @@ type Port struct {
 
 // MeshService
 // +kuma:policy:is_policy=false
+// +kuma:policy:has_status=true
 type MeshService struct {
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port
@@ -28,8 +29,6 @@ type MeshService struct {
 	// +listMapKey=port
 	// +listMapKey=protocol
 	Ports []Port `json:"ports,omitempty"`
-
-	Status MeshServiceStatus `json:"status,omitempty"`
 }
 
 type Address struct {

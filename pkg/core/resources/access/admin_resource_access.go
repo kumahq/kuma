@@ -11,20 +11,20 @@ import (
 )
 
 type adminResourceAccess struct {
-	usernames map[string]bool
-	groups    map[string]bool
+	usernames map[string]struct{}
+	groups    map[string]struct{}
 }
 
 func NewAdminResourceAccess(cfg config_access.AdminResourcesStaticAccessConfig) ResourceAccess {
 	a := &adminResourceAccess{
-		usernames: map[string]bool{},
-		groups:    map[string]bool{},
+		usernames: make(map[string]struct{}, len(cfg.Users)),
+		groups:    make(map[string]struct{}, len(cfg.Groups)),
 	}
 	for _, user := range cfg.Users {
-		a.usernames[user] = true
+		a.usernames[user] = struct{}{}
 	}
 	for _, group := range cfg.Groups {
-		a.groups[group] = true
+		a.groups[group] = struct{}{}
 	}
 	return a
 }
@@ -55,16 +55,5 @@ func (r *adminResourceAccess) validateAdminAccess(_ context.Context, u user.User
 	if !descriptor.AdminOnly {
 		return nil
 	}
-	allowed := r.usernames[u.Name]
-	for _, group := range u.Groups {
-		if r.groups[group] {
-			allowed = true
-		}
-	}
-	if !allowed {
-		return &access.AccessDeniedError{
-			Reason: fmt.Sprintf("user %q cannot access the resource of type %q", u.String(), descriptor.Name),
-		}
-	}
-	return nil
+	return access.Validate(r.usernames, r.groups, u, fmt.Sprintf("the resource of type %q", descriptor.Name))
 }

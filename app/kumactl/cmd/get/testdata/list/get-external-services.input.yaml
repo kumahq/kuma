@@ -1,0 +1,21 @@
+creationTime: "0001-01-01T00:00:00Z"
+type: ExternalService
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: experiment
+networking:
+  address: 127.0.0.1:9090
+tags:
+  kuma.io/service: mobile
+  version: v1
+---
+creationTime: "0001-01-01T00:00:00Z"
+type: ExternalService
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: example
+networking:
+  address: 127.0.0.2:9090
+tags:
+  kuma.io/service: web
+  version: v2

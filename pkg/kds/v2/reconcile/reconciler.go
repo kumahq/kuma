@@ -2,18 +2,15 @@ package reconcile
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
-	"google.golang.org/protobuf/proto"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
@@ -29,6 +26,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
 		tenants:        tenants,
+		forceVersions:  map[string][]core_model.ResourceType{},
 	}
 }
 
@@ -41,6 +39,16 @@ type reconciler struct {
 	tenants        multitenant.Tenants
 
 	lock sync.Mutex
+
+	forceVersions     map[string][]core_model.ResourceType
+	forceVersionsLock sync.RWMutex
+}
+
+func (r *reconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
+	nodeID := r.hasher.ID(node)
+	r.forceVersionsLock.Lock()
+	r.forceVersions[nodeID] = append(r.forceVersions[nodeID], resourceType)
+	r.forceVersionsLock.Unlock()
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
@@ -88,79 +96,67 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	if new == nil {
 		return errors.New("nil snapshot"), false
 	}
+	// call ConstructVersionMap, so we can override versions if needed and compute what changed
+	if old != nil {
+		// this should already be computed by SetSnapshot, but we call it just to make sure we have versions.
+		if err := old.ConstructVersionMap(); err != nil {
+			return errors.Wrap(err, "could not construct version map"), false
+		}
+	}
+	if err := new.ConstructVersionMap(); err != nil {
+		return errors.Wrap(err, "could not construct version map"), false
+	}
+	r.forceNewVersion(new, id)
 
-	new, changed := r.Version(new, old)
-	if changed {
-		r.logChanges(logger, new, old, node)
-		r.meterConfigReadyForDelivery(new, old, node.Id)
+	if changed := r.changedTypes(old, new); len(changed) > 0 {
+		r.logChanges(logger, changed, node)
+		r.meterConfigReadyForDelivery(changed, node.Id)
 		return r.cache.SetSnapshot(ctx, id, new), true
 	}
 	return nil, false
 }
 
-func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) (envoy_cache.ResourceSnapshot, bool) {
-	if new == nil {
-		return nil, false
-	}
-	changed := false
-	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
+func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_model.ResourceType {
+	var changed []core_model.ResourceType
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		version := new.GetVersion(typ)
-		if version != "" {
-			// favor a version assigned by resource generator
-			continue
+		if (old == nil && len(new.GetVersionMap(typ)) > 0) ||
+			(old != nil && !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ))) {
+			changed = append(changed, core_model.ResourceType(typ))
 		}
-
-		if old != nil && r.equal(new.GetResources(typ), old.GetResources(typ)) {
-			version = old.GetVersion(typ)
-		}
-		if version == "" {
-			version = core.NewUUID()
-			changed = true
-		}
-		if new.GetVersion(typ) == version {
-			continue
-		}
-		n := map[string]envoy_types.ResourceWithTTL{}
-		for k, v := range new.GetResourcesAndTTL(typ) {
-			n[k] = v
-		}
-		newResources[core_model.ResourceType(typ)] = envoy_cache.Resources{Version: version, Items: n}
 	}
-	return &cache_v2.Snapshot{
-		Resources: newResources,
-	}, changed
+	return changed
 }
 
-func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
-	if len(new) != len(old) {
-		return false
-	}
-	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
-			return false
+// see kdsRetryForcer for more information
+func (r *reconciler) forceNewVersion(snapshot envoy_cache.ResourceSnapshot, id string) {
+	r.forceVersionsLock.Lock()
+	forceVersionsForTypes := r.forceVersions[id]
+	delete(r.forceVersions, id)
+	r.forceVersionsLock.Unlock()
+	for _, typ := range forceVersionsForTypes {
+		cacheSnapshot, ok := snapshot.(*cache_v2.Snapshot)
+		if !ok {
+			panic("invalid type of Snapshot")
 		}
-	}
-	return true
-}
-
-func (r *reconciler) logChanges(logger logr.Logger, new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, node *envoy_core.Node) {
-	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		if old != nil && old.GetVersion(typ) != new.GetVersion(typ) {
-			client := node.Id
-			if r.mode == config_core.Zone {
-				// we need to override client name because Zone is always a client to Global (on gRPC level)
-				client = "global"
-			}
-			logger.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client) // todo is client needed?
+		for resourceName := range cacheSnapshot.VersionMap[typ] {
+			cacheSnapshot.VersionMap[typ][resourceName] = ""
 		}
 	}
 }
 
-func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot, nodeID string) {
-	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
-			r.statsCallbacks.ConfigReadyForDelivery(nodeID + typ)
+func (r *reconciler) logChanges(logger logr.Logger, changedTypes []core_model.ResourceType, node *envoy_core.Node) {
+	for _, typ := range changedTypes {
+		client := node.Id
+		if r.mode == config_core.Zone {
+			// we need to override client name because Zone is always a client to Global (on gRPC level)
+			client = "global"
 		}
+		logger.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client) // todo is client needed?
+	}
+}
+
+func (r *reconciler) meterConfigReadyForDelivery(changedTypes []core_model.ResourceType, nodeID string) {
+	for _, typ := range changedTypes {
+		r.statsCallbacks.ConfigReadyForDelivery(nodeID + string(typ))
 	}
 }

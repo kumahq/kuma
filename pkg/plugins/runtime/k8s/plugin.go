@@ -309,11 +309,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
-	if gatewayAPICRDsPresent(mgr) {
-		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().IsNonFederatedZoneCP(), mgr.GetScheme())
-		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
-	}
-
 	return nil
 }
 
@@ -353,11 +348,12 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	}
 
 	ownerRefMutator := &k8s_webhooks.OwnerReferenceMutator{
-		Client:       mgr.GetClient(),
-		CoreRegistry: core_registry.Global(),
-		K8sRegistry:  k8s_registry.Global(),
-		Scheme:       mgr.GetScheme(),
-		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
+		Client:                 mgr.GetClient(),
+		CoreRegistry:           core_registry.Global(),
+		K8sRegistry:            k8s_registry.Global(),
+		Scheme:                 mgr.GetScheme(),
+		Decoder:                kube_admission.NewDecoder(mgr.GetScheme()),
+		SkipMeshOwnerReference: rt.Config().Runtime.Kubernetes.SkipMeshOwnerReference,
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 

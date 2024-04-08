@@ -1,6 +1,8 @@
 package zone
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -130,7 +132,8 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			if err := syncClient.Receive(); err != nil {
+			err := syncClient.Receive()
+			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "GlobalToZoneSyncClient finished with an error")
 				select {
 				case errChan <- err:
@@ -148,7 +151,8 @@ func Setup(rt core_runtime.Runtime) error {
 		log.Info("ZoneToGlobalSync new session created")
 		session := kds_server_v2.NewServerStream(stream)
 		go func() {
-			if err := kdsServerV2.ZoneToGlobal(session); err != nil {
+			err := kdsServerV2.ZoneToGlobal(session)
+			if err != nil && !errors.Is(err, context.Canceled) {
 				err = errors.Wrap(err, "ZoneToGlobalSync finished with an error")
 				select {
 				case errChan <- err:
@@ -173,9 +177,7 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),
-			rt.EnvoyAdminClient().ConfigDump,
-			rt.EnvoyAdminClient().Stats,
-			rt.EnvoyAdminClient().Clusters,
+			rt.EnvoyAdminClient(),
 		),
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
