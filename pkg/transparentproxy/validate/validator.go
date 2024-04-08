@@ -145,7 +145,7 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 func (validator *Validator) runClient() error {
 	c := LocalClient{ServerIP: validator.Config.ClientConnectIP, ServerPort: validator.Config.ClientConnectPort}
 	backoff := retry.WithMaxRetries(validationRetries, retry.NewConstant(validator.Config.ClientRetryInterval))
-	return retry.Do(context.TODO(), backoff, func(ctx context.Context) error {
+	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		e := c.Run()
 		if e != nil {
 			validator.Logger.Error(e, "Client failed to connect to server")
