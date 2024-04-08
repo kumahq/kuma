@@ -47,7 +47,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/slok/go-http-metrics v0.11.0
 	github.com/spf13/cobra v1.8.0
-	github.com/spiffe/go-spiffe/v2 v2.1.7
+	github.com/spiffe/go-spiffe/v2 v2.2.0
 	github.com/testcontainers/testcontainers-go v0.30.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2
 	github.com/vishvananda/netlink v1.2.1-beta.2
