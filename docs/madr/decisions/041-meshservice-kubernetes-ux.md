@@ -46,7 +46,7 @@ The `MeshService` ports are derived from the `ports` field on `Service`,
 including supporting named `targetPorts`.
 
 Note that we only support `Service.ports[].protocol: TCP`, which is also the
-default.
+default. We copy `appProtocol` to the `MeshService` port entry as well.
 
 ### Headless Service with selectors
 
@@ -77,6 +77,71 @@ spec:
 Note that this prevents using `kind: MeshService` to select all Pods of a
 StatefulSet. In another MADR, we will cover this use case.
 
+### Examples
+
+The Kubernetes Service
+
+```
+kind: Service
+metadata:
+  name: redis
+  namespace: redis-system
+  labels:
+    team: db-operators
+    kuma.io/mesh: default
+spec:
+  selector:
+    app.kubernetes.io/name: redis
+  ports:
+  - port: 6739
+    targetPort: 6739
+    protocol: TCP
+  - name: admin
+    port: 8080
+    protocol: TCP
+    appProtocol: http
+```
+
+would be converted to:
+
+```yaml
+kind: MeshService
+metadata:
+  name: redis
+  namespace: redis-system
+  labels:
+    team: db-operators
+    kuma.io/mesh: default
+spec:
+  selector:
+    dataplaneTags: # tags in Dataplane object, see below
+      app.kubernetes.io/name: redis
+      k8s.kuma.io/namespace: redis-system # added automatically
+      kuma.io/zone: east-1 # added automatically
+  ports:
+  - port: 6739
+    targetPort:
+      value: 6739
+    appProtocol: tcp
+  - name: admin
+    port: 8080
+    appProtocol: http
+  clusterIP: 192.168.10.1
+  type: ClusterIP
+status:
+  availability: Online
+  tls:
+    state: Ready
+    issuedBackends:
+      ca-1: 5
+  proxies:
+    offline: 3
+    online: 5
+  vips:
+  - ip: 192.168.10.1
+    type: Kubernetes
+```
+
 ### Positive Consequences
 
 * Users don't have to think about creating `MeshService`
@@ -84,7 +149,7 @@ StatefulSet. In another MADR, we will cover this use case.
 
 ### Negative Consequences
 
-* None?
+* One API object per Pod, as opposed to one per Service
 
 ## Pros and Cons of the Options
 
