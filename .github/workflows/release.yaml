@@ -48,7 +48,7 @@ jobs:
           go install github.com/kumahq/ci-tools/cmd/release-tool@v0.10.1
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@78e5f2ddc08efcb88fbbee6cfa3fed770ba550c3 # v1.9.1
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
