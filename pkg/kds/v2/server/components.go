@@ -50,7 +50,7 @@ func New(
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
-		newKdsRetryForcer(log, cache, hasher),
+		newKdsRetryForcer(log, reconciler.ForceVersion, nackBackoff, rt.EventBus()),
 		syncTracker,
 	}
 	if insight {
@@ -117,13 +117,22 @@ func newSyncTracker(log logr.Logger, reconciler reconcile_v2.Reconciler, refresh
 }
 
 func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotCache) { //nolint:unparam
-	hasher := hasher{}
+	hasher := Hasher{}
 	logger := util_xds.NewLogger(log)
 	return hasher, envoy_cache.NewSnapshotCache(false, hasher, logger)
 }
 
-type hasher struct{}
+type Hasher struct{}
 
+<<<<<<< HEAD
 func (_ hasher) ID(node *envoy_core.Node) string {
 	return node.Id
+=======
+func (_ Hasher) ID(node *envoy_core.Node) string {
+	tenantID, found := util.TenantFromMetadata(node)
+	if !found {
+		return node.Id
+	}
+	return node.Id + ":" + tenantID
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 }

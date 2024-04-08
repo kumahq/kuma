@@ -2,16 +2,19 @@ package reconcile
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+<<<<<<< HEAD
 	"google.golang.org/protobuf/proto"
+=======
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
@@ -33,6 +36,11 @@ func NewReconciler(
 		generator:      generator,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
+<<<<<<< HEAD
+=======
+		tenants:        tenants,
+		forceVersions:  map[string][]core_model.ResourceType{},
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 	}
 }
 
@@ -44,6 +52,16 @@ type reconciler struct {
 	statsCallbacks xds.StatsCallbacks
 
 	lock sync.Mutex
+
+	forceVersions     map[string][]core_model.ResourceType
+	forceVersionsLock sync.RWMutex
+}
+
+func (r *reconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
+	nodeID := r.hasher.ID(node)
+	r.forceVersionsLock.Lock()
+	r.forceVersions[nodeID] = append(r.forceVersions[nodeID], resourceType)
+	r.forceVersionsLock.Unlock()
 }
 
 func (r *reconciler) Clear(node *envoy_core.Node) {
@@ -73,6 +91,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	}
 	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
+<<<<<<< HEAD
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
@@ -84,12 +103,60 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 		return nil
 	}
 	newResources := map[core_model.ResourceType]envoy_cache.Resources{}
-	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		version := new.GetVersion(typ)
-		if version != "" {
-			// favor a version assigned by resource generator
-			continue
+=======
+
+	// construct builder with unchanged types from the old snapshot
+	builder := cache_v2.NewSnapshotBuilder()
+	if old != nil {
+		for _, typ := range util_kds_v2.GetSupportedTypes() {
+			resType := core_model.ResourceType(typ)
+			if _, ok := changedTypes[resType]; ok {
+				continue
+			}
+
+			oldRes := old.GetResources(typ)
+			if len(oldRes) > 0 {
+				builder = builder.With(resType, maps.Values(oldRes))
+			}
 		}
+	}
+
+	new, err := r.generator.GenerateSnapshot(ctx, node, builder, changedTypes)
+	if err != nil {
+		return err, false
+	}
+	if new == nil {
+		return errors.New("nil snapshot"), false
+	}
+	// call ConstructVersionMap, so we can override versions if needed and compute what changed
+	if old != nil {
+		// this should already be computed by SetSnapshot, but we call it just to make sure we have versions.
+		if err := old.ConstructVersionMap(); err != nil {
+			return errors.Wrap(err, "could not construct version map"), false
+		}
+	}
+	if err := new.ConstructVersionMap(); err != nil {
+		return errors.Wrap(err, "could not construct version map"), false
+	}
+	r.forceNewVersion(new, id)
+
+	if changed := r.changedTypes(old, new); len(changed) > 0 {
+		r.logChanges(logger, changed, node)
+		r.meterConfigReadyForDelivery(changed, node.Id)
+		return r.cache.SetSnapshot(ctx, id, new), true
+	}
+	return nil, false
+}
+
+func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_model.ResourceType {
+	var changed []core_model.ResourceType
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
+	for _, typ := range util_kds_v2.GetSupportedTypes() {
+		if (old == nil && len(new.GetVersionMap(typ)) > 0) ||
+			(old != nil && !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ))) {
+			changed = append(changed, core_model.ResourceType(typ))
+		}
+<<<<<<< HEAD
 
 		if old != nil && r.equal(new.GetResources(typ), old.GetResources(typ)) {
 			version = old.GetVersion(typ)
@@ -113,16 +180,24 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 	return &cache_v2.Snapshot{
 		Resources: newResources,
 	}
+=======
+	}
+	return changed
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 }
 
-func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
-	if len(new) != len(old) {
-		return false
-	}
-	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
-			return false
+// see kdsRetryForcer for more information
+func (r *reconciler) forceNewVersion(snapshot envoy_cache.ResourceSnapshot, id string) {
+	r.forceVersionsLock.Lock()
+	forceVersionsForTypes := r.forceVersions[id]
+	delete(r.forceVersions, id)
+	r.forceVersionsLock.Unlock()
+	for _, typ := range forceVersionsForTypes {
+		cacheSnapshot, ok := snapshot.(*cache_v2.Snapshot)
+		if !ok {
+			panic("invalid type of Snapshot")
 		}
+<<<<<<< HEAD
 	}
 	return true
 }
@@ -136,14 +211,34 @@ func (r *reconciler) logChanges(new envoy_cache.ResourceSnapshot, old envoy_cach
 				client = "global"
 			}
 			log.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client)
+=======
+		for resourceName := range cacheSnapshot.VersionMap[typ] {
+			cacheSnapshot.VersionMap[typ][resourceName] = ""
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 		}
 	}
 }
 
+<<<<<<< HEAD
 func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapshot, old envoy_cache.ResourceSnapshot) {
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
+=======
+func (r *reconciler) logChanges(logger logr.Logger, changedTypes []core_model.ResourceType, node *envoy_core.Node) {
+	for _, typ := range changedTypes {
+		client := node.Id
+		if r.mode == config_core.Zone {
+			// we need to override client name because Zone is always a client to Global (on gRPC level)
+			client = "global"
+>>>>>>> 4752f7b82 (fix(kds): fix retry on NACK and add backoff (#9736))
 		}
+		logger.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client) // todo is client needed?
+	}
+}
+
+func (r *reconciler) meterConfigReadyForDelivery(changedTypes []core_model.ResourceType, nodeID string) {
+	for _, typ := range changedTypes {
+		r.statsCallbacks.ConfigReadyForDelivery(nodeID + string(typ))
 	}
 }

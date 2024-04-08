@@ -22,6 +22,11 @@ type ResourceChangedEvent struct {
 	Key       model.ResourceKey
 }
 
+type TriggerKDSResyncEvent struct {
+	Type   model.ResourceType
+	NodeID string
+}
+
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
