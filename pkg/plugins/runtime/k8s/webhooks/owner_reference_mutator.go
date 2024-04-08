@@ -10,6 +10,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -26,6 +28,7 @@ type OwnerReferenceMutator struct {
 	Decoder                *admission.Decoder
 	Scheme                 *kube_runtime.Scheme
 	SkipMeshOwnerReference bool
+	CpMode                 config_core.CpMode
 }
 
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -63,6 +66,10 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
 		}
 
+		if syncedResource(m.CpMode, obj.GetLabels()) {
+			return admission.Allowed("ignore. It's synced resource.")
+		}
+
 		owner = &mesh_k8s.Mesh{}
 		if err := m.Client.Get(ctx, kube_client.ObjectKey{Name: obj.GetMesh()}, owner); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
@@ -76,4 +83,12 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 	return admission.PatchResponseFromRaw(req.Object.Raw, mutatedRaw)
+}
+
+func syncedResource(cpMode config_core.CpMode, labels map[string]string) bool {
+	syncedOrigin := mesh_proto.GlobalResourceOrigin
+	if cpMode == config_core.Global {
+		syncedOrigin = mesh_proto.ZoneResourceOrigin
+	}
+	return len(labels) > 0 && labels[mesh_proto.ResourceOriginLabel] == string(syncedOrigin)
 }
