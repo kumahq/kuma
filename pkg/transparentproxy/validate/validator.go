@@ -36,12 +36,12 @@ func NewValidator(useIpv6 bool, port uint16, logger logr.Logger) *Validator {
 	// Traffic to lo (but not 127.0.0.1) by sidecar will be redirected to  KUMA_MESH_INBOUND_REDIRECT, so:
 	// connect to 127.0.0.6 should be redirected to 127.0.0.1
 	// connect to ::6       should be redirected to ::1
-	serverListenIP, _ := netip.AddrFromSlice([]byte{127, 0, 0, 1})
-	clientConnectIP, _ := netip.AddrFromSlice([]byte{127, 0, 0, 6})
+	serverListenIP := netip.MustParseAddr("127.0.0.1")
+	clientConnectIP := netip.MustParseAddr("127.0.0.6")
 
 	if useIpv6 {
-		serverListenIP, _ = netip.AddrFromSlice([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
-		clientConnectIP, _ = netip.AddrFromSlice([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6})
+		serverListenIP = netip.MustParseAddr("::1")
+		clientConnectIP = netip.MustParseAddr("::6")
 	}
 
 	return &Validator{
@@ -56,7 +56,7 @@ func NewValidator(useIpv6 bool, port uint16, logger logr.Logger) *Validator {
 }
 
 func (validator *Validator) Run() error {
-	validator.Logger.Info("Starting iptables validation...")
+	validator.Logger.Info("starting iptables validation")
 	sExit := make(chan struct{})
 
 	sError := validator.runServer(sExit)
@@ -65,14 +65,14 @@ func (validator *Validator) Run() error {
 		if serverErr == nil {
 			serverErr = fmt.Errorf("server exited unexpectedly")
 		}
-		validator.Logger.Error(serverErr, "Validation failed")
+		serverErr = fmt.Errorf("validation failed: %w", serverErr)
 		return serverErr
 	default:
 	}
 
 	clientErr := validator.runClient()
 	if clientErr != nil {
-		validator.Logger.Error(clientErr, "Validation failed, client failed to connect to the verification server")
+		clientErr = fmt.Errorf("validation failed, client failed to connect to the verification server: %w", clientErr)
 		close(sExit)
 		return clientErr
 	} else {

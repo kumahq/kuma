@@ -30,13 +30,13 @@ func newInstallTransparentProxyValidator() *cobra.Command {
 		Use:   "transparent-proxy-validator",
 		Short: "Validates if transparent proxy has been set up successfully",
 		Long: `Validates the transparent proxy setup by testing if the applied 
-hosts iptables rules are working correctly.
+iptables rules are working correctly onto the pod.
 
 Follow the following steps to validate:
  1) install the transparent proxy using 'kumactl install transparent-proxy'
- 2) run this command to validate if the installation was successful
+ 2) run this command
 
-The result will be shown as text in stdout as well as the exit code
+The result will be shown as text in stdout as well as the exit code.
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			log := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
