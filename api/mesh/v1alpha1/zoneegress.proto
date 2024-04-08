@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Proxy,
-  name : "ZoneEgress",
-  file_name : "zoneegress"
-};
 
 // ZoneEgress allows us to configure dataplane in the Egress mode.
 message ZoneEgress {
@@ -38,15 +31,15 @@ message ZoneEgress {
 
   message Networking {
     // Address on which inbound listener will be exposed
-    string address = 1 [ (doc.required) = true ];
+    string address = 1;
 
     // Port of the inbound interface that will forward requests to the service.
-    uint32 port = 2 [ (doc.required) = true ];
+    uint32 port = 2;
 
     // Admin contains configuration related to Envoy Admin API
     EnvoyAdmin admin = 3;
   }
 
   // Networking defines the address and port of the Egress to listen on.
-  Networking networking = 2 [ (doc.required) = true ];
+  Networking networking = 2;
 }

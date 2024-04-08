@@ -8,13 +8,6 @@ import "api/mesh/options.proto";
 import "google/protobuf/duration.proto";
 import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/wrappers.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "FaultInjection",
-  file_name : "fault-injection"
-};
 
 // FaultInjection defines the configuration of faults between dataplanes.
 message FaultInjection {
@@ -27,10 +20,10 @@ message FaultInjection {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1 [ (doc.required) = true ];
+  repeated Selector sources = 1;
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2 [ (doc.required) = true ];
+  repeated Selector destinations = 2;
 
   // Conf defines several types of faults, at least one fault should be
   // specified
@@ -40,9 +33,9 @@ message FaultInjection {
     message Delay {
       // Percentage of requests on which delay will be injected, has to be in
       // [0.0 - 100.0] range
-      google.protobuf.DoubleValue percentage = 1 [ (doc.required) = true ];
+      google.protobuf.DoubleValue percentage = 1;
       // The duration during which the response will be delayed
-      google.protobuf.Duration value = 2 [ (doc.required) = true ];
+      google.protobuf.Duration value = 2;
     }
     // Delay if specified then response from the destination will be delivered
     // with a delay
@@ -54,9 +47,9 @@ message FaultInjection {
     message Abort {
       // Percentage of requests on which abort will be injected, has to be in
       // [0.0 - 100.0] range
-      google.protobuf.DoubleValue percentage = 1 [ (doc.required) = true ];
+      google.protobuf.DoubleValue percentage = 1;
       // HTTP status code which will be returned to source side
-      google.protobuf.UInt32Value httpStatus = 2 [ (doc.required) = true ];
+      google.protobuf.UInt32Value httpStatus = 2;
     }
     // Abort if specified makes source side to receive specified httpStatus code
     Abort abort = 2;
@@ -66,15 +59,15 @@ message FaultInjection {
     message ResponseBandwidth {
       // Percentage of requests on which response bandwidth limit will be
       // injected, has to be in [0.0 - 100.0] range
-      google.protobuf.DoubleValue percentage = 1 [ (doc.required) = true ];
+      google.protobuf.DoubleValue percentage = 1;
       // Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
       // 10kbps
-      google.protobuf.StringValue limit = 2 [ (doc.required) = true ];
+      google.protobuf.StringValue limit = 2;
     }
     // ResponseBandwidth if specified limits the speed of sending response body
     ResponseBandwidth response_bandwidth = 3;
   }
 
   // Configuration of FaultInjection
-  Conf conf = 3 [ (doc.required) = true ];
+  Conf conf = 3;
 }

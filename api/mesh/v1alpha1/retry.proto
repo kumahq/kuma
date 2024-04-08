@@ -11,13 +11,6 @@ import "api/mesh/v1alpha1/http_method.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "Retry",
-  file_name : "retry"
-};
 
 // These options correspond with the retry_on options in Envoy's documentation:
 // https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on
@@ -47,16 +40,16 @@ message Retry {
   // List of selectors to match dataplanes that retry policy should be
   // configured for
   repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   message Conf {
     message BackOff {
       //  +required
-      google.protobuf.Duration base_interval = 1 [ (doc.required) = true ];
+      google.protobuf.Duration base_interval = 1;
       //  +optional
       google.protobuf.Duration max_interval = 2;
     }
@@ -114,5 +107,5 @@ message Retry {
   }
 
   //  +required
-  Conf conf = 3 [ (doc.required) = true ];
+  Conf conf = 3;
 }

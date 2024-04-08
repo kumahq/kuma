@@ -8,7 +8,6 @@ OUTPUT_PROTO_DIR=$1/protos
 # Use go list -m for deps that are also on go.mod this way we use dependabot a live on the same version
 
 PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -f '{{.Version}}' -m github.com/kumahq/protoc-gen-kumadoc)
 GINKGO=github.com/onsi/ginkgo/v2/ginkgo@$(go list -f '{{.Version}}' -m github.com/onsi/ginkgo/v2)
 CONTROLLER_GEN=sigs.k8s.io/controller-tools/cmd/controller-gen@$(go list -f '{{.Version}}' -m sigs.k8s.io/controller-tools)
 
@@ -18,7 +17,6 @@ for i in \
     google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 \
     github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema@v0.0.0-20230606235304-e35f2ad05c0c \
     ${PGV} \
-    ${PGKUMADOC} \
     ${GINKGO} \
     ${CONTROLLER_GEN} \
     github.com/mikefarah/yq/v4@v4.30.8 \
@@ -50,8 +48,8 @@ function cpOnlyProto() {
 
 rm -fr "${OUTPUT_PROTO_DIR}"/udpa "${OUTPUT_PROTO_DIR}"/xds
 mkdir -p "${OUTPUT_PROTO_DIR}"/{udpa,xds}
-go mod download github.com/cncf/udpa@master
-VERSION=$(find "${ROOT}"/github.com/cncf/udpa@* -maxdepth 0 | sort -r | head -1)
+go mod download github.com/cncf/xds@"$(go list -f '{{ .Version }}' -m github.com/cncf/xds/go)"
+VERSION=$(find "${ROOT}"/github.com/cncf/xds@* -maxdepth 0 | sort -r | head -1)
 cpOnlyProto "${VERSION}"/udpa "${OUTPUT_PROTO_DIR}"/udpa
 cpOnlyProto "${VERSION}"/xds "${OUTPUT_PROTO_DIR}"/xds
 
@@ -65,11 +63,6 @@ rm -fr "${OUTPUT_PROTO_DIR}"/validate
 mkdir -p "${OUTPUT_PROTO_DIR}"/validate
 go mod download "${PGV}"
 cpOnlyProto "${ROOT}"/"${PGV}"/validate "${OUTPUT_PROTO_DIR}"/validate
-
-rm -fr "${OUTPUT_PROTO_DIR}"/kuma-doc
-mkdir -p "${OUTPUT_PROTO_DIR}"/kuma-doc
-go mod download "${PGKUMADOC}"
-cpOnlyProto "${ROOT}"/"${PGKUMADOC}"/proto "${OUTPUT_PROTO_DIR}"/kuma-doc
 
 rm -rf "${OUTPUT_PROTO_DIR}"/google/{api,rpc}
 mkdir -p "${OUTPUT_PROTO_DIR}"/google/{api,rpc}

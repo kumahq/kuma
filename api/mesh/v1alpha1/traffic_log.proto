@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "TrafficLog",
-  file_name : "traffic-log"
-};
 
 // TrafficLog defines log for traffic between dataplanes.
 message TrafficLog {
@@ -25,10 +18,10 @@ message TrafficLog {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1 [ (doc.required) = true ];
+  repeated Selector sources = 1;
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2 [ (doc.required) = true ];
+  repeated Selector destinations = 2;
 
   // Configuration defines settings of the logging.
   message Conf {
