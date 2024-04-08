@@ -71,7 +71,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 
 		labels := map[string]string{}
 		if shadow {
-			labels["kuma.io/effect"] = "shadow"
+			labels[mesh_proto.EffectLabel] = "shadow"
 		}
 		Expect(resManager.Create(context.Background(), mt, core_store.CreateByKey(name, mesh), core_store.CreateWithLabels(labels))).To(Succeed())
 	}

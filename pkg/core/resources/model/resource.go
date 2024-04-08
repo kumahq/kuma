@@ -452,7 +452,7 @@ func ZoneOfResource(res Resource) string {
 }
 
 func IsShadowedResource(r Resource) bool {
-	if labels := r.GetMeta().GetLabels(); labels != nil && labels["kuma.io/effect"] == "shadow" {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.EffectLabel] == "shadow" {
 		return true
 	}
 	return false
