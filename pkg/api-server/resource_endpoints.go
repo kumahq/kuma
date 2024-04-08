@@ -121,11 +121,24 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.configForProxy()).
-			Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
+		if r.mode == config_core.Global {
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed("")).
+				Doc("Not allowed on Global CP.").
+				Returns(http.StatusMethodNotAllowed, "Not allowed on Global CP.", restful.ServiceError{}))
+		} else {
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.configForProxy()).
+				Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
+				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+				Returns(200, "OK", nil).
+				Returns(404, "Not found", nil))
+		}
+
+	}
+}
+
+func (r *resourceEndpoints) methodNotAllowed(title string) func(request *restful.Request, response *restful.Response) {
+	return func(request *restful.Request, response *restful.Response) {
+		rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, title)
 	}
 }
 
@@ -299,9 +312,7 @@ func (r *resourceEndpoints) MergeInOverview(resources model.ResourceList, insigh
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
-		}).
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
@@ -423,9 +434,7 @@ func (r *resourceEndpoints) updateResource(
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
-		}).
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
