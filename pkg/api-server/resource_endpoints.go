@@ -132,7 +132,6 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 				Returns(200, "OK", nil).
 				Returns(404, "Not found", nil))
 		}
-
 	}
 }
 
