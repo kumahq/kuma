@@ -128,6 +128,13 @@ func Validate(resource Resource) error {
 	return nil
 }
 
+func CheckDeprecated(resource Resource) []string {
+	if v, ok := interface{}(resource).(interface{ Deprecated() []string }); ok {
+		return v.Deprecated()
+	}
+	return nil
+}
+
 type OverviewResource interface {
 	SetOverviewSpec(resource Resource, insight Resource) error
 }
