@@ -54,6 +54,7 @@ import (
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 	"github.com/kumahq/kuma/pkg/version"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -111,6 +112,7 @@ func NewApiServer(
 	tokenIssuers builtin.TokenIssuers,
 	wsCustomize func(*restful.WebService) error,
 	globalInsightService globalinsight.GlobalInsightService,
+	xdsHooks []hooks.ResourceSetHook,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -147,7 +149,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder, xdsHooks)
 	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
 	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
@@ -238,6 +240,7 @@ func addResourcesEndpoints(
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
+	xdsHooks []hooks.ResourceSetHook,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
@@ -275,6 +278,7 @@ func addResourcesEndpoints(
 			filter:                       filters.Resource(definition),
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
+			xdsHooks:                     xdsHooks,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
@@ -475,6 +479,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.TokenIssuers(),
 		rt.APIWebServiceCustomize(),
 		rt.GlobalInsightService(),
+		rt.XDS().Hooks.ResourceSetHooks(),
 	)
 	if err != nil {
 		return err

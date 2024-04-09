@@ -4,5 +4,6 @@ generate:
 import-mapping:
   ./common/error_schema.yaml: "github.com/kumahq/kuma/api/openapi/types/common"
   ./common/resource.yaml: "github.com/kumahq/kuma/api/openapi/types/common"
+  ./common/jsonpatch.yaml: "github.com/kumahq/kuma/api/openapi/types/common"
 output-options:
   skip-prune: true

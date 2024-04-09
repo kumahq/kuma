@@ -25,8 +25,9 @@ import (
 )
 
 type DataplaneProxyBuilder struct {
-	Zone       string
-	APIVersion core_xds.APIVersion
+	Zone          string
+	APIVersion    core_xds.APIVersion
+	IncludeShadow bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -174,8 +175,12 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
+	opts := []core_plugins.MatchedPoliciesOption{}
+	if p.IncludeShadow {
+		opts = append(opts, core_plugins.IncludeShadow())
+	}
 	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
-		res, err := p.Plugin.MatchedPolicies(dataplane, resources)
+		res, err := p.Plugin.MatchedPolicies(dataplane, resources, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)
 		}

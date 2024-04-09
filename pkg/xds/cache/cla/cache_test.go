@@ -16,8 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-var _ = Describe("ClusterLoadAssignment Cache", func() {
-	var claCache *cla.Cache
+var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
+	var claCache *cla.CachedRetriever
 	var metrics core_metrics.Metrics
 
 	expiration := 2 * time.Second
