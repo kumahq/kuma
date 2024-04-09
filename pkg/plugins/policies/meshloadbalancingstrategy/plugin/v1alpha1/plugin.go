@@ -187,10 +187,10 @@ func (p plugin) configureGateway(
 			continue
 		}
 
+		perServiceConfiguration := map[string]*api.Conf{}
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
 			for _, hostInfo := range listenerHostnames.HostInfos {
 				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
-				configuredServices := map[string]bool{}
 				for _, dest := range destinations {
 					clusterName, err := dest.Destination.DestinationClusterName(hostInfo.Host.Tags)
 					if err != nil {
@@ -206,12 +206,7 @@ func (p plugin) configureGateway(
 					if localityConf == nil {
 						continue
 					}
-					if _, ok := configuredServices[serviceName]; !ok {
-						if err := p.configureListener(listener, gatewayRoutes, localityConf); err != nil {
-							return err
-						}
-						configuredServices[serviceName] = true
-					}
+					perServiceConfiguration[serviceName] = localityConf
 
 					if err := p.configureCluster(cluster, *localityConf); err != nil {
 						return err
@@ -221,6 +216,11 @@ func (p plugin) configureGateway(
 						return err
 					}
 				}
+			}
+		}
+		for _, configuration := range perServiceConfiguration {
+			if err := p.configureListener(listener, gatewayRoutes, configuration); err != nil {
+				return err
 			}
 		}
 	}
@@ -293,31 +293,37 @@ func (p plugin) configureListener(
 		return nil
 	}
 
-	if l.FilterChains == nil || len(l.FilterChains) != 1 {
-		return errors.Errorf("expected exactly one filter chain, got %d", len(l.FilterChains))
+	if l.FilterChains == nil {
+		return errors.New("expected more or one filter chain, got 0")
 	}
 
-	return v3.UpdateHTTPConnectionManager(l.FilterChains[0], func(hcm *envoy_hcm.HttpConnectionManager) error {
-		var routeConfig *envoy_route.RouteConfiguration
-		switch r := hcm.RouteSpecifier.(type) {
-		case *envoy_hcm.HttpConnectionManager_RouteConfig:
-			routeConfig = r.RouteConfig
-		case *envoy_hcm.HttpConnectionManager_Rds:
-			routeConfig = routes[r.Rds.RouteConfigName]
-		default:
-			return errors.Errorf("unexpected RouteSpecifer %T", r)
-		}
-
-		hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
-		for _, vh := range routeConfig.VirtualHosts {
-			for _, route := range vh.Routes {
-				if err := hpc.Configure(route); err != nil {
-					return err
+	for _, chain := range l.FilterChains {
+		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			var routeConfig *envoy_route.RouteConfiguration
+			switch r := hcm.RouteSpecifier.(type) {
+			case *envoy_hcm.HttpConnectionManager_RouteConfig:
+				routeConfig = r.RouteConfig
+			case *envoy_hcm.HttpConnectionManager_Rds:
+				routeConfig = routes[r.Rds.RouteConfigName]
+			default:
+				return errors.Errorf("unexpected RouteSpecifer %T", r)
+			}
+	
+			hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
+			for _, vh := range routeConfig.VirtualHosts {
+				for _, route := range vh.Routes {
+					if err := hpc.Configure(route); err != nil {
+						return err
+					}
 				}
 			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func (p plugin) configureCluster(c *envoy_cluster.Cluster, config api.Conf) error {
