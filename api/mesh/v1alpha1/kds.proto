@@ -83,6 +83,8 @@ message XDSConfigRequest {
   // Mesh of the resource on which we execute config dump. Should be empty for
   // ZoneIngress, ZoneEgress.
   string resource_mesh = 4;
+  // whether we include eds or not
+  bool include_eds = 5;
 }
 
 // XDSConfigRequest is a response containing result of XDS Config Dump execution
@@ -112,6 +114,8 @@ message StatsRequest {
   // Mesh of the resource on which we execute kuma-dp stats request.
   // Should be empty for ZoneIngress, ZoneEgress.
   string resource_mesh = 4;
+  // format is the format in which we return the clusters.
+  AdminOutputFormat format = 5;
 }
 
 // StatsResponse is a response containing result of kuma-dp stats execution on
@@ -143,6 +147,13 @@ message ClustersRequest {
   // Mesh of the resource on which we execute kuma-dp clusters request.
   // Should be empty for ZoneIngress, ZoneEgress.
   string resource_mesh = 4;
+  // format is the format in which we return the clusters.
+  AdminOutputFormat format = 5;
+}
+
+enum AdminOutputFormat {
+  TEXT = 0;
+  JSON = 1;
 }
 
 // ClustersResponse is a response containing result of kuma-dp clusters

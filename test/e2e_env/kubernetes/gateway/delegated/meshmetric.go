@@ -31,6 +31,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: OpenTelemetry
         openTelemetry: 

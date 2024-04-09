@@ -231,6 +231,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.ClientConfig.BurstQps).To(Equal(100))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
+			Expect(cfg.Runtime.Kubernetes.SkipMeshOwnerReference).To(BeTrue())
+
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
 
@@ -353,6 +355,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewStats.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 			Expect(cfg.Access.Static.ViewClusters.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
 			Expect(cfg.Access.Static.ViewClusters.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
+			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
+			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
 			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
@@ -365,6 +369,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
+			Expect(cfg.Experimental.SkipPersistedVIPs).To(BeTrue())
+			Expect(cfg.Experimental.GenerateMeshServices).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -561,6 +567,7 @@ runtime:
     leaderElection:
       leaseDuration: 199s
       renewDeadline: 99s
+    skipMeshOwnerReference: true
 reports:
   enabled: false
 general:
@@ -708,6 +715,9 @@ access:
     viewClusters:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
+    controlPlaneMetadata:
+      users: ["cp-admin1", "cp-admin2"]
+      groups: ["cp-group1", "cp-group2"]
 experimental:
   gatewayAPI: true
   kubeOutboundsAsVIPs: true
@@ -722,6 +732,8 @@ experimental:
     delayFullResync: true
   autoReachableServices: true
   sidecarContainers: true
+  generateMeshServices: true
+  skipPersistedVIPs: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1
@@ -882,6 +894,7 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_CLIENT_CONFIG_BURST_QPS":                                          "100",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
+				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
@@ -995,6 +1008,8 @@ tracing:
 				"KUMA_ACCESS_STATIC_VIEW_STATS_GROUPS":                                                     "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_USERS":                                                   "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
+				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
+				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
@@ -1005,6 +1020,8 @@ tracing:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
+				"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES":                                                 "true",
+				"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS":                                                    "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

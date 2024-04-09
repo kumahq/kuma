@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Proxy,
-  name : "ZoneIngress",
-  file_name : "zoneingress"
-};
 
 // ZoneIngress allows us to configure dataplane in the Ingress mode. In this
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
@@ -40,18 +33,18 @@ message ZoneIngress {
 
   message Networking {
     // Address on which inbound listener will be exposed
-    string address = 1 [ (doc.required) = true ];
+    string address = 1;
 
     // AdvertisedAddress defines IP or DNS name on which ZoneIngress is
     // accessible to other Kuma clusters.
-    string advertisedAddress = 2 [ (doc.required) = true ];
+    string advertisedAddress = 2;
 
     // Port of the inbound interface that will forward requests to the service.
-    uint32 port = 3 [ (doc.required) = true ];
+    uint32 port = 3;
 
     // AdvertisedPort defines port on which ZoneIngress is accessible to other
     // Kuma clusters.
-    uint32 advertisedPort = 4 [ (doc.required) = true ];
+    uint32 advertisedPort = 4;
 
     // Admin contains configuration related to Envoy Admin API
     EnvoyAdmin admin = 5;
@@ -59,7 +52,7 @@ message ZoneIngress {
 
   // Networking defines the address and port of the Ingress to listen on.
   // Additionally publicly advertised address and port could be specified.
-  Networking networking = 2 [ (doc.required) = true ];
+  Networking networking = 2;
 
   message AvailableService {
     // tags of the service

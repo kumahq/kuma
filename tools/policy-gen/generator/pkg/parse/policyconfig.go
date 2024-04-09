@@ -120,7 +120,6 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		AlternativeNames:    []string{strings.ToLower(name)},
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
-		HasStatus:           fields["Status"],
 		IsPolicy:            true,
 	}
 
@@ -132,6 +131,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_policy"); ok {
 		res.IsPolicy = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:has_status"); ok {
+		res.HasStatus = v
 	}
 
 	if v, ok := markers["kuma:policy:singular_display_name"]; ok {

@@ -164,7 +164,7 @@ func NewApiServer(
 		apiUrl = cfg.ApiServer.RootUrl
 	}
 
-	err := addConfigEndpoints(ws, cfg)
+	err := addConfigEndpoints(ws, access.ControlPlaneMetadataAccess, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
@@ -461,6 +461,7 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			cfg.Experimental.SkipPersistedVIPs,
 		),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),

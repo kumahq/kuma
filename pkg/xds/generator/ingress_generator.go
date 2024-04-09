@@ -70,13 +70,19 @@ func (i IngressGenerator) Generate(
 	if err != nil {
 		return nil, err
 	}
-	if len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0 {
-		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   OriginIngress,
-			Resource: listener,
-		})
+
+	hasFilterChain := len(listener.(*envoy_listener_v3.Listener).FilterChains) > 0
+	if !hasFilterChain {
+		listener, err = zoneproxy.GenerateEmptyDirectResponseListener(proxy, address, port)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	resources.Add(&core_xds.Resource{
+		Name:     listener.GetName(),
+		Origin:   OriginIngress,
+		Resource: listener,
+	})
 	return resources, nil
 }

@@ -10,13 +10,6 @@ import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "RateLimit",
-  file_name : "rate-limit"
-};
 
 message RateLimit {
 
@@ -29,21 +22,21 @@ message RateLimit {
 
   // List of selectors to match dataplanes that rate limit will be applied for
   repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that need to be rate limited.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   message Conf {
     message Http {
       // The number of HTTP requests this RateLimiter allows
       // +required
-      uint32 requests = 1 [ (doc.required) = true ];
+      uint32 requests = 1;
 
       // The the interval for which `requests` will be accounted.
       // +required
-      google.protobuf.Duration interval = 2 [ (doc.required) = true ];
+      google.protobuf.Duration interval = 2;
 
       message OnRateLimit {
         // The HTTP status code to be set on a RateLimit event
@@ -80,5 +73,5 @@ message RateLimit {
 
   // Configuration for RateLimit
   // +required
-  Conf conf = 3 [ (doc.required) = true ];
+  Conf conf = 3;
 }

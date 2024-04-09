@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "TrafficTrace",
-  file_name : "traffic-trace"
-};
 
 // TrafficTrace defines trace configuration for selected dataplanes.
 message TrafficTrace {
@@ -25,7 +18,7 @@ message TrafficTrace {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes.
-  repeated Selector selectors = 1 [ (doc.required) = true ];
+  repeated Selector selectors = 1;
 
   // Configuration defines settings of the tracing.
   message Conf {

@@ -4,6 +4,7 @@ import (
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_dresp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/direct_response/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -78,6 +79,35 @@ func (c *DirectResponseConfigurer) Configure(filterChain *envoy_listener.FilterC
 
 	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
 		Name: "envoy.filters.network.http_connection_manager",
+		ConfigType: &envoy_listener.Filter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	})
+	return nil
+}
+
+type NetworkDirectResponseConfigurer struct {
+	Response []byte
+}
+
+var _ FilterChainConfigurer = &NetworkDirectResponseConfigurer{}
+
+func (c *NetworkDirectResponseConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+	config := &envoy_dresp.Config{
+		Response: &envoy_core_v3.DataSource{
+			Specifier: &envoy_core_v3.DataSource_InlineBytes{
+				InlineBytes: c.Response,
+			},
+		},
+	}
+
+	pbst, err := util_proto.MarshalAnyDeterministic(config)
+	if err != nil {
+		return err
+	}
+
+	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+		Name: "envoy.filters.network.direct_response",
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: pbst,
 		},

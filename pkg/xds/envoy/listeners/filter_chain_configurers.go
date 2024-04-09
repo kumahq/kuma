@@ -57,6 +57,12 @@ func DirectResponse(virtualHostName string, endpoints []v3.DirectResponseEndpoin
 	})
 }
 
+func NetworkDirectResponse(response string) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.NetworkDirectResponseConfigurer{
+		Response: []byte(response),
+	})
+}
+
 func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
 		Mesh:           mesh,

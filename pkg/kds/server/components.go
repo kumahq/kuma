@@ -34,7 +34,7 @@ func New(
 	hashFn, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds", util_xds.NoopVersionExtractor)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    kuma.io/mesh: default
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default

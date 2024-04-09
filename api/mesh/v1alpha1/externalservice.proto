@@ -9,13 +9,6 @@ import "validate/validate.proto";
 import "google/protobuf/wrappers.proto";
 
 import "api/system/v1alpha1/datasource.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "ExternalService",
-  file_name : "external-service"
-};
 
 // ExternalService defines configuration of the externally accessible service
 message ExternalService {
@@ -29,7 +22,7 @@ message ExternalService {
   // Networking describes the properties of the external service connectivity
   message Networking {
     // Address of the external service
-    string address = 1 [ (doc.required) = true ];
+    string address = 1;
 
     // TLS
     message TLS {
@@ -70,10 +63,10 @@ message ExternalService {
     bool disableHostDNSEntry = 3;
   }
 
-  Networking networking = 1 [ (doc.required) = true ];
+  Networking networking = 1;
 
   // Tags associated with the external service,
   // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
   map<string, string> tags = 2
-      [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
+      [ (validate.rules).map.min_pairs = 1 ];
 }

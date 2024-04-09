@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -19,11 +20,12 @@ import (
 )
 
 type OwnerReferenceMutator struct {
-	Client       kube_client.Client
-	CoreRegistry core_registry.TypeRegistry
-	K8sRegistry  k8s_registry.TypeRegistry
-	Decoder      *admission.Decoder
-	Scheme       *kube_runtime.Scheme
+	Client                 kube_client.Client
+	CoreRegistry           core_registry.TypeRegistry
+	K8sRegistry            k8s_registry.TypeRegistry
+	Decoder                *admission.Decoder
+	Scheme                 *kube_runtime.Scheme
+	SkipMeshOwnerReference bool
 }
 
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -45,12 +47,17 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 
 	var owner k8s_model.KubernetesObject
 	switch resType {
+	case meshservice_api.MeshServiceType:
+		return admission.Allowed("ignored. MeshService has a reference for Service")
 	case core_mesh.DataplaneInsightType:
 		owner = &mesh_k8s.Dataplane{}
 		if err := m.Client.Get(ctx, kube_client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, owner); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	default:
+		if m.SkipMeshOwnerReference {
+			return admission.Allowed("ignored. Configuration setup to ignore Mesh owner reference.")
+		}
 		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
 		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())

@@ -149,6 +149,10 @@ type KubernetesRuntimeConfig struct {
 	ClientConfig ClientConfig `json:"clientConfig"`
 	// Kubernetes leader election configuration
 	LeaderElection LeaderElection `json:"leaderElection"`
+	// SkipMeshOwnerReference is a flag that allows to skip adding Mesh owner reference to resources.
+	// If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
+	// This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
+	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
 }
 
 type ControllersConcurrency struct {

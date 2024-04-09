@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "ProxyTemplate",
-  file_name : "proxy-template"
-};
 
 // ProxyTemplate defines the desired state of ProxyTemplate
 message ProxyTemplate {
@@ -25,10 +18,10 @@ message ProxyTemplate {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of Dataplane selectors.
-  repeated Selector selectors = 1 [ (doc.required) = true ];
+  repeated Selector selectors = 1;
 
   // Configuration for ProxyTemplate
-  Conf conf = 2 [ (doc.required) = true ];
+  Conf conf = 2;
 
   message Conf {
     // List of imported profiles.
@@ -63,7 +56,7 @@ message ProxyTemplate {
       // Only clusters that match will be modified
       Match match = 1;
       // Operation to apply on a cluster (add, remove, patch)
-      string operation = 2 [ (doc.required) = true ];
+      string operation = 2;
       // xDS cluster
       string value = 3;
 
@@ -73,7 +66,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the cluster to match
-        string name = 2 [ (doc.required) = true ];
+        string name = 2;
       }
     }
 
@@ -82,7 +75,7 @@ message ProxyTemplate {
       // Only listeners that match will be modified
       Match match = 1;
       // Operation to apply on a listener (add, remove, patch)
-      string operation = 2 [ (doc.required) = true ];
+      string operation = 2;
       // xDS listener
       string value = 3;
 
@@ -92,7 +85,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the listener to match
-        string name = 2 [ (doc.required) = true ];
+        string name = 2;
         // Tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
         map<string, string> tags = 4;
       }
@@ -104,7 +97,7 @@ message ProxyTemplate {
       Match match = 1;
       // Operation to apply on network filter (addFirst, addLast, addBefore,
       // addAfter, remove, patch)
-      string operation = 2 [ (doc.required) = true ];
+      string operation = 2;
       // xDS network filter
       string value = 3;
 
@@ -114,7 +107,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the network filter
-        string name = 2 [ (doc.required) = true ];
+        string name = 2;
         // Name of the listener that network filter modifications will be
         // applied to
         string listenerName = 3;
@@ -130,7 +123,7 @@ message ProxyTemplate {
       Match match = 1;
       // Operation to apply on network filter (addFirst, addLast, addBefore,
       // addAfter, remove, patch)
-      string operation = 2 [ (doc.required) = true ];
+      string operation = 2;
       // xDS HTTP filter
       string value = 3;
 
@@ -155,7 +148,7 @@ message ProxyTemplate {
       // Only virtual hosts that match will be modified
       Match match = 1;
       // Operation to apply on a virtual hosts (add, remove, patch)
-      string operation = 2 [ (doc.required) = true ];
+      string operation = 2;
       // xDS virtual host
       string value = 3;
 
@@ -165,7 +158,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the virtual host to match
-        string name = 2 [ (doc.required) = true ];
+        string name = 2;
         // Name of the route configuration
         string routeConfigurationName = 3;
       }
@@ -212,12 +205,12 @@ message ProxyTemplateRawResource {
 
   // The resource's name, to distinguish it from others of the same type of
   // resource.
-  string name = 1 [ (doc.required) = true ];
+  string name = 1;
 
   // The resource level version. It allows xDS to track the state of individual
   // resources.
-  string version = 2 [ (doc.required) = true ];
+  string version = 2;
 
   // xDS resource.
-  string resource = 3 [ (doc.required) = true ];
+  string resource = 3;
 }

@@ -27,6 +27,7 @@ var _ = Describe("IngressGenerator", func() {
 	type testCase struct {
 		ingress          string
 		expected         string
+		proxyZone        string
 		meshResourceList []*core_xds.MeshIngressResources
 	}
 
@@ -45,6 +46,7 @@ var _ = Describe("IngressGenerator", func() {
 			}
 			proxy := &core_xds.Proxy{
 				Id:         *core_xds.BuildProxyId("default", "ingress"),
+				Zone:       given.proxyZone,
 				APIVersion: envoy_common.APIV3,
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
 					ZoneIngressResource: zoneIngressRes,
@@ -144,6 +146,7 @@ var _ = Describe("IngressGenerator", func() {
               address: 10.0.0.1
               port: 10001
 `,
+			proxyZone:        "zone-main",
 			expected:         "02.envoy.golden.yaml",
 			meshResourceList: []*core_xds.MeshIngressResources{},
 		}),

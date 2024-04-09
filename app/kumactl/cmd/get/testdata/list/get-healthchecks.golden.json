@@ -1,0 +1,60 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "web-to-backend",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "kuma.io/service": "frontend"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "kuma.io/service": "backend"
+          }
+        }
+      ],
+      "conf": {
+        "interval": "5s",
+        "timeout": "2s",
+        "unhealthyThreshold": 3,
+        "healthyThreshold": 1
+      }
+    },
+    {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "backend-to-db",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "kuma.io/service": "frontend"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "kuma.io/service": "backend"
+          }
+        }
+      ],
+      "conf": {
+        "interval": "5s",
+        "timeout": "2s",
+        "unhealthyThreshold": 3,
+        "healthyThreshold": 1
+      }
+    }
+  ],
+  "next": null
+}
