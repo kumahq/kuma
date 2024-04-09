@@ -294,7 +294,7 @@ func (p plugin) configureListener(
 	}
 
 	if l.FilterChains == nil {
-		return errors.New("expected more or one filter chain, got 0")
+		return errors.New("expected at least one filter chain")
 	}
 
 	for _, chain := range l.FilterChains {
