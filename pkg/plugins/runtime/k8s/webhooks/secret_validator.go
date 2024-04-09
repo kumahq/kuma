@@ -12,6 +12,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -24,6 +25,7 @@ type SecretValidator struct {
 	Client       kube_client.Reader
 	Validator    secret_manager.SecretValidator
 	UnsafeDelete bool
+	CpMode       config_core.CpMode
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -76,6 +78,9 @@ func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Reques
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	if secret.Type == common_k8s.MeshSecretType {
+		if syncedResource(v.CpMode, secret.GetLabels()) {
+			return admission.Allowed("ignore. It's synced resource.")
+		}
 		if err := v.Validator.ValidateDelete(ctx, req.Name, meshOfSecret(secret)); err != nil {
 			if verr, ok := err.(*validators.ValidationError); ok {
 				return convertValidationErrorOf(*verr, secret, secret)

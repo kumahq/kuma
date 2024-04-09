@@ -288,6 +288,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
+		CpMode:       rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
@@ -317,11 +318,21 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	}
 
 	ownerRefMutator := &k8s_webhooks.OwnerReferenceMutator{
+<<<<<<< HEAD
 		Client:       mgr.GetClient(),
 		CoreRegistry: core_registry.Global(),
 		K8sRegistry:  k8s_registry.Global(),
 		Scheme:       mgr.GetScheme(),
 		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
+=======
+		Client:                 mgr.GetClient(),
+		CoreRegistry:           core_registry.Global(),
+		K8sRegistry:            k8s_registry.Global(),
+		Scheme:                 mgr.GetScheme(),
+		Decoder:                kube_admission.NewDecoder(mgr.GetScheme()),
+		SkipMeshOwnerReference: rt.Config().Runtime.Kubernetes.SkipMeshOwnerReference,
+		CpMode:                 rt.Config().Mode,
+>>>>>>> 39495fb14 (feat(kuma-cp): do not set mesh owner reference on synced resources (#9882))
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
