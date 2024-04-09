@@ -4,3 +4,6 @@ status:
   code: 200
   metadata: {}
 uid: "12345"
+warnings:
+- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshServiceSubset
+  instead
