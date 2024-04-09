@@ -551,7 +551,7 @@ spec:
                 header:
                   name: x-header
 `, Config.KumaNamespace, meshName)
-		routes :=httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80")
+		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80")
 
 		BeforeAll(func() {
 			err := NewClusterSetup().

@@ -308,7 +308,7 @@ func (p plugin) configureListener(
 			default:
 				return errors.Errorf("unexpected RouteSpecifer %T", r)
 			}
-	
+
 			hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
 			for _, vh := range routeConfig.VirtualHosts {
 				for _, route := range vh.Routes {
