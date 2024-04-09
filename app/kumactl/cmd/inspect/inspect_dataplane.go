@@ -126,11 +126,11 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 			}
 		},
 	}
-	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypePolicies, kuma_cmd.UsageOptions("inspection type", InspectionTypePolicies, InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters))
+	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypePolicies, kuma_cmd.UsageOptions("inspection type", InspectionTypePolicies, InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters, InspectionConfig))
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
 	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().BoolVar(&shadow, "shadow", false, "when computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label")
-	cmd.PersistentFlags().StringSliceVar(&include, "include", []string{}, " an array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.")
+	cmd.PersistentFlags().StringSliceVar(&include, "include", []string{}, "an array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.")
 	return cmd
 }
