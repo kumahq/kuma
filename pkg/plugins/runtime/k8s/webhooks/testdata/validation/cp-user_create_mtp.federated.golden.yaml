@@ -5,5 +5,5 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshServiceSubset
-  instead
+- MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with
+  'kuma.io/service' instead
