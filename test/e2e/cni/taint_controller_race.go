@@ -74,6 +74,7 @@ metadata:
 			Expect(k8sCluster.LoadImages(
 				Config.KumaDPImageRepo,
 				Config.KumaCNIImageRepo,
+				Config.KumaInitImageRepo,
 				Config.KumaUniversalImageRepo,
 			)).ToNot(HaveOccurred())
 
