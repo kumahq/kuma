@@ -127,7 +127,7 @@ jobs:
     steps:
       - name: "Halt due to previous failures"
         run: |-
-          echo "results: ${{ needs.*.result }}"
+          echo "results: ${{ toJson(needs.*.result) }}"
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
           [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
