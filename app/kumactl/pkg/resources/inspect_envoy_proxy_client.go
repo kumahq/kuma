@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
+	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -36,26 +36,30 @@ type httpInspectEnvoyProxyClient struct {
 var _ InspectEnvoyProxyClient = &httpInspectEnvoyProxyClient{}
 
 func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "xds")
+	return h.executeInspectRequest(ctx, rk, "xds", nil)
 }
 
 func (h *httpInspectEnvoyProxyClient) Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "stats")
+	return h.executeInspectRequest(ctx, rk, "stats", nil)
 }
 
 func (h *httpInspectEnvoyProxyClient) Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "clusters")
+	return h.executeInspectRequest(ctx, rk, "clusters", nil)
 }
 
 func (h *httpInspectEnvoyProxyClient) Config(ctx context.Context, rk core_model.ResourceKey, shadow bool, include []string) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, fmt.Sprintf("_config?shadow=%t&include=%s", shadow, strings.Join(include, ",")))
+	return h.executeInspectRequest(ctx, rk, "_config", url.Values{
+		"shadow":  {strconv.FormatBool(shadow)},
+		"include": include,
+	})
 }
 
-func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context, rk core_model.ResourceKey, inspectionPath string) ([]byte, error) {
+func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context, rk core_model.ResourceKey, inspectionPath string, queryParams url.Values) ([]byte, error) {
 	resUrl, err := h.buildURL(rk, inspectionPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not construct the url")
 	}
+	resUrl.RawQuery = queryParams.Encode()
 	req, err := http.NewRequest("GET", resUrl.String(), nil)
 	if err != nil {
 		return nil, err

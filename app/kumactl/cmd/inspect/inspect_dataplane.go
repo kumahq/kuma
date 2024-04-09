@@ -75,6 +75,13 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				inspectionType = InspectionTypeConfigDump
 			}
 
+			if shadow && inspectionType != InspectionConfig {
+				return errors.New("flag '--shadow' can be used only when '--type=config'")
+			}
+			if len(include) > 0 && inspectionType != InspectionConfig {
+				return errors.New("flag '--include' can be used only when '--type=config'")
+			}
+
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.DataplaneResourceTypeDescriptor)
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane inspect client")
