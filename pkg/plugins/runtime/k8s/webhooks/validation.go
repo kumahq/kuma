@@ -82,7 +82,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 			return admission.Denied(err.Error())
 		}
 
-		return admission.Allowed("").WithWarnings(core_model.CheckDeprecated(coreRes)...)
+		return admission.Allowed("").WithWarnings(core_model.Deprecations(coreRes)...)
 	}
 }
 
