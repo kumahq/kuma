@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -48,6 +49,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 	}
 
 	type testCase struct {
+<<<<<<< HEAD
 		inputObject     string
 		expectedPatch   string
 		expectedMessage string
@@ -60,6 +62,45 @@ var _ = Describe("OwnerReferenceMutator", func() {
 
 			wh := createWebhook()
 			r := wh.Handle(context.Background(), createRequest(tr, []byte(given.inputObject)))
+=======
+		inputObject            string
+		expectedPatch          string
+		expectedMessage        string
+		skipMeshOwnerReference bool
+		ownerId                kube_meta.Object
+		cpMode                 string
+	}
+	DescribeTable("should add owner reference to resource owned by Mesh",
+		func(given testCase) {
+			if given.ownerId == nil {
+				given.ownerId = defaultMesh
+			}
+			k8sGroupVersionKind := kube_meta.GroupVersionKind{}
+			Expect(json.Unmarshal([]byte(given.inputObject), &k8sGroupVersionKind)).To(Succeed())
+			wh := &webhooks.OwnerReferenceMutator{
+				Client:                 k8sClient,
+				CoreRegistry:           core_registry.Global(),
+				K8sRegistry:            k8s_registry.Global(),
+				Decoder:                decoder,
+				Scheme:                 scheme,
+				SkipMeshOwnerReference: given.skipMeshOwnerReference,
+				CpMode:                 given.cpMode,
+			}
+			req := kube_admission.Request{
+				AdmissionRequest: admissionv1.AdmissionRequest{
+					UID: "12345",
+					Object: kube_runtime.RawExtension{
+						Raw: []byte(given.inputObject),
+					},
+					Kind: kube_meta.GroupVersionKind{
+						Group:   k8sGroupVersionKind.Group,
+						Version: k8sGroupVersionKind.Version,
+						Kind:    k8sGroupVersionKind.Kind,
+					},
+				},
+			}
+			r := wh.Handle(context.Background(), req)
+>>>>>>> 39495fb14 (feat(kuma-cp): do not set mesh owner reference on synced resources (#9882))
 			if given.expectedMessage != "" {
 				Expect(r.Result.Message).To(Equal(given.expectedMessage))
 			} else {
@@ -128,6 +169,131 @@ var _ = Describe("OwnerReferenceMutator", func() {
             }`,
 			expectedMessage: `mesh: cannot be empty`,
 		}),
+<<<<<<< HEAD
+=======
+		Entry("should not add patches to MeshService", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshService",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedMessage: "ignored. MeshService has a reference for Service",
+		}),
+		Entry("should add owner reference to resource owned by Dataplane", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "DataplaneInsight",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "default",
+                "name": "dp-1",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedPatch: `
+            [
+              {
+                "op": "add",
+                "path": "/metadata/ownerReferences",
+                "value": [
+                  {
+                    "apiVersion": "kuma.io/v1alpha1",
+                    "kind": "Dataplane",
+                    "name": "dp-1",
+                    "uid": "%s"
+                  }
+                ]
+              }
+            ]`,
+			ownerId: dp1,
+		}),
+		Entry("should add owner reference to resource owned by Dataplane even with SkipMeshOwnerReference", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "DataplaneInsight",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "default",
+                "name": "dp-1",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedPatch: `
+            [
+              {
+                "op": "add",
+                "path": "/metadata/ownerReferences",
+                "value": [
+                  {
+                    "apiVersion": "kuma.io/v1alpha1",
+                    "kind": "Dataplane",
+                    "name": "dp-1",
+                    "uid": "%s"
+                  }
+                ]
+              }
+            ]`,
+			ownerId:                dp1,
+			skipMeshOwnerReference: true,
+		}),
+		Entry("should ignore mesh owner reference", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			skipMeshOwnerReference: true,
+			expectedMessage:        "ignored. Configuration setup to ignore Mesh owner reference.",
+		}),
+		Entry("should not add owner reference to synced resources to zone", testCase{
+			cpMode: config_core.Zone,
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              }
+            }`,
+			expectedMessage: "ignore. It's synced resource.",
+		}),
+		Entry("should not add owner reference to synced resources to global", testCase{
+			cpMode: config_core.Global,
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "zone"
+                }
+              }
+            }`,
+			expectedMessage: "ignore. It's synced resource.",
+		}),
+>>>>>>> 39495fb14 (feat(kuma-cp): do not set mesh owner reference on synced resources (#9882))
 	)
 
 	It("should add owner reference to resource owned by Dataplane", func() {
