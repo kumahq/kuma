@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -521,6 +522,87 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(429))
 			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshLoadBalancingStrategy", func() {
+		mlbs := fmt.Sprintf(`
+kind: MeshLoadBalancingStrategy
+apiVersion: kuma.io/v1alpha1
+metadata:
+  name: ring-hash
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server-mlbs_%[2]s_svc_80
+      default:
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            hashPolicies:
+              - type: Header
+                header:
+                  name: x-header
+`, Config.KumaNamespace, meshName)
+		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80")
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(testserver.Install(
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithName("test-server-mlbs"),
+					testserver.WithStatefulSet(true),
+					testserver.WithReplicas(3),
+				)).
+				Install(YamlK8s(routes...)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(routes...)).
+				Install(DeleteYamlK8s(mlbs)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should route to only one instance", func() {
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/mlbs",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("x-header", "value"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(3))
+			}, "30s", "1s").Should(Succeed())
+
+			Expect(framework.YamlK8s(mlbs)(kubernetes.Cluster)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/mlbs",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("x-header", "value"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(1))
+			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})
 
