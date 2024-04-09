@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -17,6 +18,7 @@ type InspectEnvoyProxyClient interface {
 	ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
 	Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
 	Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
+	Config(ctx context.Context, rk core_model.ResourceKey, shadow bool, include []string) ([]byte, error)
 }
 
 func NewInspectEnvoyProxyClient(resDesc core_model.ResourceTypeDescriptor, client util_http.Client) InspectEnvoyProxyClient {
@@ -43,6 +45,10 @@ func (h *httpInspectEnvoyProxyClient) Stats(ctx context.Context, rk core_model.R
 
 func (h *httpInspectEnvoyProxyClient) Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
 	return h.executeInspectRequest(ctx, rk, "clusters")
+}
+
+func (h *httpInspectEnvoyProxyClient) Config(ctx context.Context, rk core_model.ResourceKey, shadow bool, include []string) ([]byte, error) {
+	return h.executeInspectRequest(ctx, rk, fmt.Sprintf("_config?shadow=%t&include=%s", shadow, strings.Join(include, ",")))
 }
 
 func (h *httpInspectEnvoyProxyClient) executeInspectRequest(ctx context.Context, rk core_model.ResourceKey, inspectionPath string) ([]byte, error) {

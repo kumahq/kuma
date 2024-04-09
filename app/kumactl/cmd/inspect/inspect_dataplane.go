@@ -20,6 +20,7 @@ const (
 	InspectionTypeConfigDump = "config-dump"
 	InspectionTypeStats      = "stats"
 	InspectionTypeClusters   = "clusters"
+	InspectionConfig         = "config"
 )
 
 var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
@@ -61,6 +62,8 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 	}
 	var configDump bool
 	var inspectionType string
+	var shadow bool
+	var include []string
 	cmd := &cobra.Command{
 		Use:   "dataplane NAME",
 		Short: "Inspect Dataplane",
@@ -84,6 +87,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				if err != nil {
 					return errors.Wrap(err, "failed to create a dataplane inspect client")
 				}
+
 				entryList, err := client.InspectPolicies(context.Background(), pctx.CurrentMesh(), name)
 				if err != nil {
 					return err
@@ -110,6 +114,13 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				}
 				_, err = fmt.Fprint(cmd.OutOrStdout(), string(bytes))
 				return err
+			case InspectionConfig:
+				bytes, err := client.Config(context.Background(), resourceKey, shadow, include)
+				if err != nil {
+					return err
+				}
+				_, err = fmt.Fprint(cmd.OutOrStdout(), string(bytes))
+				return err
 			default:
 				return errors.New("invalid inspection type")
 			}
@@ -119,5 +130,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
 	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
+	cmd.PersistentFlags().BoolVar(&shadow, "shadow", false, "when computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label")
+	cmd.PersistentFlags().StringSliceVar(&include, "include", []string{}, " an array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.")
 	return cmd
 }
