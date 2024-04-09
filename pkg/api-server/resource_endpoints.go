@@ -380,7 +380,7 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	if warnings := model.CheckDeprecated(res); len(warnings) > 0 {
-		if err := response.WriteHeaderAndJson(201, api_server_types.SuccessfulResponse{Warnings: warnings}, "application/json"); err != nil {
+		if err := response.WriteHeaderAndJson(201, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
 			log.Error(err, "Could not write the response")
 		}
 	} else {
@@ -417,7 +417,7 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	if warnings := model.CheckDeprecated(currentRes); len(warnings) > 0 {
-		if err := response.WriteHeaderAndJson(200, api_server_types.SuccessfulResponse{Warnings: warnings}, "application/json"); err != nil {
+		if err := response.WriteHeaderAndJson(200, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
 			log.Error(err, "Could not write the response")
 		}
 	} else {

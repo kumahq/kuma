@@ -1,5 +1,5 @@
 package types
 
-type SuccessfulResponse struct {
+type CreateOrUpdateSuccessResponse struct {
 	Warnings []string `json:"warnings,omitempty"`
 }

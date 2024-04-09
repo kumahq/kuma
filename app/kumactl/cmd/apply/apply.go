@@ -19,6 +19,7 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -143,7 +144,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 					for _, w := range warnings {
-						if _, err := fmt.Fprintln(cmd.ErrOrStderr(), fmt.Sprintf("Warning: %v", w)); err != nil {
+						if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", w); err != nil {
 							return err
 						}
 					}
@@ -166,7 +167,7 @@ func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.Re
 	}
 
 	var warnings []string
-	warnContext := context.WithValue(ctx, "warnings", func(s []string) {
+	warnContext := context.WithValue(ctx, remote.WarningsCallback, func(s []string) {
 		warnings = s
 	})
 
