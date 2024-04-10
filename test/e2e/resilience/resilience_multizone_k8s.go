@@ -19,7 +19,7 @@ func ResilienceMultizoneK8s() {
 			Install(Kuma(core.Global,
 				WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
-				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "10s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
 			)).
 			Setup(global)).To(Succeed())
 		Expect(global.VerifyKuma()).To(Succeed())
@@ -33,7 +33,7 @@ func ResilienceMultizoneK8s() {
 			Install(Kuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCtlOpts(map[string]string{"--set": "controlPlane.terminationGracePeriodSeconds=5"}),
 				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
-				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "10s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Setup(zone1)).To(Succeed())
