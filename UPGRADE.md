@@ -133,7 +133,7 @@ This section describes changes to internal resources used by Kuma when configuri
 #### Prior Behavior (Before Kuma 2.7.0):
 
   * Applying a `Gateway` resource resulted in the creation of corresponding `MeshGateway` and `MeshGatewayInstance` resources.
-  * Applying an `HTTPRoute` resource was converted to a `MeshGatewayRoute` resource.
+  * An applied `HTTPRoute` resource was converted to a `MeshGatewayRoute` resource.
 
 #### Changes Introduced in Kuma 2.7.0:
 
