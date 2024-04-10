@@ -23,6 +23,14 @@ updates:
     labels:
       - "dependencies"
 
+  - package-ecosystem: "docker"
+    directory: "/test/dockerfiles"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 15
+    labels:
+      - "dependencies"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -31,8 +39,3 @@ updates:
     labels:
       - "dependencies"      
       - "ci/skip-test" # No need to run tests on github actions updates
-
-  - package-ecosystem: docker
-    directory: /tools/postgres
-    schedule:
-      interval: daily
