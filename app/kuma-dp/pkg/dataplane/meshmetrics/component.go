@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
@@ -214,9 +213,8 @@ func startExporter(ctx context.Context, backend *xds.OpenTelemetryBackend, produ
 	logger.Info("Starting OpenTelemetry exporter", "backend", backendName)
 	exporter, err := otlpmetricgrpc.New(
 		ctx,
-		otlpmetricgrpc.WithEndpoint(backend.Endpoint),
+		otlpmetricgrpc.WithEndpoint(fmt.Sprintf("unix://%s", backend.Endpoint)),
 		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithDialOption(dialOptions()...),
 	)
 	if err != nil {
 		return nil, err
@@ -279,8 +277,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Port:              cf.envoyAdminPort,
 		IsIPv6:            false,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
-		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar), metrics.MergeClustersForOpenTelemetry),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
 	})
 
 	return applicationsToScrape
@@ -314,16 +311,6 @@ func (cf *ConfigFetcher) shutDownMetricsExporters() {
 
 func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
 	return appliedConfig.RefreshInterval.Duration != newConfig.RefreshInterval.Duration
-}
-
-func dialOptions() []grpc.DialOption {
-	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
-		var d net.Dialer
-		return d.DialContext(ctx, unixDomainSocket, addr)
-	}
-	return []grpc.DialOption{
-		grpc.WithContextDialer(dialer),
-	}
 }
 
 type runningBackend struct {

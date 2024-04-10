@@ -65,12 +65,28 @@ func GetMetricsHijackerClusterName() string {
 	return Join("kuma", "metrics", "hijacker")
 }
 
+func GetInternalClusterNamePrefix() string {
+	return "_"
+}
+
+func GetAdsClusterName() string {
+	return "ads_cluster"
+}
+
+func GetAccessLogSinkClusterName() string {
+	return "access_log_sink"
+}
+
 func GetOpenTelemetryListenerName(backendName string) string {
 	return Join("_kuma", "metrics", "opentelemetry", backendName)
 }
 
+func GetOpenTelemetryClusterPrefix() string {
+	return Join("_kuma", "metrics", "opentelemetry")
+}
+
 func GetOpenTelemetryClusterName(backendName string) string {
-	return Join("_kuma", "metrics", "opentelemetry", backendName)
+	return Join(GetOpenTelemetryClusterPrefix(), backendName)
 }
 
 func GetPrometheusListenerName() string {
@@ -81,8 +97,12 @@ func GetAdminListenerName() string {
 	return Join("kuma", "envoy", "admin")
 }
 
+func GetTracingClusterPrefix() string {
+	return Join("tracing")
+}
+
 func GetTracingClusterName(backendName string) string {
-	return Join("tracing", backendName)
+	return Join(GetTracingClusterPrefix(), backendName)
 }
 
 func GetDNSListenerName() string {

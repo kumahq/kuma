@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -20,7 +22,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -32,12 +34,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 )
 
 const (
@@ -51,25 +56,27 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode                         config_core.CpMode
-	federatedZone                bool
-	zoneName                     string
-	resManager                   manager.ResourceManager
-	descriptor                   model.ResourceTypeDescriptor
-	resourceAccess               access.ResourceAccess
-	k8sMapper                    k8s.ResourceMapperFunc
-	filter                       func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder           xds_context.MeshContextBuilder
+	mode               config_core.CpMode
+	federatedZone      bool
+	zoneName           string
+	resManager         manager.ResourceManager
+	descriptor         model.ResourceTypeDescriptor
+	resourceAccess     access.ResourceAccess
+	k8sMapper          k8s.ResourceMapperFunc
+	filter             func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder xds_context.MeshContextBuilder
+	xdsHooks           []xds_hooks.ResourceSetHook
+
 	disableOriginLabelValidation bool
 }
 
 func typeToLegacyOverviewPath(resourceType model.ResourceType) string {
 	switch resourceType {
-	case mesh.ZoneEgressType:
+	case core_mesh.ZoneEgressType:
 		return "zoneegressoverviews"
-	case mesh.ZoneIngressType:
+	case core_mesh.ZoneIngressType:
 		return "zoneingresses+insights"
-	case mesh.DataplaneType:
+	case core_mesh.DataplaneType:
 		return "dataplanes+insights"
 	case system.ZoneType:
 		return "zones+insights"
@@ -108,12 +115,29 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 	}
-	if r.descriptor.Name == mesh.DataplaneType || r.descriptor.Name == mesh.MeshGatewayType {
+	if r.descriptor.Name == core_mesh.DataplaneType || r.descriptor.Name == core_mesh.MeshGatewayType {
 		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(r.rulesForResource()).
 			Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
+		if r.mode == config_core.Global {
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed("")).
+				Doc("Not allowed on Global CP.").
+				Returns(http.StatusMethodNotAllowed, "Not allowed on Global CP.", restful.ServiceError{}))
+		} else {
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.configForProxy()).
+				Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
+				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+				Returns(200, "OK", nil).
+				Returns(404, "Not found", nil))
+		}
+	}
+}
+
+func (r *resourceEndpoints) methodNotAllowed(title string) func(request *restful.Request, response *restful.Response) {
+	return func(request *restful.Request, response *restful.Response) {
+		rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, title)
 	}
 }
 
@@ -287,9 +311,7 @@ func (r *resourceEndpoints) MergeInOverview(resources model.ResourceList, insigh
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.PUT(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
-		}).
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
@@ -411,9 +433,7 @@ func (r *resourceEndpoints) updateResource(
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(func(request *restful.Request, response *restful.Response) {
-			rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, r.readOnlyMessage())
-		}).
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
@@ -473,9 +493,9 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	err.AddError("labels", r.validateLabels(resourceMeta))
 
 	if create {
-		err.AddError("", mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
+		err.AddError("", core_mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
 	} else {
-		if verr, msg := mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
+		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
 			err.AddError("", verr)
 		} else if msg != "" {
 			log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
@@ -526,7 +546,7 @@ func (r *resourceEndpoints) meshFromRequest(request *restful.Request) (string, e
 		if meshName == "" { // Handle lists across all meshes
 			return "", nil
 		}
-		mRes := mesh.MeshResourceTypeDescriptor.NewObject()
+		mRes := core_mesh.MeshResourceTypeDescriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), mRes, store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return "", err
 		}
@@ -578,9 +598,9 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 
 		var dependentTypes []model.ResourceType
 		if r.descriptor.IsTargetRefBased {
-			dependentTypes = []model.ResourceType{meshhttproute_api.MeshHTTPRouteType, mesh.MeshGatewayType}
-		} else if r.descriptor.Name == mesh.MeshGatewayRouteType {
-			dependentTypes = []model.ResourceType{mesh.MeshGatewayType}
+			dependentTypes = []model.ResourceType{meshhttproute_api.MeshHTTPRouteType, core_mesh.MeshGatewayType}
+		} else if r.descriptor.Name == core_mesh.MeshGatewayRouteType {
+			dependentTypes = []model.ResourceType{core_mesh.MeshGatewayType}
 		}
 		dependentResources := xds_context.NewResources()
 		for _, dependentType := range dependentTypes {
@@ -596,7 +616,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			dependentResources.MeshLocalResources[dependentType] = hl
 		}
 		filter := func(rs model.Resource) bool {
-			dpp := rs.(*mesh.DataplaneResource)
+			dpp := rs.(*core_mesh.DataplaneResource)
 			if r.descriptor.IsTargetRefBased {
 				res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
 				return res
@@ -620,7 +640,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			return false
 		}
-		dppList := registry.Global().MustNewList(mesh.DataplaneType)
+		dppList := registry.Global().MustNewList(core_mesh.DataplaneType)
 		err = r.resManager.List(request.Request.Context(), dppList,
 			store.ListByMesh(meshName),
 			store.ListByNameContains(nameContains),
@@ -644,6 +664,92 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
 		}
 	}
+}
+
+func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
+
+		name := request.PathParameter("name")
+		mesh, err := r.meshFromRequest(request)
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to retrieve Mesh")
+			return
+		}
+		qparams, err := r.configForProxyParams(request)
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to parse query parameters")
+			return
+		}
+
+		mc, err := r.meshContextBuilder.Build(ctx, mesh)
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to build mesh context")
+			return
+		}
+
+		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.xdsHooks...)
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
+			return
+		}
+
+		config, err := inspector.Get(ctx, name, *qparams.Shadow)
+		if err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed to inspect proxy config")
+			return
+		}
+
+		out := &api_types.InspectDataplanesConfig{
+			Xds: config,
+		}
+
+		if slices.Contains(*qparams.Include, api_types.Diff) {
+			currentConfig, err := inspector.Get(ctx, name, false)
+			if err != nil {
+				rest_errors.HandleError(ctx, response, err, "Failed to inspect current proxy config")
+				return
+			}
+			diff, err := inspect.Diff(config, currentConfig)
+			if err != nil {
+				rest_errors.HandleError(ctx, response, err, "Failed to compute diff")
+				return
+			}
+			out.Diff = &diff
+		}
+
+		if err := response.WriteAsJson(out); err != nil {
+			rest_errors.HandleError(ctx, response, err, "Failed writing response")
+		}
+	}
+}
+
+func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetMeshesMeshDataplanesNameConfigParams, error) {
+	params := &api_types.GetMeshesMeshDataplanesNameConfigParams{
+		Shadow:  pointer.To(false),
+		Include: &[]api_types.GetMeshesMeshDataplanesNameConfigParamsInclude{},
+	}
+
+	if shadow := request.QueryParameter("shadow"); shadow != "" {
+		if b, err := strconv.ParseBool(shadow); err != nil {
+			return nil, rest_errors.NewBadRequestError("unsupported value for query parameter 'shadow'")
+		} else {
+			params.Shadow = &b
+		}
+	}
+
+	if include := request.QueryParameter("include"); include != "" {
+		for _, v := range strings.Split(include, ",") {
+			switch api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v) {
+			case api_types.Diff:
+			default:
+				return nil, rest_errors.NewBadRequestError("unsupported value for query parameter 'include'")
+			}
+			*params.Include = append(*params.Include, api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v))
+		}
+	}
+
+	return params, nil
 }
 
 func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
@@ -670,19 +776,19 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 			return
 		}
-		var dp *mesh.DataplaneResource
+		var dp *core_mesh.DataplaneResource
 		switch {
-		case r.descriptor.Name == mesh.DataplaneType:
-			dp = resource.(*mesh.DataplaneResource)
-		case r.descriptor.Name == mesh.MeshGatewayType:
+		case r.descriptor.Name == core_mesh.DataplaneType:
+			dp = resource.(*core_mesh.DataplaneResource)
+		case r.descriptor.Name == core_mesh.MeshGatewayType:
 			// Create a dataplane that would match this gateway.
 			// It might not show all policies but most of the ones matching this specific gateway and its routes
-			gw := resource.(*mesh.MeshGatewayResource)
+			gw := resource.(*core_mesh.MeshGatewayResource)
 			if len(gw.Spec.Selectors) == 0 {
 				rest_errors.HandleError(request.Request.Context(), response, errors.New("no selectors on MeshGateway this is not supported"), "Invalid MeshGateway")
 				return
 			}
-			dp = &mesh.DataplaneResource{
+			dp = &core_mesh.DataplaneResource{
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{

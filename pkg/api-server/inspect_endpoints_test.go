@@ -67,6 +67,7 @@ var _ = Describe("Inspect WS", func() {
 		resources   []core_model.Resource
 		global      bool
 		contentType string
+		query       string
 	}
 	AfterEach(func() {
 		core.Now = time.Now
@@ -98,9 +99,10 @@ var _ = Describe("Inspect WS", func() {
 
 			// when
 			resp, err := http.Get((&url.URL{
-				Scheme: "http",
-				Host:   apiServer.Address(),
-				Path:   given.path,
+				Scheme:   "http",
+				Host:     apiServer.Address(),
+				Path:     given.path,
+				RawQuery: given.query,
 			}).String())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -813,6 +815,16 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: restful.MIME_JSON,
 		}),
+		Entry("inspect xds for dataplane with eds", testCase{
+			path:    "/meshes/mesh-1/dataplanes/backend-1/xds",
+			query:   "include_eds=true",
+			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_dataplane_with_eds.json")),
+			resources: []core_model.Resource{
+				builders.Mesh().WithName("mesh-1").Build(),
+				builders.Dataplane().WithName("backend-1").WithAddress("1.1.1.1").WithMesh("mesh-1").WithAdminPort(3301).WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
+			},
+			contentType: restful.MIME_JSON,
+		}),
 		Entry("inspect xds for local zone ingress", testCase{
 			path:    "/zoneingresses/zi-1/xds",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
@@ -889,6 +901,16 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: "text/plain",
 		}),
+		Entry("inspect stats for dataplane as json", testCase{
+			path:    "/meshes/mesh-1/dataplanes/backend-1/stats",
+			query:   "format=json",
+			matcher: matchers.MatchGoldenEqual(path.Join("testdata", "inspect_stats_dataplane.json")),
+			resources: []core_model.Resource{
+				builders.Mesh().WithName("mesh-1").Build(),
+				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
+			},
+			contentType: restful.MIME_JSON,
+		}),
 		Entry("inspect clusters for dataplane", testCase{
 			path:    "/meshes/mesh-1/dataplanes/backend-1/clusters",
 			matcher: matchers.MatchGoldenEqual(path.Join("testdata", "inspect_clusters_dataplane.out")),
@@ -898,6 +920,27 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: "text/plain",
 		}),
+		Entry("inspect clusters for dataplane as json", testCase{
+			path:    "/meshes/mesh-1/dataplanes/backend-1/clusters",
+			query:   "format=json",
+			matcher: matchers.MatchGoldenEqual(path.Join("testdata", "inspect_clusters_dataplane.json")),
+			resources: []core_model.Resource{
+				builders.Mesh().WithName("mesh-1").Build(),
+				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
+			},
+			contentType: restful.MIME_JSON,
+		}),
+		Entry("inspect invalid admin type for dataplane", testCase{
+			path:    "/meshes/mesh-1/dataplanes/backend-1/notAType",
+			query:   "format=json",
+			matcher: matchers.MatchGoldenEqual(path.Join("testdata", "inspect_dataplanes.invalid_admin.json")),
+			resources: []core_model.Resource{
+				builders.Mesh().WithName("mesh-1").Build(),
+				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithServices("backend").AddOutboundsToServices("redis", "elastic", "web").Build(),
+			},
+			contentType: restful.MIME_JSON,
+		}),
+
 		Entry("inspect rules empty", testCase{
 			path:    "/meshes/default/dataplanes/web-01/rules",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_rules_empty.golden.json")),

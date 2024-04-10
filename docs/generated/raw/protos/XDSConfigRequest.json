@@ -19,6 +19,10 @@
                 "resource_mesh": {
                     "type": "string",
                     "description": "Mesh of the resource on which we execute config dump. Should be empty for ZoneIngress, ZoneEgress."
+                },
+                "include_eds": {
+                    "type": "boolean",
+                    "description": "whether we include eds or not"
                 }
             },
             "additionalProperties": true,

@@ -6,7 +6,51 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.8.x`
+
 ## Upgrade to `2.7.x`
+
+### MeshMetric and cluster stats merging
+
+For MeshMetric we disabled cluster [stats merging](https://github.com/kumahq/kuma/pull/9768) so that metrics are generated per [traffic split](https://kuma.io/docs/2.6.x/policies/meshhttproute/#traffic-split).
+This means that in Grafana there will be at least two entries under "Destination service" - one for the service without a hash (e.g. `backend_kuma-demo_svc_3001`) and one per each split ending with a hash (e.g. `backend_kuma-demo_svc_3001-de1397ec09e96dfb`).
+If you want to see combined metrics you can run queries with a prefix instead of exact match, e.g.:
+
+```
+... envoy_cluster_name=~"$destination_cluster.*" ...
+```
+
+instead of
+
+```
+... envoy_cluster_name="$destination_cluster" ...
+```
+
+To correlate between a hash and a particular pod you have to click on the outbound, and then click on "clusters" and associate pod ip with cluster ip.
+This will be improved in the future by having the tags next to the outbound.
+[This issue](https://github.com/kumahq/kuma-gui/issues/2412) tracks the progress of that as well as contains screenshots of the steps.
+
+### MeshMetric `sidecar.regex` is replaced by `sidecar.profiles.exclude`
+
+If you're using `sidecar.regex` field it is getting replaced by `sidecar.profiles.exclude`.
+Replace usages of:
+
+```yaml
+...
+  sidecar:
+    regex: "my_match.*"
+...
+```
+
+with:
+
+```yaml
+  sidecar:
+    profiles:
+      exclude:
+        - type: Regex
+          match: "my_match.*"
+```
 
 ### Setting `kuma.io/service` in tags of `MeshGatewayInstance` is deprecated
 
@@ -618,7 +662,7 @@ Every item in the `items` array now has a `kind` property of either:
   structure representing the `MeshGateway` it serves.
 
 Some examples can be found in the [Inspect API
-docs](https://kuma.io/docs/1.6.x/documentation/http-api/#inspect-api).
+docs](https://kuma.io/docs/1.6.x/reference/http-api/#inspect-api).
 
 ## Upgrade to `1.5.x`
 
@@ -820,7 +864,7 @@ previous XDSv2 is still available and will continue working. All the existing da
 being restarted. The newly deployed `kuma-dp` instances will automatically get bootstrapped to XDSv3. In case that needs to be
 changed, `kuma-cp` needs to be started with `KUMA_BOOTSTRAP_SERVER_API_VERSION=v2`.
 
-With Kuma 1.1.0, the `kuma-cp` will installs default [retry](https://kuma.io/docs/1.1.0/policies/retry/) and [timeout](https://kuma.io/docs/1.1.0/policies/timeout/) policies for each new
+With Kuma 1.1.0, the `kuma-cp` will installs default retry and timeout policies for each new
 created Mesh object. The pre-existing meshes will not automatically get these default policies. If needed, they should be created accordingly.
 
 This version removes the deprecated `--dataplane` flag in `kumactl generate dataplane-token`, please consider migrating to use `--name` instead.
@@ -850,52 +894,52 @@ This release introduces a number of breaking changes. If Kuma is being deployed 
 
     The following default resources will be created upon the first start of Kuma Control Plane
         - default signing key
-        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
-        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
+        - default Allow All traffic permission policy `allow-all-<mesh name>`
+        - Default Allow All traffic route policy `allow-all-<mesh name>`
     
     Please verify if this conflicts with your deployment and expected policies.
 
  * New Multizone deployment flow
 
-    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
+    Deploying Multizone clusters is now simplified, please refer to the deployment documentation of the updated procedure.
    
  * Improved control plane communication security
    
-    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+    Kuma Control Plane exposed ports are reduced, please revise the documentation for detailed list.
     Consider reinstalling the metrics due to the port changes in Kuma Prometheus SD.
  
  * Traffic route format
  
-    The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
+    The format of the TrafficRoute has changed. Please check the documentation and adapt your resources. 
 
 ### Suggested Upgrade Path on Universal
  * Get rid of advertised hostname
     `KUMA_GENERAL_ADVERTISED_HOSTNAME` was removed and not needed now.
  
  * Autoconfigure single cert for all services
-    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the [documentation](https://github.com/kumahq/kuma/blob/release-1.0/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml) to verify the new naming.
+    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the documentation](https://github.com/kumahq/kuma/blob/release-1.0/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml) to verify the new naming.
 
  * Create default resources for Mesh
     
     The following default resources will be created upon the first start of Kuma Control Plane
         - default signing key
-        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
-        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
+        - default Allow All traffic permission policy `allow-all-<mesh name>`
+        - Default Allow All traffic route policy `allow-all-<mesh name>`
     
     Please verify if this conflicts with your deployment and expected policies.
 
 * New Multizone deployment flow
 
-    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
+    Deploying Multizone clusters is now simplified, please refer to the deployment documentation of the updated procedure.
    
  * Improved control plane communication security
    
-    `kuma-dp` invocation has changed and now [allows](https://kuma.io/docs/1.0.1/documentation/dps-and-data-model/#dataplane-entity) for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
-    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+    `kuma-dp` invocation has changed and now allows for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
+    Kuma Control Plane exposed ports are reduced, please revise the documentation for detailed list.
  
   * Traffic route format
   
-     The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
+     The format of the TrafficRoute has changed. Please check the documentation and adapt your resources. 
 
  
 ## Upgrade to `0.7.0`
@@ -956,11 +1000,11 @@ networking:
       kuma.io/service: redis" | kumactl apply -f -
 ```
 
-This release changes the way that Distributed and Hybrid Kuma Control planes are deployed. Please refer to the [documentation](https://kuma.io/docs/0.7.0/documentation/deployments/#usage) for more details.
+This release changes the way that Distributed and Hybrid Kuma Control planes are deployed. Please refer to the documentation for more details.
 
 ## Upgrade to `0.6.0`
 
-[Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/) were removed in favor of [Circuit Breaking](https://kuma.io/docs/0.6.0/policies/circuit-breaker/).
+Passive Health Check were removed in favor of Circuit Breaking.
 
 Format of Active Health Check changed from :
 ```yaml
@@ -1111,13 +1155,13 @@ spec:
 #### Removing `kuma-injector`
 
 Kuma 0.5.0 ships with `kuma-injector` embedded into the `kuma-cp`, which makes its previously created resources obsolete and potentially
- can cause problems with the deployments. Before deploying the new version, it is strongly advised to run a cleanup script [kuma-0.5.0-k8s-remove_injector_resources.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-remove_injector_resources.sh).
+ can cause problems with the deployments. Before deploying the new version, it is strongly advised to run a cleanup script kuma-0.5.0-k8s-remove_injector_resources.sh.
  
  NOTE: if Kuma was deployed in a namespace other than `kuma-system`, please run `export KUMA_SYSTEM=<othernamespace` before running the cleanup script.
 
 #### Kuma resources `ownerReferences` 
 Kuma 0.5.0 introduce webhook for setting `ownerReferences` to the Kuma resources. If you have some 
-Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-set_owner_references.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-set_owner_references.sh) 
+Kuma resources in your k8s cluster, then you can use our script kuma-0.5.0-k8s-set_owner_references.sh 
 in order to properly set `ownerReferences` .
 
 ### Suggested Upgrade Path on Universal

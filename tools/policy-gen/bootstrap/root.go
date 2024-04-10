@@ -262,8 +262,7 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	{{- if not .generateTargetRef }}
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {	{{- if not .generateTargetRef }}
 	panic("implement me")
 	{{- else }}
 	return matchers.MatchedPolicies(api.{{ .name }}Type, dataplane, resources)

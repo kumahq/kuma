@@ -322,7 +322,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		IsIPv6:            false,
 		QueryModifier:     metrics.AddPrometheusFormat,
 		Mutator:           metrics.AggregatedMetricsMutator(metrics.MergeClustersForPrometheus),
-		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.MergeClustersForOpenTelemetry),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(),
 	})
 	return applicationsToScrape
 }

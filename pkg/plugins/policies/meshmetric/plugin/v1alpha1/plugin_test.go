@@ -94,7 +94,6 @@ var _ = Describe("MeshMetric", func() {
 								Subset: []core_rules.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
-										Regex:         pointer.To("http.*"),
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
@@ -130,7 +129,6 @@ var _ = Describe("MeshMetric", func() {
 								Subset: []core_rules.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
-										Regex:         pointer.To("http.*"),
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
@@ -240,7 +238,6 @@ var _ = Describe("MeshMetric", func() {
 								Subset: []core_rules.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
-										Regex:         pointer.To("http.*"),
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
@@ -282,7 +279,6 @@ var _ = Describe("MeshMetric", func() {
 								Subset: []core_rules.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
-										Regex:         pointer.To("http.*"),
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{

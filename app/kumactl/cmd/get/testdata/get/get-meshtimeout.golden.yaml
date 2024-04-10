@@ -1,0 +1,23 @@
+creationTime: "0001-01-01T00:00:00Z"
+labels:
+  k8s.kuma.io/namespace: kong-mesh-system
+  kuma.io/display-name: timeout-2
+  kuma.io/mesh: default
+  kuma.io/origin: zone
+  kuma.io/zone: my-zone
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: meshtimeout-1
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes:
+    - Gateway
+  to:
+  - default:
+      http:
+        requestTimeout: 4s
+    targetRef:
+      kind: MeshService
+      name: api-play-000_microservice-mesh_svc_8080
+type: MeshTimeout

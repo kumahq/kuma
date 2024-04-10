@@ -39,9 +39,9 @@ var _ = Describe("Hostname intersection support", func() {
 		).Build()
 	})
 
-	checkAttachment := func(expected attachment.Attachment) func([]gatewayapi.Hostname) {
+	checkAttachment := func(expected attachment.Attachment, expectedKind attachment.Kind) func([]gatewayapi.Hostname) {
 		return func(routeHostnames []gatewayapi.Hostname) {
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				routeHostnames,
@@ -50,6 +50,7 @@ var _ = Describe("Hostname intersection support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(expected))
+			Expect(kind).To(Equal(expectedKind))
 		}
 	}
 
@@ -59,7 +60,7 @@ var _ = Describe("Hostname intersection support", func() {
 			simpleRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
 		})
 
-		DescribeTable("matches some listener", checkAttachment(attachment.Allowed),
+		DescribeTable("matches some listener", checkAttachment(attachment.Allowed, attachment.Gateway),
 			Entry("exact match", []gatewayapi.Hostname{"other.local"}),
 			Entry("non matching wildcard", []gatewayapi.Hostname{"*.wildcard.io", "something.else.local"}),
 		)
@@ -72,7 +73,7 @@ var _ = Describe("Hostname intersection support", func() {
 			simpleRef.SectionName = &anyHostnameListenerName
 		})
 
-		DescribeTable("matches", checkAttachment(attachment.Allowed),
+		DescribeTable("matches", checkAttachment(attachment.Allowed, attachment.Gateway),
 			Entry("without route hostname", nil),
 			Entry("with some hostname", []gatewayapi.Hostname{"other.local"}),
 		)
@@ -85,13 +86,13 @@ var _ = Describe("Hostname intersection support", func() {
 			simpleRef.SectionName = &simpleHostnameListenerName
 		})
 
-		DescribeTable("matches", checkAttachment(attachment.Allowed),
+		DescribeTable("matches", checkAttachment(attachment.Allowed, attachment.Gateway),
 			Entry("on exact match", []gatewayapi.Hostname{"simple.local"}),
 			Entry("if one matches", []gatewayapi.Hostname{"other.local", "simple.local"}),
 			Entry("if route wildcard matches", []gatewayapi.Hostname{"*.local"}),
 		)
 
-		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection),
+		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection, attachment.Gateway),
 			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
 		)
 	})
@@ -103,14 +104,14 @@ var _ = Describe("Hostname intersection support", func() {
 			simpleRef.SectionName = &wildcardListenerName
 		})
 
-		DescribeTable("matches", checkAttachment(attachment.Allowed),
+		DescribeTable("matches", checkAttachment(attachment.Allowed, attachment.Gateway),
 			Entry("with a complete hostname", []gatewayapi.Hostname{"something.wildcard.local"}),
 			Entry("with a complete hostname with extra subdomains", []gatewayapi.Hostname{"something.else.wildcard.local"}),
 			Entry("with a complete hostname with extra subdomain and wildcard", []gatewayapi.Hostname{"*.else.wildcard.local"}),
 			Entry("with a wildcard hostname", []gatewayapi.Hostname{"*.wildcard.local"}),
 		)
 
-		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection),
+		DescribeTable("doesn't match", checkAttachment(attachment.NoHostnameIntersection, attachment.Gateway),
 			Entry("wildcard suffix without subdomain", []gatewayapi.Hostname{"wildcard.local"}),
 			Entry("without intersection", []gatewayapi.Hostname{"other.local"}),
 		)
@@ -137,7 +138,7 @@ var _ = Describe("AllowedRoutes support", func() {
 
 		It("allows from same namespace", func() {
 			simpleRef.SectionName = &simpleListenerName
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -146,10 +147,11 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.Allowed))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 		It("allows from same namespace for all listeners", func() {
 			simpleRef.SectionName = nil
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -158,13 +160,14 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.Allowed))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 		It("denies from other namespace", func() {
 			simpleRef.SectionName = &simpleListenerName
 			ns := gatewayapi.Namespace(defaultNs)
 			simpleRef.Namespace = &ns
 
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -173,13 +176,14 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.NotPermitted))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 		It("denies from other namespace for all listeners", func() {
 			simpleRef.SectionName = nil
 			ns := gatewayapi.Namespace(defaultNs)
 			simpleRef.Namespace = &ns
 
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -188,6 +192,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.NotPermitted))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 	})
 	Context("FromAll", func() {
@@ -200,7 +205,7 @@ var _ = Describe("AllowedRoutes support", func() {
 		It("allows route from same NS", func() {
 			parentRef.SectionName = &allNsListenerName
 
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -209,13 +214,14 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.Allowed))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 		It("allows route from other NS", func() {
 			parentRef.SectionName = &allNsListenerName
 			ns := gatewayapi.Namespace(defaultNs)
 			parentRef.Namespace = &ns
 
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -224,12 +230,13 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.Allowed))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 		It("allows from other NS for all listeners", func() {
 			ns := gatewayapi.Namespace(defaultNs)
 			parentRef.Namespace = &ns
 
-			res, err := attachment.EvaluateParentRefAttachment(
+			res, kind, err := attachment.EvaluateParentRefAttachment(
 				context.Background(),
 				kubeClient,
 				nil,
@@ -238,6 +245,7 @@ var _ = Describe("AllowedRoutes support", func() {
 			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(Equal(attachment.Allowed))
+			Expect(kind).To(Equal(attachment.Gateway))
 		})
 	})
 })
@@ -258,7 +266,7 @@ var _ = Describe("NoMatchingParent support", func() {
 	})
 
 	It("allows no SectionName", func() {
-		res, err := attachment.EvaluateParentRefAttachment(
+		res, kind, err := attachment.EvaluateParentRefAttachment(
 			context.Background(),
 			kubeClient,
 			nil,
@@ -267,11 +275,12 @@ var _ = Describe("NoMatchingParent support", func() {
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(attachment.Allowed))
+		Expect(kind).To(Equal(attachment.Gateway))
 	})
 
 	It("allows matching SectionName", func() {
 		simpleRef.SectionName = &simpleListenerName
-		res, err := attachment.EvaluateParentRefAttachment(
+		res, kind, err := attachment.EvaluateParentRefAttachment(
 			context.Background(),
 			kubeClient,
 			nil,
@@ -280,12 +289,13 @@ var _ = Describe("NoMatchingParent support", func() {
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(attachment.Allowed))
+		Expect(kind).To(Equal(attachment.Gateway))
 	})
 
 	It("doesn't allow SectionName mismatches", func() {
 		someNonexistentSection := gatewayapi.SectionName("someNonexistentSection")
 		simpleRef.SectionName = &someNonexistentSection
-		res, err := attachment.EvaluateParentRefAttachment(
+		res, kind, err := attachment.EvaluateParentRefAttachment(
 			context.Background(),
 			kubeClient,
 			nil,
@@ -294,6 +304,7 @@ var _ = Describe("NoMatchingParent support", func() {
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(attachment.NoMatchingParent))
+		Expect(kind).To(Equal(attachment.Gateway))
 	})
 })
 

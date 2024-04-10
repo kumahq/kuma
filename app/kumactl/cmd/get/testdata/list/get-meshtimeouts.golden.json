@@ -1,0 +1,138 @@
+{
+  "total": 4,
+  "items": [
+    {
+      "type": "MeshTimeout",
+      "mesh": "default",
+      "name": "aatimeout-1-82vzd567626w9bcf",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "k8s.kuma.io/namespace": "kong-mesh-system",
+        "kuma.io/display-name": "aatimeout-1",
+        "kuma.io/mesh": "default",
+        "kuma.io/origin": "zone",
+        "kuma.io/zone": "my-zone"
+      },
+      "spec": {
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "to": [
+          {
+            "targetRef": {
+              "kind": "Mesh"
+            },
+            "default": {
+              "http": {
+                "requestTimeout": "1s"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "MeshTimeout",
+      "mesh": "default",
+      "name": "timeout-2-dz449dwd8fw4486x",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "k8s.kuma.io/namespace": "kong-mesh-system",
+        "kuma.io/display-name": "timeout-2",
+        "kuma.io/mesh": "default",
+        "kuma.io/origin": "zone",
+        "kuma.io/zone": "my-zone"
+      },
+      "spec": {
+        "targetRef": {
+          "kind": "Mesh",
+          "proxyTypes": [
+            "Gateway"
+          ]
+        },
+        "to": [
+          {
+            "targetRef": {
+              "kind": "MeshService",
+              "name": "api-play-000_microservice-mesh_svc_8080"
+            },
+            "default": {
+              "http": {
+                "requestTimeout": "4s"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "MeshTimeout",
+      "mesh": "default",
+      "name": "timeout-3-bbzw9cc54z4bv4v5",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "k8s.kuma.io/namespace": "kong-mesh-system",
+        "kuma.io/display-name": "timeout-3",
+        "kuma.io/mesh": "default",
+        "kuma.io/origin": "zone",
+        "kuma.io/zone": "my-zone"
+      },
+      "spec": {
+        "targetRef": {
+          "kind": "MeshService",
+          "name": "api-play-002_microservice-mesh_svc_8080"
+        },
+        "to": [
+          {
+            "targetRef": {
+              "kind": "MeshService",
+              "name": "api-play-003_microservice-mesh_svc_8080"
+            },
+            "default": {
+              "http": {
+                "requestTimeout": "2s"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "MeshTimeout",
+      "mesh": "default",
+      "name": "timeout-4-dv4792fw8fwvww42",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "k8s.kuma.io/namespace": "kong-mesh-system",
+        "kuma.io/display-name": "timeout-4",
+        "kuma.io/mesh": "default",
+        "kuma.io/origin": "zone",
+        "kuma.io/zone": "my-zone"
+      },
+      "spec": {
+        "targetRef": {
+          "kind": "MeshService",
+          "name": "api-play-000_microservice-mesh_svc_8080"
+        },
+        "to": [
+          {
+            "targetRef": {
+              "kind": "MeshService",
+              "name": "api-play-002_microservice-mesh_svc_8080"
+            },
+            "default": {
+              "http": {
+                "requestTimeout": "2s"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "next": null
+}

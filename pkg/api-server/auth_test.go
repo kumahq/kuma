@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/pkg/config/access"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -39,6 +40,8 @@ var _ = Describe("Auth test", func() {
 			cfg.HTTPS.TlsKeyFile = keyPath
 			cfg.Authn.Type = certs.PluginName
 			cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+		}).WithAccessConfigMutator(func(cfg *access.AccessConfig) {
+			cfg.Static.ControlPlaneMetadata.Groups = []string{"mesh-system:authenticated"}
 		}))
 
 		cfg := apiServer.Config()
@@ -78,7 +81,7 @@ var _ = Describe("Auth test", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(200))
+		Expect(resp).To(HaveHTTPStatus(200))
 	})
 
 	It("should be able to access admin endpoints using client certs and HTTPS", func() {
@@ -87,7 +90,7 @@ var _ = Describe("Auth test", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(200))
+		Expect(resp).To(HaveHTTPStatus(200))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
@@ -96,7 +99,7 @@ var _ = Describe("Auth test", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(403))
+		Expect(resp).To(HaveHTTPStatus(403))
 		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
@@ -109,11 +112,33 @@ var _ = Describe("Auth test", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(403))
+		Expect(resp).To(HaveHTTPStatus(403))
 		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-admin-https-bad-creds.golden.json")))
+	})
+
+	It("should be able to access config on localhost using HTTP", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/config", httpPort))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).To(HaveHTTPStatus(200))
+	})
+
+	It("should be block an access to config endpoints from other machine using HTTP", func() {
+		// when
+		resp, err := http.Get(fmt.Sprintf("http://%s/config", net.JoinHostPort(externalIP, strconv.Itoa(int(httpPort)))))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp).To(HaveHTTPStatus(403))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.Body.Close()).To(Succeed())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "auth-config-non-localhost.golden.json")))
 	})
 })
 

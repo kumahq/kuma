@@ -74,7 +74,6 @@ func AddSidecarParameters(sidecar *v1alpha12.Sidecar) func(queryParameters url.V
 	values := v1alpha1.EnvoyMetricsFilter(sidecar)
 
 	return func(queryParameters url.Values) url.Values {
-		queryParameters.Set("filter", values.Get("filter"))
 		queryParameters.Set("usedonly", values.Get("usedonly"))
 		return queryParameters
 	}

@@ -30,7 +30,6 @@ sidecarContainer:
       cpu: 8500m
       memory: 1512Mi
 initContainer:
-  enabled: true
   image: kuma/kuma-init:latest
 builtinDNS:
   enabled: true

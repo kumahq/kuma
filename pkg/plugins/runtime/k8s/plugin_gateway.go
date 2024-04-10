@@ -135,6 +135,7 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		TypeRegistry:    k8s_registry.Global(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
+		Zone:            rt.Config().Multizone.Zone.Name,
 	}
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")

@@ -79,3 +79,4 @@ nodeTaintController:
   cniNamespace: kube-system
   enabled: false
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
+skipMeshOwnerReference: false

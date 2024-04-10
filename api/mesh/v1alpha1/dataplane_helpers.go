@@ -51,6 +51,11 @@ const (
 	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
 	// It can be either "global" or "zone".
 	ResourceOriginLabel = "kuma.io/origin"
+
+	// EffectLabel is a standard label that configures what effect the policy has on the DPPs. The only supported value
+	// at this moment is "shadow". When effect is "shadow" the policy doesn't change the DPPs configs, but could be
+	// observed using the Inspect API.
+	EffectLabel = "kuma.io/effect"
 )
 
 type ResourceOrigin string

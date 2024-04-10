@@ -16,12 +16,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/client"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	"github.com/kumahq/kuma/pkg/intercp/server"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
@@ -65,7 +65,7 @@ func Setup(rt runtime.Runtime) error {
 		system_proto.RegisterInterCpPingServiceServer(interCpServer.GrpcServer(), catalog.NewServer(heartbeats, rt.LeaderInfo()))
 
 		envoyAdminServer := envoyadmin.NewServer(
-			admin.NewKDSEnvoyAdminClient(
+			kds_envoyadmin.NewClient(
 				rt.KDSContext().EnvoyAdminRPCs,
 				rt.ReadOnlyResourceManager(),
 			),

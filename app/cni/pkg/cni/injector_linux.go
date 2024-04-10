@@ -3,6 +3,7 @@ package cni
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"strconv"
 	"strings"
 
@@ -52,7 +53,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
-		if _, err := transparentproxy.Setup(*cfg); err != nil {
+		if _, err := transparentproxy.Setup(context.Background(), *cfg); err != nil {
 			return err
 		}
 

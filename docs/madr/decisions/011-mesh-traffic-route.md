@@ -363,7 +363,7 @@ Here, the `/v1` rule from `owner` is unchanged and the `/v2` rule from
 
 What this structure doesn't allow is blanket overwriting of all less-specific rules
 by a more specifically targeted resource. Instead, each rule needs to be
-explicitly overriden:
+explicitly overridden:
 
 ```yaml
 metadata:

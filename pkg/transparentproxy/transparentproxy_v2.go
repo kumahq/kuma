@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -20,7 +21,7 @@ func V2() TransparentProxy {
 	return &TransparentProxyV2{}
 }
 
-func hasLocalIPv6() (bool, error) {
+func HasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, err
@@ -44,7 +45,7 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 		return false, nil
 	}
 
-	hasIPv6Address, err := hasLocalIPv6()
+	hasIPv6Address, err := HasLocalIPv6()
 	if !hasIPv6Address || err != nil {
 		return false, err
 	}
@@ -88,7 +89,10 @@ func splitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (string, error) {
+func (tp *TransparentProxyV2) Setup(
+	ctx context.Context,
+	tpConfig *config.TransparentProxyConfig,
+) (string, error) {
 	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing inbound redirect port failed")
@@ -201,7 +205,7 @@ func (tp *TransparentProxyV2) Setup(tpConfig *config.TransparentProxyConfig) (st
 		},
 	}
 
-	return Setup(cfg)
+	return Setup(ctx, cfg)
 }
 
 func ParseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {

@@ -2995,10 +2995,6 @@ spec:
                               type: object
                             type: array
                         type: object
-                      regex:
-                        description: Regex that will be used to filter sidecar metrics.
-                          It uses Google RE2 engine https://github.com/google/re2
-                        type: string
                     type: object
                 type: object
               targetRef:
@@ -4628,31 +4624,6 @@ spec:
                     additionalProperties:
                       type: string
                     type: object
-                type: object
-              status:
-                properties:
-                  addresses:
-                    items:
-                      properties:
-                        hostname:
-                          type: string
-                      type: object
-                    type: array
-                  tls:
-                    properties:
-                      status:
-                        enum:
-                        - Ready
-                        - NotReady
-                        type: string
-                    type: object
-                  vips:
-                    items:
-                      properties:
-                        ip:
-                          type: string
-                      type: object
-                    type: array
                 type: object
             type: object
           status:

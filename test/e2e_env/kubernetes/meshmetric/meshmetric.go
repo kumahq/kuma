@@ -31,6 +31,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: Prometheus
         prometheus: 
@@ -90,6 +94,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: Prometheus
         prometheus: 
@@ -122,6 +130,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: Prometheus
         prometheus: 
@@ -148,6 +160,10 @@ spec:
     kind: MeshService
     name: %s
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: Prometheus
         prometheus: 
@@ -173,6 +189,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     applications:
       - name: "%s"
         path: "%s"
@@ -201,6 +221,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: OpenTelemetry
         openTelemetry: 
@@ -224,7 +248,10 @@ spec:
     kind: Mesh
   default:
     sidecar:
-      regex: .*upstream.*
+      profiles:
+        appendProfiles:
+          - name: All
+    sidecar:
       includeUnused: false
     backends:
       - type: OpenTelemetry
@@ -248,6 +275,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: OpenTelemetry
         openTelemetry: 
@@ -276,6 +307,10 @@ spec:
   targetRef:
     kind: Mesh
   default:
+    sidecar:
+      profiles:
+        appendProfiles:
+          - name: All
     backends:
       - type: OpenTelemetry
         openTelemetry: 

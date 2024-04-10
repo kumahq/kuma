@@ -22,7 +22,7 @@ var _ = Describe("Gateway Listener", func() {
 
 	Do := func(gateway string) (cache.ResourceSnapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
-		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds", util_xds.NoopVersionExtractor)
 		if err != nil {
 			return nil, err
 		}

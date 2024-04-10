@@ -14,10 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-var (
-	regex         = "abc"
-	includeUnused = true
-)
+var includeUnused = true
 
 var _ = Describe("Rewriting the metrics URL", func() {
 	type testCase struct {
@@ -58,9 +55,8 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			address:   "127.0.0.1",
 			input:     "http://foo/bar?one=two&three=four",
 			adminPort: 80,
-			expected:  "http://127.0.0.1:80/stats?filter=abc&one=two&three=four&usedonly=",
+			expected:  "http://127.0.0.1:80/stats?one=two&three=four&usedonly=",
 			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
-				Regex:         &regex,
 				IncludeUnused: &includeUnused,
 			}),
 		}),
@@ -68,7 +64,7 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			address:       "127.0.0.1",
 			input:         "http://foo/bar?one=two&three=four",
 			adminPort:     80,
-			expected:      "http://127.0.0.1:80/stats?filter=&one=two&three=four&usedonly=",
+			expected:      "http://127.0.0.1:80/stats?one=two&three=four&usedonly=",
 			queryModifier: AddSidecarParameters(nil),
 		}),
 	)

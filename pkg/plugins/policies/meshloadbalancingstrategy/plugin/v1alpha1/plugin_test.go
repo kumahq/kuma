@@ -1225,7 +1225,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 			}
 			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute(), samples.BackendGatewaySecondRoute()},
 			}
 
 			xdsCtx := *xds_builders.Context().
