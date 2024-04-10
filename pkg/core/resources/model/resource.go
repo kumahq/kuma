@@ -129,8 +129,8 @@ func Validate(resource Resource) error {
 }
 
 func Deprecations(resource Resource) []string {
-	if v, ok := interface{}(resource).(interface{ Deprecated() []string }); ok {
-		return v.Deprecated()
+	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
+		return v.Deprecations()
 	}
 	return nil
 }
