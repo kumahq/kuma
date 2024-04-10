@@ -8,26 +8,25 @@ import (
 	"github.com/sethvargo/go-retry"
 )
 
-const (
-	backoffBaseTime = 5 * time.Second
-	backoffMaxTime  = 1 * time.Minute
-)
-
 type resilientComponent struct {
-	log       logr.Logger
-	component Component
+	log             logr.Logger
+	component       Component
+	backoffBaseTime time.Duration
+	backoffMaxTime  time.Duration
 }
 
-func NewResilientComponent(log logr.Logger, component Component) Component {
+func NewResilientComponent(log logr.Logger, component Component, backoffBaseTime time.Duration, backoffMaxTime time.Duration) Component {
 	return &resilientComponent{
-		log:       log,
-		component: component,
+		log:             log,
+		component:       component,
+		backoffBaseTime: backoffBaseTime,
+		backoffMaxTime:  backoffMaxTime,
 	}
 }
 
 func (r *resilientComponent) Start(stop <-chan struct{}) error {
 	r.log.Info("starting resilient component ...")
-	backoff := newBackoff()
+	backoff := r.newBackoff()
 	for generationID := uint64(1); ; generationID++ {
 		lastStart := time.Now()
 		errCh := make(chan error, 1)
@@ -55,21 +54,21 @@ func (r *resilientComponent) Start(stop <-chan struct{}) error {
 				r.log.WithValues("generationID", generationID).Error(err, "component terminated with an error")
 			}
 		}
-		if time.Since(lastStart) > backoffMaxTime {
+		if time.Since(lastStart) > r.backoffMaxTime {
 			// reset backoff so in a case of event with the following steps
 			// 1) Component is unhealthy until max backoff is reached
 			// 2) Component is healthy for at least backoff max time
 			// 3) Component is unhealthy
 			// We start backoff from the beginning
-			backoff = newBackoff()
+			backoff = r.newBackoff()
 		}
 		dur, _ := backoff.Next()
 		<-time.After(dur)
 	}
 }
 
-func newBackoff() retry.Backoff {
-	return retry.WithJitter(backoffBaseTime, retry.WithCappedDuration(backoffMaxTime, retry.NewExponential(backoffBaseTime)))
+func (r *resilientComponent) newBackoff() retry.Backoff {
+	return retry.WithJitter(r.backoffBaseTime, retry.WithCappedDuration(r.backoffMaxTime, retry.NewExponential(r.backoffBaseTime)))
 }
 
 func (r *resilientComponent) NeedLeaderElection() bool {

@@ -204,7 +204,7 @@ func Setup(rt runtime.Runtime) error {
 		if err != nil {
 			return errors.Wrap(err, "couldn't create ZoneWatch")
 		}
-		if err := rt.Add(component.NewResilientComponent(zwLog, zw)); err != nil {
+		if err := rt.Add(component.NewResilientComponent(zwLog, zw, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err
 		}
 	}
@@ -234,7 +234,10 @@ func Setup(rt runtime.Runtime) error {
 			rt.Extensions(),
 			rt.EventBus(),
 		),
-	)))
+	),
+		rt.Config().General.ResilientComponentBaseBackoff.Duration,
+		rt.Config().General.ResilientComponentMaxBackoff.Duration),
+	)
 }
 
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
