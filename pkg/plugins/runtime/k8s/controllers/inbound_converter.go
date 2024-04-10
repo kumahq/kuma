@@ -120,9 +120,10 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	}
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
-		Port:  mesh_proto.TCPPortReserved,
-		Tags:  tags,
-		State: mesh_proto.Dataplane_Networking_Inbound_Ignored,
+		Port:   mesh_proto.TCPPortReserved,
+		Tags:   tags,
+		State:  mesh_proto.Dataplane_Networking_Inbound_Ignored,
+		Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
 	}
 }
 
