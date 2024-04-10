@@ -36,15 +36,15 @@ type httpInspectEnvoyProxyClient struct {
 var _ InspectEnvoyProxyClient = &httpInspectEnvoyProxyClient{}
 
 func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "xds", nil)
+	return h.executeInspectRequest(ctx, rk, "xds", url.Values{})
 }
 
 func (h *httpInspectEnvoyProxyClient) Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "stats", nil)
+	return h.executeInspectRequest(ctx, rk, "stats", url.Values{})
 }
 
 func (h *httpInspectEnvoyProxyClient) Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "clusters", nil)
+	return h.executeInspectRequest(ctx, rk, "clusters", url.Values{})
 }
 
 func (h *httpInspectEnvoyProxyClient) Config(ctx context.Context, rk core_model.ResourceKey, shadow bool, include []string) ([]byte, error) {
