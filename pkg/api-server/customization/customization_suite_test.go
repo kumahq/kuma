@@ -91,6 +91,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		},
 		func(*restful.WebService) error { return nil },
 		globalinsight.NewDefaultGlobalInsightService(store),
+		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

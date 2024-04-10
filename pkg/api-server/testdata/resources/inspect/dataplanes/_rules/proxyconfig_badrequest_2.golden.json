@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: unsupported value for query parameter 'include'",
+ "details": "bad request: unsupported value for query parameter 'include'"
+}

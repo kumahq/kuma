@@ -458,6 +458,13 @@ func ZoneOfResource(res Resource) string {
 	return parts[0]
 }
 
+func IsShadowedResource(r Resource) bool {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.EffectLabel] == "shadow" {
+		return true
+	}
+	return false
+}
+
 func equalNames(mesh, n1, n2 string) bool {
 	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
 	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1

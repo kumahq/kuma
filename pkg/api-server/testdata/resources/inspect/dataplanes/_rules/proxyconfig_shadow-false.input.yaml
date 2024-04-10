@@ -1,0 +1,27 @@
+#/meshes/default/dataplanes/dp-1/_config?shadow=false 200
+type: Mesh
+name: default
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: foo
+---
+type: MeshTimeout
+name: idle-inbound
+mesh: default
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 322s

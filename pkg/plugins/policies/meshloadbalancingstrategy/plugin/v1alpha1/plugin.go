@@ -36,8 +36,8 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources)
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.MeshLoadBalancingStrategyType, dataplane, resources, opts...)
 }
 
 func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
@@ -187,12 +187,7 @@ func (p plugin) configureGateway(
 			continue
 		}
 
-		meshConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshSubset())
-
-		if err := p.configureListener(listener, gatewayRoutes, meshConf); err != nil {
-			return err
-		}
-
+		perServiceConfiguration := map[string]*api.Conf{}
 		for _, listenerHostnames := range listenerInfo.ListenerHostnames {
 			for _, hostInfo := range listenerHostnames.HostInfos {
 				destinations := gateway_plugin.RouteDestinationsMutable(hostInfo.Entries())
@@ -211,6 +206,8 @@ func (p plugin) configureGateway(
 					if localityConf == nil {
 						continue
 					}
+					perServiceConfiguration[serviceName] = localityConf
+
 					if err := p.configureCluster(cluster, *localityConf); err != nil {
 						return err
 					}
@@ -219,6 +216,11 @@ func (p plugin) configureGateway(
 						return err
 					}
 				}
+			}
+		}
+		for _, configuration := range perServiceConfiguration {
+			if err := p.configureListener(listener, gatewayRoutes, configuration); err != nil {
+				return err
 			}
 		}
 	}
@@ -291,31 +293,37 @@ func (p plugin) configureListener(
 		return nil
 	}
 
-	if l.FilterChains == nil || len(l.FilterChains) != 1 {
-		return errors.Errorf("expected exactly one filter chain, got %d", len(l.FilterChains))
+	if l.FilterChains == nil {
+		return errors.New("expected at least one filter chain")
 	}
 
-	return v3.UpdateHTTPConnectionManager(l.FilterChains[0], func(hcm *envoy_hcm.HttpConnectionManager) error {
-		var routeConfig *envoy_route.RouteConfiguration
-		switch r := hcm.RouteSpecifier.(type) {
-		case *envoy_hcm.HttpConnectionManager_RouteConfig:
-			routeConfig = r.RouteConfig
-		case *envoy_hcm.HttpConnectionManager_Rds:
-			routeConfig = routes[r.Rds.RouteConfigName]
-		default:
-			return errors.Errorf("unexpected RouteSpecifer %T", r)
-		}
+	for _, chain := range l.FilterChains {
+		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			var routeConfig *envoy_route.RouteConfiguration
+			switch r := hcm.RouteSpecifier.(type) {
+			case *envoy_hcm.HttpConnectionManager_RouteConfig:
+				routeConfig = r.RouteConfig
+			case *envoy_hcm.HttpConnectionManager_Rds:
+				routeConfig = routes[r.Rds.RouteConfigName]
+			default:
+				return errors.Errorf("unexpected RouteSpecifer %T", r)
+			}
 
-		hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
-		for _, vh := range routeConfig.VirtualHosts {
-			for _, route := range vh.Routes {
-				if err := hpc.Configure(route); err != nil {
-					return err
+			hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
+			for _, vh := range routeConfig.VirtualHosts {
+				for _, route := range vh.Routes {
+					if err := hpc.Configure(route); err != nil {
+						return err
+					}
 				}
 			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
-		return nil
-	})
+	}
+	return nil
 }
 
 func (p plugin) configureCluster(c *envoy_cluster.Cluster, config api.Conf) error {
