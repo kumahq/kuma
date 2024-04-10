@@ -64,7 +64,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	t := tracer{
 		config: otel,
 	}
-	if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t)); err != nil {
+	if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 		return err
 	}
 

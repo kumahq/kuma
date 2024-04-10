@@ -184,6 +184,28 @@ spec:
         action: Allow
 ```
 
+### Change in internal resources with Kubernetes Gateway API
+
+This section describes changes to internal resources used by Kuma when configuring the built-in gateway using the Kubernetes Gateway API.
+
+#### Prior Behavior (Before Kuma 2.7.0):
+
+  * Applying a `Gateway` resource resulted in the creation of corresponding `MeshGateway` and `MeshGatewayInstance` resources.
+  * An applied `HTTPRoute` resource was converted to a `MeshGatewayRoute` resource.
+
+#### Changes Introduced in Kuma 2.7.0:
+
+  * `HTTPRoute` resources are now converted to `MeshHTTPRoute` resources instead of `MeshGatewayRoute` resources.
+
+#### Upgrade Impact:
+
+  * Existing `MeshGatewayRoute` resources automatically created from `HTTPRoute` definitions will be deleted during the upgrade.
+  * New `MeshHTTPRoute` resources will be created to replace the deleted ones.
+
+#### Important Note:
+
+This change is transparent with regard to the generated Envoy configuration. There should be no impact on existing traffic routing.
+
 ## Upgrade to `2.6.x`
 
 ### Policy
