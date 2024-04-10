@@ -231,10 +231,8 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"
 {{- end }}
-{{- if not .Values.controlPlane.tls.general.useSystemCA }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-{{- end }}
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
 - name: KUMA_MODE
