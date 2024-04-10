@@ -19,6 +19,7 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -138,8 +139,14 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 				} else {
-					if err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource); err != nil {
+					warnings, err := upsert(cmd.Context(), pctx.Runtime.Registry, rs, resource)
+					if err != nil {
 						return err
+					}
+					for _, w := range warnings {
+						if _, err := fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %v\n", w); err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -153,21 +160,29 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
+func upsert(ctx context.Context, typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) ([]string, error) {
 	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	var warnings []string
+	warnContext := context.WithValue(ctx, remote.WarningsCallback, func(s []string) {
+		warnings = s
+	})
+
 	meta := res.GetMeta()
 	if err := rs.Get(ctx, newRes, store.GetByKey(meta.GetName(), meta.GetMesh())); err != nil {
 		if store.IsResourceNotFound(err) {
-			return rs.Create(ctx, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
+			cerr := rs.Create(warnContext, res, store.CreateByKey(meta.GetName(), meta.GetMesh()), store.CreateWithLabels(meta.GetLabels()))
+			return warnings, cerr
 		} else {
-			return err
+			return nil, err
 		}
 	}
 	if err := newRes.SetSpec(res.GetSpec()); err != nil {
-		return err
+		return nil, err
 	}
-	return rs.Update(ctx, newRes, store.UpdateWithLabels(meta.GetLabels()))
+	uerr := rs.Update(warnContext, newRes, store.UpdateWithLabels(meta.GetLabels()))
+	return warnings, uerr
 }

@@ -146,6 +146,43 @@ In the upcoming release, Kuma will redirect IPv6 traffic to the same port as IPv
 
 We recommend that you update your configurations to use the new defaults for IPv6 traffic redirection. If you need to retain separate ports for IPv4 and IPv6 traffic, you can continue to use the deprecated flags and configuration options until they are removed.
 
+### Deprecation of 'from[].targetRef.kind: MeshService'
+
+At this moment only MeshTrafficPermission and MeshFaultInjection allowed `MeshService` in the `from[].targetRef.kind`.
+Starting `2.7` this value is deprecated, instead the `MeshSubset` with `kuma.io/service` tag should be used. For example, instead of:
+
+```yaml
+type: MeshTrafficPermission
+name: allow-orders
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        action: Allow
+```
+
+we should have:
+
+```yaml
+type: MeshTrafficPermission
+name: allow-orders
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: orders
+      default:
+        action: Allow
+```
 
 ## Upgrade to `2.6.x`
 
