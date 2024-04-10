@@ -164,7 +164,12 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
-	// init container
+	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+	if err != nil {
+		return err
+	}
+
+	var injectedInitContainers []kube_core.Container
 	if !i.cfg.CNIEnabled {
 		ic, err := i.NewInitContainer(podRedirect)
 		if err != nil {
@@ -174,42 +179,35 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
-		if err != nil {
-			return err
-		}
-		if enabled {
-			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
-			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
-		} else {
-			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
-		}
+		injectedInitContainers = append(injectedInitContainers, patchedIc)
 	} else if podRedirect.RedirectInbound {
 		ic := i.NewValidationContainer(podRedirect.IpFamilyMode, fmt.Sprintf("%d", podRedirect.RedirectPortInbound), sidecarTmp.Name)
 		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)
 		if err != nil {
 			return err
 		}
-		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
-		if err != nil {
-			return err
-		}
-		if enabled {
-			log.V(1).Info("injecting kuma cni validation container first because kuma.io/init-first is set")
-			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
-		} else {
-			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
-		}
+		injectedInitContainers = append(injectedInitContainers, patchedIc)
+	}
+
+	var prependInitContainers []kube_core.Container
+	var appendInitContainers []kube_core.Container
+
+	if initFirst || i.sidecarContainersEnabled {
+		prependInitContainers = append(prependInitContainers, injectedInitContainers...)
+	} else {
+		appendInitContainers = append(appendInitContainers, injectedInitContainers...)
 	}
 
 	if i.sidecarContainersEnabled {
 		// inject sidecar after init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+		prependInitContainers = append(prependInitContainers, patchedContainer)
 	} else {
 		// inject sidecar as first container
 		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
+
+	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
 		return err

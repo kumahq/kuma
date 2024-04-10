@@ -18,6 +18,7 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	oapi_helpers "github.com/kumahq/kuma/pkg/api-server/oapi-helpers"
+	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/policy"
@@ -394,8 +395,16 @@ func (r *resourceEndpoints) createResource(
 	if r.descriptor.HasStatus {
 		_ = res.SetStatus(resRest.GetStatus())
 	}
+
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
+		return
+	}
+
+	if warnings := model.Deprecations(res); len(warnings) > 0 {
+		if err := response.WriteHeaderAndJson(201, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
+			log.Error(err, "Could not write the response")
+		}
 	} else {
 		response.WriteHeader(201)
 	}
@@ -426,6 +435,13 @@ func (r *resourceEndpoints) updateResource(
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
+		return
+	}
+
+	if warnings := model.Deprecations(currentRes); len(warnings) > 0 {
+		if err := response.WriteHeaderAndJson(200, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
+			log.Error(err, "Could not write the response")
+		}
 	} else {
 		response.WriteHeader(200)
 	}

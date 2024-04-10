@@ -219,6 +219,8 @@ controlPlane:
       caSecretName: ""
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
+      # -- Don't use a CA bundle for the control plane's TLS, use the system one
+      useSystemCA: false
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
@@ -741,3 +743,6 @@ plugins:
     meshtimeouts: true
     meshtraces: true
     meshtrafficpermissions: true
+
+# @ignored for helm-docs
+testOnly: false

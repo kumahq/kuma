@@ -8,6 +8,28 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+## Upgrade to `2.7.x`
+
+### MeshMetric and cluster stats merging
+
+For MeshMetric we disabled cluster [stats merging](https://github.com/kumahq/kuma/pull/9768) so that metrics are generated per [traffic split](https://kuma.io/docs/2.6.x/policies/meshhttproute/#traffic-split).
+This means that in Grafana there will be at least two entries under "Destination service" - one for the service without a hash (e.g. `backend_kuma-demo_svc_3001`) and one per each split ending with a hash (e.g. `backend_kuma-demo_svc_3001-de1397ec09e96dfb`).
+If you want to see combined metrics you can run queries with a prefix instead of exact match, e.g.:
+
+```
+... envoy_cluster_name=~"$destination_cluster.*" ...
+```
+
+instead of
+
+```
+... envoy_cluster_name="$destination_cluster" ...
+```
+
+To correlate between a hash and a particular pod you have to click on the outbound, and then click on "clusters" and associate pod ip with cluster ip.
+This will be improved in the future by having the tags next to the outbound.
+[This issue](https://github.com/kumahq/kuma-gui/issues/2412) tracks the progress of that as well as contains screenshots of the steps.
+
 ### MeshMetric `sidecar.regex` is replaced by `sidecar.profiles.exclude`
 
 If you're using `sidecar.regex` field it is getting replaced by `sidecar.profiles.exclude`.
@@ -29,8 +51,6 @@ with:
         - type: Regex
           match: "my_match.*"
 ```
-
-## Upgrade to `2.7.x`
 
 ### Setting `kuma.io/service` in tags of `MeshGatewayInstance` is deprecated
 
@@ -125,6 +145,44 @@ The `--redirect-inbound-port-v6` flag and the corresponding configuration option
 In the upcoming release, Kuma will redirect IPv6 traffic to the same port as IPv4 traffic (15006). This means that you no longer need to configure a separate port for IPv6 traffic. If you want to disable traffic redirection for IPv6 traffic, you can set `--ip-family-mode ipv4`. We have also added a new configuration option `runtime.kubernetes.injector.sidecarContainer.ipFamilyMode` to switch traffic redirection for IP families.
 
 We recommend that you update your configurations to use the new defaults for IPv6 traffic redirection. If you need to retain separate ports for IPv4 and IPv6 traffic, you can continue to use the deprecated flags and configuration options until they are removed.
+
+### Deprecation of 'from[].targetRef.kind: MeshService'
+
+At this moment only MeshTrafficPermission and MeshFaultInjection allowed `MeshService` in the `from[].targetRef.kind`.
+Starting `2.7` this value is deprecated, instead the `MeshSubset` with `kuma.io/service` tag should be used. For example, instead of:
+
+```yaml
+type: MeshTrafficPermission
+name: allow-orders
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        action: Allow
+```
+
+we should have:
+
+```yaml
+type: MeshTrafficPermission
+name: allow-orders
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: orders
+      default:
+        action: Allow
+```
 
 ### Change in internal resources with Kubernetes Gateway API
 

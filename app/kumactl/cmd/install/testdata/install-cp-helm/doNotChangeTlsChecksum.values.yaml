@@ -1,1 +1,6 @@
 restartOnSecretChange: false
+controlPlane:
+  tls:
+    general:
+      secretName: general-tls-secret
+      caBundle: XYZ

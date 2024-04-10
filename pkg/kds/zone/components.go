@@ -180,7 +180,12 @@ func Setup(rt core_runtime.Runtime) error {
 			rt.EnvoyAdminClient(),
 		),
 	)
-	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
+	return rt.Add(component.NewResilientComponent(
+		kdsZoneLog.WithName("kds-mux-client"),
+		muxClient,
+		rt.Config().General.ResilientComponentBaseBackoff.Duration,
+		rt.Config().General.ResilientComponentMaxBackoff.Duration,
+	))
 }
 
 func Callbacks(
