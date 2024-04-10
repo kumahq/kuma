@@ -8,6 +8,28 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+## Upgrade to `2.7.x`
+
+### MeshMetric and cluster stats merging
+
+For MeshMetric we disabled cluster [stats merging](https://github.com/kumahq/kuma/pull/9768) so that metrics are generated per [traffic split](https://kuma.io/docs/2.6.x/policies/meshhttproute/#traffic-split).
+This means that in Grafana there will be at least two entries under "Destination service" - one for the service without a hash (e.g. `backend_kuma-demo_svc_3001`) and one per each split ending with a hash (e.g. `backend_kuma-demo_svc_3001-de1397ec09e96dfb`).
+If you want to see combined metrics you can run queries with a prefix instead of exact match, e.g.:
+
+```
+... envoy_cluster_name=~"$destination_cluster.*" ...
+```
+
+instead of
+
+```
+... envoy_cluster_name="$destination_cluster" ...
+```
+
+To correlate between a hash and a particular pod you have to click on the outbound, and then click on "clusters" and associate pod ip with cluster ip.
+This will be improved in the future by having the tags next to the outbound.
+[This issue](https://github.com/kumahq/kuma-gui/issues/2412) tracks the progress of that as well as contains screenshots of the steps.
+
 ### MeshMetric `sidecar.regex` is replaced by `sidecar.profiles.exclude`
 
 If you're using `sidecar.regex` field it is getting replaced by `sidecar.profiles.exclude`.
@@ -29,8 +51,6 @@ with:
         - type: Regex
           match: "my_match.*"
 ```
-
-## Upgrade to `2.7.x`
 
 ### Setting `kuma.io/service` in tags of `MeshGatewayInstance` is deprecated
 
