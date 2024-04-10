@@ -60,13 +60,6 @@ spec:
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
     - run
     - --log-level=info
@@ -168,6 +161,13 @@ spec:
       readOnly: true
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:
