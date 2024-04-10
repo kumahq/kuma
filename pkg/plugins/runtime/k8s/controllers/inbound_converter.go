@@ -98,7 +98,6 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	// including GUI and CLI changes
 
 	tags := InboundTagsForPod(zone, pod, name, nodeLabels)
-	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
 	}
@@ -106,7 +105,6 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	for _, container := range pod.Spec.Containers {
 		if container.Name != util_k8s.KumaSidecarContainerName {
 			if cs := util_k8s.FindContainerStatus(container.Name, pod.Status.ContainerStatuses); cs != nil && !cs.Ready {
-				state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 				health.Ready = false
 			}
 		}
@@ -118,15 +116,13 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 		pod.Status.ContainerStatuses,
 		pod.Status.InitContainerStatuses,
 	); cs != nil && !cs.Ready {
-		state = mesh_proto.Dataplane_Networking_Inbound_NotReady
 		health.Ready = false
 	}
 
 	return &mesh_proto.Dataplane_Networking_Inbound{
-		Port:   mesh_proto.TCPPortReserved,
-		Tags:   tags,
-		State:  state,
-		Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
+		Port:  mesh_proto.TCPPortReserved,
+		Tags:  tags,
+		State: mesh_proto.Dataplane_Networking_Inbound_Ignored,
 	}
 }
 
