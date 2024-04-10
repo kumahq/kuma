@@ -59,10 +59,9 @@ var _ = Describe("kumactl install control-plane", func() {
 			[]string{
 				"install",
 				"control-plane",
-				"--tls-general-secret", "general-tls-secret",
-				"--tls-general-ca-bundle", "XYZ",
 				"--skip-kinds", "CustomResourceDefinition",
 				"--without-kubernetes-connection",
+				"--set", "testOnly=true",
 				"--values", inputFile,
 			},
 		)
@@ -375,7 +374,7 @@ controlPlane:
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},
-			errorMsg:  "You need to send both or neither of controlPlane.tls.general.caBundle and controlPlane.tls.general.secretName",
+			errorMsg:  "Couldn't extract CA bundle, you are either not using generated cert or we couldn't extract it from values or secrets",
 		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
