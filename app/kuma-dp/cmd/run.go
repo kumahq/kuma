@@ -335,6 +335,8 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config) []component.Component {
+	resilientComponentBaseBackoff := 5 * time.Second
+	resilientComponentMaxBackoff := 1 * time.Minute
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 	accessLogStreamer := component.NewResilientComponent(
@@ -342,6 +344,8 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		accesslogs.NewAccessLogStreamer(
 			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
+		resilientComponentBaseBackoff,
+		resilientComponentMaxBackoff,
 	)
 
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
@@ -370,6 +374,8 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 			cfg.Dataplane.DrainTime.Duration,
 		),
+		resilientComponentBaseBackoff,
+		resilientComponentMaxBackoff,
 	)
 
 	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}

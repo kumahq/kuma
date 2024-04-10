@@ -30,5 +30,5 @@ func Setup(rt runtime.Runtime) error {
 		Metrics:             rt.Metrics(),
 		Extensions:          rt.Extensions(),
 	})
-	return rt.Add(component.NewResilientComponent(log, resyncer))
+	return rt.Add(component.NewResilientComponent(log, resyncer, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration))
 }
