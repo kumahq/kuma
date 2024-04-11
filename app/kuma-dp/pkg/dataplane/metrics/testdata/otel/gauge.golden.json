@@ -22,6 +22,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -54,6 +61,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "ads_cluster"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -92,6 +106,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -124,6 +145,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -162,6 +190,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -194,6 +229,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -232,6 +274,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -264,6 +313,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "inbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -302,6 +358,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -334,6 +397,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "localhost_3000"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -372,6 +442,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -404,6 +481,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "outbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -451,6 +535,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -483,6 +574,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "ads_cluster"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -521,6 +619,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -553,6 +658,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -591,6 +703,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -623,6 +742,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -661,6 +787,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -693,6 +826,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "inbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -731,6 +871,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -763,6 +910,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "localhost_3000"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -801,6 +955,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -833,6 +994,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "outbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -880,6 +1048,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -912,6 +1087,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "ads_cluster"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -950,6 +1132,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -982,6 +1171,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-369bce2d30623ffb"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -1020,6 +1216,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -1052,6 +1255,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "echo-server_kuma-test_svc_8080-94bcdea309bceaff"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -1090,6 +1300,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -1122,6 +1339,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "inbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -1160,6 +1384,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -1192,6 +1423,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "localhost_3000"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
@@ -1230,6 +1468,13 @@
               }
             },
             {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
+              }
+            },
+            {
               "Key": "mesh",
               "Value": {
                 "Type": "STRING",
@@ -1262,6 +1507,13 @@
               "Value": {
                 "Type": "STRING",
                 "Value": "outbound_passthrough_ipv6"
+              }
+            },
+            {
+              "Key": "extraLabel",
+              "Value": {
+                "Type": "STRING",
+                "Value": "test"
               }
             },
             {
