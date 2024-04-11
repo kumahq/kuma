@@ -6,6 +6,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 
@@ -50,6 +51,7 @@ type kdsRetryForcer struct {
 	nodes   map[xds.StreamID]*envoy_core.Node
 	backoff time.Duration
 	emitter events.Emitter
+	hasher  envoy_cache.NodeHash
 
 	sync.Mutex
 }
@@ -59,6 +61,7 @@ func newKdsRetryForcer(
 	forceFn func(*envoy_core.Node, model.ResourceType),
 	backoff time.Duration,
 	emitter events.Emitter,
+	hasher envoy_cache.NodeHash,
 ) *kdsRetryForcer {
 	return &kdsRetryForcer{
 		forceFn: forceFn,
@@ -66,6 +69,7 @@ func newKdsRetryForcer(
 		nodes:   map[xds.StreamID]*envoy_core.Node{},
 		backoff: backoff,
 		emitter: emitter,
+		hasher:  hasher,
 	}
 }
 
@@ -93,7 +97,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 		r.nodes[streamID] = node
 	}
 	r.Unlock()
-	r.log.Info("received NACK, will retry", "nodeID", node.Id, "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
+	r.log.Info("received NACK, will retry", "nodeID", r.hasher.ID(request.Node), "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
 	time.Sleep(r.backoff)
 	r.forceFn(node, model.ResourceType(request.TypeUrl))
 	r.emitter.Send(events.TriggerKDSResyncEvent{
