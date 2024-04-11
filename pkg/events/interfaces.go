@@ -27,6 +27,11 @@ type TriggerInsightsComputationEvent struct {
 	TenantID string
 }
 
+type TriggerKDSResyncEvent struct {
+	Type   model.ResourceType
+	NodeID string
+}
+
 var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
