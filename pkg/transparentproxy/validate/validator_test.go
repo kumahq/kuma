@@ -1,8 +1,7 @@
 package validate
 
 import (
-	"crypto/rand"
-	"math/big"
+	"github.com/kumahq/kuma/pkg/test"
 	"net/netip"
 	"os"
 	"strings"
@@ -39,16 +38,18 @@ var _ = Describe("Should Validate iptables rules", func() {
 	})
 
 	It("should return pass when connect to correct address", func() {
-		// when
-		port := randomPort()
-		validator := createValidator(false, port)
+		// given
+		port, err := test.GetFreePort()
+		Expect(err).ToNot(HaveOccurred())
+		validator := createValidator(false, uint16(port))
 		ipAddr := "127.0.0.1"
 		addr, _ := netip.ParseAddr(ipAddr)
 		validator.Config.ServerListenIP = addr
 		validator.Config.ClientConnectIP = addr
-		validator.Config.ClientConnectPort = port
+		validator.Config.ClientConnectPort = uint16(port)
 
-		err := validator.Run()
+		// when
+		err = validator.Run()
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -56,12 +57,13 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 	It("should return fail when no iptables rules setup", func() {
 		// given
-		port := randomPort()
-		validator := createValidator(false, port)
+		port, err := test.GetFreePort()
+		Expect(err).ToNot(HaveOccurred())
+		validator := createValidator(false, uint16(port))
 		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection
 
 		// when
-		err := validator.Run()
+		err = validator.Run()
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -74,9 +76,4 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 func createValidator(ipv6Enabled bool, validationServerPort uint16) *Validator {
 	return NewValidator(ipv6Enabled, validationServerPort, core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName("validator"))
-}
-
-func randomPort() uint16 {
-	randPort, _ := rand.Int(rand.Reader, big.NewInt(10000))
-	return uint16(1024 + randPort.Int64())
 }
