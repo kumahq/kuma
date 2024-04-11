@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"github.com/kumahq/kuma/pkg/test"
 	"net/netip"
 	"os"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("Should Validate iptables rules", func() {
