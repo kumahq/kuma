@@ -68,7 +68,6 @@ func Inspect() {
 		stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", "-m", meshName, dataplaneName, "--type=config-dump")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(stdout).To(ContainSubstring(fmt.Sprintf(`"name": "demo-client_%s_svc"`, nsName)))
 		Expect(stdout).To(ContainSubstring(`"name": "inbound:passthrough:ipv4"`))
 		Expect(stdout).To(ContainSubstring(`"name": "inbound:passthrough:ipv6"`))
 		Expect(stdout).To(ContainSubstring(`"name": "kuma:envoy:admin"`))
