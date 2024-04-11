@@ -31,29 +31,25 @@ var (
 		go func() {
 			logger := Log.WithName("runtime")
 
-			var stopSignalCancel func(os.Signal)
-			thirdStopSignal := func(signal os.Signal) {
-				logger.Info("received third signal, force exit", "signal", signal.String())
-				os.Exit(1)
-			}
-			secondStopSignal := func(signal os.Signal) {
-				logger.Info("received second signal, stopping instance", "signal", signal.String())
-				cancel()
-				stopSignalCancel = thirdStopSignal
-			}
-			firstStopSignal := func(signal os.Signal) {
-				logger.Info("received signal, stopping instance gracefully", "signal", signal.String())
-				gracefulCancel()
-				close(usr2Notify)
-				usr2Notify = nil
-				stopSignalCancel = secondStopSignal
-			}
-			stopSignalCancel = firstStopSignal
+			var numberOfStopSignals uint
 			for {
 				s := <-c
 				switch s {
 				case syscall.SIGINT, syscall.SIGTERM:
-					stopSignalCancel(s)
+					switch numberOfStopSignals {
+					case 0:
+						logger.Info("received signal, stopping instance gracefully", "signal", s.String())
+						gracefulCancel()
+						close(usr2Notify)
+						usr2Notify = nil
+					case 1:
+						logger.Info("received second signal, stopping instance", "signal", s.String())
+						cancel()
+					default:
+						logger.Info("received third signal, force exit", "signal", s.String())
+						os.Exit(1)
+					}
+					numberOfStopSignals++
 				case syscall.SIGUSR2:
 					select {
 					case usr2Notify <- struct{}{}:
