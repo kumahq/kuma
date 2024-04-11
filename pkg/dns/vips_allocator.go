@@ -352,6 +352,9 @@ func (d *VIPsAllocator) buildVirtualOutboundMeshView(
 			if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
 				continue
 			}
+			if inbound.Port == mesh_proto.TCPPortReserved {
+				continue
+			}
 			if d.serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
 			}
