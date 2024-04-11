@@ -77,7 +77,7 @@ func (validator *Validator) Run() error {
 		return clientErr
 	} else {
 		close(sExit)
-		validator.Logger.Info("Validation passed, iptables rules applied correctly")
+		validator.Logger.Info("validation passed, iptables rules applied correctly")
 		return nil
 	}
 }
@@ -105,18 +105,18 @@ type LocalServer struct {
 
 func (s *LocalServer) Run(readiness chan struct{}, exit chan struct{}) error {
 	addr := net.JoinHostPort(s.config.ServerListenIP.String(), fmt.Sprintf("%d", s.config.ServerListenPort))
-	s.logger.Info(fmt.Sprintf("Listening on %v", addr))
+	s.logger.Info(fmt.Sprintf("listening on %v", addr))
 
 	config := &net.ListenConfig{}
 	l, err := config.Listen(context.Background(), "tcp", addr)
 	if err != nil {
-		s.logger.Error(err, fmt.Sprintf("error listening on %v", s.config.ServerListenIP))
+		close(readiness)
 		return err
 	}
 
 	go s.handleTcpConnections(l, exit)
 
-	readiness <- struct{}{}
+	close(readiness)
 	<-exit
 	l.Close()
 	return nil
@@ -126,11 +126,11 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			s.logger.Error(err, "Listener failed to accept connection")
+			s.logger.Error(err, "listener failed to accept connection")
 			return
 		}
 
-		s.logger.Error(err, "Server: a connection has been established")
+		s.logger.Error(err, "server: a connection has been established")
 		_, _ = conn.Write([]byte(s.config.ServerListenIP.String()))
 		_ = conn.Close()
 
@@ -148,10 +148,10 @@ func (validator *Validator) runClient() error {
 	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		e := c.Run()
 		if e != nil {
-			validator.Logger.Error(e, "Client failed to connect to server")
+			validator.Logger.Info(fmt.Sprintf("[WARNING] client failed to connect to server: %v", e.Error()))
 			return retry.RetryableError(e)
 		}
-		validator.Logger.Info("Client: connection established")
+		validator.Logger.Info("client: connection established")
 		return nil
 	})
 }

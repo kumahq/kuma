@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"crypto/rand"
+	"math/big"
 	"net/netip"
 	"os"
 	"strings"
@@ -17,16 +19,15 @@ var _ = Describe("Should Validate iptables rules", func() {
 	Describe("generate default validator config", func() {
 		It("ipv4", func() {
 			// when
-			validator := createValidator(false)
+			validator := createValidator(false, ValidationServerPort)
 
 			// then
 			Expect(validator.Config.ServerListenIP.String()).To(Equal("127.0.0.1"))
-			Expect(validator.Config.ServerListenPort).To(Equal(uint16(15006)))
 		})
 
 		It("ipv6", func() {
 			// when
-			validator := createValidator(true)
+			validator := createValidator(true, ValidationServerPort)
 
 			// then
 			serverIP := validator.Config.ServerListenIP.String()
@@ -39,12 +40,13 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 	It("should return pass when connect to correct address", func() {
 		// when
-		validator := createValidator(false)
+		port := randomPort()
+		validator := createValidator(false, port)
 		ipAddr := "127.0.0.1"
 		addr, _ := netip.ParseAddr(ipAddr)
 		validator.Config.ServerListenIP = addr
 		validator.Config.ClientConnectIP = addr
-		validator.Config.ClientConnectPort = ValidationServerPort
+		validator.Config.ClientConnectPort = port
 
 		err := validator.Run()
 
@@ -54,7 +56,8 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 	It("should return fail when no iptables rules setup", func() {
 		// given
-		validator := createValidator(false)
+		port := randomPort()
+		validator := createValidator(false, port)
 		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection
 
 		// when
@@ -64,11 +67,16 @@ var _ = Describe("Should Validate iptables rules", func() {
 		Expect(err).To(HaveOccurred())
 		errMsg := err.Error()
 		containsTimeout := strings.Contains(errMsg, "i/o timeout")
-		containsRefused := strings.Contains(errMsg, "connection refused")
+		containsRefused := strings.Contains(errMsg, "refused")
 		Expect(containsTimeout || containsRefused).To(BeTrue())
 	})
 })
 
-func createValidator(ipv6Enabled bool) *Validator {
-	return NewValidator(ipv6Enabled, ValidationServerPort, core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName("validator"))
+func createValidator(ipv6Enabled bool, validationServerPort uint16) *Validator {
+	return NewValidator(ipv6Enabled, validationServerPort, core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName("validator"))
+}
+
+func randomPort() uint16 {
+	randPort, _ := rand.Int(rand.Reader, big.NewInt(10000))
+	return uint16(1024 + randPort.Int64())
 }
