@@ -204,7 +204,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		patchedContainer.Lifecycle = &kube_core.Lifecycle{
 			PreStop: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"kuma-dp", "drain", "--port", "9902"},
+					Command: []string{"killall", "-USR2", "kuma-dp"},
 				},
 			},
 		}

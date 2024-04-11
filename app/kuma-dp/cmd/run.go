@@ -148,7 +148,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			// gracefulCtx indicate that the process received a signal to shutdown
-			gracefulCtx, ctx := opts.SetupSignalHandler()
+			gracefulCtx, ctx, usr2Recv := opts.SetupSignalHandler()
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			components := []component.Component{tokenComp}
@@ -231,10 +231,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, envoyComponent)
 
-			drainRequests := make(chan struct{})
-			dpServerComponent := envoy.NewDPServer(9902, drainRequests)
-			components = append(components, dpServerComponent)
-
 			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
 			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
@@ -246,17 +242,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				var draining bool
 				for {
 					select {
-					case _, ok := <-drainRequests:
+					case _, ok := <-usr2Recv:
+						if !ok {
+							// If our channel is closed, never take this branch
+							// again
+							usr2Recv = nil
+							continue
+						}
 						if !draining {
 							runLog.Info("draining Envoy connections")
 							if err := envoyComponent.DrainForever(); err != nil {
 								runLog.Error(err, "could not drain connections")
 							}
-						}
-						if !ok {
-							// If our channel is closed, never take this branch
-							// again
-							drainRequests = nil
 						}
 						draining = true
 						continue
