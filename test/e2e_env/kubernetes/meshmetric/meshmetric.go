@@ -64,6 +64,7 @@ spec:
       profiles:
         appendProfiles:
           - name: Basic
+          - name: None # check merging
         exclude:
           - type: Regex
             match: "envoy_cluster_lb_.*"
