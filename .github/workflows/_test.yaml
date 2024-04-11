@@ -13,7 +13,7 @@ env:
   K8S_MAX_VERSION: v1.29.1-k3s2
 jobs:
   test_unit:
-    timeout-minutes: 20
+    timeout-minutes: 30
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ubuntu-latest
     steps:
