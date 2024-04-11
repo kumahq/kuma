@@ -45,6 +45,7 @@ var (
 				logger.Info("received signal, stopping instance gracefully", "signal", signal.String())
 				gracefulCancel()
 				close(usr2Notify)
+				usr2Notify = nil
 				stopSignalCancel = secondStopSignal
 			}
 			stopSignalCancel = firstStopSignal
