@@ -23,7 +23,7 @@ func MeshMetric(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshMetric
 metadata:
-  name: otel-metrics
+  name: otel-metrics-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

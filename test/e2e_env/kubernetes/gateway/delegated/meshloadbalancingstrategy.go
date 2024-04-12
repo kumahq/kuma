@@ -40,7 +40,7 @@ func MeshLoadBalancingStrategy(config *Config) func() {
 kind: MeshLoadBalancingStrategy
 apiVersion: kuma.io/v1alpha1
 metadata:
-  name: ring-hash
+  name: ring-hash-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

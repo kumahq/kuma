@@ -24,7 +24,7 @@ func MeshTrace(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrace
 metadata:
-  name: trace-all
+  name: trace-all-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

@@ -83,7 +83,7 @@ func MeshTimeout(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
-  name: mt1
+  name: mt1-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -102,7 +102,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
-  name: mt1
+  name: mt1-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

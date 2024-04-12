@@ -23,7 +23,7 @@ func MeshProxyPatch(config *Config) func() {
 apiVersion: kuma.io/v1alpha1 
 kind: MeshProxyPatch
 metadata:
-  name: backend-lua-filter
+  name: backend-lua-filter-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
