@@ -22,7 +22,7 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}]}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"name":"test-app","path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
                   status: 200
                 match:
                   prefix: /

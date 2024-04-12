@@ -23,7 +23,7 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := AggregatedOtelMutator()(input)
 		Expect(err).ToNot(HaveOccurred())
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service")
+		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", map[string]string{"extraLabel": "test"})
 
 		// then
 		sort.SliceStable(openTelemetryMetrics, func(i, j int) bool {
