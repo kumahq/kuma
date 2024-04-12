@@ -6010,8 +6010,6 @@ components:
                           description: >-
                             AppendProfiles allows to combine the metrics from
                             multiple predefined profiles.
-
-                            Currently, it's only possible to define one profile.
                           items:
                             properties:
                               name:
@@ -6026,7 +6024,6 @@ components:
                             required:
                               - name
                             type: object
-                          maxItems: 1
                           type: array
                         exclude:
                           description: >-

@@ -186,9 +186,9 @@ var basicProfileLabels = []selectorFunction{
 }
 
 var profileOrder = map[v1alpha1.ProfileName]int{
-	v1alpha1.AllProfileName: 0,
+	v1alpha1.AllProfileName:   0,
 	v1alpha1.BasicProfileName: 1,
-	v1alpha1.NoneProfileName: 2,
+	v1alpha1.NoneProfileName:  2,
 }
 
 func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
@@ -214,10 +214,8 @@ func ProfileMutatorGenerator(sidecar *v1alpha1.Sidecar) PrometheusMutator {
 			switch profile {
 			case string(v1alpha1.AllProfileName):
 				effectiveSelectors = append(effectiveSelectors, alwaysSelect)
-				effectiveLabelsSelectors = append(effectiveLabelsSelectors, alwaysSelect)
 			case string(v1alpha1.NoneProfileName):
 				effectiveSelectors = append(effectiveSelectors, neverSelect)
-				effectiveLabelsSelectors = append(effectiveLabelsSelectors, neverSelect)
 			case string(v1alpha1.BasicProfileName):
 				effectiveSelectors = append(effectiveSelectors, basicProfile...)
 				effectiveLabelsSelectors = append(effectiveSelectors, basicProfileLabels...)
