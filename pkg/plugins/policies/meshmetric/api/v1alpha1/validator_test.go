@@ -21,6 +21,7 @@ default:
   sidecar:
     profiles:
       appendProfiles:
+        - name: None
         - name: Basic
       exclude:
         - type: Regex
