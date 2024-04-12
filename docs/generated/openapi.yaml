@@ -71,6 +71,55 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /meshes/{mesh}/dataplanes/{name}/_config:
+    get:
+      summary: Get a proxy XDS config on a CP
+      description: >-
+        Returns the configuration of the proxy
+        ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol)
+        configuration).
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+        - in: query
+          name: shadow
+          description: >
+            When computing XDS config the CP takes into account policies with
+            'kuma.io/effect: shadow' label
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: include
+          description: >
+            An array of extra fields to include in the response. When
+            `include=diff` the server computes a diff in JSONPatch format
+
+            between the XDS config returned in 'xds' and the current proxy XDS
+            config.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - diff
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -175,8 +224,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshAccessLog entity
       tags:
@@ -260,8 +319,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshCircuitBreaker entity
       tags:
@@ -345,8 +414,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshFaultInjection entity
       tags:
@@ -430,8 +509,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshHealthCheck entity
       tags:
@@ -515,8 +604,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshHTTPRoute entity
       tags:
@@ -600,8 +699,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshLoadBalancingStrategy entity
       tags:
@@ -685,8 +794,16 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
     delete:
       summary: Deletes MeshMetric entity
       tags:
@@ -770,8 +887,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshProxyPatch entity
       tags:
@@ -855,8 +982,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshRateLimit entity
       tags:
@@ -940,8 +1077,16 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
     delete:
       summary: Deletes MeshRetry entity
       tags:
@@ -1025,8 +1170,16 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
     delete:
       summary: Deletes MeshTCPRoute entity
       tags:
@@ -1110,8 +1263,16 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
     delete:
       summary: Deletes MeshTimeout entity
       tags:
@@ -1195,8 +1356,16 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
     delete:
       summary: Deletes MeshTrace entity
       tags:
@@ -1280,8 +1449,18 @@ paths:
       responses:
         '200':
           description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
     delete:
       summary: Deletes MeshTrafficPermission entity
       tags:
@@ -1347,6 +1526,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
+    InspectDataplanesConfig:
+      type: object
+      title: InspectDataplanesConfig
+      required:
+        - xds
+      properties:
+        xds:
+          description: The raw XDS config as an inline JSON object
+          type: object
+        diff:
+          description: >
+            Contains a diff in a JSONPatch format between the XDS config
+            returned in 'xds' and the current proxy XDS config.
+
+            By default, the field is empty. To include the diff in the response,
+            use the `include=diff` query parameter.
+          type: array
+          items:
+            $ref: '#/components/schemas/JsonPatchItem'
     InspectRules:
       type: object
       title: InspectRules
@@ -1774,6 +1972,28 @@ components:
         match:
           type: object
           x-go-type: interface{}
+    JsonPatchItem:
+      type: object
+      required:
+        - op
+        - path
+        - value
+      properties:
+        op:
+          type: string
+          description: Operation to be performed.
+          enum:
+            - add
+            - remove
+            - test
+        path:
+          type: string
+          description: >-
+            A JSON Pointer path indicating the part of the document to operate
+            on.
+        value:
+          AnyValue:
+            description: The value to be used within the operations.
     MeshAccessLogItem:
       type: object
       properties:
@@ -2308,6 +2528,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshAccessLogCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshCircuitBreakerItem:
       type: object
       properties:
@@ -3418,6 +3651,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshCircuitBreakerCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshFaultInjectionItem:
       type: object
       properties:
@@ -3822,6 +4068,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshFaultInjectionCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshHealthCheckItem:
       type: object
       properties:
@@ -4227,6 +4486,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshHealthCheckCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshHTTPRouteItem:
       type: object
       properties:
@@ -4888,6 +5160,19 @@ components:
                 type: object
               type: array
           type: object
+    MeshHTTPRouteCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshLoadBalancingStrategyItem:
       type: object
       properties:
@@ -5567,6 +5852,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshMetricItem:
       type: object
       properties:
@@ -5847,6 +6145,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshMetricCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshProxyPatchItem:
       type: object
       properties:
@@ -6518,6 +6829,19 @@ components:
             - default
             - targetRef
           type: object
+    MeshProxyPatchCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshRateLimitItem:
       type: object
       properties:
@@ -6996,6 +7320,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshRateLimitCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshRetryItem:
       type: object
       properties:
@@ -7560,6 +7897,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshRetryCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshTCPRouteItem:
       type: object
       properties:
@@ -7789,6 +8139,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshTCPRouteCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshTimeoutItem:
       type: object
       properties:
@@ -8159,6 +8522,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshTimeoutCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshTraceItem:
       type: object
       properties:
@@ -8454,6 +8830,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshTraceCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshTrafficPermissionItem:
       type: object
       properties:
@@ -8613,6 +9002,19 @@ components:
           required:
             - targetRef
           type: object
+    MeshTrafficPermissionCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
   responses:
     ResourceTypeDescriptionListResponse:
       description: A response containing a list of all resources installed in Kuma
@@ -8638,6 +9040,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+    InspectDataplanesConfigResponse:
+      description: Successfully retrieved proxy XDS config.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesConfig'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

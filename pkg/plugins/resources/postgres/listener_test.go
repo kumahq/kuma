@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -128,7 +129,7 @@ func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, 
 	Expect(err).ToNot(HaveOccurred())
 	listener := eventsBus.Subscribe()
 	l := events_postgres.NewListener(cfg, eventsBus)
-	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)
+	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, 5*time.Second, 1*time.Minute)
 	go func() {
 		listenerErrCh <- resilientListener.Start(listenerStopCh)
 	}()

@@ -15,6 +15,14 @@ func BackendGatewayRoute() *core_mesh.MeshGatewayRouteResource {
 		Build()
 }
 
+func BackendGatewaySecondRoute() *core_mesh.MeshGatewayRouteResource {
+	return builders.GatewayRoute().
+		WithName("sample-gateway-route-second").
+		WithGateway("sample-gateway").
+		WithExactMatchHttpRoute("/another", "backend").
+		Build()
+}
+
 func BackendGatewayTCPRoute() *core_mesh.MeshGatewayRouteResource {
 	return builders.GatewayRoute().
 		WithName("sample-tcp-gateway-route").

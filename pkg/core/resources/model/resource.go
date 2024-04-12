@@ -128,6 +128,13 @@ func Validate(resource Resource) error {
 	return nil
 }
 
+func Deprecations(resource Resource) []string {
+	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
+		return v.Deprecations()
+	}
+	return nil
+}
+
 type OverviewResource interface {
 	SetOverviewSpec(resource Resource, insight Resource) error
 }
@@ -449,6 +456,13 @@ func ZoneOfResource(res Resource) string {
 	}
 	parts := strings.Split(res.GetMeta().GetName(), ".")
 	return parts[0]
+}
+
+func IsShadowedResource(r Resource) bool {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.EffectLabel] == "shadow" {
+		return true
+	}
+	return false
 }
 
 func equalNames(mesh, n1, n2 string) bool {

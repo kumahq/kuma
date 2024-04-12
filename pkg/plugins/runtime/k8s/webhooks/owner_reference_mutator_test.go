@@ -12,6 +12,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
@@ -24,6 +25,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 		expectedMessage        string
 		skipMeshOwnerReference bool
 		ownerId                kube_meta.Object
+		cpMode                 string
 	}
 	DescribeTable("should add owner reference to resource owned by Mesh",
 		func(given testCase) {
@@ -39,6 +41,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 				Decoder:                decoder,
 				Scheme:                 scheme,
 				SkipMeshOwnerReference: given.skipMeshOwnerReference,
+				CpMode:                 given.cpMode,
 			}
 			req := kube_admission.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
@@ -207,6 +210,42 @@ var _ = Describe("OwnerReferenceMutator", func() {
             }`,
 			skipMeshOwnerReference: true,
 			expectedMessage:        "ignored. Configuration setup to ignore Mesh owner reference.",
+		}),
+		Entry("should not add owner reference to synced resources to zone", testCase{
+			cpMode: config_core.Zone,
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              }
+            }`,
+			expectedMessage: "ignore. It's synced resource.",
+		}),
+		Entry("should not add owner reference to synced resources to global", testCase{
+			cpMode: config_core.Global,
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "zone"
+                }
+              }
+            }`,
+			expectedMessage: "ignore. It's synced resource.",
 		}),
 	)
 })

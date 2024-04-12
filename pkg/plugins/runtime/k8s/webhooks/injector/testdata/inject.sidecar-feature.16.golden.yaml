@@ -30,13 +30,6 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
     - --config-file
     - /tmp/kumactl/config
@@ -189,6 +182,13 @@ spec:
       readOnly: true
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:

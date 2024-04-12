@@ -30,15 +30,17 @@ func (c *CompositeValidator) IntoWebhook(scheme *runtime.Scheme) *admission.Webh
 
 	return &admission.Webhook{
 		Handler: admission.HandlerFunc(func(ctx context.Context, req admission.Request) admission.Response {
+			var warnings []string
 			for _, validator := range c.Validators {
 				if validator.Supports(req) {
 					resp := validator.Handle(ctx, req)
 					if !resp.Allowed {
 						return resp
 					}
+					warnings = append(warnings, resp.Warnings...)
 				}
 			}
-			return admission.Allowed("")
+			return admission.Allowed("").WithWarnings(warnings...)
 		}),
 	}
 }

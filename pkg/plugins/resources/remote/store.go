@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -87,13 +88,26 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_
 	if err != nil {
 		return err
 	}
-	if statusCode != http.StatusOK && statusCode != http.StatusCreated {
-		if statusCode == http.StatusMethodNotAllowed {
-			return errors.Errorf("%s", string(b))
-		} else {
-			return errors.Errorf("(%d): %s", statusCode, string(b))
+
+	switch statusCode {
+	case http.StatusOK, http.StatusCreated:
+		if len(b) == 0 {
+			break
 		}
+		resp := api_server_types.CreateOrUpdateSuccessResponse{}
+		if err := json.Unmarshal(b, &resp); err != nil {
+			return err
+		}
+		if len(resp.Warnings) > 0 {
+			// todo(lobkovilya): there must be a better way to pass warnings back to the store's caller
+			ctx.Value(WarningsCallback).(func([]string))(resp.Warnings)
+		}
+	case http.StatusMethodNotAllowed:
+		return errors.Errorf("%s", string(b))
+	default:
+		return errors.Errorf("(%d): %s", statusCode, string(b))
 	}
+
 	res.SetMeta(meta)
 	return nil
 }
@@ -205,3 +219,7 @@ func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []
 	}
 	return resp.StatusCode, b, nil
 }
+
+type contextKey string
+
+var WarningsCallback = contextKey("warningsCallback")
