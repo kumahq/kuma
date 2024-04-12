@@ -11,7 +11,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("Should Validate iptables rules", func() {
@@ -39,17 +38,14 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 	It("should return pass when connect to correct address", func() {
 		// given
-		port, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		validator := createValidator(false, uint16(port))
+		validator := createValidator(false, uint16(0))
 		ipAddr := "127.0.0.1"
 		addr, _ := netip.ParseAddr(ipAddr)
 		validator.Config.ServerListenIP = addr
 		validator.Config.ClientConnectIP = addr
-		validator.Config.ClientConnectPort = uint16(port)
 
 		// when
-		err = validator.Run()
+		err := validator.Run()
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -57,13 +53,12 @@ var _ = Describe("Should Validate iptables rules", func() {
 
 	It("should return fail when no iptables rules setup", func() {
 		// given
-		port, err := test.GetFreePort()
-		Expect(err).ToNot(HaveOccurred())
-		validator := createValidator(false, uint16(port))
+		validator := createValidator(false, uint16(0))
+		validator.Config.ClientConnectPort = ValidationServerPort
 		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection
 
 		// when
-		err = validator.Run()
+		err := validator.Run()
 
 		// then
 		Expect(err).To(HaveOccurred())

@@ -114,11 +114,20 @@ func (s *LocalServer) Run(readiness chan struct{}, exit chan struct{}) error {
 		return err
 	}
 
+	// if the port is not set, we will use the port that is assigned by the OS
+	// this is useful for testing purposes when cases are ran in parallel, to make sure ports are not conflicting
+	if s.config.ServerListenPort == 0 {
+		s.config.ServerListenPort = uint16(l.Addr().(*net.TCPAddr).Port)
+		if s.config.ClientConnectPort == 0 {
+			s.config.ClientConnectPort = s.config.ServerListenPort
+		}
+	}
+
 	go s.handleTcpConnections(l, exit)
 
 	close(readiness)
 	<-exit
-	l.Close()
+	_ = l.Close()
 	return nil
 }
 
@@ -186,6 +195,6 @@ func (c *LocalClient) Run() error {
 	if err != nil {
 		return err
 	}
-	conn.Close()
+	_ = conn.Close()
 	return nil
 }
