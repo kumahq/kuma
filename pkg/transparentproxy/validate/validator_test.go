@@ -47,6 +47,7 @@ var _ = Describe("Should Validate iptables rules", func() {
 		// when
 		sExit := make(chan struct{})
 		port, err := validator.RunServer(sExit)
+		Expect(err).ToNot(HaveOccurred())
 		err = validator.RunClient(port, sExit)
 
 		// then
@@ -56,12 +57,12 @@ var _ = Describe("Should Validate iptables rules", func() {
 	It("should fail when no iptables rules setup", func() {
 		// given
 		validator := createValidator(false, uint16(0))
-		validator.Config.ClientConnectPort = ValidationServerPort
 		validator.Config.ClientRetryInterval = 30 * time.Millisecond // just to make test faster and there should be no flakiness here because the connection will never establish successfully without the redirection
 
 		// when
 		sExit := make(chan struct{})
 		_, err := validator.RunServer(sExit)
+		Expect(err).ToNot(HaveOccurred())
 		// by using 0, the client will generate a random port to connect, simulating the scenario in the real world
 		err = validator.RunClient(0, sExit)
 

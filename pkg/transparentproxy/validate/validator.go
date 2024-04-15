@@ -28,7 +28,6 @@ type Config struct {
 	ServerListenIP      netip.Addr
 	ServerListenPort    uint16
 	ClientConnectIP     netip.Addr
-	ClientConnectPort   uint16
 	ClientRetryInterval time.Duration
 }
 
@@ -116,7 +115,7 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 			return
 		}
 
-		s.logger.Error(err, "server: a connection has been established")
+		s.logger.Info("server: a connection has been established")
 		_, _ = conn.Write([]byte(s.config.ServerListenIP.String()))
 		_ = conn.Close()
 
