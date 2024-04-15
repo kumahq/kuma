@@ -17,12 +17,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
   update-insecure-dependencies:
-<<<<<<< HEAD
-=======
     env:
       OSV_SCANNER_ADDITIONAL_OPTS: ""
-    timeout-minutes: 20
->>>>>>> fc8b2e9b4 (ci(update): make it possible to pass additional options to osv-scanner (#9940))
+    timeout-minutes: 20```
     needs:
       - build-matrix
     strategy:
