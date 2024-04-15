@@ -55,34 +55,9 @@ func NewValidator(useIpv6 bool, port uint16, logger logr.Logger) *Validator {
 	}
 }
 
-func (validator *Validator) Run() error {
+func (validator *Validator) RunServer(sExit chan struct{}) (uint16, error) {
 	validator.Logger.Info("starting iptables validation")
-	sExit := make(chan struct{})
 
-	sError := validator.runServer(sExit)
-	select {
-	case serverErr := <-sError:
-		if serverErr == nil {
-			serverErr = fmt.Errorf("server exited unexpectedly")
-		}
-		serverErr = fmt.Errorf("validation failed: %w", serverErr)
-		return serverErr
-	default:
-	}
-
-	clientErr := validator.runClient()
-	if clientErr != nil {
-		clientErr = fmt.Errorf("validation failed, client failed to connect to the verification server: %w", clientErr)
-		close(sExit)
-		return clientErr
-	} else {
-		close(sExit)
-		validator.Logger.Info("validation passed, iptables rules applied correctly")
-		return nil
-	}
-}
-
-func (validator *Validator) runServer(sExit chan struct{}) chan error {
 	s := LocalServer{
 		logger: validator.Logger,
 		config: validator.Config,
@@ -95,12 +70,22 @@ func (validator *Validator) runServer(sExit chan struct{}) chan error {
 	}()
 
 	<-sReady
-	return sError
+	select {
+	case serverErr := <-sError:
+		if serverErr == nil {
+			serverErr = fmt.Errorf("server exited unexpectedly")
+		}
+		serverErr = fmt.Errorf("validation failed: %w", serverErr)
+		return 0, serverErr
+	default:
+		return s.listenedPort, nil
+	}
 }
 
 type LocalServer struct {
-	logger logr.Logger
-	config *Config
+	logger       logr.Logger
+	config       *Config
+	listenedPort uint16
 }
 
 func (s *LocalServer) Run(readiness chan struct{}, exit chan struct{}) error {
@@ -113,15 +98,7 @@ func (s *LocalServer) Run(readiness chan struct{}, exit chan struct{}) error {
 		close(readiness)
 		return err
 	}
-
-	// if the port is not set, we will use the port that is assigned by the OS
-	// this is useful for testing purposes when cases are ran in parallel, to make sure ports are not conflicting
-	if s.config.ServerListenPort == 0 {
-		s.config.ServerListenPort = uint16(l.Addr().(*net.TCPAddr).Port)
-		if s.config.ClientConnectPort == 0 {
-			s.config.ClientConnectPort = s.config.ServerListenPort
-		}
-	}
+	s.listenedPort = uint16(l.Addr().(*net.TCPAddr).Port)
 
 	go s.handleTcpConnections(l, exit)
 
@@ -151,10 +128,10 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 	}
 }
 
-func (validator *Validator) runClient() error {
-	c := LocalClient{ServerIP: validator.Config.ClientConnectIP, ServerPort: validator.Config.ClientConnectPort}
+func (validator *Validator) RunClient(serverPort uint16, sExit chan struct{}) error {
+	c := LocalClient{ServerIP: validator.Config.ClientConnectIP, ServerPort: serverPort}
 	backoff := retry.WithMaxRetries(validationRetries, retry.NewConstant(validator.Config.ClientRetryInterval))
-	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	clientErr := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		e := c.Run()
 		if e != nil {
 			validator.Logger.Info(fmt.Sprintf("[WARNING] client failed to connect to server: %v", e.Error()))
@@ -163,6 +140,16 @@ func (validator *Validator) runClient() error {
 		validator.Logger.Info("client: connection established")
 		return nil
 	})
+
+	if clientErr != nil {
+		clientErr = fmt.Errorf("validation failed, client failed to connect to the verification server: %w", clientErr)
+		close(sExit)
+		return clientErr
+	} else {
+		validator.Logger.Info("validation passed, iptables rules applied correctly")
+		close(sExit)
+		return nil
+	}
 }
 
 type LocalClient struct {
