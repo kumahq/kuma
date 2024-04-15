@@ -24,7 +24,7 @@ You can access the control-plane via either the GUI, kubectl, the HTTP API, or t
     update the CRDs if the new {{ include "kuma.name" . }} version has changes
     to the CRDs. You can achieve this by calling the following command:
 
-    kumactl install crds --no-config{{ if .Values.experimental.gatewayAPI }} --experimental-gatewayapi{{ end }} | kubectl apply -f
+    kumactl install crds --no-config | kubectl apply -f
 
 {{- if and .Values.experimental.ebpf.enabled (not .Values.cni.enabled) }}
 

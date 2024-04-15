@@ -265,10 +265,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.gatewayAPI }}
-- name: KUMA_EXPERIMENTAL_GATEWAY_API
-  value: "true"
-{{- end }}
 {{- if .Values.experimental.sidecarContainers }}
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   value: "true"

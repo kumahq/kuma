@@ -50,11 +50,7 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
-		return NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
-			)).
-			Setup(cluster)
+		return NewClusterSetup().Install(Kuma(config_core.Zone)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	opts := cluster.GetKubectlOptions()
