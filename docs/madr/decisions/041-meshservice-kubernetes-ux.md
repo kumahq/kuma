@@ -56,6 +56,8 @@ for every Pod selected by the Service that points directly to the Pod's IP.
 To support this with Kuma, we will create a `MeshService` per Pod, each
 represented by the hostname allocated by the headless Service and the Pod
 IP as the "VIP" and single endpoint.
+The name of said `MeshServices` has the format `<service-name>-<pod-hash>`
+where the `Service` name is appropriately truncated.
 
 In order to do this we need to have a list of all the Pods selected by the
 Service, which we can get by looking at `EndpointSlices`. These resources hold a
