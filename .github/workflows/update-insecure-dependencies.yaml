@@ -19,7 +19,7 @@ jobs:
   update-insecure-dependencies:
     env:
       OSV_SCANNER_ADDITIONAL_OPTS: ""
-    timeout-minutes: 20```
+    timeout-minutes: 20
     needs:
       - build-matrix
     strategy:
