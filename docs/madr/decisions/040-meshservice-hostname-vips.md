@@ -63,7 +63,7 @@ In case of services in a Universal cluster, currently we provide two ways:
 
 Hostnames should be managed only by MeshOperator. Otherwise, we get into security issues such as one service owner can override a hostname of other service.
 Hostnames are created by convention in the majority of cases - Kubernetes hostnames are also such example.
-It is still possible for service owner to create unique hostname for their app by asking reaching out to mesh operator.
+It is still possible for service owner to create unique hostname for their app by reaching out to mesh operator.
 
 To manage hostname, we introduce new object called `HostnameGenerator`
 
@@ -97,7 +97,7 @@ Possible template functions/keys are:
 * `{{ name }}` - name of the MeshService
 * `{{ label "x" }}` - value of label `x`.
 
-If the template cannot be resolved (label is missing), the hostname won't be generated.
+If the template cannot be resolved (label is missing), the hostname won't be generated with a `NotAvailable` status and an appropriate `reason`.
 
 Generated hostnames will be placed in the status of MeshService
 ```yaml
