@@ -74,6 +74,11 @@ spec:
     # dataplaneTags: ...
 ```
 
+Note that Kubernetes does not allocate a `ClusterIP` for headless services, it
+only creates a round-robin DNS record to point to PodIPs. Kuma does not
+allocate a VIP either. In a zone, users can rely on kube-dns. Cross-zone
+behavior will be covered in a subsequent MADR.
+
 #### Policy matching
 
 Note that this prevents using `kind: MeshService` to select all Pods of a
