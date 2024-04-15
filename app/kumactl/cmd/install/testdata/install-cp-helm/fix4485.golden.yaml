@@ -65,6 +65,7 @@ rules:
       - pods
       - configmaps
       - nodes
+      - secrets
     verbs:
       - get
       - list
@@ -177,6 +178,7 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
+      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections

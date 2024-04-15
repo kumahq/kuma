@@ -92,10 +92,8 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if rt.Config().Experimental.GatewayAPI {
-		if err := addGatewayAPIReconcillers(mgr, rt, proxyFactory); err != nil {
-			return err
-		}
+	if err := addGatewayAPIReconcillers(mgr, rt, proxyFactory); err != nil {
+		return err
 	}
 
 	return nil
@@ -103,7 +101,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 
 func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
 	if !gatewayAPICRDsPresent(mgr) {
-		log.Info("[WARNING] Experimental GatewayAPI feature is enabled, but CRDs are not registered. Disabling support")
+		log.Info("[WARNING] GatewayAPI CRDs are not registered. Disabling support")
 		return nil
 	}
 

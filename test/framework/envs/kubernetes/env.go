@@ -24,12 +24,7 @@ func SetupAndGetState() []byte {
 	)).To(Succeed())
 
 	kumaOptions := append(
-		[]framework.KumaDeploymentOption{
-			framework.WithCtlOpts(map[string]string{
-				"--experimental-gatewayapi": "true",
-			}),
-			framework.WithEgress(),
-		},
+		[]framework.KumaDeploymentOption{framework.WithEgress()},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
 	if framework.Config.KumaExperimentalSidecarContainers {

@@ -85,7 +85,7 @@ data:
   save_crds.sh: |
     set -e
 
-    crds="$(kumactl install crds --no-config {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
+    crds="$(kumactl install crds --no-config)"
 
     if [ -n "${crds}" ]; then
       echo "found crds - saving to /kuma/crds/crds.yaml"

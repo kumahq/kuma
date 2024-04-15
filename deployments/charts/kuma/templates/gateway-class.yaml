@@ -1,4 +1,4 @@
-{{- if and .Values.experimental.gatewayAPI (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass") }}
+{{- if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
@@ -6,7 +6,7 @@ metadata:
  name: kuma
 spec:
  controllerName: "gateways.kuma.io/controller"
-{{- else if and .Values.experimental.gatewayAPI (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass") }}
+{{- else if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
