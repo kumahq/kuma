@@ -32,6 +32,9 @@ assuming:
 The `ownerReference` of the `MeshService` points to the `Service`.
 Labels are copied from the `Service` object to the `MeshService` object.
 
+If a `MeshService` object exists in the namespace with the same name, the
+`MeshService` won't be created and an error is bubbled up to the user.
+
 ### VIP
 
 For `MeshServices` in Kubernetes zones, we no longer create a VIP but instead
@@ -76,8 +79,8 @@ spec:
 
 Note that Kubernetes does not allocate a `ClusterIP` for headless services, it
 only creates a round-robin DNS record to point to PodIPs. Kuma does not
-allocate a VIP either. In a zone, users can rely on kube-dns. Cross-zone
-behavior will be covered in a subsequent MADR.
+allocate a VIP either. In a zone, users can rely on kube-dns. This record or
+behavior won't be exposed in anyway cross-zone.
 
 #### Policy matching
 
