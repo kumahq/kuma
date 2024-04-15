@@ -128,6 +128,8 @@ func (s *LocalServer) handleTcpConnections(l net.Listener, cExit chan struct{}) 
 }
 
 func (validator *Validator) RunClient(serverPort uint16, sExit chan struct{}) error {
+	defer close(sExit)
+
 	c := LocalClient{ServerIP: validator.Config.ClientConnectIP, ServerPort: serverPort}
 	backoff := retry.WithMaxRetries(validationRetries, retry.NewConstant(validator.Config.ClientRetryInterval))
 	clientErr := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
@@ -142,11 +144,9 @@ func (validator *Validator) RunClient(serverPort uint16, sExit chan struct{}) er
 
 	if clientErr != nil {
 		clientErr = fmt.Errorf("validation failed, client failed to connect to the verification server: %w", clientErr)
-		close(sExit)
 		return clientErr
 	} else {
 		validator.Logger.Info("validation passed, iptables rules applied correctly")
-		close(sExit)
 		return nil
 	}
 }
