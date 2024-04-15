@@ -28,8 +28,8 @@ We have to assign a VIP for each MeshService to be able to address it using tran
 MeshService object contains VIPs in status.
 ```yaml
 status: # managed by CP. Not shared cross zone, but synced to global
-  vips:
-  - ip: <kube_cluster_ip> # or kuma VIP
+  vip:
+    ip: <kube_cluster_ip> # or kuma VIP or Pod IP for Headless Service
     type: Kubernetes # | Kuma
 ```
 
@@ -48,9 +48,8 @@ VIP assigning process (single-threaded):
 Following this process, we don’t have to store VIPs in any central place like we do currently (VIP ConfigMap for each Mesh).
 We also assign VIPs for ExternalServices, but this can work as long as we consider both ExternalServices and MeshServices for this process.
 
-To avoid collision with an existing VIPs mechanism, we can take a completely new CIDR (241.0.0.0/4).
-
-It's not expected for service to have multiple VIPs, but we want expose this possibility for the future (therefore `vips` field is a list).
+To avoid collision with an existing VIPs mechanism, we can take a completely new CIDR by default (241.0.0.0/4).
+This CIDR can be configured by the user.
 
 ### Hostname Generator
 
