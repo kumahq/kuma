@@ -726,7 +726,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 				rest_errors.HandleError(ctx, response, err, "Failed to inspect current proxy config")
 				return
 			}
-			diff, err := inspect.Diff(config, currentConfig)
+			diff, err := inspect.Diff(currentConfig, config)
 			if err != nil {
 				rest_errors.HandleError(ctx, response, err, "Failed to compute diff")
 				return

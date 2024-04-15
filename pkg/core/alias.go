@@ -26,7 +26,7 @@ var (
 		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())
 		ctx, cancel := context.WithCancel(context.Background())
 		c := make(chan os.Signal, 3)
-		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR2)
+		signal.Notify(c, handledSignals...)
 		usr2Notify := make(chan struct{}, 1)
 		go func() {
 			logger := Log.WithName("runtime")
@@ -50,7 +50,7 @@ var (
 						os.Exit(1)
 					}
 					numberOfStopSignals++
-				case syscall.SIGUSR2:
+				case usr2:
 					select {
 					case usr2Notify <- struct{}{}:
 					default:
