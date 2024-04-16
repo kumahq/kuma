@@ -129,7 +129,6 @@ var _ = Describe("IsReferenced", func() {
 			}
 		}
 	}
-	fmt.Println("DEBUG", len(entries))
 
 	DescribeTableSubtree("",
 		func(g testCase) {
