@@ -32,7 +32,6 @@ var _ = Describe("Resource", func() {
 })
 
 var _ = Describe("IsReferenced", func() {
-
 	metaFuncs := map[string]map[string]func(mesh, name string) model.ResourceMeta{
 		"zone": {
 			"k8s": func(mesh, name string) model.ResourceMeta {
@@ -134,7 +133,6 @@ var _ = Describe("IsReferenced", func() {
 
 	DescribeTableSubtree("",
 		func(g testCase) {
-
 			refMeta := metaFuncs[g.refOrigin][g.clusterTypes[g.refOrigin]]
 			resMeta := metaFuncs[g.resOrigin][g.clusterTypes[g.resOrigin]]
 
