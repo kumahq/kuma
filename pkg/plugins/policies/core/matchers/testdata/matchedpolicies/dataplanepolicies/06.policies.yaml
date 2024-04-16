@@ -15,6 +15,8 @@ spec:
 type: MeshHTTPRoute
 name: route-1-4w55b97x462v7vdz
 mesh: default
+labels:
+  kuma.io/display-name: route-1
 spec:
   targetRef:
     kind: MeshService
