@@ -1,0 +1,61 @@
+name: Generate Provenance
+on:
+  workflow_call:
+    inputs:
+      BINARY_ARTIFACTS_HASH_AS_FILE:
+        required: true
+        type: string
+        description: file containing hash for all compressed binary artifacts
+      IMAGES:
+        required: true
+        type: string
+        description: JSON string containing all IMAGES
+      IMAGE_DIGESTS:
+        required: true
+        type: string
+        description: JSON string containing all image digests
+      REGISTRY:
+        required: true
+        type: string
+        description: registry name
+      NOTARY_REPOSITORY:
+        required: true
+        type: string
+        description: notary repository
+permissions:
+  contents: write
+  id-token: write # needed for signing the images
+  actions: read # For getting workflow run info to build provenance
+  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+jobs:
+  artifact-provenance:
+    # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
+    with:
+      base64-subjects: ${{ inputs.BINARY_ARTIFACTS_HASH_AS_FILE }}
+      upload-assets: ${{ github.ref_type == 'tag' }}
+      upload-tag-name: ${{ github.ref_name }}
+      provenance-name: ${{ github.event.repository.name }}.intoto.jsonl
+      draft-release: "true"
+
+  # Provenance job for all images manifests
+  # SLSA generator is a reusable workflow
+  # pull-request event is [not supported](https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#supported-triggers)
+  # runs-on option is [not supported](https://github.com/orgs/community/discussions/25783)
+  # ENV option is [not supported](https://github.com/orgs/community/discussions/26671)
+  # Reusable workflow doesn't support exrernal COSIGN_REPOSITORY via input / env variable
+  # TODO:
+  #   Split provenance jobs for internal / official releases when repositories are split
+  images-provenance:
+    strategy:
+      fail-fast: true
+      matrix:
+        IMAGE: ${{ fromJSON(inputs.IMAGES) }}
+    # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
+    with:
+      image: ${{ inputs.REGISTRY }}/${{ matrix.IMAGE }}
+      digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}
+      registry-username: ${{ vars.DOCKER_USERNAME }}
+    secrets:
+      registry-password: ${{ secrets.DOCKER_API_KEY }}

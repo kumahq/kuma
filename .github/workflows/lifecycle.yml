@@ -8,8 +8,15 @@ on:
       - reopened
       - opened
       - labeled
+permissions:
+  contents: read
 jobs:
   lifecycle:
+    permissions:
+      issues: write
     uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@main
     with:
       filesToIgnore: CONTRIBUTING.md
+    secrets:
+      app_id: ${{ secrets.APP_ID }}
+      private_key: ${{ secrets.APP_PRIVATE_KEY }}
