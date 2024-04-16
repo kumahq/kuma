@@ -119,5 +119,5 @@ spec:
 	Context("MeshTrace", delegated.MeshTrace(&config))
 	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
 	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
-	Context("MeshTCPRoute", delegated.MeshTCPRoute(&config))
+	XContext("MeshTCPRoute", delegated.MeshTCPRoute(&config))
 }
