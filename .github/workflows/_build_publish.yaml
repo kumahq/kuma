@@ -128,17 +128,19 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0ff22c9835d745aefc41a99de6d526dc9e984105 # v2.2.0
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
+          upload-sbom-release-assets: true
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0ff22c9835d745aefc41a99de6d526dc9e984105 # v2.2.0
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
+          upload-sbom-release-assets: true
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       - name: publish images
         id: release_images
@@ -182,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@0ff22c9835d745aefc41a99de6d526dc9e984105 # v2.2.0
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
