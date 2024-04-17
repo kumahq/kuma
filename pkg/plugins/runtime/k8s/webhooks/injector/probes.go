@@ -29,6 +29,37 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 		return err
 	}
 
+	var kumaSidecarSeen bool
+	for _, c := range pod.Spec.InitContainers {
+		if c.Name == util.KumaSidecarContainerName {
+			kumaSidecarSeen = true
+			continue
+		}
+		if !kumaSidecarSeen || c.RestartPolicy == nil || *c.RestartPolicy != kube_core.ContainerRestartPolicyAlways {
+			continue
+		}
+		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
+			log.V(1).Info("overriding liveness probe", "initContainer", c.Name)
+			resolveNamedPort(c, c.LivenessProbe)
+			if err := overrideHTTPProbe(c.LivenessProbe, port); err != nil {
+				return err
+			}
+		}
+		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
+			log.V(1).Info("overriding readiness probe", "initContainer", c.Name)
+			resolveNamedPort(c, c.ReadinessProbe)
+			if err := overrideHTTPProbe(c.ReadinessProbe, port); err != nil {
+				return err
+			}
+		}
+		if c.StartupProbe != nil && c.StartupProbe.HTTPGet != nil {
+			log.V(1).Info("overriding startup probe", "initContainer", c.Name)
+			resolveNamedPort(c, c.StartupProbe)
+			if err := overrideHTTPProbe(c.StartupProbe, port); err != nil {
+				return err
+			}
+		}
+	}
 	for _, c := range pod.Spec.Containers {
 		if c.Name == util.KumaSidecarContainerName {
 			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
