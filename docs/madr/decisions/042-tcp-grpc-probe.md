@@ -41,9 +41,9 @@ The `host` field in the `tcpSocket` probe is only used to resolve the network ad
 
 A pod can have multiple containers with each defines multiple and different probes, the worst case is a pod has all 3 different types of probes with many probes for each type.
 
-### HTTP Virtual Probes (existing design)
+## Existing design: HTTP Virtual Probes
 
-As per our current design, a pod with multiple probes will be merged and will be handled by a single virtual listener. This listener will forward/redirect probe requests to the corresponding application port without any intermediate transforming except path rewriting, etc. 
+As per our current design, a pod with multiple probes will be merged and will be handled by a single virtual listener. This listener will forward/redirect probe requests to the corresponding application port without any intermediate transforming except path rewriting, etc.
 
 While we provided annotations for users to customize whether they want to enable the Virtual Probe feature and on which port do they want to expose the Virtual Probe listener, the current design actually does not require the user to customize these items and the probes can be translated automatically and transparently.
 
@@ -117,11 +117,17 @@ spec:
   ...
 ```
 
-### TCP and gRPC Virtual Probes (proposed design)
+## Considered Options
+
+- Allocate a new and separated port for each of the TCP probes and gRPC probes
+
+- Merging all three types of probes into one listener
+
+### Allocate a new and separated port for each of the TCP probes and gRPC probes (proposed)
 
 A pod can have multiple containers with each defines different probes, the worst case is a pod has all 3 different types of probes with many probes for each type.
 
-Introduce a new annotation `kuma.io/virtual-probes-port-mapping` to let user specify the ports to use for probes, and deprecate existing annotations.
+Introduce a new annotation `kuma.io/virtual-probes-port-mapping` to let the user specify the ports to use for probes, and deprecate the existing annotation `kuma.io/virtual-probes-port`.
 
 A user can now specify the Virtual Probe ports like this:
 
@@ -155,13 +161,13 @@ In which:
 
 If a probe is not specified in the `kuma.io/virtual-probes-port-mapping`, we'll generate the port automatically by incrementing from the default port (`9000`), skipping the known and taken ports.
 
-### Virtual Probes Listeners
+#### Virtual Probes Listeners
 
 We generate a TCP proxy listener for each of gRPC and TCP probes, and forward the probe traffic transparently to the application. We also keep the existing HTTP Virtual Probe listener for HTTP probes.
 
 This keep the compatibility with the existing HTTP based Virtual Probe and data plane data model.
 
-### Data Plane Data Model 
+#### Data Plane Data Model 
 
 Introduce two new fields onto the `Dataplane` resource type to store the Virtual Probe ports:
 
@@ -181,35 +187,19 @@ Introduce two new fields onto the `Dataplane` resource type to store the Virtual
     service: abcd
 ```
 
-## Decision Drivers
-
-- Provide the best user experience by designing a simple and intuitive way of declaring virtual probes
-
-- Keep the compatibility with the existing HTTP based Virtual Probe and data plane data model
-
-## Considered Options
-
-- Allocate a new and separated port for each of the TCP probes and gRPC probes
-
-- Merging all three types of probes into one listener
-
-## Decision Outcome
-
-Chosen option: (to be chosen)
-
-### Positive Consequences
+#### Positive Consequences
 
 - Ease of implementation
 
 - Keeping the compatibility with the existing HTTP based Virtual Probe and data plane data model
 
-### Negative Consequences
+#### Negative Consequences
 
 - The user experience of specifying virtual probes ports is more complex
 
 - More virtual listeners on sidecar
 
-## Other option
+## Other options
 
 ### Merging all probes into one listener
 
@@ -229,7 +219,7 @@ HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  
    TCP Probes                                               HTTP to TCP translator  --->  Application
 ```
 
-### Positive Consequences
+#### Positive Consequences
 
 - Don't need to introduce new ports for TCP and gRPC probes
 
@@ -239,8 +229,18 @@ HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  
 
 - Don't need to introduce new fields on the `Dataplane` resource type
 
-### Negative Consequences
+#### Negative Consequences
 
 - Requires an extra component (the translator) in `kuma-dp`, which increases the implementation complexity
 
 - Less intuitiveness, so harder for troubleshooting issues
+
+## Decision Drivers
+
+- Provide the best user experience by designing a simple and intuitive way of declaring virtual probes
+
+- Keep the compatibility with the existing HTTP based Virtual Probe and data plane data model
+
+## Decision Outcome
+
+Chosen option: (to be chosen)
