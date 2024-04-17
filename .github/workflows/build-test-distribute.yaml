@@ -69,10 +69,11 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/sca@0ff22c9835d745aefc41a99de6d526dc9e984105 # v2.2.0
         with:
           dir: .
           config: .syft.yaml
+          upload-sbom-release-assets: true
       - id: metadata
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
