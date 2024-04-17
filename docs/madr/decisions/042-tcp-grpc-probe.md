@@ -163,7 +163,7 @@ This keep the compatibility with the existing HTTP based Virtual Probe and data 
 
 ### Data Plane Data Model 
 
-Introduce two new fields onto the `Dataplane` resource to store the Virtual Probe ports:
+Introduce two new fields onto the `Dataplane` resource type to store the Virtual Probe ports:
 
 ```yaml
   probes:
@@ -177,45 +177,70 @@ Introduce two new fields onto the `Dataplane` resource to store the Virtual Prob
     applicationPort: 1433
   grpcProbes:
   - port: 19002
-    service: abcd
     applicationPort: 2379
+    service: abcd
 ```
 
 ## Decision Drivers
 
-- Provide the best user experience by designing a simple and intuitive way of declaring probes 
+- Provide the best user experience by designing a simple and intuitive way of declaring virtual probes
+
 - Keep the compatibility with the existing HTTP based Virtual Probe and data plane data model
 
 ## Considered Options
 
-- Allocate a new and separated port for each of the TCP probes or gRPC probes
+- Allocate a new and separated port for each of the TCP probes and gRPC probes
 
-- Use one port to support all the three types of probes
+- Merging all three types of probes into one listener
 
 ## Decision Outcome
 
-Chosen option: 
-
-(TODO)
+Chosen option: (to be chosen)
 
 ### Positive Consequences
 
-(TODO)
+- Ease of implementation
+
+- Keeping the compatibility with the existing HTTP based Virtual Probe and data plane data model
 
 ### Negative Consequences
 
-(TODO)
+- The user experience of specifying virtual probes ports is more complex
+
+- More virtual listeners on sidecar
 
 ## Other option
 
 ### Merging all probes into one listener
 
-(TODO)
+Introducing an intermediate layer to translate HTTP probes into TCP and gRPC probes (the translator), transform user specified probes (the user probe) into HTTP probes on the pod, and:
+
+1. If the user probe is HTTP based, requests are forwarded/redirected to application directly
+
+2. If the user probe is TCP or gRPC based, we'll still receive HTTP requests for these probes, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for detecting the actual probe status from the application.
+
+The whole workflow can be shown in the following diagram:
+
+```
+  gRPC Probes                                               HTTP to gRPC translator --->  Application
+              ↘                                           ↗
+HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  Application
+              ↗                                           ↘
+   TCP Probes                                               HTTP to TCP translator  --->  Application
+```
 
 ### Positive Consequences
 
-(TODO)
+- Don't need to introduce new ports for TCP and gRPC probes
+
+- Better user experience: don't need to introduce new annotations
+
+- Less virtual listeners on sidecar
+
+- Don't need to introduce new fields on the `Dataplane` resource type
 
 ### Negative Consequences
 
-(TODO)
+- Requires an extra component (the translator) in `kuma-dp`, which increases the implementation complexity
+
+- Less intuitiveness, so harder for troubleshooting issues
