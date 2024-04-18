@@ -150,7 +150,7 @@ spec:
 
 A pod can have multiple containers with each defines different probes, the worst case is a pod has all 3 different types of probes with many probes for each type.
 
-Introduce a new annotation `kuma.io/virtual-probes-port-mapping` to let the user specify the ports to use for probes, and deprecate the existing annotation `kuma.io/virtual-probes-port`.
+Introduce a new annotation `kuma.io/virtual-probes-port-range` to let the user specify the range of ports to use for probes, and deprecate the existing annotation `kuma.io/virtual-probes-port`.
 
 A user can now specify the Virtual Probe ports like this:
 
@@ -160,7 +160,7 @@ kind: Pod
 metadata:
   annotations:
     kuma.io/virtual-probes: "enabled"
-    kuma.io/virtual-probes-port-mapping: '{"http": 19000, "grpc-2379": 19001, "tcp-1433": 19002}'
+    kuma.io/virtual-probes-port-range: '19000-19020'
 spec:
   containers:
   - name: app
@@ -177,12 +177,7 @@ spec:
         port: 1433
 ```
 
-In which:
-- `http` is the port to be used for all the HTTP probes, replacing the existing annotation `kuma.io/virtual-probes-port`
-- `grpc-*` is the ports to be used for each of gRPC probes
-- `tcp-*` is the ports to be used for each of TCP probes
-
-If a probe is not specified in the `kuma.io/virtual-probes-port-mapping`, we'll generate the port automatically by incrementing from the default port (`9000`), skipping the known and taken ports.
+If a range is not specified in the `kuma.io/virtual-probes-port-range`, we'll generate ports automatically by incrementing from the default port (`9000`), skipping the known and taken ports.
 
 #### Virtual Probes Listeners
 
