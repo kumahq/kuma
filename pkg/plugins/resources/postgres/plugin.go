@@ -39,9 +39,6 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 			return nil, nil, err
 		}
 		return store, store, err
-	case postgres.DriverNamePq:
-		store, err := NewPqStore(pc.Metrics(), *cfg)
-		return store, core_store.NoTransactions{}, err
 	default:
 		return nil, nil, errors.New("unknown driver name " + cfg.DriverName)
 	}
