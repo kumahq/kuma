@@ -18,9 +18,7 @@ const (
 	DefaultMinOpenConnections = 0
 )
 
-var (
-	_ config.Config = &PostgresStoreConfig{}
-)
+var _ config.Config = &PostgresStoreConfig{}
 
 var (
 	DefaultMinReconnectInterval        = config_types.Duration{Duration: 10 * time.Second}

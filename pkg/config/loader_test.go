@@ -104,8 +104,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MinOpenConnections).To(Equal(3))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
-			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
-			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
 			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 			Expect(cfg.Store.Postgres.MaxConnectionIdleTime.Duration).To(Equal(99 * time.Second))
 
@@ -782,8 +780,6 @@ tracing:
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
 				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                                                          "/path/to/rootCert",
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
-				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
-				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
 				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
