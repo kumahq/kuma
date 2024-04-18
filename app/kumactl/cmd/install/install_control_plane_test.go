@@ -203,7 +203,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--kds-global-address", "grpc://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
-				"--experimental-gatewayapi",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
@@ -308,17 +307,9 @@ controlPlane:
 		Entry("should add GatewayClass if CRDs are present and enabled", testCase{
 			extraArgs: []string{
 				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
-				"--experimental-gatewayapi",
 			},
 			includeCRDs: true,
 			goldenFile:  "install-control-plane.gateway-api-present.yaml",
-		}),
-		Entry("should not add GatewayClass if experimental not enabled", testCase{
-			extraArgs: []string{
-				"--api-versions", fmt.Sprintf("%s/%s", gatewayapi.GroupVersion.String(), "GatewayClass"),
-			},
-			includeCRDs: true,
-			goldenFile:  "install-control-plane.gateway-api-present-not-enabled.yaml",
 		}),
 	)
 

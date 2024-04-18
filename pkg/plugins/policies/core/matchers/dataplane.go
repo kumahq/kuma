@@ -265,7 +265,7 @@ func (b ByTargetRef) Less(i, j int) bool {
 		}
 	}
 
-	return core_model.GetDisplayName(b[i]) > core_model.GetDisplayName(b[j])
+	return core_model.GetDisplayName(b[i].GetMeta()) > core_model.GetDisplayName(b[j].GetMeta())
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }

@@ -142,19 +142,14 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh str
 		},
 	}
 
-	tags := mesh_proto.Merge(
-		common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
-		config.Tags,
-	)
-
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
-		if instance.Annotations == nil {
-			instance.Annotations = map[string]string{}
+		if instance.Labels == nil {
+			instance.Labels = map[string]string{}
 		}
-		instance.Annotations[metadata.KumaMeshAnnotation] = mesh
+		instance.Labels[metadata.KumaMeshAnnotation] = mesh
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
-			Tags:                    tags,
+			Tags:                    config.Tags,
 			MeshGatewayCommonConfig: config.MeshGatewayCommonConfig,
 		}
 

@@ -84,7 +84,7 @@ func CircuitBreaker(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb-outbound
+  name: mcb-outbound-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -106,7 +106,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb-inbound
+  name: mcb-inbound-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

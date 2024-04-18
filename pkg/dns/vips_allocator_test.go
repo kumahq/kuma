@@ -805,6 +805,33 @@ var _ = DescribeTable("outboundView",
 		thenHostnameEntries: []vips.HostnameEntry{},
 		thenOutbounds:       map[vips.HostnameEntry][]vips.OutboundEntry{},
 	}),
+	Entry("skip tcp reserved port for serviceless pods", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp-1"): samples.DataplaneBackendBuilder().
+				With(func(resource *mesh.DataplaneResource) {
+					resource.Spec.Networking.Inbound[0].Port = mesh_proto.TCPPortReserved
+				}).
+				WithMesh("mesh").Build(),
+			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.mesh",
+						Port: "8080",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+							{Name: "port"},
+						},
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{},
+		thenOutbounds:       map[vips.HostnameEntry][]vips.OutboundEntry{},
+	}),
 )
 
 var _ = Describe("AllocateVIPs", func() {

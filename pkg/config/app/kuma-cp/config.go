@@ -260,7 +260,6 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			GatewayAPI:                      false,
 			KubeOutboundsAsVIPs:             true,
 			KDSDeltaEnabled:                 true,
 			UseTagFirstVirtualOutboundModel: false,
@@ -412,8 +411,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, experimental Gateway API is enabled
-	GatewayAPI bool `json:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`

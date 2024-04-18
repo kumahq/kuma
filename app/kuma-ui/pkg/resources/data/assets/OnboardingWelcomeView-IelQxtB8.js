@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:app/kuma-ui/pkg/resources/data/assets/OnboardingWelcomeView-CCX4WX_t.js
+import{d as v,a as c,o as r,b as d,w as n,e as o,f as e,m as t,t as l,c as u,F as b,D as y,p as m,G as V,K as N,q as I,s as O,v as x,_ as C}from"./index-R2x-EjEy.js";import{O as k,a as R,b as A}from"./OnboardingPage-ClPUKWg0.js";const p=s=>(O("data-v-6d3e602f"),s=s(),x(),s),S=p(()=>t("strong",null,"few minutes",-1)),z={"data-testid":"kuma-environment"},B=p(()=>t("h2",{class:"text-center"},`
+========
 import{d as v,a as c,o as r,b as d,w as n,e as o,f as e,m as t,t as l,c as u,F as b,C as y,p as m,D as V,K as N,q as C,s as I,v as O,_ as x}from"./index-IotYe1KN.js";import{O as k,a as R,b as A}from"./OnboardingPage-CVMfM4Pa.js";const p=s=>(I("data-v-6d3e602f"),s=s(),O(),s),S=p(()=>t("strong",null,"few minutes",-1)),z={"data-testid":"kuma-environment"},B=p(()=>t("h2",{class:"text-center"},`
+>>>>>>>> master:app/kuma-ui/pkg/resources/data/assets/OnboardingWelcomeView-IelQxtB8.js
               Let’s get started:
             `,-1)),E={class:"item-status-list-wrapper"},L={class:"item-status-list"},T={class:"circle mr-2"},W=v({__name:"OnboardingWelcomeView",setup(s){return(K,q)=>{const _=c("RouteTitle"),g=c("AppView"),f=c("RouteView");return r(),d(f,{name:"onboarding-welcome-view"},{default:n(({env:h,t:a,can:w})=>[o(_,{title:a("onboarding.routes.welcome.title",{name:a("common.product.name")}),render:!1},null,8,["title"]),e(),o(g,null,{default:n(()=>[t("div",null,[o(k,null,{header:n(()=>[o(R,null,{title:n(()=>[e(`
                 Welcome to `+l(a("common.product.name")),1)]),description:n(()=>[t("p",null,[e(`

@@ -64,6 +64,7 @@ spec:
       profiles:
         appendProfiles:
           - name: Basic
+          - name: None # check merging
         exclude:
           - type: Regex
             match: "envoy_cluster_lb_.*"
@@ -248,11 +249,10 @@ spec:
     kind: Mesh
   default:
     sidecar:
+      includeUnused: false
       profiles:
         appendProfiles:
           - name: All
-    sidecar:
-      includeUnused: false
     backends:
       - type: OpenTelemetry
         openTelemetry:

@@ -95,6 +95,7 @@ type ApplicationToScrape struct {
 	Path              string
 	Port              uint32
 	IsIPv6            bool
+	ExtraLabels       map[string]string
 	QueryModifier     QueryParametersModifier
 	Mutator           MetricsMutator
 	MeshMetricMutator MeshMetricMutator

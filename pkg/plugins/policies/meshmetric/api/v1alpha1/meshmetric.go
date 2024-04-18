@@ -38,8 +38,6 @@ type Sidecar struct {
 
 type Profiles struct {
 	// AppendProfiles allows to combine the metrics from multiple predefined profiles.
-	// Currently, it's only possible to define one profile.
-	// +kubebuilder:validation:MaxItems=1
 	AppendProfiles *[]Profile `json:"appendProfiles,omitempty"`
 	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
 	// Exclude is subordinate to Include.
