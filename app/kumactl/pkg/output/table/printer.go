@@ -1,9 +1,8 @@
 package table
 
 import (
+	"errors"
 	"io"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 type Printer interface {
@@ -33,7 +32,7 @@ func (p *Table) Print(data interface{}, out io.Writer) error {
 			var err error
 			row, err = p.RowForItem(i, data)
 			if err != nil {
-				allErr = multierror.Append(allErr, err)
+				allErr = errors.Join(allErr, err)
 			}
 		}
 		if row == nil {

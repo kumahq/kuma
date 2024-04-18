@@ -27,9 +27,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.46.13
-	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9
@@ -42,9 +42,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.52.2
+	github.com/prometheus/common v0.52.3
 	github.com/sethvargo/go-retry v0.2.4
-	github.com/shopspring/decimal v1.3.1
+	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.11.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spiffe/go-spiffe/v2 v2.2.0
@@ -68,14 +68,13 @@ require (
 	golang.org/x/net v0.24.0
 	golang.org/x/sys v0.19.0
 	golang.org/x/text v0.14.0
-	golang.org/x/time v0.5.0 // indirect
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	helm.sh/helm/v3 v3.14.3
+	helm.sh/helm/v3 v3.14.4
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.3
 	k8s.io/apimachinery v0.29.3
@@ -90,8 +89,6 @@ require (
 	sigs.k8s.io/gateway-api v1.0.1-0.20240229112436-da26d60306e1
 	sigs.k8s.io/yaml v1.4.0
 )
-
-require github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -147,6 +144,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/gruntwork-io/go-commons v0.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/homeport/dyff v1.6.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -215,6 +213,7 @@ require (
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
