@@ -44,9 +44,16 @@ The result will be shown as text in stdout as well as the exit code.
 			ipv6Supported, _ := transparentproxy.HasLocalIPv6()
 			useIPv6 := ipv6Supported && args.IpFamilyMode == "ipv6"
 
+			sExit := make(chan struct{})
 			validator := validate.NewValidator(useIPv6, args.ValidationServerPort, log)
+			_, err := validator.RunServer(sExit)
+			if err != nil {
+				return err
+			}
 
-			return validator.Run()
+			// by using 0, we make the client to generate a random port to connect verifying the iptables rules are working
+			err = validator.RunClient(uint16(0), sExit)
+			return err
 		},
 	}
 

@@ -1,0 +1,108 @@
+# TYPE envoy_cluster_external_upstream_rq_xx counter
+envoy_cluster_external_upstream_rq_xx{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_health_check_attempt counter
+envoy_cluster_health_check_attempt{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_health_check_healthy counter
+envoy_cluster_health_check_healthy{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_health_check_success counter
+envoy_cluster_health_check_success{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_internal_upstream_rq_xx counter
+envoy_cluster_internal_upstream_rq_xx{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_membership_total counter
+envoy_cluster_membership_total{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_outlier_detection_ejections_active counter
+envoy_cluster_outlier_detection_ejections_active{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_ssl_handshake counter
+envoy_cluster_ssl_handshake{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_active counter
+envoy_cluster_upstream_cx_active{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_connect_ms_bucket counter
+envoy_cluster_upstream_cx_connect_ms_bucket{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_connect_timeout counter
+envoy_cluster_upstream_cx_connect_timeout{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_destroy_local_with_active_rq counter
+envoy_cluster_upstream_cx_destroy_local_with_active_rq{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_destroy_remote_with_active_rq counter
+envoy_cluster_upstream_cx_destroy_remote_with_active_rq{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_length_ms_bucket counter
+envoy_cluster_upstream_cx_length_ms_bucket{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_overflow counter
+envoy_cluster_upstream_cx_overflow{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_rx_bytes_total counter
+envoy_cluster_upstream_cx_rx_bytes_total{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_cx_tx_bytes_total counter
+envoy_cluster_upstream_cx_tx_bytes_total{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_pending_failure_eject counter
+envoy_cluster_upstream_rq_pending_failure_eject{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_pending_overflow counter
+envoy_cluster_upstream_rq_pending_overflow{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_retry_overflow counter
+envoy_cluster_upstream_rq_retry_overflow{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_rx_reset counter
+envoy_cluster_upstream_rq_rx_reset{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_time_bucket counter
+envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_timeout counter
+envoy_cluster_upstream_rq_timeout{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_total counter
+envoy_cluster_upstream_rq_total{envoy_cluster_name="example"} 1
+
+# TYPE envoy_cluster_upstream_rq_tx_reset counter
+envoy_cluster_upstream_rq_tx_reset{envoy_cluster_name="example"} 1
+
+# TYPE envoy_control_plane_connected_state counter
+envoy_control_plane_connected_state{envoy_cluster_name="example"} 1
+
+# TYPE envoy_control_plane_identifier counter
+envoy_control_plane_identifier{envoy_cluster_name="example"} 1
+
+# TYPE envoy_http_downstream_rq_total counter
+envoy_http_downstream_rq_total{envoy_cluster_name="example"} 1
+
+# TYPE envoy_rbac_allowed counter
+envoy_rbac_allowed{envoy_cluster_name="example"} 1
+
+# TYPE envoy_rbac_denied counter
+envoy_rbac_denied{envoy_cluster_name="example"} 1
+
+# TYPE envoy_rbac_shadow_allowed counter
+envoy_rbac_shadow_allowed{envoy_cluster_name="example"} 1
+
+# TYPE envoy_rbac_shadow_denied counter
+envoy_rbac_shadow_denied{envoy_cluster_name="example"} 1
+
+# TYPE envoy_server_live counter
+envoy_server_live{envoy_cluster_name="example"} 1
+
+# TYPE envoy_server_memory_allocated counter
+envoy_server_memory_allocated{envoy_cluster_name="example"} 1
+
+# TYPE envoy_server_memory_heap_size counter
+envoy_server_memory_heap_size{envoy_cluster_name="example"} 1
+
+# TYPE envoy_server_uptime counter
+envoy_server_uptime{envoy_cluster_name="example"} 1
+

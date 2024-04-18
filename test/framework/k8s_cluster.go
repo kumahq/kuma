@@ -833,6 +833,8 @@ func (c *K8sCluster) VerifyKuma() error {
 		return err
 	}
 
+	k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), Config.KumaServiceName, DefaultRetries, DefaultTimeout)
+
 	return nil
 }
 

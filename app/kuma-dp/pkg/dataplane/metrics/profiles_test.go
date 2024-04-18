@@ -44,9 +44,19 @@ var _ = Describe("Profiles", func() {
 			profiles: "all.yaml",
 		}),
 		Entry("for Basic profile should not filter dashboard metrics", testCase{
-			input:    "dashboards.in",
-			expected: "dashboards.golden",
-			profiles: "dashboards.yaml",
+			input:    "basic.in",
+			expected: "basic.golden",
+			profiles: "basic.yaml",
+		}),
+		Entry("for Basic and None merged profile should not filter dashboard metrics", testCase{
+			input:    "basic_and_none.in",
+			expected: "basic_and_none.golden",
+			profiles: "basic_and_none.yaml",
+		}),
+		Entry("for all merged profiles should not filter anything", testCase{
+			input:    "all_merged.in",
+			expected: "all_merged.golden",
+			profiles: "all_merged.yaml",
 		}),
 		Entry("for None profile should not show any metrics", testCase{
 			input:    "none.in",

@@ -105,8 +105,8 @@ paths:
             An array of extra fields to include in the response. When
             `include=diff` the server computes a diff in JSONPatch format
 
-            between the XDS config returned in 'xds' and the current proxy XDS
-            config.
+            between the current proxy XDS config and the config returned in the
+            'xds' field.
           schema:
             type: array
             items:
@@ -6010,8 +6010,6 @@ components:
                           description: >-
                             AppendProfiles allows to combine the metrics from
                             multiple predefined profiles.
-
-                            Currently, it's only possible to define one profile.
                           items:
                             properties:
                               name:
@@ -6026,7 +6024,6 @@ components:
                             required:
                               - name
                             type: object
-                          maxItems: 1
                           type: array
                         exclude:
                           description: >-

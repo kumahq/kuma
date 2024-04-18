@@ -51,15 +51,9 @@ jobs:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0
-      - name: "Add matrix to .build/info to cache"
-        run: |
-          make build/info/short > .build-info
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
@@ -111,9 +105,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
@@ -127,8 +118,6 @@ jobs:
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
           echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
-          # Add matrix to .build/info to cache
-          make build/info/short > .build-info
       - run: |
           make images/${{ matrix.image }}
       - run: |

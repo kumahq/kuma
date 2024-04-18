@@ -20,7 +20,7 @@ func MeshRetry(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshRetry
 metadata:
-  name: mr
+  name: mr-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

@@ -181,6 +181,12 @@ spec:
 			address = net.JoinHostPort(GatewayIP(gatewayName), "10080")
 			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
 		})
+		AfterAll(func() {
+			// debug information to track "could not get a LoadBalancer IP of the Gateway" flake.
+			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "get", "gateway", "-oyaml")).To(Succeed())
+			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "get", "service", "-oyaml")).To(Succeed())
+			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "get", "pods", "-oyaml")).To(Succeed())
+		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
 		})

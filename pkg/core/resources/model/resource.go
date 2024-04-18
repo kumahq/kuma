@@ -13,7 +13,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -403,18 +402,7 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	if refMeta.GetMesh() != resourceMeta.GetMesh() {
 		return false
 	}
-
-	if len(refMeta.GetNameExtensions()) == 0 {
-		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
-	}
-
-	nsRef := refMeta.GetNameExtensions()[K8sNamespaceComponent]
-	nsRes := refMeta.GetNameExtensions()[K8sNamespaceComponent]
-	if nsRef == "" || nsRef != nsRes {
-		return false
-	}
-
-	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
+	return refName == GetDisplayName(resourceMeta)
 }
 
 func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
@@ -430,14 +418,14 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 	}
 }
 
-func GetDisplayName(r Resource) string {
+func GetDisplayName(rm ResourceMeta) string {
 	// prefer display name as it's more predictable, because
 	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
 	// * When policies are synced to Zone, hash suffix also breaks sorting
-	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
 		return labels[mesh_proto.DisplayName]
 	}
-	return r.GetMeta().GetName()
+	return rm.GetName()
 }
 
 func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
@@ -463,11 +451,6 @@ func IsShadowedResource(r Resource) bool {
 		return true
 	}
 	return false
-}
-
-func equalNames(mesh, n1, n2 string) bool {
-	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
-	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {
