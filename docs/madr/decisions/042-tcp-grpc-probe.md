@@ -47,7 +47,9 @@ As per our current design, a pod with multiple probes will be merged and will be
 
 While we provided annotations for users to customize whether they want to enable the Virtual Probe feature and on which port do they want to expose the Virtual Probe listener, the current design actually does not require the user to customize these items and the probes can be translated automatically and transparently.
 
-The following example demonstrates how HTTP probes are handled in current implementation. Two probes are both handled by the Virtual Probe listener on port 19000:
+The following example demonstrates how HTTP probes are handled in current implementation.
+
+The original Pod:
 
 [inject.14.input.yaml](https://github.com/kumahq/kuma/blob/master/pkg/plugins/runtime/k8s/webhooks/injector/testdata/inject.14.input.yaml)
 
@@ -78,6 +80,8 @@ spec:
         initialDelaySeconds: 3
         periodSeconds: 3
 ```
+
+Pod with sidecar injected:
 
 [inject.14.golden.yaml](https://github.com/kumahq/kuma/blob/master/pkg/plugins/runtime/k8s/webhooks/injector/testdata/inject.14.golden.yaml)
 
@@ -114,6 +118,25 @@ spec:
   initContainers:
   - name: kuma-init
     image: kuma/kuma-init:latest
+  ...
+```
+
+And in the converted `dataplane` object, we can see the two probes are both handled by the same Virtual Probe listener on port 19000:
+
+```yaml
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  probes:
+    endpoints:
+      - inboundPath: /metrics
+        inboundPort: 8080
+        path: /8080/metrics
+      - inboundPath: /metrics
+        inboundPort: 3001
+        path: /3001/metrics
+    port: 19000
   ...
 ```
 
@@ -197,7 +220,7 @@ Introduce two new fields onto the `Dataplane` resource type to store the Virtual
 
 - The user experience of specifying virtual probes ports is more complex
 
-- More virtual listeners on sidecar
+- More virtual listeners on the sidecar
 
 ## Other options
 
