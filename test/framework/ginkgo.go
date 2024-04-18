@@ -25,6 +25,15 @@ func doIfNoSkipCleanup(fn func()) func() {
 	}
 }
 
+func AfterEachFailure(fn func()) bool {
+	return ginkgo.AfterEach(func() {
+		if !ginkgo.CurrentSpecReport().Failed() {
+			return
+		}
+		fn()
+	})
+}
+
 func E2EAfterEach(fn func()) bool {
 	return ginkgo.AfterEach(doIfNoSkipCleanup(fn))
 }
