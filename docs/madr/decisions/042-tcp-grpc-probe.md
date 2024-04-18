@@ -45,7 +45,7 @@ A pod can have multiple containers with each defines multiple and different prob
 
 As per our current design, a pod with multiple probes will be merged and will be handled by a single virtual listener. This listener will forward/redirect probe requests to the corresponding application port without any intermediate transforming except path rewriting, etc.
 
-While we provided annotations for users to customize whether they want to enable the Virtual Probe feature and on which port do they want to expose the Virtual Probe listener, the current design actually does not require the user to customize these items and the probes can be translated automatically and transparently.
+While we provided annotations for users to customize whether they want to enable the Virtual Probe feature and on which port do they want to expose the Virtual Probe listener, the current design actually does not require the user to customize these items and the probes can be translated automatically and transparently, they only need to customize the port when the default probe port (`9000`) in Kuma is conflicting with the application port.
 
 The following example demonstrates how HTTP probes are handled in current implementation.
 
@@ -121,7 +121,7 @@ spec:
   ...
 ```
 
-And in the converted `dataplane` object, we can see the two probes are both handled by the same Virtual Probe listener on port 19000:
+And in the converted `Dataplane` object, we can see the two probes are both handled by the same Virtual Probe listener on port 19000:
 
 ```yaml
 mesh: default
@@ -226,11 +226,11 @@ Introduce two new fields onto the `Dataplane` resource type to store the Virtual
 
 ### Merging all probes into one listener
 
-Introducing an intermediate layer to translate HTTP probes into TCP and gRPC probes (the translator), transform user specified probes (the user probe) into HTTP probes on the pod, and:
+Introducing an intermediate layer to transform user specified probes (the user probe) into HTTP probes on the pod, and translate HTTP probes back into TCP and gRPC probes (the translator) on this intermediate layer and:
 
 1. If the user probe is HTTP based, requests are forwarded/redirected to application directly
 
-2. If the user probe is TCP or gRPC based, we'll still receive HTTP requests for these probes, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for detecting the actual probe status from the application.
+2. If the user probe is TCP or gRPC based, we'll also receive HTTP requests for these probes, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for detecting the actual probe status from the application.
 
 The whole workflow can be shown in the following diagram:
 
@@ -246,7 +246,7 @@ HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  
 
 - Don't need to introduce new ports for TCP and gRPC probes
 
-- Better user experience: don't need to introduce new annotations
+- Better user experience: don't need to introduce new annotations, the user can still specify the port as they are doing now. 
 
 - Less virtual listeners on sidecar
 
