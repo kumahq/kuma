@@ -101,6 +101,7 @@ spec:
           maxPendingRequests: 1
           maxRequests: 1
           maxRetries: 1
+<<<<<<< HEAD:test/e2e_env/kubernetes/gateway/delegated_meshcircuitbreaker.go
 `, Config.KumaNamespace, config.mesh)),
 			Entry("inbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -124,6 +125,9 @@ spec:
           maxRequests: 1
           maxRetries: 1
 `, Config.KumaNamespace, config.mesh)),
+=======
+`, config.CpNamespace, config.Mesh)),
+>>>>>>> 1cbcbbaeb (test(e2e): remove inbound test cases in delegated gateway (#10002)):test/e2e_env/kubernetes/gateway/delegated/meshcircuitbreaker.go
 		)
 	}
 }
