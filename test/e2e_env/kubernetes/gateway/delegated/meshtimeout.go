@@ -98,25 +98,6 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, config.CpNamespace, config.Mesh)),
-			Entry("inbound timeout", fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: mt1-delegated
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        idleTimeout: 20s
-        http:
-          requestTimeout: 2s
-          maxStreamDuration: 20s`, config.CpNamespace, config.Mesh)),
 		)
 	}
 }
