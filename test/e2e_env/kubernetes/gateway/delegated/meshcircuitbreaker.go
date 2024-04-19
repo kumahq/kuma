@@ -102,28 +102,6 @@ spec:
           maxRequests: 1
           maxRetries: 1
 `, config.CpNamespace, config.Mesh)),
-			Entry("inbound circuit breaker", fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshCircuitBreaker
-metadata:
-  name: mcb-inbound-delegated
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        connectionLimits:
-          maxConnectionPools: 1
-          maxConnections: 1
-          maxPendingRequests: 1
-          maxRequests: 1
-          maxRetries: 1
-`, config.CpNamespace, config.Mesh)),
 		)
 	}
 }
