@@ -1,3 +1,4 @@
+{{- if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "zone") }}
 {{- if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -14,4 +15,5 @@ metadata:
  name: kuma
 spec:
  controllerName: "gateways.kuma.io/controller"
+{{- end }}
 {{- end }}
