@@ -1,4 +1,17 @@
+<<<<<<< HEAD
 {{- if and .Values.experimental.gatewayAPI (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass") }}
+=======
+{{- if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "zone") }}
+{{- if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass" }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+ name: kuma
+spec:
+ controllerName: "gateways.kuma.io/controller"
+{{- else if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass" }}
+>>>>>>> 4eb510324 (fix(helm): include GatewayClass only if installing a zone CP in Kubernetes mode (#10012))
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
@@ -6,4 +19,5 @@ metadata:
  name: kuma
 spec:
  controllerName: "gateways.kuma.io/controller"
+{{- end }}
 {{- end }}
