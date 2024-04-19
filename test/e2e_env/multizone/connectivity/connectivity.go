@@ -72,6 +72,7 @@ func Connectivity() {
 
 	DescribeTable("client from Kubernetes",
 		func(given testCase) {
+			Expect(true).To(BeFalse())
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(multizone.KubeZone1, "demo-client", given.address,
 					client.FromKubernetesPod(meshName, "demo-client"),
