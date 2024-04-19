@@ -14,8 +14,7 @@ import (
 // DebugUniversal prints state of the cluster. Useful in case of failure.
 // Ideas what we can add
 // * XDS / Stats / Clusters of all DPPs (ideally in form of command that we can use on prod as well)
-//
-// In case we get into limits of massive logs on stdout. We can save it to file, print file names and upload the files on CI as artifacts.
+// * CP logs (although we print this already on failure)
 func DebugUniversal(cluster Cluster, mesh string) {
 	ensureDebugDir()
 	Logf("printing debug information of cluster %q for mesh %q", cluster.Name(), mesh)
