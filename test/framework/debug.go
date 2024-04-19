@@ -26,7 +26,7 @@ func DebugUniversal(cluster Cluster, mesh string) {
 	Expect(err).ToNot(HaveOccurred())
 
 	exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o755)).To(Succeed())
+	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
 }
 
@@ -39,7 +39,7 @@ func DebugKube(cluster Cluster, mesh string, namespace string) {
 	Expect(err).ToNot(HaveOccurred())
 
 	exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o755)).To(Succeed())
+	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
 	Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), exportFilePath)
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
@@ -48,12 +48,12 @@ func DebugKube(cluster Cluster, mesh string, namespace string) {
 	Expect(err).ToNot(HaveOccurred())
 
 	exportFilePath = filepath.Join(Config.DebugDir, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o755)).To(Succeed())
+	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
 }
 
 func ensureDebugDir() {
-	err := os.MkdirAll(Config.DebugDir, 0755)
+	err := os.MkdirAll(Config.DebugDir, 0o755)
 	if err == nil || os.IsNotExist(err) {
 		return
 	}
