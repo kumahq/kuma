@@ -153,6 +153,9 @@ type KubernetesRuntimeConfig struct {
 	// If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
 	// This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
 	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
+	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
+	// The downside is that control plane requires permission to read Secrets in all namespaces.
+	SupportAllGatewaySecrets bool `json:"supportAllGatewaySecrets" envconfig:"KUMA_RUNTIME_KUBERNETES_SUPPORT_ALL_GATEWAY_SECRETS"`
 }
 
 type ControllersConcurrency struct {

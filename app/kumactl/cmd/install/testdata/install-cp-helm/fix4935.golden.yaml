@@ -123,11 +123,17 @@ rules:
       - pods
       - configmaps
       - nodes
-      - secrets
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secret
+    verbs:
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:

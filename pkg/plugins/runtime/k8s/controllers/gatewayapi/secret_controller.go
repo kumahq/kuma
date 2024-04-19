@@ -17,13 +17,19 @@ import (
 // Whenever Secret is used for TLS termination in Gateway API, we copy this to system namespace.
 // Secret is created in GatewayController, SecretController updates and deletes the secret.
 type SecretController struct {
-	Log             logr.Logger
-	Client          kube_client.Client
-	SystemNamespace string
+	Log                      logr.Logger
+	Client                   kube_client.Client
+	SystemNamespace          string
+	SupportAllGatewaySecrets bool
 }
 
 func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	r.Log.V(1).Info("reconcile", "req", req)
+	if !r.SupportAllGatewaySecrets && req.Namespace != r.SystemNamespace {
+		r.Log.V(1).Info("ignoring reconcile because SupportAllGatewaySecrets is disabled", "req", req)
+		return kube_ctrl.Result{}, nil
+	}
+	r.Log.Info("reconcile", "req", req)
+
 	copiedSecretKey := types.NamespacedName{
 		Namespace: r.SystemNamespace,
 		Name:      gatewaySecretKeyName(req.NamespacedName),
