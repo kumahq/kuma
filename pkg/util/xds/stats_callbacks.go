@@ -17,9 +17,9 @@ var statsLogger = core.Log.WithName("stats-callbacks")
 
 const (
 	ConfigInFlightThreshold = 100_000
-	failedCallingWebhook = "failed calling webhook"
-	userErrorType = "user"
-	otherErrorType = "other"
+	failedCallingWebhook    = "failed calling webhook"
+	userErrorType           = "user"
+	otherErrorType          = "other"
 )
 
 type VersionExtractor = func(metadata *structpb.Struct) string
