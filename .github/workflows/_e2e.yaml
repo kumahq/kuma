@@ -143,6 +143,7 @@ jobs:
         if: always()
         with:
           name: e2e-debug-${{ env.E2E_PARAM_TARGET }}
+          if-no-files-found: ignore
           path: |
             /tmp/e2e-debug/
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}

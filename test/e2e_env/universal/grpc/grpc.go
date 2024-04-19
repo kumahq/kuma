@@ -46,7 +46,6 @@ func GRPC() {
 
 	It("should emit stats from the server", func() {
 		Eventually(func(g Gomega) {
-			Expect(true).To(BeFalse())
 			stdout, _, err := client.CollectResponse(
 				universal.Cluster, "test-server", "http://localhost:9901/stats?format=prometheus",
 			)

@@ -369,9 +369,6 @@ jobs:
       - store_artifacts:
           name: "Store logs"
           path: /tmp/e2e
-      - store_artifacts:
-          name: debug-dir
-          path: /tmp/e2e-debug
   e2e_testing:
     parameters:
       k8sVersion:
