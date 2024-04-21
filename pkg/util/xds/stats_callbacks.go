@@ -20,6 +20,7 @@ const (
 	failedCallingWebhook    = "failed calling webhook"
 	userErrorType           = "user"
 	otherErrorType          = "other"
+	noErrorType             = "no_error"
 )
 
 type VersionExtractor = func(metadata *structpb.Struct) string
@@ -167,7 +168,7 @@ func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryReques
 	if request.HasErrors() {
 		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	if configTime, exists := s.takeConfigTimeFromQueue(request.VersionInfo()); exists {
@@ -222,7 +223,7 @@ func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDisco
 	if request.HasErrors() {
 		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	// Delta only has an initial version, therefore we need to change the key to nodeID and typeURL.
