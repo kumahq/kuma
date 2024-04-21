@@ -40,29 +40,6 @@ func Parse[T any](values []string) ([]T, error) {
 }
 
 var _ = Describe("PodToDataplane(..)", func() {
-	pod := `
-    metadata:
-      namespace: demo
-      name: example
-      labels:
-        app: example
-        version: "0.1"
-    spec:
-      containers:
-      - ports: []
-        # when a 'targetPort' in a ServicePort is a number,
-        # it should not be mandatory to list container ports explicitly
-        #
-        # containerPort: 8080
-        # containerPort: 8443
-      - ports:
-        - containerPort: 7070
-        - containerPort: 6060
-          name: metrics
-    status:
-      podIP: 192.168.0.1
-`
-
 	type testCase struct {
 		pod               string
 		servicesForPod    string
@@ -315,6 +292,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "27.dataplane.yaml",
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
+		Entry("should create dataplane even if service ports don't match", testCase{
+			pod:            "mismatch-ports.pod.yaml",
+			servicesForPod: "mismatch-ports.services-for-pod.yaml",
+			dataplane:      "mismatch-ports.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
@@ -484,68 +466,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			node:           "05.node.yaml",
 		}),
 	)
-
-	Context("when Dataplane cannot be generated", func() {
-		type testCase struct {
-			pod         string
-			services    []string
-			expectedErr string
-		}
-
-		DescribeTable("should return a descriptive error",
-			func(given testCase) {
-				// given
-				converter := PodConverter{
-					ResourceConverter: k8s.NewSimpleConverter(),
-				}
-
-				pod := &kube_core.Pod{}
-				err := yaml.Unmarshal([]byte(given.pod), pod)
-				Expect(err).ToNot(HaveOccurred())
-
-				namespace := kube_core.Namespace{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name: pod.Namespace,
-					},
-				}
-
-				services, err := Parse[*kube_core.Service](given.services)
-				Expect(err).ToNot(HaveOccurred())
-
-				dataplane := &mesh_k8s.Dataplane{}
-
-				// when
-				err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, nil)
-
-				// then
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(given.expectedErr))
-			},
-			Entry("Pod with a Service but mismatching ports", testCase{
-				pod: pod,
-				services: []string{
-					`
-                spec:
-                  clusterIP: 192.168.0.1
-                  ports:
-                  - protocol: UDP    # all non-TCP ports should be ignored
-                    port: 80
-                    targetPort: 8080
-                  - protocol: SCTP   # all non-TCP ports should be ignored
-                    port: 443
-                    targetPort: 8443
-                  - protocol: TCP
-                    port: 7070
-                    targetPort: api
-                  - # defaults to TCP protocol
-                    port: 6060
-                    targetPort: diagnostics
-`,
-				},
-				expectedErr: `A service that selects pod example was found, but it doesn't match any container ports.`,
-			}),
-		)
-	})
 })
 
 var _ = Describe("InboundTagsForService(..)", func() {

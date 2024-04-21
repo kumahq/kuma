@@ -2,11 +2,11 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/emicklei/go-restful/v3"
-	"github.com/hashicorp/go-multierror"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
@@ -320,12 +320,12 @@ func (rc *runtimeContext) Tenants() multitenant.Tenants {
 
 func (rc *runtimeContext) APIWebServiceCustomize() func(*restful.WebService) error {
 	return func(ws *restful.WebService) error {
-		err := &multierror.Error{}
+		var err error
 
 		for _, apiWebServiceCustomize := range rc.apiWebServiceCustomize {
-			err = multierror.Append(err, apiWebServiceCustomize(ws))
+			err = errors.Join(err, apiWebServiceCustomize(ws))
 		}
 
-		return err.ErrorOrNil()
+		return err
 	}
 }
