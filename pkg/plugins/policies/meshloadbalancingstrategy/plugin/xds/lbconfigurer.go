@@ -3,7 +3,7 @@ package xds
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -49,11 +49,11 @@ func (c *LoadBalancerConfigurer) Configure(cluster *envoy_cluster.Cluster) error
 		if c.LoadBalancer.RingHash == nil {
 			return nil
 		}
-		var minimumRingSize *wrappers.UInt64Value
+		var minimumRingSize *wrapperspb.UInt64Value
 		if min := c.LoadBalancer.RingHash.MinRingSize; min != nil {
 			minimumRingSize = util_proto.UInt64(uint64(*min))
 		}
-		var maximumRingSize *wrappers.UInt64Value
+		var maximumRingSize *wrapperspb.UInt64Value
 		if max := c.LoadBalancer.RingHash.MaxRingSize; max != nil {
 			maximumRingSize = util_proto.UInt64(uint64(*max))
 		}
