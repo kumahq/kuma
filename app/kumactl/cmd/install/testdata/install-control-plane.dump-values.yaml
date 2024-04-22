@@ -323,7 +323,7 @@ controlPlane:
 
   # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
   # The downside is that control plane requires permission to read Secrets in all namespaces.
-  supportAllGatewaySecrets: false
+  supportGatewaySecretsInAllNamespaces: false
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container

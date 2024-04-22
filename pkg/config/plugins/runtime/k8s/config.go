@@ -155,7 +155,7 @@ type KubernetesRuntimeConfig struct {
 	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
 	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
 	// The downside is that control plane requires permission to read Secrets in all namespaces.
-	SupportAllGatewaySecrets bool `json:"supportAllGatewaySecrets" envconfig:"KUMA_RUNTIME_KUBERNETES_SUPPORT_ALL_GATEWAY_SECRETS"`
+	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
 }
 
 type ControllersConcurrency struct {

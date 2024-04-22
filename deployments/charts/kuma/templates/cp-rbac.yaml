@@ -29,7 +29,7 @@ rules:
       - pods
       - configmaps
       - nodes
-{{- if .Values.controlPlane.supportAllGatewaySecrets }}
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
 {{- end }}
     verbs:
