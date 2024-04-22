@@ -31,9 +31,12 @@ assuming:
 
 The `ownerReference` of the `MeshService` points to the `Service`.
 Labels are copied from the `Service` object to the `MeshService` object.
+We also add a label `k8s.kuma.io/service-name` to the `MeshService` to easily
+filter for owner the `Service` object.
 
 If a `MeshService` object exists in the namespace with the same name, the
-`MeshService` won't be created and an error is bubbled up to the user.
+`MeshService` won't be created and an error is bubbled up to the user as an
+event on the `Service` resource.
 
 ### VIP
 
@@ -50,6 +53,9 @@ including supporting named `targetPorts`.
 
 Note that we only support `Service.ports[].protocol: TCP`, which is also the
 default. We copy `appProtocol` to the `MeshService` port entry as well.
+
+We add an event to the `Service` to indicate that there are ports not supported
+by Kuma.
 
 ### Headless Service with selectors
 
