@@ -66,15 +66,16 @@ In order to do this we need to have a list of all the Pods selected by the
 Service, which we can get by looking at `EndpointSlices`. These resources hold a
 list of endpoints, each of which has a `targetRef`. If the `targetRef` is `kind:
 Pod`, we can rely on the naming of `Dataplane` objects and directly select a
-given `Dataplane` by setting `spec.selector.dataplaneName` to the name of the
+given `Dataplane` by setting `spec.selector.dataplane.name` to the name of the
 `Pod`.
 
 ```
 kind: MeshService
 spec:
   selector:
-    dataplaneName: pod-1
-    # dataplaneTags: ...
+    dataplane:
+      name: pod-1
+      # tags: ...
 ```
 
 Note that Kubernetes does not allocate a `ClusterIP` for headless services, it
@@ -124,10 +125,11 @@ metadata:
     kuma.io/mesh: default
 spec:
   selector:
-    dataplaneTags: # tags in Dataplane object, see below
-      app.kubernetes.io/name: redis
-      k8s.kuma.io/namespace: redis-system # added automatically
-      kuma.io/zone: east-1 # added automatically
+    dataplane:
+      tags: # tags in Dataplane object, see below
+        app.kubernetes.io/name: redis
+        k8s.kuma.io/namespace: redis-system # added automatically
+        kuma.io/zone: east-1 # added automatically
   ports:
   - port: 6739
     targetPort:
