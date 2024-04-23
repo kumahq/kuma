@@ -93,8 +93,8 @@ func BuildIPTables(
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
 // rules for used to see and debug if something goes wrong, which can be overwritten
 // in tests to not obfuscate the other, more relevant logs
-func (r *restorer) saveIPTablesRestoreFile(f *os.File, content string) error {
-	fmt.Fprintf(r.cfg.RuntimeStdout, "# writing following contents to rules file: %s\n", f.Name())
+func (r *restorer) saveIPTablesRestoreFile(logPrefix string, f *os.File, content string) error {
+	fmt.Fprintf(r.cfg.RuntimeStdout, "%s writing following contents to rules file: %s\n", logPrefix, f.Name())
 	fmt.Fprint(r.cfg.RuntimeStdout, content)
 
 	writer := bufio.NewWriter(f)
@@ -160,37 +160,53 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+<<<<<<< HEAD
 	for i := 0; i <= r.cfg.Retry.MaxRetries; i++ {
 		fmt.Fprintf(r.cfg.RuntimeStderr, "\n# [%d/%d] ", i+1, r.cfg.Retry.MaxRetries+1)
+=======
+	maxRetries := pointer.Deref(r.cfg.Retry.MaxRetries)
 
-		output, err := r.tryRestoreIPTables(ctx, r.executables, rulesFile)
+	for i := 0; i <= maxRetries; i++ {
+		logPrefix := fmt.Sprintf("# [%d/%d]", i+1, maxRetries+1)
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
+
+		output, err := r.tryRestoreIPTables(ctx, logPrefix, r.executables, rulesFile)
 		if err == nil {
 			return output, nil
 		}
 
 		if r.executables.fallback != nil {
-			fmt.Fprintf(r.cfg.RuntimeStderr, ", trying fallback: ")
+			fmt.Fprintf(r.cfg.RuntimeStdout, "%s trying fallback\n", logPrefix)
 
-			output, err := r.tryRestoreIPTables(ctx, r.executables.fallback, rulesFile)
+			output, err := r.tryRestoreIPTables(ctx, logPrefix, r.executables.fallback, rulesFile)
 			if err == nil {
 				return output, nil
 			}
 		}
 
+<<<<<<< HEAD
 		if i < r.cfg.Retry.MaxRetries {
 			fmt.Fprintf(r.cfg.RuntimeStderr, " will try again in %s", r.cfg.Retry.SleepBetweenReties)
+=======
+		if i < maxRetries {
+			fmt.Fprintf(
+				r.cfg.RuntimeStdout,
+				"%s will try again in %s\n",
+				logPrefix,
+				r.cfg.Retry.SleepBetweenReties,
+			)
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 
 			time.Sleep(r.cfg.Retry.SleepBetweenReties)
 		}
 	}
-
-	fmt.Fprintln(r.cfg.RuntimeStderr)
 
 	return "", errors.Errorf("%s failed", r.executables.Restore.Path)
 }
 
 func (r *restorer) tryRestoreIPTables(
 	ctx context.Context,
+	logPrefix string,
 	executables *Executables,
 	rulesFile *os.File,
 ) (string, error) {
@@ -203,20 +219,31 @@ func (r *restorer) tryRestoreIPTables(
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
 
-	if err := r.saveIPTablesRestoreFile(rulesFile, rules); err != nil {
+	if err := r.saveIPTablesRestoreFile(logPrefix, rulesFile, rules); err != nil {
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
 
-	params := buildRestoreParameters(r.cfg, rulesFile, executables.legacy)
+	params := buildRestoreParameters(r.cfg, rulesFile, executables.legacy())
 
-	fmt.Fprintf(r.cfg.RuntimeStderr, "%s %s", executables.Restore.Path, strings.Join(params, " "))
+	fmt.Fprintf(
+		r.cfg.RuntimeStdout,
+		"%s %s %s\n",
+		logPrefix,
+		executables.Restore.Path,
+		strings.Join(params, " "),
+	)
 
 	output, err := executables.Restore.exec(ctx, params...)
 	if err == nil {
 		return output.String(), nil
 	}
 
-	fmt.Fprintf(r.cfg.RuntimeStderr, " failed with error: '%s'", err)
+	fmt.Fprintf(
+		r.cfg.RuntimeStderr,
+		"%s failed with error: '%s'\n",
+		logPrefix,
+		strings.ReplaceAll(err.Error(), "\n", ""),
+	)
 
 	return "", err
 }
@@ -262,8 +289,7 @@ func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 		output += ipv6Output
 	}
 
-	_, _ = cfg.RuntimeStdout.Write([]byte("\n# iptables set to diverge the traffic " +
-		"to Envoy.\n"))
+	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to divert the traffic to Envoy")
 
 	return output, nil
 }
