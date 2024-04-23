@@ -30,41 +30,25 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 	dpProbes := &mesh_proto.Dataplane_Probes{
 		Port: port,
 	}
-	var kumaSidecarSeen bool
+	var containersNeedingProbes []kube_core.Container
+
+	var initContainerComesAfterKumaSidecar bool
 	for _, c := range pod.Spec.InitContainers {
 		if c.Name == util.KumaSidecarContainerName {
-			kumaSidecarSeen = true
+			initContainerComesAfterKumaSidecar = true
 			continue
 		}
-		if !kumaSidecarSeen || c.RestartPolicy == nil || *c.RestartPolicy != kube_core.ContainerRestartPolicyAlways {
-			continue
-		}
-		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
-			if endpoint, err := probeFor(c.LivenessProbe, port); err != nil {
-				return nil, err
-			} else {
-				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
-			}
-		}
-		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
-			if endpoint, err := probeFor(c.ReadinessProbe, port); err != nil {
-				return nil, err
-			} else {
-				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
-			}
-		}
-		if c.StartupProbe != nil && c.StartupProbe.HTTPGet != nil {
-			if endpoint, err := probeFor(c.StartupProbe, port); err != nil {
-				return nil, err
-			} else {
-				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
-			}
+		if initContainerComesAfterKumaSidecar && c.RestartPolicy != nil && *c.RestartPolicy == kube_core.ContainerRestartPolicyAlways {
+			containersNeedingProbes = append(containersNeedingProbes, c)
 		}
 	}
 	for _, c := range pod.Spec.Containers {
-		if c.Name == util.KumaSidecarContainerName {
-			continue
+		if c.Name != util.KumaSidecarContainerName {
+			containersNeedingProbes = append(containersNeedingProbes, c)
 		}
+	}
+
+	for _, c := range containersNeedingProbes {
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
 			if endpoint, err := probeFor(c.LivenessProbe, port); err != nil {
 				return nil, err
@@ -87,6 +71,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 			}
 		}
 	}
+
 	return dpProbes, nil
 }
 
