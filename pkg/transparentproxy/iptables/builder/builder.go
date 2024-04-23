@@ -160,15 +160,9 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-<<<<<<< HEAD
 	for i := 0; i <= r.cfg.Retry.MaxRetries; i++ {
+		logPrefix := fmt.Sprintf("# [%d/%d]", i+1, r.cfg.Retry.MaxRetries+1)
 		fmt.Fprintf(r.cfg.RuntimeStderr, "\n# [%d/%d] ", i+1, r.cfg.Retry.MaxRetries+1)
-=======
-	maxRetries := pointer.Deref(r.cfg.Retry.MaxRetries)
-
-	for i := 0; i <= maxRetries; i++ {
-		logPrefix := fmt.Sprintf("# [%d/%d]", i+1, maxRetries+1)
->>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 
 		output, err := r.tryRestoreIPTables(ctx, logPrefix, r.executables, rulesFile)
 		if err == nil {
@@ -184,18 +178,13 @@ func (r *restorer) restore(ctx context.Context) (string, error) {
 			}
 		}
 
-<<<<<<< HEAD
 		if i < r.cfg.Retry.MaxRetries {
-			fmt.Fprintf(r.cfg.RuntimeStderr, " will try again in %s", r.cfg.Retry.SleepBetweenReties)
-=======
-		if i < maxRetries {
 			fmt.Fprintf(
 				r.cfg.RuntimeStdout,
 				"%s will try again in %s\n",
 				logPrefix,
 				r.cfg.Retry.SleepBetweenReties,
 			)
->>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 
 			time.Sleep(r.cfg.Retry.SleepBetweenReties)
 		}
