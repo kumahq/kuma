@@ -140,9 +140,10 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 	}
 
 	secretController := &gatewayapi_controllers.SecretController{
-		Log:             core.Log.WithName("controllers").WithName("secret"),
-		Client:          mgr.GetClient(),
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		Log:                                  core.Log.WithName("controllers").WithName("secret"),
+		Client:                               mgr.GetClient(),
+		SystemNamespace:                      rt.Config().Store.Kubernetes.SystemNamespace,
+		SupportGatewaySecretsInAllNamespaces: rt.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces,
 	}
 	if err := secretController.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Secret reconciler")
