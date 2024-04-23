@@ -92,7 +92,7 @@ type Executables struct {
 	Save                   Executable
 	Restore                Executable
 	fallback               *Executables
-	legacy                 bool
+	mode                   string
 	foundDockerOutputChain bool
 }
 
@@ -110,7 +110,7 @@ func newExecutables(ipv6 bool, mode string) *Executables {
 		Iptables: findExecutable(iptables),
 		Save:     findExecutable(iptablesSave),
 		Restore:  findExecutable(iptablesRestore),
-		legacy:   mode == "legacy",
+		mode:     mode,
 	}
 }
 
@@ -118,6 +118,10 @@ var necessaryMatchExtensions = []string{
 	"owner",
 	"tcp",
 	"udp",
+}
+
+func (e *Executables) legacy() bool {
+	return e.mode == "legacy"
 }
 
 func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executables, error) {
@@ -132,7 +136,7 @@ func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executabl
 	}
 
 	if len(missing) > 0 {
-		return nil, errors.Errorf("couldn't find executables: [%s]", strings.Join(missing, ","))
+		return nil, errors.Errorf("couldn't find %s executables: [%s]", e.mode, strings.Join(missing, ", "))
 	}
 
 	// We always need to have access to the "nat" table
