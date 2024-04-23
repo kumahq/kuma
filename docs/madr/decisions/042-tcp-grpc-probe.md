@@ -142,96 +142,27 @@ spec:
 
 ## Considered Options
 
-- Allocate a new and separated port for each of the TCP probes and gRPC probes
+**Option 1:** Allocate a new and separated port for each of the TCP probes, and skip these ports when setting up the transparent proxy iptables rules
 
-- Merging all three types of probes into one listener
+**Option 2:** Transform TCP probes to HTTP probes, merging all the HTTP based probes by one HTTP listener, split traffic and forward to corresponding probe handling port. 
 
-### Allocate a new and separated port for each of the TCP probes and gRPC probes (proposed)
+### Option 2: Transform TCP probes to HTTP probes, merging all the HTTP probes by one HTTP listener (proposed)
 
-A pod can have multiple containers with each defines different probes, the worst case is a pod has all 3 different types of probes with many probes for each type.
+Use the existing virtual probe HTTP listener to support both HTTP, gRPC probes. 
 
-Introduce a new annotation `kuma.io/virtual-probes-port-range` to let the user specify the range of ports to use for probes, and deprecate the existing annotation `kuma.io/virtual-probes-port`.
+For TCP probes, transform them into HTTP probes first and then also use the same HTTP virtual probe HTTP listener to handle incoming probe probe traffic.  This needs an new intermediate layer translating HTTP probes back into TCP probes (the translator), a reasonable place to is put it in the kuma-dp.
 
-A user can now specify the Virtual Probe ports like this:
+So:
 
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  annotations:
-    kuma.io/virtual-probes: "enabled"
-    kuma.io/virtual-probes-port-range: '19000-19020'
-spec:
-  containers:
-  - name: app
-    startupProbe:
-      httpGet:
-        path: /healthz
-        port: 8080
-    livenessProbe:
-      grpc:
-        port: 2379
-        service: liveness
-    readinessProbe:
-      tcpSocket:
-        port: 1433
-```
+1. If the user probe is HTTP based, requests are forwarded/redirected to application directly with necessary path/port rewriting, etc.
 
-If a range is not specified in the `kuma.io/virtual-probes-port-range`, we'll generate ports automatically by incrementing from the default port (`9000`), skipping the known and taken ports.
-
-#### Virtual Probes Listeners
-
-We generate a TCP proxy listener for each of gRPC and TCP probes, and forward the probe traffic transparently to the application. We also keep the existing HTTP Virtual Probe listener for HTTP probes.
-
-This keep the compatibility with the existing HTTP based Virtual Probe and data plane data model.
-
-#### Data Plane Data Model 
-
-Introduce two new fields onto the `Dataplane` resource type to store the Virtual Probe ports:
-
-```yaml
-  probes:
-    endpoints:
-    - inboundPath: /metrics
-      inboundPort: 8081
-      path: /8081/metrics
-    port: 19000
-  tcpProbes:
-  - port: 19001
-    applicationPort: 1433
-  grpcProbes:
-  - port: 19002
-    applicationPort: 2379
-    service: abcd
-```
-
-#### Positive Consequences
-
-- Ease of implementation
-
-- Keeping the compatibility with the existing HTTP based Virtual Probe and data plane data model
-
-#### Negative Consequences
-
-- The user experience of specifying virtual probes ports is more complex
-
-- More virtual listeners on the sidecar
-
-## Other options
-
-### Merging all probes into one listener
-
-Introducing an intermediate layer to transform user specified probes (the user probe) into HTTP probes on the pod, and translate HTTP probes back into TCP and gRPC probes (the translator) on this intermediate layer and:
-
-1. If the user probe is HTTP based, requests are forwarded/redirected to application directly
-
-2. If the user probe is TCP or gRPC based, we'll also receive HTTP requests for these probes, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for detecting the actual probe status from the application.
+2. If the user probe is TCP based, we'll also receive HTTP requests for these probes, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for detecting the actual probe status from the application.
 
 The whole workflow can be shown in the following diagram:
 
 ```
-  gRPC Probes                                               HTTP to gRPC translator --->  Application
-              ↘                                           ↗
+  gRPC Probes                                                              Application
+              ↘                                                          ↗
 HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  Application
               ↗                                           ↘
    TCP Probes                                               HTTP to TCP translator  --->  Application
@@ -252,6 +183,22 @@ HTTP Probes --> HTTP Probes --->  Virtual Probe Listener ->  HTTP Probes  --->  
 - Requires an extra component (the translator) in `kuma-dp`, which increases the implementation complexity
 
 - Less intuitiveness, so harder for troubleshooting issues
+
+## Other options
+
+### Allocate a new and separate port for each of TCP probe ports and skip them when setting up the transparent proxy iptables rules
+
+The TCP probe mechanism is broken by the transparent proxy redirection, when we skip redirecting traffic to these virtual probe ports, the probe traffic will go to the application directly. 
+
+#### Positive Consequences
+
+- Ease of implementation
+
+- Keeping the compatibility with the existing HTTP based Virtual Probe and data plane data model
+
+#### Negative Consequences
+
+- The user experience of specifying virtual probes ports is more complex
 
 ## Decision Drivers
 
