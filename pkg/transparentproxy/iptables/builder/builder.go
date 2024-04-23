@@ -83,9 +83,15 @@ func BuildIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string, e
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
 // rules for used to see and debug if something goes wrong, which can be overwritten
 // in tests to not obfuscate the other, more relevant logs
+<<<<<<< HEAD
 func saveIPTablesRestoreFile(runtimeOutput io.Writer, f *os.File, content string) error {
 	_, _ = fmt.Fprintln(runtimeOutput, "Writing following contents to rules file: ", f.Name())
 	_, _ = fmt.Fprintln(runtimeOutput, content)
+=======
+func (r *restorer) saveIPTablesRestoreFile(logPrefix string, f *os.File, content string) error {
+	fmt.Fprintf(r.cfg.RuntimeStdout, "%s writing following contents to rules file: %s\n", logPrefix, f.Name())
+	fmt.Fprint(r.cfg.RuntimeStdout, content)
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 
 	writer := bufio.NewWriter(f)
 	_, err := writer.WriteString(content)
@@ -136,11 +142,60 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 		return "", err
 	}
 
+<<<<<<< HEAD
 	rules, err := BuildIPTables(cfg, dnsServers, ipv6)
+=======
+	maxRetries := pointer.Deref(r.cfg.Retry.MaxRetries)
+
+	for i := 0; i <= maxRetries; i++ {
+		logPrefix := fmt.Sprintf("# [%d/%d]", i+1, maxRetries+1)
+
+		output, err := r.tryRestoreIPTables(ctx, logPrefix, r.executables, rulesFile)
+		if err == nil {
+			return output, nil
+		}
+
+		if r.executables.fallback != nil {
+			fmt.Fprintf(r.cfg.RuntimeStdout, "%s trying fallback\n", logPrefix)
+
+			output, err := r.tryRestoreIPTables(ctx, logPrefix, r.executables.fallback, rulesFile)
+			if err == nil {
+				return output, nil
+			}
+		}
+
+		if i < maxRetries {
+			fmt.Fprintf(
+				r.cfg.RuntimeStdout,
+				"%s will try again in %s\n",
+				logPrefix,
+				r.cfg.Retry.SleepBetweenReties,
+			)
+
+			time.Sleep(r.cfg.Retry.SleepBetweenReties)
+		}
+	}
+
+	return "", errors.Errorf("%s failed", r.executables.Restore.Path)
+}
+
+func (r *restorer) tryRestoreIPTables(
+	ctx context.Context,
+	logPrefix string,
+	executables *Executables,
+	rulesFile *os.File,
+) (string, error) {
+	if executables.foundDockerOutputChain {
+		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
+	}
+
+	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
 
+<<<<<<< HEAD
 	if err := saveIPTablesRestoreFile(cfg.RuntimeStdout, rulesFile, rules); err != nil {
 		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
 	}
@@ -151,6 +206,35 @@ func restoreIPTables(cfg config.Config, dnsServers []string, ipv6 bool) (string,
 	}
 
 	return runRestoreCmd(cmdName, rulesFile)
+=======
+	if err := r.saveIPTablesRestoreFile(logPrefix, rulesFile, rules); err != nil {
+		return "", fmt.Errorf("unable to save iptables restore file: %s", err)
+	}
+
+	params := buildRestoreParameters(r.cfg, rulesFile, executables.legacy())
+
+	fmt.Fprintf(
+		r.cfg.RuntimeStdout,
+		"%s %s %s\n",
+		logPrefix,
+		executables.Restore.Path,
+		strings.Join(params, " "),
+	)
+
+	output, err := executables.Restore.exec(ctx, params...)
+	if err == nil {
+		return output.String(), nil
+	}
+
+	fmt.Fprintf(
+		r.cfg.RuntimeStderr,
+		"%s failed with error: '%s'\n",
+		logPrefix,
+		strings.ReplaceAll(err.Error(), "\n", ""),
+	)
+
+	return "", err
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 }
 
 // RestoreIPTables
@@ -186,8 +270,12 @@ func RestoreIPTables(cfg config.Config) (string, error) {
 		output += ipv6Output
 	}
 
+<<<<<<< HEAD
 	_, _ = cfg.RuntimeStdout.Write([]byte("iptables set to diverge the traffic " +
 		"to Envoy.\n"))
+=======
+	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to divert the traffic to Envoy")
+>>>>>>> de0f8b52b (fix(transparent-proxy): stop logging all to stderr when installing tproxy (#10045))
 
 	return output, nil
 }
