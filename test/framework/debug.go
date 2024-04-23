@@ -34,7 +34,7 @@ func DebugKube(cluster Cluster, mesh string, namespace string) {
 	Logf("printing debug information of cluster %q for mesh %q and namespace %q", cluster.Name(), mesh, namespace)
 	kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 	kubeOptions.Logger = logger.Discard                  // to not print on stdout
-	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all", "-oyaml")
+	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma,gateway-api", "-oyaml")
 	Expect(err).ToNot(HaveOccurred())
 
 	exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
