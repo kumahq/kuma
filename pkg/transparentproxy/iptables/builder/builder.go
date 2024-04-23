@@ -280,7 +280,7 @@ func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 		output += ipv6Output
 	}
 
-	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to diverge the traffic to Envoy")
+	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to divert the traffic to Envoy")
 
 	return output, nil
 }
