@@ -299,6 +299,10 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
+- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
+  value: true
+{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
