@@ -26,7 +26,9 @@ func SetupAndGetState() []byte {
 	kumaOptions := append(
 		[]framework.KumaDeploymentOption{
 			framework.WithEgress(),
-			framework.WithHelmOpt("controlPlane.supportGatewaySecretsInAllNamespaces", "true"), // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
+			framework.WithCtlOpts(map[string]string{
+				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
+			}),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
