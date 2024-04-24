@@ -49,7 +49,7 @@ func Jobs() {
 				g.Expect(out).ToNot(ContainSubstring("demo-job-client"))
 			}, "30s", "1s").Should(Succeed())
 		})
-	})
+	}, Ordered)
 
 	Context("mTLS", func() {
 		const namespace = "jobs-mtls"
@@ -84,5 +84,5 @@ func Jobs() {
 			// then CP terminates the job by sending /quitquitquit to Envoy Admin and verifies connection using mTLS certs
 			Expect(err).ToNot(HaveOccurred())
 		})
-	})
+	}, Ordered)
 }
