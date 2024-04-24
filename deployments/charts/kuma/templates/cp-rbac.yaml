@@ -29,11 +29,20 @@ rules:
       - pods
       - configmaps
       - nodes
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
+{{- end }}
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:

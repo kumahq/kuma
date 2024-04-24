@@ -80,3 +80,4 @@ nodeTaintController:
   enabled: false
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 skipMeshOwnerReference: false
+supportGatewaySecretsInAllNamespaces: false

@@ -220,6 +220,11 @@ Previously, these flags were necessary for using the Gateway API feature:
 - `--experimental-gatewayapi` flag for `kumactl install control-plane` and `kumactl install crds`
 - `experimental.gatewayAPI=true` setting in both `kumactl install control-plane` and Helm charts
 
+### TLS Secrets with Gateway API in namespace other than mesh system namespace
+
+If you use TLS secrets with Gateway API for a builtin gateway deployed in any other namespace than mesh system namespace, set `controlPlane.supportGatewaySecretsInAllNamespaces` HELM value to true.
+This change was introduced so that control plane does not have capability to read content of secrets in all namespaces by default.
+
 ## Upgrade to `2.6.x`
 
 ### Policy
