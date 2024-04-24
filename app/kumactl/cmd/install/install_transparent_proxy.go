@@ -379,14 +379,12 @@ func parseArgs(cmd *cobra.Command, args *transparentProxyArgs) (config.Config, e
 }
 
 func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) error {
-	tp := transparentproxy.TransparentProxyV2{}
-
 	cfg, err := parseArgs(cmd, args)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}
 
-	output, err := tp.Setup(cmd.Context(), cfg)
+	output, err := transparentproxy.Setup(cmd.Context(), cfg)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
 	}

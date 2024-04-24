@@ -7,5 +7,5 @@ import (
 )
 
 func TestTransparentProxyV2(t *testing.T) {
-	test.RunSpecs(t, "Transparent Proxy V2")
+	test.RunSpecs(t, "Transparent Proxy")
 }
