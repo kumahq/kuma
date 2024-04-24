@@ -4,6 +4,7 @@
 package uninstall
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
@@ -48,8 +49,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 			}
 
 			if cfg.DryRun {
-				_, _ = cmd.OutOrStdout().Write([]byte(output))
-				_, _ = cmd.OutOrStdout().Write([]byte("\n"))
+				fmt.Fprintln(cfg.RuntimeStdout, output)
 			}
 
 			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
@@ -65,9 +65,10 @@ func newUninstallTransparentProxy() *cobra.Command {
 					}
 				}
 
-				_, _ = cmd.OutOrStdout().Write(content)
+				fmt.Fprintln(cfg.RuntimeStdout, string(content))
 			}
-			_, _ = cmd.OutOrStdout().Write([]byte("\nTransparent proxy cleaned up successfully\n"))
+
+			fmt.Fprintln(cfg.RuntimeStdout, "Transparent proxy cleaned up successfully")
 
 			return nil
 		},
