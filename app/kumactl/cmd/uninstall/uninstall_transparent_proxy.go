@@ -16,14 +16,7 @@ import (
 )
 
 func newUninstallTransparentProxy() *cobra.Command {
-	cfg := config.Config{
-		Ebpf: config.Ebpf{
-			Enabled:   false,
-			BPFFSPath: "/sys/fs/bpf",
-		},
-		Verbose: false,
-		DryRun:  false,
-	}
+	cfg := config.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
