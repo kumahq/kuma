@@ -39,13 +39,15 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
-			cfg := &config.TransparentProxyConfig{
-				EbpfEnabled:   args.EbpfEnabled,
-				EbpfBPFFSPath: args.EbpfBPFFSPath,
-				DryRun:        args.DryRun,
+			cfg := config.Config{
+				Ebpf: config.Ebpf{
+					Enabled:   args.EbpfEnabled,
+					BPFFSPath: args.EbpfBPFFSPath,
+				},
+				RuntimeStdout: cmd.OutOrStdout(),
+				RuntimeStderr: cmd.ErrOrStderr(),
 				Verbose:       args.Verbose,
-				Stderr:        cmd.ErrOrStderr(),
-				Stdout:        cmd.OutOrStdout(),
+				DryRun:        args.DryRun,
 			}
 
 			tp := transparentproxy.V2()

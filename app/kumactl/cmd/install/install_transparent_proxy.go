@@ -259,47 +259,132 @@ func findUidGid(uid, user string) (string, string, error) {
 	return u.Uid, u.Gid, nil
 }
 
-func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) error {
-	var tp transparentproxy.TransparentProxy
-
-	uid, gid, err := findUidGid(args.UID, args.User)
+func parseArgs(cmd *cobra.Command, args *transparentProxyArgs) (config.Config, error) {
+	uid, _, err := findUidGid(args.UID, args.User)
 	if err != nil {
-		return errors.Wrapf(err, "unable to find the kuma-dp user")
+		return config.Config{}, errors.Wrapf(err, "unable to find the kuma-dp user")
 	}
 
-	cfg := &config.TransparentProxyConfig{
-		DryRun:                    args.DryRun,
-		Verbose:                   args.Verbose,
-		RedirectPortOutBound:      args.RedirectPortOutBound,
-		RedirectInBound:           args.RedirectInbound,
-		RedirectPortInBound:       args.RedirectPortInBound,
-		RedirectPortInBoundV6:     args.RedirectPortInBoundV6,
-		IpFamilyMode:              args.IpFamilyMode,
-		ExcludeInboundPorts:       args.ExcludeInboundPorts,
-		ExcludeOutboundPorts:      args.ExcludeOutboundPorts,
-		ExcludedOutboundsForUIDs:  args.ExcludeOutboundPortsForUIDs,
-		UID:                       uid,
-		GID:                       gid,
-		RedirectDNS:               args.RedirectDNS,
-		RedirectAllDNSTraffic:     args.RedirectAllDNSTraffic,
-		AgentDNSListenerPort:      args.AgentDNSListenerPort,
-		DNSUpstreamTargetChain:    "RETURN",
-		SkipDNSConntrackZoneSplit: args.SkipDNSConntrackZoneSplit,
-		EbpfEnabled:               args.EbpfEnabled,
-		EbpfInstanceIP:            args.EbpfInstanceIP,
-		EbpfBPFFSPath:             args.EbpfBPFFSPath,
-		EbpfCgroupPath:            args.EbpfCgroupPath,
-		EbpfTCAttachIface:         args.EbpfTCAttachIface,
-		EbpfProgramsSourcePath:    args.EbpfProgramsSourcePath,
-		VnetNetworks:              args.VnetNetworks,
-		Stdout:                    cmd.OutOrStdout(),
-		Stderr:                    cmd.ErrOrStderr(),
-		Wait:                      args.Wait,
-		WaitInterval:              args.WaitInterval,
-		MaxRetries:                pointer.To(args.MaxRetries),
-		SleepBetweenRetries:       args.SleepBetweenRetries,
+	redirectInboundPort, err := transparentproxy.ParseUint16(args.RedirectPortInBound)
+	if err != nil {
+		return config.Config{}, errors.Wrap(err, "parsing inbound redirect port failed")
 	}
-	tp = transparentproxy.V2()
+
+	var redirectInboundPortIPv6 uint16
+
+	if args.RedirectPortInBoundV6 != "" {
+		redirectInboundPortIPv6, err = transparentproxy.ParseUint16(args.RedirectPortInBoundV6)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
+		}
+	}
+
+	redirectOutboundPort, err := transparentproxy.ParseUint16(args.RedirectPortOutBound)
+	if err != nil {
+		return config.Config{}, errors.Wrap(err, "parsing outbound redirect port failed")
+	}
+
+	agentDNSListenerPort, err := transparentproxy.ParseUint16(args.AgentDNSListenerPort)
+	if err != nil {
+		return config.Config{}, errors.Wrap(err, "parsing agent DNS listener port failed")
+	}
+
+	var excludeInboundPorts []uint16
+	if args.ExcludeInboundPorts != "" {
+		excludeInboundPorts, err = transparentproxy.SplitPorts(args.ExcludeInboundPorts)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "cannot parse inbound ports to exclude")
+		}
+	}
+	var excludeOutboundPortsForUids []config.UIDsToPorts
+	if len(args.ExcludeOutboundPortsForUIDs) > 0 {
+		excludeOutboundPortsForUids, err = transparentproxy.ParseExcludePortsForUIDs(args.ExcludeOutboundPortsForUIDs)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "parsing excluded outbound ports for uids failed")
+		}
+	}
+
+	var excludeOutboundPorts []uint16
+	if args.ExcludeOutboundPorts != "" {
+		excludeOutboundPorts, err = transparentproxy.SplitPorts(args.ExcludeOutboundPorts)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "cannot parse outbound ports to exclude")
+		}
+	}
+
+	var ipv6 bool
+	if args.IpFamilyMode == "ipv4" {
+		ipv6 = false
+		redirectInboundPortIPv6 = 0
+	} else {
+		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
+			redirectInboundPortIPv6 = redirectInboundPort
+		}
+
+		ipv6, err = transparentproxy.ShouldEnableIPv6(redirectInboundPortIPv6)
+		if err != nil {
+			return config.Config{}, errors.Wrap(err, "cannot verify if IPv6 should be enabled")
+		}
+	}
+
+	return config.Config{
+		Owner: config.Owner{
+			UID: uid,
+		},
+		Redirect: config.Redirect{
+			NamePrefix: "KUMA_",
+			Inbound: config.TrafficFlow{
+				Enabled:      args.RedirectInbound,
+				Port:         redirectInboundPort,
+				PortIPv6:     redirectInboundPortIPv6,
+				ExcludePorts: excludeInboundPorts,
+			},
+			Outbound: config.TrafficFlow{
+				Enabled:             true,
+				Port:                redirectOutboundPort,
+				ExcludePorts:        excludeOutboundPorts,
+				ExcludePortsForUIDs: excludeOutboundPortsForUids,
+			},
+			DNS: config.DNS{
+				Enabled:             args.RedirectDNS,
+				CaptureAll:          args.RedirectAllDNSTraffic,
+				Port:                agentDNSListenerPort,
+				UpstreamTargetChain: args.DNSUpstreamTargetChain,
+				ConntrackZoneSplit:  !args.SkipDNSConntrackZoneSplit,
+			},
+			VNet: config.VNet{
+				Networks: args.VnetNetworks,
+			},
+		},
+		Ebpf: config.Ebpf{
+			Enabled:            args.EbpfEnabled,
+			InstanceIP:         args.EbpfInstanceIP,
+			BPFFSPath:          args.EbpfBPFFSPath,
+			CgroupPath:         args.EbpfCgroupPath,
+			TCAttachIface:      args.EbpfTCAttachIface,
+			ProgramsSourcePath: args.EbpfProgramsSourcePath,
+		},
+		RuntimeStdout: cmd.OutOrStdout(),
+		RuntimeStderr: cmd.ErrOrStderr(),
+		IPv6:          ipv6,
+		Verbose:       args.Verbose,
+		DryRun:        args.DryRun,
+		Wait:          args.Wait,
+		WaitInterval:  args.WaitInterval,
+		Retry: config.RetryConfig{
+			MaxRetries:         pointer.To(args.MaxRetries),
+			SleepBetweenReties: args.SleepBetweenRetries,
+		},
+	}, nil
+}
+
+func configureTransparentProxy(cmd *cobra.Command, args *transparentProxyArgs) error {
+	tp := transparentproxy.TransparentProxyV2{}
+
+	cfg, err := parseArgs(cmd, args)
+	if err != nil {
+		return errors.Wrap(err, "failed to setup transparent proxy")
+	}
 
 	output, err := tp.Setup(cmd.Context(), cfg)
 	if err != nil {

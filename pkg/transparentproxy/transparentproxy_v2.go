@@ -60,7 +60,7 @@ func ShouldEnableIPv6(port uint16) (bool, error) {
 	return err == nil, nil
 }
 
-func parseUint16(port string) (uint16, error) {
+func ParseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
 		return 0, fmt.Errorf("value '%s', is not valid uint16", port)
@@ -69,7 +69,7 @@ func parseUint16(port string) (uint16, error) {
 	return uint16(parsedPort), nil
 }
 
-func splitPorts(ports string) ([]uint16, error) {
+func SplitPorts(ports string) ([]uint16, error) {
 	ports = strings.TrimSpace(ports)
 	if ports == "" {
 		return nil, nil
@@ -78,7 +78,7 @@ func splitPorts(ports string) ([]uint16, error) {
 	var result []uint16
 
 	for _, port := range strings.Split(ports, ",") {
-		p, err := parseUint16(port)
+		p, err := ParseUint16(port)
 		if err != nil {
 			return nil, err
 		}
@@ -89,122 +89,7 @@ func splitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func (tp *TransparentProxyV2) Setup(
-	ctx context.Context,
-	tpConfig *config.TransparentProxyConfig,
-) (string, error) {
-	redirectInboundPort, err := parseUint16(tpConfig.RedirectPortInBound)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing inbound redirect port failed")
-	}
-
-	var redirectInboundPortIPv6 uint16
-
-	if tpConfig.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = parseUint16(tpConfig.RedirectPortInBoundV6)
-		if err != nil {
-			return "", errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
-		}
-	}
-
-	redirectOutboundPort, err := parseUint16(tpConfig.RedirectPortOutBound)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing outbound redirect port failed")
-	}
-
-	agentDNSListenerPort, err := parseUint16(tpConfig.AgentDNSListenerPort)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing agent DNS listener port failed")
-	}
-
-	var excludeInboundPorts []uint16
-	if tpConfig.ExcludeInboundPorts != "" {
-		excludeInboundPorts, err = splitPorts(tpConfig.ExcludeInboundPorts)
-		if err != nil {
-			return "", errors.Wrap(err, "cannot parse inbound ports to exclude")
-		}
-	}
-	var excludeOutboundPortsForUids []config.UIDsToPorts
-	if len(tpConfig.ExcludedOutboundsForUIDs) > 0 {
-		excludeOutboundPortsForUids, err = ParseExcludePortsForUIDs(tpConfig.ExcludedOutboundsForUIDs)
-		if err != nil {
-			return "", errors.Wrap(err, "parsing excluded outbound ports for uids failed")
-		}
-	}
-
-	var excludeOutboundPorts []uint16
-	if tpConfig.ExcludeOutboundPorts != "" {
-		excludeOutboundPorts, err = splitPorts(tpConfig.ExcludeOutboundPorts)
-		if err != nil {
-			return "", errors.Wrap(err, "cannot parse outbound ports to exclude")
-		}
-	}
-
-	var ipv6 bool
-	if tpConfig.IpFamilyMode == "ipv4" {
-		ipv6 = false
-		redirectInboundPortIPv6 = 0
-	} else {
-		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
-			redirectInboundPortIPv6 = redirectInboundPort
-		}
-
-		ipv6, err = ShouldEnableIPv6(redirectInboundPortIPv6)
-		if err != nil {
-			return "", errors.Wrap(err, "cannot verify if IPv6 should be enabled")
-		}
-	}
-
-	cfg := config.Config{
-		Owner: config.Owner{
-			UID: tpConfig.UID,
-		},
-		Redirect: config.Redirect{
-			NamePrefix: "KUMA_",
-			Inbound: config.TrafficFlow{
-				Enabled:      tpConfig.RedirectInBound,
-				Port:         redirectInboundPort,
-				PortIPv6:     redirectInboundPortIPv6,
-				ExcludePorts: excludeInboundPorts,
-			},
-			Outbound: config.TrafficFlow{
-				Enabled:             true,
-				Port:                redirectOutboundPort,
-				ExcludePorts:        excludeOutboundPorts,
-				ExcludePortsForUIDs: excludeOutboundPortsForUids,
-			},
-			DNS: config.DNS{
-				Enabled:             tpConfig.RedirectDNS,
-				CaptureAll:          tpConfig.RedirectAllDNSTraffic,
-				Port:                agentDNSListenerPort,
-				UpstreamTargetChain: tpConfig.DNSUpstreamTargetChain,
-				ConntrackZoneSplit:  !tpConfig.SkipDNSConntrackZoneSplit,
-			},
-			VNet: config.VNet{
-				Networks: tpConfig.VnetNetworks,
-			},
-		},
-		Ebpf: config.Ebpf{
-			Enabled:            tpConfig.EbpfEnabled,
-			InstanceIP:         tpConfig.EbpfInstanceIP,
-			BPFFSPath:          tpConfig.EbpfBPFFSPath,
-			CgroupPath:         tpConfig.EbpfCgroupPath,
-			TCAttachIface:      tpConfig.EbpfTCAttachIface,
-			ProgramsSourcePath: tpConfig.EbpfProgramsSourcePath,
-		},
-		RuntimeStdout: tpConfig.Stdout,
-		RuntimeStderr: tpConfig.Stderr,
-		IPv6:          ipv6,
-		Verbose:       tpConfig.Verbose,
-		DryRun:        tpConfig.DryRun,
-		Wait:          tpConfig.Wait,
-		WaitInterval:  tpConfig.WaitInterval,
-		Retry: config.RetryConfig{
-			MaxRetries:         tpConfig.MaxRetries,
-			SleepBetweenReties: tpConfig.SleepBetweenRetries,
-		},
-	}
-
+func (tp *TransparentProxyV2) Setup(ctx context.Context, cfg config.Config) (string, error) {
 	return Setup(ctx, cfg)
 }
 
@@ -281,7 +166,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 		portRanges := strings.Split(element, "-")
 
 		for _, port := range portRanges {
-			_, err := parseUint16(port)
+			_, err := ParseUint16(port)
 			if err != nil {
 				return errors.Wrapf(err, "values or range '%s' failed validation", valueOrRange)
 			}
@@ -291,15 +176,6 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-func (tp *TransparentProxyV2) Cleanup(tpConfig *config.TransparentProxyConfig) (string, error) {
-	return Cleanup(config.Config{
-		Ebpf: config.Ebpf{
-			Enabled:   tpConfig.EbpfEnabled,
-			BPFFSPath: tpConfig.EbpfBPFFSPath,
-		},
-		RuntimeStdout: tpConfig.Stdout,
-		RuntimeStderr: tpConfig.Stderr,
-		Verbose:       tpConfig.Verbose,
-		DryRun:        tpConfig.DryRun,
-	})
+func (tp *TransparentProxyV2) Cleanup(cfg config.Config) (string, error) {
+	return Cleanup(cfg)
 }

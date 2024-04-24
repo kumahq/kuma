@@ -17,9 +17,9 @@ type IptablesTranslator interface {
 type TransparentProxy interface {
 	// Setup returns the stdout and stderr as string and an error if such
 	// has occurred
-	Setup(ctx context.Context, cfg *config.TransparentProxyConfig) (string, error)
+	Setup(ctx context.Context, cfg config.Config) (string, error)
 
 	// Cleanup returns the stdout and stderr as string and an error if such
 	// has occurred
-	Cleanup(cfg *config.TransparentProxyConfig) (string, error)
+	Cleanup(cfg config.Config) (string, error)
 }
