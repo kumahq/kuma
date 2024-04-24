@@ -54,9 +54,6 @@ including supporting named `targetPorts`.
 Note that we only support `Service.ports[].protocol: TCP`, which is also the
 default. We copy `appProtocol` to the `MeshService` port entry as well.
 
-We add an event to the `Service` to indicate that there are ports not supported
-by Kuma.
-
 ### Headless Service with selectors
 
 In Kubernetes, a headless Service with selectors is used to create a DNS record
