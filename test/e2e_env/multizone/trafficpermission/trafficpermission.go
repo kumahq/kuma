@@ -50,6 +50,12 @@ func TrafficPermission() {
 		Expect(DeleteMeshResources(multizone.Global, meshName, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugKube(multizone.KubeZone1, meshName, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())

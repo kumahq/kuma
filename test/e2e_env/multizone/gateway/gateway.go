@@ -48,6 +48,12 @@ func GatewayHybrid() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugKube(multizone.KubeZone1, meshName, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())

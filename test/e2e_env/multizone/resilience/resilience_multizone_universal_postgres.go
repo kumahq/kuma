@@ -61,6 +61,11 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(global, "default")
+		DebugUniversal(zoneUniversal, "default")
+	})
+
 	E2EAfterEach(func() {
 		err := zoneUniversal.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())

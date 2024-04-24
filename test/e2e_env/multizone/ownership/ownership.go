@@ -28,6 +28,11 @@ func MultizoneUniversal() {
 		).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(global, "default")
+		DebugUniversal(zoneUniversal, "default")
+	})
+
 	E2EAfterEach(func() {
 		Expect(zoneUniversal.DeleteKuma()).To(Succeed())
 		Expect(zoneUniversal.DismissCluster()).To(Succeed())
