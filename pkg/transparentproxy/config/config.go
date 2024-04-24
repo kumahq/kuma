@@ -10,41 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type TransparentProxyConfig struct {
-	DryRun                    bool
-	Verbose                   bool
-	RedirectPortOutBound      string
-	RedirectInBound           bool
-	RedirectPortInBound       string
-	RedirectPortInBoundV6     string
-	IpFamilyMode              string
-	ExcludeInboundPorts       string
-	ExcludeOutboundPorts      string
-	ExcludedOutboundsForUIDs  []string
-	UID                       string
-	GID                       string
-	RedirectDNS               bool
-	RedirectAllDNSTraffic     bool
-	AgentDNSListenerPort      string
-	DNSUpstreamTargetChain    string
-	SkipDNSConntrackZoneSplit bool
-	ExperimentalEngine        bool
-	EbpfEnabled               bool
-	EbpfInstanceIP            string
-	EbpfBPFFSPath             string
-	EbpfCgroupPath            string
-	EbpfTCAttachIface         string
-	EbpfProgramsSourcePath    string
-	VnetNetworks              []string
-	Stdout                    io.Writer
-	Stderr                    io.Writer
-	RestoreLegacy             bool
-	Wait                      uint
-	WaitInterval              uint
-	MaxRetries                *int
-	SleepBetweenRetries       time.Duration
-}
-
 const DebugLogLevel uint16 = 7
 
 type Owner struct {
