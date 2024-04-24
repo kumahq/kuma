@@ -379,6 +379,11 @@ func MeshMetric() {
 		}
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mainMesh, namespace, observabilityNamespace)
+		DebugKube(kubernetes.Cluster, secondaryMesh, secondaryOpenTelemetryCollectorNamespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(kubernetes.Cluster, mainMesh, v1alpha1.MeshMetricResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(kubernetes.Cluster, secondaryMesh, v1alpha1.MeshMetricResourceTypeDescriptor)).To(Succeed())

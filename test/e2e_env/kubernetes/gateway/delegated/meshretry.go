@@ -36,6 +36,10 @@ spec:
           retryOn: ["503"]
 `, config.CpNamespace, config.Mesh)
 
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,

@@ -46,6 +46,10 @@ spec:
 			observabilityClient = observability.From(config.ObservabilityDeploymentName, kubernetes.Cluster)
 		})
 
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,

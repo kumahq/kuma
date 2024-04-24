@@ -16,6 +16,10 @@ func MeshLoadBalancingStrategy(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,

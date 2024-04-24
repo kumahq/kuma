@@ -66,6 +66,11 @@ func Tracing() {
 		Expect(err).ToNot(HaveOccurred())
 		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 	})
+
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, ns, obsNs)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())
