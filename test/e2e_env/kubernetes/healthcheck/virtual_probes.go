@@ -26,6 +26,11 @@ func VirtualProbes() {
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 	})
+
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())

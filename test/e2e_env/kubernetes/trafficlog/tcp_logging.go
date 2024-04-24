@@ -132,6 +132,10 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		AfterEachFailure(func() {
+			DebugKube(kubernetes.Cluster, meshName, trafficNamespace, tcpSinkNamespace)
+		})
+
 		E2EAfterAll(func() {
 			Expect(kubernetes.Cluster.TriggerDeleteNamespace(trafficNamespace)).To(Succeed())
 			Expect(kubernetes.Cluster.TriggerDeleteNamespace(tcpSinkNamespace)).To(Succeed())

@@ -66,6 +66,10 @@ spec:
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace, externalServicesNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())

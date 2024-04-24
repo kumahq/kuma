@@ -63,6 +63,10 @@ func KICKubernetes() {
 		kicIP = ip
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespaceOutsideMesh)).To(Succeed())
