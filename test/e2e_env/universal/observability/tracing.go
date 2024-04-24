@@ -55,6 +55,10 @@ func Tracing() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, mesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(mesh)).To(Succeed())

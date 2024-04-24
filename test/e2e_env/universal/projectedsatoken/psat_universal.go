@@ -23,6 +23,10 @@ func ProjectedServiceAccountToken() {
 			Setup(universal)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal, "default")
+	})
+
 	E2EAfterEach(func() {
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
