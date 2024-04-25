@@ -80,6 +80,12 @@ func MeshTrafficPermission() {
 		Expect(multizone.Global.Install(externalService(meshName, esIp))).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugKube(multizone.KubeZone1, meshName, namespace)
+	})
+
 	BeforeEach(func() {
 		Expect(DeleteMeshResources(multizone.Global, meshName, policies_api.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
