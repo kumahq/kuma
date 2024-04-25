@@ -97,3 +97,8 @@ func PrintKubeState(report ginkgo.Report) {
 		}
 	}
 }
+
+func ExpectCpToNotCrash() {
+	restartCount := framework.RestartCount(Cluster.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0))
+}

@@ -347,3 +347,13 @@ func simplifySingleK8sEvent(v1Event v1.Event) *simplifiedEvent {
 		Message:  v1Event.Message,
 	}
 }
+
+func RestartCount(pods []v1.Pod) int {
+	restartCount := 0
+	for _, pod := range pods {
+		for _, container := range pod.Status.ContainerStatuses {
+			restartCount += int(container.RestartCount)
+		}
+	}
+	return restartCount
+}
