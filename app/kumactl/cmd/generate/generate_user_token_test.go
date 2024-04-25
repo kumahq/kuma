@@ -66,7 +66,7 @@ var _ = Describe("Generate User Token", func() {
 			"--group", "team-b",
 			"--valid-for", "30s",
 			"--kid", "1",
-			"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
 		})
 
 		// when
@@ -130,7 +130,7 @@ var _ = Describe("Generate User Token", func() {
 				"--group", "team-a",
 				"--group", "team-b",
 				"--valid-for", "30s",
-				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
 			},
 			err: "--kid is required when --signing-key-path is used",
 		}),
