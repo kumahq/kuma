@@ -69,6 +69,11 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
 	}
 
+	if len(gatewayInstance.Spec.Tags) > 0 && gatewayInstance.Spec.Tags[mesh_proto.ServiceTag] != "" {
+		r.Log.Info("WARNING: Setting kuma.io/service tag is deprecated for this object kind, control-plane creates a name based on the resource name and namespace",
+			"name", gatewayInstance.GetName(), "namespace", gatewayInstance.GetNamespace(), "kind", gatewayInstance.GetObjectKind().GroupVersionKind().Kind)
+	}
+
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
 	orig := gatewayInstance.DeepCopy()
@@ -101,18 +106,15 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
-func (r *GatewayInstanceReconciler) resolveGatewayInstanceServiceTag(gatewayInstance *mesh_k8s.MeshGatewayInstance) {
+func (_ *GatewayInstanceReconciler) gatewayInstanceTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) map[string]string {
 	tags := maps.Clone(gatewayInstance.Spec.Tags)
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	if _, ok := tags[mesh_proto.ServiceTag]; ok {
-		r.Log.Info("WARNING: Setting kuma.io/service tag is deprecated for this object kind, control-plane creates a name based on the resource name and namespace",
-			"name", gatewayInstance.GetName(), "namespace", gatewayInstance.GetNamespace(), "kind", gatewayInstance.GetObjectKind().GroupVersionKind().Kind)
-	} else {
+	if _, ok := tags[mesh_proto.ServiceTag]; !ok {
 		tags[mesh_proto.ServiceTag] = k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(gatewayInstance), nil)
 	}
-	gatewayInstance.Spec.Tags = tags
+	return tags
 }
 
 // createOrUpdateService can either return an error, a created Service or
@@ -127,8 +129,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, nil, err
 	}
 	gateway := xds_topology.SelectGateway(gatewayList.Items, func(selector mesh_proto.TagSelector) bool {
-		r.resolveGatewayInstanceServiceTag(gatewayInstance)
-		return selector.Matches(gatewayInstance.Spec.Tags)
+		return selector.Matches(r.gatewayInstanceTags(gatewayInstance))
 	})
 
 	obj, err := ctrls_util.ManageControlledObject(
@@ -305,7 +306,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				},
 			}
 
-			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
+			jsonTags, err := json.Marshal(r.gatewayInstanceTags(gatewayInstance))
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
 			}
