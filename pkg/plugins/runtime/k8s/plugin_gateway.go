@@ -126,10 +126,6 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 }
 
 func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
-<<<<<<< HEAD
-	if !gatewayAPICRDsPresent(mgr) {
-		log.Info("[WARNING] Experimental GatewayAPI feature is enabled, but CRDs are not registered. Disabling support")
-=======
 	if ok, missingGatewayCRDs := gatewayAPICRDsPresent(mgr); !ok {
 		if len(requiredGatewayCRDs) != len(missingGatewayCRDs) {
 			// Logging this as error as in such case there is possibility that user is expecting
@@ -138,15 +134,14 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 			// missing ReferenceGrant.
 			log.Error(
 				errors.New("only subset of required GatewayAPI CRDs registered"),
-				"disabling support for GatewayAPI",
+				"disabling support for experimental GatewayAPI feature",
 				"required", maps.Values(requiredGatewayCRDs),
 				"missing", missingGatewayCRDs,
 			)
 		} else {
-			log.Info("[WARNING] GatewayAPI CRDs are not registered. Disabling support")
+			log.Info("[WARNING] Experimental GatewayAPI feature is enabled, but CRDs are not registered. Disabling support")
 		}
 
->>>>>>> 79d58a04a (fix(gatewayapi): validate presence of all required Gateway API resources (#10079))
 		return nil
 	}
 
