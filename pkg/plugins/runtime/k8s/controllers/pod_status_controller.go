@@ -81,7 +81,7 @@ func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 
 var onlyUpdates = predicate.Funcs{
 	CreateFunc: func(event event.CreateEvent) bool {
-		return false
+		return true // we need it in case of CP restart
 	},
 	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
 		return false
