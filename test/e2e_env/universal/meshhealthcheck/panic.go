@@ -72,6 +72,10 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		for i := 7; i <= 10; i++ {

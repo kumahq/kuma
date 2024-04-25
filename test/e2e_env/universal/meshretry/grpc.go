@@ -40,6 +40,10 @@ func GrpcRetry() {
 		}).Should(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())

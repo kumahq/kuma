@@ -58,6 +58,10 @@ func PluginTest() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, mesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())
