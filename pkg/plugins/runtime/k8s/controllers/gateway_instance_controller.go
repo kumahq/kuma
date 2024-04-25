@@ -305,7 +305,11 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				},
 			}
 
-			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
+			gatewayInstanceTag := gatewayInstance.Spec.Tags
+			if gatewayInstanceTag == nil {
+				gatewayInstanceTag = map[string]string{}
+			}
+			jsonTags, err := json.Marshal(gatewayInstanceTag)
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
 			}
