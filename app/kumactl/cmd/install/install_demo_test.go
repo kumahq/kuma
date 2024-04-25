@@ -1,46 +1,25 @@
 package install_test
 
 import (
-	"bytes"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/test"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
-var _ = Describe("kumactl install demo", func() {
-	var stdout *bytes.Buffer
-	var stderr *bytes.Buffer
-
-	BeforeEach(func() {
-		stdout = &bytes.Buffer{}
-		stderr = &bytes.Buffer{}
-	})
-
+var _ = Context("kumactl install demo", func() {
 	type testCase struct {
 		extraArgs  []string
 		goldenFile string
 	}
 
-	BeforeEach(func() {
-		kuma_version.Build = kuma_version.BuildInfo{
-			Version:   "0.0.1",
-			GitTag:    "v0.0.1",
-			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
-			BuildDate: "2019-08-07T11:26:06Z",
-		}
-	})
-
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "demo"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			args := append([]string{"install", "demo"}, given.extraArgs...)
+			stdout, stderr, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()

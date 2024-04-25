@@ -9,8 +9,8 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	"github.com/kumahq/kuma/pkg/util/data"
 )
 
 var components = []string{"prometheus", "grafana", "loki", "jaeger"}

@@ -1,23 +1,13 @@
 package uninstall_test
 
 import (
-	"bytes"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/test"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
 var _ = Describe("kumactl install tracing", func() {
-	var stdout *bytes.Buffer
-	var stderr *bytes.Buffer
-
-	BeforeEach(func() {
-		stdout = &bytes.Buffer{}
-		stderr = &bytes.Buffer{}
-	})
-
 	type testCase struct {
 		extraArgs  []string
 		goldenFile string
@@ -26,10 +16,8 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"uninstall", "transparent-proxy", "--dry-run"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			args := append([]string{"uninstall", "transparent-proxy", "--dry-run"}, given.extraArgs...)
+			_, stderr, rootCmd := test_kumactl.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()
