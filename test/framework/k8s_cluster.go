@@ -235,8 +235,7 @@ func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
 		})
 }
 
-func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
-	podLogOpts := v1.PodLogOptions{}
+func (c *K8sCluster) GetPodLogs(pod v1.Pod, podLogOpts v1.PodLogOptions) (string, error) {
 	// creates the clientset
 	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
 	if err != nil {
@@ -809,12 +808,19 @@ func (c *K8sCluster) GetKumaCPLogs() (string, error) {
 	}
 
 	for _, p := range pods {
-		log, err := c.GetPodLogs(p)
+		log, err := c.GetPodLogs(p, v1.PodLogOptions{})
 		if err != nil {
 			return "", err
 		}
 
 		logs = logs + "\n >>> " + p.Name + "\n" + log
+
+		log, err = c.GetPodLogs(p, v1.PodLogOptions{
+			Previous: true,
+		})
+		if err == nil {
+			logs = logs + "\n >>> previous " + p.Name + "\n" + log
+		}
 	}
 
 	return logs, nil
