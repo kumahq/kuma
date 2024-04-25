@@ -93,6 +93,10 @@ type: system.kuma.io/secret
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace, clientNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())

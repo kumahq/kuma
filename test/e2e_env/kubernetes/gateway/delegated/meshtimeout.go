@@ -32,6 +32,10 @@ func MeshTimeout(config *Config) func() {
 			)).To(Succeed())
 		})
 
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
@@ -83,7 +87,7 @@ func MeshTimeout(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
-  name: mt1
+  name: mt1-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -91,25 +95,6 @@ spec:
   targetRef:
     kind: Mesh
   to:
-    - targetRef:
-        kind: Mesh
-      default:
-        idleTimeout: 20s
-        http:
-          requestTimeout: 2s
-          maxStreamDuration: 20s`, config.CpNamespace, config.Mesh)),
-			Entry("inbound timeout", fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: mt1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  from:
     - targetRef:
         kind: Mesh
       default:

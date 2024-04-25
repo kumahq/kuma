@@ -48,18 +48,12 @@ jobs:
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
           fetch-depth: 0
-      - name: "Add matrix to .build/info to cache"
-        run: |
-          make build/info/short > .build-info
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
@@ -77,7 +71,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      - uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -101,7 +95,7 @@ jobs:
       matrix:
         image: ${{ fromJSON(inputs.images) }}
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -111,9 +105,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
@@ -127,8 +118,6 @@ jobs:
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
           echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
-          # Add matrix to .build/info to cache
-          make build/info/short > .build-info
       - run: |
           make images/${{ matrix.image }}
       - run: |
@@ -139,17 +128,19 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@23929cfda574afc77b018c51794454b6dc99ca57 # v2.2.1
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
+          upload-sbom-release-assets: true
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@23929cfda574afc77b018c51794454b6dc99ca57 # v2.2.1
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
+          upload-sbom-release-assets: true
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       - name: publish images
         id: release_images
@@ -176,14 +167,14 @@ jobs:
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      - uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      - uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
@@ -193,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@23929cfda574afc77b018c51794454b6dc99ca57 # v2.2.1
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -206,7 +197,7 @@ jobs:
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # v4.1.4
+      - uses: actions/download-artifact@8caf195ad4b1dee92908e23f56eeb0696f1dd42d # v4.1.5
         with:
           pattern: "image_*.digest.json"
           path: ./digests
@@ -222,7 +213,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -262,7 +253,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}

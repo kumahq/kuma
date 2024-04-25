@@ -67,6 +67,13 @@ rules:
       - list
       - watch
   - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
+  - apiGroups:
       - "apps"
     resources:
       - deployments
@@ -174,6 +181,7 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
+      - meshgatewayconfigs
       - meshaccesslogs
       - meshcircuitbreakers
       - meshfaultinjections
@@ -394,7 +402,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: 2f113fa37a7e14ba1e46472f1f935a27406262785eb9e4e87f1149ea616f25a1
+        checksum/tls-secrets: e4ee17cc93e6a92b8f451e32d4eb0baf1b15db69e8fd69c764bc432888fc27d2
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -733,6 +741,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - meshgateways
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections

@@ -18,6 +18,10 @@ func MeshTCPRoute(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(
 				kubernetes.Cluster,
@@ -34,11 +38,11 @@ func MeshTCPRoute(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 metadata:
-  name: external-http-service-mtcpr
+  name: external-http-service-mtcprd
 mesh: %s
 spec:
   tags:
-    kuma.io/service: external-http-service-mtcpr
+    kuma.io/service: external-http-service-mtcprd
     kuma.io/protocol: http
   networking:
     # .svc.cluster.local is needed, otherwise Kubernetes will resolve this
@@ -50,11 +54,11 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 metadata:
-  name: external-tcp-service-mtcpr
+  name: external-tcp-service-mtcprd
 mesh: %s
 spec:
   tags:
-    kuma.io/service: external-tcp-service-mtcpr
+    kuma.io/service: external-tcp-service-mtcprd
     kuma.io/protocol: tcp
   networking:
     # .svc.cluster.local is needed, otherwise Kubernetes will resolve this
@@ -85,9 +89,9 @@ spec:
         - kind: MeshService
           name: test-server_%[2]s_svc_80
         - kind: MeshService
-          name: external-http-service-mtcpr
+          name: external-http-service-mtcprd
         - kind: MeshService
-          name: external-tcp-service-mtcpr
+          name: external-tcp-service-mtcprd
 `, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
 
 			// then

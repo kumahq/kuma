@@ -206,6 +206,25 @@ This section describes changes to internal resources used by Kuma when configuri
 
 This change is transparent with regard to the generated Envoy configuration. There should be no impact on existing traffic routing.
 
+### Gateway API Promotion to GA
+
+The Gateway API functionality within Kuma is now considered Generally Available (GA). This means the `--experimental-gatewayapi` flag and the `experimental.gatewayAPI` setting are no longer required for installation.
+
+> [!WARNING]
+> If you previously used the `--experimental-gatewayapi` flag with `kumactl install control-plane` in your workflows, it's important to note that this flag has been removed and is no longer supported. Using it will now result in an error.
+
+#### Removed Flags and Settings
+
+Previously, these flags were necessary for using the Gateway API feature:
+
+- `--experimental-gatewayapi` flag for `kumactl install control-plane` and `kumactl install crds`
+- `experimental.gatewayAPI=true` setting in both `kumactl install control-plane` and Helm charts
+
+### TLS Secrets with Gateway API in namespace other than mesh system namespace
+
+If you use TLS secrets with Gateway API for a builtin gateway deployed in any other namespace than mesh system namespace, set `controlPlane.supportGatewaySecretsInAllNamespaces` HELM value to true.
+This change was introduced so that control plane does not have capability to read content of secrets in all namespaces by default.
+
 ## Upgrade to `2.6.x`
 
 ### Policy

@@ -28,6 +28,10 @@ func ResilienceUniversal() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal, "default")
+	})
+
 	E2EAfterEach(func() {
 		Expect(universal.DeleteKuma()).To(Succeed())
 		Expect(universal.DismissCluster()).To(Succeed())

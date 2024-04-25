@@ -79,6 +79,12 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugUniversal(multizone.UniZone2, meshName)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(multizone.Global, meshName, v1alpha1.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 	})

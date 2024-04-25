@@ -42,6 +42,10 @@ func MeshCircuitBreaker() {
 		)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, namespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,

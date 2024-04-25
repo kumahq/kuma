@@ -35,6 +35,11 @@ func LeaderElectionPostgres() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(zone1, "default")
+		DebugUniversal(zone2, "default")
+	})
+
 	E2EAfterEach(func() {
 		err := zone1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())

@@ -55,6 +55,10 @@ func Test() {
 		).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(
 			kubernetes.Cluster,

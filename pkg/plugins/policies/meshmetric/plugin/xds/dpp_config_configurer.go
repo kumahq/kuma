@@ -50,6 +50,7 @@ type Metrics struct {
 	Applications []Application     `json:"applications"`
 	Backends     []Backend         `json:"backends"`
 	Sidecar      *v1alpha1.Sidecar `json:"sidecar,omitempty"`
+	ExtraLabels  map[string]string `json:"extraLabels"`
 }
 
 type Application struct {

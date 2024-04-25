@@ -38,10 +38,7 @@ func NewPlugin() core_plugins.Plugin {
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	if context.Config().Environment == config_core.KubernetesEnvironment {
 		mesh_k8s.RegisterK8sGatewayTypes()
-
-		if context.Config().Experimental.GatewayAPI {
-			mesh_k8s.RegisterK8sGatewayAPITypes()
-		}
+		mesh_k8s.RegisterK8sGatewayAPITypes()
 	}
 	return nil
 }

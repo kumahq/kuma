@@ -105,6 +105,13 @@ func CrossMeshGatewayOnMultizone() {
 		Expect(otherZoneSetup.Setup(multizone.KubeZone2)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, gatewayMesh)
+		DebugUniversal(multizone.Global, gatewayOtherMesh)
+		DebugKube(multizone.KubeZone1, gatewayMesh, gatewayClientNamespaceOtherMesh, gatewayClientNamespaceSameMesh, gatewayTestNamespace)
+		DebugKube(multizone.KubeZone2, gatewayOtherMesh, gatewayClientNamespaceOtherMesh, gatewayClientNamespaceSameMesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())

@@ -130,6 +130,10 @@ type: system.kuma.io/secret
 		}, "30s", "1s").Should(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace, clientNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())

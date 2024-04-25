@@ -41,7 +41,8 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 					Name:        dataplane.GetMeta().GetName(),
 					Address:     net.JoinHostPort(dataplane.GetIP(), strconv.FormatUint(uint64(prometheusEndpoint.Port), 10)),
 					MetricsPath: prometheusEndpoint.Path,
-					Labels:      mads.DataplaneLabels(dataplane, []*core_mesh.MeshGatewayResource{}), // what is this mesh gw and why we have labels there?
+					// labels are empty because, with MeshMetric policy they are added on Dataplane Proxy level
+					Labels: map[string]string{},
 				}},
 			}
 

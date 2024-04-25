@@ -66,6 +66,10 @@ spec:
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace, externalServicesNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())
@@ -180,6 +184,9 @@ spec:
 			Expect(YamlK8s(gateway)(kubernetes.Cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(gatewayName), "10080")
 			Expect(WaitPodsAvailable(namespace, gatewayName)(kubernetes.Cluster)).To(Succeed())
+		})
+		AfterEachFailure(func() {
+			DebugKube(kubernetes.Cluster, meshName, namespace)
 		})
 		E2EAfterAll(func() {
 			Expect(k8s.RunKubectlE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), "delete", "gateway", gatewayName)).To(Succeed())
