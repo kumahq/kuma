@@ -152,9 +152,11 @@ spec:
 
 ### Proposed option: option 2 - allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly 
 
-The only information we can use to differentiate the gRPC probes is the port number, so we need to allocate a new port for each of them. To allocate listener ports, we'll need a new annotation to support user specifying the range of ports to be used for the Virtual Probes. This annotation, with name `kuma.io/virtual-probes-port-range`, will replace the existing `kuma.io/virtual-probes-port` annotation. The annotation should be optional. When user does not specify the annotation, the default range of ports will be used.
+The only information we can use to differentiate the gRPC probes is the port number, we actually can not use this value to differ from requests for multiple gRPC probes. While the port number is included in the underlying HTTP2 request as `Host` header, it changes to the same value if we want to use one single virtual probe listener to support forwarding traffic for all gRPC probes.  
 
-gRPC probe requests are actually HTTP2 requests, which are based on TCP. So we can use a TCP proxy listener with mTLS disabled to forward the requests back to application probe handling port. Thus, on the `Dataplane` there is no need to introduce extra fields capture properties of user defined gRPC probes.
+We need to allocate a new port for each of them. To allocate listener ports, we'll need a new Pod annotation to support user specifying the range of ports to be used. This annotation, with name `kuma.io/virtual-probes-port-range`, will replace the existing `kuma.io/virtual-probes-port` annotation. The annotation should be optional. When user does not specify the annotation, the default range of ports will be used.
+
+gRPC probe requests are actually HTTP2 requests, which are based on TCP. So with separated virtual probe listener created for each probe, we can use TCP proxies with mTLS disabled in these listeners to forward requests back to application ports. Thus, on the `Dataplane` there is no need to introduce extra fields capturing properties of user defined gRPC probes, except the port number.
 
 The updated `Dataplane` would be like this: 
 
@@ -217,6 +219,8 @@ The whole workflow will be like the following diagram:
 - Less virtual listeners on sidecar
 
 - Don't need to introduce new fields on the `Dataplane` resource type
+
+- The translator may be partly reused to support TCP probes
 
 #### Negative Consequences
 
