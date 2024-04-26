@@ -12,10 +12,10 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 

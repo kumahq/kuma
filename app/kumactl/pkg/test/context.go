@@ -1,22 +1,25 @@
-package kumactl
+package test
 
 import (
+	"bytes"
 	"time"
 
+	"github.com/spf13/cobra"
+
+	kumactl_app "github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	util_test "github.com/kumahq/kuma/pkg/util/test"
 )
 
 var defaultArgs = kumactl_cmd.RootArgs{
 	ConfigType: kumactl_cmd.InMemory,
 }
 
-var defaultNewAPIServerClient = util_test.GetMockNewAPIServerClient()
+var defaultNewAPIServerClient = GetMockNewAPIServerClient()
 
 var defaultNewBaseAPIServerClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 	return nil, nil
@@ -59,4 +62,21 @@ func MakeRootContext(now time.Time, resourceStore store.ResourceStore, res ...mo
 			NewAPIServerClient: defaultNewAPIServerClient,
 		},
 	}, nil
+}
+
+// DefaultTestingRootCmd returns the DefaultRootCmd with server API mocked to return
+// current version. Useful for tests which don't actually require the server but need to
+// avoid extraneous warnings.
+func DefaultTestingRootCmd(args ...string) (*bytes.Buffer, *bytes.Buffer, *cobra.Command) {
+	ctx := kumactl_cmd.DefaultRootContext()
+	ctx.Runtime.NewAPIServerClient = defaultNewAPIServerClient
+
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	cmd := kumactl_app.NewRootCmd(ctx)
+	cmd.SetArgs(args)
+	cmd.SetErr(stderr)
+	cmd.SetOut(stdout)
+
+	return stdout, stderr, cmd
 }

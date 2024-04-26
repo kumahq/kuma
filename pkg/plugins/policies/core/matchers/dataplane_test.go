@@ -1,7 +1,6 @@
 package matchers_test
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	kubectl_output "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -90,10 +88,9 @@ var _ = Describe("MatchedPolicies", func() {
 			for _, policy := range policies.DataplanePolicies {
 				Expect(matchedPolicyList.AddItem(policy)).To(Succeed())
 			}
-			bytesBuffer := &bytes.Buffer{}
-			err = kubectl_output.NewPrinter().Print(rest.From.ResourceList(matchedPolicyList), bytesBuffer)
+			bytes, err := yaml.Marshal(rest.From.ResourceList(matchedPolicyList))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bytesBuffer.String()).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+			Expect(string(bytes)).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		},
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dataplanepolicies")),
 	)

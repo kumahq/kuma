@@ -1,4 +1,4 @@
-package plugins
+package api
 
 import util_http "github.com/kumahq/kuma/pkg/util/http"
 

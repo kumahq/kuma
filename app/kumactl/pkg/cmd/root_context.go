@@ -12,7 +12,6 @@ import (
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	"github.com/kumahq/kuma/pkg/api-server/types"
@@ -21,6 +20,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -44,7 +44,7 @@ type RootArgs struct {
 type RootRuntime struct {
 	Config                       config_proto.Configuration
 	Now                          func() time.Time
-	AuthnPlugins                 map[string]plugins.AuthnPlugin
+	AuthnPlugins                 map[string]api.AuthnPlugin
 	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer, time.Duration) (util_http.Client, error)
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
@@ -96,7 +96,7 @@ func DefaultRootContext() *RootContext {
 			Now:                    time.Now,
 			Registry:               registry.Global(),
 			NewBaseAPIServerClient: client.ApiServerClient,
-			AuthnPlugins: map[string]plugins.AuthnPlugin{
+			AuthnPlugins: map[string]api.AuthnPlugin{
 				cli.AuthType: &cli.TokenAuthnPlugin{},
 			},
 			NewResourceStore: func(client util_http.Client) core_store.ResourceStore {
