@@ -11,8 +11,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli/generate"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
 	"github.com/kumahq/kuma/pkg/util/http"
@@ -66,7 +66,7 @@ var _ = Describe("Generate User Token", func() {
 			"--group", "team-b",
 			"--valid-for", "30s",
 			"--kid", "1",
-			"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+			"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
 		})
 
 		// when
@@ -130,7 +130,7 @@ var _ = Describe("Generate User Token", func() {
 				"--group", "team-a",
 				"--group", "team-b",
 				"--valid-for", "30s",
-				"--signing-key-path", filepath.Join("..", "..", "..", "..", "..", "..", "..", "test", "keys", "samplekey.pem"),
+				"--signing-key-path", filepath.Join("..", "..", "..", "..", "test", "keys", "samplekey.pem"),
 			},
 			err: "--kid is required when --signing-key-path is used",
 		}),

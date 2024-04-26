@@ -37,7 +37,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	}
 
 	var tags map[string]string
-	if err := json.Unmarshal([]byte(tagsAnnotation), &tags); err != nil {
+	if err := json.Unmarshal([]byte(tagsAnnotation), &tags); err != nil || tags == nil {
 		r.EventRecorder.Eventf(
 			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Invalid %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
 		)

@@ -1,9 +1,9 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/util/data"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
