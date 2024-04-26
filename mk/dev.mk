@@ -90,6 +90,17 @@ $(KUBECONFIG_DIR):
 $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 	@touch $@
 
+dev/merge-release:
+	@if [[ -z "$(BRANCH)" ]]; then echo 'Set $$BRANCH to the branch you want to merge into your current one'; exit 1; fi
+	git merge upstream/$(BRANCH) --no-commit || true
+	git rm -rf app/kuma-ui/pkg/resources
+	git checkout HEAD -- app/kuma-ui/pkg/resources
+	@if git diff --name-status --diff-filter=U --exit-code; then\
+		echo "Run \`git commit\` to finish merge!";\
+	else\
+	    echo "Fix above conflicts and run \`git commit\` to finish merge!";\
+	fi
+
 # Generate a .envrc that prepends e2e test suite configs to whatever
 # KUBECONFIG currently has, and stores CI tooling in .tools.
 .PHONY: dev/enrc

@@ -22,7 +22,7 @@ resources:
               routes:
               - directResponse:
                   body:
-                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false}}}}'
+                    inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"Prometheus","name":null},{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
                   status: 200
                 match:
                   prefix: /

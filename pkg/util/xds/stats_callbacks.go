@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +15,13 @@ import (
 
 var statsLogger = core.Log.WithName("stats-callbacks")
 
-const ConfigInFlightThreshold = 100_000
+const (
+	ConfigInFlightThreshold = 100_000
+	failedCallingWebhook    = "failed calling webhook"
+	userErrorType           = "user"
+	otherErrorType          = "other"
+	noErrorType             = "no_error"
+)
 
 type VersionExtractor = func(metadata *structpb.Struct) string
 
@@ -89,7 +96,7 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 	stats.requestsReceivedMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: dsType + "_requests_received",
 		Help: "Number of confirmations requests from a client",
-	}, []string{"type_url", "confirmation"})
+	}, []string{"type_url", "confirmation", "error_type"})
 	if err := metrics.Register(stats.requestsReceivedMetric); err != nil {
 		return nil, err
 	}
@@ -159,9 +166,9 @@ func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryReques
 	}
 
 	if request.HasErrors() {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	if configTime, exists := s.takeConfigTimeFromQueue(request.VersionInfo()); exists {
@@ -214,9 +221,9 @@ func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDisco
 	}
 
 	if request.HasErrors() {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	// Delta only has an initial version, therefore we need to change the key to nodeID and typeURL.
@@ -228,4 +235,12 @@ func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDisco
 
 func (s *statsCallbacks) OnStreamDeltaResponse(_ int64, _ DeltaDiscoveryRequest, response DeltaDiscoveryResponse) {
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+}
+
+func classifyError(error string) string {
+	if strings.Contains(error, failedCallingWebhook) {
+		return userErrorType
+	} else {
+		return otherErrorType
+	}
 }

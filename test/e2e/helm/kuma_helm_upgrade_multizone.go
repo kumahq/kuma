@@ -132,7 +132,7 @@ spec:
 			n, err := numberOfPolicies(zoneK8s)
 			g.Expect(err).ToNot(HaveOccurred())
 			return n
-		}, "30s", "1s").Should(Equal(1))
+		}, "30s", "1s").Should(Equal(3))
 	})
 
 	It("should sync DPPs from Zone to Global", func() {
@@ -204,7 +204,7 @@ spec:
 			policiesZone, err := numberOfPolicies(zoneK8s)
 			g.Expect(err).ToNot(HaveOccurred())
 
-			g.Expect(policiesGlobal).To(And(Equal(policiesZone), Equal(1)))
+			g.Expect(policiesGlobal).To(And(Equal(policiesZone), Equal(3)))
 
 			dppsGlobal, err := numberOfDPPs(global)
 			g.Expect(err).ToNot(HaveOccurred())

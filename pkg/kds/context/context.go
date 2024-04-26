@@ -205,7 +205,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 			return r, nil
 		}
 
-		name := core_model.GetDisplayName(r)
+		name := core_model.GetDisplayName(r.GetMeta())
 		values := make([]string, 0, len(labelsToUse))
 		for _, lbl := range labelsToUse {
 			values = append(values, r.GetMeta().GetLabels()[lbl])

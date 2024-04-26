@@ -1,24 +1,15 @@
 package install_test
 
 import (
-	"bytes"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
-var _ = Describe("kumactl install crds", func() {
-	var stdout *bytes.Buffer
-	var stderr *bytes.Buffer
-
-	BeforeEach(func() {
-		stdout = &bytes.Buffer{}
-		stderr = &bytes.Buffer{}
-	})
-
+var _ = Context("kumactl install crds", func() {
 	type testCase struct {
 		extraArgs  []string
 		goldenFile string
@@ -27,10 +18,8 @@ var _ = Describe("kumactl install crds", func() {
 	DescribeTable("should generate Kubernetes CRD resources",
 		func(given testCase) {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "crds"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			args := append([]string{"install", "crds"}, given.extraArgs...)
+			stdout, stderr, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()
@@ -46,10 +35,6 @@ var _ = Describe("kumactl install crds", func() {
 		Entry("should generate all Kuma's CRD resources", testCase{
 			extraArgs:  nil,
 			goldenFile: "install-crds.all.golden.yaml",
-		}),
-		Entry("should generate all Kuma's CRD resources and Gateway API resources", testCase{
-			extraArgs:  []string{"--experimental-gatewayapi"},
-			goldenFile: "install-crds.experimental-gatewayapi.golden.yaml",
 		}),
 	)
 })

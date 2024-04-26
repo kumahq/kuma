@@ -92,6 +92,11 @@ dpServer:
 			Setup(universal)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal, meshes[0])
+		DebugUniversal(universal, meshes[1])
+	})
+
 	AfterAll(func() {
 		Expect(universal.DismissCluster()).To(Succeed())
 	})

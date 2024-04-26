@@ -94,6 +94,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.admissionServerPort | int | `5443` | Define a new server port for the admission controller. Recommended to set in combination with hostNetwork to prevent multiple port bindings on the same port (like Calico in AWS EKS). |
 | controlPlane.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for control plane. |
 | controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
+| controlPlane.supportGatewaySecretsInAllNamespaces | bool | `false` | If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace. The downside is that control plane requires permission to read Secrets in all namespaces. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -198,7 +199,6 @@ A Helm chart for the Kuma Control Plane
 | hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
 | hooks.ebpfCleanup.podSecurityContext | object | `{"runAsNonRoot":false}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
 | hooks.ebpfCleanup.containerSecurityContext | object | `{"readOnlyRootFilesystem":false}` | Security context at the container level for crd/webhook/cleanup-ebpf |
-| experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
 | experimental.ebpf.bpffsPath | string | `"/sys/fs/bpf"` | Path where BPF file system should be mounted |

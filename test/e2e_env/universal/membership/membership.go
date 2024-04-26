@@ -28,10 +28,16 @@ constraints:
 	BeforeAll(func() {
 		Expect(YamlUniversal(fmt.Sprintf(mesh, meshName))(universal.Cluster)).To(Succeed())
 	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
+
 	It("should take into account membership when dp is connecting to the CP", func() {
 		// when demo client is trying to connect
 		err := DemoClientUniversal(AppModeDemoClient, meshName)(universal.Cluster)

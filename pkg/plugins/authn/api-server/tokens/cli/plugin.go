@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -16,7 +16,7 @@ const (
 
 type TokenAuthnPlugin struct{}
 
-var _ plugins.AuthnPlugin = &TokenAuthnPlugin{}
+var _ api.AuthnPlugin = &TokenAuthnPlugin{}
 
 func (t *TokenAuthnPlugin) Validate(authConf map[string]string) error {
 	if authConf[TokenKey] == "" {

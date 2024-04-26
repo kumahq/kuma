@@ -93,7 +93,7 @@ paths:
           name: include
           description: |
             An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
-            between the XDS config returned in 'xds' and the current proxy XDS config.
+            between the current proxy XDS config and the config returned in the 'xds' field.
           schema:
             type: array
             items:

@@ -9,19 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
-var _ = Describe("kumactl install transparent proxy", func() {
-	var stdout *bytes.Buffer
-	var stderr *bytes.Buffer
-
-	BeforeEach(func() {
-		stdout = &bytes.Buffer{}
-		stderr = &bytes.Buffer{}
-	})
-
+var _ = Context("kumactl install transparent proxy", func() {
 	type testCase struct {
 		skip         func(stdout, stderr *bytes.Buffer) bool
 		extraArgs    []string
@@ -32,10 +24,8 @@ var _ = Describe("kumactl install transparent proxy", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			args := append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...)
+			stdout, stderr, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()
@@ -180,10 +170,8 @@ var _ = Describe("kumactl install transparent proxy", func() {
 	DescribeTable("should return error",
 		func(given testCase) {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			args := append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...)
+			_, stderr, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()

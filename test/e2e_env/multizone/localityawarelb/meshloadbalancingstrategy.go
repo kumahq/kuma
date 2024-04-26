@@ -63,6 +63,12 @@ networking:
 			Setup(multizone.Global)).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, mesh)
+		DebugUniversal(multizone.UniZone1, mesh)
+		DebugUniversal(multizone.UniZone2, mesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(multizone.UniZone2.DeleteMeshApps(mesh)).To(Succeed())

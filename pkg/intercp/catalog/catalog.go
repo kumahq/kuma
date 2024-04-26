@@ -31,10 +31,11 @@ type Catalog interface {
 	DropLeader(context.Context, Instance) error
 }
 
-var (
-	ErrNoLeader         = errors.New("leader not found")
-	ErrInstanceNotFound = errors.New("instance not found")
-)
+var ErrNoLeader = errors.New("leader not found")
+
+func ErrInstanceNotFound(id string) error {
+	return errors.Errorf("instance not found: %s", id)
+}
 
 func Leader(ctx context.Context, catalog Catalog) (Instance, error) {
 	instances, err := catalog.Instances(ctx)
@@ -59,7 +60,7 @@ func InstanceOfID(ctx context.Context, catalog Catalog, id string) (Instance, er
 			return instance, nil
 		}
 	}
-	return Instance{}, ErrInstanceNotFound
+	return Instance{}, ErrInstanceNotFound(id)
 }
 
 type InstancesByID []Instance

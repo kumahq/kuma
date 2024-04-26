@@ -64,9 +64,10 @@ Add a query parameter `shadow=true`:
 
 when `shadow=true` is set, the response will take policies with `kuma.io/effect: shadow` label into account.
 
-For visualization in GUI it would be nice to include the diff between the shadow XDS config and the current XDS config.
-When `include=diff` query parameter is set the response includes a JSONPatch that can be applied to the returned XDS config to get the current proxy XDS config.
-For `shadow=false&include=diff` the server should return an empty JSONPatch diff alongside the current XDS config.
+For visualization in GUI it would be nice to include the diff between the current XDS config and the shadow XDS config.
+When `include=diff` query parameter is set the response includes the diff in a JSONPatch format.
+The config in response `xds` filed is always a result of JSONPatch diff from `diff` field applied to the current XDS config.
+So when the query is `shadow=false&include=diff` the server should return an empty JSONPatch diff alongside the current XDS config.
 
 OpenAPI spec for new endpoints:
 

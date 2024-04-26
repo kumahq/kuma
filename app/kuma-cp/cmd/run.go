@@ -61,7 +61,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
 
-			gracefulCtx, ctx := opts.SetupSignalHandler()
+			gracefulCtx, ctx, _ := opts.SetupSignalHandler()
 			rt, err := bootstrap.Bootstrap(gracefulCtx, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")

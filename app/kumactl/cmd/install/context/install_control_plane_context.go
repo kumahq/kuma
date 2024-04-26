@@ -1,9 +1,9 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/util/data"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -56,7 +56,6 @@ type InstallControlPlaneArgs struct {
 	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
 	SkipKinds                                    []string
@@ -120,20 +119,8 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ebpf_bpffs_path:                         "/sys/fs/bpf",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			files, err := data.ReadFiles(deployments.KumaChartFS())
-			if err != nil {
-				return nil, err
-			}
-			if !args.ExperimentalGatewayAPI {
-				files = files.Filter(ExcludeGatewayAPICRDs)
-			}
-
-			return files, nil
+			return data.ReadFiles(deployments.KumaChartFS())
 		},
 		HELMValuesPrefix: "",
 	}
-}
-
-func ExcludeGatewayAPICRDs(file data.File) bool {
-	return file.Name != "kuma.io_meshgatewayconfigs.yaml"
 }

@@ -15,8 +15,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )

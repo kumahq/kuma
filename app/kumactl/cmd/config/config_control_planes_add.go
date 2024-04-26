@@ -8,8 +8,8 @@ import (
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
@@ -102,7 +102,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	return cmd
 }
 
-func validateArgs(args controlPlaneAddArgs, plugins map[string]plugins.AuthnPlugin) error {
+func validateArgs(args controlPlaneAddArgs, plugins map[string]api.AuthnPlugin) error {
 	_, err := net_url.ParseRequestURI(args.apiServerURL)
 	if err != nil {
 		return errors.Wrap(err, "API Server URL is invalid")

@@ -18,6 +18,10 @@ func Defaults() {
 		Expect(kubernetes.Cluster.Install(MeshKubernetes(meshName))).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName)
+	})
+
 	AfterAll(func() {
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})

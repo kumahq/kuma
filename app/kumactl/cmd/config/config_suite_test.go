@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/kumahq/kuma/pkg/test"
@@ -8,4 +9,8 @@ import (
 
 func TestConfigCmd(t *testing.T) {
 	test.RunSpecs(t, "Config Cmd Suite")
+}
+
+func requiredFlagNotSet(name string) string {
+	return fmt.Sprintf(`required flag\(s\) .*"%s".* not set`, name)
 }

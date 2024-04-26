@@ -162,7 +162,9 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 		}
 	}
 	if ctx != nil {
-		if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span := trace.SpanFromContext(ctx)
+		span.RecordError(err, trace.WithStackTrace(true))
+		if span.IsRecording() {
 			kumaErr.Instance = span.SpanContext().TraceID().String()
 		}
 	}

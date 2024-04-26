@@ -148,7 +148,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			// gracefulCtx indicate that the process received a signal to shutdown
-			gracefulCtx, ctx := opts.SetupSignalHandler()
+			gracefulCtx, ctx, usr2Recv := opts.SetupSignalHandler()
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			components := []component.Component{tokenComp}
@@ -239,22 +239,46 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			stopComponents := make(chan struct{})
 			go func() {
-				select {
-				case <-gracefulCtx.Done():
-					runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
-					if err := envoyComponent.DrainConnections(); err != nil {
-						runLog.Error(err, "could not drain connections")
-					} else {
-						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-						select {
-						case <-time.After(cfg.Dataplane.DrainTime.Duration):
-						case <-ctx.Done():
+				var draining bool
+				for {
+					select {
+					case _, ok := <-usr2Recv:
+						if !ok {
+							// If our channel is closed, never take this branch
+							// again
+							usr2Recv = nil
+							continue
 						}
+						if !draining {
+							runLog.Info("draining Envoy connections")
+							if err := envoyComponent.DrainForever(); err != nil {
+								runLog.Error(err, "could not drain connections")
+							}
+						}
+						draining = true
+						continue
+					case <-gracefulCtx.Done():
+						runLog.Info("Kuma DP caught an exit signal")
+						if draining {
+							runLog.Info("already drained, exit immediately")
+						} else {
+							runLog.Info("draining Envoy connections")
+							if err := envoyComponent.FailHealthchecks(); err != nil {
+								runLog.Error(err, "could not drain connections")
+							} else {
+								runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+								select {
+								case <-time.After(cfg.Dataplane.DrainTime.Duration):
+								case <-ctx.Done():
+								}
+							}
+						}
+					case <-componentCtx.Done():
 					}
-				case <-componentCtx.Done():
+					runLog.Info("stopping all Kuma DP components")
+					close(stopComponents)
+					return
 				}
-				runLog.Info("stopping all Kuma DP components")
-				close(stopComponents)
 			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
