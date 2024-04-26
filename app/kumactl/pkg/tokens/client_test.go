@@ -40,6 +40,7 @@ var _ = Describe("Tokens Client", func() {
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 			zone_access.NoopZoneTokenAccess{},
+			context.Background(),
 		))
 		server = httptest.NewServer(container.ServeMux)
 	})

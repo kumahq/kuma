@@ -64,7 +64,7 @@ func (c *plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenti
 		),
 	)
 	c.isInitialised = true
-	return UserTokenAuthenticator(validator), nil
+	return UserTokenAuthenticator(validator, context.Extensions()), nil
 }
 
 func (c *plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
@@ -94,7 +94,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 			return err
 		}
 	}
-	webService := server.NewWebService(tokenIssuer, accessFn(context))
+	webService := server.NewWebService(tokenIssuer, accessFn(context), context.Extensions())
 	context.APIManager().Add(webService)
 	return nil
 }

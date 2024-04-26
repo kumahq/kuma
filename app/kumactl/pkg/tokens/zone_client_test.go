@@ -39,6 +39,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 			zone_access.NoopZoneTokenAccess{},
+			context.Background(),
 		))
 		server = httptest.NewServer(container.ServeMux)
 	})

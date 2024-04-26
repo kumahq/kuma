@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -18,14 +19,20 @@ import (
 var log = core.Log.WithName("user-token-ws")
 
 type userTokenWebService struct {
-	issuer issuer.UserTokenIssuer
-	access access.GenerateUserTokenAccess
+	issuer     issuer.UserTokenIssuer
+	access     access.GenerateUserTokenAccess
+	extensions context.Context
 }
 
-func NewWebService(issuer issuer.UserTokenIssuer, access access.GenerateUserTokenAccess) *restful.WebService {
+func NewWebService(
+	issuer issuer.UserTokenIssuer,
+	access access.GenerateUserTokenAccess,
+	extensions context.Context,
+) *restful.WebService {
 	webservice := userTokenWebService{
-		issuer: issuer,
-		access: access,
+		issuer:     issuer,
+		access:     access,
+		extensions: extensions,
 	}
 	return webservice.createWs()
 }
@@ -41,7 +48,7 @@ func (d *userTokenWebService) createWs() *restful.WebService {
 
 func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
 	if err := d.access.ValidateGenerate(user.FromCtx(request.Request.Context())); err != nil {
-		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), nil, response, err, "Could not issue a token")
 		return
 	}
 
@@ -72,7 +79,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 	}
 
 	if verr.HasViolations() {
-		errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Invalid request")
+		errors.HandleError(request.Request.Context(), d.extensions, response, verr.OrNil(), "Invalid request")
 		return
 	}
 
@@ -81,7 +88,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 		Groups: idReq.Groups,
 	}, validFor)
 	if err != nil {
-		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
+		errors.HandleError(request.Request.Context(), d.extensions, response, err, "Could not issue a token")
 		return
 	}
 

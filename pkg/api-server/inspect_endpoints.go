@@ -49,9 +49,11 @@ func addInspectEndpoints(
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ResourceManager,
+	extensions context.Context,
 ) {
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").
+			To(inspectDataplane(cfg, builder, extensions)).
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -59,7 +61,8 @@ func addInspectEndpoints(
 	)
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").To(inspectRulesAttachment(cfg, builder)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").
+			To(inspectRulesAttachment(cfg, builder, extensions)).
 			Doc("inspect dataplane matched rules").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -68,7 +71,8 @@ func addInspectEndpoints(
 
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		ws.Route(
-			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, cfg)).
+			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).
+				To(inspectPolicies(desc.Name, builder, cfg, extensions)).
 				Doc("inspect policies").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -77,14 +81,16 @@ func addInspectEndpoints(
 	}
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/meshgateways/{name}/dataplanes").To(inspectGatewayDataplanes(builder, rm)).
+		ws.GET("/meshes/{mesh}/meshgateways/{name}/dataplanes").
+			To(inspectGatewayDataplanes(builder, rm, extensions)).
 			Doc("inspect MeshGateway").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
 			Returns(200, "OK", nil),
 	)
 	ws.Route(
-		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(cfg, builder, rm)).
+		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").
+			To(inspectGatewayRouteDataplanes(cfg, builder, rm, extensions)).
 			Doc("inspect MeshGatewayRoute").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -92,7 +98,11 @@ func addInspectEndpoints(
 	)
 }
 
-func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+func inspectDataplane(
+	cfg *kuma_cp.Config,
+	builder xds_context.MeshContextBuilder,
+	extensions context.Context,
+) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
@@ -100,7 +110,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not build MeshContext")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build MeshContext")
 			return
 		}
 
@@ -108,7 +118,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not get MatchedPolicies")
 			return
 		}
 
@@ -123,7 +133,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			result = api_server_types.NewDataplaneInspectResponse(&inner)
 		}
 		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not write response")
 			return
 		}
 	}
@@ -132,6 +142,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 func inspectGatewayDataplanes(
 	builder xds_context.MeshContextBuilder,
 	rm manager.ReadOnlyResourceManager,
+	extensions context.Context,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -140,13 +151,13 @@ func inspectGatewayDataplanes(
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not build mesh context")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build mesh context")
 			return
 		}
 
 		meshGateway := core_mesh.NewMeshGatewayResource()
 		if err := rm.Get(ctx, meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not find MeshGateway")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not find MeshGateway")
 			return
 		}
 
@@ -168,7 +179,7 @@ func inspectGatewayDataplanes(
 		result.Total = uint32(len(result.Items))
 
 		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not write response")
 			return
 		}
 	}
@@ -178,6 +189,7 @@ func inspectGatewayRouteDataplanes(
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ReadOnlyResourceManager,
+	extensions context.Context,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -186,13 +198,13 @@ func inspectGatewayRouteDataplanes(
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not build mesh context")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build mesh context")
 			return
 		}
 
 		gatewayRoute := core_mesh.NewMeshGatewayRouteResource()
 		if err := rm.Get(ctx, gatewayRoute, store.GetByKey(gatewayRouteName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not find MeshGatewayRoute")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not find MeshGatewayRoute")
 			return
 		}
 
@@ -205,7 +217,7 @@ func inspectGatewayRouteDataplanes(
 			key := core_model.MetaToResourceKey(dp.GetMeta())
 			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not generate listener info")
+				rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not generate listener info")
 				return
 			}
 			for _, listener := range gateway.ExtractGatewayListeners(proxy) {
@@ -235,7 +247,7 @@ func inspectGatewayRouteDataplanes(
 		result.Total = uint32(len(result.Items))
 
 		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not write response")
 			return
 		}
 	}
@@ -245,6 +257,7 @@ func inspectPolicies(
 	resType core_model.ResourceType,
 	builder xds_context.MeshContextBuilder,
 	cfg *kuma_cp.Config,
+	extensions context.Context,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -253,7 +266,7 @@ func inspectPolicies(
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list Dataplanes")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not list Dataplanes")
 			return
 		}
 
@@ -267,7 +280,7 @@ func inspectPolicies(
 			}
 			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
+				rest_errors.HandleError(request.Request.Context(), extensions, response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
 			if proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -298,7 +311,7 @@ func inspectPolicies(
 		result.Total = uint32(len(result.Items))
 
 		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not write response")
 			return
 		}
 	}
@@ -549,7 +562,11 @@ func gatewayEntriesByPolicy(
 	return policyMap
 }
 
-func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+func inspectRulesAttachment(
+	cfg *kuma_cp.Config,
+	builder xds_context.MeshContextBuilder,
+	extensions context.Context,
+) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
@@ -557,7 +574,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not build MeshContext")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build MeshContext")
 			return
 		}
 
@@ -565,7 +582,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not get MatchedPolicies")
 			return
 		}
 		rulesAttachments := inspect.BuildRulesAttachments(proxy.Policies.Dynamic, proxy.Dataplane.Spec.Networking, meshContext.VIPDomains)
@@ -604,7 +621,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 		}
 		resp.Total = uint32(len(resp.Items))
 		if err := response.WriteAsJson(resp); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not write response")
 			return
 		}
 	}

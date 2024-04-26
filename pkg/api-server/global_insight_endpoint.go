@@ -1,6 +1,8 @@
 package api_server
 
 import (
+	"context"
+
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -11,6 +13,7 @@ const GlobalInsightPath = "/global-insight"
 
 type globalInsightEndpoint struct {
 	globalInsightService globalinsight.GlobalInsightService
+	extensions           context.Context
 }
 
 func (ge *globalInsightEndpoint) addEndpoint(ws *restful.WebService) {
@@ -25,12 +28,12 @@ func (ge *globalInsightEndpoint) getGlobalInsight(request *restful.Request, resp
 	ctx := request.Request.Context()
 	globalInsight, err := ge.globalInsightService.GetGlobalInsight(ctx)
 	if err != nil {
-		errors.HandleError(ctx, response, err, "Could not retrieve GlobalInsight")
+		errors.HandleError(ctx, ge.extensions, response, err, "Could not retrieve GlobalInsight")
 		return
 	}
 
 	if err = response.WriteAsJson(globalInsight); err != nil {
-		errors.HandleError(ctx, response, err, "Could not write response")
+		errors.HandleError(ctx, ge.extensions, response, err, "Could not write response")
 		return
 	}
 }

@@ -55,7 +55,7 @@ var _ = Describe("Auth Tokens WS", func() {
 		)
 
 		Expect(signingKeyManager.CreateDefaultSigningKey(context.Background())).To(Succeed())
-		ws := server.NewWebService(tokenIssuer, &noopGenerateUserTokenAccess{})
+		ws := server.NewWebService(tokenIssuer, &noopGenerateUserTokenAccess{}, context.Background())
 
 		container := restful.NewContainer()
 		container.Add(ws)
@@ -124,7 +124,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	It("should throw an error when issuer is disabled", func() {
 		container := restful.NewContainer()
-		ws := server.NewWebService(issuer.DisabledIssuer{}, &noopGenerateUserTokenAccess{})
+		ws := server.NewWebService(issuer.DisabledIssuer{}, &noopGenerateUserTokenAccess{}, context.Background())
 		container.Add(ws)
 		srv := httptest.NewServer(container)
 

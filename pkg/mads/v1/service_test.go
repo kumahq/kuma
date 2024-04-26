@@ -57,7 +57,7 @@ var _ = Describe("MADS http service", func() {
 		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
 		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
-		svc := service.NewService(cfg, resManager, logr.Discard(), nil)
+		svc := service.NewService(cfg, resManager, logr.Discard(), nil, context.Background())
 
 		ws := new(restful.WebService)
 		svc.RegisterRoutes(ws)

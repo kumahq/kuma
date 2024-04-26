@@ -29,6 +29,7 @@ type inspectClient struct {
 	adminClient admin.EnvoyAdminClient
 	access      access.EnvoyAdminAccess
 	rm          manager.ResourceManager
+	extensions  context.Context
 }
 
 func addInspectEnvoyAdminEndpoints(
@@ -37,11 +38,13 @@ func addInspectEnvoyAdminEndpoints(
 	rm manager.ResourceManager,
 	adminAccess access.EnvoyAdminAccess,
 	envoyAdminClient admin.EnvoyAdminClient,
+	extensions context.Context,
 ) {
 	cl := inspectClient{
 		adminClient: envoyAdminClient,
 		access:      adminAccess,
 		rm:          rm,
+		extensions:  extensions,
 	}
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/{type}").
@@ -84,13 +87,13 @@ func (cl *inspectClient) inspectDataplaneAdmin() restful.RouteFunction {
 		dataplaneName := request.PathParameter("dataplane")
 		aType, err := cl.adminType(ctx, request.PathParameter("type"))
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not execute admin operation")
 			return
 		}
 
 		dp := core_mesh.NewDataplaneResource()
 		if err := cl.rm.Get(request.Request.Context(), dp, store.GetByKey(dataplaneName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get dataplane resource")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not get dataplane resource")
 			return
 		}
 		cl.inspectProxy(request, response, aType, dp)
@@ -104,18 +107,18 @@ func (cl *inspectClient) inspectZoneIngressAdmin(mode core.CpMode, localZone str
 
 		aType, err := cl.adminType(ctx, request.PathParameter("type"))
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not execute admin operation")
 			return
 		}
 
 		zi := core_mesh.NewZoneIngressResource()
 		if err := cl.rm.Get(ctx, zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone ingress resource")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not get zone ingress resource")
 			return
 		}
 
 		if mode == core.Zone && zi.IsRemoteIngress(localZone) {
-			rest_errors.HandleError(request.Request.Context(), response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
 			return
 		}
 		cl.inspectProxy(request, response, aType, zi)
@@ -128,18 +131,18 @@ func (cl *inspectClient) inspectZoneEgressAdmin(mode core.CpMode, localZone stri
 		zoneEgressName := request.PathParameter("zoneegress")
 		aType, err := cl.adminType(ctx, request.PathParameter("type"))
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not execute admin operation")
 			return
 		}
 
 		ze := core_mesh.NewZoneEgressResource()
 		if err := cl.rm.Get(ctx, ze, store.GetByKey(zoneEgressName, core_model.NoMesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get zone ingress resource")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not get zone ingress resource")
 			return
 		}
 
 		if mode == core.Zone && ze.IsRemoteEgress(localZone) {
-			rest_errors.HandleError(request.Request.Context(), response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
+			rest_errors.HandleError(request.Request.Context(), cl.extensions, response, &validators.ValidationError{}, "Could not connect to zone ingress that resides in another zone")
 			return
 		}
 		cl.inspectProxy(request, response, aType, ze)
@@ -193,13 +196,13 @@ func (cl *inspectClient) inspectProxy(request *restful.Request, response *restfu
 		res, err = cl.adminClient.Stats(ctx, proxy, format)
 	}
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
+		rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not execute admin operation")
 		return
 	}
 
 	response.AddHeader(restful.HEADER_ContentType, contentType)
 	if _, err := response.Write(res); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
+		rest_errors.HandleError(request.Request.Context(), cl.extensions, response, err, "Could not write response")
 		return
 	}
 }

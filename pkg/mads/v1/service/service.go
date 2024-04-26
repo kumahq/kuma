@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/config/mads"
@@ -11,12 +13,19 @@ import (
 )
 
 type service struct {
-	server Server
-	config *mads.MonitoringAssignmentServerConfig
-	log    logr.Logger
+	server     Server
+	config     *mads.MonitoringAssignmentServerConfig
+	log        logr.Logger
+	extensions context.Context
 }
 
-func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger, meshCache *mesh.Cache) *service {
+func NewService(
+	config *mads.MonitoringAssignmentServerConfig,
+	rm core_manager.ReadOnlyResourceManager,
+	log logr.Logger,
+	meshCache *mesh.Cache,
+	extensions context.Context,
+) *service {
 	hasher, cache := NewXdsContext(log)
 	generator := NewSnapshotGenerator(rm, meshCache)
 	versioner := NewVersioner()
@@ -35,8 +44,9 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 	srv := NewServer(cache, callbacks)
 
 	return &service{
-		server: srv,
-		config: config,
-		log:    log,
+		server:     srv,
+		config:     config,
+		log:        log,
+		extensions: extensions,
 	}
 }

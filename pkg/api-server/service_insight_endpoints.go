@@ -35,14 +35,14 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	service := request.PathParameter("service")
 	meshName, err := s.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Failed to retrieve Mesh")
 		return
 	}
 
 	serviceInsight := mesh.NewServiceInsightResource()
 	err = s.resManager.Get(request.Request.Context(), serviceInsight, store.GetBy(insights.ServiceInsightKey(meshName)))
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Could not retrieve a resource")
 	} else {
 		stat := serviceInsight.Spec.Services[service]
 		if stat == nil {
@@ -73,14 +73,14 @@ func (s *serviceInsightEndpoints) addListEndpoint(ws *restful.WebService, pathPr
 func (s *serviceInsightEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName, err := s.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Failed to retrieve Mesh")
 		return
 	}
 
 	serviceInsightList := &mesh.ServiceInsightResourceList{}
 	err = s.resManager.List(request.Request.Context(), serviceInsightList, store.ListByMesh(meshName))
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Could not retrieve resources")
 		return
 	}
 
@@ -92,7 +92,7 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 			f = strings.ToLower(strings.TrimSpace(f))
 			i, exists := v1alpha1.ServiceInsight_Service_Type_value[f]
 			if !exists {
-				rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError("unsupported service type"), "Invalid response type")
+				rest_errors.HandleError(request.Request.Context(), s.extensions, response, rest_errors.NewBadRequestError("unsupported service type"), "Invalid response type")
 				return
 			}
 			filterMap[v1alpha1.ServiceInsight_Service_Type(i)] = struct{}{}
@@ -112,12 +112,12 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 	}
 
 	if err := s.paginateResources(request, &restList); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not paginate resources")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Could not paginate resources")
 		return
 	}
 
 	if err := response.WriteAsJson(restList); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+		rest_errors.HandleError(request.Request.Context(), s.extensions, response, err, "Could not list resources")
 	}
 }
 

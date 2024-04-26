@@ -67,6 +67,7 @@ type resourceEndpoints struct {
 	filter             func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
+	extensions         context.Context
 
 	disableOriginLabelValidation bool
 }
@@ -138,7 +139,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 
 func (r *resourceEndpoints) methodNotAllowed(title string) func(request *restful.Request, response *restful.Response) {
 	return func(request *restful.Request, response *restful.Response) {
-		rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, title)
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, &rest_errors.MethodNotAllowed{}, title)
 	}
 }
 
@@ -147,7 +148,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 		name := request.PathParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 			return
 		}
 
@@ -157,28 +158,28 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Access Denied")
 			return
 		}
 
 		resource := r.descriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve a resource")
 			return
 		}
 		if withInsight {
 			insight := r.descriptor.NewInsight()
 			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsResourceNotFound(err) {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve insights")
 				return
 			}
 			overview, ok := r.descriptor.NewOverview().(model.OverviewResource)
 			if !ok {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, fmt.Errorf("type withInsight for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
 				return
 			}
 			if err := overview.SetOverviewSpec(resource, insight); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve insights")
 				return
 			}
 			resource = overview.(model.Resource)
@@ -189,14 +190,14 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			var err error
 			res, err = r.k8sMapper(resource, request.QueryParameter("namespace"))
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "k8s mapping failed")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "k8s mapping failed")
 				return
 			}
 		case "universal", "":
 			res = rest.From.Resource(resource)
 		default:
 			err := validators.MakeFieldMustBeOneOfErr("format", "k8s", "kubernetes", "universal")
-			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
 			log.Error(err, "Could not write the response")
@@ -235,19 +236,19 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 	return func(request *restful.Request, response *restful.Response) {
 		page, err := pagination(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve resources")
 			return
 		}
 		filter, err := r.filter(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve resources")
 			return
 		}
 		nameContains := request.QueryParameter("name")
 
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 			return
 		}
 
@@ -257,31 +258,31 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Access Denied")
 			return
 		}
 		list := r.descriptor.NewList()
 		if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter), store.ListByPage(page.size, page.offset)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve resources")
 			return
 		}
 		if withInsight {
 			// we cannot paginate insights since there is no guarantee that the insights elements will be the same as regular entities
 			insights := r.descriptor.NewInsightList()
 			if err := r.resManager.List(request.Request.Context(), insights, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter)); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve resources")
 				return
 			}
 			list, err = r.MergeInOverview(list, insights)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Failed merging overview and insights")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed merging overview and insights")
 				return
 			}
 		}
 		restList := rest.From.ResourceList(list)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not list resources")
 		}
 	}
 }
@@ -328,19 +329,19 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	name := request.PathParameter("name")
 	meshName, err := r.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 		return
 	}
 
 	bodyBytes, err := io.ReadAll(request.Request.Body)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not process a resource")
 		return
 	}
 
 	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not process a resource")
 		return
 	}
 
@@ -349,11 +350,11 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsResourceNotFound(err) {
 		create = true
 	} else if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not find a resource")
 	}
 
 	if err := r.validateResourceRequest(name, meshName, resourceRest.GetMeta(), create); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not process a resource")
 		return
 	}
 
@@ -378,7 +379,7 @@ func (r *resourceEndpoints) createResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Access Denied")
+		rest_errors.HandleError(ctx, r.extensions, response, err, "Access Denied")
 		return
 	}
 
@@ -397,7 +398,7 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
+		rest_errors.HandleError(ctx, r.extensions, response, err, "Could not create a resource")
 		return
 	}
 
@@ -424,7 +425,7 @@ func (r *resourceEndpoints) updateResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Access Denied")
+		rest_errors.HandleError(ctx, r.extensions, response, err, "Access Denied")
 		return
 	}
 
@@ -434,7 +435,7 @@ func (r *resourceEndpoints) updateResource(
 	}
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
+		rest_errors.HandleError(ctx, r.extensions, response, err, "Could not update a resource")
 		return
 	}
 
@@ -464,14 +465,14 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	name := request.PathParameter("name")
 	meshName, err := r.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 		return
 	}
 
 	resource := r.descriptor.NewObject()
 
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not delete a resource")
 		return
 	}
 
@@ -482,12 +483,12 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		resource.Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Access Denied")
 		return
 	}
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not delete a resource")
 	}
 }
 
@@ -587,13 +588,13 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 		policyName := request.PathParameter("name")
 		page, err := pagination(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve policy")
 			return
 		}
 		nameContains := request.QueryParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 			return
 		}
 
@@ -603,12 +604,12 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Access Denied")
 			return
 		}
 		policyResource := r.descriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve policy")
 			return
 		}
 
@@ -622,11 +623,11 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 		for _, dependentType := range dependentTypes {
 			hl, err := registry.Global().NewList(dependentType)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "failed inspect")
 				return
 			}
 			if err := r.resManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "failed inspect")
 				return
 			}
 			dependentResources.MeshLocalResources[dependentType] = hl
@@ -664,7 +665,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			store.ListByPage(page.size, page.offset),
 		)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "failed inspect")
 			return
 		}
 		items := make([]api_common.Meta, len(dppList.GetItems()))
@@ -677,7 +678,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			Next:  nextLink(request, dppList.GetPagination().NextOffset),
 		}
 		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed writing response")
 		}
 	}
 }
@@ -689,30 +690,30 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 		name := request.PathParameter("name")
 		mesh, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed to retrieve Mesh")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to retrieve Mesh")
 			return
 		}
 		qparams, err := r.configForProxyParams(request)
 		if err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed to parse query parameters")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to parse query parameters")
 			return
 		}
 
 		mc, err := r.meshContextBuilder.Build(ctx, mesh)
 		if err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed to build mesh context")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to build mesh context")
 			return
 		}
 
 		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.xdsHooks...)
 		if err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to create proxy config inspector")
 			return
 		}
 
 		config, err := inspector.Get(ctx, name, *qparams.Shadow)
 		if err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed to inspect proxy config")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to inspect proxy config")
 			return
 		}
 
@@ -723,19 +724,19 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 		if slices.Contains(*qparams.Include, api_types.Diff) {
 			currentConfig, err := inspector.Get(ctx, name, false)
 			if err != nil {
-				rest_errors.HandleError(ctx, response, err, "Failed to inspect current proxy config")
+				rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to inspect current proxy config")
 				return
 			}
 			diff, err := inspect.Diff(currentConfig, config)
 			if err != nil {
-				rest_errors.HandleError(ctx, response, err, "Failed to compute diff")
+				rest_errors.HandleError(ctx, r.extensions, response, err, "Failed to compute diff")
 				return
 			}
 			out.Diff = &diff
 		}
 
 		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(ctx, response, err, "Failed writing response")
+			rest_errors.HandleError(ctx, r.extensions, response, err, "Failed writing response")
 		}
 	}
 }
@@ -773,7 +774,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		resourceName := request.PathParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to retrieve Mesh")
 			return
 		}
 
@@ -783,13 +784,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Access Denied")
 			return
 		}
 
 		resource := r.descriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(resourceName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 			return
 		}
 		var dp *core_mesh.DataplaneResource
@@ -801,7 +802,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			// It might not show all policies but most of the ones matching this specific gateway and its routes
 			gw := resource.(*core_mesh.MeshGatewayResource)
 			if len(gw.Spec.Selectors) == 0 {
-				rest_errors.HandleError(request.Request.Context(), response, errors.New("no selectors on MeshGateway this is not supported"), "Invalid MeshGateway")
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, errors.New("no selectors on MeshGateway this is not supported"), "Invalid MeshGateway")
 				return
 			}
 			dp = &core_mesh.DataplaneResource{
@@ -816,12 +817,12 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 		// In the future we will probably add externalService
 		default:
-			rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
 			return
 		}
 		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build Mesh context")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed to build Mesh context")
 		}
 
 		resources := xds_context.Resources{
@@ -842,10 +843,10 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
 			}
 			if res.Type == "" {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
+				rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, fmt.Sprintf("matched policy didn't set type for policy plugin %s", policyPlugin.Name))
 			}
 
 			if len(res.ToRules.Rules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
@@ -929,7 +930,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			Rules:       rules,
 		}
 		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Failed writing response")
 		}
 	}
 }

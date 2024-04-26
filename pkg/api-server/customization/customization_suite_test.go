@@ -1,6 +1,7 @@
 package customization_test
 
 import (
+	"context"
 	"net"
 	"path/filepath"
 	"testing"
@@ -92,6 +93,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		func(*restful.WebService) error { return nil },
 		globalinsight.NewDefaultGlobalInsightService(store),
 		nil,
+		context.Background(),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

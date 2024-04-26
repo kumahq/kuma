@@ -44,5 +44,6 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 		runtime.APIWebServiceCustomize(),
 		runtime.GlobalInsightService(),
 		runtime.XDS().Hooks.ResourceSetHooks(),
+		runtime.Extensions(),
 	)
 }

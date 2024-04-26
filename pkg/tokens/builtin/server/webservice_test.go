@@ -53,6 +53,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 			&zoneStaticTokenIssuer{},
 			&access.NoopDpTokenAccess{},
 			&zone_access.NoopZoneTokenAccess{},
+			context.Background(),
 		)
 
 		container := restful.NewContainer()

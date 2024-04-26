@@ -1,6 +1,7 @@
 package api_server
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 type globalInsightsEndpoints struct {
 	resManager     manager.ResourceManager
 	resourceAccess access.ResourceAccess
+	extensions     context.Context
 }
 
 type globalInsightsStat struct {
@@ -56,7 +58,7 @@ func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Reques
 
 		list := descriptor.NewList()
 		if err := r.resManager.List(request.Request.Context(), list); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve global insights")
+			rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve global insights")
 			return
 		}
 
@@ -68,6 +70,6 @@ func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Reques
 	insights := newGlobalInsightsResponse(resources)
 
 	if err := response.WriteAsJson(insights); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve global insights")
+		rest_errors.HandleError(request.Request.Context(), r.extensions, response, err, "Could not retrieve global insights")
 	}
 }

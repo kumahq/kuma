@@ -71,14 +71,14 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 			s.log.V(1).Info("no update needed")
 			res.WriteHeader(http.StatusNotModified)
 		} else {
-			rest_errors.HandleError(req.Request.Context(), res, err, "Could not fetch MonitoringAssignments")
+			rest_errors.HandleError(req.Request.Context(), s.extensions, res, err, "Could not fetch MonitoringAssignments")
 		}
 		return
 	}
 
 	marshaller := &jsonpb.Marshaler{OrigName: true}
 	if err := marshaller.Marshal(res, discoveryRes); err != nil {
-		rest_errors.HandleError(req.Request.Context(), res, err, "Could write DiscoveryResponse")
+		rest_errors.HandleError(req.Request.Context(), s.extensions, res, err, "Could write DiscoveryResponse")
 		return
 	}
 }

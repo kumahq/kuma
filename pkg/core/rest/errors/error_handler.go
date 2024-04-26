@@ -24,8 +24,8 @@ import (
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
-func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
+func HandleError(ctx, extensions context.Context, response *restful.Response, err error, title string) {
+	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, extensions)
 	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err) || errors.Is(err, &NotFound{}):

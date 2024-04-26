@@ -113,6 +113,7 @@ func NewApiServer(
 	wsCustomize func(*restful.WebService) error,
 	globalInsightService globalinsight.GlobalInsightService,
 	xdsHooks []hooks.ResourceSetHook,
+	extensions context.Context,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -129,7 +130,7 @@ func NewApiServer(
 	container.Filter(otelrestful.OTelFilter("api-server"))
 
 	if cfg.ApiServer.Authn.LocalhostIsAdmin {
-		container.Filter(authn.LocalhostAuthenticator)
+		container.Filter(authn.LocalhostAuthenticator(extensions))
 	}
 	container.Filter(authenticator)
 
@@ -149,11 +150,11 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder, xdsHooks)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess, globalInsightService, meshContextBuilder, xdsHooks, extensions)
 	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager)
-	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient)
-	addZoneEndpoints(ws, resManager)
+	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, extensions)
+	addInspectEnvoyAdminEndpoints(ws, cfg, resManager, access.EnvoyAdminAccess, envoyAdminClient, extensions)
+	addZoneEndpoints(ws, resManager, extensions)
 	guiUrl := ""
 	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
 		guiUrl = cfg.ApiServer.GUI.BasePath
@@ -166,7 +167,7 @@ func NewApiServer(
 		apiUrl = cfg.ApiServer.RootUrl
 	}
 
-	err := addConfigEndpoints(ws, access.ControlPlaneMetadataAccess, cfg)
+	err := addConfigEndpoints(ws, access.ControlPlaneMetadataAccess, cfg, extensions)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
@@ -192,6 +193,7 @@ func NewApiServer(
 		tokenIssuers.ZoneToken,
 		access.DataplaneTokenAccess,
 		access.ZoneTokenAccess,
+		extensions,
 	))
 	guiPath := cfg.ApiServer.GUI.BasePath
 	if !strings.HasSuffix(guiPath, "/") {
@@ -241,15 +243,18 @@ func addResourcesEndpoints(
 	globalInsightService globalinsight.GlobalInsightService,
 	meshContextBuilder xds_context.MeshContextBuilder,
 	xdsHooks []hooks.ResourceSetHook,
+	extensions context.Context,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
+		extensions:     extensions,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
 
 	globalInsightEndpoint := globalInsightEndpoint{
 		globalInsightService: globalInsightService,
+		extensions:           extensions,
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
@@ -279,6 +284,7 @@ func addResourcesEndpoints(
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 			xdsHooks:                     xdsHooks,
+			extensions:                   extensions,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
@@ -480,6 +486,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.APIWebServiceCustomize(),
 		rt.GlobalInsightService(),
 		rt.XDS().Hooks.ResourceSetHooks(),
+		rt.Extensions(),
 	)
 	if err != nil {
 		return err

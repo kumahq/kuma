@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 
@@ -52,6 +53,10 @@ func (t *testRuntime) Metrics() metrics.Metrics {
 
 func (t *testRuntime) MeshCache() *mesh.Cache {
 	return t.meshCache
+}
+
+func (t *testRuntime) Extensions() context.Context {
+	return context.Background()
 }
 
 var _ = Describe("MADS Server", func() {
