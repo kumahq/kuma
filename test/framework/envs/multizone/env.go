@@ -304,3 +304,10 @@ func PrintKubeState(report Report) {
 		}
 	}
 }
+
+func ExpectCpsToNotCrash() {
+	restartCount := framework.RestartCount(KubeZone1.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
+	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
+}
