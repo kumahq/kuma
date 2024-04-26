@@ -22,7 +22,7 @@ func addConfigEndpoints(ws *restful.WebService, access access.ControlPlaneMetada
 	}
 	ws.Route(ws.GET("/config").To(func(req *restful.Request, resp *restful.Response) {
 		ctx := req.Request.Context()
-		if err := access.ValidateView(ctx, user.FromCtx(ctx)); err != nil {
+		if err := access.ValidateView(ctx, user.FromCtx(ctx)); err != nil { //nolint:contextcheck
 			rest_errors.HandleError(ctx, extensions, resp, err, "Access denied")
 			return
 		}

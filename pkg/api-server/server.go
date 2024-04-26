@@ -301,24 +301,26 @@ func addResourcesEndpoints(
 					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
 				},
 			}
-			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath) //nolint:contextcheck
+			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)         //nolint:contextcheck
+			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)           //nolint:contextcheck
+			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)           //nolint:contextcheck
+			// listing all resources in all meshes
+			ep.addListEndpoint(ws, "/"+definition.WsPath) //nolint:contextcheck
 		default:
 			switch definition.Scope {
 			case model.ScopeMesh:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath) //nolint:contextcheck
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)         //nolint:contextcheck
+				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)           //nolint:contextcheck
+				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)           //nolint:contextcheck
+				// listing all resources in all meshes
+				endpoints.addListEndpoint(ws, "/"+definition.WsPath) //nolint:contextcheck
 			case model.ScopeGlobal:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath)
+				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath) //nolint:contextcheck
+				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)         //nolint:contextcheck
+				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)           //nolint:contextcheck
+				endpoints.addListEndpoint(ws, "/"+definition.WsPath)           //nolint:contextcheck
 			}
 		}
 	}

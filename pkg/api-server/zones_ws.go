@@ -19,7 +19,7 @@ type Zones []Zone
 
 func addZoneEndpoints(ws *restful.WebService, resManager manager.ResourceManager, extensions context.Context) {
 	ws.Route(ws.GET("/status/zones").To(func(request *restful.Request, response *restful.Response) {
-		zoneOverviews, err := fetchOverviews(resManager, request.Request.Context())
+		zoneOverviews, err := fetchOverviews(resManager, request.Request.Context()) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not retrieve a zone overview")
 			return

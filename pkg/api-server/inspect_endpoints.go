@@ -108,13 +108,13 @@ func inspectDataplane(
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		meshContext, err := builder.Build(ctx, meshName)
+		meshContext, err := builder.Build(ctx, meshName) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build MeshContext")
 			return
 		}
 
-		proxy, err := getMatchedPolicies(
+		proxy, err := getMatchedPolicies( //nolint:contextcheck
 			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
@@ -149,14 +149,14 @@ func inspectGatewayDataplanes(
 		meshName := request.PathParameter("mesh")
 		gatewayName := request.PathParameter("name")
 
-		meshContext, err := builder.Build(ctx, meshName)
+		meshContext, err := builder.Build(ctx, meshName) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build mesh context")
 			return
 		}
 
 		meshGateway := core_mesh.NewMeshGatewayResource()
-		if err := rm.Get(ctx, meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
+		if err := rm.Get(ctx, meshGateway, store.GetByKey(gatewayName, meshName)); err != nil { //nolint:contextcheck
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not find MeshGateway")
 			return
 		}
@@ -196,14 +196,14 @@ func inspectGatewayRouteDataplanes(
 		meshName := request.PathParameter("mesh")
 		gatewayRouteName := request.PathParameter("name")
 
-		meshContext, err := builder.Build(ctx, meshName)
+		meshContext, err := builder.Build(ctx, meshName) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build mesh context")
 			return
 		}
 
 		gatewayRoute := core_mesh.NewMeshGatewayRouteResource()
-		if err := rm.Get(ctx, gatewayRoute, store.GetByKey(gatewayRouteName, meshName)); err != nil {
+		if err := rm.Get(ctx, gatewayRoute, store.GetByKey(gatewayRouteName, meshName)); err != nil { //nolint:contextcheck
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not find MeshGatewayRoute")
 			return
 		}
@@ -215,7 +215,7 @@ func inspectGatewayRouteDataplanes(
 				continue
 			}
 			key := core_model.MetaToResourceKey(dp.GetMeta())
-			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
+			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key) //nolint:contextcheck
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not generate listener info")
 				return
@@ -264,7 +264,7 @@ func inspectPolicies(
 		meshName := request.PathParameter("mesh")
 		policyName := request.PathParameter("name")
 
-		meshContext, err := builder.Build(ctx, meshName)
+		meshContext, err := builder.Build(ctx, meshName) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not list Dataplanes")
 			return
@@ -278,7 +278,7 @@ func inspectPolicies(
 				Mesh: dpKey.Mesh,
 				Name: dpKey.Name,
 			}
-			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
+			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey) //nolint:contextcheck
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), extensions, response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
@@ -572,13 +572,13 @@ func inspectRulesAttachment(
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		meshContext, err := builder.Build(ctx, meshName)
+		meshContext, err := builder.Build(ctx, meshName) //nolint:contextcheck
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), extensions, response, err, "Could not build MeshContext")
 			return
 		}
 
-		proxy, err := getMatchedPolicies(
+		proxy, err := getMatchedPolicies( //nolint:contextcheck
 			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {

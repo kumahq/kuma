@@ -48,7 +48,7 @@ func addInspectEnvoyAdminEndpoints(
 	}
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/{type}").
-			To(cl.inspectDataplaneAdmin()).
+			To(cl.inspectDataplaneAdmin()). //nolint:contextcheck
 			Doc("inspect dataplane configuration and stats").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -56,7 +56,7 @@ func addInspectEnvoyAdminEndpoints(
 	)
 	ws.Route(
 		ws.GET("/zoneingresses/{zoneingress}/{type}").
-			To(cl.inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)).
+			To(cl.inspectZoneIngressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)). //nolint:contextcheck
 			Doc("inspect zone ingresses XDS configuration").
 			Produces("application/json").
 			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")).
@@ -64,7 +64,7 @@ func addInspectEnvoyAdminEndpoints(
 	)
 	ws.Route(
 		ws.GET("/zoneegresses/{zoneegress}/{type}").
-			To(cl.inspectZoneEgressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)).
+			To(cl.inspectZoneEgressAdmin(cfg.Mode, cfg.Multizone.Zone.Name)). //nolint:contextcheck
 			Doc("inspect zone egresses XDS configuration").
 			Produces("application/json").
 			Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")).

@@ -22,7 +22,7 @@ func LocalhostAuthenticator(extensions context.Context) restful.FilterFunction {
 		}
 		if host == "127.0.0.1" || host == "::1" {
 			log.V(1).Info("authenticated as admin because requests originates from the same machine")
-			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), user.Admin.Authenticated()))
+			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), user.Admin.Authenticated())) //nolint:contextcheck
 		}
 		chain.ProcessFilter(request, response)
 	}

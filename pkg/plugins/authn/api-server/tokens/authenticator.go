@@ -24,17 +24,17 @@ func UserTokenAuthenticator(validator issuer.UserTokenValidator, extensions cont
 			return
 		}
 		authnHeader := request.Request.Header.Get("authorization")
-		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
+		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && //nolint:contextcheck // do not overwrite existing user
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
-			u, err := validator.Validate(request.Request.Context(), token)
+			u, err := validator.Validate(request.Request.Context(), token) //nolint:contextcheck
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), extensions, response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
 				log.Info("authentication rejected", "reason", err.Error())
 				return
 			}
-			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u.Authenticated()))
+			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u.Authenticated())) //nolint:contextcheck
 		}
 		chain.ProcessFilter(request, response)
 	}
