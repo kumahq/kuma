@@ -350,3 +350,7 @@ func (r *TestRuntime) TokenIssuers() tokens_builtin.TokenIssuers {
 func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
 	return func(*restful.WebService) error { return nil }
 }
+
+func (r *TestRuntime) Extensions() context.Context {
+	return context.Background()
+}
