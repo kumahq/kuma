@@ -1,4 +1,4 @@
-{{- if .Values.ingress.autoscaling.enabled }}
+{{- if and .Values.ingress.enabled .Values.ingress.autoscaling.enabled }}
 {{ if .Capabilities.APIVersions.Has "autoscaling/v2" }}
 apiVersion: "autoscaling/v2"
 {{ else }}
