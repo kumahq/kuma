@@ -294,6 +294,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
+	cmd.Flags().StringVar(&args.ValuesProfile, "profile", args.ValuesProfile, "specify the builtin default values file to be used, supported values are: demo, production")
 	cmd.Flags().StringArrayVar(&args.SkipKinds, "skip-kinds", []string{}, "INTERNAL: A list of kubernetes kinds to not generate (useful, to ignore CRDs for example)")
 	if err := cmd.Flags().MarkHidden("skip-kinds"); err != nil {
 		panic(err.Error())

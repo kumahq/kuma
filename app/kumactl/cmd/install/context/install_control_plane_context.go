@@ -1,10 +1,12 @@
 package context
 
 import (
+	"fmt"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/util/data"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"golang.org/x/exp/slices"
 )
 
 type InstallControlPlaneArgs struct {
@@ -58,6 +60,7 @@ type InstallControlPlaneArgs struct {
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ValueFiles                                   []string
 	Values                                       []string
+	ValuesProfile                                string
 	SkipKinds                                    []string
 	// APIVersions is a hidden, internal option
 	APIVersions        []string
@@ -117,10 +120,42 @@ func DefaultInstallCpContext() InstallCpContext {
 			Egress_drainTime:                        "30s",
 			Egress_service_type:                     "ClusterIP",
 			Ebpf_bpffs_path:                         "/sys/fs/bpf",
+			ValuesProfile:                           "demo",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(deployments.KumaChartFS())
+			loadedFileList, err := data.ReadFiles(deployments.KumaChartFS())
+			if err != nil {
+				return loadedFileList, err
+			}
+
+			return useProfileValues(loadedFileList, args.ValuesProfile)
 		},
 		HELMValuesPrefix: "",
 	}
+}
+
+func useProfileValues(loadedFileList data.FileList, profile string) (data.FileList, error) {
+	if profile == "" || profile == "demo" {
+		return loadedFileList, nil
+	}
+	const defaultValuesFile = "values.yaml"
+	profileValuesFile := fmt.Sprintf("values.%s.yaml", profile)
+
+	idxDefaultValues := -1
+	idxProfileValues := -1
+
+	for i, file := range loadedFileList {
+		if file.Name == defaultValuesFile {
+			idxDefaultValues = i
+		} else if file.Name == profileValuesFile {
+			idxProfileValues = i
+		}
+	}
+
+	if idxProfileValues == -1 {
+		return loadedFileList, nil
+	}
+	loadedFileList[idxProfileValues].Name = defaultValuesFile
+	loadedFileList[idxProfileValues].FullPath = defaultValuesFile
+	return slices.Delete(loadedFileList, idxDefaultValues, idxDefaultValues+1), nil
 }
