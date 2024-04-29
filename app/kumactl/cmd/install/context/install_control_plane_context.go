@@ -128,13 +128,13 @@ func DefaultInstallCpContext() InstallCpContext {
 				return loadedFileList, err
 			}
 
-			return useProfileValues(loadedFileList, args.ValuesProfile)
+			return UseProfileValues(loadedFileList, args.ValuesProfile)
 		},
 		HELMValuesPrefix: "",
 	}
 }
 
-func useProfileValues(loadedFileList data.FileList, profile string) (data.FileList, error) {
+func UseProfileValues(loadedFileList data.FileList, profile string) (data.FileList, error) {
 	if profile == "" || profile == "demo" {
 		return loadedFileList, nil
 	}

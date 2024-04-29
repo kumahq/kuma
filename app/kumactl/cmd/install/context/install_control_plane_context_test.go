@@ -11,7 +11,7 @@ var _ = Describe("Override profile values", func() {
 
 	It("should apply profile values and remove default values.yaml", func() {
 		loadedFiles := createFiles("values.production.yaml", "values.yaml")
-		files, err := useProfileValues(loadedFiles, "production")
+		files, err := UseProfileValues(loadedFiles, "production")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(files).To(HaveLen(1))
 		Expect(files[0].Name).To(Equal("values.yaml"))
@@ -21,7 +21,7 @@ var _ = Describe("Override profile values", func() {
 
 	It("should use default values.yaml when use demo profile", func() {
 		loadedFiles := createFiles("values.yaml", "templates/config.yaml")
-		files, err := useProfileValues(loadedFiles, "demo")
+		files, err := UseProfileValues(loadedFiles, "demo")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(files).To(HaveLen(2))
 		Expect(files[0].Name).To(Equal("values.yaml"))
@@ -30,7 +30,7 @@ var _ = Describe("Override profile values", func() {
 
 	It("should keep values.yaml when use empty profile", func() {
 		loadedFiles := createFiles("values.yaml")
-		files, err := useProfileValues(loadedFiles, "demo")
+		files, err := UseProfileValues(loadedFiles, "demo")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(files).To(HaveLen(1))
 		Expect(files[0].Name).To(Equal("values.yaml"))
@@ -39,7 +39,7 @@ var _ = Describe("Override profile values", func() {
 
 	It("should keep default values.yaml when profile does not exist", func() {
 		loadedFiles := createFiles("values.yaml")
-		files, err := useProfileValues(loadedFiles, "default")
+		files, err := UseProfileValues(loadedFiles, "default")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(files).To(HaveLen(1))
 		Expect(files[0].Name).To(Equal("values.yaml"))
