@@ -139,7 +139,7 @@ Explicit import seems to have very little value, because clients needs to explic
 
 We can introduce `spec.export` field to MeshService with values `All`, `None`.
 On Kubernetes, this would be controlled via `kuma.io/export` annotation on `Service` object.
-On Universal, this would be controlled via `kuma.io/export` tag on a Dataplane object.
+On Universal, where MeshService is synthesized from Dataplane objects, this would be controlled via `kuma.io/export` tag on a Dataplane object.
 
 If missing, then default behavior from kuma-cp configuration will be applied.
 Then it's up to a mesh operator if they want to sync everything by default or opt-in exported services.
@@ -171,7 +171,8 @@ metadata:
     kuma.io/origin: global
 spec:
   selector:
-    dataplaneTags: # it has no kuma.io/zone so it aggregates all redis from redis-system from all zones
+    dataplane:
+      tags: # it has no kuma.io/zone so it aggregates all redis from redis-system from all zones
       app: redis
       k8s.kuma.io/namespace: redis-system
 status:
@@ -247,7 +248,7 @@ Considered names alternatives:
 * GlobalMeshService
 
 The advantages:
-* We don't need to compute anything on global cp. In the example above, both redis services are in zone already.
+* We don't need to compute anything on global cp. In the example above, both redis MeshServices have been synced to the zone.
 * We don't need to traverse over all data plane proxies
 * Users don't need to redefine ports
 * Policy matching easier to implement (will be covered more in policy matching MADR)
