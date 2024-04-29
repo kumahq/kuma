@@ -20,6 +20,8 @@ jobs:
         with:
           go-version-file: go.mod
       - run: |
+          make dev/tools
+      - run: |
           make dev/merge-release
       - name: Generate GitHub app token
         id: github-app-token
