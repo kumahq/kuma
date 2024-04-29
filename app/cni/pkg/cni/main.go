@@ -290,5 +290,10 @@ func cmdDel(args *skel.CmdArgs) error {
 }
 
 func Run() {
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version))
+	cniFuncs := skel.CNIFuncs{
+		Add:   cmdAdd,
+		Del:   cmdDel,
+		Check: cmdCheck,
+	}
+	skel.PluginMainFuncs(cniFuncs, version.All, fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version))
 }
