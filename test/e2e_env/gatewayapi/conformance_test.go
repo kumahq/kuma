@@ -1,6 +1,7 @@
 package gatewayapi_test
 
 import (
+	"io/fs"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -11,9 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
-	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1alpha1"
+	"sigs.k8s.io/gateway-api/conformance"
+	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
+	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -66,14 +69,14 @@ func TestConformance(t *testing.T) {
 	client, err := client.New(clientConfig, client.Options{})
 	g.Expect(err).ToNot(HaveOccurred())
 
-	g.Expect(gatewayapi.AddToScheme(client.Scheme())).To(Succeed())
-	g.Expect(gatewayapi_v1.AddToScheme(client.Scheme())).To(Succeed())
+	g.Expect(gatewayapi.Install(client.Scheme())).To(Succeed())
+	g.Expect(gatewayapi_v1.Install(client.Scheme())).To(Succeed())
 	g.Expect(apiextensionsv1.AddToScheme(client.Scheme())).To(Succeed())
 
 	clientset, err := clientgo_kube.NewForConfig(clientConfig)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	suiteOpts := suite.Options{
+	options := suite.ConformanceOptions{
 		Client:               client,
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
@@ -83,34 +86,31 @@ func TestConformance(t *testing.T) {
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
+		ManifestFS: []fs.FS{&conformance.Manifests},
 		SupportedFeatures: sets.New(
-			suite.SupportGateway,
-			suite.SupportGatewayPort8080,
-			suite.SupportReferenceGrant,
-			suite.SupportHTTPRouteResponseHeaderModification,
-			suite.SupportHTTPRoute,
-			suite.SupportHTTPRouteHostRewrite,
-			suite.SupportHTTPRouteMethodMatching,
-			suite.SupportHTTPRoutePathRedirect,
-			suite.SupportHTTPRoutePathRewrite,
-			suite.SupportHTTPRoutePortRedirect,
-			suite.SupportHTTPRouteQueryParamMatching,
-			suite.SupportHTTPRouteRequestMirror,
-			suite.SupportHTTPRouteSchemeRedirect,
-			suite.SupportMesh,
+			features.SupportGateway,
+			features.SupportGatewayPort8080,
+			features.SupportReferenceGrant,
+			features.SupportHTTPRouteResponseHeaderModification,
+			features.SupportHTTPRoute,
+			features.SupportHTTPRouteHostRewrite,
+			features.SupportHTTPRouteMethodMatching,
+			features.SupportHTTPRoutePathRedirect,
+			features.SupportHTTPRoutePathRewrite,
+			features.SupportHTTPRoutePortRedirect,
+			features.SupportHTTPRouteQueryParamMatching,
+			features.SupportHTTPRouteRequestMirror,
+			features.SupportHTTPRouteSchemeRedirect,
+			features.SupportMesh,
 		),
+		Implementation:      implementation,
+		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
 	}
 
-	conformanceSuite, err := suite.NewExperimentalConformanceTestSuite(
-		suite.ExperimentalConformanceOptions{
-			Options:             suiteOpts,
-			Implementation:      implementation,
-			ConformanceProfiles: sets.New(suite.HTTPConformanceProfileName, suite.MeshConformanceProfileName),
-		},
-	)
+	conformanceSuite, err := suite.NewConformanceTestSuite(options)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	conformanceSuite.Setup(t)
+	conformanceSuite.Setup(t, tests.ConformanceTests)
 
 	var passingTests []suite.ConformanceTest
 	for _, test := range tests.ConformanceTests {
