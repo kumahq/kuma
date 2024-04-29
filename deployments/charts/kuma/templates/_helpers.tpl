@@ -217,6 +217,8 @@ env:
   value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
+- name: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
+  value: {{ join " " .Values.controlPlane.apiServer.coresAllowedDomains | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
   value: {{ .Values.controlPlane.admissionServerPort | default "5443" | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR

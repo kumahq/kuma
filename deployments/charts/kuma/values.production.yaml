@@ -45,6 +45,11 @@ controlPlane:
   # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
+  apiServer:
+    coresAllowedDomains:
+      - "https://localhost:5678"
+      - "http://localhost:5678"
+
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 2
 
