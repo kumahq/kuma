@@ -37,7 +37,7 @@ When a gRPC probe request is being sent from kubelet, it will:
 - include the port as part of the underlying HTTP `Host` header 
 - include the `service` as part of gRPC message body
 
-A pod can have multiple containers with each defines multiple and different probes, the worst case is a pod has all different types of probes with many probes for each type. 
+A pod can have multiple containers with each defineing multiple and different probes, the worst case is a pod has all the different types of probes with many probes for each type. 
 
 The key design goal is to solve these two problems:
 
@@ -46,7 +46,7 @@ The key design goal is to solve these two problems:
 
 ## Existing design: HTTP Virtual Probes
 
-As per our current design, a pod with multiple probes will be merged and will be handled by a single virtual listener. This listener will forward/redirect probe requests to the corresponding application port without any intermediate transforming except path rewriting, etc.
+As per our current design, a pod with multiple probes will be merged and will be handled by a single virtual listener. This listener will forward/redirect probe requests to the corresponding application port without any intermediate modification except path rewriting, etc.
 
 While we provided annotations for users to customize whether they want to enable the Virtual Probe feature and on which port do they want to expose the Virtual Probe listener, the current design actually does not require the user to customize these items and the probes can be translated automatically and transparently, they only need to customize the port when the default probe port (`9000`) in Kuma is conflicting with the application port.
 
@@ -146,13 +146,15 @@ spec:
 
 ## Considered Options
 
-**Option 1:** Transform gRPC probes to HTTP probes, merging all the HTTP probes into the existing HTTP based Virtual Probes listener
+**Option 1:** Allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly. 
 
-**Option 2:** Allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly. 
+**Option 2:** Transform gRPC probes to HTTP probes, merging all the HTTP probes into the existing HTTP based Virtual Probes listener
 
-### Proposed option: option 2 - allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly 
+### Proposed option: option 1 - allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly 
 
-The only information we can use to differ from multiple gRPC probes is the port number, while the port number is included in the underlying HTTP2 request as `Host` header, it will be the same if we want to use a single virtual probe listener to support forwarding traffic for all gRPC probes. So we need to allocate a new virtual probe port for each of them. To allocate these ports, we'll need a new Pod annotation to support user specifying the range to be used. This annotation, with name `kuma.io/virtual-probes-port-range`, will replace the existing annotation `kuma.io/virtual-probes-port`. The annotation should be optional: when user does not specify, a default range will be used.
+The only information we can use to differ from multiple gRPC probes is the port number, while the port number is included in the underlying HTTP2 request as the `Host` header, it will be the same if we want to use a single virtual probe listener to support forwarding traffic for all gRPC probes. So we need to allocate a new virtual probe port for each of them. 
+
+To allocate these ports, we'll need a new Pod annotation to support user specifying the range to be used. This annotation, with name `kuma.io/virtual-probes-port-range`, will replace the existing annotation `kuma.io/virtual-probes-port`. The annotation should be optional: when user does not specify, a default range `9000-9020` will be used. 
 
 gRPC probe requests are actually HTTP2 requests under the hood, we can use mTLS disabled HTTP listeners to forward requests prefixed with `/grpc.health.v1.Health/` back to application ports. Transparent TCP proxies should not be used as they will make the whole application lose the protection from mTLS. With separated virtual probes listeners, there is no need to introduce extra fields on the `Dataplane` to capture properties of user defined gRPC probes, except the port number. To unify data structure, we can share the parent level property with TCP probes as `tcpProbes`.
 
@@ -190,7 +192,7 @@ spec:
 
 ## Other options
 
-### Option 1: Transform gRPC probes to HTTP probes, merge all the HTTP probes by one HTTP listener
+### Option 2: Transform gRPC probes to HTTP probes, merge all the HTTP probes by one HTTP listener
 
 Transform user defined gRPC probes into HTTP probes first and then use the existing Virtual Probe HTTP listener to handle incoming probe traffic. This needs n new intermediate layer translating HTTP probes back into gRPC probes (the translator), a reasonable place is put it in the kuma-dp.
 
