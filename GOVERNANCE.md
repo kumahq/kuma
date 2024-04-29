@@ -108,7 +108,7 @@ Any maintainer can become Emeritus maintainer in two ways:
 A new maintainer can be proposed by opening a PR (with title `Maintainer Nomination`) to the repository containing the following information:
 
 * nominee's first and last name,
-* nominee's email address and GitHub user name,
+* nominee's email address and GitHub username,
 * an explanation of why the nominee should be a maintainer/reviewer (adding links to significant contributions)
 
 At least two maintainers need to agree with the nomination (or all maintainers if there's a single maintainer).
