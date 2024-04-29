@@ -1,14 +1,17 @@
 package context
 
 import (
-	"github.com/kumahq/kuma/pkg/util/data"
+	"strings"
+
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"strings"
+
+	"github.com/kumahq/kuma/pkg/util/data"
 )
 
 var _ = Describe("Override profile values", func() {
-
 	It("should apply profile values and remove default values.yaml", func() {
 		loadedFiles := createFiles("values.production.yaml", "values.yaml")
 		files, err := UseProfileValues(loadedFiles, "production")

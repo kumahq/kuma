@@ -2,11 +2,13 @@ package context
 
 import (
 	"fmt"
+
+	"golang.org/x/exp/slices"
+
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/util/data"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"golang.org/x/exp/slices"
 )
 
 type InstallControlPlaneArgs struct {
