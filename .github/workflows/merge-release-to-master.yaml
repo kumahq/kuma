@@ -16,13 +16,32 @@ jobs:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           ref: "master"
+          fetch-depth: 0
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
       - run: |
           make dev/tools
       - run: |
+          git config --global user.email "110050114+kumahq[bot]@users.noreply.github.com"
+          git config --global user.name "kumahq[bot]"
+      - id: latest-branch
+        run: |
+          echo "branch=$(make dev/print-latest-release-branch)" >> $GITHUB_OUTPUT
+      - run: |
           make dev/merge-release
+      - id: commit-changes
+        run: |
+          git status
+          # "git merge HEAD" is the way to check if merge is in progress
+          if git merge HEAD &> /dev/null; then
+            echo "skipping commit"
+            echo "changes=skipped" >> $GITHUB_OUTPUT
+          else
+            echo "commit changes"
+            git commit -s -m "chore(merge): ${{ steps.latest-branch.outputs.branch }} branch to master"
+            echo "changes=committed" >> $GITHUB_OUTPUT
+          fi
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
@@ -31,13 +50,14 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
+        if: steps.commit-changes.outputs.changes == 'committed'
         with:
-          commit-message: "Merge release branch to master"
+          commit-message: "chore(merge): ${{ steps.latest-branch.outputs.branch }} branch to master"
           signoff: true
           branch: chore/merge-release-to-master
           base: master
           delete-branch: true
-          title: "Merge release branch to master"
+          title: "chore(merge): ${{ steps.latest-branch.outputs.branch }} branch to master"
           draft: false
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
