@@ -91,6 +91,10 @@ $(KUBECONFIG_DIR):
 $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 	@touch $@
 
+.PHONY: dev/print-latest-release-branch
+dev/print-latest-release-branch:
+	@echo $(LATEST_RELEASE_BRANCH)
+
 .PHONY: dev/merge-release
 dev/merge-release:
 	git merge origin/$(LATEST_RELEASE_BRANCH) --no-commit || true
