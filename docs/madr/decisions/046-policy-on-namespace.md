@@ -6,13 +6,7 @@
 
 Kuma 2.6.0 introduced a new feature allowing users to apply policies on Zone CP.
 This change unblocks us to introduce a namespace support for policies.
-Namespaced-scoped policies provide a k8s-native UX:
-
-* ability to use k8s RBAC
-* policy affect only workloads in the same namespace
-
-The CRDs for new policies are already namespace-scoped,
-but they can be applied only to the `kuma-system` namespace.
+The CRDs for new policies are already namespace-scoped, but they can be applied only on the `kuma-system` namespace.
 
 ## Considered Options
 
