@@ -4,8 +4,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 on:
-#  schedule:
-#    - cron: 0 7 * * *
+  push:
+    branches: ["release-*"]
   workflow_dispatch: {}
 permissions:
   contents: read
