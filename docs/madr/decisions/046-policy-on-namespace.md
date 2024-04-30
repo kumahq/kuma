@@ -93,3 +93,116 @@ type TargetRef struct {
     Namespace string `json:"namespace,omitempty"`
 }
 ```
+
+
+
+----------
+### MeshService reference
+
+Since we didn't make any decisions on how to target MeshService in policies we will leave this out of now. We will revisit 
+this while discussing targeting MeshService in policies.
+
+### MeshGateway reference
+
+`MeshGateway` at this moment is not namespace-scoped. It can change in the future with the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
+
+We've decided that we won't allow targeting `MeshGateway` in namspace scoped polcies except for the
+`MeshHttpRoute` and `MeshHttpRoute`. To appply policy like `MeshTimeout` or `MeshCircuitBreaker` on
+`MeshGateway` you need to create it in `kuma-system` namespace.
+
+With `MeshHttpRoute` and `MeshTcpRoute` you can target `MeshGateway` either from `kuma-system` or custom namespace.
+
+#### Example
+
+As a **Cluster Operator** I want to deploy a single global `MeshGateway` to the cluster so that I’m able to manage a single 
+deployment for the whole cluster without knowing specific details about apps and routes.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+mesh: default
+metadata:
+  name: edge-gateway
+  labels:
+    kuma.io/origin: zone
+spec:
+  conf:
+    listeners:
+    - port: 80
+      protocol: HTTP
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway
+```
+
+As a **Frontend Engineer** Service Owner I want to configure routes on `MeshGateway` without the access to cluster-scoped 
+CRDs so that I could manage my routes independently.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: frontend-ns
+  labels:
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /gui
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: frontend
+                namespace: frontend-ns
+```
+
+## Cross namespace traffic forwarding and RefenceGrant
+
+There is a [CVE on cross namespace traffic](https://github.com/kubernetes/kubernetes/issues/103675). To solve this issue 
+Kubernetes Gateway API introduced [ReferenceGrant](https://gateway-api.sigs.k8s.io/api-types/referencegrant/).
+
+For the east-west traffic this is not needed as we can use `MeshTrafficPermission` to handle permissions. It is more 
+broadly explained in [Gateway API docs](https://gateway-api.sigs.k8s.io/geps/gep-1426/#namespace-boundaries).
+
+The problem could emerge in MeshGateway. Lets look at the example:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: payments-ns
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /internal
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: internal
+                namespace: internal-ns
+```
+
+This `MeshHttpRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should not 
+be possible. We want to forbid selecting `backendRef` from namespace different than policy namespace if top level targetRef is `MeshGateway`.
+
+Since our `MeshGateway` is cluster scoped it is not limited to single namespace. You can direct traffic to any namespace by 
+applying policy in `kuma-system` namespace, to which not everyone should have access. Because of this we don't need to 
+implement `ReferenceGrant` yet. But this will probably be needed after after adding namespace scoped [MeshBuiltinGateway](https://github.com/kumahq/kuma/issues/10014) in the future.
