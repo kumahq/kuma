@@ -134,7 +134,7 @@ Kuma also provides an easy to use `kumactl` CLI client for every environment, an
 
 ## Roadmap
 
-Kuma releases a minor version on a 10 week release cycle.
+Kuma releases a minor version on a 10-week release cycle.
 The roadmap is tracked using milestones: https://github.com/kumahq/kuma/milestones
 
 ## Development
