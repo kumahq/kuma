@@ -22,7 +22,7 @@ The CRDs for new policies are already namespace-scoped, but they can be applied 
 * Good, because allows using Kubernetes RBAC
 * Good, because provides more predictable behaviour as namespace-scoped policy affects only workloads in the same
   namespace
-* Good, because provides overall more Kubernetes-native UX
+* Good, because provides more Kubernetes-native UX
 * Bad, because adds complexity for users
     * what's the right namespace for the policy?
     * how cross-policy refs work?
