@@ -54,7 +54,6 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v1.56.1
-          skip-pkg-cache: true
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
