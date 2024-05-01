@@ -87,8 +87,9 @@
   release: 2.7.x
   latest: true
   releaseDate: "2024-04-19"
-  endOfLifeDate: "2025-04-19"
+  endOfLifeDate: "2026-04-19"
   branch: release-2.7
+  lts: true
 - edition: kuma
   version: preview
   release: dev
