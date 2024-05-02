@@ -353,10 +353,10 @@ revisit this while discussing targeting MeshService in policies.
 the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
 
 We've decided that we won't allow targeting `MeshGateway` in namspace scoped polcies except for the
-`MeshHttpRoute` and `MeshHttpRoute`. To appply policy like `MeshTimeout` or `MeshCircuitBreaker` on
+`MeshHTTPRoute` and `MeshTCPRoute`. To apply policy like `MeshTimeout` or `MeshCircuitBreaker` on
 `MeshGateway` you need to create it in `kuma-system` namespace.
 
-With `MeshHttpRoute` and `MeshTcpRoute` you can target `MeshGateway` either from `kuma-system` or custom namespace.
+With `MeshHTTPRoute` and `MeshTCPRoute` you can target `MeshGateway` either from `kuma-system` or custom namespace.
 
 #### Example
 
@@ -381,7 +381,7 @@ spec:
         kuma.io/service: edge-gateway
 ```
 
-As a **Frontend Engineer** Service Owner I want to configure routes on `MeshGateway` without the access to
+As a **Frontend Service Owner** I want to configure routes on `MeshGateway` without the access to
 cluster-scoped CRDs so that I could manage my routes independently.
 
 ```yaml
@@ -411,7 +411,7 @@ spec:
                 namespace: frontend-ns
 ```
 
-## Cross namespace traffic forwarding and RefenceGrant
+## Cross namespace traffic forwarding and ReferenceGrant
 
 There is a [CVE on cross namespace traffic](https://github.com/kubernetes/kubernetes/issues/103675). To solve this issue
 Kubernetes Gateway API introduced [ReferenceGrant](https://gateway-api.sigs.k8s.io/api-types/referencegrant/).
@@ -446,11 +446,11 @@ spec:
                 namespace: internal-ns
 ```
 
-This `MeshHttpRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should
+This `MeshHTTPRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should
 not be possible. We want to forbid selecting `backendRef` from namespace different than policy namespace if top level
 targetRef is `MeshGateway`.
 
 Since our `MeshGateway` is cluster scoped it is not limited to single namespace. You can direct traffic to any namespace
 by applying policy in `kuma-system` namespace, to which not everyone should have access. Because of this we don't need
-to implement `ReferenceGrant` yet. But this will probably be needed after after adding namespace
+to implement `ReferenceGrant` yet. But this will probably be needed after adding namespace
 scoped [MeshBuiltinGateway](https://github.com/kumahq/kuma/issues/10014) in the future.
