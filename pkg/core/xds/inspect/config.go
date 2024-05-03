@@ -168,7 +168,7 @@ func (ds *dummySecrets) cas(meshes ...*core_mesh.MeshResource) map[string]*core_
 	return cas
 }
 
-func (ds *dummySecrets) Info(dpKey model.ResourceKey) *secrets.Info {
+func (ds *dummySecrets) Info(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) *secrets.Info {
 	return &secrets.Info{
 		Expiration: time.Unix(2, 2),
 		Generation: time.Unix(1, 1),
@@ -188,4 +188,4 @@ func (ds *dummySecrets) Info(dpKey model.ResourceKey) *secrets.Info {
 	}
 }
 
-func (ds *dummySecrets) Cleanup(model.ResourceKey) {}
+func (ds *dummySecrets) Cleanup(mesh_proto.ProxyType, model.ResourceKey) {}
