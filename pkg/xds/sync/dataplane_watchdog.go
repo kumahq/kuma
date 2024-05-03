@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	std_errors "errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -96,7 +97,19 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	case mesh_proto.IngressProxyType:
 		return d.IngressReconciler.Clear(&proxyID)
 	case mesh_proto.EgressProxyType:
-		return d.EgressReconciler.Clear(&proxyID)
+		var errs []error
+		aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(
+			context.TODO(),
+			d.ResManager,
+			d.MeshCache.GetMeshContext,
+		)
+		errs = append(errs, err)
+		for _, mesh := range aggregatedMeshCtxs.Meshes {
+			d.EnvoyCpCtx.Secrets.Cleanup(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		}
+		err = d.EgressReconciler.Clear(&proxyID)
+		errs = append(errs, err)
+		return std_errors.Join(errs...)
 	default:
 		return nil
 	}
