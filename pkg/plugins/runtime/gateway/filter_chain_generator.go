@@ -167,6 +167,8 @@ func generateCertificateSecret(
 		// to disambiguate when the certificate is provided as
 		// inline data.
 		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", names.Join(hostnames...))
+	case *system_proto.DataSource_InlineString:
+		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inlineString", names.Join(hostnames...))
 	default:
 		return nil, errors.Errorf("unsupported datasource type %T", d)
 	}
