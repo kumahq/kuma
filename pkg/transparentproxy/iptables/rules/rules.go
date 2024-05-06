@@ -15,16 +15,16 @@ const (
 )
 
 type Rule struct {
-	tableName  string
-	chainName  string
+	table      string
+	chain      string
 	position   uint
 	parameters parameters.Parameters
 }
 
-func NewRule(tableName, chainName string, position uint, parameters []*parameters.Parameter) *Rule {
+func NewRule(table, chain string, position uint, parameters []*parameters.Parameter) *Rule {
 	return &Rule{
-		tableName:  tableName,
-		chainName:  chainName,
+		table:      table,
+		chain:      chain,
 		position:   position,
 		parameters: parameters,
 	}
@@ -46,8 +46,8 @@ func (r *Rule) Build(verbose bool) string {
 
 	cmd := []string{flag}
 
-	if r.chainName != "" {
-		cmd = append(cmd, r.chainName)
+	if r.chain != "" {
+		cmd = append(cmd, r.chain)
 	}
 
 	if r.position != 0 {
