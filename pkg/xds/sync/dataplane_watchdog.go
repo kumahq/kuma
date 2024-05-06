@@ -184,7 +184,10 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	var syncForCert bool
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		certInfo := d.EnvoyCpCtx.Secrets.Info(
+			mesh_proto.IngressProxyType,
+			core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+		)
 		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
 	}
 	if !syncForConfig && !syncForCert {
@@ -242,7 +245,10 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	var syncForCert bool
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		certInfo := d.EnvoyCpCtx.Secrets.Info(
+			mesh_proto.EgressProxyType,
+			core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+		)
 		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
 	}
 	if !syncForConfig && !syncForCert {
