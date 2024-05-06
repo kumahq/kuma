@@ -103,7 +103,10 @@ func (d *DataplaneWatchdog) Cleanup() error {
 			d.MeshCache.GetMeshContext,
 		)
 		for _, mesh := range aggregatedMeshCtxs.Meshes {
-			d.EnvoyCpCtx.Secrets.Cleanup(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+			d.EnvoyCpCtx.Secrets.Cleanup(
+				mesh_proto.EgressProxyType,
+				core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+			)
 		}
 		return std_errors.Join(aggregateMeshContextsErr, d.EgressReconciler.Clear(&proxyID))
 	default:
