@@ -7,6 +7,13 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
+const (
+	appendLong  = "--append"
+	appendShort = "-A"
+	insertLong  = "--insert"
+	insertShort = "-I"
+)
+
 type Rule struct {
 	chainName  string
 	position   uint
@@ -18,13 +25,13 @@ func (r *Rule) Build(verbose bool) string {
 
 	switch {
 	case r.position == 0 && verbose:
-		flag = "--append"
+		flag = appendLong
 	case r.position == 0 && !verbose:
-		flag = "-A"
+		flag = appendShort
 	case r.position != 0 && verbose:
-		flag = "--insert"
+		flag = insertLong
 	case r.position != 0 && !verbose:
-		flag = "-I"
+		flag = insertShort
 	}
 
 	cmd := []string{flag}
