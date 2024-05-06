@@ -6,9 +6,9 @@ import (
 )
 
 type Chain struct {
-	table    string
-	name     string
-	commands []*rules.Rule
+	table string
+	name  string
+	rules []*rules.Rule
 }
 
 func (c *Chain) Name() string {
@@ -16,13 +16,13 @@ func (c *Chain) Name() string {
 }
 
 func (c *Chain) AddRule(parameters ...*Parameter) *Chain {
-	c.commands = append(c.commands, rules.NewRule(c.table, c.name, 0, parameters))
+	c.rules = append(c.rules, rules.NewRule(c.table, c.name, 0, parameters))
 
 	return c
 }
 
 func (c *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
-	c.commands = append(c.commands, rules.NewRule(c.table, c.name, position, parameters))
+	c.rules = append(c.rules, rules.NewRule(c.table, c.name, position, parameters))
 
 	return c
 }
@@ -38,8 +38,8 @@ func (c *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chai
 func (c *Chain) Build(verbose bool) []string {
 	var cmds []string
 
-	for _, cmd := range c.commands {
-		cmds = append(cmds, cmd.Build(verbose))
+	for _, rule := range c.rules {
+		cmds = append(cmds, rule.Build(verbose))
 	}
 
 	return cmds
