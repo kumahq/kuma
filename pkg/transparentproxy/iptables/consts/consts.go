@@ -26,19 +26,33 @@ const (
 	TableMangle = "mangle"
 )
 
+const (
+	// commands
+	FlagAppend   = "append"
+	FlagInsert   = "insert"
+	FlagNewChain = "new-chain"
+
+	// parameters
+	FlagJump = "jump"
+)
+
 var Flags = map[string]map[bool]string{
 	// commands
-	"append": {
+	FlagAppend: {
 		Long:  "--append",
 		Short: "-A",
 	},
-	"new-chain": {
+	FlagInsert: {
+		Long:  "--insert",
+		Short: "-I",
+	},
+	FlagNewChain: {
 		Long:  "--new-chain",
 		Short: "-N",
 	},
 
 	// parameters
-	"jump": {
+	FlagJump: {
 		Long:  "--jump",
 		Short: "-j",
 	},

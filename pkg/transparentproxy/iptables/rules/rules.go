@@ -4,14 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-)
-
-const (
-	appendLong  = "--append"
-	appendShort = "-A"
-	insertLong  = "--insert"
-	insertShort = "-I"
 )
 
 type Rule struct {
@@ -47,17 +41,9 @@ func NewRule(table, chain string, position uint, parameters []*parameters.Parame
 // chain name, optional position (if not zero), and the parameters built using
 // the `parameters.Build(verbose)` method.
 func (r *Rule) BuildForRestore(verbose bool) string {
-	var flag string
-
-	switch {
-	case r.position == 0 && verbose:
-		flag = appendLong
-	case r.position == 0 && !verbose:
-		flag = appendShort
-	case r.position != 0 && verbose:
-		flag = insertLong
-	case r.position != 0 && !verbose:
-		flag = insertShort
+	flag := consts.Flags[consts.FlagAppend][verbose]
+	if r.position != 0 {
+		flag = consts.Flags[consts.FlagInsert][verbose]
 	}
 
 	cmd := []string{flag}

@@ -50,7 +50,7 @@ func (b *TableBuilder) BuildForRestore(verbose bool) string {
 	}
 
 	for _, c := range b.newChains {
-		newChainLines = append(newChainLines, fmt.Sprintf("%s %s", Flags["new-chain"][verbose], c.Name()))
+		newChainLines = append(newChainLines, fmt.Sprintf("%s %s", Flags[FlagNewChain][verbose], c.Name()))
 		rules := c.BuildForRestore(verbose)
 		ruleLines = append(ruleLines, rules...)
 	}
