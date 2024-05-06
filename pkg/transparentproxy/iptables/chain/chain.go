@@ -43,13 +43,13 @@ func (c *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chai
 // for each rule. The `verbose` flag is passed along to maintain consistent
 // output formatting throughout the chain.
 func (c *Chain) BuildForRestore(verbose bool) []string {
-	var cmds []string
+	var lines []string
 
 	for _, rule := range c.rules {
-		cmds = append(cmds, rule.BuildForRestore(verbose))
+		lines = append(lines, rule.BuildForRestore(verbose))
 	}
 
-	return cmds
+	return lines
 }
 
 func NewChain(table, chain string) *Chain {
