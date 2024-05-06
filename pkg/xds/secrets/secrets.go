@@ -34,8 +34,8 @@ type Secrets interface {
 	GetForDataPlane(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error)
 	GetForZoneEgress(ctx context.Context, zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	GetAllInOne(ctx context.Context, mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
-	Info(dpKey model.ResourceKey) *Info
-	Cleanup(dpKey model.ResourceKey)
+	Info(mesh_proto.ProxyType, model.ResourceKey) *Info
+	Cleanup(mesh_proto.ProxyType, model.ResourceKey)
 }
 
 type MeshInfo struct {
@@ -78,9 +78,14 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 	return &secrets{
 		caProvider:            caProvider,
 		identityProvider:      identityProvider,
-		cachedCerts:           map[model.ResourceKey]*certs{},
+		cachedCerts:           map[certCacheKey]*certs{},
 		certGenerationsMetric: certGenerationsMetric,
 	}, nil
+}
+
+type certCacheKey struct {
+	resource  model.ResourceKey
+	proxyType mesh_proto.ProxyType
 }
 
 type secrets struct {
@@ -88,14 +93,14 @@ type secrets struct {
 	identityProvider IdentityProvider
 
 	sync.RWMutex
-	cachedCerts           map[model.ResourceKey]*certs
+	cachedCerts           map[certCacheKey]*certs
 	certGenerationsMetric *prometheus.CounterVec
 }
 
 var _ Secrets = &secrets{}
 
-func (s *secrets) Info(dpKey model.ResourceKey) *Info {
-	certs := s.certs(dpKey)
+func (s *secrets) Info(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) *Info {
+	certs := s.certs(proxyType, dpKey)
 	if certs == nil {
 		return nil
 	}
@@ -117,11 +122,11 @@ func (c *certs) Info() *Info {
 	return c.info
 }
 
-func (s *secrets) certs(dpKey model.ResourceKey) *certs {
+func (s *secrets) certs(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) *certs {
 	s.RLock()
 	defer s.RUnlock()
 
-	return s.cachedCerts[dpKey]
+	return s.cachedCerts[certCacheKey{proxyType: proxyType, resource: dpKey}]
 }
 
 func (s *secrets) GetForDataPlane(
@@ -130,7 +135,7 @@ func (s *secrets) GetForDataPlane(
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, map[string]*core_xds.CaSecret, error) {
-	identity, cas, _, err := s.get(ctx, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	identity, cas, _, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, cas, err
 }
 
@@ -140,7 +145,7 @@ func (s *secrets) GetAllInOne(
 	dataplane *core_mesh.DataplaneResource,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	identity, _, allInOne, err := s.get(ctx, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	identity, _, allInOne, err := s.get(ctx, mesh_proto.DataplaneProxyType, dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, allInOne.CaSecret, err
 }
 
@@ -155,12 +160,13 @@ func (s *secrets) GetForZoneEgress(
 		},
 	})
 
-	identity, cas, _, err := s.get(ctx, zoneEgress, tags, mesh, nil)
+	identity, cas, _, err := s.get(ctx, mesh_proto.EgressProxyType, zoneEgress, tags, mesh, nil)
 	return identity, cas[mesh.GetMeta().GetName()], err
 }
 
 func (s *secrets) get(
 	ctx context.Context,
+	proxyType mesh_proto.ProxyType,
 	resource model.Resource,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
@@ -174,7 +180,7 @@ func (s *secrets) get(
 
 	resourceKey := model.MetaToResourceKey(resource.GetMeta())
 	resourceKey.Mesh = meshName
-	certs := s.certs(resourceKey)
+	certs := s.certs(proxyType, resourceKey)
 
 	if updateKinds, debugReason := s.shouldGenerateCerts(
 		certs.Info(),
@@ -192,8 +198,12 @@ func (s *secrets) get(
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
 
+		key := certCacheKey{
+			resource:  resourceKey,
+			proxyType: proxyType,
+		}
 		s.Lock()
-		s.cachedCerts[resourceKey] = certs
+		s.cachedCerts[key] = certs
 		s.Unlock()
 
 		caMap := map[string]*core_xds.CaSecret{
@@ -219,9 +229,13 @@ func (s *secrets) get(
 	return certs.identity, caMap, certs.allInOneCa, nil
 }
 
-func (s *secrets) Cleanup(dpKey model.ResourceKey) {
+func (s *secrets) Cleanup(proxyType mesh_proto.ProxyType, dpKey model.ResourceKey) {
+	key := certCacheKey{
+		resource:  dpKey,
+		proxyType: proxyType,
+	}
 	s.Lock()
-	delete(s.cachedCerts, dpKey)
+	delete(s.cachedCerts, key)
 	s.Unlock()
 }
 

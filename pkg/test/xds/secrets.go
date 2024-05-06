@@ -94,11 +94,11 @@ func (ts *TestSecrets) GetAllInOne(
 	return identity, allInOne, nil
 }
 
-func (*TestSecrets) Info(model.ResourceKey) *secrets.Info {
+func (*TestSecrets) Info(mesh_proto.ProxyType, model.ResourceKey) *secrets.Info {
 	return TestSecretsInfo
 }
 
-func (*TestSecrets) Cleanup(model.ResourceKey) {
+func (*TestSecrets) Cleanup(mesh_proto.ProxyType, model.ResourceKey) {
 }
 
 var _ secrets.Secrets = &TestSecrets{}
