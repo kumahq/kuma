@@ -2,6 +2,7 @@ package table
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type RawTable struct {
@@ -29,9 +30,13 @@ func (t *RawTable) Build(verbose bool) string {
 	return table.Build(verbose)
 }
 
+func NewRawChain(name string) *chain.Chain {
+	return chain.NewChain(consts.TableRaw, name)
+}
+
 func Raw() *RawTable {
 	return &RawTable{
-		prerouting: chain.NewChain("PREROUTING"),
-		output:     chain.NewChain("OUTPUT"),
+		prerouting: NewRawChain("PREROUTING"),
+		output:     NewRawChain("OUTPUT"),
 	}
 }

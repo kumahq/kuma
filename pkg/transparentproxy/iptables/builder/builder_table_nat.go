@@ -13,7 +13,7 @@ import (
 )
 
 func buildMeshInbound(cfg config.TrafficFlow, prefix string, meshInboundRedirect string) *Chain {
-	meshInbound := NewChain(cfg.Chain.GetFullName(prefix))
+	meshInbound := table.NewNatChain(cfg.Chain.GetFullName(prefix))
 	if !cfg.Enabled {
 		meshInbound.AddRule(
 			Protocol(Tcp()),
@@ -70,7 +70,7 @@ func buildMeshOutbound(
 		localhost = LocalhostCIDRIPv6
 	}
 
-	meshOutbound := NewChain(outboundChainName)
+	meshOutbound := table.NewNatChain(outboundChainName)
 	if !cfg.Redirect.Outbound.Enabled {
 		meshOutbound.AddRule(
 			Protocol(Tcp()),
@@ -182,7 +182,7 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) *Chain 
 		redirectPort = cfg.PortIPv6
 	}
 
-	return NewChain(chainName).
+	return table.NewNatChain(chainName).
 		AddRule(
 			Protocol(Tcp()),
 			Jump(ToPort(redirectPort)),

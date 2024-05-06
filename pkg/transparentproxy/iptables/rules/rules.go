@@ -15,13 +15,15 @@ const (
 )
 
 type Rule struct {
+	tableName  string
 	chainName  string
 	position   uint
 	parameters parameters.Parameters
 }
 
-func NewRule(chainName string, position uint, parameters []*parameters.Parameter) *Rule {
+func NewRule(tableName, chainName string, position uint, parameters []*parameters.Parameter) *Rule {
 	return &Rule{
+		tableName:  tableName,
 		chainName:  chainName,
 		position:   position,
 		parameters: parameters,

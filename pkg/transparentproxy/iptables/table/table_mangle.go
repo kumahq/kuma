@@ -2,6 +2,7 @@ package table
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type MangleTable struct {
@@ -47,12 +48,16 @@ func (t *MangleTable) Build(verbose bool) string {
 	return table.Build(verbose)
 }
 
+func NewMangleChain(name string) *chain.Chain {
+	return chain.NewChain(consts.TableMangle, name)
+}
+
 func Mangle() *MangleTable {
 	return &MangleTable{
-		prerouting:  chain.NewChain("PREROUTING"),
-		input:       chain.NewChain("INPUT"),
-		forward:     chain.NewChain("FORWARD"),
-		output:      chain.NewChain("OUTPUT"),
-		postrouting: chain.NewChain("POSTROUTING"),
+		prerouting:  NewMangleChain("PREROUTING"),
+		input:       NewMangleChain("INPUT"),
+		forward:     NewMangleChain("FORWARD"),
+		output:      NewMangleChain("OUTPUT"),
+		postrouting: NewMangleChain("POSTROUTING"),
 	}
 }

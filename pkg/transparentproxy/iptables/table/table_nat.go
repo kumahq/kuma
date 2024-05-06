@@ -2,6 +2,7 @@ package table
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type NatTable struct {
@@ -51,11 +52,15 @@ func (t *NatTable) Build(verbose bool) string {
 	return table.Build(verbose)
 }
 
+func NewNatChain(name string) *chain.Chain {
+	return chain.NewChain(consts.TableNat, name)
+}
+
 func Nat() *NatTable {
 	return &NatTable{
-		prerouting:  chain.NewChain("PREROUTING"),
-		input:       chain.NewChain("INPUT"),
-		output:      chain.NewChain("OUTPUT"),
-		postrouting: chain.NewChain("POSTROUTING"),
+		prerouting:  NewNatChain("PREROUTING"),
+		input:       NewNatChain("INPUT"),
+		output:      NewNatChain("OUTPUT"),
+		postrouting: NewNatChain("POSTROUTING"),
 	}
 }

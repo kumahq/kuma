@@ -19,6 +19,11 @@ const (
 	PreroutingLogPrefix                     = "PREROUTING:"
 	UDP                                     = "udp"
 	TCP                                     = "tcp"
+
+	// Table names
+	TableNat    = "nat"
+	TableRaw    = "raw"
+	TableMangle = "mangle"
 )
 
 var Flags = map[string]map[bool]string{

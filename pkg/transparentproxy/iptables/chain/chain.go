@@ -1,11 +1,12 @@
 package chain
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 )
 
 type Chain struct {
+	table    string
 	name     string
 	commands []*rules.Rule
 }
@@ -15,13 +16,13 @@ func (b *Chain) Name() string {
 }
 
 func (b *Chain) AddRule(parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.NewRule(b.name, 0, parameters))
+	b.commands = append(b.commands, rules.NewRule(b.table, b.name, 0, parameters))
 
 	return b
 }
 
 func (b *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.NewRule(b.name, position, parameters))
+	b.commands = append(b.commands, rules.NewRule(b.table, b.name, position, parameters))
 
 	return b
 }
@@ -44,8 +45,9 @@ func (b *Chain) Build(verbose bool) []string {
 	return cmds
 }
 
-func NewChain(name string) *Chain {
+func NewChain(table, chain string) *Chain {
 	return &Chain{
-		name: name,
+		table: table,
+		name:  chain,
 	}
 }
