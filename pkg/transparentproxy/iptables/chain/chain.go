@@ -11,34 +11,34 @@ type Chain struct {
 	commands []*rules.Rule
 }
 
-func (b *Chain) Name() string {
-	return b.name
+func (c *Chain) Name() string {
+	return c.name
 }
 
-func (b *Chain) AddRule(parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.NewRule(b.table, b.name, 0, parameters))
+func (c *Chain) AddRule(parameters ...*Parameter) *Chain {
+	c.commands = append(c.commands, rules.NewRule(c.table, c.name, 0, parameters))
 
-	return b
+	return c
 }
 
-func (b *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.NewRule(b.table, b.name, position, parameters))
+func (c *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
+	c.commands = append(c.commands, rules.NewRule(c.table, c.name, position, parameters))
 
-	return b
+	return c
 }
 
-func (b *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chain {
+func (c *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chain {
 	if predicate() {
-		return b.AddRule(parameters...)
+		return c.AddRule(parameters...)
 	}
 
-	return b
+	return c
 }
 
-func (b *Chain) Build(verbose bool) []string {
+func (c *Chain) Build(verbose bool) []string {
 	var cmds []string
 
-	for _, cmd := range b.commands {
+	for _, cmd := range c.commands {
 		cmds = append(cmds, cmd.Build(verbose))
 	}
 
