@@ -20,6 +20,14 @@ type Rule struct {
 	parameters parameters.Parameters
 }
 
+func NewRule(chainName string, position uint, parameters []*parameters.Parameter) *Rule {
+	return &Rule{
+		chainName:  chainName,
+		position:   position,
+		parameters: parameters,
+	}
+}
+
 func (r *Rule) Build(verbose bool) string {
 	var flag string
 
@@ -45,12 +53,4 @@ func (r *Rule) Build(verbose bool) string {
 	}
 
 	return strings.Join(append(cmd, r.parameters.Build(verbose)...), " ")
-}
-
-func NewRule(chainName string, position uint, parameters []*parameters.Parameter) *Rule {
-	return &Rule{
-		chainName:  chainName,
-		position:   position,
-		parameters: parameters,
-	}
 }
