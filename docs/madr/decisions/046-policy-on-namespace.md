@@ -132,7 +132,7 @@ The use case for this scenario can be the following:
 
 **As** a Backend Service Owner<br>
 **I want** all requests routed to `version: v2` instances to have a 5s timeout<br>
-**so that** consumers didn't wait longer than max possible processing time.
+**so that** consumers don't wait longer than max possible processing time.
 
 This can be achieved by applying 2 policies:
 
