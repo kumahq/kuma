@@ -72,7 +72,8 @@ namespace: backend
 port: 80
 ```
 
-In general, we try to do the expected thing and refer to `MeshService` via its display name.
+The `name` of a `MeshService` ref always refers to the name of the Kubernetes
+object.
 
 Exactly one of either `name` or `labels` is **required**.
 
@@ -84,18 +85,22 @@ In `backendRefs`, `port` is required.
 
 #### Local `MeshServices`
 
-If the policy ref doesn't set `zone`:
+If the policy ref doesn't set `zone`, it refers to a `MeshService` in the local
+zone.
 
-* without `namespace` set on a k8s zone:
-  * if the policy is *not in `kuma-system`*, the ref refers to
-    `MeshServices` in the same namespace
-  * if the policy is in `kuma-system`, the ref refers to
-      the core name of the `MeshService`
-* with `namespace`, only that namespace is matched for `MeshServices`
+On a k8s zone:
+* without `namespace`, the policy refers to `MeshServices` in the same
+  namespace as the policy.
+* with `namespace`, only that namespace is searched matching `MeshServices`
+
+Note that this means it's possible to refer to synced `MeshServices` via their
+transformed `<service>-<hash-suffix>`.
 
 #### Non-local `MeshServices`
 
-If `zone` is set, `name` refers to the name of the `MeshService` in that zone.
+If `zone` is set, `name` cannot be set and instead `displayName` must be set,
+which matches based on the `kuma.io/display-name` of the `MeshService`.
+For example, the name of the object in the zone's cluster.
 
 Without `namespace`, refer to _all_ `MeshServices` with this name. That means we
 don't infer any similarity between the local namespace and the other zone's
@@ -126,10 +131,22 @@ spec:
        kubernetes.io/service-name: zk
 ```
 
+In other zones:
+
+```yaml
+spec:
+ to:
+ - targetRef:
+     kind: MeshService
+     displayName: backend
+     zone: other-zone
+```
+
+
 ##### `backendRef`
 
 The structure of `backendRef` for `MeshService` is largely similar except that
-we require a specific port.
+we *require* a specific port.
 
 ```yaml
 kind: MeshHTTPRoute
