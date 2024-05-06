@@ -11,7 +11,7 @@ func buildMangleTable(cfg config.Config) *table.MangleTable {
 	mangle := table.Mangle()
 
 	mangle.Prerouting().
-		AppendIf(cfg.ShouldDropInvalidPackets,
+		AddRuleIf(cfg.ShouldDropInvalidPackets,
 			Match(Conntrack(Ctstate(INVALID))),
 			Jump(Drop()),
 		)

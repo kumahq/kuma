@@ -14,21 +14,21 @@ func (b *Chain) Name() string {
 	return b.name
 }
 
-func (b *Chain) Append(parameters ...*Parameter) *Chain {
+func (b *Chain) AddRule(parameters ...*Parameter) *Chain {
 	b.commands = append(b.commands, rules.NewRule(b.name, 0, parameters))
 
 	return b
 }
 
-func (b *Chain) Insert(position uint, parameters ...*Parameter) *Chain {
+func (b *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
 	b.commands = append(b.commands, rules.NewRule(b.name, position, parameters))
 
 	return b
 }
 
-func (b *Chain) AppendIf(predicate func() bool, parameters ...*Parameter) *Chain {
+func (b *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chain {
 	if predicate() {
-		return b.Append(parameters...)
+		return b.AddRule(parameters...)
 	}
 
 	return b

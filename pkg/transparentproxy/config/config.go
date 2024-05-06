@@ -138,28 +138,28 @@ type Config struct {
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
-// i.e. AppendIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
+// i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
 func (c Config) ShouldDropInvalidPackets() bool {
 	return c.DropInvalidPackets
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
-// i.e. AppendIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
+// i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
 func (c Config) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
 // ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
-// i.e. AppendIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
+// i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
 func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
 	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
-// i.e. AppendIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
+// i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
 func (c Config) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
