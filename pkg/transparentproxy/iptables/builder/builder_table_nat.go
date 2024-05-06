@@ -198,7 +198,7 @@ func addOutputRules(
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	dnsRedirectPort := cfg.Redirect.DNS.Port
 	uid := cfg.Owner.UID
-	rulePosition := 1
+	rulePosition := uint(1)
 	if cfg.Log.Enabled {
 		nat.Output().Insert(
 			rulePosition,
@@ -272,7 +272,7 @@ func addOutputRules(
 
 func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
-	rulePosition := 1
+	rulePosition := uint(1)
 	if cfg.Log.Enabled {
 		nat.Prerouting().Append(
 			Jump(Log(PreroutingLogPrefix, cfg.Log.Level)),

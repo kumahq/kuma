@@ -20,7 +20,7 @@ func (b *Chain) Append(parameters ...*Parameter) *Chain {
 	return b
 }
 
-func (b *Chain) Insert(position int, parameters ...*Parameter) *Chain {
+func (b *Chain) Insert(position uint, parameters ...*Parameter) *Chain {
 	b.commands = append(b.commands, rules.NewRule(b.name, position, parameters))
 
 	return b

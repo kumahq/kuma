@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
@@ -9,7 +9,7 @@ import (
 
 type Rule struct {
 	chainName  string
-	position   int
+	position   uint
 	parameters parameters.Parameters
 }
 
@@ -34,13 +34,13 @@ func (r *Rule) Build(verbose bool) string {
 	}
 
 	if r.position != 0 {
-		cmd = append(cmd, strconv.Itoa(r.position))
+		cmd = append(cmd, fmt.Sprintf("%d", r.position))
 	}
 
 	return strings.Join(append(cmd, r.parameters.Build(verbose)...), " ")
 }
 
-func NewRule(chainName string, position int, parameters []*parameters.Parameter) *Rule {
+func NewRule(chainName string, position uint, parameters []*parameters.Parameter) *Rule {
 	return &Rule{
 		chainName:  chainName,
 		position:   position,
