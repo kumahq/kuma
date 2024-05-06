@@ -37,7 +37,7 @@ func (t *NatTable) WithChain(chain *chain.Chain) *NatTable {
 	return t
 }
 
-func (t *NatTable) Build(verbose bool) string {
+func (t *NatTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
 		name:      "nat",
 		newChains: t.chains,

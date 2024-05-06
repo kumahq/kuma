@@ -18,7 +18,7 @@ func (t *RawTable) Output() *chain.Chain {
 	return t.output
 }
 
-func (t *RawTable) Build(verbose bool) string {
+func (t *RawTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
 		name: "raw",
 		chains: []*chain.Chain{

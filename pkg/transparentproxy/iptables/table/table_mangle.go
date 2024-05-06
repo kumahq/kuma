@@ -33,7 +33,7 @@ func (t *MangleTable) Postrouting() *chain.Chain {
 	return t.postrouting
 }
 
-func (t *MangleTable) Build(verbose bool) string {
+func (t *MangleTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
 		name: "mangle",
 		chains: []*chain.Chain{

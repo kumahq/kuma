@@ -40,20 +40,20 @@ func newIPTables(
 	}
 }
 
-func (t *IPTables) Build(verbose bool) string {
+func (t *IPTables) BuildForRestore(verbose bool) string {
 	var tables []string
 
-	raw := t.raw.Build(verbose)
+	raw := t.raw.BuildForRestore(verbose)
 	if raw != "" {
 		tables = append(tables, raw)
 	}
 
-	nat := t.nat.Build(verbose)
+	nat := t.nat.BuildForRestore(verbose)
 	if nat != "" {
 		tables = append(tables, nat)
 	}
 
-	mangle := t.mangle.Build(verbose)
+	mangle := t.mangle.BuildForRestore(verbose)
 	if mangle != "" {
 		tables = append(tables, mangle)
 	}
@@ -66,7 +66,7 @@ func (t *IPTables) Build(verbose bool) string {
 	return strings.Join(tables, separator) + "\n"
 }
 
-func BuildIPTables(
+func BuildIPTablesForRestore(
 	cfg config.Config,
 	dnsServers []string,
 	ipv6 bool,
@@ -88,7 +88,7 @@ func BuildIPTables(
 		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
 		natTable,
 		buildMangleTable(cfg),
-	).Build(cfg.Verbose), nil
+	).BuildForRestore(cfg.Verbose), nil
 }
 
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
@@ -205,7 +205,7 @@ func (r *restorer) tryRestoreIPTables(
 		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
+	rules, err := BuildIPTablesForRestore(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
