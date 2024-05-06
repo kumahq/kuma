@@ -8,18 +8,23 @@ import (
 )
 
 type Command struct {
-	long       string
-	short      string
 	chainName  string
 	position   int
 	parameters parameters.Parameters
 }
 
 func (c *Command) Build(verbose bool) string {
-	flag := c.short
+	var flag string
 
-	if verbose {
-		flag = c.long
+	switch {
+	case c.position == 0 && verbose:
+		flag = "--append"
+	case c.position == 0 && !verbose:
+		flag = "-A"
+	case c.position != 0 && verbose:
+		flag = "--insert"
+	case c.position != 0 && !verbose:
+		flag = "-I"
 	}
 
 	cmd := []string{flag}
@@ -37,8 +42,6 @@ func (c *Command) Build(verbose bool) string {
 
 func Append(chainName string, parameters []*parameters.Parameter) *Command {
 	return &Command{
-		long:       "--append",
-		short:      "-A",
 		position:   0,
 		chainName:  chainName,
 		parameters: parameters,
@@ -47,8 +50,6 @@ func Append(chainName string, parameters []*parameters.Parameter) *Command {
 
 func Insert(chainName string, position int, parameters []*parameters.Parameter) *Command {
 	return &Command{
-		long:       "--insert",
-		short:      "-I",
 		chainName:  chainName,
 		position:   position,
 		parameters: parameters,
