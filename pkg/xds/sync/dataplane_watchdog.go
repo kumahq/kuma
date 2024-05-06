@@ -144,7 +144,38 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	}
 	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not aggregate mesh contexts")
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.IngressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	var syncForCert bool
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
+		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
+	}
+	if !syncForConfig && !syncForCert {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.lastHash = aggregatedMeshCtxs.Hash
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	}
+	if syncForCert {
+		d.log.V(1).Info("certs expiring soon, reconcile")
+	}
+
+	proxy, err := d.IngressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not build ingress proxy")
+>>>>>>> c8ae260de (fix(kuma-cp): consistently check for expiring ZoneIngress/ZoneEgress certs (#10160))
 	}
 	networking := proxy.ZoneIngressProxy.ZoneIngressResource.Spec.GetNetworking()
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.GetAddress(), networking.GetAdvertisedAddress())
@@ -166,7 +197,38 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 
 	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key)
 	if err != nil {
+<<<<<<< HEAD
 		return err
+=======
+		return SyncResult{}, errors.Wrap(err, "could not aggregate mesh contexts")
+	}
+
+	result := SyncResult{
+		ProxyType: mesh_proto.EgressProxyType,
+	}
+	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
+	var syncForCert bool
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
+		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
+	}
+	if !syncForConfig && !syncForCert {
+		result.Status = SkipStatus
+		return result, nil
+	}
+
+	d.lastHash = aggregatedMeshCtxs.Hash
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", aggregatedMeshCtxs.Hash)
+	}
+	if syncForCert {
+		d.log.V(1).Info("certs expiring soon, reconcile")
+	}
+
+	proxy, err := d.EgressProxyBuilder.Build(ctx, d.key, aggregatedMeshCtxs)
+	if err != nil {
+		return SyncResult{}, errors.Wrap(err, "could not build egress proxy")
+>>>>>>> c8ae260de (fix(kuma-cp): consistently check for expiring ZoneIngress/ZoneEgress certs (#10160))
 	}
 	networking := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.Networking
 	envoyAdminMTLS, err := d.getEnvoyAdminMTLS(ctx, networking.Address, "")
