@@ -40,15 +40,7 @@ func (r *Rule) Build(verbose bool) string {
 	return strings.Join(append(cmd, r.parameters.Build(verbose)...), " ")
 }
 
-func Append(chainName string, parameters []*parameters.Parameter) *Rule {
-	return &Rule{
-		position:   0,
-		chainName:  chainName,
-		parameters: parameters,
-	}
-}
-
-func Insert(chainName string, position int, parameters []*parameters.Parameter) *Rule {
+func NewRule(chainName string, position int, parameters []*parameters.Parameter) *Rule {
 	return &Rule{
 		chainName:  chainName,
 		position:   position,

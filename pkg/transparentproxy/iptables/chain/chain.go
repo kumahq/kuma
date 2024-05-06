@@ -15,13 +15,13 @@ func (b *Chain) Name() string {
 }
 
 func (b *Chain) Append(parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.Append(b.name, parameters))
+	b.commands = append(b.commands, rules.NewRule(b.name, 0, parameters))
 
 	return b
 }
 
 func (b *Chain) Insert(position int, parameters ...*Parameter) *Chain {
-	b.commands = append(b.commands, rules.Insert(b.name, position, parameters))
+	b.commands = append(b.commands, rules.NewRule(b.name, position, parameters))
 
 	return b
 }
