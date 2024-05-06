@@ -45,7 +45,7 @@ func (t *MangleTable) Build(verbose bool) string {
 		},
 	}
 
-	return table.Build(verbose)
+	return table.BuildForRestore(verbose)
 }
 
 func NewMangleChain(name string) *chain.Chain {

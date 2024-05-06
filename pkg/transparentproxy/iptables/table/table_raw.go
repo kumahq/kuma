@@ -27,7 +27,7 @@ func (t *RawTable) Build(verbose bool) string {
 		},
 	}
 
-	return table.Build(verbose)
+	return table.BuildForRestore(verbose)
 }
 
 func NewRawChain(name string) *chain.Chain {

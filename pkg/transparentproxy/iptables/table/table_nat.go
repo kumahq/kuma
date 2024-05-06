@@ -49,7 +49,7 @@ func (t *NatTable) Build(verbose bool) string {
 		},
 	}
 
-	return table.Build(verbose)
+	return table.BuildForRestore(verbose)
 }
 
 func NewNatChain(name string) *chain.Chain {

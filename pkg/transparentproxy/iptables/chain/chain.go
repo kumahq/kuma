@@ -35,11 +35,18 @@ func (c *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chai
 	return c
 }
 
-func (c *Chain) Build(verbose bool) []string {
+// BuildForRestore function generates all iptables rules within chain in
+// a format suitable for restoration using the `iptables-restore` command.
+//
+// It iterates over each rule in the `rules` slice and calls the rule's
+// `BuildForRestore(verbose)` method to generate the individual command string
+// for each rule. The `verbose` flag is passed along to maintain consistent
+// output formatting throughout the chain.
+func (c *Chain) BuildForRestore(verbose bool) []string {
 	var cmds []string
 
 	for _, rule := range c.rules {
-		cmds = append(cmds, rule.Build(verbose))
+		cmds = append(cmds, rule.BuildForRestore(verbose))
 	}
 
 	return cmds
