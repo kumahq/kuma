@@ -2,12 +2,14 @@ package sync
 
 import (
 	"context"
+	std_errors "errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -83,7 +85,16 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	case mesh_proto.IngressProxyType:
 		return d.IngressReconciler.Clear(&proxyID)
 	case mesh_proto.EgressProxyType:
-		return d.EgressReconciler.Clear(&proxyID)
+		var meshList core_mesh.MeshResourceList
+		listErr := d.ResManager.List(context.TODO(), &meshList)
+
+		if listErr == nil {
+			for _, mesh := range meshList.Items {
+				d.EnvoyCpCtx.Secrets.Cleanup(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+			}
+		}
+
+		return std_errors.Join(listErr, d.EgressReconciler.Clear(&proxyID))
 	default:
 		return nil
 	}
