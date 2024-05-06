@@ -36,10 +36,10 @@ func LoadResources(ctx context.Context, rs store.ResourceStore, inputs string) e
 		}
 
 		if create {
-			err = rs.Create(ctx, resource, store.CreateByKey(resource.GetMeta().GetName(), resource.GetMeta().GetMesh()))
+			err = rs.Create(ctx, resource, store.CreateByKey(resource.GetMeta().GetName(), resource.GetMeta().GetMesh()), store.CreateWithLabels(resource.GetMeta().GetLabels()))
 		} else {
 			_ = curResource.SetSpec(resource.GetSpec())
-			err = rs.Update(ctx, curResource)
+			err = rs.Update(ctx, curResource, store.UpdateWithLabels(resource.GetMeta().GetLabels()))
 		}
 		if err != nil {
 			return errors.Wrapf(err, "failed with entry %d meta: %s", i, resource.GetMeta())

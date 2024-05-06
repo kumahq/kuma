@@ -2,10 +2,12 @@ package xds
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -13,7 +15,19 @@ import (
 
 var statsLogger = core.Log.WithName("stats-callbacks")
 
-const ConfigInFlightThreshold = 100_000
+const (
+	ConfigInFlightThreshold = 100_000
+	failedCallingWebhook    = "failed calling webhook"
+	userErrorType           = "user"
+	otherErrorType          = "other"
+	noErrorType             = "no_error"
+)
+
+type VersionExtractor = func(metadata *structpb.Struct) string
+
+var NoopVersionExtractor = func(metadata *structpb.Struct) string {
+	return ""
+}
 
 type StatsCallbacks interface {
 	// ConfigReadyForDelivery marks a configuration as a ready to be delivered.
@@ -31,10 +45,13 @@ type statsCallbacks struct {
 	NoopCallbacks
 	responsesSentMetric    *prometheus.CounterVec
 	requestsReceivedMetric *prometheus.CounterVec
+	versionsMetric         *prometheus.GaugeVec
 	deliveryMetric         prometheus.Summary
 	deliveryMetricName     string
 	streamsActive          int
 	configsQueue           map[string]time.Time
+	versionsForStream      map[int64]string
+	versionExtractor       VersionExtractor
 	sync.RWMutex
 }
 
@@ -61,9 +78,11 @@ func (s *statsCallbacks) DiscardConfig(configVersion string) {
 
 var _ StatsCallbacks = &statsCallbacks{}
 
-func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (StatsCallbacks, error) {
+func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtractor VersionExtractor) (StatsCallbacks, error) {
 	stats := &statsCallbacks{
-		configsQueue: map[string]time.Time{},
+		configsQueue:      map[string]time.Time{},
+		versionsForStream: map[int64]string{},
+		versionExtractor:  versionExtractor,
 	}
 
 	stats.responsesSentMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -77,7 +96,7 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (StatsCallb
 	stats.requestsReceivedMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: dsType + "_requests_received",
 		Help: "Number of confirmations requests from a client",
-	}, []string{"type_url", "confirmation"})
+	}, []string{"type_url", "confirmation", "error_type"})
 	if err := metrics.Register(stats.requestsReceivedMetric); err != nil {
 		return nil, err
 	}
@@ -104,6 +123,14 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (StatsCallb
 		return nil, err
 	}
 
+	stats.versionsMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: dsType + "_client_versions",
+		Help: "Number of clients for each version. It only counts connections where they sent at least one request",
+	}, []string{"version"})
+	if err := metrics.Register(stats.versionsMetric); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -114,21 +141,34 @@ func (s *statsCallbacks) OnStreamOpen(context.Context, int64, string) error {
 	return nil
 }
 
-func (s *statsCallbacks) OnStreamClosed(int64) {
+func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.streamsActive--
+	if ver, ok := s.versionsForStream[streamID]; ok {
+		s.versionsMetric.WithLabelValues(ver).Dec()
+		delete(s.versionsForStream, streamID)
+	}
 }
 
-func (s *statsCallbacks) OnStreamRequest(_ int64, request DiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryRequest) error {
 	if request.VersionInfo() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
 	}
 
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versionsMetric.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
+	}
+
 	if request.HasErrors() {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	if configTime, exists := s.takeConfigTimeFromQueue(request.VersionInfo()); exists {
@@ -156,21 +196,34 @@ func (s *statsCallbacks) OnDeltaStreamOpen(context.Context, int64, string) error
 	return nil
 }
 
-func (s *statsCallbacks) OnDeltaStreamClosed(int64) {
+func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	s.Lock()
 	defer s.Unlock()
 	s.streamsActive--
+	if ver, ok := s.versionsForStream[streamID]; ok {
+		s.versionsMetric.WithLabelValues(ver).Dec()
+		delete(s.versionsForStream, streamID)
+	}
 }
 
-func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDiscoveryRequest) error {
 	if request.GetResponseNonce() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
 	}
 
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versionsMetric.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
+	}
+
 	if request.HasErrors() {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK", classifyError(request.ErrorMsg())).Inc()
 	} else {
-		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
+		s.requestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK", noErrorType).Inc()
 	}
 
 	// Delta only has an initial version, therefore we need to change the key to nodeID and typeURL.
@@ -182,4 +235,12 @@ func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryReq
 
 func (s *statsCallbacks) OnStreamDeltaResponse(_ int64, _ DeltaDiscoveryRequest, response DeltaDiscoveryResponse) {
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
+}
+
+func classifyError(error string) string {
+	if strings.Contains(error, failedCallingWebhook) {
+		return userErrorType
+	} else {
+		return otherErrorType
+	}
 }

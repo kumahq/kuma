@@ -22,6 +22,10 @@ func API() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, Config.KumaNamespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshFaultInjectionResourceTypeDescriptor)).To(Succeed())
 	})

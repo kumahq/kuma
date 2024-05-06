@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
@@ -90,7 +89,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
+			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
 			err = cf.configureOpenTelemetryExporter(ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 			if err != nil {
@@ -214,9 +213,8 @@ func startExporter(ctx context.Context, backend *xds.OpenTelemetryBackend, produ
 	logger.Info("Starting OpenTelemetry exporter", "backend", backendName)
 	exporter, err := otlpmetricgrpc.New(
 		ctx,
-		otlpmetricgrpc.WithEndpoint(backend.Endpoint),
+		otlpmetricgrpc.WithEndpoint(fmt.Sprintf("unix://%s", backend.Endpoint)),
 		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithDialOption(dialOptions()...),
 	)
 	if err != nil {
 		return nil, err
@@ -253,7 +251,7 @@ func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
 	return prometheusBackends
 }
 
-func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar) []metrics.ApplicationToScrape {
+func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
 	for _, application := range applications {
@@ -262,25 +260,26 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			address = application.Address
 		}
 		applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-			Name:          pointer.Deref(application.Name),
-			Address:       address,
-			Path:          application.Path,
-			Port:          application.Port,
-			IsIPv6:        utilnet.IsAddressIPv6(address),
-			QueryModifier: metrics.RemoveQueryParameters,
-			OtelMutator:   metrics.ParsePrometheusMetrics,
+			Name:              pointer.Deref(application.Name),
+			Address:           address,
+			Path:              application.Path,
+			Port:              application.Port,
+			IsIPv6:            utilnet.IsAddressIPv6(address),
+			ExtraLabels:       extraLabels,
+			QueryModifier:     metrics.RemoveQueryParameters,
+			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
 	}
 
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
-		Name:          "envoy",
-		Path:          "/stats",
-		Address:       cf.envoyAdminAddress,
-		Port:          cf.envoyAdminPort,
-		IsIPv6:        false,
-		QueryModifier: metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
-		Mutator:       metrics.MergeClusters,
-		OtelMutator:   metrics.MergeClustersForOpenTelemetry,
+		Name:              "envoy",
+		Path:              "/stats",
+		Address:           cf.envoyAdminAddress,
+		Port:              cf.envoyAdminPort,
+		IsIPv6:            false,
+		ExtraLabels:       extraLabels,
+		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
+		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
 	})
 
 	return applicationsToScrape
@@ -314,16 +313,6 @@ func (cf *ConfigFetcher) shutDownMetricsExporters() {
 
 func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
 	return appliedConfig.RefreshInterval.Duration != newConfig.RefreshInterval.Duration
-}
-
-func dialOptions() []grpc.DialOption {
-	dialer := func(ctx context.Context, addr string) (net.Conn, error) {
-		var d net.Dialer
-		return d.DialContext(ctx, unixDomainSocket, addr)
-	}
-	return []grpc.DialOption{
-		grpc.WithContextDialer(dialer),
-	}
 }
 
 type runningBackend struct {

@@ -13,11 +13,11 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -68,6 +68,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("secret", "secret"),
 		Entry("global-secret", "global-secret"),
 		Entry("retry", "retry"),
+		Entry("meshtimeout", "meshtimeout"),
 	}
 
 	DescribeTable("should throw an error in case of no args",
@@ -114,7 +115,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		func(resource string) {
 			// setup - add resource to store
 			resourceYAML := fmt.Sprintf("get-%s.golden.yaml", resource)
-			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata", resourceYAML)})
+			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata/get", resourceYAML)})
 			Expect(rootCmd.Execute()).To(Succeed())
 
 			// given
@@ -128,7 +129,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceTable))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata/get", resourceTable))
 		},
 		entries,
 	)
@@ -137,7 +138,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		func(resource string) {
 			// setup - add resource to store
 			resourceYAML := fmt.Sprintf("get-%s.golden.yaml", resource)
-			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata", resourceYAML)})
+			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata/get", resourceYAML)})
 			Expect(rootCmd.Execute()).To(Succeed())
 
 			// given
@@ -151,7 +152,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceJSON))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata/get", resourceJSON))
 		},
 		entries,
 	)
@@ -160,7 +161,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		func(resource string) {
 			// setup - add resource to store
 			resourceYAML := fmt.Sprintf("get-%s.golden.yaml", resource)
-			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata", resourceYAML)})
+			rootCmd.SetArgs([]string{"apply", "-f", filepath.Join("testdata/get", resourceYAML)})
 			Expect(rootCmd.Execute()).To(Succeed())
 
 			// when
@@ -171,7 +172,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceYAML))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata/get", resourceYAML))
 		},
 		entries,
 	)

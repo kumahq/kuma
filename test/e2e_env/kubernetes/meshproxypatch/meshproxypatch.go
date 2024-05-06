@@ -35,6 +35,10 @@ func MeshProxyPatch() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshProxyPatchResourceTypeDescriptor)).To(Succeed())
 	})

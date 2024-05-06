@@ -12,6 +12,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -40,13 +41,14 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
-	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp"
 	"github.com/kumahq/kuma/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/multitenant"
@@ -140,7 +142,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithInterCPClientPool(intercp.DefaultClientPool())
 
 	if cfg.Mode == config_core.Global {
-		kdsEnvoyAdminClient := admin.NewKDSEnvoyAdminClient(
+		kdsEnvoyAdminClient := kds_envoyadmin.NewClient(
 			builder.KDSContext().EnvoyAdminRPCs,
 			builder.ReadOnlyResourceManager(),
 		)
@@ -170,11 +172,12 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 		ZoneTokenAccess:      zone_access.NewStaticZoneTokenAccess(builder.Config().Access.Static.GenerateZoneToken),
-		EnvoyAdminAccess: access.NewStaticEnvoyAdminAccess(
+		EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
 			builder.Config().Access.Static.ViewConfigDump,
 			builder.Config().Access.Static.ViewStats,
 			builder.Config().Access.Static.ViewClusters,
 		),
+		ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(builder.Config().Access.Static.ControlPlaneMetadata),
 	})
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {
@@ -509,6 +512,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
+		builder.Config().Experimental.SkipPersistedVIPs,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

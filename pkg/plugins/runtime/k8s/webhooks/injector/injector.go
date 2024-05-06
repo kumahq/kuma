@@ -95,6 +95,14 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
+	initTmp := kube_core.Volume{
+		Name: "kuma-init-tmp",
+		VolumeSource: kube_core.VolumeSource{
+			EmptyDir: &kube_core.EmptyDirVolumeSource{
+				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
+			},
+		},
+	}
 	sidecarTmp := kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
 		VolumeSource: kube_core.VolumeSource{
@@ -103,7 +111,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			},
 		},
 	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, sidecarTmp)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, initTmp, sidecarTmp)
 
 	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
 		Name:      sidecarTmp.Name,
@@ -152,9 +160,18 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		})
 	}
 
-	// init container
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
+	if err != nil {
+		return err
+	}
+	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+	if err != nil {
+		return err
+	}
+
+	var injectedInitContainers []kube_core.Container
 	if !i.cfg.CNIEnabled {
-		ic, err := i.NewInitContainer(pod)
+		ic, err := i.NewInitContainer(podRedirect)
 		if err != nil {
 			return err
 		}
@@ -162,26 +179,42 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		if err != nil {
 			return err
 		}
-		enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+		injectedInitContainers = append(injectedInitContainers, patchedIc)
+	} else if podRedirect.RedirectInbound {
+		ic := i.NewValidationContainer(podRedirect.IpFamilyMode, fmt.Sprintf("%d", podRedirect.RedirectPortInbound), sidecarTmp.Name)
+		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)
 		if err != nil {
 			return err
 		}
-		if enabled {
-			log.V(1).Info("injecting kuma init container first because kuma.io/init-first is set")
-			pod.Spec.InitContainers = append([]kube_core.Container{patchedIc}, pod.Spec.InitContainers...)
-		} else {
-			pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
-		}
+		injectedInitContainers = append(injectedInitContainers, patchedIc)
+	}
+
+	var prependInitContainers []kube_core.Container
+	var appendInitContainers []kube_core.Container
+
+	if initFirst || i.sidecarContainersEnabled {
+		prependInitContainers = append(prependInitContainers, injectedInitContainers...)
+	} else {
+		appendInitContainers = append(appendInitContainers, injectedInitContainers...)
 	}
 
 	if i.sidecarContainersEnabled {
 		// inject sidecar after init
 		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedContainer)
+		patchedContainer.Lifecycle = &kube_core.Lifecycle{
+			PreStop: &kube_core.LifecycleHandler{
+				Exec: &kube_core.ExecAction{
+					Command: []string{"killall", "-USR2", "kuma-dp"},
+				},
+			},
+		}
+		prependInitContainers = append(prependInitContainers, patchedContainer)
 	} else {
 		// inject sidecar as first container
 		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 	}
+
+	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
 		return err
@@ -356,18 +389,21 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 	return nil
 }
 
-func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
-	if err != nil {
-		return kube_core.Container{}, err
-	}
-
+func (i *KumaInjector) NewInitContainer(podRedirect *tp_k8s.PodRedirect) (kube_core.Container, error) {
 	container := kube_core.Container{
 		Name:            k8s_util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args:            podRedirect.AsKumactlCommandLine(),
+		Env: []kube_core.EnvVar{
+			// iptables needs this lock file to be writable:
+			// source: https://git.netfilter.org/iptables/tree/iptables/xshared.c?h=v1.8.7#n258
+			{
+				Name:  "XTABLES_LOCKFILE",
+				Value: "/tmp/xtables.lock",
+			},
+		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
 			RunAsGroup: new(int64),
@@ -376,7 +412,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 					"NET_ADMIN",
 					"NET_RAW",
 				},
+				Drop: []kube_core.Capability{
+					"ALL",
+				},
 			},
+			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{
@@ -387,6 +427,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
 			},
+		},
+		VolumeMounts: []kube_core.VolumeMount{
+			{Name: "kuma-init-tmp", MountPath: "/tmp", ReadOnly: false},
 		},
 	}
 
@@ -412,13 +455,53 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			kube_core.ResourceMemory: *kube_api.NewScaledQuantity(80, kube_api.Mega),
 		}
 
-		container.VolumeMounts = []kube_core.VolumeMount{
-			{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
-			{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
-		}
+		container.VolumeMounts = append(container.VolumeMounts,
+			kube_core.VolumeMount{Name: "sys-fs-cgroup", MountPath: i.cfg.EBPF.CgroupPath},
+			kube_core.VolumeMount{Name: "bpf-fs", MountPath: i.cfg.EBPF.BPFFSPath, MountPropagation: &bidirectional},
+		)
 	}
 
 	return container, nil
+}
+
+func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort string, tmpVolumeName string) kube_core.Container {
+	container := kube_core.Container{
+		Name:            k8s_util.KumaCniValidationContainerName,
+		Image:           i.cfg.InitContainer.Image,
+		ImagePullPolicy: kube_core.PullIfNotPresent,
+		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy-validator"},
+		Args: []string{
+			"--config-file", "/tmp/.kumactl",
+			"--ip-family-mode", ipFamilyMode,
+			"--validation-server-port", inboundRedirectPort,
+		},
+		SecurityContext: &kube_core.SecurityContext{
+			RunAsUser:  &i.cfg.SidecarContainer.DataplaneContainer.UID,
+			RunAsGroup: &i.cfg.SidecarContainer.DataplaneContainer.GID,
+			Capabilities: &kube_core.Capabilities{
+				Drop: []kube_core.Capability{
+					"ALL",
+				},
+			},
+		},
+		Resources: kube_core.ResourceRequirements{
+			Limits: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(100, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(50, kube_api.Mega),
+			},
+			Requests: kube_core.ResourceList{
+				kube_core.ResourceCPU:    *kube_api.NewScaledQuantity(20, kube_api.Milli),
+				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(20, kube_api.Mega),
+			},
+		},
+	}
+	container.VolumeMounts = append(container.VolumeMounts, kube_core.VolumeMount{
+		Name:      tmpVolumeName,
+		MountPath: "/tmp",
+		ReadOnly:  false,
+	})
+
+	return container
 }
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {

@@ -26,6 +26,7 @@ type PolicyConfig struct {
 	AlternativeNames    []string
 	HasTo               bool
 	HasFrom             bool
+	HasStatus           bool
 	GoModule            string
 	ResourceDir         string
 	IsPolicy            bool
@@ -42,9 +43,6 @@ func Policy(path string) (PolicyConfig, error) {
 	var mainStruct *ast.TypeSpec
 	var mainComment *ast.CommentGroup
 	var packageName string
-
-	hasTo := false
-	hasFrom := false
 
 	ast.Inspect(f, func(n ast.Node) bool {
 		if file, ok := n.(*ast.File); ok {
@@ -69,14 +67,10 @@ func Policy(path string) (PolicyConfig, error) {
 		return PolicyConfig{}, errors.Errorf("type %s is not a struct", mainStruct.Name.String())
 	}
 
+	fields := map[string]bool{}
 	for _, field := range st.Fields.List {
 		for _, name := range field.Names {
-			switch name.Name {
-			case "From":
-				hasFrom = true
-			case "To":
-				hasTo = true
-			}
+			fields[name.Name] = true
 		}
 	}
 
@@ -85,7 +79,7 @@ func Policy(path string) (PolicyConfig, error) {
 		return PolicyConfig{}, err
 	}
 
-	return newPolicyConfig(packageName, mainStruct.Name.String(), markers, hasTo, hasFrom)
+	return newPolicyConfig(packageName, mainStruct.Name.String(), markers, fields)
 }
 
 func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
@@ -116,7 +110,7 @@ func parseBool(markers map[string]string, key string) (bool, bool) {
 	return false, false
 }
 
-func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom bool) (PolicyConfig, error) {
+func newPolicyConfig(pkg, name string, markers map[string]string, fields map[string]bool) (PolicyConfig, error) {
 	res := PolicyConfig{
 		Package:             pkg,
 		Name:                name,
@@ -124,8 +118,8 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 		SingularDisplayName: core_model.DisplayName(name),
 		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
 		AlternativeNames:    []string{strings.ToLower(name)},
-		HasTo:               hasTo,
-		HasFrom:             hasFrom,
+		HasTo:               fields["To"],
+		HasFrom:             fields["From"],
 		IsPolicy:            true,
 	}
 
@@ -137,6 +131,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, hasTo, hasFrom
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_policy"); ok {
 		res.IsPolicy = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:has_status"); ok {
+		res.HasStatus = v
 	}
 
 	if v, ok := markers["kuma:policy:singular_display_name"]; ok {

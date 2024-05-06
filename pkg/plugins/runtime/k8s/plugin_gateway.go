@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -16,23 +17,47 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
-	controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
-func gatewayAPICRDsPresent(mgr kube_ctrl.Manager) bool {
-	gk := schema.GroupKind{
-		Group: gatewayapi.SchemeGroupVersion.Group,
-		Kind:  "Gateway",
+var requiredGatewayCRDs = map[string]string{
+	"GatewayClass":   gatewayCRDNameWithGroupKindAndVersion("GatewayClass"),
+	"Gateway":        gatewayCRDNameWithGroupKindAndVersion("Gateway"),
+	"HTTPRoute":      gatewayCRDNameWithGroupKindAndVersion("HTTPRoute"),
+	"ReferenceGrant": gatewayCRDNameWithGroupKindAndVersion("ReferenceGrant"),
+}
+
+func gatewayCRDNameWithGroupKindAndVersion(name string) string {
+	return fmt.Sprintf(
+		"%s.%s/%s",
+		name,
+		gatewayapi.GroupVersion.Group,
+		gatewayapi.GroupVersion.Version,
+	)
+}
+
+func gatewayAPICRDsPresent(mgr kube_ctrl.Manager) (bool, []string) {
+	var missing []string
+
+	for kind, fullName := range requiredGatewayCRDs {
+		gk := schema.GroupKind{
+			Group: gatewayapi.GroupVersion.Group,
+			Kind:  kind,
+		}
+
+		mappings, _ := mgr.GetClient().RESTMapper().RESTMappings(
+			gk,
+			gatewayapi.GroupVersion.Version,
+		)
+
+		if len(mappings) == 0 {
+			missing = append(missing, fullName)
+		}
 	}
 
-	mappings, _ := mgr.GetClient().RESTMapper().RESTMappings(
-		gk,
-		gatewayapi.SchemeGroupVersion.Version,
-	)
-
-	return len(mappings) > 0
+	return len(missing) == 0, missing
 }
 
 func meshGatewayCRDsPresent() bool {
@@ -92,18 +117,30 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if rt.Config().Experimental.GatewayAPI {
-		if err := addGatewayAPIReconcillers(mgr, rt, proxyFactory); err != nil {
-			return err
-		}
+	if err := addGatewayAPIReconcillers(mgr, rt, proxyFactory); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
-	if !gatewayAPICRDsPresent(mgr) {
-		log.Info("[WARNING] Experimental GatewayAPI feature is enabled, but CRDs are not registered. Disabling support")
+	if ok, missingGatewayCRDs := gatewayAPICRDsPresent(mgr); !ok {
+		if len(requiredGatewayCRDs) != len(missingGatewayCRDs) {
+			// Logging this as error as in such case there is possibility that user is expecting
+			// Gateway API support to work, but might be unaware that some (not all) CRDs are
+			// missing. Such scenario might occur when old version of CRDs is installed with
+			// missing ReferenceGrant.
+			log.Error(
+				errors.New("only subset of required GatewayAPI CRDs registered"),
+				"disabling support for GatewayAPI",
+				"required", maps.Values(requiredGatewayCRDs),
+				"missing", missingGatewayCRDs,
+			)
+		} else {
+			log.Info("[WARNING] GatewayAPI CRDs are not registered. Disabling support")
+		}
+
 		return nil
 	}
 
@@ -135,15 +172,17 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 		TypeRegistry:    k8s_registry.Global(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
+		Zone:            rt.Config().Multizone.Zone.Name,
 	}
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
 	}
 
 	secretController := &gatewayapi_controllers.SecretController{
-		Log:             core.Log.WithName("controllers").WithName("secret"),
-		Client:          mgr.GetClient(),
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		Log:                                  core.Log.WithName("controllers").WithName("secret"),
+		Client:                               mgr.GetClient(),
+		SystemNamespace:                      rt.Config().Store.Kubernetes.SystemNamespace,
+		SupportGatewaySecretsInAllNamespaces: rt.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces,
 	}
 	if err := secretController.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Secret reconciler")

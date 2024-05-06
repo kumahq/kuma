@@ -95,9 +95,11 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				InstanceIPEnvVarName: "INSTANCE_IP",
 				BPFFSPath:            "/sys/fs/bpf",
 				CgroupPath:           "/sys/fs/cgroup",
-				ProgramsSourcePath:   "/kuma/ebpf",
+				ProgramsSourcePath:   "/tmp/kuma-ebpf",
 			},
 			IgnoredServiceSelectorLabels: []string{},
+			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
+			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region"},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -147,6 +149,13 @@ type KubernetesRuntimeConfig struct {
 	ClientConfig ClientConfig `json:"clientConfig"`
 	// Kubernetes leader election configuration
 	LeaderElection LeaderElection `json:"leaderElection"`
+	// SkipMeshOwnerReference is a flag that allows to skip adding Mesh owner reference to resources.
+	// If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
+	// This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
+	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
+	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
+	// The downside is that control plane requires permission to read Secrets in all namespaces.
+	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
 }
 
 type ControllersConcurrency struct {
@@ -221,6 +230,8 @@ type Injector struct {
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
+	// NodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
+	NodeLabelsToCopy []string `json:"nodeLabelsToCopy" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection

@@ -1,0 +1,3 @@
+# TYPE envoy_rbac_allowed counter
+envoy_rbac_allowed{envoy_cluster_name="example"} 1
+

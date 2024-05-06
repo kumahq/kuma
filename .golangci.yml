@@ -2,6 +2,7 @@ linters:
   enable:
     - bodyclose
     - contextcheck
+    - depguard
     - errcheck
     - gci
     - ginkgolinter
@@ -78,6 +79,9 @@ linters-settings:
         - github.com/ghodss/yaml:
             recommendations:
               - sigs.k8s.io/yaml
+        - github.com/hashicorp/go-multierror:
+            recommandations:
+              - errors
         - gopkg.in/yaml.v2:
             recommendations:
               - sigs.k8s.io/yaml
@@ -88,6 +92,16 @@ linters-settings:
             recommandations:
               - io
               - os
+  depguard:
+    rules:
+      pkg-import:
+        list-mode: lax # only disallow some imports
+        files:
+          - "!**/app/**/*.go"
+          - "!**/pkg/api-server/gui_handler.go"
+        deny:
+          - pkg: "github.com/kumahq/kuma/app"
+            desc: "pkg can't import app"
 
   misspell:
     locale: US

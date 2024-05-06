@@ -27,8 +27,6 @@ type Conf struct {
 }
 
 type Sidecar struct {
-	// Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
-	Regex *string `json:"regex,omitempty"`
 	// Profiles allows to customize which metrics are published.
 	Profiles *Profiles `json:"profiles,omitempty"`
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
@@ -40,8 +38,6 @@ type Sidecar struct {
 
 type Profiles struct {
 	// AppendProfiles allows to combine the metrics from multiple predefined profiles.
-	// Currently, it's only possible to define one profile.
-	// +kubebuilder:validation:MaxItems=1
 	AppendProfiles *[]Profile `json:"appendProfiles,omitempty"`
 	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
 	// Exclude is subordinate to Include.
@@ -72,13 +68,14 @@ type Selector struct {
 	Match string `json:"match"`
 }
 
-// +kubebuilder:validation:Enum=Prefix;Regex;Exact
+// +kubebuilder:validation:Enum=Prefix;Regex;Exact;Contains
 type SelectorType string
 
 const (
-	PrefixSelectorType SelectorType = "Prefix"
-	RegexSelectorType  SelectorType = "Regex"
-	ExactSelectorType  SelectorType = "Exact"
+	PrefixSelectorType   SelectorType = "Prefix"
+	RegexSelectorType    SelectorType = "Regex"
+	ExactSelectorType    SelectorType = "Exact"
+	ContainsSelectorType SelectorType = "Contains"
 )
 
 type Application struct {

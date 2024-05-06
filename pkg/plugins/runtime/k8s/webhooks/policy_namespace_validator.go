@@ -31,5 +31,5 @@ func (p *PolicyNamespaceValidator) Supports(request admission.Request) bool {
 	if err != nil {
 		return false
 	}
-	return desc.IsPluginOriginated
+	return desc.IsPluginOriginated && desc.IsPolicy
 }

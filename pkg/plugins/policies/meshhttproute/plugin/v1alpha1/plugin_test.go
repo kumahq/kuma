@@ -132,11 +132,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort: 8084,
 						Protocol:   core_mesh.ProtocolHTTP,
 					}},
-					Status: meshservice_api.MeshServiceStatus{
-						VIPs: []meshservice_api.VIP{{
-							IP: "10.0.0.1",
-						}},
-					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
 				},
 			}
 			resources := xds_context.NewResources()
@@ -150,7 +150,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(samples.DataplaneWebBuilder().
+						AddOutbound(builders.Outbound().
+							WithAddress("10.0.0.1").
+							WithPort(80).
+							WithMeshService("backend", 80),
+						),
+					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),
 			}

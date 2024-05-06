@@ -25,10 +25,10 @@ func SetupAndGetState() []byte {
 
 	kumaOptions := append(
 		[]framework.KumaDeploymentOption{
-			framework.WithCtlOpts(map[string]string{
-				"--experimental-gatewayapi": "true",
-			}),
 			framework.WithEgress(),
+			framework.WithCtlOpts(map[string]string{
+				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
+			}),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
@@ -96,4 +96,9 @@ func PrintKubeState(report ginkgo.Report) {
 			framework.Logf("could not retrieve kube pods")
 		}
 	}
+}
+
+func ExpectCpToNotCrash() {
+	restartCount := framework.RestartCount(Cluster.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0), "CP restarted in this suite, this should not happen.")
 }

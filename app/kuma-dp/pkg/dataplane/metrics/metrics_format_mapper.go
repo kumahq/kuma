@@ -10,8 +10,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
-	extraAttributes := extraAttributesFrom(mesh, dataplane, service)
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string) []metricdata.Metrics {
+	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
 	var openTelemetryMetrics []metricdata.Metrics
 	for _, prometheusMetric := range appMetrics {
@@ -132,7 +132,7 @@ func toOpenTelemetryQuantile(prometheusQuantiles []*io_prometheus_client.Quantil
 	return otelQuantiles
 }
 
-func extraAttributesFrom(mesh string, dataplane string, service string) []attribute.KeyValue {
+func extraAttributesFrom(mesh string, dataplane string, service string, extraLabels map[string]string) []attribute.KeyValue {
 	var extraAttributes []attribute.KeyValue
 	if mesh != "" {
 		extraAttributes = append(extraAttributes, attribute.String("mesh", mesh))
@@ -142,6 +142,9 @@ func extraAttributesFrom(mesh string, dataplane string, service string) []attrib
 	}
 	if service != "" {
 		extraAttributes = append(extraAttributes, attribute.String("service", service))
+	}
+	for k, v := range extraLabels {
+		extraAttributes = append(extraAttributes, attribute.String(k, v))
 	}
 	return extraAttributes
 }

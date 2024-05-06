@@ -32,14 +32,15 @@ import (
 var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
-	rm              manager.ReadOnlyResourceManager
-	typeSet         map[core_model.ResourceType]struct{}
-	ipFunc          lookup.LookupIPFunc
-	zone            string
-	vipsPersistence *vips.Persistence
-	topLevelDomain  string
-	vipPort         uint32
-	rsGraphBuilder  ReachableServicesGraphBuilder
+	rm                manager.ReadOnlyResourceManager
+	typeSet           map[core_model.ResourceType]struct{}
+	ipFunc            lookup.LookupIPFunc
+	zone              string
+	vipsPersistence   *vips.Persistence
+	topLevelDomain    string
+	vipPort           uint32
+	rsGraphBuilder    ReachableServicesGraphBuilder
+	skipPersistedVIPs bool
 }
 
 // MeshContextBuilder
@@ -70,6 +71,7 @@ func NewMeshContextBuilder(
 	topLevelDomain string,
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
+	skipPersistedVIPs bool,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -77,14 +79,15 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:              rm,
-		typeSet:         typeSet,
-		ipFunc:          ipFunc,
-		zone:            zone,
-		vipsPersistence: vipsPersistence,
-		topLevelDomain:  topLevelDomain,
-		vipPort:         vipPort,
-		rsGraphBuilder:  rsGraphBuilder,
+		rm:                rm,
+		typeSet:           typeSet,
+		ipFunc:            ipFunc,
+		zone:              zone,
+		vipsPersistence:   vipsPersistence,
+		topLevelDomain:    topLevelDomain,
+		vipPort:           vipPort,
+		rsGraphBuilder:    rsGraphBuilder,
+		skipPersistedVIPs: skipPersistedVIPs,
 	}
 }
 
@@ -163,12 +166,17 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
 
-	virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch vips")
+	var domains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	if !m.skipPersistedVIPs {
+		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not fetch vips")
+		}
+		// resolve all the domains
+		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
 	}
-	// resolve all the domains
-	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+	outbounds = append(outbounds, xds_topology.MeshServiceOutbounds(meshServices)...)
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh

@@ -25,6 +25,9 @@ type MeshService struct {
 	// Spec is the specification of the Kuma MeshService resource.
 	// +kubebuilder:validation:Optional
 	Spec *policy.MeshService `json:"spec,omitempty"`
+	// Status is the current status of the Kuma MeshService resource.
+	// +kubebuilder:validation:Optional
+	Status *policy.MeshServiceStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -73,6 +76,24 @@ func (cb *MeshService) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = spec.(*policy.MeshService)
+}
+
+func (cb *MeshService) GetStatus() (core_model.ResourceStatus, error) {
+	return cb.Status, nil
+}
+
+func (cb *MeshService) SetStatus(status core_model.ResourceStatus) error {
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.MeshServiceStatus); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.MeshServiceStatus)
+	return nil
 }
 
 func (cb *MeshService) Scope() model.Scope {

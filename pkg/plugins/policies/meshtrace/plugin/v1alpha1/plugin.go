@@ -32,8 +32,8 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources)
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.MeshTraceType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.Proxy) error {
@@ -113,7 +113,7 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 }
 
 func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 		listener, ok := outboundListeners[oface]

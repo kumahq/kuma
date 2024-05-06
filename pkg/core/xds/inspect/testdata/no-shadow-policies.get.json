@@ -1,0 +1,65 @@
+{
+  "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
+    "localhost:8080": {
+      "name": "localhost:8080",
+      "altStatName": "localhost_8080",
+      "type": "STATIC",
+      "connectTimeout": "5s",
+      "loadAssignment": {
+        "clusterName": "localhost:8080",
+        "endpoints": [
+          {
+            "lbEndpoints": [
+              {
+                "endpoint": {
+                  "address": {
+                    "socketAddress": {
+                      "address": "192.168.0.1",
+                      "portValue": 8080
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "type.googleapis.com/envoy.config.listener.v3.Listener": {
+    "inbound:192.168.0.1:80": {
+      "name": "inbound:192.168.0.1:80",
+      "address": {
+        "socketAddress": {
+          "address": "192.168.0.1",
+          "portValue": 80
+        }
+      },
+      "filterChains": [
+        {
+          "filters": [
+            {
+              "name": "envoy.filters.network.tcp_proxy",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
+                "statPrefix": "localhost_8080",
+                "cluster": "localhost:8080",
+                "idleTimeout": "123s"
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "filterMetadata": {
+          "io.kuma.tags": {
+            "kuma.io/service": "test",
+            "region": "eu"
+          }
+        }
+      },
+      "trafficDirection": "INBOUND",
+      "enableReusePort": false
+    }
+  }
+}

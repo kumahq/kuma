@@ -63,6 +63,10 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(cluster, "default")
+	})
+
 	E2EAfterEach(func() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

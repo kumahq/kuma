@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -18,10 +19,12 @@ import (
 )
 
 type InboundConverter struct {
-	NameExtractor NameExtractor
+	NameExtractor    NameExtractor
+	NodeGetter       kube_client.Reader
+	NodeLabelsToCopy []string
 }
 
-func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) []*mesh_proto.Dataplane_Networking_Inbound {
+func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for i := range service.Spec.Ports {
 		svcPort := service.Spec.Ports[i]
@@ -36,7 +39,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			continue
 		}
 
-		tags := InboundTagsForService(zone, pod, service, &svcPort)
+		tags := InboundTagsForService(zone, pod, service, &svcPort, nodeLabels)
 		state := mesh_proto.Dataplane_Networking_Inbound_Ready
 		health := mesh_proto.Dataplane_Networking_Inbound_Health{
 			Ready: true,
@@ -83,7 +86,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 	return ifaces
 }
 
-func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_proto.Dataplane_Networking_Inbound {
+func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) *mesh_proto.Dataplane_Networking_Inbound {
 	// The Pod does not have any services associated with it, just get the data from the Pod itself
 
 	// We still need that extra listener with a service because it is required in many places of the code (e.g. mTLS)
@@ -94,7 +97,7 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 	// will create lots of code changes to account for this other type of dataplne (we already have GW and Ingress),
 	// including GUI and CLI changes
 
-	tags := InboundTagsForPod(zone, pod, name)
+	tags := InboundTagsForPod(zone, pod, name, nodeLabels)
 	state := mesh_proto.Dataplane_Networking_Inbound_Ready
 	health := mesh_proto.Dataplane_Networking_Inbound_Health{
 		Ready: true,
@@ -128,6 +131,11 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string) *mesh_p
 }
 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return nil, err
+	}
+
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for _, svc := range services {
 		// Services of ExternalName type should not have any selectors.
@@ -137,25 +145,39 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, inboundForService(zone, pod, svc)...)
+			ifaces = append(ifaces, inboundForService(zone, pod, svc, nodeLabels)...)
 		}
 	}
 
 	if len(ifaces) == 0 {
-		if len(services) > 0 {
-			return nil, errors.Errorf("A service that selects pod %s was found, but it doesn't match any container ports.", pod.GetName())
-		}
 		name, _, err := i.NameExtractor.Name(ctx, pod)
 		if err != nil {
 			return nil, err
 		}
 
-		ifaces = append(ifaces, inboundForServiceless(zone, pod, name))
+		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
 	}
 	return ifaces, nil
 }
 
-func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
+func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {
+	if len(i.NodeLabelsToCopy) == 0 || nodeName == "" {
+		return map[string]string{}, nil
+	}
+	node := &kube_core.Node{}
+	if err := i.NodeGetter.Get(ctx, types.NamespacedName{Name: nodeName}, node); err != nil {
+		return nil, errors.Wrapf(err, "unable to get Node %s", nodeName)
+	}
+	nodeLabels := make(map[string]string, len(i.NodeLabelsToCopy))
+	for _, label := range i.NodeLabelsToCopy {
+		if value, exists := node.Labels[label]; exists {
+			nodeLabels[label] = value
+		}
+	}
+	return nodeLabels, nil
+}
+
+func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, nodeLabels map[string]string) map[string]string {
 	logger := converterLog.WithValues("pod", pod.Name, "namespace", pod.Namespace)
 	tags := map[string]string{}
 	var ignoredLabels []string
@@ -172,12 +194,16 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if len(ignoredLabels) > 0 {
 		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
+
 	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace
 	tags[mesh_proto.KubeServiceTag] = svc.Name
 	tags[mesh_proto.KubePortTag] = strconv.Itoa(int(svcPort.Port))
 	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTag(kube_client.ObjectKeyFromObject(svc), &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
+	}
+	for key, value := range nodeLabels {
+		tags[key] = value
 	}
 	// For provided gateway we should ignore the protocol tag
 	protocol := ProtocolTagFor(svc, svcPort)
@@ -222,7 +248,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	return strings.ToLower(protocolValue)
 }
 
-func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]string {
+func InboundTagsForPod(zone string, pod *kube_core.Pod, name string, nodeLabels map[string]string) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
 		if value == "" {
@@ -239,6 +265,9 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod, name string) map[string]
 	}
 	tags[mesh_proto.ProtocolTag] = core_mesh.ProtocolTCP
 	tags[mesh_proto.InstanceTag] = pod.Name
+	for key, value := range nodeLabels {
+		tags[key] = value
+	}
 
 	return tags
 }

@@ -8,7 +8,7 @@ function envoy_version() {
   # - if ENVOY_TAG is a real git tag like 'v1.20.0' then the version is equal to '1.20.0' (without the first letter 'v').
   # - if ENVOY_TAG is a commit hash then the version will look like '1.20.1-dev-b16d390f'
 
-  ENVOY_TAG=${ENVOY_TAG:-"v1.29.2"}
+  ENVOY_TAG=${ENVOY_TAG:-"v1.29.4"}
   ENVOY_VERSION=$(curl --silent --location "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION.txt")
 
   # for envoy versions older than v1.22.0 file 'VERSION.txt' used to be called 'VERSION'
@@ -35,7 +35,7 @@ function base_branch_name() {
   highestMinorVersionTag=$(git tag -l --sort -version:refname | head -n 1  | awk -F'.' '{print $1"."$2}')
   currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
   # On master the closest tag is 2.0.0 so we are setting dev for master
-  if [[ ${describe} =~ ^v?[1-9]*\.[0-9]*\.0 && ${describe} =~ ^${highestMinorVersionTag} ]]
+  if [[ ${describe} =~ ^v?[1-9]*\.[0-9]*\.[0-9]* && ${describe} =~ ^${highestMinorVersionTag} ]]
   then
     echo "master"
   # If we are on the release branch use the branch name

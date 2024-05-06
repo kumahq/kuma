@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 )
 
 type EnvoyAdminProcessor interface {
@@ -19,29 +20,20 @@ type EnvoyAdminProcessor interface {
 	StartProcessingClusters(stream mesh_proto.GlobalKDSService_StreamClustersClient, errorCh chan error)
 }
 
-type EnvoyAdminFn = func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
-
 type envoyAdminProcessor struct {
-	resManager core_manager.ReadOnlyResourceManager
-
-	configDumpFn EnvoyAdminFn
-	statsFn      EnvoyAdminFn
-	clustersFn   EnvoyAdminFn
+	resManager  core_manager.ReadOnlyResourceManager
+	adminClient admin.EnvoyAdminClient
 }
 
 var _ EnvoyAdminProcessor = &envoyAdminProcessor{}
 
 func NewEnvoyAdminProcessor(
 	resManager core_manager.ReadOnlyResourceManager,
-	configDumpFn EnvoyAdminFn,
-	statsFn EnvoyAdminFn,
-	clustersFn EnvoyAdminFn,
+	adminClient admin.EnvoyAdminClient,
 ) EnvoyAdminProcessor {
 	return &envoyAdminProcessor{
-		resManager:   resManager,
-		configDumpFn: configDumpFn,
-		statsFn:      statsFn,
-		clustersFn:   clustersFn,
+		resManager:  resManager,
+		adminClient: adminClient,
 	}
 }
 
@@ -56,7 +48,9 @@ func (s *envoyAdminProcessor) StartProcessingXDSConfigs(
 			return
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
-			config, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, s.configDumpFn)
+			config, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+				return s.adminClient.ConfigDump(ctx, proxy, req.IncludeEds)
+			})
 
 			resp := &mesh_proto.XDSConfigResponse{
 				RequestId: req.RequestId,
@@ -90,7 +84,9 @@ func (s *envoyAdminProcessor) StartProcessingStats(
 			return
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
-			stats, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, s.statsFn)
+			stats, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+				return s.adminClient.Stats(ctx, proxy, req.Format)
+			})
 
 			resp := &mesh_proto.StatsResponse{
 				RequestId: req.RequestId,
@@ -124,7 +120,9 @@ func (s *envoyAdminProcessor) StartProcessingClusters(
 			return
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
-			clusters, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, s.clustersFn)
+			clusters, err := s.executeAdminFn(stream.Context(), req.ResourceType, req.ResourceName, req.ResourceMesh, func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+				return s.adminClient.Clusters(ctx, proxy, req.Format)
+			})
 
 			resp := &mesh_proto.ClustersResponse{
 				RequestId: req.RequestId,
@@ -152,7 +150,7 @@ func (s *envoyAdminProcessor) executeAdminFn(
 	resType string,
 	resName string,
 	resMesh string,
-	adminFn EnvoyAdminFn,
+	adminFn func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error),
 ) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

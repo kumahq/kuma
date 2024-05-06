@@ -18,7 +18,7 @@ const (
 	PartiallyDegraded = Status("Partially degraded")
 )
 
-func (t *DataplaneOverviewResource) GetStatus() (Status, []string) {
+func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	proxyOnline := t.Spec.DataplaneInsight.IsOnline()
 
 	var errs []string

@@ -31,7 +31,6 @@ sidecarContainer:
       cpu: 1100m
       memory: 1512Mi
 initContainer:
-  enabled: true
   image: kuma/kuma-init:latest
 virtualProbesEnabled: true
 virtualProbesPort: 9000
@@ -44,4 +43,4 @@ ebpf:
   bpffsPath: "/sys/fs/bpf"
   cgroupPath: "/sys/fs/cgroup"
   tcAttachIface: "eth0"
-  programsSourcePath: "/kuma/ebpf"
+  programsSourcePath: "/tmp/kuma-ebpf"

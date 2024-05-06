@@ -1,5 +1,5 @@
 # until there is a distroless iptables image we have to use something else
-FROM ubuntu:jammy-20240227@sha256:77906da86b60585ce12215807090eb327e7386c8fafb5402369e421f44eff17e
+FROM ubuntu:jammy-20240416@sha256:6d7b5d3317a71adb5e175640150e44b8b9a9401a7dd394f44840626aff9fa94d
 ARG ARCH
 
 RUN apt-get update && \
@@ -15,8 +15,7 @@ COPY /tools/releases/templates/LICENSE \
 
 COPY /tools/releases/templates/NOTICE /kuma/NOTICE
 
-RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
-    adduser --system --disabled-password --group kumactl --uid 5678
+RUN adduser --system --disabled-password --group kumactl --uid 5678
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]

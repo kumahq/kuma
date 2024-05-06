@@ -93,6 +93,13 @@ func InboundPassthrough() {
 			Setup(multizone.KubeZone1),
 		).To(Succeed())
 	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, mesh)
+		DebugUniversal(multizone.UniZone1, mesh)
+		DebugKube(multizone.KubeZone1, mesh, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())

@@ -25,8 +25,8 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshHealthCheckType, dataplane, resources)
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.MeshHealthCheckType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -55,7 +55,11 @@ func applyToOutbounds(
 	dataplane *core_mesh.DataplaneResource,
 	meshCtx xds_context.MeshContext,
 ) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
+	targetedClusters := policies_xds.GatherTargetedClusters(
+		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outboundSplitClusters,
+		outboundClusters,
+	)
 
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {

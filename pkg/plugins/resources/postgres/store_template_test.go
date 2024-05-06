@@ -21,9 +21,6 @@ var _ = Describe("PostgresStore template", func() {
 			dbCfg.MaxListQueryElements = uint32(maxListQueryElements)
 			dbCfg.MaxOpenConnections = 2
 
-			pqMetrics, err := core_metrics.NewMetrics("Zone")
-			Expect(err).ToNot(HaveOccurred())
-
 			pgxMetrics, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 
@@ -38,9 +35,6 @@ var _ = Describe("PostgresStore template", func() {
 			if storeName == "pgx" {
 				dbCfg.DriverName = config_postgres.DriverNamePgx
 				pStore, err = postgres.NewPgxStore(pgxMetrics, dbCfg, config.NoopPgxConfigCustomizationFn)
-			} else {
-				dbCfg.DriverName = config_postgres.DriverNamePq
-				pStore, err = postgres.NewPqStore(pqMetrics, dbCfg)
 			}
 			if err != nil {
 				logger.Default.Logf(GinkgoT(), "error connecting to database: db name: %s, host: %s, port: %d, error: %v",
@@ -59,7 +53,4 @@ var _ = Describe("PostgresStore template", func() {
 	test_store.ExecuteStoreTests(createStore("pgx", 0), "pgx")
 	test_store.ExecuteStoreTests(createStore("pgx", 4), "pgx")
 	test_store.ExecuteOwnerTests(createStore("pgx", 0), "pgx")
-	test_store.ExecuteStoreTests(createStore("pq", 0), "pq")
-	test_store.ExecuteStoreTests(createStore("pq", 4), "pq")
-	test_store.ExecuteOwnerTests(createStore("pq", 0), "pq")
 })

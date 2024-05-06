@@ -19,9 +19,9 @@ targetRef:
   name: svc-1
 default:
   sidecar:
-    regex: "http2_.*"
     profiles:
       appendProfiles:
+        - name: None
         - name: Basic
       exclude:
         - type: Regex
@@ -102,24 +102,6 @@ targetRef:
 default:
   applications:
     - port: 95599
-`),
-		ErrorCase(
-			"invalid regex",
-			validators.Violation{
-				Field:   "spec.default.sidecar.regex",
-				Message: "invalid regex",
-			},
-			`
-type: MeshMetric
-mesh: mesh-1
-name: metrics-1
-targetRef:
-  kind: MeshService
-  name: svc-1
-default:
-  sidecar:
-    regex: "())(!("
-    includeUnused: true
 `),
 		ErrorCase(
 			"invalid exclude regexes",

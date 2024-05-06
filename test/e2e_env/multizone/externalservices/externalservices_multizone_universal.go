@@ -135,6 +135,12 @@ routing:
 		wg.Wait()
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(global, defaultMesh)
+		DebugUniversal(zone1, defaultMesh)
+		DebugUniversal(zone2, defaultMesh)
+	})
+
 	E2EAfterEach(func() {
 		Expect(external.DismissCluster()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())

@@ -26,6 +26,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -37,8 +38,8 @@ func RegisterBootstrapCluster(c string) string {
 }
 
 var (
-	adsClusterName           = RegisterBootstrapCluster("ads_cluster")
-	accessLogSinkClusterName = RegisterBootstrapCluster("access_log_sink")
+	adsClusterName           = RegisterBootstrapCluster(names.GetAdsClusterName())
+	accessLogSinkClusterName = RegisterBootstrapCluster(names.GetAccessLogSinkClusterName())
 )
 
 func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloadableTokens bool) (*envoy_bootstrap_v3.Bootstrap, error) {

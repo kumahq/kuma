@@ -33,14 +33,9 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
-  - command:
-    - sh
-    - -c
-    - sleep 5
-    image: busybox
-    name: init
-    resources: {}
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
@@ -62,6 +57,9 @@ spec:
     - /usr/bin/kumactl
     - install
     - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
     image: kuma/kuma-init:latest
     imagePullPolicy: IfNotPresent
     name: kuma-init
@@ -77,8 +75,14 @@ spec:
         add:
         - NET_ADMIN
         - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
   - args:
     - run
     - --log-level=info
@@ -145,6 +149,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -192,10 +203,20 @@ spec:
       readOnly: true
     - mountPath: /tmp
       name: kuma-sidecar-tmp
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:
       secretName: default-token-w7dxf
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

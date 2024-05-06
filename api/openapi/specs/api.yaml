@@ -65,6 +65,47 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /meshes/{mesh}/dataplanes/{name}/_config:
+    get:
+      summary: Get a proxy XDS config on a CP
+      description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+        - in: query
+          name: shadow
+          description: |
+            When computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: include
+          description: |
+            An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
+            between the current proxy XDS config and the config returned in the 'xds' field.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [diff]
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDataplanesConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -145,6 +186,21 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
+    InspectDataplanesConfig:
+      type: object
+      title: InspectDataplanesConfig
+      required: [ xds ]
+      properties:
+        xds:
+          description: The raw XDS config as an inline JSON object
+          type: object
+        diff:
+          description: |
+            Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
+            By default, the field is empty. To include the diff in the response, use the `include=diff` query parameter.
+          type: array
+          items:
+            $ref: './common/jsonpatch.yaml#/components/schemas/JsonPatchItem'
     InspectRules:
       type: object
       title: InspectRules
@@ -346,6 +402,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+    InspectDataplanesConfigResponse:
+      description: Successfully retrieved proxy XDS config.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDataplanesConfig'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

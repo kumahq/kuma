@@ -13,7 +13,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/kds/hash"
 )
 
 const (
@@ -84,11 +83,15 @@ func (kt KDSFlagType) Has(flag KDSFlagType) bool {
 
 type ResourceSpec interface{}
 
+type ResourceStatus interface{}
+
 type Resource interface {
 	GetMeta() ResourceMeta
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
+	GetStatus() ResourceStatus
+	SetStatus(ResourceStatus) error
 	Descriptor() ResourceTypeDescriptor
 }
 
@@ -120,6 +123,13 @@ type ResourceValidator interface {
 func Validate(resource Resource) error {
 	if rv, ok := resource.(ResourceValidator); ok {
 		return rv.Validate()
+	}
+	return nil
+}
+
+func Deprecations(resource Resource) []string {
+	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
+		return v.Deprecations()
 	}
 	return nil
 }
@@ -172,6 +182,8 @@ type ResourceTypeDescriptor struct {
 	HasToTargetRef bool
 	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
 	HasFromTargetRef bool
+	// HasStatus indicates that the policy has a status field
+	HasStatus bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 	// Insight contains the insight type attached to this resourceType
@@ -191,6 +203,14 @@ func newObject(baseResource Resource) Resource {
 
 	if err := resource.SetSpec(newSpec); err != nil {
 		panic(errors.Wrap(err, "could not set spec on the new resource"))
+	}
+
+	if baseResource.Descriptor().HasStatus {
+		statusType := reflect.TypeOf(baseResource.GetStatus()).Elem()
+		newStatus := reflect.New(statusType).Interface().(ResourceSpec)
+		if err := resource.SetStatus(newStatus); err != nil {
+			panic(errors.Wrap(err, "could not set spec on the new resource"))
+		}
 	}
 
 	return resource
@@ -382,18 +402,7 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	if refMeta.GetMesh() != resourceMeta.GetMesh() {
 		return false
 	}
-
-	if len(refMeta.GetNameExtensions()) == 0 {
-		return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetName())
-	}
-
-	nsRef := refMeta.GetNameExtensions()[K8sNamespaceComponent]
-	nsRes := refMeta.GetNameExtensions()[K8sNamespaceComponent]
-	if nsRef == "" || nsRef != nsRes {
-		return false
-	}
-
-	return equalNames(refMeta.GetMesh(), refName, resourceMeta.GetNameExtensions()[K8sNameComponent])
+	return refName == GetDisplayName(resourceMeta)
 }
 
 func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
@@ -409,14 +418,14 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 	}
 }
 
-func GetDisplayName(r Resource) string {
+func GetDisplayName(rm ResourceMeta) string {
 	// prefer display name as it's more predictable, because
 	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this
 	// * When policies are synced to Zone, hash suffix also breaks sorting
-	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.DisplayName] != "" {
 		return labels[mesh_proto.DisplayName]
 	}
-	return r.GetMeta().GetName()
+	return rm.GetName()
 }
 
 func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
@@ -437,9 +446,11 @@ func ZoneOfResource(res Resource) string {
 	return parts[0]
 }
 
-func equalNames(mesh, n1, n2 string) bool {
-	// instead of dragging the info if Zone is federated or not we can simply check 3 possible combinations
-	return n1 == n2 || hash.HashedName(mesh, n1) == n2 || hash.HashedName(mesh, n2) == n1
+func IsShadowedResource(r Resource) bool {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.EffectLabel] == "shadow" {
+		return true
+	}
+	return false
 }
 
 func MetaToResourceKey(meta ResourceMeta) ResourceKey {

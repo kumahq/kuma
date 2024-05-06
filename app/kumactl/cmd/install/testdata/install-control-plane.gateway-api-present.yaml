@@ -2928,9 +2928,8 @@ spec:
                           published.
                         properties:
                           appendProfiles:
-                            description: |-
-                              AppendProfiles allows to combine the metrics from multiple predefined profiles.
-                              Currently, it's only possible to define one profile.
+                            description: AppendProfiles allows to combine the metrics
+                              from multiple predefined profiles.
                             items:
                               properties:
                                 name:
@@ -2944,7 +2943,6 @@ spec:
                               required:
                               - name
                               type: object
-                            maxItems: 1
                             type: array
                           exclude:
                             description: |-
@@ -2963,6 +2961,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match
@@ -2986,6 +2985,7 @@ spec:
                                   - Prefix
                                   - Regex
                                   - Exact
+                                  - Contains
                                   type: string
                               required:
                               - match
@@ -2993,10 +2993,6 @@ spec:
                               type: object
                             type: array
                         type: object
-                      regex:
-                        description: Regex that will be used to filter sidecar metrics.
-                          It uses Google RE2 engine https://github.com/google/re2
-                        type: string
                     type: object
                 type: object
               targetRef:
@@ -3707,7 +3703,7 @@ spec:
                           properties:
                             http:
                               description: |-
-                                LocalHTTP defines confguration of local HTTP rate limiting
+                                LocalHTTP defines configuration of local HTTP rate limiting
                                 https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                               properties:
                                 disabled:
@@ -3923,7 +3919,7 @@ spec:
                           properties:
                             http:
                               description: |-
-                                LocalHTTP defines confguration of local HTTP rate limiting
+                                LocalHTTP defines configuration of local HTTP rate limiting
                                 https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                               properties:
                                 disabled:
@@ -4627,31 +4623,32 @@ spec:
                       type: string
                     type: object
                 type: object
-              status:
+            type: object
+          status:
+            description: Status is the current status of the Kuma MeshService resource.
+            properties:
+              addresses:
+                items:
+                  properties:
+                    hostname:
+                      type: string
+                  type: object
+                type: array
+              tls:
                 properties:
-                  addresses:
-                    items:
-                      properties:
-                        hostname:
-                          type: string
-                      type: object
-                    type: array
-                  tls:
-                    properties:
-                      status:
-                        enum:
-                        - Ready
-                        - NotReady
-                        type: string
-                    type: object
-                  vips:
-                    items:
-                      properties:
-                        ip:
-                          type: string
-                      type: object
-                    type: array
+                  status:
+                    enum:
+                    - Ready
+                    - NotReady
+                    type: string
                 type: object
+              vips:
+                items:
+                  properties:
+                    ip:
+                      type: string
+                  type: object
+                type: array
             type: object
         type: object
     served: true
@@ -7910,11 +7907,17 @@ rules:
       - pods
       - configmaps
       - nodes
-      - secrets
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:
@@ -8217,7 +8220,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 55df76c297436a96c281fa360f359938237859b33236d52399c3c877d6154285
+        checksum/tls-secrets: eb1e9f5d49326fa9ef721f20fa81eee9b696c7e8abe3861fcc0e14256d454be5
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -8269,8 +8272,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_GATEWAY_API
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -8402,6 +8403,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - meshgateways
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections

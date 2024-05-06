@@ -38,6 +38,12 @@ spec:
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh1, ns1)
+		DebugKube(kubernetes.Cluster, mesh2, ns2)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns1)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh1)).To(Succeed())

@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,6 +76,14 @@ func (cb *MeshCircuitBreaker) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 	cb.Spec = spec.(*policy.MeshCircuitBreaker)
+}
+
+func (cb *MeshCircuitBreaker) GetStatus() (core_model.ResourceStatus, error) {
+	return nil, nil
+}
+
+func (cb *MeshCircuitBreaker) SetStatus(status core_model.ResourceStatus) error {
+	return errors.New("status not supported")
 }
 
 func (cb *MeshCircuitBreaker) Scope() model.Scope {

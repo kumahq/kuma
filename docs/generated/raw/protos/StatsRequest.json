@@ -19,6 +19,23 @@
                 "resource_mesh": {
                     "type": "string",
                     "description": "Mesh of the resource on which we execute kuma-dp stats request. Should be empty for ZoneIngress, ZoneEgress."
+                },
+                "format": {
+                    "enum": [
+                        "TEXT",
+                        0,
+                        "JSON",
+                        1
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Admin Output Format"
                 }
             },
             "additionalProperties": true,

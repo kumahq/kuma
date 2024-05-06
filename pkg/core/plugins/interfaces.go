@@ -88,11 +88,31 @@ type AuthnAPIServerPlugin interface {
 	NewAuthenticator(PluginContext) (authn.Authenticator, error)
 }
 
+type MatchedPoliciesConfig struct {
+	IncludeShadow bool
+}
+
+func NewMatchedPoliciesConfig(opts ...MatchedPoliciesOption) *MatchedPoliciesConfig {
+	cfg := &MatchedPoliciesConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg
+}
+
+type MatchedPoliciesOption func(*MatchedPoliciesConfig)
+
+func IncludeShadow() MatchedPoliciesOption {
+	return func(cfg *MatchedPoliciesConfig) {
+		cfg.IncludeShadow = true
+	}
+}
+
 // PolicyPlugin a plugin to add a Policy to Kuma
 type PolicyPlugin interface {
 	Plugin
 	// MatchedPolicies return all the policies of the plugins' type matching this dataplane. This is used in the inspect api and accessible in Apply through `proxy.Policies.Dynamic`
-	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+	MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error)
 	// Apply to `rs` using the `ctx` and `proxy` the mutation for all policies of the type this plugin implements.
 	// You can access matching policies by using `proxy.Policies.Dynamic`.
 	Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error
@@ -102,7 +122,7 @@ type EgressPolicyPlugin interface {
 	PolicyPlugin
 	// EgressMatchedPolicies returns all the policies of the plugins' type matching the external service that
 	// should be applied on the zone egress.
-	EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error)
+	EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error)
 }
 
 // ProxyPlugin a plugin to modify the proxy. This happens before any `PolicyPlugin` or any envoy generation. and it is applied both for Dataplanes and ZoneProxies

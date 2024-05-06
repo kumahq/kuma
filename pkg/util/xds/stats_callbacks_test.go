@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -20,6 +21,21 @@ import (
 )
 
 var _ = Describe("Stats callbacks", func() {
+	versionExtractor := func(metadata *structpb.Struct) string {
+		if len(metadata.GetFields()) > 0 {
+			return metadata.GetFields()["version"].GetStringValue()
+		}
+		return ""
+	}
+
+	metadataWithVersion := func(version string) *structpb.Struct {
+		return &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"version": {Kind: &structpb.Value_StringValue{StringValue: version}},
+			},
+		}
+	}
+
 	Context("Callbacks", func() {
 		const streamId = int64(1)
 		var adaptedCallbacks envoy_xds.Callbacks
@@ -31,7 +47,7 @@ var _ = Describe("Stats callbacks", func() {
 			m, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			metrics = m
-			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "xds")
+			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "xds", versionExtractor)
 			adaptedCallbacks = util_xds_v3.AdaptCallbacks(statsCallbacks)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -82,6 +98,30 @@ var _ = Describe("Stats callbacks", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(test_metrics.FindMetric(metrics, "xds_requests_received", "confirmation", "ACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track version", func() {
+			// when
+			version := "1.0.0"
+			node := &corev3.Node{
+				Metadata: metadataWithVersion(version),
+			}
+			req := &envoy_discovery.DiscoveryRequest{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+				Node:        node,
+			}
+			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+
+			// when
+			adaptedCallbacks.OnStreamClosed(streamId, node)
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
 		})
 
 		It("should track NACK", func() {
@@ -170,7 +210,7 @@ var _ = Describe("Stats callbacks", func() {
 			m, err := core_metrics.NewMetrics("Zone")
 			Expect(err).ToNot(HaveOccurred())
 			metrics = m
-			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "delta_xds")
+			statsCallbacks, err = util_xds.NewStatsCallbacks(metrics, "delta_xds", versionExtractor)
 			adaptedCallbacks = util_xds_v3.AdaptDeltaCallbacks(statsCallbacks)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -240,6 +280,30 @@ var _ = Describe("Stats callbacks", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received", "confirmation", "NACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
+		It("should track version", func() {
+			// when
+			version := "1.0.0"
+			node := &corev3.Node{
+				Metadata: metadataWithVersion(version),
+			}
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				TypeUrl:       resource.RouteType,
+				Node:          node,
+				ResponseNonce: "1",
+			}
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+
+			// when
+			adaptedCallbacks.OnDeltaStreamClosed(streamId, node)
+
+			// then
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
 		})
 
 		It("should track responses sent", func() {

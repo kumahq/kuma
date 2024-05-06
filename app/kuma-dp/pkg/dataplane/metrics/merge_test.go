@@ -36,7 +36,7 @@ var _ = Describe("Merge", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			actual := new(bytes.Buffer)
-			err = MergeClusters(input, actual)
+			err = AggregatedMetricsMutator(MergeClustersForPrometheus)(input, actual)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))

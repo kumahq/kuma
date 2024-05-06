@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -115,16 +117,36 @@ func Setup(rt runtime.Runtime) error {
 	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
-			errChan <- errors.Wrap(err, "Global CP could not create a zone")
+			if errors.Is(err, context.Canceled) {
+				return
+			}
+			err = errors.Wrap(err, "Global CP could not create a zone")
+			select {
+			case errChan <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil {
-			errChan <- err
+
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && status.Code(err) != codes.Canceled {
+			select {
+			case errChan <- err:
+			default:
+				log.Error(err, "failed to write error to closed channel")
+			}
+			return
 		} else {
 			log.V(1).Info("GlobalToZoneSync finished gracefully")
 		}
@@ -133,7 +155,12 @@ func Setup(rt runtime.Runtime) error {
 	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
+			}
+			return
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
@@ -146,8 +173,14 @@ func Setup(rt runtime.Runtime) error {
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
 		go func() {
-			if err := sink.Receive(); err != nil {
-				errChan <- errors.Wrap(err, "KDSSyncClient finished with an error")
+			err := sink.Receive()
+			if err != nil && status.Code(err) != codes.Canceled {
+				err = errors.Wrap(err, "KDSSyncClient finished with an error")
+				select {
+				case errChan <- err:
+				default:
+					log.Error(err, "failed to write error to closed channel")
+				}
 			} else {
 				log.V(1).Info("KDSSyncClient finished gracefully")
 			}
@@ -171,7 +204,7 @@ func Setup(rt runtime.Runtime) error {
 		if err != nil {
 			return errors.Wrap(err, "couldn't create ZoneWatch")
 		}
-		if err := rt.Add(component.NewResilientComponent(zwLog, zw)); err != nil {
+		if err := rt.Add(component.NewResilientComponent(zwLog, zw, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err
 		}
 	}
@@ -201,7 +234,10 @@ func Setup(rt runtime.Runtime) error {
 			rt.Extensions(),
 			rt.EventBus(),
 		),
-	)))
+	),
+		rt.Config().General.ResilientComponentBaseBackoff.Duration,
+		rt.Config().General.ResilientComponentMaxBackoff.Duration),
+	)
 }
 
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {

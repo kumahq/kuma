@@ -51,6 +51,11 @@ const (
 	// ResourceOriginLabel is a standard label that has information about the origin of the resource.
 	// It can be either "global" or "zone".
 	ResourceOriginLabel = "kuma.io/origin"
+
+	// EffectLabel is a standard label that configures what effect the policy has on the DPPs. The only supported value
+	// at this moment is "shadow". When effect is "shadow" the policy doesn't change the DPPs configs, but could be
+	// observed using the Inspect API.
+	EffectLabel = "kuma.io/effect"
 )
 
 type ResourceOrigin string
@@ -125,6 +130,26 @@ func (i OutboundInterface) MarshalText() ([]byte, error) {
 func (i OutboundInterface) String() string {
 	return net.JoinHostPort(i.DataplaneIP,
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
+}
+
+func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef == nil
+}
+
+func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
+	var result []*Dataplane_Networking_Outbound
+	for _, outbound := range n.GetOutbound() {
+		add := true
+		for _, filter := range filters {
+			if !filter(outbound) {
+				add = false
+			}
+		}
+		if add {
+			result = append(result, outbound)
+		}
+	}
+	return result
 }
 
 func (n *Dataplane_Networking) GetOutboundInterfaces() []OutboundInterface {

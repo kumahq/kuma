@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
@@ -51,7 +50,7 @@ func resourceDir() string {
 	_, callerFile, _, _ := runtime.Caller(0)
 
 	dir := findProjectRoot(cwd, callerFile)
-	rDir := path.Join(dir, "tools/postgres")
+	rDir := path.Join(dir, "test/dockerfiles")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0o600)
 	if err != nil {
 		panic(err)
@@ -78,8 +77,9 @@ func (v *PostgresContainer) Start() error {
 
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:   resourceDir(),
-			BuildArgs: buildArgs,
+			Context:    resourceDir(),
+			Dockerfile: "postgres.dockerfile",
+			BuildArgs:  buildArgs,
 		},
 		Env: map[string]string{
 			"POSTGRES_USER":     "kuma",

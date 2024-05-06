@@ -25,8 +25,9 @@ import (
 )
 
 type DataplaneProxyBuilder struct {
-	Zone       string
-	APIVersion core_xds.APIVersion
+	Zone          string
+	APIVersion    core_xds.APIVersion
+	IncludeShadow bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -120,23 +121,25 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		service := outbound.GetService()
-		if len(reachableServices) != 0 {
-			if !reachableServices[service] {
-				// ignore VIP outbound if reachableServices is defined and not specified
-				// Reachable services takes precedence over reachable services graph.
+		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
+			service := outbound.GetService()
+			if len(reachableServices) != 0 {
+				if !reachableServices[service] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+			} else {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
+					continue
+				}
+			}
+			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+				// Skip overlapping outbound interface with inbound.
+				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 				continue
 			}
-		} else {
-			// static reachable services takes precedence over the graph
-			if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
-				continue
-			}
-		}
-		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
-			// Skip overlapping outbound interface with inbound.
-			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
-			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}
@@ -172,8 +175,12 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 		Dynamic:            core_xds.PluginOriginatedPolicies{},
 	}
+	opts := []core_plugins.MatchedPoliciesOption{}
+	if p.IncludeShadow {
+		opts = append(opts, core_plugins.IncludeShadow())
+	}
 	for _, p := range core_plugins.Plugins().PolicyPlugins(ordered.Policies) {
-		res, err := p.Plugin.MatchedPolicies(dataplane, resources)
+		res, err := p.Plugin.MatchedPolicies(dataplane, resources, opts...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not apply policy plugin %s", p.Name)
 		}

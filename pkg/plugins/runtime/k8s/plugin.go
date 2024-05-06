@@ -81,6 +81,11 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
+	if rt.Config().Experimental.GenerateMeshServices {
+		if err := addMeshServiceReconciler(mgr); err != nil {
+			return err
+		}
+	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
@@ -135,6 +140,15 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 	return reconciler.SetupWithManager(mgr)
 }
 
+func addMeshServiceReconciler(mgr kube_ctrl.Manager) error {
+	reconciler := &k8s_controllers.MeshServiceReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme: mgr.GetScheme(),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if rt.Config().IsFederatedZoneCP() {
 		return nil
@@ -168,6 +182,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 					ReplicaSetGetter: mgr.GetClient(),
 					JobGetter:        mgr.GetClient(),
 				},
+				NodeGetter:       mgr.GetClient(),
+				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
 			ResourceConverter:   converter,
@@ -290,13 +306,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
+		CpMode:       rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
-
-	if gatewayAPICRDsPresent(mgr) {
-		gatewayClassValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().IsNonFederatedZoneCP(), mgr.GetScheme())
-		mgr.GetWebhookServer().Register("/validate-gatewayclass", gatewayClassValidator)
-	}
 
 	return nil
 }
@@ -337,11 +349,13 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 	}
 
 	ownerRefMutator := &k8s_webhooks.OwnerReferenceMutator{
-		Client:       mgr.GetClient(),
-		CoreRegistry: core_registry.Global(),
-		K8sRegistry:  k8s_registry.Global(),
-		Scheme:       mgr.GetScheme(),
-		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
+		Client:                 mgr.GetClient(),
+		CoreRegistry:           core_registry.Global(),
+		K8sRegistry:            k8s_registry.Global(),
+		Scheme:                 mgr.GetScheme(),
+		Decoder:                kube_admission.NewDecoder(mgr.GetScheme()),
+		SkipMeshOwnerReference: rt.Config().Runtime.Kubernetes.SkipMeshOwnerReference,
+		CpMode:                 rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 

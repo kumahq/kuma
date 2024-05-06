@@ -86,12 +86,7 @@ var _ = Describe("snapshotGenerator", func() {
 					Address:     "192.168.0.1:1234",
 					MetricsPath: "/custom",
 					Scheme:      "http",
-					Labels: map[string]string{
-						"env":              "intg",
-						"envs":             ",intg,",
-						"kuma_io_service":  "backend",
-						"kuma_io_services": ",backend,",
-					},
+					Labels:      map[string]string{},
 				}},
 			},
 		})
@@ -122,6 +117,7 @@ var _ = Describe("snapshotGenerator", func() {
 					".mesh",
 					80,
 					xds_context.AnyToAnyReachableServicesGraphBuilder,
+					false,
 				)
 				newMetrics, err := metrics.NewMetrics(zone)
 				Expect(err).ToNot(HaveOccurred())
@@ -373,12 +369,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"env":              "intg",
-									"envs":             ",intg,",
-									"kuma_io_service":  "backend",
-									"kuma_io_services": ",backend,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -447,12 +438,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"env":              "intg",
-									"envs":             ",intg,",
-									"kuma_io_service":  "backend",
-									"kuma_io_services": ",backend,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -465,12 +451,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend",
-									"kuma_io_services": ",backend,",
-									"env":              "intg",
-									"envs":             ",intg,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -537,10 +518,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-01",
-									"kuma_io_services": ",backend-01,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -638,10 +616,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-01",
-									"kuma_io_services": ",backend-01,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 						"/meshes/default/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
@@ -652,10 +627,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.2:5678",
 								MetricsPath: "/other",
 								Scheme:      "https",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-02",
-									"kuma_io_services": ",backend-02,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 						"/meshes/default/dataplanes/backend-03": &observability_v1.MonitoringAssignment{
@@ -666,10 +638,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.3:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-03",
-									"kuma_io_services": ",backend-03,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -766,10 +735,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.2:5678",
 								MetricsPath: "/other",
 								Scheme:      "https",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-02",
-									"kuma_io_services": ",backend-02,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),
@@ -782,10 +748,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.1:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-01",
-									"kuma_io_services": ",backend-01,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 						"/meshes/default/dataplanes/backend-03": &observability_v1.MonitoringAssignment{
@@ -796,10 +759,7 @@ var _ = Describe("snapshotGenerator", func() {
 								Address:     "192.168.0.3:1234",
 								MetricsPath: "/custom",
 								Scheme:      "http",
-								Labels: map[string]string{
-									"kuma_io_service":  "backend-03",
-									"kuma_io_services": ",backend-03,",
-								},
+								Labels:      map[string]string{},
 							}},
 						},
 					}),

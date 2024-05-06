@@ -116,6 +116,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		"--config-path", configFile,
 		"--drain-time-s",
 		fmt.Sprintf("%d", e.opts.Config.Dataplane.DrainTime.Duration/time.Second),
+		"--drain-strategy", "immediate",
 		// "hot restart" (enabled by default) requires each Envoy instance to have
 		// `--base-id <uint32_t>` argument.
 		// it is not possible to start multiple Envoy instances on the same Linux machine
@@ -171,8 +172,20 @@ func (e *Envoy) WaitForDone() {
 	e.wg.Wait()
 }
 
-func (e *Envoy) DrainConnections() error {
+func (e *Envoy) FailHealthchecks() error {
 	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (e *Envoy) DrainForever() error {
+	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/drain_listeners?inboundonly&graceful&skip_exit", e.opts.AdminPort), "", nil)
 	if err != nil {
 		return err
 	}

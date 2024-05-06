@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -53,7 +54,6 @@ var _ = Describe("Events", func() {
 			Eventually(channelClosesWithoutErrors(listenerErrCh), "5s", "10ms").Should(BeTrue())
 			Eventually(channelClosesWithoutErrors(storeErrCh), "5s", "10ms").Should(BeTrue())
 		},
-		Entry("When using pq", config_postgres.DriverNamePq),
 		Entry("When using pgx", config_postgres.DriverNamePgx),
 	)
 
@@ -91,7 +91,6 @@ var _ = Describe("Events", func() {
 			Expect(resourceChanged.Operation).To(Equal(kuma_events.Create))
 			Expect(resourceChanged.Type).To(Equal(model.ResourceType("Mesh")))
 		},
-		Entry("When using pq", config_postgres.DriverNamePq),
 		Entry("When using pgx", config_postgres.DriverNamePgx),
 	)
 })
@@ -112,9 +111,6 @@ func setupStore(cfg config_postgres.PostgresStoreConfig, driverName string) stor
 	if driverName == "pgx" {
 		cfg.DriverName = config_postgres.DriverNamePgx
 		pStore, err = postgres.NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn)
-	} else {
-		cfg.DriverName = config_postgres.DriverNamePq
-		pStore, err = postgres.NewPqStore(metrics, cfg)
 	}
 	Expect(err).ToNot(HaveOccurred())
 	return pStore
@@ -128,7 +124,7 @@ func setupListeners(cfg config_postgres.PostgresStoreConfig, driverName string, 
 	Expect(err).ToNot(HaveOccurred())
 	listener := eventsBus.Subscribe()
 	l := events_postgres.NewListener(cfg, eventsBus)
-	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l)
+	resilientListener := component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), l, 5*time.Second, 1*time.Minute)
 	go func() {
 		listenerErrCh <- resilientListener.Start(listenerStopCh)
 	}()

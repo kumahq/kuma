@@ -69,6 +69,11 @@ spec:
 			Install(DemoClientUniversal("web", meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())

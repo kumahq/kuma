@@ -28,8 +28,9 @@ func NewPlugin() core_plugins.Plugin {
 func (p plugin) MatchedPolicies(
 	dataplane *core_mesh.DataplaneResource,
 	resources xds_context.Resources,
+	opts ...core_plugins.MatchedPoliciesOption,
 ) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources)
+	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
 func (p plugin) Apply(
@@ -96,7 +97,11 @@ func applyToOutbounds(
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	dataplane *core_mesh.DataplaneResource,
 ) error {
-	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
+	targetedClusters := policies_xds.GatherTargetedClusters(
+		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outboundSplitClusters,
+		outboundClusters,
+	)
 
 	for cluster, serviceName := range targetedClusters {
 		if err := configure(rules.Rules, core_rules.MeshService(serviceName), cluster); err != nil {

@@ -34,7 +34,7 @@ func BuildRouteMap(dataplane *core_mesh.DataplaneResource, routes []*core_mesh.T
 	policyMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
 	routeMap := core_xds.RouteMap{}
-	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
+	for _, oface := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		serviceName := oface.GetService()
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if policy, exists := policyMap[serviceName]; exists {
@@ -89,7 +89,7 @@ func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string
 // via given routes.
 func BuildDestinationMap(dataplane *core_mesh.DataplaneResource, routes core_xds.RouteMap) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
-	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
+	for _, oface := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		serviceName := oface.GetService()
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]

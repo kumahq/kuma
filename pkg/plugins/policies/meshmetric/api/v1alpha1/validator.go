@@ -43,12 +43,6 @@ func validateSidecar(sidecar *Sidecar) validators.ValidationError {
 	if sidecar == nil {
 		return verr
 	}
-	if sidecar.Regex != nil {
-		_, err := regexp.Compile(*sidecar.Regex)
-		if err != nil {
-			verr.AddViolation("regex", "invalid regex")
-		}
-	}
 	if sidecar.Profiles != nil {
 		profiles := sidecar.Profiles
 		if profiles.Exclude != nil {
@@ -89,7 +83,7 @@ func validateSelectors(selectors []Selector, selectorType string) validators.Val
 			if err != nil {
 				verr.AddViolation(path.Field("match").String(), "invalid regex")
 			}
-		case PrefixSelectorType, ExactSelectorType:
+		case PrefixSelectorType, ExactSelectorType, ContainsSelectorType:
 		default:
 			verr.AddViolation(path.Field("type").String(), fmt.Sprintf("unrecognized type '%s' - 'Regex', 'Prefix', 'Exact' are supported", selector.Type))
 		}

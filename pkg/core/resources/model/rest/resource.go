@@ -8,4 +8,5 @@ import (
 type Resource interface {
 	GetMeta() v1alpha1.ResourceMeta
 	GetSpec() core_model.ResourceSpec
+	GetStatus() core_model.ResourceStatus
 }

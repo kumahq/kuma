@@ -42,6 +42,11 @@ func NewInferenceMapper(systemNamespace string, kubeFactory KubeFactory) Resourc
 		rs.SetMesh(resource.GetMeta().GetMesh())
 		rs.SetCreationTimestamp(v1.NewTime(resource.GetMeta().GetCreationTime()))
 		rs.SetSpec(resource.GetSpec())
+		if resource.Descriptor().HasStatus {
+			if err := rs.SetStatus(resource.GetStatus()); err != nil {
+				return nil, err
+			}
+		}
 		return rs, nil
 	}
 }

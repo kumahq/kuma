@@ -9,13 +9,6 @@ import "api/mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "HealthCheck",
-  file_name : "health-check"
-};
 
 // HealthCheck defines configuration for health checking.
 message HealthCheck {
@@ -30,11 +23,11 @@ message HealthCheck {
   // List of selectors to match dataplanes that should be configured to do
   // health checks.
   repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1 ];
 
   // Conf defines configuration for various types of health checking.
   message Conf {
@@ -43,8 +36,7 @@ message HealthCheck {
       (validate.rules).duration = {
         required : true,
         gt {}
-      },
-      (doc.required) = true
+      }
     ];
 
     // Maximum time to wait for a health check response.
@@ -52,18 +44,17 @@ message HealthCheck {
       (validate.rules).duration = {
         required : true,
         gt {}
-      },
-      (doc.required) = true
+      }
     ];
 
     // Number of consecutive unhealthy checks before considering a host
     // unhealthy.
     uint32 unhealthy_threshold = 3
-        [ (validate.rules).uint32 = {gt : 0}, (doc.required) = true ];
+        [ (validate.rules).uint32 = {gt : 0} ];
 
     // Number of consecutive healthy checks before considering a host healthy.
     uint32 healthy_threshold = 4
-        [ (validate.rules).uint32 = {gt : 0}, (doc.required) = true ];
+        [ (validate.rules).uint32 = {gt : 0} ];
 
     // If specified, Envoy will start health checking after for a random time in
     // ms between 0 and initial_jitter. This only applies to the first health
@@ -129,12 +120,12 @@ message HealthCheck {
       // The HTTP path which will be requested during the health check
       // (ie. /health)
       //  +required
-      string path = 1 [ (doc.required) = true ];
+      string path = 1;
 
       message HeaderValue {
         // Header name
         //  +required
-        string key = 1 [ (doc.required) = true ];
+        string key = 1;
         // Header value
         //  +optional
         string value = 2;
@@ -143,7 +134,7 @@ message HealthCheck {
       message HeaderValueOption {
         // Key/Value representation of the HTTP header
         //  +required
-        HeaderValue header = 1 [ (doc.required) = true ];
+        HeaderValue header = 1;
         // The bool value which if true (default) will mean the header values
         // should be appended to already present ones
         //  +optional
@@ -169,5 +160,5 @@ message HealthCheck {
   }
 
   // Configuration for various types of health checking.
-  Conf conf = 3 [ (doc.required) = true ];
+  Conf conf = 3;
 }

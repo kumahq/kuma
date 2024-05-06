@@ -20,7 +20,7 @@ injector:
     cgroupPath: /sys/fs/cgroup
     enabled: false
     instanceIPEnvVarName: INSTANCE_IP
-    programsSourcePath: /kuma/ebpf
+    programsSourcePath: /tmp/kuma-ebpf
   exceptions:
     labels:
       openshift.io/build.name: '*'
@@ -28,6 +28,9 @@ injector:
   ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
+  nodeLabelsToCopy:
+  - topology.kubernetes.io/zone
+  - topology.kubernetes.io/region
   sidecarContainer:
     drainTime: 30s
     envVars: {}
@@ -76,3 +79,5 @@ nodeTaintController:
   cniNamespace: kube-system
   enabled: false
 serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
+skipMeshOwnerReference: false
+supportGatewaySecretsInAllNamespaces: false

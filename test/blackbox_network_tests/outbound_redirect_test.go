@@ -1,6 +1,7 @@
 package blackbox_network_tests_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -62,7 +63,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -141,7 +142,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -244,7 +245,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -357,7 +358,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -467,7 +468,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -564,7 +565,7 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -661,7 +662,7 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -747,7 +748,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -824,7 +825,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -928,7 +929,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 
 			// when
 			Eventually(ns.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -1027,7 +1028,7 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 
 			// when
 			Eventually(ns2.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then
@@ -1118,7 +1119,7 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 
 			// when
 			Eventually(ns2.UnsafeExec(func() {
-				Expect(builder.RestoreIPTables(tproxyConfig)).Error().To(Succeed())
+				Expect(builder.RestoreIPTables(context.Background(), tproxyConfig)).Error().To(Succeed())
 			})).Should(BeClosed())
 
 			// then

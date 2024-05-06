@@ -62,91 +62,88 @@ func (f *forwardingKdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.Dat
 	panic("not implemented")
 }
 
-func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	ctx = appendTenantMetadata(ctx)
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ConfigDumpRPC)
-	if err != nil {
-		return nil, err
-	}
-	f.logIntendedAction(proxy, instanceID)
-	if instanceID == f.instanceID {
-		return f.fallbackClient.ConfigDump(ctx, proxy)
-	}
-	client, err := f.clientForInstanceID(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-	req := &mesh_proto.XDSConfigRequest{
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: proxy.GetMeta().GetName(),
-		ResourceMesh: proxy.GetMeta().GetMesh(),
-	}
-	resp, err := client.XDSConfig(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	if resp != nil && resp.GetError() != "" {
-		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
-	}
-	return resp.GetConfig(), nil
+type MessageWithError interface {
+	GetError() string
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+func forward[T MessageWithError](
+	f *forwardingKdsEnvoyAdminClient,
+	ctx context.Context,
+	proxy core_model.ResourceWithAddress,
+	kind string,
+	fallback func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error),
+	doRequest func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (T, error),
+	handleResponse func(resp T) []byte,
+) ([]byte, error) {
 	ctx = appendTenantMetadata(ctx)
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.StatsRPC)
+	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), kind)
 	if err != nil {
 		return nil, err
 	}
 	f.logIntendedAction(proxy, instanceID)
 	if instanceID == f.instanceID {
-		return f.fallbackClient.Stats(ctx, proxy)
+		return fallback(ctx, proxy)
 	}
 	client, err := f.clientForInstanceID(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
-	req := &mesh_proto.StatsRequest{
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: proxy.GetMeta().GetName(),
-		ResourceMesh: proxy.GetMeta().GetMesh(),
-	}
-	resp, err := client.Stats(ctx, req)
+	resp, err := doRequest(ctx, client)
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil && resp.GetError() != "" {
+	if resp.GetError() != "" {
 		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
 	}
-	return resp.GetStats(), nil
+	return handleResponse(resp), nil
 }
 
-func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	ctx = appendTenantMetadata(ctx)
-	instanceID, err := f.globalInstanceID(ctx, core_model.ZoneOfResource(proxy), service.ClustersRPC)
-	if err != nil {
-		return nil, err
+func (f *forwardingKdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
+	fallback := func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+		return f.fallbackClient.ConfigDump(ctx, proxy, includeEds)
 	}
-	f.logIntendedAction(proxy, instanceID)
-	if instanceID == f.instanceID {
-		return f.fallbackClient.Clusters(ctx, proxy)
+	doRequest := func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (*mesh_proto.XDSConfigResponse, error) {
+		req := &mesh_proto.XDSConfigRequest{
+			ResourceType: string(proxy.Descriptor().Name),
+			ResourceName: proxy.GetMeta().GetName(),
+			ResourceMesh: proxy.GetMeta().GetMesh(),
+		}
+		return client.XDSConfig(ctx, req)
 	}
-	client, err := f.clientForInstanceID(ctx, instanceID)
-	if err != nil {
-		return nil, err
+	handleResponse := func(resp *mesh_proto.XDSConfigResponse) []byte { return resp.GetConfig() }
+	return forward(f, ctx, proxy, service.ConfigDumpRPC, fallback, doRequest, handleResponse)
+}
+
+func (f *forwardingKdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+	fallback := func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+		return f.fallbackClient.Stats(ctx, proxy, format)
 	}
-	req := &mesh_proto.ClustersRequest{
-		ResourceType: string(proxy.Descriptor().Name),
-		ResourceName: proxy.GetMeta().GetName(),
-		ResourceMesh: proxy.GetMeta().GetMesh(),
+	doRequest := func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (*mesh_proto.StatsResponse, error) {
+		req := &mesh_proto.StatsRequest{
+			ResourceType: string(proxy.Descriptor().Name),
+			ResourceName: proxy.GetMeta().GetName(),
+			ResourceMesh: proxy.GetMeta().GetMesh(),
+		}
+		return client.Stats(ctx, req)
 	}
-	resp, err := client.Clusters(ctx, req)
-	if err != nil {
-		return nil, err
+	handleResponse := func(resp *mesh_proto.StatsResponse) []byte { return resp.GetStats() }
+	return forward(f, ctx, proxy, service.StatsRPC, fallback, doRequest, handleResponse)
+}
+
+func (f *forwardingKdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
+	fallback := func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
+		return f.fallbackClient.Clusters(ctx, proxy, format)
 	}
-	if resp != nil && resp.GetError() != "" {
-		return nil, &ForwardKDSRequestError{reason: resp.GetError()}
+	doRequest := func(ctx context.Context, client mesh_proto.InterCPEnvoyAdminForwardServiceClient) (*mesh_proto.ClustersResponse, error) {
+		req := &mesh_proto.ClustersRequest{
+			ResourceType: string(proxy.Descriptor().Name),
+			ResourceName: proxy.GetMeta().GetName(),
+			ResourceMesh: proxy.GetMeta().GetMesh(),
+		}
+		return client.Clusters(ctx, req)
 	}
-	return resp.GetClusters(), nil
+	handleResponse := func(resp *mesh_proto.ClustersResponse) []byte { return resp.GetClusters() }
+	return forward(f, ctx, proxy, service.ClustersRPC, fallback, doRequest, handleResponse)
 }
 
 func (f *forwardingKdsEnvoyAdminClient) logIntendedAction(proxy core_model.ResourceWithAddress, instanceID string) {

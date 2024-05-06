@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -31,7 +32,14 @@ func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResourc
 }
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
-func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneResource, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
+func MatchedPolicies(
+	rType core_model.ResourceType,
+	dpp *core_mesh.DataplaneResource,
+	resources xds_context.Resources,
+	opts ...plugins.MatchedPoliciesOption,
+) (core_xds.TypedMatchingPolicies, error) {
+	mpOpts := plugins.NewMatchedPoliciesConfig(opts...)
+
 	policies := resources.ListOrEmpty(rType)
 	var warnings []string
 
@@ -41,6 +49,10 @@ func MatchedPolicies(rType core_model.ResourceType, dpp *core_mesh.DataplaneReso
 
 	gateway := xds_topology.SelectGateway(resources.Gateways().Items, dpp.Spec.Matches)
 	for _, policy := range policies.GetItems() {
+		if !mpOpts.IncludeShadow && core_model.IsShadowedResource(policy) {
+			continue
+		}
+
 		refPolicy := policy.GetSpec().(core_model.Policy)
 		selectedInbounds, matchedGatewayListeners, delegatedGatewaySelected, err := dppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, gateway, resources)
 		if err != nil {
@@ -253,7 +265,7 @@ func (b ByTargetRef) Less(i, j int) bool {
 		}
 	}
 
-	return core_model.GetDisplayName(b[i]) > core_model.GetDisplayName(b[j])
+	return core_model.GetDisplayName(b[i].GetMeta()) > core_model.GetDisplayName(b[j].GetMeta())
 }
 
 func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }

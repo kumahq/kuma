@@ -10,13 +10,6 @@ import "api/mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Proxy,
-  name : "Dataplane",
-  file_name : "dataplane"
-};
 
 // Dataplane defines a configuration of a side-car proxy.
 message Dataplane {
@@ -51,7 +44,7 @@ message Dataplane {
     // IP on which the data plane proxy is accessible to the control plane and
     // other data plane proxies in the same network. This can also be a
     // hostname, in which case the control plane will periodically resolve it.
-    string address = 5 [ (doc.required) = true ];
+    string address = 5;
 
     reserved 6; // Formerly ingress mode message, see #3435
 
@@ -75,7 +68,7 @@ message Dataplane {
       // When transparent proxying is used, it is a port on which the service is
       // listening to. When transparent proxying is not used, Envoy will bind to
       // this port.
-      uint32 port = 3 [ (doc.required) = true ];
+      uint32 port = 3;
 
       // Port of the service that requests will be forwarded to.
       // Defaults to the same value as `port`.
@@ -95,7 +88,7 @@ message Dataplane {
       // reference these tags in policies like MeshTrafficPermission.
       // `kuma.io/service` tag is mandatory.
       map<string, string> tags = 2
-          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
+          [ (validate.rules).map.min_pairs = 1 ];
 
       // Health describes the status of an inbound
       message Health {
@@ -173,7 +166,7 @@ message Dataplane {
       // Port on which the consumed service will be available to this data plane
       // proxy. When transparent proxying is not used, Envoy will bind to this
       // port.
-      uint32 port = 4 [ (doc.required) = true ];
+      uint32 port = 4;
 
       // Tags of consumed data plane proxies.
       // `kuma.io/service` tag is required.
@@ -183,7 +176,21 @@ message Dataplane {
       // specific data plane proxy of a service (for example: `version=v2`) the
       // better practice is to use TrafficRoute.
       map<string, string> tags = 5;
+
+      // BackendRef is a way to target MeshService.
+      // Experimental. Do not use on production yet.
+      BackendRef backendRef = 6;
+
+      message BackendRef {
+        // Kind is a type of the object to target. Allowed: MeshService
+        string kind = 1;
+        // Name of the targeted object
+        string name = 2;
+        // Port of the targeted object. Required when kind is MeshService.
+        uint32 port = 3;
+      }
     }
+
 
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
@@ -201,7 +208,7 @@ message Dataplane {
       // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
       // mandatory.
       map<string, string> tags = 1
-          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
+          [ (validate.rules).map.min_pairs = 1 ];
 
       // Type of gateway this data plane proxy manages.
       // There are two types: `DELEGATED` and `BUILTIN`. Defaults to
@@ -215,7 +222,7 @@ message Dataplane {
       // configured as a gateway.
       //
       // See https://kuma.io/docs/latest/explore/gateway/ for more information.
-      GatewayType type = 2 [ (doc.required) = true ];
+      GatewayType type = 2;
     }
 
     // TransparentProxying describes configuration for transparent proxying.
@@ -303,21 +310,21 @@ message Dataplane {
   message Probes {
     // Port on which the probe endpoints will be exposed. This cannot overlap
     // with any other ports.
-    uint32 port = 1 [ (doc.required) = true ];
+    uint32 port = 1;
 
     message Endpoint {
       // Inbound port is a port of the application from which we expose the
       // endpoint.
-      uint32 inbound_port = 1 [ (doc.required) = true ];
+      uint32 inbound_port = 1;
       // Inbound path is a path of the application from which we expose the
       // endpoint. It is recommended to be as specific as possible.
-      string inbound_path = 2 [ (doc.required) = true ];
+      string inbound_path = 2;
       // Path is a path on which we expose inbound path on the probes port.
-      string path = 3 [ (doc.required) = true ];
+      string path = 3;
     }
 
     // List of endpoints to expose without mTLS.
-    repeated Endpoint endpoints = 2 [ (doc.required) = true ];
+    repeated Endpoint endpoints = 2;
   }
 
   // Probes describe a list of endpoints that will be exposed without mTLS.

@@ -147,7 +147,7 @@ Reuse KDS server for inter cp communications
 
 #### Disadvantages
 * Same problems as API server with TLS & Authentication
-* Might a bit awkward to explain that this is sometimes use to Global CP <-> Zone CP, and sometimes it's used for inter cp communciations.
+* Might a bit awkward to explain that this is sometimes use to Global CP <-> Zone CP, and sometimes it's used for inter cp communications.
 
 ## Decision Outcome
 

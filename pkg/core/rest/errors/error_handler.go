@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel/trace"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -18,17 +18,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
+	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
+	log := logr.FromContextOrDiscard(ctx)
+
 	var kumaErr *types.Error
 	switch {
-	case store.IsResourceNotFound(err):
+	case store.IsResourceNotFound(err) || errors.Is(err, &NotFound{}):
 		kumaErr = &types.Error{
 			Status: 404,
 			Title:  title,
@@ -146,7 +146,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &admin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
+	case errors.Is(err, &kds_envoyadmin.KDSTransportError{}), errors.Is(err, &envoyadmin.ForwardKDSRequestError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
@@ -162,7 +162,9 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 		}
 	}
 	if ctx != nil {
-		if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span := trace.SpanFromContext(ctx)
+		span.RecordError(err, trace.WithStackTrace(true))
+		if span.IsRecording() {
 			kumaErr.Instance = span.SpanContext().TraceID().String()
 		}
 	}

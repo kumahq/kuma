@@ -84,7 +84,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
 
 			// when
-			_, err := forwardingClient.ConfigDump(context.Background(), dp)
+			_, err := forwardingClient.ConfigDump(context.Background(), dp, false)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -109,7 +109,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
 
 			// when
-			_, err := forwardingClient.Stats(context.Background(), dp)
+			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -134,7 +134,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
 
 			// when
-			_, err := forwardingClient.Clusters(context.Background(), dp)
+			_, err := forwardingClient.Clusters(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

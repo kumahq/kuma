@@ -12,7 +12,7 @@ metadata:
     kuma.io/transparent-proxying-ebpf: enabled
     kuma.io/transparent-proxying-ebpf-bpf-fs-path: /sys/fs/bpf
     kuma.io/transparent-proxying-ebpf-cgroup-path: /sys/fs/cgroup
-    kuma.io/transparent-proxying-ebpf-programs-source-path: /kuma/ebpf
+    kuma.io/transparent-proxying-ebpf-programs-source-path: /tmp/kuma-ebpf
     kuma.io/transparent-proxying-ebpf-tc-attach-iface: eth0
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
@@ -30,6 +30,8 @@ spec:
     resources: {}
   initContainers:
   - args:
+    - --config-file
+    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
@@ -54,7 +56,7 @@ spec:
     - --ebpf-tc-attach-iface
     - eth0
     - --ebpf-programs-source-path
-    - /kuma/ebpf
+    - /tmp/kuma-ebpf
     command:
     - /usr/bin/kumactl
     - install
@@ -77,9 +79,12 @@ spec:
     securityContext:
       capabilities: {}
       privileged: true
+      readOnlyRootFilesystem: true
       runAsGroup: 0
       runAsUser: 0
     volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
     - mountPath: /sys/fs/cgroup
       name: sys-fs-cgroup
     - mountPath: /sys/fs/bpf
@@ -139,6 +144,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:
@@ -184,6 +196,9 @@ spec:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
   volumes:
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
   - emptyDir:
       sizeLimit: 10M
     name: kuma-sidecar-tmp

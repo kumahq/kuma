@@ -10,41 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type TransparentProxyConfig struct {
-	DryRun                    bool
-	Verbose                   bool
-	RedirectPortOutBound      string
-	RedirectInBound           bool
-	RedirectPortInBound       string
-	RedirectPortInBoundV6     string
-	IpFamilyMode              string
-	ExcludeInboundPorts       string
-	ExcludeOutboundPorts      string
-	ExcludedOutboundsForUIDs  []string
-	UID                       string
-	GID                       string
-	RedirectDNS               bool
-	RedirectAllDNSTraffic     bool
-	AgentDNSListenerPort      string
-	DNSUpstreamTargetChain    string
-	SkipDNSConntrackZoneSplit bool
-	ExperimentalEngine        bool
-	EbpfEnabled               bool
-	EbpfInstanceIP            string
-	EbpfBPFFSPath             string
-	EbpfCgroupPath            string
-	EbpfTCAttachIface         string
-	EbpfProgramsSourcePath    string
-	VnetNetworks              []string
-	Stdout                    io.Writer
-	Stderr                    io.Writer
-	RestoreLegacy             bool
-	Wait                      uint
-	WaitInterval              uint
-	MaxRetries                *int
-	SleepBetweenRetries       time.Duration
-}
-
 const DebugLogLevel uint16 = 7
 
 type Owner struct {
@@ -203,15 +168,19 @@ func (c Config) ShouldCaptureAllDNS() bool {
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
 // the DNS conntrack zone splitting iptables rules
-func (c Config) ShouldConntrackZoneSplit() bool {
+func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
 		return false
+	}
+
+	if iptablesExecutable == "" {
+		iptablesExecutable = "iptables"
 	}
 
 	// There are situations where conntrack extension is not present (WSL2)
 	// instead of failing the whole iptables application, we can log the warning,
 	// skip conntrack related rules and move forward
-	if err := exec.Command("iptables", "-m", "conntrack", "--help").Run(); err != nil {
+	if err := exec.Command(iptablesExecutable, "-m", "conntrack", "--help").Run(); err != nil {
 		_, _ = fmt.Fprintf(c.RuntimeStderr,
 			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
 				"module is present. Rules for DNS conntrack zone "+
@@ -260,7 +229,7 @@ func defaultConfig() Config {
 		Ebpf: Ebpf{
 			Enabled:            false,
 			BPFFSPath:          "/run/kuma/bpf",
-			ProgramsSourcePath: "/kuma/ebpf",
+			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
 		IPv6:               false,

@@ -33,6 +33,8 @@ func ResilienceMultizoneUniversalPostgres() {
 			Install(Kuma(core.Global,
 				WithPostgres(postgres.From(global, clusterName1).GetEnvVars()),
 				WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
 			)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
@@ -52,9 +54,16 @@ func ResilienceMultizoneUniversalPostgres() {
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithPostgres(postgres.From(zoneUniversal, clusterName2).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_BASE_BACKOFF", "1s"),
+				WithEnv("KUMA_GENERAL_RESILIENT_COMPONENT_MAX_BACKOFF", "1s"),
 			)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(global, "default")
+		DebugUniversal(zoneUniversal, "default")
 	})
 
 	E2EAfterEach(func() {

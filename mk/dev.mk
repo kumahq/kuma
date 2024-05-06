@@ -27,6 +27,7 @@ export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v1.56.1
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
+LATEST_RELEASE_BRANCH := $(shell $(CI_TOOLS_BIN_DIR)/yq e '.[] | select(.latest == true) | .branch' versions.yml)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
@@ -89,6 +90,23 @@ $(KUBECONFIG_DIR):
 # current context.
 $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 	@touch $@
+
+.PHONY: dev/print-latest-release-branch
+dev/print-latest-release-branch:
+	@echo $(LATEST_RELEASE_BRANCH)
+
+TAKE_FILES_FROM_MASTER = app/kuma-ui/pkg/resources go.mod go.sum deployments/charts/*/Chart.yaml
+
+.PHONY: dev/merge-release
+dev/merge-release:
+	git merge origin/$(LATEST_RELEASE_BRANCH) --no-commit || true
+	git rm -rf $(TAKE_FILES_FROM_MASTER)
+	git checkout HEAD -- $(TAKE_FILES_FROM_MASTER)
+	@if git diff --name-status --diff-filter=U --exit-code; then\
+		echo "Run \`git commit\` to finish merge!";\
+	else\
+	    echo "Fix above conflicts and run \`git commit\` to finish merge!";\
+	fi
 
 # Generate a .envrc that prepends e2e test suite configs to whatever
 # KUBECONFIG currently has, and stores CI tooling in .tools.

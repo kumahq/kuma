@@ -39,9 +39,6 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 			return nil, nil, err
 		}
 		return store, store, err
-	case postgres.DriverNamePq:
-		store, err := NewPqStore(pc.Metrics(), *cfg)
-		return store, core_store.NoTransactions{}, err
 	default:
 		return nil, nil, errors.New("unknown driver name " + cfg.DriverName)
 	}
@@ -57,5 +54,5 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 
 func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Emitter) error {
 	postgresListener := postgres_events.NewListener(*pc.Config().Store.Postgres, out)
-	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener))
+	return pc.ComponentManager().Add(component.NewResilientComponent(core.Log.WithName("postgres-event-listener-component"), postgresListener, pc.Config().General.ResilientComponentBaseBackoff.Duration, pc.Config().General.ResilientComponentMaxBackoff.Duration))
 }

@@ -16,11 +16,20 @@ on:
       IMAGES:
         required: true
         type: string
+      REGISTRY:
+        required: true
+        type: string
+      VERSION_NAME:
+        required: true
+        type: string
+      NOTARY_REPOSITORY:
+        required: true
+        type: string
     outputs:
-      IMAGE_MANIFESTS:
-        value: ${{ jobs.build.outputs.IMAGE_MANIFESTS }}
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGE_DIGESTS:
+        value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
   contents: read
   id-token: write # Required for image signing
@@ -39,19 +48,13 @@ jobs:
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           fetch-depth: 0
-      - name: "Add matrix to .build/info to cache"
-        run: |
-          make build/info/short > .build-info
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -68,7 +71,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -76,6 +79,7 @@ jobs:
             ./build/distributions/out/*.tar.gz
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -85,15 +89,13 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      IMAGE_MANIFESTS: ${{ steps.image_manifests.outputs.manifests }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         image: ${{ fromJSON(inputs.images) }}
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -103,10 +105,7 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: |
-            .build-info
-            go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -118,13 +117,7 @@ jobs:
       - id: image_meta
         run: |
           echo "Extracting image meta for ${{ matrix.image }}"
-          registry=$(make docker/info/registry)
-          tag=$(make build/info/version)
-          echo "tag=${tag}" >> $GITHUB_OUTPUT
-          echo "registry=${registry}" >> $GITHUB_OUTPUT
-          echo "image=${registry}/${{ matrix.image }}:${tag}" >> $GITHUB_OUTPUT
-          # Add matrix to .build/info to cache
-          make build/info/short > .build-info
+          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
       - run: |
           make images/${{ matrix.image }}
       - run: |
@@ -133,25 +126,21 @@ jobs:
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
           make test/container-structure/${{ matrix.image }}
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
-        id: image-artifacts
-        with:
-          name: images_${{ matrix.image }}
-          path: |
-            ./build/docker/*.tar
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@2f02738ecb1670f01391162e43fe3f5d4e7942a1 # v2.2.2
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
+          upload-sbom-release-assets: true
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@2f02738ecb1670f01391162e43fe3f5d4e7942a1 # v2.2.2
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
+          upload-sbom-release-assets: true
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       - name: publish images
         id: release_images
@@ -177,22 +166,54 @@ jobs:
           digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
+          echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        id: image-artifacts
+        with:
+          name: image_${{ matrix.image }}
+          path: |
+            ./build/docker/*.tar
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        id: image-digest-artifacts
+        with:
+          name: image_${{ matrix.image }}.digest.json
+          path: |
+            ./build/docker/${{ matrix.image }}.digest.json
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@590c699fe824010d7d563a33cc60500d847d3f9e # v2.1.0
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@2f02738ecb1670f01391162e43fe3f5d4e7942a1 # v2.2.2
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
-          signature_registry: ${{ steps.image_meta.outputs.registry }}/notary${{ contains(steps.image_meta.outputs.tag, 'preview') && '-internal' }}
+          signature_registry: ${{ inputs.REGISTRY }}/${{inputs.NOTARY_REPOSITORY}}
           registry_username: ${{ vars.DOCKER_USERNAME }}
           registry_password: ${{ secrets.DOCKER_API_KEY }}
+  digest-images:
+    needs: [build-images]
+    runs-on: ubuntu-latest
+    outputs:
+      DIGESTS: ${{ steps.compute-digests.outputs.digests }}
+    steps:
+      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+        with:
+          pattern: "image_*.digest.json"
+          path: ./digests
+          merge-multiple: true
+      - id: compute-digests
+        run: |
+          # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
+          echo "digests<<EOF" >> $GITHUB_OUTPUT
+          jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
@@ -204,7 +225,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -232,7 +253,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
@@ -242,7 +263,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@f2acddfb5195534d487896a656232b016a682f3c # v1.9.0
+        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

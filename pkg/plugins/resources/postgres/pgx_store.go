@@ -95,9 +95,14 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 	}
 
 	version := 0
-	statement := `INSERT INTO resources (name, mesh, type, version, spec, creation_time, modification_time, owner_name, owner_mesh, owner_type, labels) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
+	statement := `INSERT INTO resources (name, mesh, type, version, spec, creation_time, modification_time, owner_name, owner_mesh, owner_type, labels, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`
 
 	labels, err := prepareLabels(opts.Labels)
+	if err != nil {
+		return err
+	}
+
+	status, err := prepareStatus(resource)
 	if err != nil {
 		return err
 	}
@@ -114,6 +119,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		ownerMesh,
 		ownerType,
 		labels,
+		status,
 	}
 	tx, exist := store.TxFromCtx(ctx)
 	if pgxTx, ok := tx.(pgx.Tx); exist && ok {
@@ -158,12 +164,18 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
-	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4 WHERE name=$5 AND mesh=$6 AND type=$7 AND version=$8;`
+	status, err := prepareStatus(resource)
+	if err != nil {
+		return err
+	}
+
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4, status=$5 WHERE name=$6 AND mesh=$7 AND type=$8 AND version=$9;`
 	args := []any{
 		string(bytes),
 		newVersion,
 		opts.ModificationTime.UTC(),
 		labels,
+		status,
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
@@ -221,7 +233,7 @@ func (r *pgxResourceStore) Delete(ctx context.Context, resource core_model.Resou
 func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 
-	statement := `SELECT spec, version, creation_time, modification_time, labels FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
+	statement := `SELECT spec, version, creation_time, modification_time, labels, status FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
 	args := []any{opts.Name, opts.Mesh, resource.Descriptor().Name}
 	tx, exist := store.TxFromCtx(ctx)
 	var row pgx.Row
@@ -239,7 +251,8 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 	var version int
 	var creationTime, modificationTime time.Time
 	var labels string
-	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels)
+	var status string
+	err := row.Scan(&spec, &version, &creationTime, &modificationTime, &labels, &status)
 	if err == pgx.ErrNoRows {
 		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
@@ -249,6 +262,12 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 
 	if err := core_model.FromJSON([]byte(spec), resource.GetSpec()); err != nil {
 		return errors.Wrap(err, "failed to convert json to spec")
+	}
+
+	if resource.Descriptor().HasStatus {
+		if err := core_model.FromJSON([]byte(status), resource.GetStatus()); err != nil {
+			return errors.Wrap(err, "failed to convert json to status")
+		}
 	}
 
 	meta := &resourceMetaObject{
@@ -285,7 +304,7 @@ func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
 func (r *pgxResourceStore) List(ctx context.Context, resources core_model.ResourceList, args ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(args...)
 
-	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels FROM resources WHERE type=$1`
+	statement := `SELECT name, mesh, spec, version, creation_time, modification_time, labels, status FROM resources WHERE type=$1`
 	var statementArgs []interface{}
 	statementArgs = append(statementArgs, resources.GetItemType())
 	argsIndex := 1
@@ -374,13 +393,20 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 	var version int
 	var creationTime, modificationTime time.Time
 	var labels string
-	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime, &labels); err != nil {
+	var status string
+	if err := rows.Scan(&name, &mesh, &spec, &version, &creationTime, &modificationTime, &labels, &status); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve elements from query")
 	}
 
 	item := resources.NewItem()
 	if err := core_model.FromJSON([]byte(spec), item.GetSpec()); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to spec")
+	}
+
+	if item.Descriptor().HasStatus {
+		if err := core_model.FromJSON([]byte(status), item.GetStatus()); err != nil {
+			return nil, errors.Wrap(err, "failed to convert json to status")
+		}
 	}
 
 	meta := &resourceMetaObject{
@@ -558,4 +584,15 @@ func prepareLabels(labels map[string]string) (string, error) {
 		return "", errors.Wrap(err, "failed to convert labels to json")
 	}
 	return string(lblBytes), nil
+}
+
+func prepareStatus(resource core_model.Resource) (string, error) {
+	if !resource.Descriptor().HasStatus {
+		return "{}", nil
+	}
+	statusBytes, err := core_model.ToJSON(resource.GetStatus())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to convert spec to json")
+	}
+	return string(statusBytes), nil
 }

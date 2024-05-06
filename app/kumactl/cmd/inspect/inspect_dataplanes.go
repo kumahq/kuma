@@ -92,7 +92,7 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 			totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 				return s.GetStatus().GetTotal().GetResponsesRejected()
 			})
-			status, errs := dataplaneOverview.GetStatus()
+			status, errs := dataplaneOverview.Status()
 			lastConnected := util_proto.MustTimestampFromProto(lastSubscription.GetConnectTime())
 			lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 

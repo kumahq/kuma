@@ -43,7 +43,7 @@ jobs:
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
@@ -53,7 +53,7 @@ jobs:
           go-version-file: go.mod
       - name: "GitHub Actions: set up cache"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -139,6 +139,14 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        if: always()
+        with:
+          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}
+          if-no-files-found: ignore
+          path: |
+            /tmp/e2e-debug/
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params

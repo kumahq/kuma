@@ -47,5 +47,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
-    namespace: kube-system
+    namespace: {{ .Values.cni.namespace }}
   {{- end }}

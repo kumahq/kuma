@@ -113,9 +113,7 @@ properties:
                 description: Profiles allows to customize which metrics are published.
                 properties:
                   appendProfiles:
-                    description: |-
-                      AppendProfiles allows to combine the metrics from multiple predefined profiles.
-                      Currently, it's only possible to define one profile.
+                    description: AppendProfiles allows to combine the metrics from multiple predefined profiles.
                     items:
                       properties:
                         name:
@@ -128,7 +126,6 @@ properties:
                       required:
                         - name
                       type: object
-                    maxItems: 1
                     type: array
                   exclude:
                     description: |-
@@ -145,6 +142,7 @@ properties:
                             - Prefix
                             - Regex
                             - Exact
+                            - Contains
                           type: string
                       required:
                         - match
@@ -166,6 +164,7 @@ properties:
                             - Prefix
                             - Regex
                             - Exact
+                            - Contains
                           type: string
                       required:
                         - match
@@ -173,9 +172,6 @@ properties:
                       type: object
                     type: array
                 type: object
-              regex:
-                description: Regex that will be used to filter sidecar metrics. It uses Google RE2 engine https://github.com/google/re2
-                type: string
             type: object
         type: object
       targetRef:

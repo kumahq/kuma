@@ -6,13 +6,6 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/selector.proto";
-import "kuma-doc/config.proto";
-
-option (doc.config) = {
-  type : Policy,
-  name : "VirtualOutbound",
-  file_name : "virtual-outbound"
-};
 
 // VirtualOutbound defines how to generate hostname ports combination.
 message VirtualOutbound {
@@ -24,22 +17,22 @@ message VirtualOutbound {
   option (kuma.mesh.resource).ws.name = "virtual-outbound";
 
   // List of selectors to match dataplanes that this policy applies to
-  repeated Selector selectors = 1 [ (doc.required) = true ];
-  Conf conf = 2 [ (doc.required) = true ];
+  repeated Selector selectors = 1;
+  Conf conf = 2;
 
   message Conf {
     // Host the gotemplate to generate the hostname from the Parameters map
-    string host = 1 [ (doc.required) = true ];
+    string host = 1;
     // Port the gotemplate to generate the port from the Parameters map
-    string port = 2 [ (doc.required) = true ];
+    string port = 2;
     // Parameters a mapping between tag keys and template parameter key. This
     // must always contain at least `kuma.io/service`
-    repeated TemplateParameter parameters = 3 [ (doc.required) = true ];
+    repeated TemplateParameter parameters = 3;
 
     // A mapping between a template parameter and a dataplane outbound tag name.
     message TemplateParameter {
       // Name the name of the template parameter (must be alphanumeric).
-      string name = 1 [ (doc.required) = true ];
+      string name = 1;
       // TagKey the name of the tag in the Kuma outbound (optional if absent it
       // will use Name).
       string tag_key = 2;
