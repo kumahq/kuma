@@ -2,12 +2,14 @@ package sync
 
 import (
 	"context"
+	std_errors "errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -78,12 +80,24 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
-		d.EnvoyCpCtx.Secrets.Cleanup(d.key)
+		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
 		return d.DataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.IngressReconciler.Clear(&proxyID)
 	case mesh_proto.EgressProxyType:
-		return d.EgressReconciler.Clear(&proxyID)
+		var meshList core_mesh.MeshResourceList
+		listErr := d.ResManager.List(context.TODO(), &meshList)
+
+		if listErr == nil {
+			for _, mesh := range meshList.Items {
+				d.EnvoyCpCtx.Secrets.Cleanup(
+					mesh_proto.EgressProxyType,
+					core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+				)
+			}
+		}
+
+		return std_errors.Join(listErr, d.EgressReconciler.Clear(&proxyID))
 	default:
 		return nil
 	}
@@ -97,7 +111,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 		return err
 	}
 
-	certInfo := d.EnvoyCpCtx.Secrets.Info(d.key)
+	certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.DataplaneProxyType, d.key)
 	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
 	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
 	if !syncForCert && !syncForConfig {
@@ -125,7 +139,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
-		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
+		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	proxy.Metadata = metadata
 	err = d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)

@@ -19,7 +19,7 @@ import (
 var sinkLog = core.Log.WithName("xds").WithName("sink")
 
 type DataplaneInsightSink interface {
-	Start(stop <-chan struct{})
+	Start(stop <-chan struct{}) // TODO error
 }
 
 type DataplaneInsightStore interface {
@@ -72,9 +72,15 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	var lastStoredSecretsInfo *secrets.Info
 	var generation uint32
 
+	proxyType, err := core_mesh.ProxyTypeFromResourceType(s.dataplaneType)
+	if err != nil {
+		sinkLog.Error(err, "failed to create dataplaneInsightSink")
+		return
+	}
+
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
-		secretsInfo := s.secrets.Info(dataplaneID)
+		secretsInfo := s.secrets.Info(proxyType, dataplaneID)
 
 		select {
 		case <-generationTicker.C:
