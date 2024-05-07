@@ -27,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -434,9 +433,45 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		svc := obj.(*kube_core.Service)
+		l := l.WithValues(
+			"Service",
+			kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+		)
 		// List Pods in the same namespace as a Service
 		pods := &kube_core.PodList{}
-		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(obj.(*kube_core.Service).Spec.Selector)); err != nil {
+		if len(svc.Spec.Selector) == 0 {
+			endpointSlices := &kube_discovery.EndpointSliceList{}
+			if err := client.List(
+				ctx,
+				endpointSlices,
+				kube_client.InNamespace(svc.Namespace),
+				kube_client.MatchingLabels(map[string]string{
+					kube_discovery.LabelServiceName: svc.Name,
+				}),
+			); err != nil {
+				l.Error(err, "failed to fetch EndpointSlices")
+				return nil
+			}
+			var req []kube_reconcile.Request
+			for _, slice := range endpointSlices.Items {
+				l = l.WithValues(
+					"EndpointSlice",
+					kube_types.NamespacedName{Namespace: slice.Namespace, Name: slice.Name},
+				)
+				for _, endpoint := range slice.Endpoints {
+					l = l.WithValues("Endpoint", endpoint)
+					if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() {
+						req = append(req, kube_reconcile.Request{
+							NamespacedName: kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace},
+						})
+					}
+				}
+			}
+			return req
+		}
+
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(svc.Spec.Selector)); err != nil {
 			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
 			return nil
 		}
@@ -451,12 +486,42 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 }
 
 func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("endpoint-slice-to-pods-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		slice := obj.(*kube_discovery.EndpointSlice)
 
+		l := l.WithValues(
+			"EndpointSlice",
+			kube_types.NamespacedName{Namespace: slice.Namespace, Name: slice.Name},
+		)
+
 		var req []kube_reconcile.Request
 		for _, endpoint := range slice.Endpoints {
-			if pointer.DerefOr(endpoint.Conditions.Ready, false) && endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" {
+			l = l.WithValues(
+				"Endpoint",
+				endpoint,
+			)
+			svcName, ok := slice.Labels[kube_discovery.LabelServiceName]
+			if !ok {
+				continue
+			}
+
+			l = l.WithValues(
+				"Service",
+				kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName},
+			)
+
+			svc := &kube_core.Service{}
+			if err := client.Get(ctx, kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName}, svc); err != nil {
+				l.Error(err, "failed to fetch Service")
+				// We intentionally continue here because we can't confirm we
+				// can skip this EndpointSlice
+			} else if len(svc.Spec.Selector) > 0 {
+				// We don't consider EndpointSlices for this kind of Service
+				continue
+			}
+
+			if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() {
 				req = append(req, kube_reconcile.Request{
 					NamespacedName: kube_types.NamespacedName{Namespace: endpoint.TargetRef.Namespace, Name: endpoint.TargetRef.Name},
 				})
