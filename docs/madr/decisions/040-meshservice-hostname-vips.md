@@ -76,7 +76,7 @@ name: k8s-zone-hostnames
 spec:
   selector:
     meshService:
-      Labels:
+      labels:
         kuma.io/zone: east 
   template: {{ label "k8s.kuma.io/service-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.{{ label "kuma.io/zone" }}
 ```
