@@ -48,16 +48,41 @@ func (t *MangleTable) BuildForRestore(verbose bool) string {
 	return table.BuildForRestore(verbose)
 }
 
-func NewMangleChain(name string) *chain.Chain {
+func NewMangleChain(name string) (*chain.Chain, error) {
 	return chain.NewChain(consts.TableMangle, name)
 }
 
-func Mangle() *MangleTable {
-	return &MangleTable{
-		prerouting:  NewMangleChain("PREROUTING"),
-		input:       NewMangleChain("INPUT"),
-		forward:     NewMangleChain("FORWARD"),
-		output:      NewMangleChain("OUTPUT"),
-		postrouting: NewMangleChain("POSTROUTING"),
+func Mangle() (*MangleTable, error) {
+	prerouting, err := NewMangleChain("PREROUTING")
+	if err != nil {
+		return nil, err
 	}
+
+	input, err := NewMangleChain("INPUT")
+	if err != nil {
+		return nil, err
+	}
+
+	forward, err := NewMangleChain("FORWARD")
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := NewMangleChain("OUTPUT")
+	if err != nil {
+		return nil, err
+	}
+
+	postrouting, err := NewMangleChain("POSTROUTING")
+	if err != nil {
+		return nil, err
+	}
+
+	return &MangleTable{
+		prerouting:  prerouting,
+		input:       input,
+		forward:     forward,
+		output:      output,
+		postrouting: postrouting,
+	}, nil
 }

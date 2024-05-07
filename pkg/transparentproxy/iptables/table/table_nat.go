@@ -52,15 +52,35 @@ func (t *NatTable) BuildForRestore(verbose bool) string {
 	return table.BuildForRestore(verbose)
 }
 
-func NewNatChain(name string) *chain.Chain {
+func NewNatChain(name string) (*chain.Chain, error) {
 	return chain.NewChain(consts.TableNat, name)
 }
 
-func Nat() *NatTable {
-	return &NatTable{
-		prerouting:  NewNatChain("PREROUTING"),
-		input:       NewNatChain("INPUT"),
-		output:      NewNatChain("OUTPUT"),
-		postrouting: NewNatChain("POSTROUTING"),
+func Nat() (*NatTable, error) {
+	prerouting, err := NewNatChain("PREROUTING")
+	if err != nil {
+		return nil, err
 	}
+
+	input, err := NewNatChain("INPUT")
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := NewNatChain("OUTPUT")
+	if err != nil {
+		return nil, err
+	}
+
+	postrouting, err := NewNatChain("POSTROUTING")
+	if err != nil {
+		return nil, err
+	}
+
+	return &NatTable{
+		prerouting:  prerouting,
+		input:       input,
+		output:      output,
+		postrouting: postrouting,
+	}, nil
 }

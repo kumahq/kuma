@@ -1,6 +1,8 @@
 package chain
 
 import (
+	"errors"
+
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 )
@@ -52,9 +54,17 @@ func (c *Chain) BuildForRestore(verbose bool) []string {
 	return lines
 }
 
-func NewChain(table, chain string) *Chain {
+func NewChain(table, chain string) (*Chain, error) {
+	if table == "" {
+		return nil, errors.New("table is required and cannot be empty")
+	}
+
+	if chain == "" {
+		return nil, errors.New("chain is required and cannot be empty")
+	}
+
 	return &Chain{
 		table: table,
 		name:  chain,
-	}
+	}, nil
 }

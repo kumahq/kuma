@@ -46,11 +46,7 @@ func (r *Rule) BuildForRestore(verbose bool) string {
 		flag = consts.Flags[consts.FlagInsert][verbose]
 	}
 
-	cmd := []string{flag}
-
-	if r.chain != "" {
-		cmd = append(cmd, r.chain)
-	}
+	cmd := []string{flag, r.chain}
 
 	if r.position != 0 {
 		cmd = append(cmd, fmt.Sprintf("%d", r.position))

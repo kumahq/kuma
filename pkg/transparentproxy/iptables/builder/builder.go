@@ -84,10 +84,20 @@ func BuildIPTablesForRestore(
 		return "", fmt.Errorf("build nat table: %s", err)
 	}
 
+	rawTable, err := buildRawTable(cfg, dnsServers, iptablesExecutablePath)
+	if err != nil {
+		return "", fmt.Errorf("build raw table: %s", err)
+	}
+
+	mangleTable, err := buildMangleTable(cfg)
+	if err != nil {
+		return "", fmt.Errorf("build mangle table: %s", err)
+	}
+
 	return newIPTables(
-		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
+		rawTable,
 		natTable,
-		buildMangleTable(cfg),
+		mangleTable,
 	).BuildForRestore(cfg.Verbose), nil
 }
 

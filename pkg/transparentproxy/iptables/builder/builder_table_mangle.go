@@ -7,8 +7,11 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
 )
 
-func buildMangleTable(cfg config.Config) *table.MangleTable {
-	mangle := table.Mangle()
+func buildMangleTable(cfg config.Config) (*table.MangleTable, error) {
+	mangle, err := table.Mangle()
+	if err != nil {
+		return nil, err
+	}
 
 	mangle.Prerouting().
 		AddRuleIf(cfg.ShouldDropInvalidPackets,
@@ -16,5 +19,5 @@ func buildMangleTable(cfg config.Config) *table.MangleTable {
 			Jump(Drop()),
 		)
 
-	return mangle
+	return mangle, nil
 }

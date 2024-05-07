@@ -30,13 +30,23 @@ func (t *RawTable) BuildForRestore(verbose bool) string {
 	return table.BuildForRestore(verbose)
 }
 
-func NewRawChain(name string) *chain.Chain {
+func NewRawChain(name string) (*chain.Chain, error) {
 	return chain.NewChain(consts.TableRaw, name)
 }
 
-func Raw() *RawTable {
-	return &RawTable{
-		prerouting: NewRawChain("PREROUTING"),
-		output:     NewRawChain("OUTPUT"),
+func Raw() (*RawTable, error) {
+	prerouting, err := NewRawChain("PREROUTING")
+	if err != nil {
+		return nil, err
 	}
+
+	output, err := NewRawChain("OUTPUT")
+	if err != nil {
+		return nil, err
+	}
+
+	return &RawTable{
+		prerouting: prerouting,
+		output:     output,
+	}, nil
 }

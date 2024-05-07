@@ -27,9 +27,12 @@ const (
 )
 
 const (
+	FlagTable = "table"
+
 	// commands
 	FlagAppend   = "append"
 	FlagInsert   = "insert"
+	FlagCheck    = "check"
 	FlagNewChain = "new-chain"
 
 	// parameters
@@ -37,6 +40,11 @@ const (
 )
 
 var Flags = map[string]map[bool]string{
+	FlagTable: {
+		Long:  "--table",
+		Short: "-t",
+	},
+
 	// commands
 	FlagAppend: {
 		Long:  "--append",
@@ -45,6 +53,10 @@ var Flags = map[string]map[bool]string{
 	FlagInsert: {
 		Long:  "--insert",
 		Short: "-I",
+	},
+	FlagCheck: {
+		Long:  "--check",
+		Short: "-C",
 	},
 	FlagNewChain: {
 		Long:  "--new-chain",
