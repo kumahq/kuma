@@ -33,32 +33,24 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 	var options []*envoy_config_core.HeaderValueOption
 
 	for _, set := range mod.Set {
-		for i, headerValue := range headerValues(set.Value) {
-			appendAction := envoy_config_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
-			if i > 0 {
-				appendAction = envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
-			}
-			replace := &envoy_config_core.HeaderValueOption{
-				AppendAction: appendAction,
-				Header: &envoy_config_core.HeaderValue{
-					Key:   string(set.Name),
-					Value: headerValue,
-				},
-			}
-			options = append(options, replace)
+		replace := &envoy_config_core.HeaderValueOption{
+			AppendAction: envoy_config_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
+			Header: &envoy_config_core.HeaderValue{
+				Key:   string(set.Name),
+				Value: string(set.Value),
+			},
 		}
+		options = append(options, replace)
 	}
 	for _, add := range mod.Add {
-		for _, headerValue := range headerValues(add.Value) {
-			appendOption := &envoy_config_core.HeaderValueOption{
-				AppendAction: envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
-				Header: &envoy_config_core.HeaderValue{
-					Key:   string(add.Name),
-					Value: headerValue,
-				},
-			}
-			options = append(options, appendOption)
+		appendOption := &envoy_config_core.HeaderValueOption{
+			AppendAction: envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+			Header: &envoy_config_core.HeaderValue{
+				Key:   string(add.Name),
+				Value: string(add.Value),
+			},
 		}
+		options = append(options, appendOption)
 	}
 
 	return options, mod.Remove
