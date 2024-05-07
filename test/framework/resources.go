@@ -17,18 +17,27 @@ import (
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
-	var errs []error
+	_, err := retry.DoWithRetryE(
+		cluster.GetTesting(),
+		"delete mesh resources",
+		10,
+		time.Second,
+		func() (string, error) {
+			var errs []error
 
-	for _, desc := range descriptor {
-		if _, ok := cluster.(*K8sCluster); ok {
-			errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
-			continue
-		}
+			for _, desc := range descriptor {
+				if _, ok := cluster.(*K8sCluster); ok {
+					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+					continue
+				}
 
-		errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
-	}
+				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
+			}
 
-	return errors.Join(errs...)
+			return "", errors.Join(errs...)
+		},
+	)
+	return err
 }
 
 func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
