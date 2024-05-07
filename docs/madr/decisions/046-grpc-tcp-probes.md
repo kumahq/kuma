@@ -163,11 +163,11 @@ Handling incoming probe request from kubelet:
 The whole workflow will be like the following diagram:
 
 ```
-  kubelet (HTTP Probes)                                         Application (HTTP Probes)
+  kubelet (TCP Probes)                                   HTTP to TCP translator  --->  Application (TCP port)
                ↘                                                ↗ 
                  Pod (HTTP Probes)  --->  Virtual Probe Listener (HTTP routing)
                ↗                                                ↘
-  kubelet (gRPC Probes)                                  HTTP to gRPC translator  --->  Application (gRPC Probes)
+  kubelet (gRPC Probes)                                  HTTP to gRPC translator  --->  Application (gRPC healthcheck)
 ```
 
 #### Positive Consequences
@@ -176,17 +176,63 @@ The whole workflow will be like the following diagram:
 
 - Better user experience: don't need to introduce new annotations, the user can still specify the port as they are doing now.
 
-- Less virtual listeners on sidecar
+- Less virtual listeners on sidecar and saves a port to be taken from application: the translator will be used to handle both TCP probes and gRPC probes
 
-- Don't need to introduce new fields on the `Dataplane` resource type
-
-- The translator may be partly reused to support TCP probes
+- Don't need to introduce new fields on the `Dataplane` object
 
 #### Negative Consequences
 
 - Requires an extra component (the translator) in `kuma-dp`, which increases the implementation complexity
 
 - Less intuitiveness, harder for troubleshooting issues
+
+#### Implementation details
+
+The probes support can be implemented in the following steps:
+
+1. Change the `Dataplane` model to contain fields for gRPC and TCP probes (see examples below)
+2. Create a new component in `kuma-dp` (the probe translator) to handle the incoming HTTP probes by performing the actual gRPC and TCP probes and returning the result
+3. Generate a new Envoy cluster `kuma-virtual-probes` and point it to the component
+4. Make sidecar injector to:
+   1. Get the correct port for the probe translator, and generate corresponding command line arguments for `kuma-dp` 
+   2. Identify gRPC and TCP probes and transform them into the updated `Dataplane` object
+5. Change the route of Virtual Probe listener (in `probe_generator`) and forward the user defined gRPC and TCP probes into the new component in `kuma-dp`
+
+In step 2, the new component is an HTTP server and needs to listen on a new port, a different one from the existing Virtual Probe listener port (default `9000`). The new port will be configurable by `runtime.kubernetes.injector.virtualProbesPort` and the default value is `9001`. The user is not expected to change this port unless it is conflicting with an application port. 
+
+Note that if we decide not to introduce a feature flag for this new feature, the newly introduced port can be a break change for meshes hosting application who is listening on port `9001`, it can cause a DoA incident. 
+
+The updated `Dataplane` will be like this:
+
+```yaml
+type: Dataplane
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  probes:
+    endpoints:
+      - inboundPath: /metrics
+        inboundPort: 8080
+        path: /8080/metrics
+      - inboundPath: /metrics
+        inboundPort: 3001
+        path: /3001/metrics
+      # below are generated for gRPC and TCP probes
+      - inboundPort: 9001
+        path: /grpc/3536/liveness
+      - inboundPort: 9001
+        path: /tcp/4246
+    port: 19000
+```
+
+The last two endpoints are for gRPC and TCP probes: when generating routes for the Virtual Probes listener, these probes are identified by the path prefix, we include the `service` field in the path for gRPC probes.
+
+In the probe translator, it will:
+
+- return `503` responses for failed probes, return `200` responses for successful probes
+- use the pod IP as the `Host` header in the gRPC request to the application
+- use socket options `SO_LINGER` and timeout 0 to close the connection immediately on detecting TCP connections
 
 ## Decision Drivers
 
@@ -200,9 +246,9 @@ Chosen option: option 1
 
 ## Other options
 
-### Option 2 - allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly
+### Option 2 - allocate a new and separated port for each of the gRPC/TCP probes, and route them back to the application probe handling port accordingly
 
-The only information we can use to differ from multiple gRPC probes is the port number, while the port number is included in the underlying HTTP2 request as the `Host` header, it will be the same if we want to use a single virtual probe listener to support forwarding traffic for all gRPC probes. So we need to allocate a new virtual probe port for each of them.
+The only information we can use to differ from multiple gRPC probes is the port number, while the port number is included in the underlying HTTP2 request as the `Host` header, it will be the same if we want to use a single virtual probe listener to support forwarding traffic for all gRPC probes. So we need to allocate a new virtual probe port for each of them. TCP probes share the same scenario, so we also need to allocate a new port for each of them.
 
 To allocate these ports, we'll need a new Pod annotation to support user specifying the range to be used. This annotation, with name `kuma.io/virtual-probes-port-range`, will replace the existing annotation `kuma.io/virtual-probes-port`. The annotation should be optional: when user does not specify, a default range `9000-9020` will be used.
 
@@ -225,14 +271,16 @@ spec:
         inboundPort: 3001
         path: /3001/metrics
     port: 19000
+  # both gRPC and TCP probes are generated as "tcpProbes" in the Dataplane object
   tcpProbes:
   - port: 2379
+  - port: 3476
   ...
 ```
 
 #### Positive Consequences
 
-- Ease of implementation
+- No translation between user defined probes and actual probes, so it's intuitive enough for issue troubleshooting
 
 - Keeping the compatibility with the existing HTTP based Virtual Probe and data plane data model
 
