@@ -120,7 +120,7 @@ status:
 Hostname generation process (only computed by leader):
 * List MeshService and HostnameGenerators
 * Sort HostnameGenerators by precedence
-* Take each HostnameGenerator and add hostnames for a Service (on the side, do not modify MeshService object). Track generated hostnames to detect collisions 
+* Take each HostnameGenerator and add hostnames for a Service (on the side, do not modify MeshService object). Track generated hostnames for each mesh to detect collisions 
 * Go through MeshServices and compare if generated hostnames for service are different. If so, update MeshService
 
 **Precedence and collisions**
