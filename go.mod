@@ -37,7 +37,7 @@ require (
 	github.com/moby/sys/mountinfo v0.7.1
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.17.2
-	github.com/onsi/gomega v1.33.0
+	github.com/onsi/gomega v1.33.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
@@ -66,13 +66,13 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/net v0.24.0
-	golang.org/x/sys v0.19.0
-	golang.org/x/text v0.14.0
+	golang.org/x/sys v0.20.0
+	golang.org/x/text v0.15.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.14.4
 	k8s.io/api v0.29.3

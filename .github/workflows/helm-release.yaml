@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version-file: go.mod
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -71,7 +71,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: github.event.inputs.release == 'true'
-        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        uses: actions/create-github-app-token@a0de6af83968303c8c955486bf9739a57d23c7f1 # v1.10.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

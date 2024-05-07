@@ -3,6 +3,7 @@ package export
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -56,7 +57,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				cmd.PrintErrln(err)
 			}
 
-			if ctx.args.profile != profileAll && ctx.args.profile != profileFederation && ctx.args.profile != profileFederationWithPolicies {
+			if !slices.Contains([]string{profileFederation, profileFederationWithPolicies, profileAll}, ctx.args.profile) {
 				return errors.New("invalid profile")
 			}
 
@@ -65,7 +66,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return err
 			}
 
-			if ctx.args.format != formatUniversal && ctx.args.format != formatKubernetes {
+			if !slices.Contains([]string{formatKubernetes, formatUniversal}, ctx.args.format) {
 				return errors.New("invalid format")
 			}
 
