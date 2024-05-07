@@ -113,9 +113,9 @@ To provide hostname, we can use `HostnameGenerator` described in MADR #XXX (todo
 type: HostnameGenerator
 name: k8s-zone-hostnames
 spec:
-  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.cluster.{{ label "kuma.io/zone" }}
+  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.{{ label "kuma.io/zone" }}
 ```
-so that the synced service in zone `west` gets this hostname `redis.redis-system.svc.cluster.east`.
+so that the synced service in zone `west` gets this hostname `redis.redis-system.svc.mesh.east`.
 
 To assign Kuma VIP, we follow the process descirbed in MADR #XXX (todo provide a number when merged).
 
@@ -137,11 +137,12 @@ Explicit import seems to have very little value, because clients needs to explic
 
 ##### Export field
 
-We can introduce `spec.export` field to MeshService with values `All`, `None`.
-On Kubernetes, this would be controlled via `kuma.io/export` annotation on `Service` object.
-On Universal, where MeshService is synthesized from Dataplane objects, this would be controlled via `kuma.io/export` tag on a Dataplane object.
+We can introduce `spec.export.mode` field to MeshService with values `All`, `None`.
+We want to have nested mode in export, so we can later extend api if needed. For example `spec.export.mode: Subset` and `spec.export.list: zone-a,zone-b`.
+On Kubernetes, this would be controlled via `kuma.io/export-mode` annotation on `Service` object.
+On Universal, where MeshService is synthesized from Dataplane objects, this would be controlled via `kuma.io/export-mode` tag on a Dataplane object.
 
-If missing, then default behavior from kuma-cp configuration will be applied.
+If missing, then default behavior from kuma-cp configuration will be applied. The default CP configuration is `spec.export.mode: All`.
 Then it's up to a mesh operator if they want to sync everything by default or opt-in exported services.
 
 ##### MeshTrafficPermission
@@ -180,7 +181,7 @@ status:
   - port: 1234
     protocol: tcp
   addresses:
-  - hostname: redis.redis-system.svc.cluster.global
+  - hostname: redis.redis-system.svc.mesh.global
     status: Available
     origin: global-generator
   vips:
@@ -206,7 +207,7 @@ spec:
   meshServiceSelector:
     matchLabels:
       kuma.io/origin: global
-  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.cluster.global
+  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.global
 ```
 
 #### MeshMultiZoneService
@@ -232,7 +233,7 @@ status: # computed on the zone
   - port: 1234
     protocol: tcp
   addresses:
-  - hostname: redis.redis-system.svc.cluster.global
+  - hostname: redis.redis-system.svc.mesh.global
     status: Available
     origin: global-generator
   vips:
@@ -267,7 +268,7 @@ name: global-generator
 spec:
   targetRef:
     kind: MeshMultiZoneService
-  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.cluster.global
+  template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.global
 ```
 
 #### MeshService with serviceSelector selector applied on global CP
