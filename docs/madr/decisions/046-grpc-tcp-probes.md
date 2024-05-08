@@ -13,7 +13,7 @@ Kubernetes support three types of network based probes:
 
 Kuma transparent proxy captures inbound traffic of pods, including the probe traffic. This leads to unexpected behaviour for Kubernetes probes without special handling: gRPC requests can fail due to lack of mTLS client certificates attached.
 
-We've implemented the [Virtual Probes feature](https://kuma.io/docs/2.6.x/policies/service-health-probes/#virtual-probes) which creates a dedicated listener for HTTP probes. And now, we want to support gRPC probes as well. We'll create a separated MADR for the supporting of TCP probes.
+We've implemented the [Virtual Probes feature](https://kuma.io/docs/2.6.x/policies/service-health-probes/#virtual-probes) which creates a dedicated listener for HTTP probes. And now, we want to support gRPC and TCP probes as well.
 
 Kubernetes users can specify HTTP and gRPC probes like this:
 
@@ -146,39 +146,47 @@ spec:
 
 ## Considered Options
 
-**Option 1:** Transform gRPC and TCP probes to HTTP probes, and merge into the existing HTTP based Virtual Probes listener
+**Option 1:** Transform gRPC and TCP probes to HTTP probes, use an intermediate Virtual Probe Handler to handle all incoming probe traffic.
 
-**Option 2:** Allocate a new and separated port for each of the gRPC probes, and route them back to the application probe handling port accordingly.
+**Option 2:** Allocate a new and separated port for each of the gRPC and TCP probes, and route them back to the application probe handling port accordingly.
 
-### Proposed option: option 1 - Transform gRPC probes to HTTP probes, merge all the HTTP probes by one HTTP listener
+### Proposed option: option 1 - Transform gRPC and TCP probes to HTTP probes, use an intermediate Virtual Probe Handler to handle all incoming probe traffic.
 
-Transform user defined gRPC probes into HTTP probes first and then use the existing Virtual Probe HTTP listener to handle incoming probe traffic. This needs n new intermediate layer translating HTTP probes back into gRPC probes (the translator), a reasonable place is put it in the kuma-dp.
+Transform user defined gRPC and TCP probes into HTTP probes first, create a HTTP based Virtual Probe Handler in `kuma-dp` to handle all incoming probe traffic sent from `kubelet`. This handler translates HTTP probes back into original format (gRPC, TCP or user defined HTTP probes) and eventually be handled by the application.
 
-Handling incoming probe request from kubelet:
+The Virtual Probe Handler will handle incoming probe requests like this:
 
-1. If the user defines an HTTP probe, requests from kubelet are forwarded/redirected to application directly with necessary path/port rewriting, etc.
+1. If the user defines an HTTP probe, requests from kubelet are rewritten back to the user defined paths and forwarded to the application port.
 
-2. If the user defines a gRPC probe, we'll also receive HTTP requests from kubelet, since they are transformed to HTTP probes. We forward these requests to the translator and the translator is responsible for handling the probe request, by detecting the actual status from the application.
+2. If the user defines a gRPC probe, the Virtual Probe Handler will also receive HTTP requests from kubelet, since they are transformed to HTTP probes. The handler will then detect the actual status from the application by sending gRPC health check requests and respond to HTTP requests accordingly.
 
-The whole workflow will be like the following diagram:
+3. If the user defines a TCP probe, The handler will then detect the actual status from the application by establishing connections to the application port and respond to HTTP requests accordingly.
+
+The whole workflow can be described as the following diagram, the column "Transformed" will be put into pod manifest after the Kuma sidecar/init containers are injected into a pod:
 
 ```
-  kubelet (TCP Probes)                                   HTTP to TCP translator  --->  Application (TCP port)
-               ↘                                                ↗ 
-                 Pod (HTTP Probes)  --->  Virtual Probe Listener (HTTP routing)
-               ↗                                                ↘
-  kubelet (gRPC Probes)                                  HTTP to gRPC translator  --->  Application (gRPC healthcheck)
+  User Defined      Transformed            Virtual Probe Handler                Application Endpoint   
+
+  TCP Probes                                         HTTP to TCP translator  -->   TCP server
+               ↘                                    ↗ 
+  HTTP Probes -->  Pod (HTTP Probes)  -->  kuma-dp --> HTTP to HTTP rewriter -->  HTTP handler
+               ↗                                    ↘
+  gRPC Probes                                        HTTP to gRPC translator -->  gRPC healthcheck service
 ```
+
+By also using this same Virtual Probe Handler in `kuma-dp` to handle user defined HTTP probes, we remove the requirements to generate a Virtual Probe listener within Envoy. As a side effect, it adds a requirement to exclude this port of the "Virtual Probe Handler" from the traffic redirection mechanism.
+
+In this way, we can unify the handling of all user defined probes, and removes the `probes` field from the `Dataplane` object.
 
 #### Positive Consequences
 
-- Don't need to introduce new ports for gRPC probes
+- Don't need to introduce new port for virtual probes
 
 - Better user experience: don't need to introduce new annotations, the user can still specify the port as they are doing now.
 
-- Less virtual listeners on sidecar and saves a port to be taken from application: the translator will be used to handle both TCP probes and gRPC probes
+- Less virtual listeners on sidecars: the translator will be used to handle all three types of probes
 
-- Don't need to introduce new fields on the `Dataplane` object
+- Simplifies the model by removing the `probes` field, and don't need to introduce new fields on the `Dataplane` object,
 
 #### Negative Consequences
 
@@ -188,42 +196,155 @@ The whole workflow will be like the following diagram:
 
 #### Implementation details
 
-The probes support can be implemented in the following steps:
+The probes support can be implemented in these steps:
 
-1. Change the `Dataplane` model to contain fields for gRPC and TCP probes (see examples below)
-2. Create a new component in `kuma-dp` (the probe translator) to handle the incoming HTTP probes by performing the actual gRPC and TCP probes and returning the result
-3. Generate a new Envoy cluster `kuma-virtual-probes` and point it to the component
-4. Make sidecar injector to:
-   1. Get the correct port for the probe translator, and generate corresponding command line arguments for `kuma-dp` 
-   2. Identify gRPC and TCP probes and transform them into the updated `Dataplane` object
-5. Change the route of Virtual Probe listener (in `probe_generator`) and forward the user defined gRPC and TCP probes into the new component in `kuma-dp`
+1. Create a new component in `kuma-dp` (the Virtual Probe Handler) to handle the incoming HTTP probes by performing the actual probes and returning the result
+2. Make the sidecar injector to:
+   1. Get the correct port for the Virtual Probe Handler, and generate corresponding command line arguments for `kuma-dp` according to the user defined probes and the Virtual Probe port
+   2. Exclude the Virtual Probe port by including it into `kuma-init` command line arguments or by excluding it in `kuma-cni`
+3. Remove the existing Virtual Probe listener (generated in `probe_generator`) in Envoy
+4. Deprecate the `probes` field in the `Dataplane` object
 
-In step 2, the new component is an HTTP server and needs to listen on a new port, a different one from the existing Virtual Probe listener port (default `9000`). The new port will be configurable by `runtime.kubernetes.injector.virtualProbesPort` and the default value is `9001`. The user is not expected to change this port unless it is conflicting with an application port. 
+In step 1, the Virtual Probe Handler is an HTTP server and needs to listen on a port. We can use the existing Virtual Probe port, since it will not used in Envoy anymore. It defaults to `9000` and will be configurable by `runtime.kubernetes.injector.virtualProbesPort`. The user is not expected to change this port unless it is conflicting with an application port. 
 
-Note that if we decide not to introduce a feature flag for this new feature, the newly introduced port can be a break change for meshes hosting application who is listening on port `9001`, it can cause a DoA incident. 
+A pod with multiple probes defined will be converted by the injector like this:
+
+Original pod manifest:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    traffic.kuma.io/exclude-inbound-ports: "9800"
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: 6851
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      livenessProbe:
+        grpc:
+          port: 6852
+          service: liveness 
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      startupProbe:
+        tcpSocket:
+          port: 6853
+        initialDelaySeconds: 3
+        periodSeconds: 3
+```
+
+Injected pod manifest:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    ...
+    kuma.io/virtual-probes: enabled
+    # this will be injected by the injector and may be consunmed by kuma-cni 
+    kuma.io/virtual-probes-port: "9000"
+    traffic.kuma.io/exclude-inbound-ports: "9800"
+  labels:
+    run: busybox
+  name: busybox
+spec:
+  initContainers:
+  - args:
+    - --config-file
+    - /tmp/kumactl/config
+    - --redirect-outbound-port
+    - "15001"
+    - --redirect-inbound=true
+    - --redirect-inbound-port
+    - "15006"
+    - --kuma-dp-uid
+    - "5678"
+    - --exclude-inbound-ports
+    # 9000 is the virtual probe port and appended by the injector
+    - "9000,9800"
+    - --exclude-outbound-ports
+    - ""
+    - --verbose
+    - --ip-family-mode
+    - dualstack
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    ...
+  containers:
+  - args:
+    - run
+    - --log-level=info
+    - --concurrency=2
+    env:
+    # this is converted from user defined probes and be injected by the injector 
+    - name: KUMA_DATAPLANE_PROBES
+      value: "[{\"httpGet\":{\"path\":\"/healthz\",\"port\":6852}},{\"grpc\":{\"port\":3636,\"service\":\"liveness\"}},{\"tcpSocket\":{\"port\":6826}}]"
+    - name: INSTANCE_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.podIP
+    ...
+    image: kuma/kuma-sidecar:latest
+    imagePullPolicy: IfNotPresent
+    ...
+  - image: busybox
+    name: busybox
+    # these are transformed from user defined probes by the injector
+    readinessProbe:
+      httpGet:
+        path: /6851/healthz
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    livenessProbe:
+      httpGet:
+        path: /grpc/6852/liveness
+        port: 9000 
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    startupProbe:
+      httpGet:
+        path: /tcp/6853
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+```
+
 
 The updated `Dataplane` will be like this:
 
 ```yaml
 type: Dataplane
+name: backend-1
 mesh: default
-metadata:
-  creationTimestamp: null
 spec:
+  networking:
+    address: 192.168.0.2
+    inbound:
+     - port: 8080
+       tags:
+          kuma.io/service: backend
+  # this field will be deprecated
   probes:
     endpoints:
-      - inboundPath: /metrics
-        inboundPort: 8080
-        path: /8080/metrics
-      - inboundPath: /metrics
-        inboundPort: 3001
-        path: /3001/metrics
-      # below are generated for gRPC and TCP probes
-      - inboundPort: 9001
-        path: /grpc/3536/liveness
-      - inboundPort: 9001
-        path: /tcp/4246
-    port: 19000
+      - inboundPath: /healthz
+        inboundPort: 6851
+        path: /6851/healthz
+    port: 9000
 ```
 
 The last two endpoints are for gRPC and TCP probes: when generating routes for the Virtual Probes listener, these probes are identified by the path prefix, we include the `service` field in the path for gRPC probes.
