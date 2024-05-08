@@ -1,12 +1,9 @@
 package filters
 
 import (
-	"strings"
-
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
@@ -54,8 +51,4 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 	}
 
 	return options, mod.Remove
-}
-
-func headerValues(raw common_api.HeaderValue) []string {
-	return strings.Split(string(raw), ",")
 }
