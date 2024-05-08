@@ -13,7 +13,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -23,15 +23,15 @@ const (
 )
 
 type IPTables struct {
-	raw    *table.RawTable
-	nat    *table.NatTable
-	mangle *table.MangleTable
+	raw    *tables.RawTable
+	nat    *tables.NatTable
+	mangle *tables.MangleTable
 }
 
 func newIPTables(
-	raw *table.RawTable,
-	nat *table.NatTable,
-	mangle *table.MangleTable,
+	raw *tables.RawTable,
+	nat *tables.NatTable,
+	mangle *tables.MangleTable,
 ) *IPTables {
 	return &IPTables{
 		raw:    raw,

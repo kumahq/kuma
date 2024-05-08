@@ -1,4 +1,4 @@
-package table
+package tables
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"

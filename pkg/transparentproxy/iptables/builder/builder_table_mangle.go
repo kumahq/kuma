@@ -4,11 +4,11 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters/match/conntrack"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-func buildMangleTable(cfg config.Config) (*table.MangleTable, error) {
-	mangle := table.Mangle()
+func buildMangleTable(cfg config.Config) (*tables.MangleTable, error) {
+	mangle := tables.Mangle()
 
 	mangle.Prerouting().
 		AddRuleIf(cfg.ShouldDropInvalidPackets,

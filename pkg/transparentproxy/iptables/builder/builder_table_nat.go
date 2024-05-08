@@ -9,7 +9,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
 func buildMeshInbound(
@@ -208,7 +208,7 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain
 func addOutputRules(
 	cfg config.Config,
 	dnsServers []string,
-	nat *table.NatTable,
+	nat *tables.NatTable,
 	ipv6 bool,
 ) error {
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
@@ -286,7 +286,7 @@ func addOutputRules(
 	return nil
 }
 
-func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error {
+func addPreroutingRules(cfg config.Config, nat *tables.NatTable, ipv6 bool) error {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	rulePosition := uint(1)
 	if cfg.Log.Enabled {
@@ -349,11 +349,11 @@ func buildNatTable(
 	dnsServers []string,
 	loopback string,
 	ipv6 bool,
-) (*table.NatTable, error) {
+) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 
-	nat := table.Nat()
+	nat := tables.Nat()
 
 	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
