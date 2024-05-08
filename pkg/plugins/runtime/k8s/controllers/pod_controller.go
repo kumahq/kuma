@@ -513,7 +513,10 @@ func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_ha
 
 			svc := &kube_core.Service{}
 			if err := client.Get(ctx, kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName}, svc); err != nil {
-				l.Error(err, "failed to fetch Service")
+				if kube_apierrs.IsNotFound(err) {
+					continue
+				}
+				l.Error(err, "failed to get Service")
 				// We intentionally continue here because we can't confirm we
 				// can skip this EndpointSlice
 			} else if len(svc.Spec.Selector) > 0 {
