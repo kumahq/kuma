@@ -21,19 +21,61 @@ const (
 	TCP                                     = "tcp"
 )
 
-var Flags = map[string]map[bool]string{
+type TableName string
+
+const (
+	TableNat    TableName = "nat"
+	TableRaw    TableName = "raw"
+	TableMangle TableName = "mangle"
+)
+
+const (
+	ChainPrerouting  = "PREROUTING"
+	ChainInput       = "INPUT"
+	ChainForward     = "FORWARD"
+	ChainOutput      = "OUTPUT"
+	ChainPostrouting = "POSTROUTING"
+)
+
+const (
+	FlagTable = "table"
+
 	// commands
-	"append": {
+	FlagAppend   = "append"
+	FlagInsert   = "insert"
+	FlagCheck    = "check"
+	FlagNewChain = "new-chain"
+
+	// parameters
+	FlagJump = "jump"
+)
+
+var Flags = map[string]map[bool]string{
+	FlagTable: {
+		Long:  "--table",
+		Short: "-t",
+	},
+
+	// commands
+	FlagAppend: {
 		Long:  "--append",
 		Short: "-A",
 	},
-	"new-chain": {
+	FlagInsert: {
+		Long:  "--insert",
+		Short: "-I",
+	},
+	FlagCheck: {
+		Long:  "--check",
+		Short: "-C",
+	},
+	FlagNewChain: {
 		Long:  "--new-chain",
 		Short: "-N",
 	},
 
 	// parameters
-	"jump": {
+	FlagJump: {
 		Long:  "--jump",
 		Short: "-j",
 	},
