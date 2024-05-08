@@ -325,7 +325,7 @@ func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.Ma
 		if err := client.List(ctx, &gateways, kube_client.MatchingFields{
 			secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
 		}); err != nil {
-			l.Error(nil, "unexpected error listing Gateways")
+			l.Error(err, "unexpected error listing Gateways")
 			return nil
 		}
 
