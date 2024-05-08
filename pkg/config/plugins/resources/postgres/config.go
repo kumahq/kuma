@@ -163,6 +163,8 @@ type TLSPostgresStoreConfig struct {
 	CAPath string `json:"caPath" envconfig:"kuma_store_postgres_tls_ca_path"`
 	// Whether to disable SNI the postgres `sslsni` option.
 	DisableSSLSNI bool `json:"disableSSLSNI" envconfig:"kuma_store_postgres_tls_disable_sslsni"`
+	// CipherSuites defines the list of ciphers to use
+	CipherSuites []string `json:"cipherSuites" envconfig:"kuma_store_postgres_tls_cipher_suites"`
 }
 
 func (s TLSPostgresStoreConfig) Validate() error {

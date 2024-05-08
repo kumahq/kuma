@@ -121,6 +121,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 			Expect(cfg.Store.Postgres.TLS.DisableSSLSNI).To(BeTrue())
+			Expect(cfg.Store.Postgres.TLS.CipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
 			Expect(cfg.Store.Postgres.ReadReplica.Host).To(Equal("ro.host"))
 			Expect(cfg.Store.Postgres.ReadReplica.Port).To(Equal(uint(35432)))
@@ -404,6 +405,7 @@ store:
       keyPath: /path/to/key
       caPath: /path/to/rootCert
       disableSSLSNI: true
+      cipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
     readReplica:
       host: ro.host
       port: 35432
@@ -780,6 +782,7 @@ tracing:
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
 				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                                                          "/path/to/rootCert",
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
+				"KUMA_STORE_POSTGRES_TLS_CIPHER_SUITES":                                                    "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",

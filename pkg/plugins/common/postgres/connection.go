@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 )
 
@@ -66,6 +67,13 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 
 	if err != nil {
 		return nil, err
+	}
+	if configuredSuites := postgresStoreConfig.TLS.CipherSuites; configuredSuites != nil {
+		suites, err := config_types.TLSCiphers(configuredSuites)
+		if err != nil {
+			return nil, err
+		}
+		pgxConfig.ConnConfig.TLSConfig.CipherSuites = suites
 	}
 
 	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
