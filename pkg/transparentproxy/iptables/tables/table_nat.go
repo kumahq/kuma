@@ -39,7 +39,7 @@ func (t *NatTable) WithChain(chain *chains.Chain) *NatTable {
 
 func (t *NatTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
-		name:      "nat",
+		name:      string(consts.TableNat),
 		newChains: t.chains,
 		chains: []*chains.Chain{
 			t.prerouting,
@@ -53,10 +53,10 @@ func (t *NatTable) BuildForRestore(verbose bool) string {
 }
 
 func Nat() *NatTable {
-	prerouting, _ := chains.NewChain(consts.TableNat, "PREROUTING")
-	input, _ := chains.NewChain(consts.TableNat, "INPUT")
-	output, _ := chains.NewChain(consts.TableNat, "OUTPUT")
-	postrouting, _ := chains.NewChain(consts.TableNat, "POSTROUTING")
+	prerouting, _ := chains.NewChain(consts.TableNat, consts.ChainPrerouting)
+	input, _ := chains.NewChain(consts.TableNat, consts.ChainInput)
+	output, _ := chains.NewChain(consts.TableNat, consts.ChainOutput)
+	postrouting, _ := chains.NewChain(consts.TableNat, consts.ChainPostrouting)
 
 	return &NatTable{
 		prerouting:  prerouting,

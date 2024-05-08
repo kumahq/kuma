@@ -20,7 +20,7 @@ func (t *RawTable) Output() *chains.Chain {
 
 func (t *RawTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
-		name: "raw",
+		name: string(consts.TableRaw),
 		chains: []*chains.Chain{
 			t.prerouting,
 			t.output,
@@ -31,8 +31,8 @@ func (t *RawTable) BuildForRestore(verbose bool) string {
 }
 
 func Raw() *RawTable {
-	prerouting, _ := chains.NewChain(consts.TableRaw, "PREROUTING")
-	output, _ := chains.NewChain(consts.TableRaw, "OUTPUT")
+	prerouting, _ := chains.NewChain(consts.TableRaw, consts.ChainPrerouting)
+	output, _ := chains.NewChain(consts.TableRaw, consts.ChainOutput)
 
 	return &RawTable{
 		prerouting: prerouting,

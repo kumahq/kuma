@@ -30,6 +30,14 @@ const (
 )
 
 const (
+	ChainPrerouting  = "PREROUTING"
+	ChainInput       = "INPUT"
+	ChainForward     = "FORWARD"
+	ChainOutput      = "OUTPUT"
+	ChainPostrouting = "POSTROUTING"
+)
+
+const (
 	FlagTable = "table"
 
 	// commands

@@ -35,7 +35,7 @@ func (t *MangleTable) Postrouting() *chains.Chain {
 
 func (t *MangleTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
-		name: "mangle",
+		name: string(consts.TableMangle),
 		chains: []*chains.Chain{
 			t.prerouting,
 			t.input,
@@ -49,11 +49,11 @@ func (t *MangleTable) BuildForRestore(verbose bool) string {
 }
 
 func Mangle() *MangleTable {
-	prerouting, _ := chains.NewChain(consts.TableMangle, "PREROUTING")
-	input, _ := chains.NewChain(consts.TableMangle, "INPUT")
-	forward, _ := chains.NewChain(consts.TableMangle, "FORWARD")
-	output, _ := chains.NewChain(consts.TableMangle, "OUTPUT")
-	postrouting, _ := chains.NewChain(consts.TableMangle, "POSTROUTING")
+	prerouting, _ := chains.NewChain(consts.TableMangle, consts.ChainPrerouting)
+	input, _ := chains.NewChain(consts.TableMangle, consts.ChainInput)
+	forward, _ := chains.NewChain(consts.TableMangle, consts.ChainForward)
+	output, _ := chains.NewChain(consts.TableMangle, consts.ChainOutput)
+	postrouting, _ := chains.NewChain(consts.TableMangle, consts.ChainPostrouting)
 
 	return &MangleTable{
 		prerouting:  prerouting,
