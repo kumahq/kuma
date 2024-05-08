@@ -6,25 +6,33 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-func buildMeshInbound(cfg config.TrafficFlow, prefix string, meshInboundRedirect string) *Chain {
-	meshInbound := NewChain(cfg.Chain.GetFullName(prefix))
+func buildMeshInbound(
+	cfg config.TrafficFlow,
+	prefix string,
+	meshInboundRedirect string,
+) (*Chain, error) {
+	meshInbound, err := NewChain(TableNat, cfg.Chain.GetFullName(prefix))
+	if err != nil {
+		return nil, err
+	}
+
 	if !cfg.Enabled {
-		meshInbound.Append(
+		meshInbound.AddRule(
 			Protocol(Tcp()),
 			Jump(Return()),
 		)
-		return meshInbound
+		return meshInbound, nil
 	}
 
 	// Include inbound ports
 	for _, port := range cfg.IncludePorts {
-		meshInbound.Append(
+		meshInbound.AddRule(
 			Protocol(Tcp(DestinationPort(port))),
 			Jump(ToUserDefinedChain(meshInboundRedirect)),
 		)
@@ -33,18 +41,18 @@ func buildMeshInbound(cfg config.TrafficFlow, prefix string, meshInboundRedirect
 	if len(cfg.IncludePorts) == 0 {
 		// Excluded outbound ports
 		for _, port := range cfg.ExcludePorts {
-			meshInbound.Append(
+			meshInbound.AddRule(
 				Protocol(Tcp(DestinationPort(port))),
 				Jump(Return()),
 			)
 		}
-		meshInbound.Append(
+		meshInbound.AddRule(
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(meshInboundRedirect)),
 		)
 	}
 
-	return meshInbound
+	return meshInbound, nil
 }
 
 func buildMeshOutbound(
@@ -52,7 +60,7 @@ func buildMeshOutbound(
 	dnsServers []string,
 	loopback string,
 	ipv6 bool,
-) *Chain {
+) (*Chain, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(prefix)
@@ -70,19 +78,23 @@ func buildMeshOutbound(
 		localhost = LocalhostCIDRIPv6
 	}
 
-	meshOutbound := NewChain(outboundChainName)
+	meshOutbound, err := NewChain(TableNat, outboundChainName)
+	if err != nil {
+		return nil, err
+	}
+
 	if !cfg.Redirect.Outbound.Enabled {
-		meshOutbound.Append(
+		meshOutbound.AddRule(
 			Protocol(Tcp()),
 			Jump(Return()),
 		)
-		return meshOutbound
+		return meshOutbound, nil
 	}
 
 	// Excluded outbound ports
 	if !hasIncludedPorts {
 		for _, port := range excludePorts {
-			meshOutbound.Append(
+			meshOutbound.AddRule(
 				Protocol(Tcp(DestinationPort(port))),
 				Jump(Return()),
 			)
@@ -114,37 +126,37 @@ func buildMeshOutbound(
 		//     listener#[fd00::0:10]:7777 ⤸
 		//     cluster#localhost:7777 ⤸
 		//   localhost:7777
-		Append(
+		AddRule(
 			Source(Address(inboundPassthroughSourceAddress)),
 			OutInterface(loopback),
 			Jump(Return()),
 		).
-		Append(
+		AddRule(
 			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
 			OutInterface(loopback),
 			NotDestination(localhost),
 			Match(Owner(Uid(uid))),
 			Jump(ToUserDefinedChain(inboundRedirectChainName)),
 		).
-		Append(
+		AddRule(
 			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
 			OutInterface(loopback),
 			Match(Owner(NotUid(uid))),
 			Jump(Return()),
 		).
-		Append(
+		AddRule(
 			Match(Owner(Uid(uid))),
 			Jump(Return()),
 		)
 	if cfg.ShouldRedirectDNS() {
 		if cfg.ShouldCaptureAllDNS() {
-			meshOutbound.Append(
+			meshOutbound.AddRule(
 				Protocol(Tcp(DestinationPort(DNSPort))),
 				Jump(ToPort(dnsRedirectPort)),
 			)
 		} else {
 			for _, dnsIp := range dnsServers {
-				meshOutbound.Append(
+				meshOutbound.AddRule(
 					Destination(dnsIp),
 					Protocol(Tcp(DestinationPort(DNSPort))),
 					Jump(ToPort(dnsRedirectPort)),
@@ -153,28 +165,28 @@ func buildMeshOutbound(
 		}
 	}
 	meshOutbound.
-		Append(
+		AddRule(
 			Destination(localhost),
 			Jump(Return()),
 		)
 
 	if hasIncludedPorts {
 		for _, port := range includePorts {
-			meshOutbound.Append(
+			meshOutbound.AddRule(
 				Protocol(Tcp(DestinationPort(port))),
 				Jump(ToUserDefinedChain(outboundRedirectChainName)),
 			)
 		}
 	} else {
-		meshOutbound.Append(
+		meshOutbound.AddRule(
 			Jump(ToUserDefinedChain(outboundRedirectChainName)),
 		)
 	}
 
-	return meshOutbound
+	return meshOutbound, nil
 }
 
-func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) *Chain {
+func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain, error) {
 	chainName := cfg.RedirectChain.GetFullName(prefix)
 
 	redirectPort := cfg.Port
@@ -182,25 +194,29 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) *Chain 
 		redirectPort = cfg.PortIPv6
 	}
 
-	return NewChain(chainName).
-		Append(
-			Protocol(Tcp()),
-			Jump(ToPort(redirectPort)),
-		)
+	redirectChain, err := NewChain(TableNat, chainName)
+	if err != nil {
+		return nil, err
+	}
+
+	return redirectChain.AddRule(
+		Protocol(Tcp()),
+		Jump(ToPort(redirectPort)),
+	), nil
 }
 
 func addOutputRules(
 	cfg config.Config,
 	dnsServers []string,
-	nat *table.NatTable,
+	nat *tables.NatTable,
 	ipv6 bool,
 ) error {
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	dnsRedirectPort := cfg.Redirect.DNS.Port
 	uid := cfg.Owner.UID
-	rulePosition := 1
+	rulePosition := uint(1)
 	if cfg.Log.Enabled {
-		nat.Output().Insert(
+		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Jump(Log(OutputLogPrefix, cfg.Log.Level)),
 		)
@@ -220,7 +236,7 @@ func addOutputRules(
 			return fmt.Errorf("unknown protocol %s, only 'tcp' or 'udp' allowed", uIDsToPorts.Protocol)
 		}
 
-		nat.Output().Insert(
+		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Match(Multiport()),
 			protocol,
@@ -236,7 +252,7 @@ func addOutputRules(
 			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
 		}
 
-		nat.Output().Insert(
+		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Protocol(Udp(DestinationPort(DNSPort))),
 			Match(Owner(Uid(uid))),
@@ -245,14 +261,14 @@ func addOutputRules(
 		rulePosition++
 
 		if cfg.ShouldCaptureAllDNS() {
-			nat.Output().Insert(
+			nat.Output().AddRuleAtPosition(
 				rulePosition,
 				Protocol(Udp(DestinationPort(DNSPort))),
 				Jump(ToPort(dnsRedirectPort)),
 			)
 		} else {
 			for _, dnsIp := range dnsServers {
-				nat.Output().Insert(
+				nat.Output().AddRuleAtPosition(
 					rulePosition,
 					Destination(dnsIp),
 					Protocol(Udp(DestinationPort(DNSPort))),
@@ -263,18 +279,18 @@ func addOutputRules(
 		}
 	}
 	nat.Output().
-		Append(
+		AddRule(
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(outboundChainName)),
 		)
 	return nil
 }
 
-func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error {
+func addPreroutingRules(cfg config.Config, nat *tables.NatTable, ipv6 bool) error {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
-	rulePosition := 1
+	rulePosition := uint(1)
 	if cfg.Log.Enabled {
-		nat.Prerouting().Append(
+		nat.Prerouting().AddRule(
 			Jump(Log(PreroutingLogPrefix, cfg.Log.Level)),
 		)
 	}
@@ -297,7 +313,7 @@ func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error
 			}
 		}
 		for iface, cidr := range interfaceAndCidr {
-			nat.Prerouting().Insert(
+			nat.Prerouting().AddRuleAtPosition(
 				rulePosition,
 				InInterface(iface),
 				Match(MatchUdp()),
@@ -305,7 +321,7 @@ func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error
 				Jump(ToPort(cfg.Redirect.DNS.Port)),
 			)
 			rulePosition += 1
-			nat.Prerouting().Insert(
+			nat.Prerouting().AddRuleAtPosition(
 				rulePosition,
 				NotDestination(cidr),
 				InInterface(iface),
@@ -314,13 +330,13 @@ func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error
 			)
 			rulePosition += 1
 		}
-		nat.Prerouting().Insert(
+		nat.Prerouting().AddRuleAtPosition(
 			rulePosition,
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(inboundChainName)),
 		)
 	} else {
-		nat.Prerouting().Append(
+		nat.Prerouting().AddRule(
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(inboundChainName)),
 		)
@@ -333,10 +349,11 @@ func buildNatTable(
 	dnsServers []string,
 	loopback string,
 	ipv6 bool,
-) (*table.NatTable, error) {
+) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
-	nat := table.Nat()
+
+	nat := tables.Nat()
 
 	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
@@ -346,20 +363,32 @@ func buildNatTable(
 	}
 
 	// MESH_INBOUND
-	meshInbound := buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)
+	meshInbound, err := buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)
+	if err != nil {
+		return nil, err
+	}
 
 	// MESH_INBOUND_REDIRECT
-	meshInboundRedirect := buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)
+	meshInboundRedirect, err := buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)
+	if err != nil {
+		return nil, err
+	}
 
 	// MESH_OUTBOUND
-	meshOutbound := buildMeshOutbound(cfg, dnsServers, loopback, ipv6)
+	meshOutbound, err := buildMeshOutbound(cfg, dnsServers, loopback, ipv6)
+	if err != nil {
+		return nil, err
+	}
 
 	// MESH_OUTBOUND_REDIRECT
-	meshOutboundRedirect := buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)
+	meshOutboundRedirect, err := buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)
+	if err != nil {
+		return nil, err
+	}
 
 	return nat.
-		WithChain(meshInbound).
-		WithChain(meshOutbound).
-		WithChain(meshInboundRedirect).
-		WithChain(meshOutboundRedirect), nil
+		WithCustomChain(meshInbound).
+		WithCustomChain(meshOutbound).
+		WithCustomChain(meshInboundRedirect).
+		WithCustomChain(meshOutboundRedirect), nil
 }
