@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type TableBuilder struct {
 	name string
 
-	newChains []*chain.Chain
-	chains    []*chain.Chain
+	newChains []*chains.Chain
+	chains    []*chains.Chain
 }
 
 // BuildForRestore function generates all iptables rules for a given table in

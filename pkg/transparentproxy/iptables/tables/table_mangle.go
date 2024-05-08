@@ -1,42 +1,42 @@
 package tables
 
 import (
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chain"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type MangleTable struct {
-	prerouting  *chain.Chain
-	input       *chain.Chain
-	forward     *chain.Chain
-	output      *chain.Chain
-	postrouting *chain.Chain
+	prerouting  *chains.Chain
+	input       *chains.Chain
+	forward     *chains.Chain
+	output      *chains.Chain
+	postrouting *chains.Chain
 }
 
-func (t *MangleTable) Prerouting() *chain.Chain {
+func (t *MangleTable) Prerouting() *chains.Chain {
 	return t.prerouting
 }
 
-func (t *MangleTable) Input() *chain.Chain {
+func (t *MangleTable) Input() *chains.Chain {
 	return t.input
 }
 
-func (t *MangleTable) Forward() *chain.Chain {
+func (t *MangleTable) Forward() *chains.Chain {
 	return t.forward
 }
 
-func (t *MangleTable) Output() *chain.Chain {
+func (t *MangleTable) Output() *chains.Chain {
 	return t.output
 }
 
-func (t *MangleTable) Postrouting() *chain.Chain {
+func (t *MangleTable) Postrouting() *chains.Chain {
 	return t.postrouting
 }
 
 func (t *MangleTable) BuildForRestore(verbose bool) string {
 	table := &TableBuilder{
 		name: "mangle",
-		chains: []*chain.Chain{
+		chains: []*chains.Chain{
 			t.prerouting,
 			t.input,
 			t.forward,
@@ -49,11 +49,11 @@ func (t *MangleTable) BuildForRestore(verbose bool) string {
 }
 
 func Mangle() *MangleTable {
-	prerouting, _ := chain.NewChain(consts.TableMangle, "PREROUTING")
-	input, _ := chain.NewChain(consts.TableMangle, "INPUT")
-	forward, _ := chain.NewChain(consts.TableMangle, "FORWARD")
-	output, _ := chain.NewChain(consts.TableMangle, "OUTPUT")
-	postrouting, _ := chain.NewChain(consts.TableMangle, "POSTROUTING")
+	prerouting, _ := chains.NewChain(consts.TableMangle, "PREROUTING")
+	input, _ := chains.NewChain(consts.TableMangle, "INPUT")
+	forward, _ := chains.NewChain(consts.TableMangle, "FORWARD")
+	output, _ := chains.NewChain(consts.TableMangle, "OUTPUT")
+	postrouting, _ := chains.NewChain(consts.TableMangle, "POSTROUTING")
 
 	return &MangleTable{
 		prerouting:  prerouting,

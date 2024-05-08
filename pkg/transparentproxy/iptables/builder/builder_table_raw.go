@@ -11,7 +11,7 @@ func buildRawTable(
 	cfg config.Config,
 	dnsServers []string,
 	iptablesExecutablePath string,
-) (*tables.RawTable, error) {
+) *tables.RawTable {
 	raw := tables.Raw()
 
 	if cfg.ShouldConntrackZoneSplit(iptablesExecutablePath) {
@@ -55,5 +55,5 @@ func buildRawTable(
 		}
 	}
 
-	return raw, nil
+	return raw
 }
