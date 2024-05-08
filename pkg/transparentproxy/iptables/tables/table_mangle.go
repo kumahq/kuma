@@ -5,12 +5,18 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+var _ Table = &MangleTable{}
+
 type MangleTable struct {
 	prerouting  *chains.Chain
 	input       *chains.Chain
 	forward     *chains.Chain
 	output      *chains.Chain
 	postrouting *chains.Chain
+}
+
+func (t *MangleTable) Name() consts.TableName {
+	return consts.TableMangle
 }
 
 func (t *MangleTable) Prerouting() *chains.Chain {
@@ -33,19 +39,12 @@ func (t *MangleTable) Postrouting() *chains.Chain {
 	return t.postrouting
 }
 
-func (t *MangleTable) BuildForRestore(verbose bool) string {
-	table := &TableBuilder{
-		name: string(consts.TableMangle),
-		chains: []*chains.Chain{
-			t.prerouting,
-			t.input,
-			t.forward,
-			t.output,
-			t.postrouting,
-		},
-	}
+func (t *MangleTable) Chains() []*chains.Chain {
+	return []*chains.Chain{t.prerouting, t.input, t.forward, t.output, t.postrouting}
+}
 
-	return table.BuildForRestore(verbose)
+func (t *MangleTable) CustomChains() []*chains.Chain {
+	return nil
 }
 
 func Mangle() *MangleTable {

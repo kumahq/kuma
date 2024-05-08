@@ -5,9 +5,15 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+var _ Table = &RawTable{}
+
 type RawTable struct {
 	prerouting *chains.Chain
 	output     *chains.Chain
+}
+
+func (t *RawTable) Name() consts.TableName {
+	return consts.TableRaw
 }
 
 func (t *RawTable) Prerouting() *chains.Chain {
@@ -18,16 +24,12 @@ func (t *RawTable) Output() *chains.Chain {
 	return t.output
 }
 
-func (t *RawTable) BuildForRestore(verbose bool) string {
-	table := &TableBuilder{
-		name: string(consts.TableRaw),
-		chains: []*chains.Chain{
-			t.prerouting,
-			t.output,
-		},
-	}
+func (t *RawTable) Chains() []*chains.Chain {
+	return []*chains.Chain{t.prerouting, t.output}
+}
 
-	return table.BuildForRestore(verbose)
+func (t *RawTable) CustomChains() []*chains.Chain {
+	return nil
 }
 
 func Raw() *RawTable {

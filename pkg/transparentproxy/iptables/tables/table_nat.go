@@ -5,6 +5,8 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+var _ Table = &NatTable{}
+
 type NatTable struct {
 	prerouting  *chains.Chain
 	input       *chains.Chain
@@ -12,7 +14,11 @@ type NatTable struct {
 	postrouting *chains.Chain
 
 	// custom chains
-	chains []*chains.Chain
+	customChains []*chains.Chain
+}
+
+func (t *NatTable) Name() consts.TableName {
+	return consts.TableNat
 }
 
 func (t *NatTable) Prerouting() *chains.Chain {
@@ -31,25 +37,18 @@ func (t *NatTable) Postrouting() *chains.Chain {
 	return t.postrouting
 }
 
-func (t *NatTable) WithChain(chain *chains.Chain) *NatTable {
-	t.chains = append(t.chains, chain)
-
-	return t
+func (t *NatTable) Chains() []*chains.Chain {
+	return []*chains.Chain{t.prerouting, t.input, t.output, t.postrouting}
 }
 
-func (t *NatTable) BuildForRestore(verbose bool) string {
-	table := &TableBuilder{
-		name:      string(consts.TableNat),
-		newChains: t.chains,
-		chains: []*chains.Chain{
-			t.prerouting,
-			t.input,
-			t.output,
-			t.postrouting,
-		},
-	}
+func (t *NatTable) CustomChains() []*chains.Chain {
+	return t.customChains
+}
 
-	return table.BuildForRestore(verbose)
+func (t *NatTable) WithCustomChain(chain *chains.Chain) *NatTable {
+	t.customChains = append(t.customChains, chain)
+
+	return t
 }
 
 func Nat() *NatTable {

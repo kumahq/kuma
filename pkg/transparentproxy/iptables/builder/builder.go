@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,29 +42,18 @@ func newIPTables(
 }
 
 func (t *IPTables) BuildForRestore(verbose bool) string {
-	var tables []string
-
-	raw := t.raw.BuildForRestore(verbose)
-	if raw != "" {
-		tables = append(tables, raw)
-	}
-
-	nat := t.nat.BuildForRestore(verbose)
-	if nat != "" {
-		tables = append(tables, nat)
-	}
-
-	mangle := t.mangle.BuildForRestore(verbose)
-	if mangle != "" {
-		tables = append(tables, mangle)
-	}
+	result := slices.DeleteFunc([]string{
+		tables.BuildRulesForRestore(t.raw, verbose),
+		tables.BuildRulesForRestore(t.nat, verbose),
+		tables.BuildRulesForRestore(t.mangle, verbose),
+	}, func(s string) bool { return s == "" })
 
 	separator := "\n"
 	if verbose {
 		separator = "\n\n"
 	}
 
-	return strings.Join(tables, separator) + "\n"
+	return strings.Join(result, separator) + "\n"
 }
 
 func BuildIPTablesForRestore(

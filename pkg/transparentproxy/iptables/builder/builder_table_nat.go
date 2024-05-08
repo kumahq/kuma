@@ -387,8 +387,8 @@ func buildNatTable(
 	}
 
 	return nat.
-		WithChain(meshInbound).
-		WithChain(meshOutbound).
-		WithChain(meshInboundRedirect).
-		WithChain(meshOutboundRedirect), nil
+		WithCustomChain(meshInbound).
+		WithCustomChain(meshOutbound).
+		WithCustomChain(meshInboundRedirect).
+		WithCustomChain(meshOutboundRedirect), nil
 }

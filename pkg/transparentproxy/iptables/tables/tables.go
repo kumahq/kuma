@@ -8,11 +8,10 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
-type TableBuilder struct {
-	name string
-
-	newChains []*chains.Chain
-	chains    []*chains.Chain
+type Table interface {
+	Name() TableName
+	Chains() []*chains.Chain
+	CustomChains() []*chains.Chain
 }
 
 // BuildForRestore function generates all iptables rules for a given table in
@@ -21,10 +20,10 @@ type TableBuilder struct {
 // For existing chains, it calls the `BuildForRestore(verbose)` method on each
 // object to retrieve the individual rule restore commands.
 //
-// For newly created chains, it first builds the command to create the chain
-// using the appropriate flag based on the `verbose` flag (--new-chain or -N).
-// Then, it calls `BuildForRestore(verbose)` on each new chain to retrieve
-// the individual rule restore commands.
+// For custom chains, it first builds the command to create the chain using the
+// appropriate flag based on the `verbose` flag (--new-chain or -N). Then, it
+// calls `BuildForRestore(verbose)` on each new chain to retrieve the individual
+// rule restore commands.
 //
 // The built commands are then organized:
 //   - A table line with the table name prefixed by "*".
@@ -39,27 +38,25 @@ type TableBuilder struct {
 //
 // TODO (bartsmykla): refactor
 // TODO (bartsmykla): add tests
-func (b *TableBuilder) BuildForRestore(verbose bool) string {
-	tableLine := fmt.Sprintf("* %s", b.name)
-	var newChainLines []string
+func BuildRulesForRestore(table Table, verbose bool) string {
+	tableLine := fmt.Sprintf("* %s", table.Name())
+	var customChainLines []string
 	var ruleLines []string
 
-	for _, c := range b.chains {
-		rules := c.BuildForRestore(verbose)
-		ruleLines = append(ruleLines, rules...)
+	for _, c := range table.Chains() {
+		ruleLines = append(ruleLines, c.BuildForRestore(verbose)...)
 	}
 
-	for _, c := range b.newChains {
-		newChainLines = append(newChainLines, fmt.Sprintf("%s %s", Flags[FlagNewChain][verbose], c.Name()))
-		rules := c.BuildForRestore(verbose)
-		ruleLines = append(ruleLines, rules...)
+	for _, c := range table.CustomChains() {
+		customChainLines = append(customChainLines, fmt.Sprintf("%s %s", Flags[FlagNewChain][verbose], c.Name()))
+		ruleLines = append(ruleLines, c.BuildForRestore(verbose)...)
 	}
 
 	if verbose {
-		if len(newChainLines) > 0 {
-			newChainLines = append(
+		if len(customChainLines) > 0 {
+			customChainLines = append(
 				[]string{"# Custom Chains:"},
-				newChainLines...,
+				customChainLines...,
 			)
 		}
 
@@ -70,17 +67,17 @@ func (b *TableBuilder) BuildForRestore(verbose bool) string {
 
 	lines := []string{tableLine}
 
-	newChains := strings.Join(newChainLines, "\n")
-	if newChains != "" {
-		lines = append(lines, newChains)
+	customChainsResult := strings.Join(customChainLines, "\n")
+	if customChainsResult != "" {
+		lines = append(lines, customChainsResult)
 	}
 
-	rules := strings.Join(ruleLines, "\n")
-	if rules == "" {
+	rulesResult := strings.Join(ruleLines, "\n")
+	if rulesResult == "" {
 		return ""
 	}
 
-	lines = append(lines, rules, "COMMIT")
+	lines = append(lines, rulesResult, "COMMIT")
 
 	if verbose {
 		return strings.Join(lines, "\n\n")
