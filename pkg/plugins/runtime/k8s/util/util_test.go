@@ -95,7 +95,7 @@ var _ = Describe("Util", func() {
 	})
 
 	exampleTime := time.Date(2020, 0o1, 0o1, 0o1, 12, 0o0, 0o0, time.UTC)
-	DescribeTable("FindServices",
+	DescribeTable("MatchService",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
 			var svcNames []string
