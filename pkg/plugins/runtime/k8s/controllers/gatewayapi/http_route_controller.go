@@ -354,7 +354,7 @@ func routesForService(l logr.Logger, client kube_client.Client) kube_handler.Map
 		if err := client.List(ctx, &routes, kube_client.MatchingFields{
 			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
 		}); err != nil {
-			l.Error(nil, "unexpected error listing HTTPRoutes")
+			l.Error(err, "unexpected error listing HTTPRoutes")
 			return nil
 		}
 
