@@ -12,10 +12,7 @@ func buildRawTable(
 	dnsServers []string,
 	iptablesExecutablePath string,
 ) (*table.RawTable, error) {
-	raw, err := table.Raw()
-	if err != nil {
-		return nil, err
-	}
+	raw := table.Raw()
 
 	if cfg.ShouldConntrackZoneSplit(iptablesExecutablePath) {
 		raw.Output().

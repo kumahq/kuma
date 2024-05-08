@@ -8,10 +8,7 @@ import (
 )
 
 func buildMangleTable(cfg config.Config) (*table.MangleTable, error) {
-	mangle, err := table.Mangle()
-	if err != nil {
-		return nil, err
-	}
+	mangle := table.Mangle()
 
 	mangle.Prerouting().
 		AddRuleIf(cfg.ShouldDropInvalidPackets,

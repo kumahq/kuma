@@ -12,9 +12,7 @@ var _ = Describe("Builder nat", func() {
 	DescribeTable("should insert PREROUTING rules",
 		func(vnet []string, verbose bool, ipv6 bool, expect ...string) {
 			// given
-			nat, err := table.Nat()
-			Expect(err).NotTo(HaveOccurred())
-
+			nat := table.Nat()
 			cfg := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
@@ -121,9 +119,7 @@ var _ = Describe("Builder nat", func() {
 	DescribeTable("should append PREROUTING rules",
 		func(verbose bool, ipv6 bool, expect ...string) {
 			// given
-			nat, err := table.Nat()
-			Expect(err).NotTo(HaveOccurred())
-
+			nat := table.Nat()
 			cfg := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{

@@ -17,7 +17,7 @@ func buildMeshInbound(
 	prefix string,
 	meshInboundRedirect string,
 ) (*Chain, error) {
-	meshInbound, err := table.NewNatChain(cfg.Chain.GetFullName(prefix))
+	meshInbound, err := NewChain(TableNat, cfg.Chain.GetFullName(prefix))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func buildMeshOutbound(
 		localhost = LocalhostCIDRIPv6
 	}
 
-	meshOutbound, err := table.NewNatChain(outboundChainName)
+	meshOutbound, err := NewChain(TableNat, outboundChainName)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain
 		redirectPort = cfg.PortIPv6
 	}
 
-	redirectChain, err := table.NewNatChain(chainName)
+	redirectChain, err := NewChain(TableNat, chainName)
 	if err != nil {
 		return nil, err
 	}
@@ -353,10 +353,7 @@ func buildNatTable(
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 
-	nat, err := table.Nat()
-	if err != nil {
-		return nil, err
-	}
+	nat := table.Nat()
 
 	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
