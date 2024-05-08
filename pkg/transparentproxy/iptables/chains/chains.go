@@ -1,14 +1,15 @@
 package chains
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 )
 
 type Chain struct {
-	table string
+	table consts.TableName
 	name  string
 	rules []*rules.Rule
 }
@@ -54,9 +55,20 @@ func (c *Chain) BuildForRestore(verbose bool) []string {
 	return lines
 }
 
-func NewChain(table, chain string) (*Chain, error) {
-	if table == "" {
+func NewChain(table consts.TableName, chain string) (*Chain, error) {
+	switch table {
+	// Only raw, nat and mangle are supported
+	case consts.TableRaw, consts.TableNat, consts.TableMangle:
+	case "":
 		return nil, errors.New("table is required and cannot be empty")
+	default:
+		return nil, errors.Errorf(
+			"unsupported table %q (valid: [%q, %q, %q])",
+			table,
+			consts.TableRaw,
+			consts.TableNat,
+			consts.TableMangle,
+		)
 	}
 
 	if chain == "" {

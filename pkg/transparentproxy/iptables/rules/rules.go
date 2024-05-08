@@ -9,13 +9,18 @@ import (
 )
 
 type Rule struct {
-	table      string
+	table      consts.TableName
 	chain      string
 	position   uint
 	parameters parameters.Parameters
 }
 
-func NewRule(table, chain string, position uint, parameters []*parameters.Parameter) *Rule {
+func NewRule(
+	table consts.TableName,
+	chain string,
+	position uint,
+	parameters []*parameters.Parameter,
+) *Rule {
 	return &Rule{
 		table:      table,
 		chain:      chain,

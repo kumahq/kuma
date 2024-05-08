@@ -19,11 +19,14 @@ const (
 	PreroutingLogPrefix                     = "PREROUTING:"
 	UDP                                     = "udp"
 	TCP                                     = "tcp"
+)
 
-	// Table names
-	TableNat    = "nat"
-	TableRaw    = "raw"
-	TableMangle = "mangle"
+type TableName string
+
+const (
+	TableNat    TableName = "nat"
+	TableRaw    TableName = "raw"
+	TableMangle TableName = "mangle"
 )
 
 const (
