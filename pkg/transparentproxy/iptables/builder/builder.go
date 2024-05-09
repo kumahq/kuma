@@ -72,8 +72,6 @@ func BuildIPTables(
 	ipv6 bool,
 	iptablesExecutablePath string,
 ) (string, error) {
-	cfg = config.MergeConfigWithDefaults(cfg)
-
 	loopbackIface, err := getLoopback()
 	if err != nil {
 		return "", fmt.Errorf("cannot obtain loopback interface: %s", err)
@@ -240,8 +238,6 @@ func (r *restorer) tryRestoreIPTables(
 }
 
 func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
-	cfg = config.MergeConfigWithDefaults(cfg)
-
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
 		"iptables rules that will enable transparent proxying on the machine. " +
 		"The SSH connection may drop. If that happens, just reconnect again.\n"))
