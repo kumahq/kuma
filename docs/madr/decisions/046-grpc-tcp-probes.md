@@ -167,6 +167,7 @@ The whole workflow can be described as the following diagram, the column "Transf
 ```
   User Defined      Transformed            Virtual Probe Handler                Application Endpoint   
 
+
   TCP Probes                                         HTTP to TCP translator  -->   TCP server
                ↘                                    ↗ 
   HTTP Probes -->  Pod (HTTP Probes)  -->  kuma-dp --> HTTP to HTTP rewriter -->  HTTP handler
@@ -184,13 +185,13 @@ In this way, we can unify the handling of all user defined probes, and removes t
 
 - Better user experience: don't need to introduce new annotations, the user can still specify the port as they are doing now.
 
-- Less virtual listeners on sidecars: the translator will be used to handle all three types of probes
+- Less virtual listeners on sidecars: the Virtual Probe Handler will be used to handle all three types of probes
 
 - Simplifies the model by removing the `probes` field, and don't need to introduce new fields on the `Dataplane` object,
 
 #### Negative Consequences
 
-- Requires an extra component (the translator) in `kuma-dp`, which increases the implementation complexity
+- Requires an extra component (the Virtual Probe Handler) in `kuma-dp`, which increases the architecture complexity
 
 - Less intuitiveness, harder for troubleshooting issues
 
@@ -203,9 +204,9 @@ The probes support can be implemented in these steps:
    1. Get the correct port for the Virtual Probe Handler, and generate corresponding command line arguments for `kuma-dp` according to the user defined probes and the Virtual Probe port
    2. Exclude the Virtual Probe port by including it into `kuma-init` command line arguments or by excluding it in `kuma-cni`
 3. Remove the existing Virtual Probe listener (generated in `probe_generator`) in Envoy
-4. Deprecate the `probes` field in the `Dataplane` object
+4. Deprecate the `probes` field in the `Dataplane` type
 
-In step 1, the Virtual Probe Handler is an HTTP server and needs to listen on a port. We can use the existing Virtual Probe port, since it will not used in Envoy anymore. It defaults to `9000` and will be configurable by `runtime.kubernetes.injector.virtualProbesPort`. The user is not expected to change this port unless it is conflicting with an application port. 
+In step 1, the Virtual Probe Handler is an HTTP server and needs to listen on a port. We can use the existing Virtual Probe port, since it will not be used in Envoy anymore. It defaults to `9000` and will be configurable by `runtime.kubernetes.injector.virtualProbesPort`. The user is not expected to change this port unless it is conflicting with an application port. 
 
 A pod with multiple probes defined will be converted by the injector like this:
 
@@ -325,7 +326,7 @@ spec:
 ```
 
 
-The updated `Dataplane` will be like this:
+The `Dataplane` type definition will be updated, here is an example:
 
 ```yaml
 type: Dataplane
@@ -339,17 +340,15 @@ spec:
        tags:
           kuma.io/service: backend
   # this field will be deprecated
-  probes:
-    endpoints:
-      - inboundPath: /healthz
-        inboundPort: 6851
-        path: /6851/healthz
-    port: 9000
+  # probes:
+  #  endpoints:
+  #    - inboundPath: /healthz
+  #      inboundPort: 6851
+  #      path: /6851/healthz
+  #  port: 9000
 ```
 
-The last two endpoints are for gRPC and TCP probes: when generating routes for the Virtual Probes listener, these probes are identified by the path prefix, we include the `service` field in the path for gRPC probes.
-
-In the probe translator, it will:
+In the probe Virtual Probe Handler, it will:
 
 - return `503` responses for failed probes, return `200` responses for successful probes
 - use the pod IP as the `Host` header in the gRPC request to the application
