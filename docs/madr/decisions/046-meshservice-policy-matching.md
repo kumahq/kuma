@@ -197,12 +197,12 @@ spec:
            backendRefs:
              - kind: MeshService
                name: frontend
-               port: http
+               port: 8080
                labels:
                  kuma.io/zone: east
              - kind: MeshMultiZoneService
                name: frontend
-               port: http
+               port: 8080
                labels:
                  kuma.io/zone: east
 ```
