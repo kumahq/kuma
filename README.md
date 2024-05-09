@@ -16,6 +16,7 @@
 
 [![Docker hub](https://img.shields.io/docker/pulls/kumahq/kuma-cp)](https://hub.docker.com/u/kumahq)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
+[![Package Hosting By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith)](https://cloudsmith.io/~kong/repos/kuma-binaries-release/packages)
 
 **Social**
 
@@ -146,6 +147,13 @@ See [Developer Guide](DEVELOPER.md) for further details.
 ## Enterprise Support
 
 If you are implementing Kuma in a mission-critical environment and require enterprise support and features, please visit [Enterprise](https://kuma.io/enterprise/) to explore the available offerings.
+
+## Package Hosting
+
+Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
+Cloudsmith is the only fully hosted, cloud-native, universal package management solution, that
+enables your organization to create, store and share packages in any format, to any place, with total
+confidence.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
