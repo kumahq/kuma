@@ -1,22 +1,20 @@
 package parameters
 
-import (
-	"strings"
-)
+var _ ParameterBuilder = &MatchParameter{}
 
 type MatchParameter struct {
 	name       string
 	parameters []ParameterBuilder
 }
 
-func (p *MatchParameter) Build(verbose bool) string {
+func (p *MatchParameter) Build(verbose bool) []string {
 	result := []string{p.name}
 
 	for _, parameter := range p.parameters {
-		result = append(result, parameter.Build(verbose))
+		result = append(result, parameter.Build(verbose)...)
 	}
 
-	return strings.Join(result, " ")
+	return result
 }
 
 func (p *MatchParameter) Negate() ParameterBuilder {

@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("WaitIntervalParameter", func() {
 	DescribeTable("should return",
-		func(microseconds int, verbose bool, want string) {
+		func(microseconds int, verbose bool, want []string) {
 			// given
 			waitInterval := WaitInterval(uint(microseconds))
 
@@ -19,9 +19,9 @@ var _ = Describe("WaitIntervalParameter", func() {
 			// then
 			Expect(got).To(Equal(want))
 		},
-		Entry("no flag when parameter is 0", 0, false, ""),
-		Entry("no flag when parameter is 0 - verbose", 0, true, ""),
-		Entry("wait interval", 20, false, "--wait-interval=20"),
-		Entry("wait interval - verbose", 20, true, "--wait-interval=20"),
+		Entry("no flag when parameter is 0", 0, false, nil),
+		Entry("no flag when parameter is 0 - verbose", 0, true, nil),
+		Entry("wait interval", 20, false, []string{"--wait-interval=20"}),
+		Entry("wait interval - verbose", 20, true, []string{"--wait-interval=20"}),
 	)
 })

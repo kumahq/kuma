@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/test/framework"
@@ -112,7 +113,7 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 
-				logs, err := kubernetes.Cluster.GetPodLogs(demoClientPod)
+				logs, err := kubernetes.Cluster.GetPodLogs(demoClientPod, v1.PodLogOptions{})
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(parseLogs(logs)).To(ContainElement(
 					And(

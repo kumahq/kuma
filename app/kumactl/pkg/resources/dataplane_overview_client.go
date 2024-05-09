@@ -51,7 +51,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 }
 
 func constructUrl(meshName string, tags map[string]string, gateway bool, ingress bool) (*url.URL, error) {
-	result, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplanes+insights", meshName))
+	result, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/_overview", meshName, mesh.DataplaneResourceTypeDescriptor.WsPath))
 	if err != nil {
 		return nil, err
 	}

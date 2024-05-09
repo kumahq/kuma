@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -23,15 +24,15 @@ const (
 )
 
 type IPTables struct {
-	raw    *table.RawTable
-	nat    *table.NatTable
-	mangle *table.MangleTable
+	raw    *tables.RawTable
+	nat    *tables.NatTable
+	mangle *tables.MangleTable
 }
 
 func newIPTables(
-	raw *table.RawTable,
-	nat *table.NatTable,
-	mangle *table.MangleTable,
+	raw *tables.RawTable,
+	nat *tables.NatTable,
+	mangle *tables.MangleTable,
 ) *IPTables {
 	return &IPTables{
 		raw:    raw,
@@ -40,33 +41,22 @@ func newIPTables(
 	}
 }
 
-func (t *IPTables) Build(verbose bool) string {
-	var tables []string
-
-	raw := t.raw.Build(verbose)
-	if raw != "" {
-		tables = append(tables, raw)
-	}
-
-	nat := t.nat.Build(verbose)
-	if nat != "" {
-		tables = append(tables, nat)
-	}
-
-	mangle := t.mangle.Build(verbose)
-	if mangle != "" {
-		tables = append(tables, mangle)
-	}
+func (t *IPTables) BuildForRestore(verbose bool) string {
+	result := slices.DeleteFunc([]string{
+		tables.BuildRulesForRestore(t.raw, verbose),
+		tables.BuildRulesForRestore(t.nat, verbose),
+		tables.BuildRulesForRestore(t.mangle, verbose),
+	}, func(s string) bool { return s == "" })
 
 	separator := "\n"
 	if verbose {
 		separator = "\n\n"
 	}
 
-	return strings.Join(tables, separator) + "\n"
+	return strings.Join(result, separator) + "\n"
 }
 
-func BuildIPTables(
+func BuildIPTablesForRestore(
 	cfg config.Config,
 	dnsServers []string,
 	ipv6 bool,
@@ -88,7 +78,7 @@ func BuildIPTables(
 		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
 		natTable,
 		buildMangleTable(cfg),
-	).Build(cfg.Verbose), nil
+	).BuildForRestore(cfg.Verbose), nil
 }
 
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
@@ -205,7 +195,7 @@ func (r *restorer) tryRestoreIPTables(
 		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	rules, err := BuildIPTables(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
+	rules, err := BuildIPTablesForRestore(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}
