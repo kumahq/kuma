@@ -34,29 +34,36 @@ Some things to remember:
 
 This MADR only consider references in `to[].targetRef.kind` and MeshHTTPRoute/MeshTCPRoute `backendRefs[].kind`.
 
-This MADR adds 1 new kind:
-
-* `MeshMultiZoneService`
-
-and adds support for matching real `MeshService` resources to the existing `MeshService` kind.
+This MADR adds 1 new kind, `MeshMultiZoneService` and adds support
+for matching real `MeshService` resources to the existing `MeshService` kind.
 Matches on real `MeshService` objects have priority over `kuma.io/service`
 matches.
 
-Additionally, we propose a number of new fields to the ref structure:
+A majority of the use cases for policy will involve selecting a specific *port* of the
+`MeshService`, `MeshServices` from a given Kuma zone and namespace.
 
-* `port`
-* `namespace`
-* `labels`
-* `zone`
+Note, we have already in targetRef:
 
-Another option would be to have the `namespace` and `zone` fields under `labels` instead.
-The motivation for having them top level is that they have especially important
-semantic meaning, beyond other arbitrary, user-defined labels.
+```yaml
+name: ...
+namespace: ...
+```
+
+Now we have to consider how we attach to a port and select from a zone.
+
+* Add top level field `zone` and `port` and `labels` for selecting groups of
+  `MeshService`
+* Add top level `port` field and use `labels: {"kuma.io/zone": "..."}`
+* Use generic Gateway API targetRef field `sectionName` to specify a port in
+  `targetRef` but `port` in `backendRef` and add `labels` for selecting
+  groups of `MeshService`.
 
 ## Decision Outcome
 
-These new kinds allow for selecting or directing traffic that's going to new,
-`MeshService`-based destinations.
+We choose:
+
+* use generic Gateway API targetRef field `sectionName` to specify `port` and
+  add `labels` but use `port` in `backendRefs`.
 
 ### `targetRef`
 
@@ -67,53 +74,71 @@ that correspond to the `MeshService`.
 References for `kind: MeshService` have the following structure:
 
 ```yaml
+---
 kind: MeshService
-name: backend
-labels: {}
-zone: east
-namespace: backend
-port: 80
+spec:
+  ports:
+  - port: 80
+    name: http
+---
+targetRef:
+  kind: MeshService
+  namespace: backend
+  name: backend # only name or labels
+  labels: # only name or labels
+    kuma.io/zone: east
+  sectionName: http
 ```
 
-The `name` of a `MeshService` ref always refers to the name of the Kubernetes
-object.
+The `name` of a `MeshService` ref always refers to the name of one, real Kubernetes
+object in the zone of the policy.
 
-Exactly one of either `name` or `labels` is **required**.
+Exactly one of either `targetRef.name` or `targetRef.labels` is **required**.
 
-#### `port`
+#### `sectionName`
 
-If `port` is set in `targetRef.kind`, only traffic to that port is affected.
+If `sectionName` is set in `targetRef.kind` with `kind: MeshService`,
+it refers to an entry in `ports` by name and only traffic to that port is affected.
 
-In `backendRefs`, `port` is required.
+In `backendRefs`, `sectionName` is required.
 
-#### Local `MeshServices`
+#### `name`
 
-If the policy ref doesn't set `zone`, it refers to a `MeshService` in the local
-zone.
+If the policy ref sets `name`, it refers to one `MeshService` in the *local
+zone*.
 
 On a k8s zone:
 * without `namespace`, the policy refers to `MeshServices` in the same
   namespace as the policy.
-* with `namespace`, only that namespace is searched matching `MeshServices`
+* with `namespace`, only that namespace is searched for matching `MeshServices`
+
+On a universal zone, `namespace` is not valid.
 
 Note that this means it's possible to refer to synced `MeshServices` via their
 transformed `<service>-<hash-suffix>`.
 
-#### Non-local `MeshServices`
+#### `labels`
 
-If `zone` is set, `name` cannot be set and instead `displayName` must be set,
-which matches based on the `kuma.io/display-name` of the `MeshService`.
-For example, the name of the object in the zone's cluster.
+If `name` is not set, `labels` must be set.
+Via `labels`, groups of `MeshServices` can be matched, for example by:
 
-Without `namespace`, refer to _all_ `MeshServices` with this name. That means we
-don't infer any similarity between the local namespace and the other zone's
-namespace.
+* `kuma.io/display-name`
+* `kuma.io/zone`
+
+If `kuma.io/zone` is set, a missing `namespace` field means we
+refer to _all_ `MeshServices` with this name.
+If no `kuma.io/zone` is set, the `namespace` is assumed to be the namespace of
+the policy making the reference.
+
+This means we don't infer any similarity between the local namespace
+and the other zone's namespace.
 
 #### Examples
 
 ##### `MeshService`
 
-Users can target `MeshServices` directly by `name`:
+Users can target `MeshServices` in the namespace of the policy
+directly with `name`:
 
 ```yaml
 spec:
@@ -123,7 +148,8 @@ spec:
      name: backend
 ```
 
-or by using `labels` without `name`:
+or by using `labels` without `name`. The below example searches _only in the
+namespace_ of the policy.
 
 ```yaml
 spec:
@@ -134,15 +160,16 @@ spec:
        kubernetes.io/service-name: zk
 ```
 
-In other zones:
+In other zones, we search _all namespaces_:
 
 ```yaml
 spec:
  to:
  - targetRef:
      kind: MeshService
-     displayName: backend
-     zone: other-zone
+     labels:
+        kuma.io/display-name: backend
+        kuma.io/zone: other-zone
 ```
 
 
@@ -169,11 +196,14 @@ spec:
            backendRefs:
              - kind: MeshService
                name: frontend
-               port: 8080
-               zone: east
+               port: http
+               labels:
+                 kuma.io/zone: east
              - kind: MeshMultiZoneService
                name: frontend
-               port: 8080
+               port: http
+               labels:
+                 kuma.io/zone: east
 ```
 
 #### Status
@@ -186,9 +216,12 @@ if a route targets a
 
 * Allows users to apply policy to traffic going to `MeshService` and
   `MeshMultiZoneService`
-* We can match set of `MeshServices`, important for headless services
+* We can match a set of `MeshServices`, important for headless services
 * We're flexible with regards to local vs non-local `MeshServices`.
+* We diverge the least from upstream `targetRef`
+* Adding fewer API fields
 
 ### Negative Consequences
 
 * Relative complexity of the semantics of various combinations
+* Verbosity in `labels`
