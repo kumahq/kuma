@@ -19,39 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type IPTables struct {
-	raw    *tables.RawTable
-	nat    *tables.NatTable
-	mangle *tables.MangleTable
-}
-
-func newIPTables(
-	raw *tables.RawTable,
-	nat *tables.NatTable,
-	mangle *tables.MangleTable,
-) *IPTables {
-	return &IPTables{
-		raw:    raw,
-		nat:    nat,
-		mangle: mangle,
-	}
-}
-
-func (t *IPTables) BuildForRestore(verbose bool) string {
-	result := slices.DeleteFunc([]string{
-		tables.BuildRulesForRestore(t.raw, verbose),
-		tables.BuildRulesForRestore(t.nat, verbose),
-		tables.BuildRulesForRestore(t.mangle, verbose),
-	}, func(s string) bool { return s == "" })
-
-	separator := "\n"
-	if verbose {
-		separator = "\n\n"
-	}
-
-	return strings.Join(result, separator) + "\n"
-}
-
 func BuildIPTablesForRestore(
 	cfg config.InitializedConfig,
 	dnsServers []string,
@@ -63,11 +30,18 @@ func BuildIPTablesForRestore(
 		return "", fmt.Errorf("build nat table: %s", err)
 	}
 
-	return newIPTables(
-		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
-		natTable,
-		buildMangleTable(cfg),
-	).BuildForRestore(cfg.Verbose), nil
+	result := slices.DeleteFunc([]string{
+		tables.BuildRulesForRestore(buildRawTable(cfg, dnsServers, iptablesExecutablePath), cfg.Verbose),
+		tables.BuildRulesForRestore(natTable, cfg.Verbose),
+		tables.BuildRulesForRestore(buildMangleTable(cfg), cfg.Verbose),
+	}, func(s string) bool { return s == "" })
+
+	separator := "\n"
+	if cfg.Verbose {
+		separator = "\n\n"
+	}
+
+	return strings.Join(result, separator) + "\n", nil
 }
 
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
