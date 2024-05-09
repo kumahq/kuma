@@ -32,19 +32,22 @@ Some things to remember:
 
 ## Considered Options
 
-This MADR adds 2 kinds `to[].targetRef.kind` and Mesh*Route `backendRefs[].kind`:
+This MADR only consider references in `to[].targetRef.kind` and MeshHTTPRoute/MeshTCPRoute `backendRefs[].kind`.
 
-* `MeshService`
+This MADR adds 1 new kind:
+
 * `MeshMultiZoneService`
 
-as well as a number of new fields to the ref structure:
+and adds support for matching real `MeshService` resources to the existing `MeshService` kind.
+Matches on real `MeshService` objects have priority over `kuma.io/service`
+matches.
+
+Additionally, we propose a number of new fields to the ref structure:
 
 * `port`
 * `namespace`
 * `labels`
 * `zone`
-
-This MADR doesn't address using `MeshService` as a reference anywhere else.
 
 Another option would be to have the `namespace` and `zone` fields under `labels` instead.
 The motivation for having them top level is that they have especially important
