@@ -193,7 +193,7 @@ func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	return true
 }
 
-func defaultConfig() Config {
+func DefaultConfig() Config {
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
@@ -250,12 +250,8 @@ func defaultConfig() Config {
 	}
 }
 
-func DefaultConfig() Config {
-	return defaultConfig()
-}
-
 func MergeConfigWithDefaults(cfg Config) Config {
-	result := defaultConfig()
+	result := DefaultConfig()
 
 	// .Owner
 	if cfg.Owner.UID != "" {
