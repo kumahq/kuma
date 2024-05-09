@@ -16,14 +16,11 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
-var dockerOutputChainRegex = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)
-
-var fallbackPaths = []string{
-	"/usr/sbin",
-	"/sbin",
-	"/usr/bin",
-	"/bin",
-}
+var (
+	dockerOutputChainRegex   = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)
+	fallbackPaths            = []string{"/usr/sbin", "/sbin", "/usr/bin", "/bin"}
+	necessaryMatchExtensions = []string{"owner", "tcp", "udp"}
+)
 
 func buildRestoreParameters(cfg config.Config, rulesFile *os.File, restoreLegacy bool) []string {
 	return NewParameters().
@@ -112,12 +109,6 @@ func newExecutables(ipv6 bool, mode string) *Executables {
 		Restore:  findExecutable(iptablesRestore),
 		mode:     mode,
 	}
-}
-
-var necessaryMatchExtensions = []string{
-	"owner",
-	"tcp",
-	"udp",
 }
 
 func (e *Executables) legacy() bool {
