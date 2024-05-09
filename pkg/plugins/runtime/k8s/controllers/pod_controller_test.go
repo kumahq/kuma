@@ -81,6 +81,11 @@ var _ = Describe("PodReconciler", func() {
 								{ContainerPort: 6060, Name: "metrics"},
 							},
 						},
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 9090},
+							},
+						},
 					},
 				},
 				Status: kube_core.PodStatus{
@@ -298,6 +303,44 @@ var _ = Describe("PodReconciler", func() {
 					Name:      "example-ip4",
 					Labels: map[string]string{
 						kube_discovery.LabelServiceName: "example",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.1"},
+					TargetRef: &kube_core.ObjectReference{
+						Kind:      "Pod",
+						Name:      "pod-with-kuma-sidecar-and-ip",
+						Namespace: "demo",
+						UID:       "pod-with-kuma-sidecar-and-ip-demo",
+					},
+				}},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "manual-example",
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 90,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 9090,
+							},
+							AppProtocol: pointer.To("http"),
+						},
+					},
+				},
+			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "manual-example-ip4",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "manual-example",
 					},
 				},
 				AddressType: kube_discovery.AddressTypeIPv4,
@@ -559,6 +602,16 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
                 k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 9090
+              tags:
+                app: sample
+                kuma.io/service: manual-example_demo_svc_90
+                kuma.io/protocol: http
+                k8s.kuma.io/service-name: manual-example
+                k8s.kuma.io/service-port: "90"
+                k8s.kuma.io/namespace: demo
 `))
 	})
 
@@ -638,6 +691,16 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/protocol: tcp
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
+                k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 9090
+              tags:
+                app: sample
+                kuma.io/service: manual-example_demo_svc_90
+                kuma.io/protocol: http
+                k8s.kuma.io/service-name: manual-example
+                k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
 `))
 	})
