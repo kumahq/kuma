@@ -131,11 +131,11 @@ runuser -u kuma-dp -- \
 				}
 
 				if cfg.StoreFirewalld {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used\n"))
+					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used")
 				}
 
 				if args.SkipDNSConntrackZoneSplit {
-					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used\n"))
+					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used")
 				}
 			}
 
@@ -144,19 +144,19 @@ runuser -u kuma-dp -- \
 			if args.RedirectPortInBoundV6 != "" &&
 				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.Port) /* new default value, identical to ipv4 port */ &&
 				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.PortIPv6) /* old default value, dedicated for ipv6 */ {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead\n"))
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead")
 			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
 				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
 			}
 			if len(args.ExcludeOutboundTCPPortsForUIDs) > 0 {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead\n"))
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
 				for _, v := range args.ExcludeOutboundTCPPortsForUIDs {
 					args.ExcludeOutboundPortsForUIDs = append(args.ExcludeOutboundPortsForUIDs, fmt.Sprintf("tcp:%s", v))
 				}
 			}
 			if len(args.ExcludeOutboundUDPPortsForUIDs) > 0 {
-				_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] flag --exclude-outbound-udp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead\n"))
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-udp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
 				for _, v := range args.ExcludeOutboundUDPPortsForUIDs {
 					args.ExcludeOutboundPortsForUIDs = append(args.ExcludeOutboundPortsForUIDs, fmt.Sprintf("udp:%s", v))
 				}
@@ -180,7 +180,8 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			_, _ = cmd.OutOrStdout().Write([]byte("# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.\n"))
+			fmt.Fprintln(cfg.RuntimeStdout, "# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+
 			return nil
 		},
 	}
