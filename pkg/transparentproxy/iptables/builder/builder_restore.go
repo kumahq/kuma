@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
@@ -94,9 +95,9 @@ type Executables struct {
 }
 
 func newExecutables(ipv6 bool, mode string) *Executables {
-	prefix := iptables
+	prefix := consts.Iptables
 	if ipv6 {
-		prefix = ip6tables
+		prefix = consts.Ip6tables
 	}
 
 	iptables := fmt.Sprintf("%s-%s", prefix, mode)

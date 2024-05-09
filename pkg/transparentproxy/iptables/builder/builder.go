@@ -14,13 +14,9 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-)
-
-const (
-	iptables  = "iptables"
-	ip6tables = "ip6tables"
 )
 
 type IPTables struct {
@@ -91,16 +87,16 @@ func (r *restorer) saveIPTablesRestoreFile(logPrefix string, f *os.File, content
 }
 
 func createRulesFile(ipv6 bool) (*os.File, error) {
-	prefix := iptables
+	prefix := consts.Iptables
 	if ipv6 {
-		prefix = ip6tables
+		prefix = consts.Ip6tables
 	}
 
 	filename := fmt.Sprintf("%s-rules-%d.txt", prefix, time.Now().UnixNano())
 
 	f, err := os.CreateTemp("", filename)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create %s rules file: %s", iptables, err)
+		return nil, fmt.Errorf("unable to create %s rules file: %s", consts.Iptables, err)
 	}
 
 	return f, nil
