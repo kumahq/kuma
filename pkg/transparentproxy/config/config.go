@@ -134,6 +134,9 @@ type Config struct {
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
 	Retry RetryConfig
+	// StoreFirewalld when set, configures firewalld to store the generated
+	// iptables rules.
+	StoreFirewalld bool
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in

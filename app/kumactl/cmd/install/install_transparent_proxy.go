@@ -30,7 +30,6 @@ type transparentProxyArgs struct {
 	UID                            string
 	User                           string
 	AgentDNSListenerPort           string
-	StoreFirewalld                 bool
 	SkipDNSConntrackZoneSplit      bool
 }
 
@@ -51,7 +50,6 @@ func newInstallTransparentProxy() *cobra.Command {
 		UID:                            "",
 		User:                           "",
 		AgentDNSListenerPort:           "15053",
-		StoreFirewalld:                 false,
 		SkipDNSConntrackZoneSplit:      false,
 	}
 
@@ -132,7 +130,7 @@ runuser -u kuma-dp -- \
 					return errors.Errorf("--ebpf-instance-ip flag has to be specified --ebpf-enabled is provided")
 				}
 
-				if args.StoreFirewalld {
+				if cfg.StoreFirewalld {
 					_, _ = cmd.ErrOrStderr().Write([]byte("# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used\n"))
 				}
 
@@ -173,7 +171,7 @@ runuser -u kuma-dp -- \
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}
 
-			if !cfg.Ebpf.Enabled && args.StoreFirewalld {
+			if !cfg.Ebpf.Enabled && cfg.StoreFirewalld {
 				if _, err := firewalld.NewIptablesTranslator().
 					WithDryRun(cfg.DryRun).
 					WithOutput(cfg.RuntimeStdout).
@@ -202,7 +200,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
-	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
+	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 
 	// ebpf
