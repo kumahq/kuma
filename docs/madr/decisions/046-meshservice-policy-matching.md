@@ -100,7 +100,8 @@ Exactly one of either `targetRef.name` or `targetRef.labels` is **required**.
 If `sectionName` is set in `targetRef.kind` with `kind: MeshService`,
 it refers to an entry in `ports` by name and only traffic to that port is affected.
 
-In `backendRefs`, `sectionName` is required.
+In `backendRefs`, `port` is required. There is no `sectionName`, in accordance
+with Gateway API HTTPRoute.
 
 #### `name`
 
