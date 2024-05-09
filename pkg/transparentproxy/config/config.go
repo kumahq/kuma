@@ -197,7 +197,7 @@ func DefaultConfig() Config {
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
-			NamePrefix: "",
+			NamePrefix: "KUMA_",
 			Inbound: TrafficFlow{
 				Enabled:       true,
 				Port:          15006,
@@ -218,7 +218,7 @@ func DefaultConfig() Config {
 			DNS: DNS{
 				Port:               15053,
 				Enabled:            false,
-				CaptureAll:         true,
+				CaptureAll:         false,
 				ConntrackZoneSplit: true,
 				ResolvConfigPath:   "/etc/resolv.conf",
 			},
@@ -228,6 +228,7 @@ func DefaultConfig() Config {
 		},
 		Ebpf: Ebpf{
 			Enabled:            false,
+			CgroupPath:         "/sys/fs/cgroup",
 			BPFFSPath:          "/run/kuma/bpf",
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
@@ -235,7 +236,7 @@ func DefaultConfig() Config {
 		IPv6:               false,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
-		Verbose:            true,
+		Verbose:            false,
 		DryRun:             false,
 		Log: LogConfig{
 			Enabled: false,
@@ -248,150 +249,4 @@ func DefaultConfig() Config {
 			SleepBetweenReties: 2 * time.Second,
 		},
 	}
-}
-
-func MergeConfigWithDefaults(cfg Config) Config {
-	result := DefaultConfig()
-
-	// .Owner
-	if cfg.Owner.UID != "" {
-		result.Owner.UID = cfg.Owner.UID
-	}
-
-	// .Redirect
-	if cfg.Redirect.NamePrefix != "" {
-		result.Redirect.NamePrefix = cfg.Redirect.NamePrefix
-	}
-
-	// .Redirect.Inbound
-	result.Redirect.Inbound.Enabled = cfg.Redirect.Inbound.Enabled
-	if cfg.Redirect.Inbound.Port != 0 {
-		result.Redirect.Inbound.Port = cfg.Redirect.Inbound.Port
-	}
-
-	if cfg.Redirect.Inbound.PortIPv6 != 0 {
-		result.Redirect.Inbound.PortIPv6 = cfg.Redirect.Inbound.PortIPv6
-	}
-
-	if cfg.Redirect.Inbound.Chain.Name != "" {
-		result.Redirect.Inbound.Chain.Name = cfg.Redirect.Inbound.Chain.Name
-	}
-
-	if cfg.Redirect.Inbound.RedirectChain.Name != "" {
-		result.Redirect.Inbound.RedirectChain.Name = cfg.Redirect.Inbound.RedirectChain.Name
-	}
-
-	if len(cfg.Redirect.Inbound.ExcludePorts) > 0 {
-		result.Redirect.Inbound.ExcludePorts = cfg.Redirect.Inbound.ExcludePorts
-	}
-
-	if len(cfg.Redirect.Inbound.IncludePorts) > 0 {
-		result.Redirect.Inbound.IncludePorts = cfg.Redirect.Inbound.IncludePorts
-	}
-
-	// .Redirect.Outbound
-	result.Redirect.Outbound.Enabled = cfg.Redirect.Outbound.Enabled
-	if cfg.Redirect.Outbound.Port != 0 {
-		result.Redirect.Outbound.Port = cfg.Redirect.Outbound.Port
-	}
-
-	if cfg.Redirect.Outbound.Chain.Name != "" {
-		result.Redirect.Outbound.Chain.Name = cfg.Redirect.Outbound.Chain.Name
-	}
-
-	if cfg.Redirect.Outbound.RedirectChain.Name != "" {
-		result.Redirect.Outbound.RedirectChain.Name = cfg.Redirect.Outbound.RedirectChain.Name
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePorts) > 0 {
-		result.Redirect.Outbound.ExcludePorts = cfg.Redirect.Outbound.ExcludePorts
-	}
-
-	if len(cfg.Redirect.Outbound.IncludePorts) > 0 {
-		result.Redirect.Outbound.IncludePorts = cfg.Redirect.Outbound.IncludePorts
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePortsForUIDs) > 0 {
-		result.Redirect.Outbound.ExcludePortsForUIDs = cfg.Redirect.Outbound.ExcludePortsForUIDs
-	}
-
-	// .Redirect.DNS
-	result.Redirect.DNS.Enabled = cfg.Redirect.DNS.Enabled
-	result.Redirect.DNS.ConntrackZoneSplit = cfg.Redirect.DNS.ConntrackZoneSplit
-	result.Redirect.DNS.CaptureAll = cfg.Redirect.DNS.CaptureAll
-	if cfg.Redirect.DNS.ResolvConfigPath != "" {
-		result.Redirect.DNS.ResolvConfigPath = cfg.Redirect.DNS.ResolvConfigPath
-	}
-
-	if cfg.Redirect.DNS.UpstreamTargetChain != "" {
-		result.Redirect.DNS.UpstreamTargetChain = cfg.Redirect.DNS.UpstreamTargetChain
-	}
-
-	if cfg.Redirect.DNS.Port != 0 {
-		result.Redirect.DNS.Port = cfg.Redirect.DNS.Port
-	}
-
-	// .Redirect.VNet
-	if len(cfg.Redirect.VNet.Networks) > 0 {
-		result.Redirect.VNet.Networks = cfg.Redirect.VNet.Networks
-	}
-
-	// .Ebpf
-	result.Ebpf.Enabled = cfg.Ebpf.Enabled
-	if cfg.Ebpf.InstanceIP != "" {
-		result.Ebpf.InstanceIP = cfg.Ebpf.InstanceIP
-	}
-
-	if cfg.Ebpf.BPFFSPath != "" {
-		result.Ebpf.BPFFSPath = cfg.Ebpf.BPFFSPath
-	}
-
-	if cfg.Ebpf.ProgramsSourcePath != "" {
-		result.Ebpf.ProgramsSourcePath = cfg.Ebpf.ProgramsSourcePath
-	}
-
-	// .DropInvalidPackets
-	result.DropInvalidPackets = cfg.DropInvalidPackets
-
-	// .IPv6
-	result.IPv6 = cfg.IPv6
-
-	// .RuntimeStdout
-	if cfg.RuntimeStdout != nil {
-		result.RuntimeStdout = cfg.RuntimeStdout
-	}
-
-	// .RuntimeStderr
-	if cfg.RuntimeStderr != nil {
-		result.RuntimeStderr = cfg.RuntimeStderr
-	}
-
-	// .Verbose
-	result.Verbose = cfg.Verbose
-
-	// .DryRun
-	result.DryRun = cfg.DryRun
-
-	// .Log
-	result.Log.Enabled = cfg.Log.Enabled
-	if cfg.Log.Level != DebugLogLevel {
-		result.Log.Level = cfg.Log.Level
-	}
-
-	// .Wait
-	result.Wait = cfg.Wait
-
-	// .WaitInterval
-	result.WaitInterval = cfg.WaitInterval
-
-	// .Retry
-	if cfg.Retry.MaxRetries != nil {
-		result.Retry.MaxRetries = cfg.Retry.MaxRetries
-	}
-
-	if cfg.Retry.SleepBetweenReties != 0 {
-		result.Retry.SleepBetweenReties = cfg.Retry.SleepBetweenReties
-	}
-
-	return result
 }
