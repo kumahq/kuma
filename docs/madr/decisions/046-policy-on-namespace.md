@@ -186,6 +186,8 @@ in `frontend-ns`?
 Mesh Operator should work with policies that apply globally, knowing specifics of the `frontend` app seems incorrect.
 We didn't find good use cases why this type of reference would make sense.
 
+Applying policy in kuma-system that references other policy from custom namespace will result in error.
+
 **3. MeshTimeout in "frontend-ns", MeshHTTPRoute in "kuma-system"**
 
 **As** a Backend Service Owner<br>
