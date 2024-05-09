@@ -58,7 +58,6 @@ type DNS struct {
 
 type InitializedDNS struct {
 	DNS
-
 	ServersIPv4 []string
 	ServersIPv6 []string
 }
