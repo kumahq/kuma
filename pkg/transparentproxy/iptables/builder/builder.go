@@ -57,17 +57,12 @@ func (t *IPTables) BuildForRestore(verbose bool) string {
 }
 
 func BuildIPTablesForRestore(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
 	ipv6 bool,
 	iptablesExecutablePath string,
 ) (string, error) {
-	loopbackIface, err := getLoopback()
-	if err != nil {
-		return "", fmt.Errorf("cannot obtain loopback interface: %s", err)
-	}
-
-	natTable, err := buildNatTable(cfg, dnsServers, loopbackIface.Name, ipv6)
+	natTable, err := buildNatTable(cfg, dnsServers, ipv6)
 	if err != nil {
 		return "", fmt.Errorf("build nat table: %s", err)
 	}
@@ -112,7 +107,7 @@ func createRulesFile(ipv6 bool) (*os.File, error) {
 }
 
 type restorer struct {
-	cfg         config.Config
+	cfg         config.InitializedConfig
 	ipv6        bool
 	dnsServers  []string
 	executables *Executables
@@ -120,13 +115,17 @@ type restorer struct {
 
 func newIPTablesRestorer(
 	ctx context.Context,
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	ipv6 bool,
-	dnsServers []string,
 ) (*restorer, error) {
 	executables, err := DetectIptablesExecutables(ctx, cfg, ipv6)
 	if err != nil {
 		return nil, fmt.Errorf("unable to detect iptables restore binaries: %s", err)
+	}
+
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
 	}
 
 	return &restorer{
@@ -227,22 +226,12 @@ func (r *restorer) tryRestoreIPTables(
 	return "", err
 }
 
-func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
+func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
 		"iptables rules that will enable transparent proxying on the machine. " +
 		"The SSH connection may drop. If that happens, just reconnect again.\n"))
 
-	var err error
-	var dnsIpv6, dnsIpv4 []string
-
-	if cfg.ShouldRedirectDNS() && !cfg.ShouldCaptureAllDNS() {
-		dnsIpv4, dnsIpv6, err = GetDnsServers(cfg.Redirect.DNS.ResolvConfigPath)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false, dnsIpv4)
+	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false)
 	if err != nil {
 		return "", err
 	}
@@ -253,7 +242,7 @@ func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	}
 
 	if cfg.IPv6 {
-		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true, dnsIpv6)
+		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true)
 		if err != nil {
 			return "", err
 		}

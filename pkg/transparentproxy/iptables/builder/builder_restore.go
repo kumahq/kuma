@@ -22,7 +22,7 @@ var (
 	necessaryMatchExtensions = []string{"owner", "tcp", "udp"}
 )
 
-func buildRestoreParameters(cfg config.Config, rulesFile *os.File, restoreLegacy bool) []string {
+func buildRestoreParameters(cfg config.InitializedConfig, rulesFile *os.File, restoreLegacy bool) []string {
 	return NewParameters().
 		AppendIf(restoreLegacy, Wait(cfg.Wait), WaitInterval(cfg.WaitInterval)).
 		Append(NoFlush()).
@@ -115,7 +115,7 @@ func (e *Executables) legacy() bool {
 	return e.mode == "legacy"
 }
 
-func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executables, error) {
+func (e *Executables) verify(ctx context.Context, cfg config.InitializedConfig) (*Executables, error) {
 	var missing []string
 
 	if e.Save.Path == "" {
@@ -164,7 +164,7 @@ func (e *Executables) withFallback(fallback *Executables) *Executables {
 
 func DetectIptablesExecutables(
 	ctx context.Context,
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	ipv6 bool,
 ) (*Executables, error) {
 	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)

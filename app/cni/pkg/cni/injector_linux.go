@@ -46,6 +46,11 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 		return err
 	}
 
+	initializedConfig, err := cfg.Initialize()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize config")
+	}
+
 	namespace, err := ns.GetNS(netns)
 	if err != nil {
 		return errors.Wrap(err, "failed to open namespace")
@@ -53,7 +58,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
-		if _, err := transparentproxy.Setup(context.Background(), *cfg); err != nil {
+		if _, err := transparentproxy.Setup(context.Background(), initializedConfig); err != nil {
 			return err
 		}
 
