@@ -57,6 +57,46 @@ Now we have to consider how we attach to a port and select from a zone.
 * Use generic Gateway API targetRef field `sectionName` to specify a port in
   `targetRef` but `port` in `backendRef` and add `labels` for selecting
   groups of `MeshService`.
+* Add additional kind `NonLocalMeshService` that explicitly selects non-local
+  `MeshServices` via a structured set of fields `zone`, `port`, `labels`,
+  `namespace`
+* Add an additional kind `MeshServiceId` to support selecting an arbitrary
+  `MeshService` via a kind of UID like `kuma://backend/zone-1/backend-ns/8080`
+
+### Pros and Cons
+
+#### `NonLocalMeshService`
+
+```yaml
+kind: NonLocalMeshService
+namespace: other-zone-ns
+zone: other-zone
+```
+
+##### Positive
+
+* sidesteps issues of the k8s namespace not being the same as the original k8s
+  namespace
+
+##### Negative
+
+* one more additional kind
+
+#### `MeshServiceId`
+
+```yaml
+kind: MeshServiceId
+name: kuma://backend/zone-1/backend-ns/8080
+```
+
+##### Positive
+
+* least verbose of the options
+
+##### Negative
+
+* one more additional kind
+* not structured
 
 ## Decision Outcome
 
