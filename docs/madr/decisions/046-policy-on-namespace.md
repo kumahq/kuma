@@ -354,13 +354,11 @@ revisit this while discussing targeting MeshService in policies.
 `MeshGateway` at this moment is not namespace-scoped. It can change in the future with
 the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
 
-We've decided that we won't allow targeting `MeshGateway` in namspace scoped polcies except for the
-`MeshHTTPRoute` and `MeshTCPRoute`. To apply policy like `MeshTimeout` or `MeshCircuitBreaker` on
-`MeshGateway` you need to create it in `kuma-system` namespace.
+For policies in custom namespaces, we've decided that we would allow targeting `MeshGateway` in `MeshHTTPRoute` and `MeshTCPRoute`, and policies 
+that configures only Envoy cluster (services that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`). 
+For other policies we would allow referencing routes that reference `MeshGateway`.
 
-With `MeshHTTPRoute` and `MeshTCPRoute` you can target `MeshGateway` either from `kuma-system` or custom namespace.
-
-#### Example
+#### Examples
 
 As a **Cluster Operator** I want to deploy a single global `MeshGateway` to the cluster so that I’m able to manage a
 single deployment for the whole cluster without knowing specific details about apps and routes.
@@ -382,6 +380,8 @@ spec:
     - match:
         kuma.io/service: edge-gateway
 ```
+
+##### Targeting MeshGateway in MeshHttpRoute
 
 As a **Frontend Service Owner** I want to configure routes on `MeshGateway` without the access to
 cluster-scoped CRDs so that I could manage my routes independently.
@@ -411,6 +411,31 @@ spec:
               - kind: MeshService
                 name: frontend
                 namespace: frontend-ns
+```
+
+##### Targeting MeshGateway in other policies
+
+As a **Frontend Service Owner** I want to configure circuit breaker on `MeshGateway` without the access to
+cluster-scoped CRDs so that I could manage my routes independently.
+
+```yaml
+type: MeshCircuitBreaker
+mesh: default
+name: circuit-breaker
+namespace: frontend-ns
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - targetRef:
+      kind: MeshService # you need to specify MeshService in to[].targetRef.kind
+      name: frontend
+    default:
+      outlierDetection:
+        detectors:
+          totalFailures:
+            consecutive: 10
 ```
 
 ## Cross namespace traffic forwarding and ReferenceGrant
