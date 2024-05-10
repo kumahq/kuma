@@ -216,28 +216,28 @@ type InitializedConfig struct {
 // ShouldDropInvalidPackets is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
-func (c Config) ShouldDropInvalidPackets() bool {
+func (c InitializedConfig) ShouldDropInvalidPackets() bool {
 	return c.DropInvalidPackets
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldRedirectDNS() bool {
+func (c InitializedConfig) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
 // ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
-func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
+func (c InitializedConfig) ShouldFallbackDNSToUpstreamChain() bool {
 	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldCaptureAllDNS() bool {
+func (c InitializedConfig) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
 
@@ -245,7 +245,7 @@ func (c Config) ShouldCaptureAllDNS() bool {
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
 // the DNS conntrack zone splitting iptables rules
-func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
+func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
 		return false
 	}
