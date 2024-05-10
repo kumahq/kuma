@@ -166,7 +166,12 @@ runuser -u kuma-dp -- \
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}
 
-			output, err := transparentproxy.Setup(cmd.Context(), cfg)
+			initializedConfig, err := cfg.Initialize()
+			if err != nil {
+				return errors.Wrap(err, "failed to initialize config")
+			}
+
+			output, err := transparentproxy.Setup(cmd.Context(), initializedConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}

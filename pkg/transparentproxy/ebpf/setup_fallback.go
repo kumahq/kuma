@@ -8,6 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
-func Setup(config.Config) (string, error) {
+func Setup(config.InitializedConfig) (string, error) {
 	return "", fmt.Errorf("ebpf is currently supported only on linux")
 }

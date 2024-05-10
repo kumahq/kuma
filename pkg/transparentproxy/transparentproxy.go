@@ -166,7 +166,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-func Setup(ctx context.Context, cfg config.Config) (string, error) {
+func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	if cfg.Ebpf.Enabled {
 		return ebpf.Setup(cfg)
 	}
@@ -174,7 +174,7 @@ func Setup(ctx context.Context, cfg config.Config) (string, error) {
 	return iptables.Setup(ctx, cfg)
 }
 
-func Cleanup(cfg config.Config) (string, error) {
+func Cleanup(cfg config.InitializedConfig) (string, error) {
 	if cfg.Ebpf.Enabled {
 		return ebpf.Cleanup(cfg)
 	}

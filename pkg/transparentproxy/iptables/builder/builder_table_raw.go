@@ -8,7 +8,7 @@ import (
 )
 
 func buildRawTable(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
 	iptablesExecutablePath string,
 ) *tables.RawTable {
