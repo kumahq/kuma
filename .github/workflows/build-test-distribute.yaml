@@ -34,6 +34,7 @@ jobs:
       REGISTRY: ${{ steps.metadata.outputs.registry }}
       VERSION_NAME: ${{ steps.metadata.outputs.version }}
       NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
+      CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
@@ -75,6 +76,7 @@ jobs:
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
+          echo "distribution_repository=$(make build/info/distribution/repo)" >> $GITHUB_OUTPUT
   test:
     permissions:
       contents: read
@@ -129,3 +131,64 @@ jobs:
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
           [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
           echo "All dependent jobs succeeded"
+        # Aggregated package for SBOMs helps avoid depending on variable asset names
+        # Easy to match and filter on file extensions produced in various distributed jobs
+      - name: "Aggregate all SBOM assets"
+        if: ${{ fromJSON(needs.check.outputs.BUILD) && (needs.check.result == 'success' || needs.build_publish.result == 'success') }}
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ github.workspace }}/security-assets/sboms
+          pattern: '*sbom.{cyclonedx,spdx}.json'
+          merge-multiple: true # When set, all matched zipped artifacts are extracted into the specified path
+          # Zip all SBOM assets for artifact types (Images, Repository scanning) produced in the jobs
+      - name: "metadata for publishing sbom assets"
+        id: sbom_publish_metadata
+        if: ${{ fromJSON(needs.check.outputs.BUILD) && (needs.check.result == 'success' || needs.build_publish.result == 'success') }}
+        run: |-
+          SBOM_PACKAGE_NAME="${{github.repository}}-sbom"
+          echo "SBOM_PACKAGE_NAME=${SBOM_PACKAGE_NAME}" >> $GITHUB_OUTPUT
+          zip -rj ${SBOM_PACKAGE_NAME} ${{ github.workspace }}/security-assets/sboms -i '*sbom.spdx.json' '*sbom.cyclonedx.json'
+      - name: "Download binary artifact provenance"
+        uses: actions/download-artifact@v4
+        if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
+        with:
+          path: ${{ github.workspace }}/security-assets/provenance
+          pattern: ${{ github.event.repository.name }}.intoto.jsonl
+          merge-multiple: true # When set, all matched zipped artifacts are extracted into the specified path
+      - name: "Inspect security assets"
+        if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+        run: |-
+          ls -alR ${{github.workspace}}/security-assets
+        # Publish aggregated zip file of SBOMs to artifact regstry
+      - name: Push SBOMs assets to cloudsmith
+        id: push_sbom
+        if: ${{ fromJSON(needs.check.outputs.BUILD) && (needs.check.result == 'success' || needs.build_publish.result == 'success') }}
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "raw"
+          owner: "kong"
+          repo: "${{ needs.check.outputs.CLOUDSMITH_REPOSITORY }}"
+          version: "${{ needs.check.outputs.VERSION_NAME }}"
+          file: "${{ github.workspace }}/security-assets/provenance/${{ steps.sbom_publish_metadata.outputs.SBOM_PACKAGE_NAME }}"
+          name: "${{ steps.sbom_publish_metadata.outputs.SBOM_PACKAGE_NAME }}"
+          summary: "SBOM artifacts for ${{ github.repository }}"
+          description: "SBOM artifacts for binaries built from source code and container images"
+      - name: Push Binary Provenance to cloudsmith
+        if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
+        id: push_binary_provenance
+        uses: cloudsmith-io/action@master
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "raw"
+          owner: "kong"
+          repo: "${{ needs.check.outputs.CLOUDSMITH_REPOSITORY }}"
+          version: "${{ needs.check.outputs.VERSION_NAME }}"
+          file: "${{ github.workspace }}/security-assets/provenance/${{ github.event.repository.name }}.intoto.jsonl"
+          name: "${{ env.BINARY_PROVENANCE_PACKAGE_NAME }}"
+          summary: "Binary Artifact Provenance for ${{ github.repository }}"
+          description: "Provenance file for verifying ${{ github.repository }} binary artifacts"
+        env:
+          BINARY_PROVENANCE_PACKAGE_NAME: "${{github.repository}}-binary-provenance"
