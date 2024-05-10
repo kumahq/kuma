@@ -65,6 +65,27 @@ Now we have to consider how we attach to a port and select from a zone.
 
 ### Pros and Cons
 
+#### `labels` vs top level fields
+
+##### Positive
+
+Allows us to be explicit as well as not back ourselves into a corner
+with the API.
+
+##### Negative
+
+* more verbose
+
+#### `sectionName`
+
+##### Positive
+
+* consistency with Gateway API
+
+##### Negative
+
+* too generic, potentially confusing
+
 #### `NonLocalMeshService`
 
 ```yaml
@@ -104,6 +125,8 @@ We choose:
 
 * use generic Gateway API targetRef field `sectionName` to specify `port` and
   add `labels` but use `port` in `backendRefs`.
+* use exactly one of `labels` or `name`/`namespace`
+* no new top level fields besides `labels`
 
 ### `targetRef`
 
@@ -124,8 +147,8 @@ spec:
 targetRef:
   kind: MeshService
   namespace: backend
-  name: backend # only name or labels
-  labels: # only name or labels
+  name: backend # only name/namespace or labels
+  labels: # only name/namespace or labels
     kuma.io/zone: east
   sectionName: http
 ```
@@ -156,25 +179,27 @@ On a k8s zone:
 On a universal zone, `namespace` is not valid.
 
 Note that this means it's possible to refer to synced `MeshServices` via their
-transformed `<service>-<hash-suffix>`.
+transformed `<service>-<hash-suffix>` name.
 
 #### `labels`
 
-If `name` is not set, `labels` must be set.
+If `name` is not set, `labels` must be set and `namespace` cannot be set!
+
 Via `labels`, groups of `MeshServices` can be matched, for example by:
 
 * `kuma.io/display-name`
 * `kuma.io/zone`
 
-If `kuma.io/zone` is set, a missing `namespace` field means we
-refer to _all_ `MeshServices` with this name.
-If no `kuma.io/zone` is set, the `namespace` is assumed to be the namespace of
-the policy making the reference.
+With `labels`, we don't assume anything about the namespace of the object. The
+namespace _must_ be selected using the `k8s.kuma.io/namespace` label.
 
-This means we don't infer any similarity between the local namespace
+This also means more verbosity for the headless service usecase.
+It means we don't infer any similarity between the local namespace
 and the other zone's namespace.
 
 #### Examples
+
+These examples assume the `frontend` namespace and the zone named `local-zone`.
 
 ##### `MeshService`
 
@@ -189,8 +214,7 @@ spec:
      name: backend
 ```
 
-or by using `labels` without `name`. The below example searches _only in the
-namespace_ of the policy.
+or by using `labels` without `name`. The below examples search _any namespace_.
 
 ```yaml
 spec:
@@ -198,10 +222,10 @@ spec:
  - targetRef:
      kind: MeshService
      labels:
-       kubernetes.io/service-name: zk
+       k8s.kuma.io/service-name: zk
+       k8s.kuma.io/namespace: zk-namespace # this must be set to target a namespace, even the local one
+       kuma.io/zone: local-zone # must also be set to target a local zone, otherwise all zones are targeted
 ```
-
-In other zones, we search _all namespaces_:
 
 ```yaml
 spec:
@@ -236,14 +260,9 @@ spec:
          default:
            backendRefs:
              - kind: MeshService
-               name: frontend
                port: 8080
                labels:
-                 kuma.io/zone: east
-             - kind: MeshMultiZoneService
-               name: frontend
-               port: 8080
-               labels:
+                 kuma.io/display-name: frontend
                  kuma.io/zone: east
 ```
 
