@@ -19,7 +19,10 @@ KUMA_IMAGES = $(call build_image,$(IMAGES_RELEASE) $(IMAGES_TEST))
 export DOCKER_BUILDKIT := 1
 
 # add targets to build images for each arch
-# $(1) - GOOS to build for
+# $(1) - GOARCH to build for
+# (TODO): Donot hardcode "linux" platform for images
+# (TODO): May be support other image platforms using argument
+
 define IMAGE_TARGETS_BY_ARCH
 .PHONY: image/static/$(1)
 image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
@@ -65,8 +68,9 @@ $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goa
 
 # add targets to generate docker/{save,load,tag,push} for each supported ARCH
 # add targets to build images for each arch
-# $(1) - GOOS to build for
+# $(1) - Imae Name to build for
 # $(2) - GOARCH to build for
+# (TODO): Support image platform in output file names
 define DOCKER_TARGETS_BY_ARCH
 .PHONY: docker/save/$(1)/$(2)
 docker/save/$(1)/$(2):
