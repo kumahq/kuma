@@ -3,9 +3,13 @@ package config
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -52,6 +56,41 @@ type DNS struct {
 	ResolvConfigPath    string
 }
 
+type InitializedDNS struct {
+	DNS
+	ServersIPv4 []string
+	ServersIPv6 []string
+}
+
+// Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
+// the nameservers from the file specified in the ResolvConfigPath field of
+// the input DNS struct.
+func (c DNS) Initialize() (InitializedDNS, error) {
+	initialized := InitializedDNS{DNS: c}
+
+	// We don't have to get DNS servers if DNS traffic shouldn't be redirected,
+	// or if we want to capture all DNS traffic
+	if !c.Enabled || c.CaptureAll {
+		return initialized, nil
+	}
+
+	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
+	if err != nil {
+		return initialized, errors.Errorf("unable to read file %s: %s", c.ResolvConfigPath, err)
+	}
+
+	for _, address := range dnsConfig.Servers {
+		parsed := net.ParseIP(address)
+		if parsed.To4() != nil {
+			initialized.ServersIPv4 = append(initialized.ServersIPv4, address)
+		} else {
+			initialized.ServersIPv6 = append(initialized.ServersIPv6, address)
+		}
+	}
+
+	return initialized, nil
+}
+
 type VNet struct {
 	Networks []string
 }
@@ -63,6 +102,25 @@ type Redirect struct {
 	Outbound   TrafficFlow
 	DNS        DNS
 	VNet       VNet
+}
+
+type InitializedRedirect struct {
+	Redirect
+	DNS InitializedDNS
+}
+
+func (c Redirect) Initialize() (InitializedRedirect, error) {
+	var err error
+
+	initialized := InitializedRedirect{Redirect: c}
+
+	// .DNS
+	initialized.DNS, err = c.DNS.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .DNS")
+	}
+
+	return initialized, nil
 }
 
 type Chain struct {
@@ -139,31 +197,47 @@ type Config struct {
 	StoreFirewalld bool
 }
 
+// InitializedConfig extends the Config struct by adding fields that require
+// additional logic to retrieve their values. These values typically involve
+// interacting with the system or external resources.
+type InitializedConfig struct {
+	Config
+	// Redirect is an InitializedRedirect struct containing the initialized
+	// redirection configuration. If DNS redirection is enabled this includes
+	// the DNS servers retrieved from the specified resolv.conf file
+	// (/etc/resolv.conf by default)
+	Redirect InitializedRedirect
+	// LoopbackInterfaceName represents the name of the loopback interface which
+	// will be used to construct outbound iptable rules for outbound (i.e.
+	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
+	LoopbackInterfaceName string
+}
+
 // ShouldDropInvalidPackets is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
-func (c Config) ShouldDropInvalidPackets() bool {
+func (c InitializedConfig) ShouldDropInvalidPackets() bool {
 	return c.DropInvalidPackets
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldRedirectDNS() bool {
+func (c InitializedConfig) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
 // ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
-func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
+func (c InitializedConfig) ShouldFallbackDNSToUpstreamChain() bool {
 	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldCaptureAllDNS() bool {
+func (c InitializedConfig) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
 
@@ -171,7 +245,7 @@ func (c Config) ShouldCaptureAllDNS() bool {
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
 // the DNS conntrack zone splitting iptables rules
-func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
+func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
 		return false
 	}
@@ -194,6 +268,39 @@ func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	}
 
 	return true
+}
+
+func getLoopbackInterfaceName() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list network interfaces")
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			return iface.Name, nil
+		}
+	}
+
+	return "", errors.New("loopback interface not found")
+}
+
+func (c Config) Initialize() (InitializedConfig, error) {
+	var err error
+
+	initialized := InitializedConfig{Config: c}
+
+	initialized.Redirect, err = c.Redirect.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
+	}
+
+	initialized.LoopbackInterfaceName, err = getLoopbackInterfaceName()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+	}
+
+	return initialized, nil
 }
 
 func DefaultConfig() Config {

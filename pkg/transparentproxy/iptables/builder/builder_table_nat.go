@@ -56,9 +56,8 @@ func buildMeshInbound(
 }
 
 func buildMeshOutbound(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
-	loopback string,
 	ipv6 bool,
 ) (*Chain, error) {
 	prefix := cfg.Redirect.NamePrefix
@@ -128,19 +127,19 @@ func buildMeshOutbound(
 		//   localhost:7777
 		AddRule(
 			Source(Address(inboundPassthroughSourceAddress)),
-			OutInterface(loopback),
+			OutInterface(cfg.LoopbackInterfaceName),
 			Jump(Return()),
 		).
 		AddRule(
 			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
-			OutInterface(loopback),
+			OutInterface(cfg.LoopbackInterfaceName),
 			NotDestination(localhost),
 			Match(Owner(Uid(uid))),
 			Jump(ToUserDefinedChain(inboundRedirectChainName)),
 		).
 		AddRule(
 			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
-			OutInterface(loopback),
+			OutInterface(cfg.LoopbackInterfaceName),
 			Match(Owner(NotUid(uid))),
 			Jump(Return()),
 		).
@@ -206,7 +205,7 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain
 }
 
 func addOutputRules(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
 	nat *tables.NatTable,
 	ipv6 bool,
@@ -286,7 +285,7 @@ func addOutputRules(
 	return nil
 }
 
-func addPreroutingRules(cfg config.Config, nat *tables.NatTable, ipv6 bool) error {
+func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6 bool) error {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	rulePosition := uint(1)
 	if cfg.Log.Enabled {
@@ -345,9 +344,8 @@ func addPreroutingRules(cfg config.Config, nat *tables.NatTable, ipv6 bool) erro
 }
 
 func buildNatTable(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
-	loopback string,
 	ipv6 bool,
 ) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
@@ -375,7 +373,7 @@ func buildNatTable(
 	}
 
 	// MESH_OUTBOUND
-	meshOutbound, err := buildMeshOutbound(cfg, dnsServers, loopback, ipv6)
+	meshOutbound, err := buildMeshOutbound(cfg, dnsServers, ipv6)
 	if err != nil {
 		return nil, err
 	}
