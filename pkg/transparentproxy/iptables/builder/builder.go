@@ -14,71 +14,34 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-const (
-	iptables  = "iptables"
-	ip6tables = "ip6tables"
-)
-
-type IPTables struct {
-	raw    *tables.RawTable
-	nat    *tables.NatTable
-	mangle *tables.MangleTable
-}
-
-func newIPTables(
-	raw *tables.RawTable,
-	nat *tables.NatTable,
-	mangle *tables.MangleTable,
-) *IPTables {
-	return &IPTables{
-		raw:    raw,
-		nat:    nat,
-		mangle: mangle,
-	}
-}
-
-func (t *IPTables) BuildForRestore(verbose bool) string {
-	result := slices.DeleteFunc([]string{
-		tables.BuildRulesForRestore(t.raw, verbose),
-		tables.BuildRulesForRestore(t.nat, verbose),
-		tables.BuildRulesForRestore(t.mangle, verbose),
-	}, func(s string) bool { return s == "" })
-
-	separator := "\n"
-	if verbose {
-		separator = "\n\n"
-	}
-
-	return strings.Join(result, separator) + "\n"
-}
-
 func BuildIPTablesForRestore(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	dnsServers []string,
 	ipv6 bool,
 	iptablesExecutablePath string,
 ) (string, error) {
-	cfg = config.MergeConfigWithDefaults(cfg)
-
-	loopbackIface, err := getLoopback()
-	if err != nil {
-		return "", fmt.Errorf("cannot obtain loopback interface: %s", err)
-	}
-
-	natTable, err := buildNatTable(cfg, dnsServers, loopbackIface.Name, ipv6)
+	natTable, err := buildNatTable(cfg, dnsServers, ipv6)
 	if err != nil {
 		return "", fmt.Errorf("build nat table: %s", err)
 	}
 
-	return newIPTables(
-		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
-		natTable,
-		buildMangleTable(cfg),
-	).BuildForRestore(cfg.Verbose), nil
+	result := slices.DeleteFunc([]string{
+		tables.BuildRulesForRestore(buildRawTable(cfg, dnsServers, iptablesExecutablePath), cfg.Verbose),
+		tables.BuildRulesForRestore(natTable, cfg.Verbose),
+		tables.BuildRulesForRestore(buildMangleTable(cfg), cfg.Verbose),
+	}, func(s string) bool { return s == "" })
+
+	separator := "\n"
+	if cfg.Verbose {
+		separator = "\n\n"
+	}
+
+	return strings.Join(result, separator) + "\n", nil
 }
 
 // runtimeOutput is the file (should be os.Stdout by default) where we can dump generated
@@ -98,23 +61,23 @@ func (r *restorer) saveIPTablesRestoreFile(logPrefix string, f *os.File, content
 }
 
 func createRulesFile(ipv6 bool) (*os.File, error) {
-	prefix := iptables
+	prefix := consts.Iptables
 	if ipv6 {
-		prefix = ip6tables
+		prefix = consts.Ip6tables
 	}
 
 	filename := fmt.Sprintf("%s-rules-%d.txt", prefix, time.Now().UnixNano())
 
 	f, err := os.CreateTemp("", filename)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create %s rules file: %s", iptables, err)
+		return nil, fmt.Errorf("unable to create %s rules file: %s", consts.Iptables, err)
 	}
 
 	return f, nil
 }
 
 type restorer struct {
-	cfg         config.Config
+	cfg         config.InitializedConfig
 	ipv6        bool
 	dnsServers  []string
 	executables *Executables
@@ -122,13 +85,17 @@ type restorer struct {
 
 func newIPTablesRestorer(
 	ctx context.Context,
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	ipv6 bool,
-	dnsServers []string,
 ) (*restorer, error) {
 	executables, err := DetectIptablesExecutables(ctx, cfg, ipv6)
 	if err != nil {
 		return nil, fmt.Errorf("unable to detect iptables restore binaries: %s", err)
+	}
+
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
 	}
 
 	return &restorer{
@@ -229,24 +196,12 @@ func (r *restorer) tryRestoreIPTables(
 	return "", err
 }
 
-func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
-	cfg = config.MergeConfigWithDefaults(cfg)
-
+func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
 		"iptables rules that will enable transparent proxying on the machine. " +
 		"The SSH connection may drop. If that happens, just reconnect again.\n"))
 
-	var err error
-	var dnsIpv6, dnsIpv4 []string
-
-	if cfg.ShouldRedirectDNS() && !cfg.ShouldCaptureAllDNS() {
-		dnsIpv4, dnsIpv6, err = GetDnsServers(cfg.Redirect.DNS.ResolvConfigPath)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false, dnsIpv4)
+	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false)
 	if err != nil {
 		return "", err
 	}
@@ -257,7 +212,7 @@ func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	}
 
 	if cfg.IPv6 {
-		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true, dnsIpv6)
+		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true)
 		if err != nil {
 			return "", err
 		}

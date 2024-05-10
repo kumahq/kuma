@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+	tproxy_test "github.com/kumahq/kuma/pkg/transparentproxy/test"
 )
 
 var _ = Describe("Builder nat", func() {
@@ -13,7 +14,7 @@ var _ = Describe("Builder nat", func() {
 		func(vnet []string, verbose bool, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
-			cfg := config.Config{
+			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -30,7 +31,7 @@ var _ = Describe("Builder nat", func() {
 						Networks: vnet,
 					},
 				},
-			}
+			})
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
@@ -120,7 +121,7 @@ var _ = Describe("Builder nat", func() {
 		func(verbose bool, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
-			cfg := config.Config{
+			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -134,7 +135,7 @@ var _ = Describe("Builder nat", func() {
 					},
 					DNS: config.DNS{Port: 15053},
 				},
-			}
+			})
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())

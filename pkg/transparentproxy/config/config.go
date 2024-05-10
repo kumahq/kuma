@@ -3,9 +3,13 @@ package config
 import (
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -52,6 +56,41 @@ type DNS struct {
 	ResolvConfigPath    string
 }
 
+type InitializedDNS struct {
+	DNS
+	ServersIPv4 []string
+	ServersIPv6 []string
+}
+
+// Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
+// the nameservers from the file specified in the ResolvConfigPath field of
+// the input DNS struct.
+func (c DNS) Initialize() (InitializedDNS, error) {
+	initialized := InitializedDNS{DNS: c}
+
+	// We don't have to get DNS servers if DNS traffic shouldn't be redirected,
+	// or if we want to capture all DNS traffic
+	if !c.Enabled || c.CaptureAll {
+		return initialized, nil
+	}
+
+	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
+	if err != nil {
+		return initialized, errors.Errorf("unable to read file %s: %s", c.ResolvConfigPath, err)
+	}
+
+	for _, address := range dnsConfig.Servers {
+		parsed := net.ParseIP(address)
+		if parsed.To4() != nil {
+			initialized.ServersIPv4 = append(initialized.ServersIPv4, address)
+		} else {
+			initialized.ServersIPv6 = append(initialized.ServersIPv6, address)
+		}
+	}
+
+	return initialized, nil
+}
+
 type VNet struct {
 	Networks []string
 }
@@ -63,6 +102,25 @@ type Redirect struct {
 	Outbound   TrafficFlow
 	DNS        DNS
 	VNet       VNet
+}
+
+type InitializedRedirect struct {
+	Redirect
+	DNS InitializedDNS
+}
+
+func (c Redirect) Initialize() (InitializedRedirect, error) {
+	var err error
+
+	initialized := InitializedRedirect{Redirect: c}
+
+	// .DNS
+	initialized.DNS, err = c.DNS.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .DNS")
+	}
+
+	return initialized, nil
 }
 
 type Chain struct {
@@ -134,33 +192,52 @@ type Config struct {
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
 	Retry RetryConfig
+	// StoreFirewalld when set, configures firewalld to store the generated
+	// iptables rules.
+	StoreFirewalld bool
+}
+
+// InitializedConfig extends the Config struct by adding fields that require
+// additional logic to retrieve their values. These values typically involve
+// interacting with the system or external resources.
+type InitializedConfig struct {
+	Config
+	// Redirect is an InitializedRedirect struct containing the initialized
+	// redirection configuration. If DNS redirection is enabled this includes
+	// the DNS servers retrieved from the specified resolv.conf file
+	// (/etc/resolv.conf by default)
+	Redirect InitializedRedirect
+	// LoopbackInterfaceName represents the name of the loopback interface which
+	// will be used to construct outbound iptable rules for outbound (i.e.
+	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
+	LoopbackInterfaceName string
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
-func (c Config) ShouldDropInvalidPackets() bool {
+func (c InitializedConfig) ShouldDropInvalidPackets() bool {
 	return c.DropInvalidPackets
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldRedirectDNS() bool {
+func (c InitializedConfig) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
 // ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
-func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
+func (c InitializedConfig) ShouldFallbackDNSToUpstreamChain() bool {
 	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
-func (c Config) ShouldCaptureAllDNS() bool {
+func (c InitializedConfig) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
 
@@ -168,7 +245,7 @@ func (c Config) ShouldCaptureAllDNS() bool {
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
 // the DNS conntrack zone splitting iptables rules
-func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
+func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
 		return false
 	}
@@ -193,11 +270,44 @@ func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 	return true
 }
 
-func defaultConfig() Config {
+func getLoopbackInterfaceName() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to list network interfaces")
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			return iface.Name, nil
+		}
+	}
+
+	return "", errors.New("loopback interface not found")
+}
+
+func (c Config) Initialize() (InitializedConfig, error) {
+	var err error
+
+	initialized := InitializedConfig{Config: c}
+
+	initialized.Redirect, err = c.Redirect.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
+	}
+
+	initialized.LoopbackInterfaceName, err = getLoopbackInterfaceName()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+	}
+
+	return initialized, nil
+}
+
+func DefaultConfig() Config {
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
-			NamePrefix: "",
+			NamePrefix: "KUMA_",
 			Inbound: TrafficFlow{
 				Enabled:       true,
 				Port:          15006,
@@ -218,7 +328,7 @@ func defaultConfig() Config {
 			DNS: DNS{
 				Port:               15053,
 				Enabled:            false,
-				CaptureAll:         true,
+				CaptureAll:         false,
 				ConntrackZoneSplit: true,
 				ResolvConfigPath:   "/etc/resolv.conf",
 			},
@@ -228,6 +338,7 @@ func defaultConfig() Config {
 		},
 		Ebpf: Ebpf{
 			Enabled:            false,
+			CgroupPath:         "/sys/fs/cgroup",
 			BPFFSPath:          "/run/kuma/bpf",
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
@@ -235,7 +346,7 @@ func defaultConfig() Config {
 		IPv6:               false,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
-		Verbose:            true,
+		Verbose:            false,
 		DryRun:             false,
 		Log: LogConfig{
 			Enabled: false,
@@ -248,154 +359,4 @@ func defaultConfig() Config {
 			SleepBetweenReties: 2 * time.Second,
 		},
 	}
-}
-
-func DefaultConfig() Config {
-	return defaultConfig()
-}
-
-func MergeConfigWithDefaults(cfg Config) Config {
-	result := defaultConfig()
-
-	// .Owner
-	if cfg.Owner.UID != "" {
-		result.Owner.UID = cfg.Owner.UID
-	}
-
-	// .Redirect
-	if cfg.Redirect.NamePrefix != "" {
-		result.Redirect.NamePrefix = cfg.Redirect.NamePrefix
-	}
-
-	// .Redirect.Inbound
-	result.Redirect.Inbound.Enabled = cfg.Redirect.Inbound.Enabled
-	if cfg.Redirect.Inbound.Port != 0 {
-		result.Redirect.Inbound.Port = cfg.Redirect.Inbound.Port
-	}
-
-	if cfg.Redirect.Inbound.PortIPv6 != 0 {
-		result.Redirect.Inbound.PortIPv6 = cfg.Redirect.Inbound.PortIPv6
-	}
-
-	if cfg.Redirect.Inbound.Chain.Name != "" {
-		result.Redirect.Inbound.Chain.Name = cfg.Redirect.Inbound.Chain.Name
-	}
-
-	if cfg.Redirect.Inbound.RedirectChain.Name != "" {
-		result.Redirect.Inbound.RedirectChain.Name = cfg.Redirect.Inbound.RedirectChain.Name
-	}
-
-	if len(cfg.Redirect.Inbound.ExcludePorts) > 0 {
-		result.Redirect.Inbound.ExcludePorts = cfg.Redirect.Inbound.ExcludePorts
-	}
-
-	if len(cfg.Redirect.Inbound.IncludePorts) > 0 {
-		result.Redirect.Inbound.IncludePorts = cfg.Redirect.Inbound.IncludePorts
-	}
-
-	// .Redirect.Outbound
-	result.Redirect.Outbound.Enabled = cfg.Redirect.Outbound.Enabled
-	if cfg.Redirect.Outbound.Port != 0 {
-		result.Redirect.Outbound.Port = cfg.Redirect.Outbound.Port
-	}
-
-	if cfg.Redirect.Outbound.Chain.Name != "" {
-		result.Redirect.Outbound.Chain.Name = cfg.Redirect.Outbound.Chain.Name
-	}
-
-	if cfg.Redirect.Outbound.RedirectChain.Name != "" {
-		result.Redirect.Outbound.RedirectChain.Name = cfg.Redirect.Outbound.RedirectChain.Name
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePorts) > 0 {
-		result.Redirect.Outbound.ExcludePorts = cfg.Redirect.Outbound.ExcludePorts
-	}
-
-	if len(cfg.Redirect.Outbound.IncludePorts) > 0 {
-		result.Redirect.Outbound.IncludePorts = cfg.Redirect.Outbound.IncludePorts
-	}
-
-	if len(cfg.Redirect.Outbound.ExcludePortsForUIDs) > 0 {
-		result.Redirect.Outbound.ExcludePortsForUIDs = cfg.Redirect.Outbound.ExcludePortsForUIDs
-	}
-
-	// .Redirect.DNS
-	result.Redirect.DNS.Enabled = cfg.Redirect.DNS.Enabled
-	result.Redirect.DNS.ConntrackZoneSplit = cfg.Redirect.DNS.ConntrackZoneSplit
-	result.Redirect.DNS.CaptureAll = cfg.Redirect.DNS.CaptureAll
-	if cfg.Redirect.DNS.ResolvConfigPath != "" {
-		result.Redirect.DNS.ResolvConfigPath = cfg.Redirect.DNS.ResolvConfigPath
-	}
-
-	if cfg.Redirect.DNS.UpstreamTargetChain != "" {
-		result.Redirect.DNS.UpstreamTargetChain = cfg.Redirect.DNS.UpstreamTargetChain
-	}
-
-	if cfg.Redirect.DNS.Port != 0 {
-		result.Redirect.DNS.Port = cfg.Redirect.DNS.Port
-	}
-
-	// .Redirect.VNet
-	if len(cfg.Redirect.VNet.Networks) > 0 {
-		result.Redirect.VNet.Networks = cfg.Redirect.VNet.Networks
-	}
-
-	// .Ebpf
-	result.Ebpf.Enabled = cfg.Ebpf.Enabled
-	if cfg.Ebpf.InstanceIP != "" {
-		result.Ebpf.InstanceIP = cfg.Ebpf.InstanceIP
-	}
-
-	if cfg.Ebpf.BPFFSPath != "" {
-		result.Ebpf.BPFFSPath = cfg.Ebpf.BPFFSPath
-	}
-
-	if cfg.Ebpf.ProgramsSourcePath != "" {
-		result.Ebpf.ProgramsSourcePath = cfg.Ebpf.ProgramsSourcePath
-	}
-
-	// .DropInvalidPackets
-	result.DropInvalidPackets = cfg.DropInvalidPackets
-
-	// .IPv6
-	result.IPv6 = cfg.IPv6
-
-	// .RuntimeStdout
-	if cfg.RuntimeStdout != nil {
-		result.RuntimeStdout = cfg.RuntimeStdout
-	}
-
-	// .RuntimeStderr
-	if cfg.RuntimeStderr != nil {
-		result.RuntimeStderr = cfg.RuntimeStderr
-	}
-
-	// .Verbose
-	result.Verbose = cfg.Verbose
-
-	// .DryRun
-	result.DryRun = cfg.DryRun
-
-	// .Log
-	result.Log.Enabled = cfg.Log.Enabled
-	if cfg.Log.Level != DebugLogLevel {
-		result.Log.Level = cfg.Log.Level
-	}
-
-	// .Wait
-	result.Wait = cfg.Wait
-
-	// .WaitInterval
-	result.WaitInterval = cfg.WaitInterval
-
-	// .Retry
-	if cfg.Retry.MaxRetries != nil {
-		result.Retry.MaxRetries = cfg.Retry.MaxRetries
-	}
-
-	if cfg.Retry.SleepBetweenReties != 0 {
-		result.Retry.SleepBetweenReties = cfg.Retry.SleepBetweenReties
-	}
-
-	return result
 }

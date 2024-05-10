@@ -6,6 +6,11 @@ const (
 )
 
 const (
+	Iptables  = "iptables"
+	Ip6tables = "ip6tables"
+)
+
+const (
 	DNSPort           uint16 = 53
 	LocalhostIPv4            = "127.0.0.1"
 	LocalhostCIDRIPv4        = "127.0.0.1/32"

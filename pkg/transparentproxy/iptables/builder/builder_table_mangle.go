@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-func buildMangleTable(cfg config.Config) *tables.MangleTable {
+func buildMangleTable(cfg config.InitializedConfig) *tables.MangleTable {
 	mangle := tables.Mangle()
 
 	mangle.Prerouting().
