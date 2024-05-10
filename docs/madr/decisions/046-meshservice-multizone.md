@@ -78,7 +78,7 @@ This will be synced to global and look like this
 kind: MeshService
 metadata:
   name: redis-xyz12345 # we add hash suffix of (mesh, zone, namespace)
-  namespace: kuma-system # not that it's synced to system namespace
+  namespace: kuma-system # note that it's synced to system namespace
   labels:
     kuma.io/display-name: redis # original name of the object on the Kubernetes
     k8s.kuma.io/namespace: redis-system
@@ -108,20 +108,30 @@ We cannot reuse:
 
 Therefore `status` object should not be synced from zone `east` to zone `west`.
 
-To provide hostname, we can use `HostnameGenerator` described in MADR #XXX (todo provide a number when merged).
+To provide hostname, we can use `HostnameGenerator` described in MADR #046.
 ```yaml
+---
 type: HostnameGenerator
 name: k8s-zone-hostnames
 spec:
+  targetRef:
+    kind: MeshService
   template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.{{ label "kuma.io/zone" }}
+---
+type: HostnameGenerator
+name: uni-zone-hostnames
+spec:
+  targetRef:
+    kind: MeshService
+  template: {{ label "kuma.io/service" }}.svc.mesh.{{ label "kuma.io/zone" }}
 ```
 so that the synced service in zone `west` gets this hostname `redis.redis-system.svc.mesh.east`.
 
-To assign Kuma VIP, we follow the process descirbed in MADR #XXX (todo provide a number when merged).
+To assign Kuma VIP, we follow the process described in MADR #046 (todo provide a number when merged).
 
 When generating the XDS configuration for the client in zone `west`, we check if MeshService has `kuma.io/zone` tag that is not equal to local zone.
 If so, then we need to point Envoy Cluster to endpoint for ZoneIngress of `west`.
-This way we get rid of `ZoneIngress#availableServices`, which was one of the initial motivation of introducing MeshService (see MADR #YYY).
+This way we get rid of `ZoneIngress#availableServices`, which was one of the initial motivation of introducing MeshService (see MADR #039).
 
 #### Service export / import
 
@@ -138,7 +148,7 @@ Explicit import seems to have very little value, because clients needs to explic
 ##### Export field
 
 We can introduce `spec.export.mode` field to MeshService with values `All`, `None`.
-We want to have nested mode in export, so we can later extend api if needed. For example `spec.export.mode: Subset` and `spec.export.list: zone-a,zone-b`.
+We want to have nested `mode` in `export`, so we can later extend api if needed. For example `spec.export.mode: Subset` and `spec.export.list: zone-a,zone-b`.
 On Kubernetes, this would be controlled via `kuma.io/export-mode` annotation on `Service` object.
 On Universal, where MeshService is synthesized from Dataplane objects, this would be controlled via `kuma.io/export-mode` tag on a Dataplane object.
 
@@ -173,9 +183,9 @@ metadata:
 spec:
   selector:
     dataplane:
-      tags: # it has no kuma.io/zone so it aggregates all redis from redis-system from all zones
-      app: redis
-      k8s.kuma.io/namespace: redis-system
+      tags: # it has no kuma.io/zone, so it aggregates all redis from redis-system from all zones
+        app: redis
+        k8s.kuma.io/namespace: redis-system
 status:
   ports:
   - port: 1234
@@ -204,8 +214,9 @@ We can provide hostnames by selecting by `kuma.io/origin` label.
 type: HostnameGenerator
 name: global-generator
 spec:
-  meshServiceSelector:
-    matchLabels:
+  targetRef:
+    kind: MeshServices
+    labels:
       kuma.io/origin: global
   template: {{ label "kuma.io/display-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.global
 ```
@@ -237,7 +248,7 @@ status: # computed on the zone
     status: Available
     origin: global-generator
   vips:
-  - ip: 241.0.0.1
+  - ip: 242.0.0.1 # separate CIDR
     type: Kuma
   zones:
   - name: east
@@ -245,7 +256,7 @@ status: # computed on the zone
 ```
 
 Considered names alternatives:
-* MeshGlobalService
+* MeshGlobalService - we want to avoid using Global as it may indicate non-mesh specific object.
 * GlobalMeshService
 
 The advantages:
@@ -301,6 +312,13 @@ The disadvantages:
 **Hostname and VIP management**
 Same as with `MeshService with dataplaneTags selector applied on global CP`.
 
+### Replicated service between Kubernetes and Universal deployments
+
+To treat the service on Kubernetes and Universal as the same service, we need to have common tags on them. We can either:
+* Add k8s specific labels for Universal Dataplane
+* Add common label like (`myorg.com/service`) to both of them.
+  In this case we need to trust that it cannot be freely modified by service owners, otherwise it's easy to impersonate for a service.
+
 ### Explicit namespace sameness
 
 Whether we choose `MeshMultiZoneService` or `MeshService` for replicated services use case it will require extra step than the existing implementation.
@@ -342,14 +360,18 @@ status:
 
 Service then can be addressed by `redis.kuma-demo.svc.clusterset.local`
 
+ServiceImport is managed by MCS-controller which means that it has similar problem that we had - if someone take over one cluster they can advertise their service.
+
 * Export field controlled by annotation described in MADR is an equivalent of ServiceExport.
+  The difference is that we can do it by default, whereas in Multicluster API, it's explicit.
 * Synced MeshService is similar to ServiceImport.
   The difference is that the object is synced to the mesh system namespace, and synced service is bound to a specific zone.
-  We get access to services of a **specific** cluster without any extra action of importing.
+  We get access to services of a **specific** cluster without any extra action of exporting.
   For example `redis-kuma-demo.svc.cluster.east`
+  There is no way to do this in MC API.
 * MeshMultiZoneService is an equivalent of `ServiceImport`.
   It is also "zone agnostic" - the client do not care in which zone the Service is deployed.
-  Just like ServiceImport it requires an extra manual step - creating an object.
+  Just like ServiceImport/ServiceExport it requires an extra manual step - creating an object.
   You don't need to create this in every cluster, you can create MeshMultiZoneService on Global CP and it's synced to every cluster.
   When applied on Global CP, it's synced to the system namespace.
 
