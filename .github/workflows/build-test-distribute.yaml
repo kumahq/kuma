@@ -138,11 +138,12 @@ jobs:
         id: collect_sbom
         if: ${{ fromJSON(needs.check.outputs.BUILD) && (needs.check.result == 'success' || needs.build_publish.result == 'success') }}
         run: |-
-          echo "SBOM_DOWNLOAD_PATH=${{env.SBOM_DOWNLOAD_PATH}}" >> $GITHUB_OUTPUT
-          gh run download ${{ github.run_id }} -D ${{ env.SBOM_DOWNLOAD_PATH }} -p ${{ env.SBOM_ARTIFACT_GLOB_PATTERN }}
+          echo "SBOM_DOWNLOAD_PATH=${{ env.SBOM_DOWNLOAD_PATH }}" >> $GITHUB_OUTPUT
+          gh run download ${{ github.run_id }} -D ${{ env.SBOM_DOWNLOAD_PATH }} -p "${{ env.CYCLONEDX_SBOM_PATTERN }}" -p "${{ env.SPDX_SBOM_PATTERN }}" --repo ${{ github.repository }}
         env:
-          SBOM_DOWNLOAD_PATH: ${{ github.workspace }}/security-assets/sboms
-          SBOM_ARTIFACT_GLOB_PATTERN: "*sbom.{cyclonedx,spdx}.json"
+          SBOM_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets/sboms"
+          SPDX_SBOM_PATTERN: "*sbom.spdx.json"
+          CYCLONEDX_SBOM_PATTERN: "*sbom.cyclonedx.json"
           # uses: actions/download-artifact@v4
           # id: collect_sbom
           # with:
@@ -154,9 +155,9 @@ jobs:
         id: collect_provenance
         run: |-
           echo "PROVENANCE_DOWNLOAD_PATH=${{env.PROVENANCE_DOWNLOAD_PATH}}" >> $GITHUB_OUTPUT
-          gh run download ${{ github.run_id }} -D ${{ env.PROVENANCE_DOWNLOAD_PATH }} -n ${{ env.BINARY_PROVENANCE_ARTIFACT }}
+          gh run download ${{ github.run_id }} -D ${{ env.PROVENANCE_DOWNLOAD_PATH }} -n ${{ env.BINARY_PROVENANCE_ARTIFACT }} --repo ${{ github.repository }}
         env:
-          PROVENANCE_DOWNLOAD_PATH: ${{ github.workspace }}/security-assets/provenance
+          PROVENANCE_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets/provenance"
           BINARY_PROVENANCE_ARTIFACT: "${{ github.event.repository.name }}.intoto.jsonl"
           # uses: actions/download-artifact@v4
           # with:
