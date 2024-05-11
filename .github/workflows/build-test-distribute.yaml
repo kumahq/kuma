@@ -123,6 +123,9 @@ jobs:
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read # For getting workflow run info
     steps:
       - name: "Halt due to previous failures"
         run: |-
@@ -144,6 +147,7 @@ jobs:
           SBOM_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets/sboms"
           SPDX_SBOM_PATTERN: "*sbom.spdx.json"
           CYCLONEDX_SBOM_PATTERN: "*sbom.cyclonedx.json"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # uses: actions/download-artifact@v4
           # id: collect_sbom
           # with:
@@ -159,6 +163,7 @@ jobs:
         env:
           PROVENANCE_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets/provenance"
           BINARY_PROVENANCE_ARTIFACT: "${{ github.event.repository.name }}.intoto.jsonl"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # uses: actions/download-artifact@v4
           # with:
           #   path: ${{ github.workspace }}/security-assets/provenance
