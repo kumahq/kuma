@@ -338,7 +338,76 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 	}
 }
 
+// routesForService returns a function that calculates which HTTPRoutes might
+// be affected by changes in a Service.
+func routesForService(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("service-to-routes-mapper")
+
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		svc, ok := obj.(*kube_core.Service)
+		if !ok {
+			l.Error(nil, "unexpected error converting object to Service", "typ", reflect.TypeOf(obj))
+			return nil
+		}
+
+		var routes gatewayapi.HTTPRouteList
+		if err := client.List(ctx, &routes, kube_client.MatchingFields{
+			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
+		}); err != nil {
+			l.Error(err, "unexpected error listing HTTPRoutes")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+		for i := range routes.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&routes.Items[i]),
+			})
+		}
+		return requests
+	}
+}
+
+const (
+	servicesOfRouteField = ".metadata.services"
+)
+
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, servicesOfRouteField, func(obj kube_client.Object) []string {
+		route := obj.(*gatewayapi.HTTPRoute)
+
+		var names []string
+
+		for _, rule := range route.Spec.Rules {
+			var allBackendRefs []gatewayapi.BackendObjectReference
+			for _, backendRef := range rule.BackendRefs {
+				allBackendRefs = append(allBackendRefs, backendRef.BackendObjectReference)
+			}
+			for _, filter := range rule.Filters {
+				if filter.Type == gatewayapi_v1.HTTPRouteFilterRequestMirror {
+					allBackendRefs = append(allBackendRefs, filter.RequestMirror.BackendRef)
+				}
+			}
+			for _, backendRef := range allBackendRefs {
+				if string(*backendRef.Group) != kube_core.SchemeGroupVersion.Group || *backendRef.Kind != "Service" {
+					continue
+				}
+
+				namespace := route.Namespace
+				if backendRef.Namespace != nil {
+					namespace = string(*backendRef.Namespace)
+				}
+				names = append(
+					names,
+					kube_types.NamespacedName{Namespace: namespace, Name: string(backendRef.Name)}.String(),
+				)
+			}
+		}
+
+		return names
+	}); err != nil {
+		return err
+	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
@@ -348,6 +417,10 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&gatewayapi.ReferenceGrant{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_core.Service{},
+			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client)),
 		).
 		Complete(r)
 }

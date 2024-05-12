@@ -35,7 +35,7 @@ function base_branch_name() {
   highestMinorVersionTag=$(git tag -l --sort -version:refname | head -n 1  | awk -F'.' '{print $1"."$2}')
   currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo "no-branch")
   # On master the closest tag is 2.0.0 so we are setting dev for master
-  if [[ ${describe} =~ ^v?[1-9]*\.[0-9]*\.0 && ${describe} =~ ^${highestMinorVersionTag} ]]
+  if [[ ${describe} =~ ^v?[1-9]*\.[0-9]*\.[0-9]* && ${describe} =~ ^${highestMinorVersionTag} ]]
   then
     echo "master"
   # If we are on the release branch use the branch name
