@@ -65,7 +65,32 @@ Now we have to consider how we attach to a port and select from a zone.
 
 ### Pros and Cons
 
-#### `labels` vs top level fields
+#### `labels` vs top level `zone`/`namespace`/`name`
+
+Top level zone would look like the following:
+
+```yaml
+kind: NonLocalMeshService
+namespace: other-zone-ns
+zone: other-zone
+name: name-in-its-zone
+```
+
+Using `zone` top level could allow us to be "smarter" about selecting
+cross-zone `MeshServices`. Instead of matching the actual Kubernetes object
+we could transparently match `name`/`namespace` to `kuma.io/display-name`/`kuma.io/namespace`, instead of
+requiring:
+
+```yaml
+kind: NonLocalMeshService
+labels:
+  kuma.io/zone: other-zone
+  kuma.io/display-name: name-in-its-zone
+  k8s.kuma.io/namespace: other-zone-ns
+```
+
+which is significantly more noisy. Using `labels` is less "magic" and doesn't
+look like we're matching an object that doesn't actually exist in the cluster.
 
 ##### Positive
 
@@ -75,6 +100,7 @@ with the API.
 ##### Negative
 
 * more verbose
+* not always directly matching Kubernetes objects
 
 #### `sectionName`
 
