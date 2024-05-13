@@ -276,30 +276,30 @@ spec:
 ```yaml
 kind: MeshExternalService
 metadata:
-  name: my-example
+  name: myservice
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
 spec:
   domains:
   - *.myservice.svc.local
-  - google.com
+  - httpbin.com
   addresses:
   - 10.1.1.0/24
   - 192.168.0.1
   ports:
   - port: 443
     targetPort: 8443
-    protocol: tcp # http, tcp, tls, grpc, http2
+    protocol: tcp
   type: Regular # Regular|Passthrough|Extension
   extension:
     type: Lambda 
     config: # type JSON
       arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
-  destinations: # you can mix ip/domain/socket
+  destinations:
   - address: 1.1.1.1
     port: 12345
-  - address: example.com
+  - address: httpbin.com
   - address: unix://....
   tls:
     version:
@@ -309,8 +309,8 @@ spec:
     verification:
       skip: true # if this is true then subjectAltNames don't take effect
       subjectAltNames: # if subjectAltNames is not defined then take domains
-        - example.com
-        - "spiffe://example.local/ns/local"
+        - httpbin.com
+        - "spiffe://httpbin.com"
     caCert: 
       inline: 123
     clientCert:
@@ -319,7 +319,7 @@ spec:
       secret: 123
 status: # managed by CP. Not shared cross zone, but synced to global
   addresses:
-  - hostname: httpbin.ext.svc.local
+  - hostname: myservice.svc.meshext.local
     status: Available # | NotAvailable
     origin: 
       kind: HostGenerator
@@ -454,7 +454,7 @@ spec:
 ...
 status:
   addresses:
-  - hostname: httpbin.ext.svc.local
+  - hostname: httpbin.svc.meshext.local
     status: Available # | NotAvailable
     origin: 
       kind: HostGenerator
