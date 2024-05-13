@@ -50,7 +50,7 @@ Chosen options:
 
 #### MeshService synced to other zones
 
-MeshService is an object created on the zone that matches a proxies in this specific zone.
+MeshService is an object created on the zone that matches a set of proxies in this specific zone.
 This object is the synced to the global control plane.
 
 To solve the first use case we can then sync MeshService to other zones.
@@ -66,9 +66,10 @@ labels:
   kuma.io/zone: east
 spec:
   selector:
-    dataplaneTags:
-      app: redis
-      k8s.kuma.io/namespace: redis-system
+    dataplane:
+      tags:
+        app: redis
+        k8s.kuma.io/namespace: redis-system
   ports: ...
 status: ...
 ```
@@ -86,10 +87,11 @@ metadata:
     kuma.io/origin: zone
 spec:
   selector:
-    dataplaneTags:
-      app: redis
-      k8s.kuma.io/namespace: redis-system
-      kuma.io/zone: east-1
+    dataplane:
+      tags:
+        app: redis
+        k8s.kuma.io/namespace: redis-system
+        kuma.io/zone: east-1
   ports: ...
 status: ...
 ```
@@ -127,9 +129,9 @@ spec:
 ```
 so that the synced service in zone `west` gets this hostname `redis.redis-system.svc.mesh.east`.
 
-To assign Kuma VIP, we follow the process described in MADR #046 (todo provide a number when merged).
+To assign Kuma VIP, we follow the process described in MADR #046.
 
-When generating the XDS configuration for the client in zone `west`, we check if MeshService has `kuma.io/zone` tag that is not equal to local zone.
+When generating the XDS configuration for the client in zone `west`, we check if MeshService has `kuma.io/zone` label that is not equal to local zone.
 If so, then we need to point Envoy Cluster to endpoint for ZoneIngress of `west`.
 This way we get rid of `ZoneIngress#availableServices`, which was one of the initial motivation of introducing MeshService (see MADR #039).
 
@@ -235,10 +237,11 @@ metadata:
     team: db-operators
     kuma.io/mesh: default
 spec:
-  meshServiceSelector: # we select services by labels, not dataplane objects
-    matchLabels:
-      k8s.kuma.io/service-name: redis
-      k8s.kuma.io/namespace: redis-system
+  selector:
+    meshService:
+      labels:
+        k8s.kuma.io/service-name: redis
+        k8s.kuma.io/namespace: redis-system
 status: # computed on the zone
   ports:
   - port: 1234
@@ -262,7 +265,7 @@ Considered names alternatives:
 The advantages:
 * We don't need to compute anything on global cp. In the example above, both redis MeshServices have been synced to the zone.
 * We don't need to traverse over all data plane proxies
-* Users don't need to redefine ports
+* Users don't need to redefine ports. In case there is difference. We take only common ports.
 * Policy matching easier to implement (will be covered more in policy matching MADR)
 * We can expose a capability to apply this locally on one zone.
 
@@ -284,7 +287,7 @@ spec:
 
 #### MeshService with serviceSelector selector applied on global CP
 
-Alternatively we can combine both solutions to have `MeshService`, but with `meshServiceSelector`
+Alternatively we can combine both solutions to have `MeshService`, but with `selector.meshService.labels`
 
 ```yaml
 kind: MeshService
@@ -296,10 +299,11 @@ metadata:
     kuma.io/mesh: default
     kuma.io/origin: global
 spec:
-  meshServiceSelector: # we select services by labels, not dataplane objects
-    matchLabels:
-      k8s.kuma.io/service-name: redis
-      k8s.kuma.io/namespace: redis-system
+  selector:
+    meshService: # we select services by labels, not dataplane objects
+      labels:
+        k8s.kuma.io/service-name: redis
+        k8s.kuma.io/namespace: redis-system
 ```
 
 The advantages:
