@@ -112,7 +112,6 @@ status:
       * `CIDR`: handles traffic to specified addresses range
       * `IP` handles the traffic to specified IP
     * **value**: depends of the type can be an existing domain, new domain name, CIDR or IP
-  * **ports**: defines a list of ports and protocols
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
       * `tls`: should be used when TLS traffic is originated by the client application
@@ -120,7 +119,6 @@ status:
       * `grpc`
       * `http`
       * `http2`
-    * **targetPort**: defines a target port to which traffic should be sent. 
   * **destination**: defines where matched requests should be routed
     * **type**: defines what kind of destination is it, one of `Regular`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
       * `Regular`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
