@@ -1,11 +1,13 @@
 package parameters
 
+var _ ParameterBuilder = &OutInterfaceParameter{}
+
 type OutInterfaceParameter struct {
 	name string
 }
 
-func (p *OutInterfaceParameter) Build(bool) string {
-	return p.name
+func (p *OutInterfaceParameter) Build(bool) []string {
+	return []string{p.name}
 }
 
 func (p *OutInterfaceParameter) Negate() ParameterBuilder {

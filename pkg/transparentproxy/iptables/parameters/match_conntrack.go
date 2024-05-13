@@ -1,7 +1,6 @@
 package parameters
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters/match/conntrack"
@@ -17,6 +16,8 @@ import (
 //
 // ref. iptables-extensions(8) > conntrack
 
+var _ ParameterBuilder = &ConntrackParameter{}
+
 type ConntrackParameter struct {
 	flag     string
 	values   []string
@@ -29,14 +30,14 @@ func (p *ConntrackParameter) Negate() ParameterBuilder {
 	return p
 }
 
-func (p *ConntrackParameter) Build(bool) string {
+func (p *ConntrackParameter) Build(bool) []string {
 	value := strings.Join(p.values, ",")
 
 	if p.negative {
-		return fmt.Sprintf("! %s %s", p.flag, value)
+		return []string{"!", p.flag, value}
 	}
 
-	return fmt.Sprintf("%s %s", p.flag, value)
+	return []string{p.flag, value}
 }
 
 // Ctstate expects at least one state is necessary, so that's the reason for split

@@ -12,7 +12,7 @@ var _ = Describe("ConntrackParameter", func() {
 	Describe("Ctstate", func() {
 		DescribeTable("should build valid ctstate parameter with the combined, "+
 			"provided ...State",
-			func(states []State, verbose bool, want string) {
+			func(states []State, verbose bool, want []string) {
 				// when
 				got := Ctstate(states[0], states[1:]...).Build(verbose)
 
@@ -22,80 +22,80 @@ var _ = Describe("ConntrackParameter", func() {
 			// INVALID
 			Entry("INVALID state",
 				[]State{INVALID}, false,
-				"--ctstate INVALID",
+				[]string{"--ctstate", "INVALID"},
 			),
 			Entry("INVALID state - verbose",
 				[]State{INVALID}, true,
-				"--ctstate INVALID",
+				[]string{"--ctstate", "INVALID"},
 			),
 			// NEW
 			Entry("NEW state",
 				[]State{NEW}, false,
-				"--ctstate NEW",
+				[]string{"--ctstate", "NEW"},
 			),
 			Entry("NEW state - verbose",
 				[]State{NEW}, true,
-				"--ctstate NEW",
+				[]string{"--ctstate", "NEW"},
 			),
 			// ESTABLISHED
 			Entry("ESTABLISHED state",
 				[]State{ESTABLISHED}, false,
-				"--ctstate ESTABLISHED",
+				[]string{"--ctstate", "ESTABLISHED"},
 			),
 			Entry("ESTABLISHED state - verbose",
 				[]State{ESTABLISHED}, true,
-				"--ctstate ESTABLISHED",
+				[]string{"--ctstate", "ESTABLISHED"},
 			),
 			// RELATED
 			Entry("RELATED state",
 				[]State{RELATED}, false,
-				"--ctstate RELATED",
+				[]string{"--ctstate", "RELATED"},
 			),
 			Entry("RELATED state - verbose",
 				[]State{RELATED}, true,
-				"--ctstate RELATED",
+				[]string{"--ctstate", "RELATED"},
 			),
 			// UNTRACKED
 			Entry("UNTRACKED state",
 				[]State{UNTRACKED}, false,
-				"--ctstate UNTRACKED",
+				[]string{"--ctstate", "UNTRACKED"},
 			),
 			Entry("UNTRACKED state - verbose",
 				[]State{UNTRACKED}, true,
-				"--ctstate UNTRACKED",
+				[]string{"--ctstate", "UNTRACKED"},
 			),
 			// SNAT
 			Entry("SNAT state",
 				[]State{SNAT}, false,
-				"--ctstate SNAT",
+				[]string{"--ctstate", "SNAT"},
 			),
 			Entry("SNAT state - verbose",
 				[]State{SNAT}, true,
-				"--ctstate SNAT",
+				[]string{"--ctstate", "SNAT"},
 			),
 			// DNAT
 			Entry("DNAT state",
 				[]State{DNAT}, false,
-				"--ctstate DNAT",
+				[]string{"--ctstate", "DNAT"},
 			),
 			Entry("DNAT state - verbose",
 				[]State{DNAT}, true,
-				"--ctstate DNAT",
+				[]string{"--ctstate", "DNAT"},
 			),
 			// Multiple states
 			Entry("Multiple states",
 				[]State{INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT}, false,
-				"--ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 			Entry("Multiple states - verbose",
 				[]State{INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT}, true,
-				"--ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 		)
 
 		DescribeTable("should build valid ctstate parameter with the combined, "+
 			"provided ...State when negated",
-			func(states []State, verbose bool, want string) {
+			func(states []State, verbose bool, want []string) {
 				// when
 				got := Ctstate(states[0], states[1:]...).Negate().Build(verbose)
 
@@ -105,79 +105,79 @@ var _ = Describe("ConntrackParameter", func() {
 			// INVALID
 			Entry("INVALID state",
 				[]State{INVALID}, false,
-				"! --ctstate INVALID",
+				[]string{"!", "--ctstate", "INVALID"},
 			),
 			Entry("INVALID state - verbose",
 				[]State{INVALID}, true,
-				"! --ctstate INVALID",
+				[]string{"!", "--ctstate", "INVALID"},
 			),
 			// NEW
 			Entry("NEW state",
 				[]State{NEW}, false,
-				"! --ctstate NEW",
+				[]string{"!", "--ctstate", "NEW"},
 			),
 			Entry("NEW state - verbose",
 				[]State{NEW}, true,
-				"! --ctstate NEW",
+				[]string{"!", "--ctstate", "NEW"},
 			),
 			// ESTABLISHED
 			Entry("ESTABLISHED state",
 				[]State{ESTABLISHED}, false,
-				"! --ctstate ESTABLISHED",
+				[]string{"!", "--ctstate", "ESTABLISHED"},
 			),
 			Entry("ESTABLISHED state - verbose",
 				[]State{ESTABLISHED}, true,
-				"! --ctstate ESTABLISHED",
+				[]string{"!", "--ctstate", "ESTABLISHED"},
 			),
 			// RELATED
 			Entry("RELATED state",
 				[]State{RELATED}, false,
-				"! --ctstate RELATED",
+				[]string{"!", "--ctstate", "RELATED"},
 			),
 			Entry("RELATED state - verbose",
 				[]State{RELATED}, true,
-				"! --ctstate RELATED",
+				[]string{"!", "--ctstate", "RELATED"},
 			),
 			// UNTRACKED
 			Entry("UNTRACKED state",
 				[]State{UNTRACKED}, false,
-				"! --ctstate UNTRACKED",
+				[]string{"!", "--ctstate", "UNTRACKED"},
 			),
 			Entry("UNTRACKED state - verbose",
 				[]State{UNTRACKED}, true,
-				"! --ctstate UNTRACKED",
+				[]string{"!", "--ctstate", "UNTRACKED"},
 			),
 			// SNAT
 			Entry("SNAT state",
 				[]State{SNAT}, false,
-				"! --ctstate SNAT",
+				[]string{"!", "--ctstate", "SNAT"},
 			),
 			Entry("SNAT state - verbose",
 				[]State{SNAT}, true,
-				"! --ctstate SNAT",
+				[]string{"!", "--ctstate", "SNAT"},
 			),
 			// DNAT
 			Entry("DNAT state",
 				[]State{DNAT}, false,
-				"! --ctstate DNAT",
+				[]string{"!", "--ctstate", "DNAT"},
 			),
 			Entry("DNAT state - verbose",
 				[]State{DNAT}, true,
-				"! --ctstate DNAT",
+				[]string{"!", "--ctstate", "DNAT"},
 			),
 			// Multiple states
 			Entry("Multiple states",
 				[]State{INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT}, false,
-				"! --ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"!", "--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 			Entry("Multiple states - verbose",
 				[]State{INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT}, true,
-				"! --ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"!", "--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 		)
 
 		DescribeTable("Conntrack",
-			func(parameters []*ConntrackParameter, verbose bool, want string) {
+			func(parameters []*ConntrackParameter, verbose bool, want []string) {
 				// when
 				got := Conntrack(parameters...).Build(verbose)
 
@@ -186,23 +186,23 @@ var _ = Describe("ConntrackParameter", func() {
 			},
 			Entry("no parameters",
 				nil, false,
-				"conntrack",
+				[]string{"conntrack"},
 			),
 			Entry("no parameters - verbose",
 				nil, true,
-				"conntrack",
+				[]string{"conntrack"},
 			),
 			Entry("1 parameter (Ctstate with all possible states)",
 				[]*ConntrackParameter{Ctstate(
 					INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT,
 				)}, false,
-				"conntrack --ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"conntrack", "--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 			Entry("1 parameter (Ctstate with all possible states) - verbose",
 				[]*ConntrackParameter{Ctstate(
 					INVALID, NEW, ESTABLISHED, RELATED, UNTRACKED, SNAT, DNAT,
 				)}, true,
-				"conntrack --ctstate INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT",
+				[]string{"conntrack", "--ctstate", "INVALID,NEW,ESTABLISHED,RELATED,UNTRACKED,SNAT,DNAT"},
 			),
 		)
 	})

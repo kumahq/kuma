@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -26,7 +27,7 @@ type httpZoneIngressOverviewClient struct {
 }
 
 func (d *httpZoneIngressOverviewClient) List(ctx context.Context) (*mesh.ZoneIngressOverviewResourceList, error) {
-	req, err := http.NewRequest("GET", "/zoneingresses+insights", nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("/%s/_overview", mesh.ZoneIngressResourceTypeDescriptor.WsPath), nil)
 	if err != nil {
 		return nil, err
 	}

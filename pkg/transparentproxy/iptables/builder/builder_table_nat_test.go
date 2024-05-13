@@ -5,15 +5,16 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+	tproxy_test "github.com/kumahq/kuma/pkg/transparentproxy/test"
 )
 
 var _ = Describe("Builder nat", func() {
 	DescribeTable("should insert PREROUTING rules",
 		func(vnet []string, verbose bool, ipv6 bool, expect ...string) {
 			// given
-			nat := table.Nat()
-			cfg := config.Config{
+			nat := tables.Nat()
+			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -30,11 +31,11 @@ var _ = Describe("Builder nat", func() {
 						Networks: vnet,
 					},
 				},
-			}
+			})
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
-			table := nat.Build(verbose)
+			table := tables.BuildRulesForRestore(nat, verbose)
 
 			// then
 			for _, rule := range expect {
@@ -119,8 +120,8 @@ var _ = Describe("Builder nat", func() {
 	DescribeTable("should append PREROUTING rules",
 		func(verbose bool, ipv6 bool, expect ...string) {
 			// given
-			nat := table.Nat()
-			cfg := config.Config{
+			nat := tables.Nat()
+			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -134,11 +135,11 @@ var _ = Describe("Builder nat", func() {
 					},
 					DNS: config.DNS{Port: 15053},
 				},
-			}
+			})
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
-			table := nat.Build(verbose)
+			table := tables.BuildRulesForRestore(nat, verbose)
 
 			// then
 			for _, rule := range expect {
