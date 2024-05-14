@@ -228,6 +228,8 @@ It's possible for users to create a policy where the IP ranges intersect with ea
 
 > external-service1 and external-service2 have overlapping IPs X.X.X.X, which can disrupt your traffic.
 
+As a result, we will select the first `MeshExternalService` based on the creation type. If they were created simultaneously, we will use lexicographical order.
+
 #### Domain generation
 
 The `ExternalService` resource automatically allocated an internal IP each real domain (e.g. `httpbin.com`). While this approach offered benefits such as avoiding the allocation of a listener for a specific port listening on `0.0.0.0`, it obscured the existing domain behind a custom IP. With the introduction of `MeshExternalService`, we expose to users a type called `InternalVIP`, enabling the creation of domains for specific external services.
