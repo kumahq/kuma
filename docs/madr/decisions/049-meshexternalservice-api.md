@@ -124,7 +124,7 @@ status:
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
       * `tls`: should be used when TLS traffic is originated by the client application
-      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port.
+      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
       * `grpc`
       * `http`
       * `http2`
