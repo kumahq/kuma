@@ -2,17 +2,18 @@ package parameters
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
+
+var _ ParameterBuilder = &ProtocolParameter{}
 
 type ProtocolParameter struct {
 	name       string
 	parameters []ParameterBuilder
 }
 
-func (p *ProtocolParameter) Build(verbose bool) string {
+func (p *ProtocolParameter) Build(verbose bool) []string {
 	result := []string{p.name}
 
 	// If the -p or --protocol was specified and if and only if an unknown option is encountered,
@@ -22,11 +23,11 @@ func (p *ProtocolParameter) Build(verbose bool) string {
 	// ref. iptables-extensions(8) > MATCH EXTENSIONS
 	for _, parameter := range p.parameters {
 		if parameter != nil {
-			result = append(result, parameter.Build(verbose))
+			result = append(result, parameter.Build(verbose)...)
 		}
 	}
 
-	return strings.Join(result, " ")
+	return result
 }
 
 func (p *ProtocolParameter) Negate() ParameterBuilder {
@@ -37,6 +38,8 @@ func (p *ProtocolParameter) Negate() ParameterBuilder {
 	return p
 }
 
+var _ ParameterBuilder = &TcpUdpParameter{}
+
 type TcpUdpParameter struct {
 	long     string
 	short    string
@@ -44,7 +47,7 @@ type TcpUdpParameter struct {
 	negative bool
 }
 
-func (p *TcpUdpParameter) Build(verbose bool) string {
+func (p *TcpUdpParameter) Build(verbose bool) []string {
 	flag := p.short
 
 	if verbose {
@@ -57,9 +60,7 @@ func (p *TcpUdpParameter) Build(verbose bool) string {
 		result = append([]string{"!"}, result...)
 	}
 
-	result = append(result, p.value)
-
-	return strings.Join(result, " ")
+	return append(result, p.value)
 }
 
 func (p *TcpUdpParameter) Negate() ParameterBuilder {

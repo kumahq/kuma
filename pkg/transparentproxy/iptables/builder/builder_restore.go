@@ -13,19 +13,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
-var dockerOutputChainRegex = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)
+var (
+	dockerOutputChainRegex   = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)
+	fallbackPaths            = []string{"/usr/sbin", "/sbin", "/usr/bin", "/bin"}
+	necessaryMatchExtensions = []string{"owner", "tcp", "udp"}
+)
 
-var fallbackPaths = []string{
-	"/usr/sbin",
-	"/sbin",
-	"/usr/bin",
-	"/bin",
-}
-
-func buildRestoreParameters(cfg config.Config, rulesFile *os.File, restoreLegacy bool) []string {
+func buildRestoreParameters(cfg config.InitializedConfig, rulesFile *os.File, restoreLegacy bool) []string {
 	return NewParameters().
 		AppendIf(restoreLegacy, Wait(cfg.Wait), WaitInterval(cfg.WaitInterval)).
 		Append(NoFlush()).
@@ -97,9 +95,9 @@ type Executables struct {
 }
 
 func newExecutables(ipv6 bool, mode string) *Executables {
-	prefix := iptables
+	prefix := consts.Iptables
 	if ipv6 {
-		prefix = ip6tables
+		prefix = consts.Ip6tables
 	}
 
 	iptables := fmt.Sprintf("%s-%s", prefix, mode)
@@ -114,17 +112,11 @@ func newExecutables(ipv6 bool, mode string) *Executables {
 	}
 }
 
-var necessaryMatchExtensions = []string{
-	"owner",
-	"tcp",
-	"udp",
-}
-
 func (e *Executables) legacy() bool {
 	return e.mode == "legacy"
 }
 
-func (e *Executables) verify(ctx context.Context, cfg config.Config) (*Executables, error) {
+func (e *Executables) verify(ctx context.Context, cfg config.InitializedConfig) (*Executables, error) {
 	var missing []string
 
 	if e.Save.Path == "" {
@@ -173,7 +165,7 @@ func (e *Executables) withFallback(fallback *Executables) *Executables {
 
 func DetectIptablesExecutables(
 	ctx context.Context,
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	ipv6 bool,
 ) (*Executables, error) {
 	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)

@@ -39,10 +39,7 @@ resources:
                 - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header-multiple
-                    value: one-value
-                - header:
-                    key: request-set-header-multiple
-                    value: second-value
+                    value: one-value,second-value
                 - header:
                     key: request-add-header
                     value: add-value
@@ -62,10 +59,7 @@ resources:
                 - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
                   header:
                     key: request-set-header-multiple
-                    value: one-value
-                - header:
-                    key: request-set-header-multiple
-                    value: second-value
+                    value: one-value,second-value
                 - header:
                     key: request-add-header
                     value: add-value
