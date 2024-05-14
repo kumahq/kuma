@@ -88,7 +88,7 @@ spec:
         max: TLSv1_3 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
       allowRenegotiation: false
       verification:
-        skip: true # if this is true then subjectAltNames don't take effect
+        skipSAN: true # if this is true then subjectAltNames don't take effect
         subjectAltNames: # if subjectAltNames is not defined then take domain or ips
           - example.com
           - "spiffe://example.local/ns/local"
@@ -146,7 +146,7 @@ status:
         * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
       * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
       * **verification**: section for providing TLS verification details.
-        * **skip**: defines if proxy should skip SAN verification. Default `false`.
+        * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
         * **subjectAltNames**: list of names to verify in the certificate.
       * **caCert**: defines a certificate of CA.
         * one of `inline`, `inlineString` or `secret`.
@@ -372,7 +372,7 @@ status: # managed by CP. Not shared cross zone, but synced to global
       * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
-      * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
+      * **skip**: defines if proxy should skip SAN verification. Default `false`.
       * **subjectAltNames**: list of names to verify in the certificate.
       * **caCert**: defines a certificate of CA.
         * one of `inline`, `inlineString` or `secret`.
