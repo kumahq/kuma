@@ -71,7 +71,7 @@ spec:
     port: 80
     protocol: http
   destination:
-    type: Regular # Regular|Passthrough|Extension
+    type: Managed # Managed|Passthrough|Extension
     extension:
       type: Lambda 
       config: # type JSON
@@ -100,9 +100,18 @@ spec:
         secret: 123
 status: 
   vips:
-  - ip: 242.0.0.1
+    ip: 242.0.0.1
     type: Kuma
-    hostname: example.ext.svc.local
+  addresses:
+  - address: example.ext.svc.local
+    status: Available
+  - address: httpbin.com
+    status: Available
+  - address: 192.168.0.1
+    status: Available
+  - address: 10.1.1.0/24
+    status: NotAvailable
+    reason: "addresses are overlapping with ext2"
 ```
 * **spec**:
   * **match**: defines a list of internalVIPs/domains/CIDR/IPs that should be routed through the sidecar
@@ -120,8 +129,8 @@ status:
       * `http`
       * `http2`
   * **destination**: defines where matched requests should be routed
-    * **type**: defines what kind of destination it is, one of `Regular`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
-      * `Regular`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
+    * **type**: defines what kind of destination it is, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
+      * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
       * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, only available when defined sections `endpoints`, `tls` and `extension` are not defined.
       * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
     * **extension**: struct for a plugin configuration
@@ -146,10 +155,13 @@ status:
       * **clientKey**: defines a client private key.
         * one of `inline`, `inlineString` or `secret`.
 * **status**: status of an object managed by Kuma control-plane
-  * **vips**: list of allocated VIPs
+  * **vip**: section for allocated IP
     * **ip**: allocated IP for a provided domain with `InternalVIP` type in a match section
     * **type**: provides information about the way IP was provided
-    * **hostname**: provides a domain with `InternalVIP` type in a match section for which IP was allocated. In case of many entries it helps corelating entries.
+  * **addresses**: list of domains and addresses
+    * **address**: IP address, CIDR, or domain name user
+    * **status**: indicate if an address is available
+    * **reason**: holds error messages if there are any 
 
 #### Cluster name
 
@@ -234,7 +246,7 @@ spec:
     port: 27017
     protocol: tcp
  destination:
-   type: Regular # Regular|Passthrough|Extension
+   type: Managed # Managed|Passthrough|Extension
    endpoints:
    - address: 10.0.0.1
      port: 27017
@@ -269,6 +281,8 @@ spec:
     protocol: tls
 ```
 
+Potentially, by using [Matching API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api) we can support partial matching  exmaple: `*-test.eu-west-3.aws.cloud`
+
 ### Other options
 
 #### Creating MeshExternalService + HostnameGenerator
@@ -291,7 +305,7 @@ spec:
   - port: 443
     targetPort: 8443
     protocol: tcp
-  type: Regular # Regular|Passthrough|Extension
+  type: Managed # Managed|Passthrough|Extension
   extension:
     type: Lambda 
     config: # type JSON
@@ -341,8 +355,8 @@ status: # managed by CP. Not shared cross zone, but synced to global
       * `http`
       * `http2`
     * **targetPort**: defines a target port to which traffic should be sent.
-  * **type**: defines what kind of destination is it, one of `Regular`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
-      * `Regular`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
+  * **type**: defines what kind of destination is it, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
+      * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
       * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, when defined sections `endpoints`, `tls` and `extension` are not available.
       * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
     * **extension**: struct for a plugin configuration
@@ -352,20 +366,20 @@ status: # managed by CP. Not shared cross zone, but synced to global
     * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
     * **port**: defines a port of a destination.
   * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
-    * **enabled**: defines if proxy should originate TLS.
+    * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundled.
     * **version**: section for providing version specification.
       * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
       * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
-      * **skip**: defines if proxy should skip SAN verification. Default `false`.
+      * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
       * **subjectAltNames**: list of names to verify in the certificate.
-    * **caCert**: defines a certificate of CA.
-      * one of `inline`, `inlineString` or `secret`.
-    * **clientCert**: defines a certificate of a client.
-      * one of `inline`, `inlineString` or `secret`.
-    * **clientKey**: defines a client private key.
-      * one of `inline`, `inlineString` or `secret`.
+      * **caCert**: defines a certificate of CA.
+        * one of `inline`, `inlineString` or `secret`.
+      * **clientCert**: defines a certificate of a client.
+        * one of `inline`, `inlineString` or `secret`.
+      * **clientKey**: defines a client private key.
+        * one of `inline`, `inlineString` or `secret`.
 * **status**: status of an object managed by Kuma control-plane
   * **addresses**:
     * **hostname**: domain generated by HostnameGenerator
@@ -472,6 +486,7 @@ status:
 #### Negative Consequences
 
 * Less explicit
+* Match section looks a bit awkward with a hostname generator
 
 ## Common concerns
 
