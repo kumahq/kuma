@@ -99,7 +99,7 @@ spec:
       clientKey:
         secret: 123
 status: 
-  vips:
+  vip:
     ip: 242.0.0.1
     type: Kuma
   addresses:
@@ -253,10 +253,9 @@ spec:
    - address: 10.0.0.2
      port: 27017
 status: 
-  vips:
-  - ip: 242.0.0.1
+  vip:
+    ip: 242.0.0.1
     type: Kuma
-    hostname: mongo.ext.svc.local
 ```
 
 In this scenario, we generate a custom domain `mongo.ext.svc.local` and allocate the address `242.0.0.1` to it.
