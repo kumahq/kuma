@@ -12,7 +12,7 @@ The current implementation of `ExternalService` has significant limitations and 
 * Lack of support for thick clients (think Kafka or C* where discovery is done as part of the client).
 * Need for pluggability (for example lambda support or equivalent)
 * Working well with gateways (what if your ExternalService relies on SNI/host header to route through a gateway)
-* Applying policies
+* Applying policies with and without egress
 
 
 ## Considered Options
@@ -120,9 +120,9 @@ status:
       * `http`
       * `http2`
   * **destination**: defines where matched requests should be routed
-    * **type**: defines what kind of destination is it, one of `Regular`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
+    * **type**: defines what kind of destination it is, one of `Regular`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
       * `Regular`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
-      * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, when defined sections `endpoints`, `tls` and `extension` are not available.
+      * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, only available when defined sections `endpoints`, `tls` and `extension` are not defined.
       * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
     * **extension**: struct for a plugin configuration
       * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
@@ -381,7 +381,7 @@ status: # managed by CP. Not shared cross zone, but synced to global
 
 ##### Hostname and VIP generation
 
-Currently, Kuma allocates a domain for an ExternalService based on the kuma.io/service label and the real destination domain. However, in MeshExternalService, we aim to discontinue this practice. Instead, we propose utilizing the HostGenerator for domain generation. To facilitate this change, we intend to introduce a new selector called meshExternalServiceSelector, enabling users to specify particular MeshExternalServices that necessitate custom domains. Only MeshOperator should create a HostGenerator policy and when a user needs a specific domain for a MeshExternalService, the user needs to reach out to the MeshOperator. HostGenerator can be created only on GlobalCP and later is synchronized to all zones. More about HostGenerator (MADR-046).
+Currently, Kuma allocates a domain for an ExternalService based on the kuma.io/service label and the real destination domain. However, in MeshExternalService, we aim to discontinue this practice. Instead, we propose utilizing the HostGenerator for domain generation. To facilitate this change, we intend to introduce a new selector called meshExternalServiceSelector, enabling users to specify particular MeshExternalServices that necessitate custom domains. Only MeshOperator should create a HostGenerator policy and when a user needs a specific domain for a MeshExternalService, the user needs to reach out to the MeshOperator. HostGenerator can be created only on GlobalCP and later is synchronized to all zones. More about HostGenerator in [MADR-046](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/046-meshservice-hostname-vips.md?plain=1#L58).
 
 ```yaml
 kind: HostnameGenerator
