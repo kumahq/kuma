@@ -455,12 +455,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 			}
 			var req []kube_reconcile.Request
 			for _, slice := range endpointSlices.Items {
-				l = l.WithValues(
-					"EndpointSlice",
-					kube_types.NamespacedName{Namespace: slice.Namespace, Name: slice.Name},
-				)
 				for _, endpoint := range slice.Endpoints {
-					l = l.WithValues("Endpoint", endpoint)
 					if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() {
 						req = append(req, kube_reconcile.Request{
 							NamespacedName: kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace},
@@ -472,7 +467,7 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 		}
 
 		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(svc.Spec.Selector)); err != nil {
-			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
+			l.Error(err, "failed to fetch Pods matching selector")
 			return nil
 		}
 		var req []kube_reconcile.Request
@@ -497,7 +492,7 @@ func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_ha
 
 		var req []kube_reconcile.Request
 		for _, endpoint := range slice.Endpoints {
-			l = l.WithValues(
+			l := l.WithValues(
 				"Endpoint",
 				endpoint,
 			)
