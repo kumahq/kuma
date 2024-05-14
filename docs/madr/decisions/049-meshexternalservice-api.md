@@ -472,3 +472,21 @@ status:
 #### Negative Consequences
 
 * Less explicit
+
+## Common concerns
+
+### Migration
+
+It is vital that we provide easy and safe migration path.
+MeshExternalService is quite different from other policies so having shadow mode will result in big Envoy config diffs that would be hard to predict if they would work correctly.
+
+#### Introduce switch on the DP (env variable / label) to disable specific ExternalServices
+
+We can have a switch to disable a list of ExternalServices on the DP level.
+
+The migration path will look like this:
+1. Define MeshExternalService "x" (that replaces ExternalService "x")
+2. Disable ExternalService "x" on one instance
+3. Check that the traffic is working fine
+4. Remove ExternalService
+5. Remove config from point 2
