@@ -42,7 +42,6 @@ store:
     maxOpenConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # MaxIdleConnections is the maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections.
-    # Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
     maxIdleConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # MaxListQueryElements defines maximum number of changed elements before requesting full list of elements from the store.
     maxListQueryElements: 0 # ENV: KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS
@@ -56,17 +55,6 @@ store:
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
-    # MinReconnectInterval controls the duration to wait before trying to
-    # re-establish the database connection after connection loss. After each
-    # consecutive failure this interval is doubled, until MaxReconnectInterval
-    # is reached. Successfully completing the connection establishment procedure
-    # resets the interval back to MinReconnectInterval.
-    # Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
-    minReconnectInterval: "10s" # ENV: KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL
-    # MaxReconnectInterval controls the maximum possible duration to wait before trying
-    # to re-establish the database connection after connection loss.
-    # Deprecated: it's only used when driverName=postgres (lib/pq) which is deprecated, use driverName=pgx instead.
-    maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
     # ReadReplica is a setting for a DB replica used only for read queries
     readReplica:
       # Host of the Postgres DB read replica. If not set, read replica is not used.
@@ -405,6 +393,9 @@ runtime:
     # If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
     # This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
     skipMeshOwnerReference: false # ENV: KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE
+    # If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
+    # The downside is that control plane requires permission to read Secrets in all namespaces.
+    supportGatewaySecretsInAllNamespaces: false # ENV: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
@@ -417,7 +408,7 @@ defaults:
   skipMeshCreation: false # ENV: KUMA_DEFAULTS_SKIP_MESH_CREATION
   # If true, it skips creating the default tenant resources
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
-  # If true, it creates the default routing (TrafficPermisson and TrafficRoute) resources for a new Mesh
+  # If true, it creates the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh
   createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
 # Metrics configuration
 metrics:
@@ -731,8 +722,6 @@ access:
       groups: ["mesh-system:unauthenticated", "mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS
 # Configuration of experimental features of Kuma
 experimental:
-  # If true, experimental Gateway API is enabled
-  gatewayAPI: false # ENV: KUMA_EXPERIMENTAL_GATEWAY_API
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
   # This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
   kubeOutboundsAsVIPs: true # ENV: KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS

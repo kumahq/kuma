@@ -78,6 +78,11 @@ func CrossMeshGatewayOnUniversal() {
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, gatewayMesh)
+		DebugUniversal(universal.Cluster, gatewayOtherMesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(gatewayMesh)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())

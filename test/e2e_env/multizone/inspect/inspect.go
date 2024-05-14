@@ -34,6 +34,11 @@ func Inspect() {
 		}).Should(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())

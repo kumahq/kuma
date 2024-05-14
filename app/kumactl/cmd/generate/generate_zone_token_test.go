@@ -14,8 +14,8 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )

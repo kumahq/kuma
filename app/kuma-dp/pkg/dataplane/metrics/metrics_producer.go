@@ -110,7 +110,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		Scope: instrumentation.Scope{
 			Name: app.Name,
 		},
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service),
+		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels),
 	}
 }
 

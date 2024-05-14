@@ -265,10 +265,6 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.gatewayAPI }}
-- name: KUMA_EXPERIMENTAL_GATEWAY_API
-  value: "true"
-{{- end }}
 {{- if .Values.experimental.sidecarContainers }}
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   value: "true"
@@ -303,6 +299,10 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
+- name: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
+  value: true
+{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}

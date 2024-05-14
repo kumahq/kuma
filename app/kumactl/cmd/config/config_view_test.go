@@ -1,22 +1,19 @@
 package config_test
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
 var _ = Describe("kumactl config view", func() {
 	It("should display configuration from a given file", func() {
 		// setup
-		rootCmd := test.DefaultTestingRootCmd()
-		buf := &bytes.Buffer{}
-		rootCmd.SetOut(buf)
+		buf, _, rootCmd := test.DefaultTestingRootCmd()
 
 		// given
 		rootCmd.SetArgs([]string{

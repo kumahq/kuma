@@ -24,7 +24,7 @@ func MeshTrace(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshTrace
 metadata:
-  name: trace-all
+  name: trace-all-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -44,6 +44,10 @@ spec:
 
 		BeforeAll(func() {
 			observabilityClient = observability.From(config.ObservabilityDeploymentName, kubernetes.Cluster)
+		})
+
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
 		})
 
 		framework.E2EAfterEach(func() {

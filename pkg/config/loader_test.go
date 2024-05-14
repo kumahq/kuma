@@ -104,8 +104,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.MinOpenConnections).To(Equal(3))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
-			Expect(cfg.Store.Postgres.MinReconnectInterval.Duration).To(Equal(44 * time.Second))
-			Expect(cfg.Store.Postgres.MaxReconnectInterval.Duration).To(Equal(55 * time.Second))
 			Expect(cfg.Store.Postgres.MaxListQueryElements).To(Equal(uint32(111)))
 			Expect(cfg.Store.Postgres.MaxConnectionIdleTime.Duration).To(Equal(99 * time.Second))
 
@@ -232,6 +230,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration).To(Equal(199 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration).To(Equal(99 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.SkipMeshOwnerReference).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces).To(BeTrue())
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
@@ -358,7 +357,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
@@ -568,6 +566,7 @@ runtime:
       leaseDuration: 199s
       renewDeadline: 99s
     skipMeshOwnerReference: true
+    supportGatewaySecretsInAllNamespaces: true
 reports:
   enabled: false
 general:
@@ -719,7 +718,6 @@ access:
       users: ["cp-admin1", "cp-admin2"]
       groups: ["cp-group1", "cp-group2"]
 experimental:
-  gatewayAPI: true
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
   kdsDeltaEnabled: true
@@ -782,8 +780,6 @@ tracing:
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
 				"KUMA_STORE_POSTGRES_TLS_CA_PATH":                                                          "/path/to/rootCert",
 				"KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI":                                                   "true",
-				"KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL":                                               "44s",
-				"KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL":                                               "55s",
 				"KUMA_STORE_POSTGRES_MAX_LIST_QUERY_ELEMENTS":                                              "111",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_HOST":                                                    "ro.host",
 				"KUMA_STORE_POSTGRES_READ_REPLICA_PORT":                                                    "35432",
@@ -895,6 +891,7 @@ tracing:
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION":                                   "199s",
 				"KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE":                                   "99s",
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
+				"KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES":                        "true",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
@@ -1012,7 +1009,6 @@ tracing:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 				"KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL":                                   "false",
 				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",

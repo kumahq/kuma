@@ -8,7 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
 var _ = Describe("kumactl root cmd", func() {

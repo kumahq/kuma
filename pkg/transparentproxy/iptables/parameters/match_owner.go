@@ -16,10 +16,10 @@ package parameters
 // ref. iptables-extensions(8) > owner
 
 import (
-	"fmt"
-
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
+
+var _ ParameterBuilder = &OwnerParameter{}
 
 type OwnerParameter struct {
 	flag     string
@@ -33,12 +33,12 @@ func (p *OwnerParameter) Negate() ParameterBuilder {
 	return p
 }
 
-func (p *OwnerParameter) Build(bool) string {
+func (p *OwnerParameter) Build(bool) []string {
 	if p.negative {
-		return fmt.Sprintf("! %s %s", p.flag, p.value)
+		return []string{"!", p.flag, p.value}
 	}
 
-	return fmt.Sprintf("%s %s", p.flag, p.value)
+	return []string{p.flag, p.value}
 }
 
 func uid(id string, negative bool) *OwnerParameter {

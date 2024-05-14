@@ -193,7 +193,7 @@ func resNameInZone(
 	resManager manager.ReadOnlyResourceManager,
 	r core_model.Resource,
 ) (string, error) {
-	name := core_model.GetDisplayName(r)
+	name := core_model.GetDisplayName(r.GetMeta())
 	zone := core_model.ZoneOfResource(r)
 	// we need to check for the legacy name which starts with zoneName
 	if strings.HasPrefix(r.GetMeta().GetName(), zone) {

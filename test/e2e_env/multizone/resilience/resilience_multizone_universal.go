@@ -34,6 +34,11 @@ func ResilienceMultizoneUniversal() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(global, "default")
+		DebugUniversal(zone1, "default")
+	})
+
 	E2EAfterEach(func() {
 		err := zone1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())

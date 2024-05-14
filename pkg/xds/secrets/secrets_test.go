@@ -155,7 +155,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(ca["default"].PemCerts).ToNot(BeEmpty())
 
 			// and info is stored
-			info := secrets.Info(core_model.MetaToResourceKey(newDataplane().Meta))
+			info := secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
 			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
@@ -237,7 +237,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 			It("when cert was cleaned up", func() {
 				// given
-				secrets.Cleanup(core_model.MetaToResourceKey(newDataplane().Meta))
+				secrets.Cleanup(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))
 
 				// when
 				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
@@ -255,10 +255,10 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			secrets.Cleanup(core_model.MetaToResourceKey(newDataplane().Meta))
+			secrets.Cleanup(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))
 
 			// then
-			Expect(secrets.Info(core_model.MetaToResourceKey(newDataplane().Meta))).To(BeNil())
+			Expect(secrets.Info(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))).To(BeNil())
 		})
 	})
 
@@ -274,7 +274,7 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(ca.PemCerts).ToNot(BeEmpty())
 
 			// and info is stored
-			info := secrets.Info(core_model.MetaToResourceKey(newZoneEgress().Meta))
+			info := secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
 			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
@@ -340,7 +340,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 			It("when cert was cleaned up", func() {
 				// given
-				secrets.Cleanup(core_model.MetaToResourceKey(newZoneEgress().Meta))
+				secrets.Cleanup(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
 
 				// when
 				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
@@ -358,10 +358,10 @@ var _ = Describe("Secrets", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			secrets.Cleanup(core_model.MetaToResourceKey(newZoneEgress().Meta))
+			secrets.Cleanup(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
 
 			// then
-			Expect(secrets.Info(core_model.MetaToResourceKey(newZoneEgress().Meta))).To(BeNil())
+			Expect(secrets.Info(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))).To(BeNil())
 		})
 	})
 })

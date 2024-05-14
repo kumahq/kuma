@@ -50,6 +50,10 @@ func TrafficRoute() {
 		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("route-es-http").GetContainerName(), "80")
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())

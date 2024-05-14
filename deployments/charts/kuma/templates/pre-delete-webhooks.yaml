@@ -95,6 +95,7 @@ spec:
             - 'kubectl'
             - 'delete'
             - 'ValidatingWebhookConfiguration'
+            - '--ignore-not-found'
             - {{ include "kuma.name" . }}-validating-webhook-configuration
           securityContext:
           {{- toYaml (mergeOverwrite (dict "runAsUser" 65534) .Values.hooks.containerSecurityContext) | trim | nindent 12 }}

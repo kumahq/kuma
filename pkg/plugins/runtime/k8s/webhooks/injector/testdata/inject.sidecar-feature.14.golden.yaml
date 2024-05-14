@@ -141,6 +141,13 @@ spec:
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - killall
+          - -USR2
+          - kuma-dp
     livenessProbe:
       failureThreshold: 212
       httpGet:

@@ -23,7 +23,7 @@ const (
 )
 
 type FlagGenerator = func(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	cgroup string,
 	bpffs string,
 ) ([]string, error)
@@ -31,10 +31,10 @@ type FlagGenerator = func(
 type Program struct {
 	Name    string
 	Flags   FlagGenerator
-	Cleanup func(cfg config.Config) error
+	Cleanup func(cfg config.InitializedConfig) error
 }
 
-func (p Program) LoadAndAttach(cfg config.Config, programs embed.FS, cgroup string, bpffs string) error {
+func (p Program) LoadAndAttach(cfg config.InitializedConfig, programs embed.FS, cgroup string, bpffs string) error {
 	programBytes, err := programs.ReadFile(p.Name)
 	if err != nil {
 		return fmt.Errorf("reading ebpf program bytes failed: %s", err)
@@ -122,7 +122,7 @@ func initBPFFSMaybe(fsPath string) error {
 	return nil
 }
 
-func getCgroupPath(cfg config.Config) (string, error) {
+func getCgroupPath(cfg config.InitializedConfig) (string, error) {
 	cgroupPath := cfg.Ebpf.CgroupPath
 
 	if cgroupPath != "" {
@@ -177,7 +177,7 @@ func getCgroupPath(cfg config.Config) (string, error) {
 	return mounts[0].Mountpoint, nil
 }
 
-func getBpffsPath(cfg config.Config) (string, error) {
+func getBpffsPath(cfg config.InitializedConfig) (string, error) {
 	bpffsPath := cfg.Ebpf.BPFFSPath
 
 	if bpffsPath != "" {
@@ -238,7 +238,7 @@ func getBpffsPath(cfg config.Config) (string, error) {
 }
 
 func Flags(flags map[string]string) FlagGenerator {
-	return func(cfg config.Config, _ string, bpffs string) ([]string, error) {
+	return func(cfg config.InitializedConfig, _ string, bpffs string) ([]string, error) {
 		f := map[string]string{
 			"--bpffs": bpffs,
 		}
@@ -256,7 +256,7 @@ func Flags(flags map[string]string) FlagGenerator {
 }
 
 func CgroupFlags(
-	cfg config.Config,
+	cfg config.InitializedConfig,
 	cgroup string,
 	bpffs string,
 ) ([]string, error) {

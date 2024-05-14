@@ -20,7 +20,7 @@ func MeshRetry(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshRetry
 metadata:
-  name: mr
+  name: mr-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -35,6 +35,10 @@ spec:
           numRetries: 6
           retryOn: ["503"]
 `, config.CpNamespace, config.Mesh)
+
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
 
 		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(

@@ -56,7 +56,7 @@ func GetFileInode(path string) (uint64, error) {
 	return stat.Ino, nil
 }
 
-func Setup(cfg config.Config) (string, error) {
+func Setup(cfg config.InitializedConfig) (string, error) {
 	if os.Getuid() != 0 {
 		return "", fmt.Errorf("root user in required for this process or container")
 	}

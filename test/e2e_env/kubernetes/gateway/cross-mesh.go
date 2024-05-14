@@ -68,6 +68,11 @@ func CrossMeshGatewayOnKubernetes() {
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, gatewayMesh, gatewayTestNamespace, gatewayTestNamespace2, gatewayClientNamespaceSameMesh)
+		DebugKube(kubernetes.Cluster, gatewayOtherMesh, gatewayClientNamespaceOtherMesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceSameMesh)).To(Succeed())

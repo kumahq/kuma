@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl generate tls-certificate", func() {
@@ -87,15 +87,13 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate client certificate", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
 				"--key-type", "ecdsa",
 				"--hostname", "hostname",
-			})
+			)
 
 			// then
 			Do(rootCmd)
@@ -103,15 +101,14 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate server certificate", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
+			_, _, rootCmd := test.DefaultTestingRootCmd(
 				"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
 				"--key-type", "ecdsa",
 				"--hostname", "hostname",
-			})
+			)
 
 			// then
 			Do(rootCmd)
@@ -133,30 +130,23 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate client certificate", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
 				"--hostname", "client-name",
-			})
+			)
 
 			// then
 			Do(rootCmd)
 		})
 		It("should validate that --hostname is present", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
-			})
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
-
+			)
 			// when
 			err := rootCmd.Execute()
 
@@ -179,15 +169,13 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate server certificate", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
 				"--hostname", "kuma1.internal",
 				"--hostname", "kuma2.internal",
-			})
+			)
 
 			// then
 			Do(rootCmd)
@@ -195,16 +183,14 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate an ECDSA server certificate", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
 				"--key-type", "ecdsa",
 				"--hostname", "kuma1.internal",
 				"--hostname", "kuma2.internal",
-			})
+			)
 
 			// then
 			Do(rootCmd)
@@ -212,15 +198,11 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should validate that --hostname is present", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
-			})
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
+			)
 
 			// when
 			err := rootCmd.Execute()
@@ -231,18 +213,13 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should validate that --key-type is checked", func() {
 			// given
-			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs([]string{
-				"generate", "tls-certificate",
+			_, _, rootCmd := test.DefaultTestingRootCmd("generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
 				"--hostname", "foo",
 				"--key-type", "phoney",
-			})
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
-
+			)
 			// when
 			err := rootCmd.Execute()
 

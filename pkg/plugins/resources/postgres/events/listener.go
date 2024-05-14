@@ -33,8 +33,6 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	switch k.cfg.DriverName {
 	case postgres.DriverNamePgx:
 		listener, err = common_postgres.NewPgxListener(k.cfg, core.Log.WithName("postgres-event-listener-pgx"))
-	case postgres.DriverNamePq:
-		listener, err = common_postgres.NewListener(k.cfg, core.Log.WithName("postgres-event-listener-pq"))
 	default:
 		return errors.Errorf("unsupported driver name %s", k.cfg.DriverName)
 	}

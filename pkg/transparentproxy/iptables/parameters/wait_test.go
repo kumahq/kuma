@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("WaitParameter", func() {
 	DescribeTable("should return",
-		func(seconds int, verbose bool, want string) {
+		func(seconds int, verbose bool, want []string) {
 			// given
 			wait := Wait(uint(seconds))
 
@@ -19,9 +19,9 @@ var _ = Describe("WaitParameter", func() {
 			// then
 			Expect(got).To(Equal(want))
 		},
-		Entry("no flag when parameter is 0", 0, false, ""),
-		Entry("no flag when parameter is 0 - verbose", 0, true, ""),
-		Entry("wait seconds", 10, false, "--wait=10"),
-		Entry("wait seconds - verbose", 10, true, "--wait=10"),
+		Entry("no flag when parameter is 0", 0, false, nil),
+		Entry("no flag when parameter is 0 - verbose", 0, true, nil),
+		Entry("wait seconds", 10, false, []string{"--wait=10"}),
+		Entry("wait seconds - verbose", 10, true, []string{"--wait=10"}),
 	)
 })

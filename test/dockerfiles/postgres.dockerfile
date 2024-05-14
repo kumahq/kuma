@@ -2,7 +2,7 @@ ARG MODE
 # With test-containers building the same image many times have race conditions when deleting the images
 # We therefore add a unique ID just to make images different
 ARG UNIQUEID
-FROM postgres:latest@sha256:5c587078ef86f4b5fd24c9ed4394429e59035ead421873c14135d5b57c117908 AS pg-tls
+FROM postgres:latest@sha256:ba727f758a75cdd503c6b63db66a5fbc22ded0a228952e9d88e601621ad4de64 AS pg-tls
 COPY pg_hba.conf /var/lib/postgresql/pg_hba.conf
 COPY certs/rootCA.crt /var/lib/postgresql/rootCA.crt
 COPY certs/postgres.server.crt /var/lib/postgresql/postgres.server.crt
@@ -10,7 +10,7 @@ COPY certs/postgres.server.key /var/lib/postgresql/postgres.server.key
 RUN chown -R postgres /var/lib/postgresql && \
 	chmod 600 /var/lib/postgresql/postgres.server.key
 CMD ["-c", "ssl=on", "-c", "max_connections=10000", "-c", "ssl_cert_file=/var/lib/postgresql/postgres.server.crt", "-c", "ssl_key_file=/var/lib/postgresql/postgres.server.key", "-c", "ssl_ca_file=/var/lib/postgresql/rootCA.crt", "-c", "hba_file=/var/lib/postgresql/pg_hba.conf"]
-FROM postgres:latest@sha256:5c587078ef86f4b5fd24c9ed4394429e59035ead421873c14135d5b57c117908 AS pg-standard
+FROM postgres:latest@sha256:ba727f758a75cdd503c6b63db66a5fbc22ded0a228952e9d88e601621ad4de64 AS pg-standard
 CMD ["-c", "max_connections=10000"]
 
 FROM pg-${MODE}
