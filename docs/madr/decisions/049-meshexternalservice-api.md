@@ -92,12 +92,12 @@ spec:
         subjectAltNames: # if subjectAltNames is not defined then take domain or ips
           - example.com
           - "spiffe://example.local/ns/local"
-      caCert: 
-        inline: 123
-      clientCert:
-        secret: 123
-      clientKey:
-        secret: 123
+        caCert: 
+          inline: 123
+        clientCert:
+          secret: 123
+        clientKey:
+          secret: 123
 status: 
   vip:
     ip: 242.0.0.1
