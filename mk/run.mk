@@ -49,11 +49,11 @@ KUMA_CP_ADDRESS ?= grpcs://localhost:5678
 
 .PHONY: run/postgres/start
 run/postgres/start: ## Dev: start Postgres for Control Plane with initial schema (Use POSTGRES_MODE=tls to enable TLS)
-	$(CP_ENV) POSTGRES_MODE=$(POSTGRES_MODE) docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d --build
+	$(CP_ENV) POSTGRES_MODE=$(POSTGRES_MODE) docker-compose -f $(KUMA_DIR)/test/dockerfiles/docker-compose.yaml up -d --build
 
 .PHONY: run/postgres/stop
 run/postgres/stop: ## Dev: stop Postgres
-	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml down
+	docker-compose -f $(KUMA_DIR)/test/dockerfiles/docker-compose.yaml down
 
 .PHONY: run/kuma-cp
 run/kuma-cp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-cp` locally (use CP_STORE=postgres to use postgres as a store and POSTGRES_MODE=tls to enabled TLS, use EXTRA_CP_ENV to add extra Kuma env vars)
