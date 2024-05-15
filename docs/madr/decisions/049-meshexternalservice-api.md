@@ -148,12 +148,12 @@ status:
       * **verification**: section for providing TLS verification details.
         * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
         * **subjectAltNames**: list of names to verify in the certificate.
-      * **caCert**: defines a certificate of CA.
-        * one of `inline`, `inlineString` or `secret`.
-      * **clientCert**: defines a certificate of a client.
-        * one of `inline`, `inlineString` or `secret`.
-      * **clientKey**: defines a client private key.
-        * one of `inline`, `inlineString` or `secret`.
+        * **caCert**: defines a certificate of CA.
+          * one of `inline`, `inlineString` or `secret`.
+        * **clientCert**: defines a certificate of a client.
+          * one of `inline`, `inlineString` or `secret`.
+        * **clientKey**: defines a client private key.
+          * one of `inline`, `inlineString` or `secret`.
 * **status**: status of an object managed by Kuma control-plane
   * **vip**: section for allocated IP
     * **ip**: allocated IP for a provided domain with `InternalVIP` type in a match section
