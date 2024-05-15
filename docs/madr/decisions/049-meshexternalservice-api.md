@@ -36,7 +36,7 @@ Chosen option: "Creating MeshExternalService".
 
 * Whole new resource with a lot of new code.
 * Temporarily increased complexity of a product until the migration is done.
-* One external service might have many internal VIPs
+* Problem with supporting Universal without transparent proxy, because one MeshExternalService points to many real domains
 
 ## Pros and Cons of the Options
 
