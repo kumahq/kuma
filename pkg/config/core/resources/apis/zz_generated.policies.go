@@ -4,6 +4,7 @@
 package apis
 
 var DefaultEnabled = []string{
+	"meshexternalservices",
 	"meshservices",
 }
 

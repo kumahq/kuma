@@ -791,4 +791,5 @@ policies:
     - meshtrafficpermissions
 coreResources:
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
+    - meshexternalservices
     - meshservices
