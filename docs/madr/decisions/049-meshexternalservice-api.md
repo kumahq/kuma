@@ -228,7 +228,7 @@ This specific setup has limitations caused by the nature of passthrough.
 
 Limitations:
 * Wildcard doesn’t work through proxy
-* Only `destination.type: Regular` supported
+* Only `destination.type: Manged` supported
 
 Traffic handled without transparent proxy doesn't provide information about the original destination of the request. That causes traffic to be difficult to recognize and we are not able to handle 2 different matches on the same listener, unless it's http traffic. In this case it makes sense to have only one match, or even use only destinations.
 
