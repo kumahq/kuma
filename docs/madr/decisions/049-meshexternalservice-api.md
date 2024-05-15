@@ -222,6 +222,16 @@ spec:
        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
 ```
 
+#### Universal without Transparent Proxy
+
+This specific setup has limitations caused by the nature of passthrough. 
+
+Limitations:
+* Wildcard doesn’t work through proxy
+* Only `destination.type: Regular` supported
+
+Traffic handled without transparent proxy doesn't provide information about the original destination of the request. That causes traffic to be difficult to recognize and we are not able to handle 2 different matches on the same listener, unless it's http traffic. In this case it makes sense to have only one match, or even use only destinations.
+
 #### IP intersections 
 
 It's possible for users to create a policy where the IP ranges intersect with each other. We cannot validate this during policy creation, but during configuration generation, we are able to check if IPs intersect. In such cases, we can log a message stating:
