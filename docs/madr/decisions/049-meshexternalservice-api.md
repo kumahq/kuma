@@ -42,7 +42,7 @@ Chosen option: "Creating MeshExternalService".
 
 ### Creating MeshExternalService
 
-We're introducing a new object called `MeshExternalService`. This object will be a namespace resource and will only be creatable within the `kuma-system` namespace. It can be created within a specific zone, but in this case, it will only be accessible within the zone where it was created.
+We're introducing a new object resource `MeshExternalService`. This object will be a namespace resource and will only be creatable within the `kuma-system` namespace. It can be created within a specific zone, but in this case, it will only be accessible within the zone where it was created.
 
 ```yaml
 kind: MeshExternalService
@@ -70,12 +70,12 @@ spec:
     value: 192.168.0.1
     port: 80
     protocol: http
-  destination:
-    type: Managed # Managed|Passthrough|Extension
-    extension:
-      type: Lambda 
-      config: # type JSON
-        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  type: Managed # Managed|Passthrough|Extension
+  extension:
+    type: Lambda 
+    config: # type JSON
+      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  managed:
     endpoints:
     - address: 1.1.1.1
       port: 12345
@@ -123,19 +123,19 @@ status:
     * **value**: depends of the type can be an existing domain, new domain name, CIDR or IP
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
-      * `tls`: should be used when TLS traffic is originated by the client application
+      * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
       * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
       * `grpc`
       * `http`
       * `http2`
-  * **destination**: defines where matched requests should be routed
-    * **type**: defines what kind of destination it is, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
-      * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
-      * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, only available when defined sections `endpoints`, `tls` and `extension` are not defined.
-      * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
-    * **extension**: struct for a plugin configuration
-      * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
-      * **config**: json map that is mapped to configuration provided in the type.
+  * **type**: defines what kind of destination it is, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
+    * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
+    * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, only available when defined sections `endpoints`, `tls` and `extension` are not defined.
+    * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
+  * **extension**: struct for a plugin configuration, only for a `type: Extension`
+    * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
+    * **config**: json map that is mapped to configuration provided in the type.
+  * **managed**: defines where matched requests should be routed, only for a `type: Managed`
     * **endpoints**: defines a list of endpoints
       * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
       * **port**: defines a port of a destination.
@@ -163,7 +163,15 @@ status:
     * **status**: indicate if an address is available
     * **reason**: holds error messages if there are any 
 
-#### Cluster name
+#### Default CA certificate
+
+By default, when TLS is enabled and CA certificate is not set, we are going to use system bundled one. We can achive that by scanning in `kuma-dp` [default paths](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ssl#example-configuration) for each environment and later send that information in the bootstrap request to the control-plane for a configuration generation.
+
+#### Policy matching
+
+`MeshExternalServices` should work the same with policies as `MeshService`. We are going to introduce a new `kind: MeshExternalService`, which allows targeting them with policies.
+
+#### Envoy resources naming
 
 Currently, we name clusters after their respective policies. However, when dealing with multiple protocols, we find it necessary to include the port number in the cluster name.
 Example:
@@ -186,13 +194,15 @@ spec:
     value: httpbin.com
     port: 443
     protocol: tls
- destination:
-   type: Passthrough
+  type: Passthrough
 ```
 
 In this case, for port `80`, we require HTTP/2 configuration in the cluster settings. This necessitates having a separate configuration for each cluster.
 
-clusterName: `{policyName}_{port}`, so for the above policy name would looks like: `httpbin_80` and `httpbin_443`
+clusterName: `mes_{policyName}_{port}`, so for the above policy name would looks like: `mes_httpbin_80` and `mes_httpbin_443`
+listenername: we are not going to create new listeners
+FilterChainNaming for tls and tcp `mes_{policyName}_{port}`, because each listener points to the cluster.
+In case of http traffic we are going to name `mes_http_{port}` because we can distinguish the traffic on routes.
 
 #### Extensability
 
@@ -214,12 +224,11 @@ spec:
     value: example.ext.svc.local
     port: 80
     protocol: http
- destination:
-   type: Extension
-   extension:
-     type: Lambda 
-     config:
-       arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  type: Extension
+  extension:
+    type: Lambda 
+    config:
+      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
 ```
 
 #### Universal without Transparent Proxy
@@ -228,7 +237,7 @@ This specific setup has limitations caused by the nature of passthrough.
 
 Limitations:
 * Wildcard doesn’t work through proxy
-* Only `destination.type: Manged` supported
+* Only `destination.type: Managed` supported
 
 Traffic handled without transparent proxy doesn't provide information about the original destination of the request. That causes traffic to be difficult to recognize and we are not able to handle 2 different matches on the same listener, unless it's http traffic. In this case it makes sense to have only one match, or even use only destinations.
 
@@ -238,7 +247,7 @@ It's possible for users to create a policy where the IP ranges intersect with ea
 
 > external-service1 and external-service2 have overlapping IPs X.X.X.X, which can disrupt your traffic.
 
-As a result, we will select the first `MeshExternalService` based on the creation type. If they were created simultaneously, we will use lexicographical order.
+As a result, we will select the first `MeshExternalService` based on the creation time. If they were created simultaneously, we will use lexicographical order.
 
 #### Domain generation
 
@@ -257,13 +266,13 @@ spec:
     value: mongo.ext.svc.local
     port: 27017
     protocol: tcp
- destination:
-   type: Managed # Managed|Passthrough|Extension
-   endpoints:
-   - address: 10.0.0.1
-     port: 27017
-   - address: 10.0.0.2
-     port: 27017
+  type: Managed # Managed|Passthrough|Extension
+  managed:
+    endpoints:
+    - address: 10.0.0.1
+      port: 27017
+    - address: 10.0.0.2
+      port: 27017
 status: 
   vip:
     ip: 242.0.0.1
@@ -377,7 +386,7 @@ status: # managed by CP. Not shared cross zone, but synced to global
     * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
     * **port**: defines a port of a destination.
   * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
-    * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundled.
+    * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundle. More details in section: Default CA certificate
     * **version**: section for providing version specification.
       * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
       * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
@@ -433,6 +442,7 @@ metadata:
     kuma.io/zone: east-1
     kuma.io/origin: zone
 spec:
+  type: Managed # Managed|Passthrough|Extension
   destinations:
   - address: 192.168.0.1
     port: 9090 
@@ -459,7 +469,7 @@ If the template cannot be resolved (label is missing), the hostname won't be gen
 
 #### Creating MeshExternalService and using HostnameGenerator for InternalVIP
 
-This option is similar to the chosen one, but instead of explicitly providing a domain in the policy, users would need to create a `HostnameGenerator` to generate a domain.
+This option is similar to the chosen one, but instead of explicitly defining a Kuma DNS entry in the `MeshExternalService` resource (to be generated), users would need to create a `HostnameGenerator` to generate a domain.
 
 The API model does not include a `value` field for the `InternalVIP` type. The domain name is generated by `HostnameGenerator` and later provided under a status section.
 
