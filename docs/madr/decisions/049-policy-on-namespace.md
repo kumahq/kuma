@@ -4,8 +4,8 @@
 
 ## Context and Problem Statement
 
-Kuma 2.6.0 introduced a new feature allowing users to apply policies on Zone CP.
-This change unblocks us to introduce a namespace support for policies.
+Kuma 2.6.0 enable users to apply policies on Zone CP.
+This change unblocks us to introduce namespace support for policies.
 The CRDs for new policies are already namespace-scoped, but they can be applied only on the `kuma-system` namespace.
 
 ## Considered Options
@@ -19,10 +19,10 @@ The CRDs for new policies are already namespace-scoped, but they can be applied 
 
 ## Pros and Cons of the applying policies on custom namespaces
 
-* Good, because allows using Kubernetes RBAC
-* Good, because provides more predictable behaviour as namespace-scoped policy affects only workloads in the same
+* Good, because it allows using Kubernetes RBAC
+* Good, because it provides more predictable behaviour as namespace-scoped policy affects only workloads in the same
   namespace
-* Good, because provides more Kubernetes-native UX
+* Good, because it provides more Kubernetes-native UX
 * Bad, because adds complexity for users
     * what's the right namespace for the policy?
     * how cross-policy refs work?
@@ -67,7 +67,7 @@ Policy's namespace **does not** implicitly turn the top-level targetRef to `Mesh
 Namespace-scoped policies can be applied to a custom namespace only on zones as there are simply no DPPs and custom
 namespaces on Global.
 
-After a user applied a policy on zone's custom namespace, it automatically gets a `k8s.kuma.io/namespace` label.
+After a user applied a policy on zone's custom namespace, the webhook automatically adds a `k8s.kuma.io/namespace` label to the policy.
 The label is part of the hash suffix when policy is synced to global.
 
 As mentioned previously, a policy applied in producer namespace can affect envoy configs of consumers.
@@ -284,7 +284,7 @@ Introducing namespace-scoped policies adds another steps to the policy compariso
 6. The policy is more specific if it's name is lexicographically less than other policy's name ("aaa" < "bbb" so that "
    aaa" policy is more specific)
 
-### Cross-policy references
+### Cross-resource references
 
 Kuma policies support cross-policy references.
 At this moment, it works only between MeshTimeout and MeshHTTPRoute, but there are plans to support it for other
