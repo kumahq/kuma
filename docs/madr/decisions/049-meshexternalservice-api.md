@@ -14,35 +14,284 @@ The current implementation of `ExternalService` has significant limitations and 
 * Working well with gateways (what if your ExternalService relies on SNI/host header to route through a gateway)
 * Applying policies with and without egress
 
-
 ## Considered Options
 
-* Creating MeshExternalService + HostnameGenerator
+* Creating MeshExternalService resource and MeshPassthrough policy
 * Creating MeshExternalService
-* Creating MeshExternalService and using HostnameGenerator for InternalVIP
 
 ## Decision Outcome
 
-Chosen option: "Creating MeshExternalService".
+Chosen option: "Creating MeshExternalService resource and MeshPassthrough policy".
 
 ### Positive Consequences
 
 * Clearer structure.
+* Explicit showing what is passthough and what is external service
 * Enhanced functionalities.
 * Better policy matching capabilities.
-* No need for a HostnameGenerator
 
 ### Negative Consequences
 
-* Whole new resource with a lot of new code.
+* 2 new resources
 * Temporarily increased complexity of a product until the migration is done.
-* Problem with supporting Universal without transparent proxy, because one MeshExternalService points to many real domains
 
 ## Pros and Cons of the Options
 
 ### Creating MeshExternalService
 
 We're introducing a new object resource `MeshExternalService`. This object will be a namespace resource and will only be creatable within the `kuma-system` namespace. It can be created within a specific zone, but in this case, it will only be accessible within the zone where it was created.
+
+```yaml
+kind: MeshExternalService
+metadata:
+  name: example
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+    kuma.io/zone: east-1
+spec:
+  type: Managed # Managed
+  managed:
+    match:
+      type: KumaHostname # Kuma will generate a domain
+      port: 80
+      protocol: http
+    extension:
+      type: Lambda 
+      config: # type JSON
+        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+    endpoints:
+      - address: 1.1.1.1
+        port: 12345
+      - address: example.com
+      - address: unix://....
+    tls:
+      version:
+        min: TLSv1_2 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
+        max: TLSv1_3 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
+      allowRenegotiation: false
+      verification:
+        skipSAN: true # if this is true then subjectAltNames don't take effect
+        subjectAltNames: # if subjectAltNames is not defined then take domain or ips
+          - example.com
+          - "spiffe://example.local/ns/local"
+        caCert: 
+          inline: 123
+        clientCert:
+          secret: 123
+        clientKey:
+          secret: 123
+status: 
+  vip:
+    value: 242.0.0.1
+    type: Kuma
+  addresses:
+  - hostname: example.ext.svc.local
+    status: NotAvailable
+    origin:
+      kind: HostnameGenerator
+      name: k8s-example-service-hostname
+    reason: "addresses are overlapping with ext2"
+```
+* **spec**:
+  * **match**: defines a traffic that should be routed through the sidecar
+    * **type**: type of the match, one of `KumaHostname`, `Domain`, `CIDR` and `IP` are available
+      * `KumaHostname`: allocates a VIP for a domain provided in the `value` field
+      * `Domain`: handles traffic to the specified domain
+      * `CIDR`: handles traffic to specified addresses range
+      * `IP` handles the traffic to specified IP
+    * **value**: depends of the type can be an existing domain, new domain name, CIDR or IP
+    * **port**: defines a port to which a user does requests
+    * **protocol**: defines a protocol of the communication. Possible values:
+      * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
+      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
+      * `grpc`
+      * `http`
+      * `http2`
+  * **type**: defines what kind of destination it is, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
+    * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
+  * **managed**: defines where matched requests should be routed, only for a `type: Managed`
+    * **extension**: struct for a plugin configuration, only for a `type: Extension`
+      * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
+      * **config**: json map that is mapped to configuration provided in the type.
+    * **endpoints**: defines a list of endpoints
+      * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
+      * **port**: defines a port of a destination.
+    * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
+      * **version**: section for providing version specification.
+        * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
+        * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
+      * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
+      * **verification**: section for providing TLS verification details.
+        * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
+        * **subjectAltNames**: list of names to verify in the certificate.
+        * **caCert**: defines a certificate of CA.
+          * one of `inline`, `inlineString` or `secret`.
+        * **clientCert**: defines a certificate of a client.
+          * one of `inline`, `inlineString` or `secret`.
+        * **clientKey**: defines a client private key.
+          * one of `inline`, `inlineString` or `secret`.
+* **status**: status of an object managed by Kuma control-plane
+  * **vip**: section for allocated IP
+    * **value**: allocated IP for a provided domain with `KumaHostname` type in a match section or provided IP
+    * **type**: provides information about the way IP was provided
+  * **addresses**: section for generated domain
+    * **hostname**: generated domain 
+    * **status**: indicate if an address is available
+    * **origin**: section providing information what generated the vip
+      * **kind**: points to kind that generated domain
+      * **name**: name of the `HostnameGenerator`
+    * **reason**: holds error messages if there are any 
+
+#### Default CA certificate
+
+By default, when TLS is enabled and CA certificate is not set, we are going to use system bundled one. We can achive that by scanning in `kuma-dp` [default paths](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ssl#example-configuration) for each environment and later send that information in the bootstrap request to the control-plane for a configuration generation.
+
+#### Policy matching
+
+`MeshExternalServices` should work the same with policies as `MeshService`. We are going to introduce a new `kind: MeshExternalService`, which allows targeting them with policies.
+
+#### Envoy resources naming
+
+Currently, we name clusters after their respective policies. Since the model includes only one match we can stick to the same pattern but prefix it with `mes_` which stands for `MeshExternalService`.
+Example:
+
+```yaml
+kind: MeshExternalService
+metadata:
+  name: httpbin
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+    kuma.io/zone: east-1
+spec:
+  type: Managed # Managed
+  managed:
+    match:
+      type: Domain # Kuma will generate a domain
+      value: httpbin.com
+      port: 80
+      protocol: http
+    extension:
+      type: Lambda 
+      config: # type JSON
+        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+    endpoints:
+      - address: 1.1.1.1
+        port: 12345
+```
+
+Cluster name: `mes_{policyName}`, so for the policy name above, it would look like: `mes_httpbin`.
+
+Listener name: We are going to create listeners only for `KumaHostname` and `IP`. In this case, the naming remains the same as now: `outbound:{address}:{port}`.
+
+For `CIDR` and `Domain`, we will create filter chain matches to exclude them from the traffic. For TLS and TCP traffic, we will name them `mes_{policyName}` because each listener points to the cluster. For `HTTP` traffic, we will name them `mes_http_{port}` because we can distinguish the traffic on routes based on host header.
+
+#### Extensability
+
+Provided model allows creating separate plugins which can integrate with different cloud providers or components. The user can create it's own custom configuration and later in the code create XDS configuration based on it. 
+
+Example:
+
+```yaml
+kind: MeshExternalService
+metadata:
+  name: lambda-example
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+    kuma.io/zone: east-1
+spec:
+  type: Managed # Managed
+  managed:
+    match:
+      type: KumaHostname # Kuma will generate a domain
+      port: 80
+      protocol: http
+    extension:
+      type: Lambda 
+      config: # type JSON
+        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+```
+
+`destination` and `tls` section in the configuration are extension specific and might not be required.
+
+#### Universal without Transparent Proxy
+
+It should works similar to the current way. In the `Dataplane` object an user needs to provide information about outbounds. The external service is going to be available on this port.
+
+```yaml
+type: Dataplane
+mesh: default
+name: redis-1
+networking:
+  ...
+  outbound:
+  - port: 54321
+    backendRef:
+      kind: MeshExternalService
+      name: ext-svc
+```
+
+#### IP intersections 
+
+It's possible for users to create a `MeshExternalService` resource where the IP ranges intersect with each other. We cannot validate this during policy creation, but during configuration generation, we are able to check if IPs intersect. In such cases, we can log a message stating:
+
+> external-service1 and external-service2 have overlapping IPs X.X.X.X, which can disrupt your traffic.
+
+As a result, we will select the first `MeshExternalService` based on the creation time. If they were created simultaneously, we will use lexicographical order.
+
+#### Domain generation
+
+Currently, Kuma allocates a domain for an `ExternalService` based on the `kuma.io/service` label and the real destination domain. However, in `MeshExternalService`, we aim to discontinue this practice. Instead, we propose utilizing the `HostnameGenerator` for domain generation. To facilitate this change, we intend to introduce a new kind `MeshExternalService`, enabling users to specify particular `MeshExternalServices` that necessitate custom domains. Only MeshOperator should create a `HostnameGenerator` resource and when a user needs a specific domain for a `MeshExternalService`, the user needs to reach out to the MeshOperator. `HostnameGenerator` can be created only on GlobalCP and later is synchronized to all zones. More about HostnameGenerator in [MADR-046](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/046-meshservice-hostname-vips.md?plain=1#L58).
+
+```yaml
+kind: HostnameGenerator
+metadata:
+  name: k8s-meshext-hostnames
+spec:
+  targetRef:
+    kind: MeshExternalService
+    tags:
+      my-service.io/access: "true" 
+  template: {{ name }}.svc.meshext.local
+```
+
+For example, given this `MeshExternalService`
+
+```yaml
+kind: MeshExternalService
+metadata:
+  name: mydomain
+  namespace: kuma-system
+  labels:
+    my-service.io/access: "true" 
+    kuma.io/mesh: default
+    kuma.io/zone: east-1
+    kuma.io/origin: zone
+spec:
+  type: Managed
+  managed:
+    match:
+      type: KumaHostname
+      port: 80
+      protocol: http
+    endpoints:
+    - address: 192.168.0.1
+      port: 9090 
+...
+```
+
+In this scenario, we generate a custom domain `mydomain.svc.meshext.local` and allocate the address `242.0.0.1` to it.
+For the purpose of `MeshExternalServices` we are going to take a completely new CIDR by default `242.0.0.0/8`. This CIDR can be configured by the user.
+
+#### Wildcard domain
+
+Wildcard domains are not going to be supported as a part of `MeshExternalService`. We want to introduce a new policy `MeshPassthrough` which is going to be resposible for exposing wildcard and domains.
+
+### Other options
+
+#### Creating MeshExternalService
 
 ```yaml
 kind: MeshExternalService
@@ -163,259 +412,9 @@ status:
     * **status**: indicate if an address is available
     * **reason**: holds error messages if there are any 
 
-#### Default CA certificate
-
-By default, when TLS is enabled and CA certificate is not set, we are going to use system bundled one. We can achive that by scanning in `kuma-dp` [default paths](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ssl#example-configuration) for each environment and later send that information in the bootstrap request to the control-plane for a configuration generation.
-
-#### Policy matching
-
-`MeshExternalServices` should work the same with policies as `MeshService`. We are going to introduce a new `kind: MeshExternalService`, which allows targeting them with policies.
-
-#### Envoy resources naming
-
-Currently, we name clusters after their respective policies. However, when dealing with multiple protocols, we find it necessary to include the port number in the cluster name.
-Example:
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: httpbin
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-    kuma.io/zone: east-1
-spec:
-  match:
-  - type: Domain
-    value: httpbin.com
-    port: 80
-    protocol: http2
-  - type: Domain
-    value: httpbin.com
-    port: 443
-    protocol: tls
-  type: Passthrough
-```
-
-In this case, for port `80`, we require HTTP/2 configuration in the cluster settings. This necessitates having a separate configuration for each cluster.
-
-clusterName: `mes_{policyName}_{port}`, so for the above policy name would looks like: `mes_httpbin_80` and `mes_httpbin_443`
-listenername: we are not going to create new listeners
-FilterChainNaming for tls and tcp `mes_{policyName}_{port}`, because each listener points to the cluster.
-In case of http traffic we are going to name `mes_http_{port}` because we can distinguish the traffic on routes.
-
-#### Extensability
-
-Provided model allows creating separate plugins which can integrate with different cloud providers or components. The user can create it's own custom configuration and later in the code create XDS configuration based on it. 
-
-Example:
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: example
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-    kuma.io/zone: east-1
-spec:
-  match:
-  - type: InternalVIP
-    value: example.ext.svc.local
-    port: 80
-    protocol: http
-  type: Extension
-  extension:
-    type: Lambda 
-    config:
-      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
-```
-
-#### Universal without Transparent Proxy
-
-This specific setup has limitations caused by the nature of passthrough. 
-
-Limitations:
-* Wildcard doesn’t work through proxy
-* Only `destination.type: Managed` supported
-
-Traffic handled without transparent proxy doesn't provide information about the original destination of the request. That causes traffic to be difficult to recognize and we are not able to handle 2 different matches on the same listener, unless it's http traffic. In this case it makes sense to have only one match, or even use only destinations.
-
-#### IP intersections 
-
-It's possible for users to create a policy where the IP ranges intersect with each other. We cannot validate this during policy creation, but during configuration generation, we are able to check if IPs intersect. In such cases, we can log a message stating:
-
-> external-service1 and external-service2 have overlapping IPs X.X.X.X, which can disrupt your traffic.
-
-As a result, we will select the first `MeshExternalService` based on the creation time. If they were created simultaneously, we will use lexicographical order.
-
-#### Domain generation
-
-The `ExternalService` resource automatically allocated an internal IP each real domain (e.g. `httpbin.com`). While this approach offered benefits such as avoiding the allocation of a listener for a specific port listening on `0.0.0.0`, it obscured the existing domain behind a custom IP. With the introduction of `MeshExternalService`, we expose to users a type called `InternalVIP`, enabling the creation of domains for specific external services.
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: mongo
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  match:
-  - type: InternalVIP # Kuma will generate a domain
-    value: mongo.ext.svc.local
-    port: 27017
-    protocol: tcp
-  type: Managed # Managed|Passthrough|Extension
-  managed:
-    endpoints:
-    - address: 10.0.0.1
-      port: 27017
-    - address: 10.0.0.2
-      port: 27017
-status: 
-  vip:
-    ip: 242.0.0.1
-    type: Kuma
-```
-
-In this scenario, we generate a custom domain `mongo.ext.svc.local` and allocate the address `242.0.0.1` to it.
-For the purpose of `MeshExternalServices` we are going to take a completely new CIDR by default `242.0.0.0/8`. This CIDR can be configured by the user.
-
-#### Wildcard domain
-
-Wildcard domains are supported only when `destination.type: Passthrough`, which is a default one.
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: kafka
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  match: 
-  - type: Domain
-    value: *.eu-west-3.aws.cloud 
-    port: 9092
-    protocol: tls
-```
-
-Potentially, by using [Matching API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api) we can support partial matching  exmaple: `*-test.eu-west-3.aws.cloud`
-
-### Other options
-
-#### Creating MeshExternalService + HostnameGenerator
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: myservice
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-spec:
-  domains:
-  - *.myservice.svc.local
-  - httpbin.com
-  addresses:
-  - 10.1.1.0/24
-  - 192.168.0.1
-  ports:
-  - port: 443
-    targetPort: 8443
-    protocol: tcp
-  type: Managed # Managed|Passthrough|Extension
-  extension:
-    type: Lambda 
-    config: # type JSON
-      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
-  destinations:
-  - address: 1.1.1.1
-    port: 12345
-  - address: httpbin.com
-  - address: unix://....
-  tls:
-    version:
-      min: TLS_12 # or TLS_13
-      max: TLS_12 # setting min=max means we require specific version
-    allowRenegotiation: false
-    verification:
-      skip: true # if this is true then subjectAltNames don't take effect
-      subjectAltNames: # if subjectAltNames is not defined then take domains
-        - httpbin.com
-        - "spiffe://httpbin.com"
-    caCert: 
-      inline: 123
-    clientCert:
-      secret: 123
-    clientKey:
-      secret: 123
-status: # managed by CP. Not shared cross zone, but synced to global
-  addresses:
-  - hostname: myservice.svc.meshext.local
-    status: Available # | NotAvailable
-    origin: 
-      kind: HostGenerator
-      name: "k8s-zone-generator"
-    reason: "not available because of the clash with ..."
-  vips:
-  - ip: <kuma VIP>
-    type: Kuma | # External
-```
-
-* **spec**:
-  * **domains**: defines a list of existing domains that are going to be routed through proxy
-  * **ports**: defines a list of ports and protocols
-    * **port**: defines a port to which a user does requests
-    * **protocol**: defines a protocol of the communication. Possible values:
-      * `tls`: should be used when TLS traffic is originated by the client application
-      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port.
-      * `grpc`
-      * `http`
-      * `http2`
-    * **targetPort**: defines a target port to which traffic should be sent.
-  * **type**: defines what kind of destination is it, one of `Managed`, `Passthrough`, or `Extension`, (Default: `Passthrough`)
-      * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
-      * `Passthrough`: traffic just passes a proxy without any modifications to the original destination, when defined sections `endpoints`, `tls` and `extension` are not available.
-      * `Extension`: allows specifying a custom plugin for example, user can create a plugin which support AWS Lambda, when defined sections `endpoints` and `tls` are not available.
-    * **extension**: struct for a plugin configuration
-      * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
-      * **config**: json map that is mapped to configuration provided in the type. 
-  * **destinations**: defines a list of domains, unix sockets or ips:
-    * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
-    * **port**: defines a port of a destination.
-  * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
-    * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundle. More details in section: Default CA certificate
-    * **version**: section for providing version specification.
-      * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
-      * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
-    * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
-    * **verification**: section for providing TLS verification details.
-      * **skip**: defines if proxy should skip SAN verification. Default `false`.
-      * **subjectAltNames**: list of names to verify in the certificate.
-      * **caCert**: defines a certificate of CA.
-        * one of `inline`, `inlineString` or `secret`.
-      * **clientCert**: defines a certificate of a client.
-        * one of `inline`, `inlineString` or `secret`.
-      * **clientKey**: defines a client private key.
-        * one of `inline`, `inlineString` or `secret`.
-* **status**: status of an object managed by Kuma control-plane
-  * **addresses**:
-    * **hostname**: domain generated by HostnameGenerator
-    * **status**: if a domain is already assigned, possible values `Available` | `NotAvailable`
-    * **origin**: provided an information how the domain was generated
-      * **kind**: kind of resource responsible for hostname generation
-      * **name**: name of the resource
-    * **reason**: set when there was error when generating a hostname
-  * **vips**: list of allocated VIPs
-    * **ip**: allocated IP for a provided domain with `InternalVIP` type in a match section
-    * **type**: provides information about the way IP was provided
-    * **hostname**: provides a domain with `InternalVIP` type in a match section for which IP was allocated. In case of many entries it helps corelating entries.
-
 ##### Hostname and VIP generation
 
-Currently, Kuma allocates a domain for an ExternalService based on the kuma.io/service label and the real destination domain. However, in MeshExternalService, we aim to discontinue this practice. Instead, we propose utilizing the HostGenerator for domain generation. To facilitate this change, we intend to introduce a new selector called meshExternalServiceSelector, enabling users to specify particular MeshExternalServices that necessitate custom domains. Only MeshOperator should create a HostGenerator policy and when a user needs a specific domain for a MeshExternalService, the user needs to reach out to the MeshOperator. HostGenerator can be created only on GlobalCP and later is synchronized to all zones. More about HostGenerator in [MADR-046](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/046-meshservice-hostname-vips.md?plain=1#L58).
+Currently, Kuma allocates a domain for an ExternalService based on the kuma.io/service label and the real destination domain. However, in `MeshExternalService`, we aim to discontinue this practice. Instead, we propose utilizing the HostGenerator for domain generation. To facilitate this change, we intend to introduce a new selector called meshExternalServiceSelector, enabling users to specify particular MeshExternalServices that necessitate custom domains. Only MeshOperator should create a HostGenerator policy and when a user needs a specific domain for a MeshExternalService, the user needs to reach out to the MeshOperator. HostGenerator can be created only on GlobalCP and later is synchronized to all zones. More about HostGenerator in [MADR-046](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/046-meshservice-hostname-vips.md?plain=1#L58).
 
 ```yaml
 kind: HostnameGenerator
@@ -460,54 +459,17 @@ If the template cannot be resolved (label is missing), the hostname won't be gen
 
 #### Positive Consequences
 
-* Simpler model, but not as clear
-* One domain per external service 
+* Clearer structure.
+* Enhanced functionalities.
+* Better policy matching capabilities.
+* No need for a HostnameGenerator
 
 #### Negative Consequences
 
-* Using HostnameGenerator might cause unexpected domains to be created, when match is too wide
-
-#### Creating MeshExternalService and using HostnameGenerator for InternalVIP
-
-This option is similar to the chosen one, but instead of explicitly defining a Kuma DNS entry in the `MeshExternalService` resource (to be generated), users would need to create a `HostnameGenerator` to generate a domain.
-
-The API model does not include a `value` field for the `InternalVIP` type. The domain name is generated by `HostnameGenerator` and later provided under a status section.
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: example
-  namespace: kuma-system
-  labels:
-    kuma.io/mesh: default
-    kuma.io/zone: east-1
-spec:
-  match:
-  - type: InternalVIP # Kuma will generate a domain based on HostnameGenerator
-    port: 80
-    protocol: http
-...
-status:
-  addresses:
-  - hostname: httpbin.svc.meshext.local
-    status: Available # | NotAvailable
-    origin: 
-      kind: HostGenerator
-      name: "k8s-zone-generator"
-    reason: "not available because of the clash with ..."
-  vips:
-  - ip: <kuma VIP>
-    type: Kuma | # External
-```
-
-#### Positive Consequences
-
-* Separation between hostname generation and possible better security (but not a huge problem when only MeshOperator is allowed to create the policy)
-
-#### Negative Consequences
-
-* Less explicit
-* Match section looks a bit awkward with a hostname generator
+* Whole new resource with a lot of new code.
+* Temporarily increased complexity of a product until the migration is done.
+* Problem with supporting Universal without transparent proxy, because one MeshExternalService points to many real domains
+* Problem with matching and applying policy when type `Passthrough`.
 
 ## Common concerns
 
@@ -526,3 +488,5 @@ The migration path will look like this:
 3. Check that the traffic is working fine
 4. Remove ExternalService
 5. Remove config from point 2
+
+We can implement support for `kuma.io/ignore` for `ExternalService`. When labels is added, the whole resource is not taken into configuration generation.
