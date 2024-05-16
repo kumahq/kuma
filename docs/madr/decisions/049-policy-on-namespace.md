@@ -229,13 +229,7 @@ spec:
 
 ##### Decision Outcome
 
-Automatically detect if a policy needs to be exported. 
-Backwards compatibility is tricky, but manageable. 
-We can introduce this behaviour behind the feature flag. 
-This gives users time after the upgrade to make conscious choices on what policies should be exported.
-When the feature flag is switched, Global is going to validate policies against the new enhanced rules.
-
-TODO: how does the Global behave when policy doesn't pass the validation to be synced to other zones?
+Automatically detect if a policy needs to be exported.
 
 ##### Pros and Cons of introducing `spec.export.mode`, the default is `None`
 
@@ -259,9 +253,17 @@ It can be easily replaced with the top-level `targetRef{kind:MeshSubset,tags{"ku
 Having `spec.export.mode` might be excessive taking into account we already have a top-level targetRef.
 If the top-level targetRef specifies a tag `kuma.io/zone` then it's clear whether we need to export the policy or not.
 
+Zone-originated policies in `kuma-system` won't be synced to other zones. 
+This eliminated the problem of backwards compatibility. 
+Also, with the introduction of namespace-originated policies, applying policies to `kuma-system` becomes an edge use case.
+The only reason to apply a policy on zone's `kuma-system` is Zone Cluster Operator stepping in to fix the undesired behaviour.
+
+Zone-originated policies on Universal won't be synced to other zones as well. 
+We might want to introduce namespaces to Universal in the future.
+
 * Good, because we don't introduce new fields, no need for users to learn new concepts.
 * Good, because all consumers are treated equally by default without favoring the local ones.
-* Bad, because it's not backward compatible.
+* Bad, because if you want to keep this only to your local zone, you need to specify the name of the zone in the policy
 
 ### Order when merging
 
