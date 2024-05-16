@@ -28,10 +28,6 @@ filterChains:
             name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
               cluster: backend
-              retryPolicy:
-                numRetries: 0
-                perTryTimeout: 2s
-                retryOn: gateway-error,connect-failure,refused-stream
               timeout: 0s
       statPrefix: outbound_127_0_0_1_10001
 name: outbound:127.0.0.1:10001
