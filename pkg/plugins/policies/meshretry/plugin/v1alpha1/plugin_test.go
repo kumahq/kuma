@@ -179,6 +179,27 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "http",
 		}),
+		Entry("http retry 0 numRetries", testCase{
+			resources: []core_xds.Resource{{
+				Name:     "outbound",
+				Origin:   generator.OriginOutbound,
+				Resource: httpListenerWithSimpleRoute(10001),
+			}},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{},
+						Conf: api.Conf{
+							HTTP: &api.HTTP{
+								NumRetries:    pointer.To[uint32](0),
+								PerTryTimeout: test.ParseDuration("2s"),
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "http_0_numretries",
+		}),
 		Entry("grpc retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:     "outbound",
@@ -226,6 +247,30 @@ var _ = Describe("MeshRetry", func() {
 				},
 			},
 			goldenFilePrefix: "grpc",
+		}),
+		Entry("grpc retry 0 numRetries", testCase{
+			resources: []core_xds.Resource{{
+				Name:     "outbound",
+				Origin:   generator.OriginOutbound,
+				Resource: httpListenerWithSimpleRoute(10002),
+			}},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{core_rules.Tag{
+							Key:   mesh_proto.ServiceTag,
+							Value: "grpc-service",
+						}},
+						Conf: api.Conf{
+							GRPC: &api.GRPC{
+								NumRetries:    pointer.To[uint32](0),
+								PerTryTimeout: test.ParseDuration("12s"),
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "grpc_0_numretries",
 		}),
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{

@@ -96,11 +96,7 @@ func (c *Configurer) getRouteRetryConfig(conf *api.Conf) (*envoy_route.RetryPoli
 	}
 	switch c.Protocol {
 	case "http":
-		policy, err := genHttpRetryPolicy(conf.HTTP)
-		if err != nil {
-			return nil, err
-		}
-		return policy, nil
+		return genHttpRetryPolicy(conf.HTTP)
 	case "grpc":
 		return genGrpcRetryPolicy(conf.GRPC), nil
 	default:
