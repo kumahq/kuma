@@ -263,11 +263,9 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-				if !supportsHashSuffixes {
-					// todo: remove in 2 releases after 2.6.x
-					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
-				}
-				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
+				hasOldStylePrefix := strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
+				hasZoneLabel := r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
+				return hasOldStylePrefix || hasZoneLabel
 			}), sync_store.Zone(clusterName))
 		},
 	}
