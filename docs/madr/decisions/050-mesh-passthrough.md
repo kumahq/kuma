@@ -33,7 +33,7 @@ New `MeshPassthrough` policy seems like cleaner, more flexible.
 
 ### New MeshPassthrough policy
 
-We would like to introduce a new policy `MeshPassthrough` which allows exposing domains, IPs, CIDRs through specific sidecars. Policy should be only configured by the MeshOperator and allowed in `kuma-system`.
+We would like to introduce a new policy `MeshPassthrough` which allows exposing domains, IPs, CIDRs through specific sidecars.
 
 
 ```yaml
@@ -57,22 +57,22 @@ spec:
       protocol: tls    
 ```
 
-`MeshPassthrough` should allow targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh`, `MeshSubset` and in the future `MeshService`.
+`MeshPassthrough` should allow targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh` and`MeshSubset`.
 
 * **matchAppend**: list of all domains/ips/cidrs supported through the selected sidecars. In case there is many polcies matching the same sidecar, lists are merged.
 * **type**: type of the entry, one of `Domain`, `IP` or `CIDR`
 * **value**: value for the entry
 * **port**: port on which service can communicate
 * **protocol**: defines a protocol of the communication. Possible values:
-  * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
-  * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
-  * `grpc`
-  * `http`
-  * `http2`
+  * `Tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
+  * `Tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
+  * `Grpc`
+  * `Http`
+  * `Http2`
 
 #### Implementation
 
-We can use [Matcher API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api.html#matching-api) which got out of a Alpha phase and is stable. We can use it to support different entries on one listener. Together with [passthrough](https://kuma.io/docs/2.7.x/networking/non-mesh-traffic/#outgoing) mode one the mesh, MeshOperator can disable all outgoing traffic except the one provided by `MeshPassthrough`.
+We can use [Matcher API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api.html#matching-api) which got out of a Alpha phase and is stable. We can use it to support different entries on one listener. Together with [passthrough](https://kuma.io/docs/2.7.x/networking/non-mesh-traffic/#outgoing) mode one the mesh, MeshOperator can disable all outgoing traffic except the one provided by `MeshPassthrough`. It is worth pointing out that when `passthrough.enabled` is set to `true` on the `Mesh`, `MeshPassthrough` policies have no effect because all outgoing traffic is allowed.
 
 From the envoy configuration point of view, we are going to add filter chain matchers under `outbound:passthrough:ipv4"` listener.
 
@@ -83,6 +83,13 @@ This policy won't apply without transparent proxy.
 #### ZoneEgress
 
 TBA
+
+#### Security
+
+It is advised that the MeshOperator is responsible for the `MeshPassthrough` policy. This policy can introduce traffic outside of the mesh or even the cluster, and the MeshOperator should be aware of this. It is also important to note that once a policy is matched by tags, any service owner can add specific tags that match the policy. Depending on the security requirements, the MeshOperator:
+
+* can forbid service owners from using these tags,
+* should conduct auditing and proceed based on the audit results.
 
 ### Other options
 
