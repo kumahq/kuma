@@ -299,11 +299,15 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-				if !supportsHashSuffixes {
-					// todo: remove in 2 releases after 2.6.x
-					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
-				}
-				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
+				// Assuming the global CP was updated first, the prefix check is only necessary
+				// if the client doesn't have `supportsHashSuffixes`.
+				// But maybe some prefixed resources were previously synced, we
+				// can filter them and the zone won't sync them again.
+				// When we are further from this migration we can remove this
+				// check.
+				hasOldStylePrefix := strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
+				hasZoneLabel := r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == clusterName
+				return hasOldStylePrefix || hasZoneLabel
 			}), sync_store.Zone(clusterName))
 		},
 	}
