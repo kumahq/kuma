@@ -50,14 +50,14 @@ spec:
     tags:
       chatgpt.io/access: "true"
   default:
-    matchAppend:
+    appendMatch:
     - type: Domain
       value: api.chatgpt.com
       port: 443
       protocol: tls    
 ```
 
-`MeshPassthrough` should allows targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh`, `MeshSubset` and in the future `MeshService`.
+`MeshPassthrough` should allow targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh`, `MeshSubset` and in the future `MeshService`.
 
 * **matchAppend**: list of all domains/ips/cidrs supported through the selected sidecars. In case there is many polcies matching the same sidecar, lists are merged.
 * **type**: type of the entry, one of `Domain`, `IP` or `CIDR`
@@ -78,7 +78,7 @@ From the envoy configuration point of view, we are going to add filter chain mat
 
 #### Universal without transparent proxy
 
-This policy won't apply when no transparent proxy.
+This policy won't apply without transparent proxy.
 
 #### ZoneEgress
 
