@@ -23,6 +23,7 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 const (
@@ -195,6 +196,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 	}
 	b.mutable["signal"] = pingType
 	b.mutable["cluster_id"] = rt.GetClusterId()
+	b.mutable["cluster_uptime"] = strconv.FormatInt(int64(time.Since(rt.GetClusterCreationTime())/time.Second), 10)
 	b.mutable["uptime"] = strconv.FormatInt(int64(time.Since(rt.GetStartTime())/time.Second), 10)
 	if extraFn != nil {
 		if valMap, err := extraFn(rt); err != nil {
@@ -239,6 +241,8 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	b.immutable["unique_id"] = rt.GetInstanceId()
 	b.immutable["backend"] = rt.Config().Store.Type
 	b.immutable["mode"] = rt.Config().Mode
+	b.immutable["federated"] = strconv.FormatBool(rt.Config().IsFederatedZoneCP())
+	b.immutable["zone_name_hash"] = sha256.Hash(rt.Config().Multizone.Zone.Name)
 
 	hostname, err := os.Hostname()
 	if err == nil {
