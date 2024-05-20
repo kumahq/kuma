@@ -111,12 +111,12 @@ status:
       * `http`
       * `http2`
   * **type**: defines what kind of destination it is, currently `Managed`
-    * `Managed`: allows creating a set of destination endpoints and `TLS` configuration, when defined section `extension` is not available.
+    * `Managed`: allows creating a set of destination endpoints and `TLS` configuration
   * **managed**: defines where matched requests should be routed, only for a `type: Managed`
     * **extension**: struct for a plugin configuration
       * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
       * **config**: json map that is mapped to configuration provided in the type.
-    * **endpoints**: defines a list of endpoints
+    * **endpoints**: defines a list of endpoints, either this or `endpoints` can be defined
       * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
       * **port**: defines a port of a destination.
     * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
