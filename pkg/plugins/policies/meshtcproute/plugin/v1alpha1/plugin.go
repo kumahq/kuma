@@ -63,3 +63,107 @@ func (p plugin) Apply(
 
 	return nil
 }
+<<<<<<< HEAD
+=======
+
+func ApplyToGateway(
+	ctx context.Context,
+	proxy *core_xds.Proxy,
+	resources *core_xds.ResourceSet,
+	xdsCtx xds_context.Context,
+	policies core_xds.TypedMatchingPolicies,
+) error {
+	if len(policies.GatewayRules.ToRules.ByListenerAndHostname) == 0 {
+		return nil
+	}
+
+	var limits []plugin_gateway.RuntimeResoureLimitListener
+
+	var gateways *core_mesh.MeshGatewayResourceList
+	if rawList := xdsCtx.Mesh.Resources.MeshLocalResources[core_mesh.MeshGatewayType]; rawList != nil {
+		gateways = rawList.(*core_mesh.MeshGatewayResourceList)
+	} else {
+		return nil
+	}
+
+	gateway := xds_topology.SelectGateway(gateways.Items, proxy.Dataplane.Spec.Matches)
+	if gateway == nil {
+		return nil
+	}
+
+	listeners := meshroute.CollectListenerInfos(
+		ctx,
+		xdsCtx.Mesh,
+		gateway,
+		proxy,
+		policies.GatewayRules,
+		[]mesh_proto.MeshGateway_Listener_Protocol{mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS},
+		sortRulesToHosts,
+	)
+
+	plugin_gateway.SetGatewayListeners(proxy, listeners)
+
+	for _, info := range listeners {
+		cdsResources, err := generateGatewayClusters(ctx, xdsCtx, info)
+		if err != nil {
+			return err
+		}
+		resources.AddSet(cdsResources)
+
+		ldsResources, limit, err := generateGatewayListeners(xdsCtx, info) // nolint: contextcheck
+		if err != nil {
+			return err
+		}
+		resources.AddSet(ldsResources)
+
+		if limit != nil {
+			limits = append(limits, *limit)
+		}
+	}
+
+	resources.Add(plugin_gateway.GenerateRTDS(limits))
+
+	return nil
+}
+
+func sortRulesToHosts(
+	meshLocalResources xds_context.ResourceMap,
+	rawRules rules.GatewayRules,
+	address string,
+	port uint32,
+	protocol mesh_proto.MeshGateway_Listener_Protocol,
+	sublisteners []meshroute.Sublistener,
+) []plugin_gateway.GatewayListenerHostname {
+	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
+	for _, hostnameTag := range sublisteners {
+		host := plugin_gateway.GatewayHost{
+			Hostname: hostnameTag.Hostname,
+			Routes:   nil,
+			Policies: map[model.ResourceType][]match.RankedPolicy{},
+			Tags:     hostnameTag.Tags,
+		}
+		hostInfo := plugin_gateway.GatewayHostInfo{
+			Host: host,
+		}
+		inboundListener := rules.NewInboundListenerHostname(
+			address,
+			port,
+			hostnameTag.Hostname,
+		)
+		rulesForListener, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
+		if !ok {
+			continue
+		}
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
+		meshroute.AddToListenerByHostname(
+			hostInfosByHostname,
+			protocol,
+			hostnameTag.Hostname,
+			hostnameTag.TLS,
+			hostInfo,
+		)
+	}
+
+	return meshroute.SortByHostname(hostInfosByHostname)
+}
+>>>>>>> 84a6ab5f8 (fix(MeshRoute): properly map listener TLS certs to DownstreamTlsContext (#10272))
