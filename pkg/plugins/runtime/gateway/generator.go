@@ -52,7 +52,6 @@ type GatewayHost struct {
 	Hostname string
 	Routes   []*core_mesh.MeshGatewayRouteResource
 	Policies map[model.ResourceType][]match.RankedPolicy
-	TLS      *mesh_proto.MeshGateway_TLS_Conf
 	// Contains MeshGateway, Listener and Dataplane object tags
 	Tags mesh_proto.TagSelector
 }
@@ -369,7 +368,6 @@ func MakeGatewayListener(
 		host := GatewayHost{
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
-			TLS:      l.GetTls(),
 			Tags:     l.Tags,
 			Routes:   routes,
 		}
