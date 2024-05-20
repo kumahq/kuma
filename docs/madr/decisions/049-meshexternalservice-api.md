@@ -182,9 +182,9 @@ spec:
         port: 12345
 ```
 
-Cluster name: `mes_{policyName}`, so for the policy name above, it would look like: `mes_httpbin`.
+Cluster name: `meshexternalservice_{policyName}`, so for the policy name above, it would look like: `meshexternalservice_httpbin`.
 
-Listener name: we don't need new listeners, only filter chain matches. We will create filter chain matches to match traffic. For TLS and TCP traffic, we will name them `mes_{policyName}` because each listener points to the cluster. For `HTTP` traffic, we will name them `mes_http_{port}` because we can distinguish the traffic on routes based on host header.
+Listener name: we don't need new listeners, only filter chain matches. We will create filter chain matches to match traffic. For TLS and TCP traffic, we will name them `meshexternalservice_{policyName}` because each listener points to the cluster. For `HTTP` traffic, we will name them `meshexternalservice_http_{port}` because we can distinguish the traffic on routes based on host header.
 
 #### Extensability
 
