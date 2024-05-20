@@ -25,6 +25,7 @@ New `MeshPassthrough` policy seems like cleaner, more flexible.
 * Clarity: There is no confusion about which fields are involved in the policy configuration.
 * Simplicity: Policies are cleaner and cannot be configured with other policies, unlike MeshExternalService.
 * No confusion with Universal: There is no issue with non-transparent proxies.
+* Can have separate clusters for each "match" and separate metrics for them.
 
 ### Negative Consequences
 
