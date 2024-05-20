@@ -185,9 +185,7 @@ spec:
 
 Cluster name: `mes_{policyName}`, so for the policy name above, it would look like: `mes_httpbin`.
 
-Listener name: We are going to create listeners only for `KumaHostname` and `IP`. In this case, the naming remains the same as now: `outbound:{address}:{port}`.
-
-For `CIDR` and `Domain`, we will create filter chain matches to exclude them from the traffic. For TLS and TCP traffic, we will name them `mes_{policyName}` because each listener points to the cluster. For `HTTP` traffic, we will name them `mes_http_{port}` because we can distinguish the traffic on routes based on host header.
+Listener name: we don't need new listeners, only filter chain matches. We will create filter chain matches to match traffic. For TLS and TCP traffic, we will name them `mes_{policyName}` because each listener points to the cluster. For `HTTP` traffic, we will name them `mes_http_{port}` because we can distinguish the traffic on routes based on host header.
 
 #### Extensability
 
