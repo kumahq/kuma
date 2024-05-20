@@ -24,9 +24,8 @@ networking:
 endef
 
 POSTGRES_MODE = standard
-CP_STORE = memory
-CP_ENV += KUMA_ENVIRONMENT=universal KUMA_MULTIZONE_ZONE_NAME=zone-1 KUMA_STORE_TYPE=$(CP_STORE)
-ifeq ($(CP_STORE),postgres)
+CP_ENV += KUMA_ENVIRONMENT=universal KUMA_MULTIZONE_ZONE_NAME=zone-1
+ifeq ($(KUMA_STORE_TYPE),postgres)
 CP_ENV += KUMA_STORE_POSTGRES_HOST=localhost \
 	KUMA_STORE_POSTGRES_PORT=15432 \
 	KUMA_STORE_POSTGRES_USER=kuma \
@@ -56,8 +55,8 @@ run/postgres/stop: ## Dev: stop Postgres
 	docker-compose -f $(KUMA_DIR)/test/dockerfiles/docker-compose.yaml down
 
 .PHONY: run/kuma-cp
-run/kuma-cp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-cp` locally (use CP_STORE=postgres to use postgres as a store and POSTGRES_MODE=tls to enabled TLS, use EXTRA_CP_ENV to add extra Kuma env vars)
-ifeq ($(CP_STORE),postgres)
+run/kuma-cp: $(DISTRIBUTION_FOLDER) ## Dev: Run `kuma-cp` locally (use KUMA_STORE_TYPE=postgres to use postgres as a store and POSTGRES_MODE=tls to enabled TLS, use EXTRA_CP_ENV to add extra Kuma env vars)
+ifeq ($(KUMA_STORE_TYPE),postgres)
 	$(CP_ENV) $(DISTRIBUTION_FOLDER)/bin/kuma-cp migrate up --log-level=debug
 endif
 	$(CP_ENV) $(DISTRIBUTION_FOLDER)/bin/kuma-cp run --log-level=debug
