@@ -25,6 +25,7 @@ New `MeshPassthrough` policy seems like cleaner, more flexible.
 * Clarity: There is no confusion about which fields are involved in the policy configuration.
 * Simplicity: Policies are cleaner and cannot be configured with other policies, unlike MeshExternalService.
 * No confusion with Universal: There is no issue with non-transparent proxies.
+* Can have separate clusters for each "match" and separate metrics for them.
 
 ### Negative Consequences
 
@@ -65,7 +66,7 @@ spec:
 * **port**: port on which service can communicate
 * **protocol**: defines a protocol of the communication. Possible values:
   * `Tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
-  * `Tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
+  * `Tcp`: WARNING: can't be used when `match.type == Domain` (at TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port). This will be validated in the config.
   * `Grpc`
   * `Http`
   * `Http2`
@@ -94,8 +95,8 @@ This case is a bit more problematic. We can use tunneling over [HTTP2 Connect](h
 
 It is advised that the MeshOperator is responsible for the `MeshPassthrough` policy. This policy can introduce traffic outside of the mesh or even the cluster, and the MeshOperator should be aware of this. It is also important to note that once a policy is matched by tags, any service owner can add specific tags that match the policy. Depending on the security requirements, the MeshOperator:
 
-* can forbid service owners from using these tags,
-* should conduct auditing and proceed based on the audit results.
+* control how service owners use these tags (OPA, Kyverno, MeshConstraints...),
+* should conduct audits and proceed based on the audit results.
 
 ### Other options
 
