@@ -116,7 +116,7 @@ status:
     * **extension**: struct for a plugin configuration
       * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
       * **config**: json map that is mapped to configuration provided in the type.
-    * **endpoints**: defines a list of endpoints, either this or `endpoints` can be defined
+    * **endpoints**: defines a list of endpoints.
       * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
       * **port**: defines a port of a destination.
     * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
@@ -214,7 +214,7 @@ spec:
         arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
 ```
 
-`managed` and `tls` section in the configuration are extension specific and might not be required.
+`endpoints` and `tls` sections in the configuration are extension specific and might not be required.
 
 #### Universal without Transparent Proxy
 
