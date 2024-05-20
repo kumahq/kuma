@@ -15,5 +15,4 @@ type MeshExternalService struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 }
 
-type MeshExternalServiceStatus struct {
-}
+type MeshExternalServiceStatus struct{}
