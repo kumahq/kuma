@@ -88,6 +88,10 @@ spec:
             required:
             - targetRef
             type: object
+          status:
+            description: Status is the current status of the Kuma MeshExternalService
+              resource.
+            type: object
         type: object
     served: true
     storage: true

@@ -5,7 +5,6 @@
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +12,7 @@ import (
 	policy "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -25,6 +25,9 @@ type MeshExternalService struct {
 	// Spec is the specification of the Kuma MeshExternalService resource.
 	// +kubebuilder:validation:Optional
 	Spec *policy.MeshExternalService `json:"spec,omitempty"`
+	// Status is the current status of the Kuma MeshExternalService resource.
+	// +kubebuilder:validation:Optional
+	Status *policy.MeshExternalServiceStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -76,11 +79,21 @@ func (cb *MeshExternalService) SetSpec(spec core_model.ResourceSpec) {
 }
 
 func (cb *MeshExternalService) GetStatus() (core_model.ResourceStatus, error) {
-	return nil, nil
+	return cb.Status, nil
 }
 
 func (cb *MeshExternalService) SetStatus(status core_model.ResourceStatus) error {
-	return errors.New("status not supported")
+	if status == nil {
+		cb.Status = nil
+		return nil
+	}
+
+	if _, ok := status.(*policy.MeshExternalServiceStatus); !ok {
+		panic(fmt.Sprintf("unexpected message type %T", status))
+	}
+
+	cb.Status = status.(*policy.MeshExternalServiceStatus)
+	return nil
 }
 
 func (cb *MeshExternalService) Scope() model.Scope {
@@ -93,4 +106,20 @@ func (l *MeshExternalServiceList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshExternalService{}, &MeshExternalServiceList{})
+	registry.RegisterObjectType(&policy.MeshExternalService{}, &MeshExternalService{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshExternalService",
+		},
+	})
+	registry.RegisterListType(&policy.MeshExternalService{}, &MeshExternalServiceList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshExternalServiceList",
+		},
+	})
 }

@@ -6,7 +6,6 @@ package v1alpha1
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -34,13 +33,15 @@ const (
 var _ model.Resource = &MeshExternalServiceResource{}
 
 type MeshExternalServiceResource struct {
-	Meta model.ResourceMeta
-	Spec *MeshExternalService
+	Meta   model.ResourceMeta
+	Spec   *MeshExternalService
+	Status *MeshExternalServiceStatus
 }
 
 func NewMeshExternalServiceResource() *MeshExternalServiceResource {
 	return &MeshExternalServiceResource{
-		Spec: &MeshExternalService{},
+		Spec:   &MeshExternalService{},
+		Status: &MeshExternalServiceStatus{},
 	}
 }
 
@@ -71,11 +72,21 @@ func (t *MeshExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 }
 
 func (t *MeshExternalServiceResource) GetStatus() model.ResourceStatus {
-	return nil
+	return t.Status
 }
 
-func (t *MeshExternalServiceResource) SetStatus(_ model.ResourceStatus) error {
-	return errors.New("status not supported")
+func (t *MeshExternalServiceResource) SetStatus(status model.ResourceStatus) error {
+	protoType, ok := status.(*MeshExternalServiceStatus)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Status", status)
+	} else {
+		if protoType == nil {
+			t.Status = &MeshExternalServiceStatus{}
+		} else {
+			t.Status = protoType
+		}
+		return nil
+	}
 }
 
 func (t *MeshExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
@@ -148,5 +159,5 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:    false,
 	HasToTargetRef:      false,
 	HasFromTargetRef:    false,
-	HasStatus:           false,
+	HasStatus:           true,
 }
