@@ -154,7 +154,7 @@ By default, when TLS is enabled and CA certificate is not set, we are going to u
 
 #### Envoy resources naming
 
-Currently, we name clusters after their respective policies. Since the model includes only one match we can stick to the same pattern but prefix it with `mes_` which stands for `MeshExternalService`.
+Currently, we name clusters after their respective policies. Since the model includes only one match we can stick to the same pattern but prefix it with `meshexternalservice_`.
 Example:
 
 ```yaml
