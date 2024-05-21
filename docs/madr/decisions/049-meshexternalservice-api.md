@@ -52,37 +52,35 @@ metadata:
     kuma.io/mesh: default
     kuma.io/zone: east-1
 spec:
-  type: Managed # Managed
-  managed:
-    match:
-      type: KumaHostname # Kuma will generate a domain
-      port: 80
-      protocol: http
-    extension:
-      type: Lambda 
-      config: # type JSON
-        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
-    endpoints:
-      - address: 1.1.1.1
-        port: 12345
-      - address: example.com
-      - address: unix://....
-    tls:
-      version:
-        min: TLSv1_2 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
-        max: TLSv1_3 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
-      allowRenegotiation: false
-      verification:
-        skipSAN: true # if this is true then subjectAltNames don't take effect
-        subjectAltNames: # if subjectAltNames is not defined then take domain or ips
-          - example.com
-          - "spiffe://example.local/ns/local"
-        caCert: 
-          inline: 123
-        clientCert:
-          secret: 123
-        clientKey:
-          secret: 123
+  match:
+    type: HostnameGenerator # Kuma will generate a domain
+    port: 80
+    protocol: http
+  extension:
+    type: Lambda 
+    config: # type JSON
+      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  endpoints: # in the presence of an extension `endpoints` and `tls` are not required anymore, it's up to the extension to validate them independently.
+    - address: 1.1.1.1
+      port: 12345
+    - address: example.com
+    - address: unix://....
+  tls:
+    version:
+      min: TLS12 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
+      max: TLS13 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
+    allowRenegotiation: false
+    verification:
+      skipSAN: true # if this is true then subjectAltNames don't take effect
+      subjectAltNames: # if subjectAltNames is not defined then take domain or ips
+        - example.com
+        - "spiffe://example.local/ns/local"
+      caCert: 
+        inline: 123
+      clientCert:
+        secret: 123
+      clientKey:
+        secret: 123
 status: 
   vip:
     value: 242.0.0.1
@@ -96,42 +94,36 @@ status:
     reason: "addresses are overlapping with ext2"
 ```
 * **spec**:
-  * **match**: defines a traffic that should be routed through the sidecar
-    * **type**: type of the match, one of `KumaHostname`, `Domain`, `CIDR` and `IP` are available
-      * `KumaHostname`: matches hostnames provided by HostnameGenerator
-      * `Domain`: handles traffic to the specified domain
-      * `CIDR`: handles traffic to specified addresses range
-      * `IP` handles the traffic to specified IP
-    * **value**: depends of the type can be an existing domain, CIDR or IP. Not available when type `KumaHostname`
+  * **match**: defines traffic that should be routed through the sidecar
+    * **type**: type of the match, only `HostnameGenerator` is available at the moment
+      * `HostnameGenerator`: matches hostnames provided by HostnameGenerator
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
       * `tcp`: WARNING: shouldn't be used when match is `Domain` type. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
       * `grpc`
       * `http`
       * `http2`
-  * **type**: defines what kind of destination it is, currently `Managed`
-    * `Managed`: allows creating a set of destination endpoints and `TLS` configuration
-  * **managed**: defines where matched requests should be routed, only for a `type: Managed`
-    * **extension**: struct for a plugin configuration
-      * **type**: defines what kind of plugin to use, it's a string type so any new plugins should works.
-      * **config**: json map that is mapped to configuration provided in the type.
-    * **endpoints**: defines a list of endpoints.
-      * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
-      * **port**: defines a port of a destination.
-    * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
-      * **version**: section for providing version specification.
-        * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
-        * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
-      * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
-      * **verification**: section for providing TLS verification details.
-        * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
-        * **subjectAltNames**: list of names to verify in the certificate.
-        * **caCert**: defines a certificate of CA.
-          * one of `inline`, `inlineString` or `secret`.
-        * **clientCert**: defines a certificate of a client.
-          * one of `inline`, `inlineString` or `secret`.
-        * **clientKey**: defines a client private key.
-          * one of `inline`, `inlineString` or `secret`.
+  * **extension**: struct for a plugin configuration, in the presence of an extension `endpoints` and `tls` are not required anymore - it's up to the extension to validate them independently.
+    * **type**: defines what kind of plugin to use, it's a string type so any new plugins should work.
+    * **config**: json map that is mapped to configuration provided in the type.
+  * **endpoints**: defines a list of endpoints.
+    * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
+    * **port**: defines a port of a destination.
+  * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
+    * **enabled**: defines if proxy should originate TLS.
+    * **version**: section for providing version specification.
+      * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
+      * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
+    * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
+    * **verification**: section for providing TLS verification details.
+      * **skipVerification**: defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default `Secured`.
+      * **subjectAltNames**: list of names to verify in the certificate.
+      * **caCert**: defines a certificate of CA.
+        * one of `inline`, `inlineString` or `secret`.
+      * **clientCert**: defines a certificate of a client.
+        * one of `inline`, `inlineString` or `secret`.
+      * **clientKey**: defines a client private key.
+        * one of `inline`, `inlineString` or `secret`.
 * **status**: status of an object managed by Kuma control-plane
   * **vip**: section for allocated IP
     * **value**: allocated IP for a provided domain with `KumaHostname` type in a match section or provided IP
@@ -332,8 +324,8 @@ spec:
     tls:
       enabled: true
       version:
-        min: TLSv1_2 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
-        max: TLSv1_3 # or TLS_AUTO, TLSv1_0, TLSv1_1, TLSv1_2, TLSv1_3
+        min: TLS12 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
+        max: TLS13 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
       allowRenegotiation: false
       verification:
         skipSAN: true # if this is true then subjectAltNames don't take effect
@@ -390,8 +382,8 @@ status:
     * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
       * **enabled**: defines if proxy should originate TLS.
       * **version**: section for providing version specification.
-        * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`. Default: `TLS_AUTO`
-        * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`. Default: `TLS_AUTO`
+        * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`. Default: `TLSAuto`
+        * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`. Default: `TLSAuto`
       * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
       * **verification**: section for providing TLS verification details.
         * **skipSAN**: defines if proxy should skip SAN verification. Default `false`.
@@ -553,8 +545,8 @@ status: # managed by CP. Not shared cross zone, but synced to global
   * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
     * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundled.
     * **version**: section for providing version specification.
-      * **min**: defines minmum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
-      * **max**: defines maximum supported version. One of `TLS_AUTO`, `TLSv1_0`, `TLSv1_1`, `TLSv1_2`, `TLSv1_3`
+      * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
+      * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
       * **skip**: defines if proxy should skip SAN verification. Default `false`.
