@@ -317,9 +317,9 @@ It's always justifiable to reference any MeshHTTPRoute from any MeshTimeout.
 `MeshGateway` at this moment is not namespace-scoped. It can change in the future with
 the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
 
-For policies in custom namespaces, we've decided that we would allow targeting `MeshGateway` in `MeshHTTPRoute` and `MeshTCPRoute`, and policies 
-that configures only Envoy cluster (services that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`). 
-For other policies we would allow referencing routes that reference `MeshGateway`.
+For policies in custom namespaces, we've decided that we would allow targeting `MeshGateway` in topLevel targetRef in 
+`MeshHTTPRoute` and `MeshTCPRoute`, and policies that configures only Envoy clusters (policies that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`). 
+For other policies we would allow referencing Mesh*Routes that reference `MeshGateway` in topLevel targetRef.
 
 #### Examples
 
