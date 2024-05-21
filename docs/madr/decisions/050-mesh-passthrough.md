@@ -71,6 +71,12 @@ spec:
   * `Http`
   * `Http2`
 
+#### Security
+
+Relying on labels means that it's important to either:
+1. Make sure that service owners can't freely set them (using something like [kyverno](https://kyverno.io/policies/other/allowed-label-changes/allowed-label-changes/))
+2. Accept the risk of being able to "impersonate" a passthrough label and rely on auditing
+
 #### Implementation
 
 We can use [Matcher API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api.html#matching-api) which got out of a Alpha phase and is stable. We can use it to support different entries on one listener. Together with [passthrough](https://kuma.io/docs/2.7.x/networking/non-mesh-traffic/#outgoing) mode one the mesh, MeshOperator can disable all outgoing traffic except the one provided by `MeshPassthrough`. It is worth pointing out that when `passthrough.enabled` is set to `true` on the `Mesh`, `MeshPassthrough` policies have no effect because all outgoing traffic is allowed.
