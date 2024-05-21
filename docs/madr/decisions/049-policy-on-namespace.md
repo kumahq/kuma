@@ -312,7 +312,7 @@ As mentioned previously, applying a policy on the custom namespace affects reque
 This means, no matter where MeshHTTPRoute is created it can be a "producer" route and affect consumers' configurations.
 It's always justifiable to reference any MeshHTTPRoute from any MeshTimeout.
 
-### MeshGateway reference
+### Referencing MeshGateway
 
 `MeshGateway` at this moment is not namespace-scoped. It can change in the future with
 the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
@@ -321,9 +321,171 @@ For policies in custom namespaces, we've decided that we would allow targeting `
 that configures only Envoy cluster (services that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`). 
 For other policies we would allow referencing routes that reference `MeshGateway`.
 
-## Examples
+#### Examples
 
-## Producer and consumer routes
+As a **Cluster Operator** I want to deploy a single global `MeshGateway` to the cluster so that I’m able to manage a
+single deployment for the whole cluster without knowing specific details about apps and routes.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+mesh: default
+metadata:
+  name: edge-gateway
+  labels:
+    kuma.io/origin: zone
+spec:
+  conf:
+    listeners:
+      - port: 80
+        protocol: HTTP
+  selectors:
+    - match:
+        kuma.io/service: edge-gateway
+```
+
+##### Targeting MeshGateway in MeshHttpRoute
+
+As a **Frontend Service Owner** I want to configure routes on `MeshGateway` without the access to
+cluster-scoped CRDs so that I could manage my routes independently.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: frontend-ns
+  labels:
+    kuma.io/origin: zone-1
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /gui
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: frontend
+                # namespace: frontend-ns - is added automatically
+```
+
+##### Targeting MeshGateway in other policies
+
+###### Producer policies
+
+As a **Frontend Service Owner** I want to configure circuit breaker on `MeshGateway` without the access to
+cluster-scoped CRDs so that I could manage my routes independently.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: circuit-breaker
+  namespace: frontend-ns
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+  - targetRef:
+      kind: MeshService 
+      name: frontend 
+      # namespace: frontend-ns - is added automatically
+    default:
+      outlierDetection:
+        detectors:
+          totalFailures:
+            consecutive: 10
+```
+
+This is straightforward example that will work like any other producer policies and will be applied to MeshGateway
+
+###### Consumer policies
+
+Let's look at the example:
+
+```yaml
+metadata:
+  namespace: finance-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+    tags:
+      k8s.kuma.io/namespace: finance-ns # should we assume this?
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+```
+
+We are creating policy in `frontend-ns` namespace, and we are modifying traffic to backend service in different namespace. 
+Right now MeshGateway is cluster scoped, so it is not clear what should we do. I think we have three options here:
+
+1. forbid user from configuring this, `MeshGateway` is cluster scoped so this does not make sense
+2. allow and try to apply config only to `MeshGatewayInstances` in `frontend-ns`, feels wrong since policy is not really applied on MeshGateway but on MeshGatewayInstance, 
+but this can be done now with matching gateway + listener + dataplane tags, and specifying namespace tag 
+3. allow but ignore policy, as there is no namespace scoped MeshGateway present
+
+**We've decided to go with option no 1. We will forbid user from configuring this `MeshGateway` is cluster scoped so this does not make sense**
+
+## Cross namespace traffic forwarding and ReferenceGrant
+
+There is a [CVE on cross namespace traffic](https://github.com/kubernetes/kubernetes/issues/103675). To solve this issue
+Kubernetes Gateway API introduced [ReferenceGrant](https://gateway-api.sigs.k8s.io/api-types/referencegrant/).
+
+For the east-west traffic this is not needed as we can use `MeshTrafficPermission` to handle permissions. It is more
+broadly explained in [Gateway API docs](https://gateway-api.sigs.k8s.io/geps/gep-1426/#namespace-boundaries).
+
+The problem could emerge in MeshGateway. Lets look at the example:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1
+  namespace: payments-ns
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /internal
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: internal
+                namespace: internal-ns
+```
+
+This `MeshHTTPRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should
+not be possible. We want to forbid selecting `backendRef` from namespace different than policy namespace if top level
+targetRef is `MeshGateway`.
+
+Since our `MeshGateway` is cluster scoped it is not limited to single namespace. You can direct traffic to any namespace
+by applying policy in `kuma-system` namespace, to which not everyone should have access. Because of this we don't need
+to implement `ReferenceGrant` yet. But this will probably be needed after adding namespace
+scoped [MeshBuiltinGateway](https://github.com/kumahq/kuma/issues/10014) in the future.
+
+## Examples - where should we put this section? It does not fit in the previous place
+
+### Producer and consumer routes
 
 As a **Backend Service Owner** I want to route all requests with `/v2` prefix to `version: v2` instances
 so that requests that need v2 version of the API ended up on correct instances.
@@ -403,127 +565,3 @@ spec:
         http:
           requestTimeout: 3s
 ```
-
-### MeshGateway Examples
-
-As a **Cluster Operator** I want to deploy a single global `MeshGateway` to the cluster so that I’m able to manage a
-single deployment for the whole cluster without knowing specific details about apps and routes.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshGateway
-mesh: default
-metadata:
-  name: edge-gateway
-  labels:
-    kuma.io/origin: zone
-spec:
-  conf:
-    listeners:
-      - port: 80
-        protocol: HTTP
-  selectors:
-    - match:
-        kuma.io/service: edge-gateway
-```
-
-#### Targeting MeshGateway in MeshHttpRoute
-
-As a **Frontend Service Owner** I want to configure routes on `MeshGateway` without the access to
-cluster-scoped CRDs so that I could manage my routes independently.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: http-route-1
-  namespace: frontend-ns
-  labels:
-    kuma.io/origin: zone
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /gui
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: frontend
-                namespace: frontend-ns
-```
-
-#### Targeting MeshGateway in other policies
-
-As a **Frontend Service Owner** I want to configure circuit breaker on `MeshGateway` without the access to
-cluster-scoped CRDs so that I could manage my routes independently.
-
-```yaml
-type: MeshCircuitBreaker
-mesh: default
-name: circuit-breaker
-namespace: frontend-ns
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway
-  to:
-  - targetRef:
-      kind: MeshService # you need to specify MeshService in to[].targetRef.kind
-      name: frontend
-    default:
-      outlierDetection:
-        detectors:
-          totalFailures:
-            consecutive: 10
-```
-
-## Cross namespace traffic forwarding and ReferenceGrant
-
-There is a [CVE on cross namespace traffic](https://github.com/kubernetes/kubernetes/issues/103675). To solve this issue
-Kubernetes Gateway API introduced [ReferenceGrant](https://gateway-api.sigs.k8s.io/api-types/referencegrant/).
-
-For the east-west traffic this is not needed as we can use `MeshTrafficPermission` to handle permissions. It is more
-broadly explained in [Gateway API docs](https://gateway-api.sigs.k8s.io/geps/gep-1426/#namespace-boundaries).
-
-The problem could emerge in MeshGateway. Lets look at the example:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: http-route-1
-  namespace: payments-ns
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /internal
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: internal
-                namespace: internal-ns
-```
-
-This `MeshHTTPRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should
-not be possible. We want to forbid selecting `backendRef` from namespace different than policy namespace if top level
-targetRef is `MeshGateway`.
-
-Since our `MeshGateway` is cluster scoped it is not limited to single namespace. You can direct traffic to any namespace
-by applying policy in `kuma-system` namespace, to which not everyone should have access. Because of this we don't need
-to implement `ReferenceGrant` yet. But this will probably be needed after adding namespace
-scoped [MeshBuiltinGateway](https://github.com/kumahq/kuma/issues/10014) in the future.
