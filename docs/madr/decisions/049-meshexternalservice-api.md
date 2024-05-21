@@ -179,7 +179,7 @@ spec:
 Cluster name: `meshexternalservice_{policyName}`, so for the policy name above, it would look like: `meshexternalservice_httpbin`.
 
 Currently the name is `outbound:{vip_ip}:{vip_port}` - we think that VIP IP does not tell the user too much information so we suggest changing it.
-For TLS and TCP traffic, we suggest naming them `meshexternalservice_{resourceName}` because each listener points to the cluster. For `HTTP` traffic, we suggest naming them `meshexternalservice_http_{port}` because we can distinguish the traffic on routes based on host header.
+We suggest naming them `meshexternalservice_{resourceName}` because each listener points to the cluster.
 
 #### Extensability
 
