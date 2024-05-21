@@ -95,7 +95,7 @@ Static IP and Domain we can achive the same way we are doing it now. By setting 
 
 ##### CIDR and Wildcard domains
 
-This case is a bit more problematic. We can use tunneling over [HTTP2 Connect](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades#tunneling-tcp-over-http). Client's application needs to resolve address and later sidecar sends the requests to egress. On the `egress` we need a cluster which supports routing based on the `original_dst_lb_config` and listener supporting `CONNECT`. In this case we cannot match based on SNI because we are sending this traffic over HTTP. In this case, we would need to terminate TLS. [Example Evoy configuration](https://gist.github.com/lukidzi/34cd94528fe6a3d87dd2f2411ff39018).
+This case is a bit more problematic. We can use tunneling over [HTTP2 Connect](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades#tunneling-tcp-over-http). Client's application needs to resolve address and later sidecar sends the requests to egress. On the `egress` we need a cluster which supports routing based on the `original_dst_lb_config` and listener supporting `CONNECT`. In this case we cannot match based on SNI because we are sending this traffic over HTTP. [Example Evoy configuration](https://gist.github.com/lukidzi/34cd94528fe6a3d87dd2f2411ff39018).
 
 #### Security
 
