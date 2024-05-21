@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type DataplaneTags map[string]string
@@ -12,8 +13,8 @@ type Selector struct {
 }
 
 type Port struct {
-	Port       uint32 `json:"port"`
-	TargetPort uint32 `json:"targetPort,omitempty"`
+	Port       uint32             `json:"port"`
+	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
 	Protocol core_mesh.Protocol `json:"protocol,omitempty"`
 }
