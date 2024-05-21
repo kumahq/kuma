@@ -51,6 +51,7 @@ spec:
     tags:
       chatgpt.io/access: "true"
   default:
+    enabled: false
     appendMatch:
     - type: Domain
       value: api.chatgpt.com
@@ -60,6 +61,7 @@ spec:
 
 `MeshPassthrough` should allow targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh` and`MeshSubset`.
 
+* **enabled**: defines if sidecar should be in a passthrough mode and allow all outside traffic. If `true`, `matchAppend` is not used. Default: `false`.
 * **matchAppend**: list of all domains/ips/cidrs supported through the selected sidecars. In case there is many polcies matching the same sidecar, lists are merged.
 * **type**: type of the entry, one of `Domain`, `IP` or `CIDR`
 * **value**: value for the entry
@@ -71,10 +73,16 @@ spec:
   * `Http`
   * `Http2`
 
+#### Mesh with a passthrough
+
+If there is no `MeshPassthrough` policy targetting specific dataplane we are taking the default value from the `Mesh` object. If there is neither `Mesh` setting nor `MeshPassthrough` policy we are using the default for the control-plane which is `enabled` by default.
+
 #### Security
 
-Relying on labels means that it's important to either:
-1. Make sure that service owners can't freely set them (using something like [kyverno](https://kyverno.io/policies/other/allowed-label-changes/allowed-label-changes/))
+It is advised that the MeshOperator is responsible for the `MeshPassthrough` policy. This policy can introduce traffic outside of the mesh or even the cluster, and the MeshOperator should be aware of this
+If you want to secure access to `MeshPassthrough` to specific services, you must choose them manually. 
+If you rely on tags in the top-level `targetRef` you might consider securing them by one of the:
+1. Make sure that service owners can't freely set them (using something like [kyverno](https://kyverno.io/policies/other/allowed-label-changes/allowed-label-changes/), OPA)
 2. Accept the risk of being able to "impersonate" a passthrough label and rely on auditing
 
 #### Implementation
@@ -96,13 +104,6 @@ Static IP and Domain we can achive the same way we are doing it now. By setting 
 ##### CIDR and Wildcard domains
 
 This case is a bit more problematic. We can use tunneling over [HTTP2 Connect](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/upgrades#tunneling-tcp-over-http). Client's application needs to resolve address and later sidecar sends the requests to egress. On the `egress` we need a cluster which supports routing based on the `original_dst_lb_config` and listener supporting `CONNECT`. In this case we cannot match based on SNI because we are sending this traffic over HTTP. [Example Evoy configuration](https://gist.github.com/lukidzi/34cd94528fe6a3d87dd2f2411ff39018).
-
-#### Security
-
-It is advised that the MeshOperator is responsible for the `MeshPassthrough` policy. This policy can introduce traffic outside of the mesh or even the cluster, and the MeshOperator should be aware of this. It is also important to note that once a policy is matched by tags, any service owner can add specific tags that match the policy. Depending on the security requirements, the MeshOperator:
-
-* control how service owners use these tags (OPA, Kyverno, MeshConstraints...),
-* should conduct audits and proceed based on the audit results.
 
 ### Other options
 
