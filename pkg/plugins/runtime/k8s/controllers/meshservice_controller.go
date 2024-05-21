@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -126,7 +126,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
 				Port:       uint32(port.Port),
-				TargetPort: uint32(port.TargetPort.IntVal), // todo(jakubdyszkiewicz): update after API changes
+				TargetPort: port.TargetPort,
 				Protocol:   core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
