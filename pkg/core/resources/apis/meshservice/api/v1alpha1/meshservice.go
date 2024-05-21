@@ -2,8 +2,9 @@
 package v1alpha1
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type DataplaneTags map[string]string
