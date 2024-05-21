@@ -11,6 +11,19 @@ type DataplaneTags map[string]string
 
 type Selector struct {
 	DataplaneTags DataplaneTags `json:"dataplaneTags,omitempty"`
+	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
+}
+
+type DataplaneRef struct {
+	Name string `json:"name,omitempty"`
+}
+
+func (r *DataplaneRef) Matches() bool {
+	if r == nil {
+		return false
+	}
+
+	return false
 }
 
 type Port struct {
