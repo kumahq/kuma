@@ -32,6 +32,12 @@ import (
 )
 
 const (
+	// CreatedMeshServiceReason is added to an event when
+	// a new MeshService is successfully created.
+	CreatedMeshServiceReason = "CreatedMeshService"
+	// UpdatedMeshServiceReason is added to an event when
+	// an existing MeshService is successfully updated.
+	UpdatedMeshServiceReason = "UpdatedMeshService"
 	// FailedToGenerateMeshServiceReason is added to an event when
 	// a MeshService cannot be generated.
 	FailedToGenerateMeshServiceReason = "FailedToGenerateMeshService"
@@ -161,7 +167,12 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
-
+	switch operationResult {
+	case kube_controllerutil.OperationResultCreated:
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created Kuma MeshService: %s", ms.Name)
+	case kube_controllerutil.OperationResultUpdated:
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated Kuma MeshService: %s", ms.Name)
+	}
 	log.V(1).Info("mesh service reconciled", "result", operationResult)
 	return kube_ctrl.Result{}, nil
 }
