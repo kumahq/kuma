@@ -71,10 +71,13 @@ spec:
       max: TLS13 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
     allowRenegotiation: false
     verification:
-      skipSAN: true # if this is true then subjectAltNames don't take effect
+      enabled: true
+      skipVerification: Secured
       subjectAltNames: # if subjectAltNames is not defined then take domain or ips
-        - example.com
-        - "spiffe://example.local/ns/local"
+        - type: Exact
+          value: example.com
+        - type: Prefix
+          value: "spiffe://example.local/ns/local"
       caCert: 
         inline: 123
       clientCert:
@@ -118,6 +121,8 @@ status:
     * **verification**: section for providing TLS verification details.
       * **skipVerification**: defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default `Secured`.
       * **subjectAltNames**: list of names to verify in the certificate.
+        * **type**: specify matching type, one of `Exact`, `Prefix`. Default: `Exact`
+        * **value**: name to verify.
       * **caCert**: defines a certificate of CA.
         * one of `inline`, `inlineString` or `secret`.
       * **clientCert**: defines a certificate of a client.
@@ -144,7 +149,7 @@ By default, when TLS is enabled and CA certificate is not set, we are going to u
 
 `MeshExternalServices` should work the same with policies as `MeshService`. We are going to introduce a new `kind: MeshExternalService`, which allows targeting them with policies.
 
-We will create separate listeners for each MeshExternalService that bind to VIP provided by HostnameGenerator. It's easier to do it this way instead of having multiple filter chain matches on `passthrough` listener because we this piece of code already implemented and we don't have to search deep to find which FilterChain is responsible for which External Service.
+We will create separate listeners for each `MeshExternalService` that bind to VIP provided by HostnameGenerator. It's easier to do it this way instead of having multiple filter chain matches on `passthrough` listener because we this piece of code already implemented and we don't have to search deep to find which FilterChain is responsible for which External Service.
 
 #### Envoy resources naming
 
@@ -154,29 +159,26 @@ Example:
 ```yaml
 kind: MeshExternalService
 metadata:
-  name: httpbin
+  name: lambda
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
     kuma.io/zone: east-1
 spec:
-  type: Managed # Managed
-  managed:
-    match:
-      type: Domain # Kuma will generate a domain
-      value: httpbin.com
-      port: 80
-      protocol: http
-    extension:
-      type: Lambda 
-      config: # type JSON
-        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
-    endpoints:
-      - address: 1.1.1.1
-        port: 12345
+  match:
+    type: HostnameGenerator # Kuma will generate a domain
+    port: 80
+    protocol: http
+  extension:
+    type: Lambda 
+    config: # type JSON
+      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  endpoints:
+    - address: 1.1.1.1
+      port: 12345
 ```
 
-Cluster name: `meshexternalservice_{policyName}`, so for the policy name above, it would look like: `meshexternalservice_httpbin`.
+Cluster name: `meshexternalservice_{resourceName}`, so for the resource name above, it would look like: `meshexternalservice_lambda`.
 
 Currently the name is `outbound:{vip_ip}:{vip_port}` - we think that VIP IP does not tell the user too much information so we suggest changing it.
 We suggest naming them `meshexternalservice_{resourceName}` because each listener points to the cluster.
@@ -196,16 +198,14 @@ metadata:
     kuma.io/mesh: default
     kuma.io/zone: east-1
 spec:
-  type: Managed # Managed
-  managed:
-    match:
-      type: HostnameGenerator # Kuma will generate a domain
-      port: 80
-      protocol: http
-    extension:
-      type: Lambda 
-      config: # type JSON
-        arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
+  match:
+    type: HostnameGenerator # Kuma will generate a domain
+    port: 80
+    protocol: http
+  extension:
+    type: Lambda 
+    config: # type JSON
+      arn: arn:aws:lambda:us-west-2:123456789012:function:my-function
 ```
 
 `endpoints` and `tls` sections in the configuration are extension specific and might not be required.
@@ -226,14 +226,6 @@ networking:
       kind: MeshExternalService
       name: ext-svc
 ```
-
-#### IP intersections 
-
-It's possible for users to create a `MeshExternalService` resource where the IP ranges intersect with each other. We cannot validate this during policy creation, but during configuration generation, we are able to check if IPs intersect. In such cases, we can log a message stating:
-
-> external-service1 and external-service2 have overlapping IPs X.X.X.X, which can disrupt your traffic.
-
-As a result, we will select the first `MeshExternalService` based on the creation time. If they were created simultaneously, we will use lexicographical order.
 
 #### Domain generation
 
@@ -264,15 +256,13 @@ metadata:
     kuma.io/zone: east-1
     kuma.io/origin: zone
 spec:
-  type: Managed
-  managed:
-    match:
-      type: HostnameGenerator
-      port: 80
-      protocol: http
-    endpoints:
-    - address: 192.168.0.1
-      port: 9090 
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+  - address: 192.168.0.1
+    port: 9090 
 ...
 ```
 
