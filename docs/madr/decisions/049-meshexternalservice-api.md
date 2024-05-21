@@ -144,6 +144,8 @@ By default, when TLS is enabled and CA certificate is not set, we are going to u
 
 `MeshExternalServices` should work the same with policies as `MeshService`. We are going to introduce a new `kind: MeshExternalService`, which allows targeting them with policies.
 
+We will create separate listeners for each MeshExternalService that bind to VIP provided by HostnameGenerator. It's easier to do it this way instead of having multiple filter chain matches on `passthrough` listener because we this piece of code already implemented and we don't have to search deep to find which FilterChain is responsible for which External Service.
+
 #### Envoy resources naming
 
 Currently, we name clusters after their respective policies. Since the model includes only one match we can stick to the same pattern but prefix it with `meshexternalservice_`.
