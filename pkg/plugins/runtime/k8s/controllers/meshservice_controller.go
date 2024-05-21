@@ -140,7 +140,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		ctx,
 		meshServices,
 		kube_client.MatchingLabels(map[string]string{
-			metadata.KumaSerivceName: svc.Name,
+			metadata.KumaServiceName: svc.Name,
 		}),
 	); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
@@ -314,7 +314,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 			ms.ObjectMeta.Labels = map[string]string{}
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
-		ms.ObjectMeta.Labels[metadata.KumaSerivceName] = svc.GetName()
+		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
 		}
