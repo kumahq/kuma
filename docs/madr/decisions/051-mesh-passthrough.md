@@ -67,11 +67,11 @@ spec:
 * **value**: value for the entry
 * **port**: port on which service can communicate
 * **protocol**: defines a protocol of the communication. Possible values:
-  * `Tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
-  * `Tcp`: WARNING: can't be used when `match.type == Domain` (at TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port). This will be validated in the config.
-  * `Grpc`
-  * `Http`
-  * `Http2`
+  * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
+  * `tcp`: WARNING: can't be used when `match.type == Domain` (at TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port). This will be validated in the config.
+  * `grpc`
+  * `http`
+  * `http2`
 
 #### Mesh with a passthrough
 
@@ -89,11 +89,11 @@ If you rely on tags in the top-level `targetRef` you might consider securing the
 
 We can use [Matcher API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api.html#matching-api) which got out of a Alpha phase and is stable. We can use it to support different entries on one listener. Together with [passthrough](https://kuma.io/docs/2.7.x/networking/non-mesh-traffic/#outgoing) mode one the mesh, MeshOperator can disable all outgoing traffic except the one provided by `MeshPassthrough`. It is worth pointing out that when `passthrough.enabled` is set to `true` on the `Mesh`, `MeshPassthrough` policies have no effect because all outgoing traffic is allowed.
 
-From the envoy configuration point of view, we are going to add filter chain matchers under `outbound:passthrough:ipv4"` listener.
+From the envoy configuration point of view, we are going to add filter chain matchers under `outbound:passthrough:ipv4"` listener. It's possible to use MeshTrace for tracing, but for the scope of this issue, we decided not to cover it now. We will create an issue and implement it if required.
 
 #### Universal without transparent proxy
 
-This policy won't apply without transparent proxy.
+This policy won't apply without transparent proxy. We can provide in a [warning field](https://github.com/kumahq/kuma/blob/master/pkg/core/xds/matched_policies.go#L23) information why it wasn't applied.
 
 #### ZoneEgress
 
