@@ -126,7 +126,7 @@ status:
         * one of `inline`, `inlineString` or `secret`.
 * **status**: status of an object managed by Kuma control-plane
   * **vip**: section for allocated IP
-    * **value**: allocated IP for a provided domain with `KumaHostname` type in a match section or provided IP
+    * **value**: allocated IP for a provided domain with `HostnameGenerator` type in a match section or provided IP
     * **type**: provides information about the way IP was provided
   * **addresses**: section for generated domain
     * **hostname**: generated domain 
@@ -199,7 +199,7 @@ spec:
   type: Managed # Managed
   managed:
     match:
-      type: KumaHostname # Kuma will generate a domain
+      type: HostnameGenerator # Kuma will generate a domain
       port: 80
       protocol: http
     extension:
@@ -267,7 +267,7 @@ spec:
   type: Managed
   managed:
     match:
-      type: KumaHostname
+      type: HostnameGenerator
       port: 80
       protocol: http
     endpoints:
