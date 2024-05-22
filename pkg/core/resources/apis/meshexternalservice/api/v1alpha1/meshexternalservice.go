@@ -14,11 +14,11 @@ type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
 	Match Match `json:"match"`
 	// Extension struct for a plugin configuration, in the presence of an extension `endpoints` and `tls` are not required anymore - it's up to the extension to validate them independently.
-	Extension Extension `json:"extension"`
+	Extension Extension `json:"extension,omitempty"`
 	// Endpoints defines a list of destinations to send traffic to.
-	Endpoints []Endpoint `json:"endpoints"`
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
 	// Tls provides a TLS configuration when proxy is resposible for a TLS origination
-	Tls Tls `json:"tls"`
+	Tls Tls `json:"tls,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=HostnameGenerator
@@ -29,11 +29,13 @@ type ProtocolType string
 
 type Match struct {
 	// Type of the match, only `HostnameGenerator` is available at the moment.
-	Type MatchType `json:"type"`
+	// +kubebuilder:default=HostnameGenerator
+	Type MatchType `json:"type,omitempty"`
 	// Port defines a port to which a user does request.
 	Port int `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
-	Protocol ProtocolType `json:"protocol"`
+	// +kubebuilder:default=tcp
+	Protocol ProtocolType `json:"protocol,omitempty"`
 }
 
 type Extension struct {
@@ -55,46 +57,49 @@ type Endpoint struct {
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint
-	Port EndpointPort `json:"port,omitempty"`
+	Port EndpointPort `json:"port"`
 }
 
 type Tls struct {
 	// Enabled defines if proxy should originate TLS.
+	// +kubebuilder:default=false
 	Enabled bool `json:"enabled,omitempty"`
 	// Version section for providing version specification.
 	Version TlsVersion `json:"version"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
+	// +kubebuilder:default=false
 	AllowRenegotiation bool `json:"allowRenegotiation"`
 	// Verification section for providing TLS verification details.
 	Verification Verification `json:"verification"`
 }
 
 // +kubebuilder:validation:Enum=TLSAuto;TLS10;TLS11;TLS12;TLS13
-// +kubebuilder:default=TLSAuto
 type TlsMinMaxVersion string
 
 type TlsVersion struct {
 	// Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+	// +kubebuilder:default=TLSAuto
 	Min TlsMinMaxVersion `json:"min"`
 	// Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+	// +kubebuilder:default=TLSAuto
 	Max TlsMinMaxVersion `json:"max"`
 }
 
 // +kubebuilder:validation:Enum=SkipSAN;SkipCA;Secured;SkipALL
-// +kubebuilder:default=Secured
 type VerificationMode string
 
 type Verification struct {
 	// Mode defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default `Secured`.
-	Mode VerificationMode `json:"mode"`
+	// +kubebuilder:default=Secured
+	Mode VerificationMode `json:"mode,omitempty"`
 	// SubjectAltNames list of names to verify in the certificate.
-	SubjectAltNames []SANMatch `json:"subjectAltNames"`
+	SubjectAltNames []SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.
-	CaCert *v1alpha1.DataSource `json:"caCert"`
+	CaCert *v1alpha1.DataSource `json:"caCert,omitempty"`
 	// ClientCert defines a certificate of a client.
-	ClientCert *v1alpha1.DataSource `json:"clientCert"`
+	ClientCert *v1alpha1.DataSource `json:"clientCert,omitempty"`
 	// ClientKey defines a client private key.
-	ClientKey *v1alpha1.DataSource `json:"clientKey"`
+	ClientKey *v1alpha1.DataSource `json:"clientKey,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix
@@ -102,7 +107,8 @@ type SANMatchType string
 
 type SANMatch struct {
 	// Type specifies matching type, one of `Exact`, `Prefix`. Default: `Exact`
-	Type SANMatchType `json:"type"`
+	// +kubebuilder:default=Secured
+	Type SANMatchType `json:"type,omitempty"`
 	// Value to match.
 	Value string `json:"value"`
 }
