@@ -38,9 +38,6 @@ func (d *DataplaneClaims) ID() string {
 	return d.RegisteredClaims.ID
 }
 
-func (d *DataplaneClaims) KeyIDFallback() {
-}
-
 func (d *DataplaneClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
 	d.RegisteredClaims = claims
 }
