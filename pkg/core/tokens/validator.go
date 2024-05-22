@@ -41,14 +41,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		var keyID KeyID
 		kid, exists := token.Header[KeyIDHeader]
 		if !exists {
-			if _, ok := claims.(KeyIDFallback); ok {
-				// KID wasn't supported in the past, so we use a marker interface to indicate which tokens were allowed
-				// This will be removed with https://github.com/kumahq/kuma/issues/5519
-				j.log.Info("[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma", "claims", claims, KeyIDHeader, 0)
-				keyID = KeyIDFallbackValue
-			} else {
-				return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
-			}
+			return 0, fmt.Errorf("JWT token must have %s header", KeyIDHeader)
 		} else {
 			keyID = kid.(string)
 		}
