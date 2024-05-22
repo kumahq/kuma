@@ -11,6 +11,7 @@ The CRDs for new policies are already namespace-scoped, but they can be applied 
 ## Decision Drivers
 
 * Kubernetes-native UX, all app-related resources should be applied in the app's namespace
+* Ability to use Kubernetes RBAC with Kuma policies
 * It's not sustainable to grant access to `kuma-system` namespace to everyone who works with Kuma policies
 * Service owners should have a way to affect Envoy configuration of their clients without applying policies to `kuma-system`
 
