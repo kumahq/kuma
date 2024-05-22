@@ -98,7 +98,7 @@ func Setup(rt runtime.Runtime) error {
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
-		if err := createZoneIfAbsent(session.ClientStream().Context(), log, session.PeerID(), rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(session.ClientStream().Context(), log, session.PeerID(), rt.ResourceManager(), rt.KDSContext().CreateZoneOnFirstConnect); err != nil {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
@@ -127,7 +127,7 @@ func Setup(rt runtime.Runtime) error {
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
-		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager()); err != nil {
+		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager(), rt.KDSContext().CreateZoneOnFirstConnect); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
@@ -240,10 +240,10 @@ func Setup(rt runtime.Runtime) error {
 	)
 }
 
-func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
+func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager, createZoneOnConnect bool) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
 	if err := resManager.Get(ctx, system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
-		if !store.IsResourceNotFound(err) {
+		if !store.IsResourceNotFound(err) || !createZoneOnConnect {
 			return err
 		}
 		log.Info("creating Zone", "name", name)
