@@ -129,7 +129,7 @@ type Dataplane struct {
 	Mesh string `json:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `json:"name,omitempty" envconfig:"kuma_dataplane_name"`
-	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress'
+	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress', 'egress'
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
