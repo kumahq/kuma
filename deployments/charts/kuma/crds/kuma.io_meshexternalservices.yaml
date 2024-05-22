@@ -41,56 +41,265 @@ spec:
             description: Spec is the specification of the Kuma MeshExternalService
               resource.
             properties:
-              targetRef:
-                description: |-
-                  TargetRef is a reference to the resource the policy takes an effect on.
-                  The resource could be either a real store object or virtual resource
-                  defined in-place.
+              endpoints:
+                description: Endpoints defines a list of destinations to send traffic
+                  to.
+                items:
+                  properties:
+                    address:
+                      description: Address defines an address to which a user want
+                        to send a request. Is possible to provide `domain`, `ip` and
+                        `unix` sockets.
+                      example: unix:///tmp/example.sock
+                      minLength: 1
+                      type: string
+                    port:
+                      description: Port of the endpoint
+                      maximum: 65535
+                      minimum: 1
+                      type: integer
+                  required:
+                  - address
+                  - port
+                  type: object
+                type: array
+              extension:
+                description: Extension struct for a plugin configuration, in the presence
+                  of an extension `endpoints` and `tls` are not required anymore -
+                  it's up to the extension to validate them independently.
                 properties:
-                  kind:
-                    description: Kind of the referenced resource
+                  config:
+                    description: Config freeform configuration for the extension.
+                    x-kubernetes-preserve-unknown-fields: true
+                  type:
+                    description: Type of the extension.
+                    type: string
+                required:
+                - config
+                - type
+                type: object
+              match:
+                description: Match defines traffic that should be routed through the
+                  sidecar.
+                properties:
+                  port:
+                    description: Port defines a port to which a user does request.
+                    type: integer
+                  protocol:
+                    default: tcp
+                    description: 'Protocol defines a protocol of the communication.
+                      Possible values: `tcp`, `grpc`, `http`, `http2`.'
                     enum:
-                    - Mesh
-                    - MeshSubset
-                    - MeshGateway
-                    - MeshService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
+                    - tcp
+                    - grpc
+                    - http
+                    - http2
                     type: string
-                  mesh:
-                    description: Mesh is reserved for future use to identify cross
-                      mesh resources.
+                  type:
+                    default: HostnameGenerator
+                    description: Type of the match, only `HostnameGenerator` is available
+                      at the moment.
+                    enum:
+                    - HostnameGenerator
                     type: string
-                  name:
+                required:
+                - port
+                type: object
+              tls:
+                description: Tls provides a TLS configuration when proxy is resposible
+                  for a TLS origination
+                properties:
+                  allowRenegotiation:
+                    default: false
                     description: |-
-                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
-                      `MeshServiceSubset` and `MeshGatewayRoute`
-                    type: string
-                  proxyTypes:
-                    description: |-
-                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
-                      all data plane types are targeted by the policy.
-                    items:
-                      enum:
-                      - Sidecar
-                      - Gateway
-                      type: string
-                    minItems: 1
-                    type: array
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
+                      AllowRenegotiation defines if TLS sessions will allow renegotiation.
+                      Setting this to true is not recommended for security reasons.
+                    type: boolean
+                  enabled:
+                    default: false
+                    description: Enabled defines if proxy should originate TLS.
+                    type: boolean
+                  verification:
+                    description: Verification section for providing TLS verification
+                      details.
+                    properties:
+                      caCert:
+                        description: CaCert defines a certificate of CA.
+                        properties:
+                          inline:
+                            description: Data source is inline bytes.
+                            format: byte
+                            type: string
+                          inlineString:
+                            description: Data source is inline string`
+                            type: string
+                          secret:
+                            description: Data source is a secret with given Secret
+                              key.
+                            type: string
+                        type: object
+                      clientCert:
+                        description: ClientCert defines a certificate of a client.
+                        properties:
+                          inline:
+                            description: Data source is inline bytes.
+                            format: byte
+                            type: string
+                          inlineString:
+                            description: Data source is inline string`
+                            type: string
+                          secret:
+                            description: Data source is a secret with given Secret
+                              key.
+                            type: string
+                        type: object
+                      clientKey:
+                        description: ClientKey defines a client private key.
+                        properties:
+                          inline:
+                            description: Data source is inline bytes.
+                            format: byte
+                            type: string
+                          inlineString:
+                            description: Data source is inline string`
+                            type: string
+                          secret:
+                            description: Data source is a secret with given Secret
+                              key.
+                            type: string
+                        type: object
+                      mode:
+                        default: Secured
+                        description: Mode defines if proxy should skip verification,
+                          one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default
+                          `Secured`.
+                        enum:
+                        - SkipSAN
+                        - SkipCA
+                        - Secured
+                        - SkipALL
+                        type: string
+                      subjectAltNames:
+                        description: SubjectAltNames list of names to verify in the
+                          certificate.
+                        items:
+                          properties:
+                            type:
+                              default: Exact
+                              description: 'Type specifies matching type, one of `Exact`,
+                                `Prefix`. Default: `Exact`'
+                              enum:
+                              - Exact
+                              - Prefix
+                              type: string
+                            value:
+                              description: Value to match.
+                              type: string
+                          required:
+                          - value
+                          type: object
+                        type: array
                     type: object
+                  version:
+                    description: Version section for providing version specification.
+                    properties:
+                      max:
+                        default: TLSAuto
+                        description: Max defines maximum supported version. One of
+                          `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                        enum:
+                        - TLSAuto
+                        - TLS10
+                        - TLS11
+                        - TLS12
+                        - TLS13
+                        type: string
+                      min:
+                        default: TLSAuto
+                        description: Min defines minimum supported version. One of
+                          `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                        enum:
+                        - TLSAuto
+                        - TLS10
+                        - TLS11
+                        - TLS12
+                        - TLS13
+                        type: string
+                    required:
+                    - max
+                    - min
+                    type: object
+                required:
+                - allowRenegotiation
+                - verification
+                - version
                 type: object
             required:
-            - targetRef
+            - match
             type: object
           status:
             description: Status is the current status of the Kuma MeshExternalService
               resource.
+            properties:
+              addresses:
+                description: Addresses section for generated domains
+                items:
+                  properties:
+                    hostname:
+                      description: Hostname of the generated domain
+                      type: string
+                    origin:
+                      description: Origin provides information what generated the
+                        vip
+                      properties:
+                        kind:
+                          description: Kind points to entity kind that generated the
+                            domain.
+                          enum:
+                          - HostnameGenerator
+                          type: string
+                        name:
+                          description: Name of the entity that generated the domain.
+                          type: string
+                      required:
+                      - kind
+                      - name
+                      type: object
+                    reason:
+                      example: addresses are overlapping with my-mesh-external-service-2
+                      type: string
+                    status:
+                      description: Status indicates if an address is available
+                      enum:
+                      - Available
+                      - NotAvailable
+                      type: string
+                  required:
+                  - hostname
+                  - origin
+                  - reason
+                  - status
+                  type: object
+                type: array
+              vip:
+                description: Vip section for allocated IP
+                properties:
+                  type:
+                    description: Type provides information about the way IP was provided.
+                    enum:
+                    - Kuma
+                    type: string
+                  value:
+                    description: Value allocated IP for a provided domain with `HostnameGenerator`
+                      type in a match section or provided IP.
+                    type: string
+                required:
+                - type
+                - value
+                type: object
+            required:
+            - addresses
+            - vip
             type: object
         type: object
     served: true

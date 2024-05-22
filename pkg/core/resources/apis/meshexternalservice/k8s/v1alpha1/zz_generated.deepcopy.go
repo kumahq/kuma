@@ -22,7 +22,7 @@ func (in *MeshExternalService) DeepCopyInto(out *MeshExternalService) {
 	if in.Status != nil {
 		in, out := &in.Status, &out.Status
 		*out = new(apiv1alpha1.MeshExternalServiceStatus)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 }
 

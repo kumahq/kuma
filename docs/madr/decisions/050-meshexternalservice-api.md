@@ -71,7 +71,6 @@ spec:
       max: TLS13 # or TLSAuto, TLS10, TLS11, TLS12, TLS13
     allowRenegotiation: false
     verification:
-      enabled: true
       mode: Secured
       subjectAltNames: # if subjectAltNames is not defined then take domain or ips
         - type: Exact
@@ -102,7 +101,7 @@ status:
       * `HostnameGenerator`: matches hostnames provided by HostnameGenerator
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
-      * `tcp`: WARNING: shouldn't be used when match is `Domain` type. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
+      * `tcp`
       * `grpc`
       * `http`
       * `http2`
