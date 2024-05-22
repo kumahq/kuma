@@ -93,20 +93,16 @@ spec:
 
 We can formally define what's producer and consumer Kuma policies:
 
-* The policy is a **producer policy**, when:
-  * for each `idx` the value of `spec.to[idx].targetRef.namespace` is equal to `metadata.namespace`
-  * the policy has a `from` array
-* The policy is a **consumer policy**, when:
-  * for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace`
-  * there are no `from` or `to` arrays (i.e. MeshTrace, MeshMetric, MeshProxyPatch)
+* if for each `idx` the value of `spec.to[idx].targetRef.namespace` is equal to `metadata.namespace` then it's a producer policy
+* for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace` then it's a consumer policy
 
-If a policy is neither producer nor consumer then such policy should be rejected by the validation webhook.
+The concept of producer/consumer policies is applied only to policies with `to` array.
+Other policies, i.e. with `from` or without `from/to` are neither producer nor consumer policies.
+For convenience when referring to such type of policies we're going to call them **workload-owner policies**.
+The examples of workload-owner policies are MeshTrace, MeshMetric, MeshProxyPatch, MeshTrafficPermission, etc. 
 
 Top-level targetRef in Kuma policies always references a group of sidecars that are subjected to the change.
-New namespace-scoped policies are no exception, but we're going to implicitly add `k8s.kuma.io/namespace` and `kuma.io/zone` tags to the top-level targetRef, when:
-
-* the policy is a producer policy with `from` array
-* the policy is a consumer policy
+New namespace-scoped policies are no exception, but we're going to implicitly add `k8s.kuma.io/namespace` and `kuma.io/zone` for **consumer** and **workload-owner policies**.
 
 ```yaml
 # a valid consumer policy
@@ -123,7 +119,7 @@ spec:
         name: backend
         namespace: backend-ns
 ---
-# producer policy with 'from'
+# workload-owner policy with 'from'
 metadata:
   namespace: frontend-ns
   labels:
@@ -135,6 +131,30 @@ spec:
     - targetRef:
         kind: Mesh
 ```
+
+### Validation
+
+Policies with `to` array that have items for local and non-local namespaces shouldn't be allowed:
+
+```yaml
+# invalid policy example
+metadata:
+  namespace: finance-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: finance-ns # this indicates the policy is a producer policy
+    - targetRef:
+        kind: MeshService
+        name: redis
+        namespace: redis-ns # this indicates the policy is a consumer policy
+```
+
+Policies that support both `from` and `to` and specify them at the same time shouldn't be allowed as well.
 
 ### Syntactic sugar
 
@@ -151,14 +171,12 @@ If the `spec.to[idx].targetRef.namespace` is not specified then it's equal to `m
 
 #### Empty top-level targetRef
 
-* if the top-level targetRef is not specified in **producer policy** with `to`
+* if the top-level targetRef is not specified in **producer policy**
   then it's assumed to be `Mesh`
-* if the top-level targetRef is not specified in **producer policy** with `from`
-  then it's assumed to be `MeshSubset` with `kuma.io/zone` and `k8s.kuma.io/namespace` tags.
-* if the top-level targetRef is not specified in **consumer policy**
+* if the top-level targetRef is not specified in **consumer policy** or **workload-owner policy**
   then it's assumed to be `MeshSubset` with `kuma.io/zone` and `k8s.kuma.io/namespace` tags.
 
-The following producer policies with `to` are semantically equal:
+The following producer policies semantically equal:
 
 ```yaml
 metadata:
@@ -181,7 +199,7 @@ spec:
         namespace: backend-ns
 ```
 
-The following producer policies with `from` are semantically equal:
+The following workload-owner policies are semantically equal:
 
 ```yaml
 metadata:
@@ -329,6 +347,7 @@ to:
 are going to work even when policy is synced to another zone.
 The downside of this approach is that multiple MeshServices can be selected, 
 because we didn't specify `kuma.io/zone` and `k8s.kuma.io/namespace` labels.
+Also, using labels is a more verbose approach especially when it comes to referencing the resources in the same namespace.
 
 Another way to reference the resource is by using `name` and `namespace` fields:
 
@@ -341,8 +360,30 @@ to:
 ```
 
 but we have to implement "smart" de-referencing when the policy is synced to another zone.
-The code that performs de-referencing should take into account `kuma.io/zone`, `k8s.kuma.io/namespace` labels of the policy
-and find the single correct resource that was referenced. For example:
+
+#### Considered Options
+
+* explicitly de-reference all `to[].targetRef.name` before syncing the resource to another zone
+* implicitly de-reference `to[].targetRef.name` in the destination zone when needed
+
+#### Decision Outcome
+
+* explicitly de-reference all `to[].targetRef.name` before syncing the resource to another zone
+
+#### Pros and Cons of explicitly de-referencing all `to[].targetRef.name` before syncing the resource to another zone
+
+* Good, because `name` and `namespace` always refer to the real object
+* Good, because more predictable for users. They can always copy the name with hash suffix and find the resource in the store
+* Bad, because we're modifying the original spec provided by user
+
+#### Pros and Cons of implicitly de-referencing `to[].targetRef.name` in the destination zone when needed
+
+* Good, because we're not modifying the spec on the fly
+* Bad, because de-referencing is not straightforward and hides extra logic
+
+#### Examples
+
+##### Policy in zone-1 references MeshService in zone-1 (and reference works after both resources synced to zone-2)
 
 ```yaml
 # zone-1, producer-timeout references backend service
@@ -387,10 +428,11 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend # based on labels we should be able to de-reference this to 'backend-w3r3jwi90l8dyuix'
+        name: backend-w3r3jwi90l8dyuix
+        namespace: kuma-system
 ```
 
-#### Example
+##### Policy in zone-1 references MeshHTTPRoute from zone-2
 
 As a **Backend Service Owner** I want to route all requests with `/v2` prefix to `version: v2` instances
 so that requests that need v2 version of the API ended up on correct instances.
@@ -402,6 +444,7 @@ As a **Frontend Service Owner** I want all requests routed to `version: v2` inst
 so that my service meets SLO and responds withing 3s.
 
 ```yaml
+# zone-1, producer route 
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
@@ -410,8 +453,6 @@ metadata:
   labels:
     kuma.io/zone: zone-1
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -428,6 +469,7 @@ spec:
                 tags:
                   version: v2
 ---
+# zone-1, producer policy
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -436,16 +478,17 @@ metadata:
   labels:
     kuma.io/zone: zone-1
 spec:
-  targetRef:
-    kind: MeshHTTPRoute
-    name: backend-route # we can use 'name' here because the namespace is the same
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshHTTPRoute # doesn't work like this today, we need https://github.com/kumahq/kuma/issues/10247
+        name: backend-route
       default:
         http:
           requestTimeout: 5s
----
+```
+
+```yaml
+# zone-2, consumer policy
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -454,15 +497,13 @@ metadata:
   labels:
     kuma.io/zone: zone-2
 spec:
-  targetRef:
-    kind: MeshHTTPRoute # we can't use 'name' and 'namespace' because we're referencing resource from another zone and namespace
-    labels:
-      kuma.io/display-name: backend-route
-      k8s.kuma.io/namespace: backend-ns
-      kuma.io/zone: zone-1
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshHTTPRoute # technically we can use 'name' and 'namespace' but we'd have to know hashed name of the route after syncing
+        labels:
+          kuma.io/display-name: backend-route
+          k8s.kuma.io/namespace: backend-ns
+          kuma.io/zone: zone-1
       default:
         http:
           requestTimeout: 3s
