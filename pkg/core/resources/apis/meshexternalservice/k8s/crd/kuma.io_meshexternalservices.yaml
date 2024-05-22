@@ -185,7 +185,7 @@ spec:
                         items:
                           properties:
                             type:
-                              default: Secured
+                              default: Exact
                               description: 'Type specifies matching type, one of `Exact`,
                                 `Prefix`. Default: `Exact`'
                               enum:

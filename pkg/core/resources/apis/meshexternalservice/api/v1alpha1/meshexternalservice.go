@@ -108,7 +108,7 @@ type SANMatchType string
 
 type SANMatch struct {
 	// Type specifies matching type, one of `Exact`, `Prefix`. Default: `Exact`
-	// +kubebuilder:default=Secured
+	// +kubebuilder:default=Exact
 	Type SANMatchType `json:"type,omitempty"`
 	// Value to match.
 	Value string `json:"value"`
