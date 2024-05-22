@@ -67,6 +67,7 @@ type Tls struct {
 	// Version section for providing version specification.
 	Version TlsVersion `json:"version"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
+	// Setting this to true is not recommended for security reasons.
 	// +kubebuilder:default=false
 	AllowRenegotiation bool `json:"allowRenegotiation"`
 	// Verification section for providing TLS verification details.
