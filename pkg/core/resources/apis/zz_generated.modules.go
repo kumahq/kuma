@@ -4,9 +4,11 @@ package apis
 
 import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
-	"meshservices": {InitFn: meshservice.InitPlugin, Initialized: false},
+	"meshexternalservices": {InitFn: meshexternalservice.InitPlugin, Initialized: false},
+	"meshservices":         {InitFn: meshservice.InitPlugin, Initialized: false},
 }

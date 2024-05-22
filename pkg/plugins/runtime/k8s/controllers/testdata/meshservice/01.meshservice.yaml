@@ -1,6 +1,7 @@
 metadata:
   creationTimestamp: null
   labels:
+    k8s.kuma.io/service-name: example
     kuma.io/mesh: default
   name: example
   namespace: demo

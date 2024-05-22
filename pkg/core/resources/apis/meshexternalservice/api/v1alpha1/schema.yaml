@@ -1,0 +1,63 @@
+type: object
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshExternalService
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma MeshExternalService resource.
+    properties:
+      targetRef:
+        description: |-
+          TargetRef is a reference to the resource the policy takes an effect on.
+          The resource could be either a real store object or virtual resource
+          defined in-place.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshGateway
+              - MeshService
+              - MeshServiceSubset
+              - MeshHTTPRoute
+            type: string
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: |-
+              Name of the referenced resource. Can only be used with kinds: `MeshService`,
+              `MeshServiceSubset` and `MeshGatewayRoute`
+            type: string
+          proxyTypes:
+            description: |-
+              ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+              all data plane types are targeted by the policy.
+            items:
+              enum:
+                - Sidecar
+                - Gateway
+              type: string
+            minItems: 1
+            type: array
+          tags:
+            additionalProperties:
+              type: string
+            description: |-
+              Tags used to select a subset of proxies by tags. Can only be used with kinds
+              `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+    required:
+      - targetRef
+    type: object

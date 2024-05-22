@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -1192,12 +1193,12 @@ var _ = Describe("TrafficRoute", func() {
 							Ports: []v1alpha1.Port{
 								{
 									Port:       80,
-									TargetPort: 8080,
+									TargetPort: intstr.FromInt(8080),
 									Protocol:   "http",
 								},
 								{
 									Port:       8081,
-									TargetPort: 8081,
+									TargetPort: intstr.FromInt(8081),
 									Protocol:   "http",
 								},
 							},
@@ -1217,7 +1218,7 @@ var _ = Describe("TrafficRoute", func() {
 							Ports: []v1alpha1.Port{
 								{
 									Port:       6379,
-									TargetPort: 6379,
+									TargetPort: intstr.FromInt(6379),
 								},
 							},
 						},

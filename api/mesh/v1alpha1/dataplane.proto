@@ -153,6 +153,9 @@ message Dataplane {
 
       // State describes the current state of the listener.
       State state = 9;
+
+      // Name adds another way of referencing this port, usable with MeshService
+      string name = 10;
     }
 
     // Outbound describes a service consumed by the data plane proxy.
