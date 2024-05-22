@@ -8,59 +8,223 @@ Kuma 2.6.0 enable users to apply policies on Zone CP.
 This change unblocks us to introduce namespace support for policies.
 The CRDs for new policies are already namespace-scoped, but they can be applied only on the `kuma-system` namespace.
 
+## Decision Drivers
+
+* Kubernetes-native UX, all app-related resources should be applied in the app's namespace
+* It's not sustainable to grant access to `kuma-system` namespace to everyone who works with Kuma policies
+* Service owners should have a way to affect Envoy configuration of their clients without applying policies to `kuma-system`
+
 ## Considered Options
 
-- allow applying new policies to the custom namespaces
-- do nothing
+* implicitly convert policy's namespace to `k8s.kuma.io/namespace` tag for top-level targetRef
+* adopt producer/consumer concept from [GAMMA](https://gateway-api.sigs.k8s.io/mesh/#gateway-api-for-service-mesh)
 
 ## Decision Outcome
 
-- allow applying new policies to the custom namespaces
+- adopt producer/consumer concept from GAMMA
 
-## Pros and Cons of the applying policies on custom namespaces
+## Pros and Cons of implicitly converting policy's namespace to `k8s.kuma.io/namespace` tag for top-level targetRef
 
-* Good, because it allows using Kubernetes RBAC
-* Good, because it provides more predictable behaviour as namespace-scoped policy affects only workloads in the same
-  namespace
-* Good, because it provides more Kubernetes-native UX
-* Bad, because adds complexity for users
-    * what's the right namespace for the policy?
-    * how cross-policy refs work?
-    * how policy order works?
+* Good, because it easy to implement
+* Good, because it works similar to zone-originated policies (we implicitly add `kuma.io/zone` tag for top-level targetRef)
+* Bad, because it doesn't remove necessity to create policies in `kuma-system` namespace
 
-## Pros and Cons of doing nothing
+## Pros and Cons of adopting producer/consumer concept from GAMMA
 
-* Good, because we have time to work on other features
-* Bad, because cluster operator has to grant write permissions to `kuma-system` namespace to everyone who works with
-  policies
-* Bad, because low isolation between teams (team-a can unintentionally break polices of the team-b)
+* Good, because it's familiar to users who know GAMMA
+* Good, because creating policies in `kuma-system` becomes an edge use-case, the vast majority of use cases is covered by namespace-scoped policies
+* Bad, because it requires syncing policies across zones. 
+  Today zone-originated policies are synced only to global for visibility. 
+  It will be possible to apply policy to `zone-a` and it'll be synced to `zone-b`.
 
 ## Implementation
 
-Applying a policy on the custom namespace **affects requests to the pods in the custom namespace**.
-Since some policies are applied on the client-side, the scope of policy's effect is not limited to the namespace
-where it was applied. 
-For example, the following policy sets the timeout on outbounds of all consumers of the backend service:
+### Producers and consumers
+
+[GAMMA](https://gateway-api.sigs.k8s.io/mesh/#gateway-api-for-service-mesh) introduces a concept of producer and consumer routes:
+
+> A Route in the same Namespace as its Service is called a **producer route**, 
+> since it is typically created by the creator of the workload in order to define acceptable usage of the workload.
+
+> A Route in a different Namespace than its Service is called a **consumer route**. 
+> Typically, this is a Route meant to refine how a consumer of a given workload makes request of that workload.
+
+The concept of producer/consumer routes is very convenient. 
+We can extend this to producer/consumer policies in general:
+
+* A **producer policy** is a policy created in the same namespace as the service it's referring to. 
+Typically created by the service owner in order to define acceptable usage of the service.
+
+* A **consumer policy** is a policy created in a different namespace than the service it's referring to.
+Typically, the policy is meant to refine how a consumer of a given service makes request to it.
+
+Applying this concept to Kuma policies, we'll get the following examples:
 
 ```yaml
-kind: MeshTimeout
+# Backend Service Owner creates a producer policy 
 metadata:
   namespace: backend-ns
 spec:
   targetRef:
     kind: Mesh
   to:
-    - targetRef: 
+    - targetRef:
         kind: MeshService
         name: backend
         namespace: backend-ns
-      default:
-        connectionTimeout: 5s
+      default: $conf1 # 'conf1' is going to be applied to all consumers of the backend service
+---
+# Frontend Service Owner creates a consumer policy 
+metadata:
+  namespace: frontend-ns
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/service: frontend_frontend-ns_svc_8080
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+      default: $conf2 # 'conf2' refines 'conf1' that was already provided by the producer
 ```
 
-Important to note, even though policy in `backend-ns` changes proxy configurations in `frontend-ns` 
-the top-level targetRef still servers the purpose of showing what proxy configurations are going to change.
-Policy's namespace **does not** implicitly turn the top-level targetRef to `MeshSubset{tags:{"kuma.io/namespace":"backend-ns"}}`.
+We can formally define what's producer and consumer Kuma policies:
+
+* The policy is a **producer policy**, when:
+  * for each `idx` the value of `spec.to[idx].targetRef.namespace` is equal to `metadata.namespace`
+  * the policy has a `from` array
+* The policy is a **consumer policy**, when:
+  * for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace`
+  * there are no `from` or `to` arrays (i.e. MeshTrace, MeshProxyPatch)
+
+If a policy is neither producer nor consumer then such policy should be rejected by the validation webhook.
+
+Top-level targetRef in Kuma policies always references a group of sidecars that are subjected to the change.
+New namespace-scoped policies are no exception, but we're going to implicitly add `k8s.kuma.io/namespace` and `kuma.io/zone` tags to the top-level targetRef, when:
+
+* the policy is a producer policy with `from` array
+* the policy is a consumer policy
+
+```yaml
+# a valid consumer policy
+metadata:
+  namespace: frontend-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: Mesh # despite it targets 'Mesh' the policy will be applied to pods in the 'frontend-ns' of 'zone-1'
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+---
+# producer policy with 'from'
+metadata:
+  namespace: frontend-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: Mesh # despite it targets 'Mesh' the policy will be applied to pods in the 'frontend-ns' of 'zone-1'
+  from:
+    - targetRef:
+        kind: Mesh
+```
+
+### Syntactic sugar
+
+There are few things in policies syntax Kuma can figure out without requiring user to specify them explicitly.
+The syntactic sugar is very important as it allows user to not specify zone's name and namespace explicitly in the policy's yaml. 
+
+#### Empty namespace in `to[].targetRef`
+
+If the `spec.to[idx].targetRef.namespace` is not specified then it's equal to `metadata.namespace`.
+
+#### Empty top-level targetRef
+
+* if the top-level targetRef is not specified in **producer policy** with `to`
+  then it's assumed to be `Mesh`
+* if the top-level targetRef is not specified in **producer policy** with `from`
+  then it's assumed to be `MeshSubset` with `kuma.io/zone` and `k8s.kuma.io/namespace` tags.
+* if the top-level targetRef is not specified in **consumer policy**
+  then it's assumed to be `MeshSubset` with `kuma.io/zone` and `k8s.kuma.io/namespace` tags.
+
+The following producer policies with `to` are semantically equal:
+
+```yaml
+metadata:
+  namespace: backend-ns
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+---
+metadata:
+  namespace: backend-ns
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+```
+
+The following producer policies with `from` are semantically equal:
+
+```yaml
+metadata:
+  namespace: backend-ns
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+---
+metadata:
+  namespace: backend-ns
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/namespace: frontend-ns
+      kuma.io/zone: zone-with-frontend
+  from:
+    - targetRef:
+        kind: Mesh
+```
+
+The following consumer policies are semantically equal:
+
+```yaml
+metadata:
+  namespace: frontend-ns
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+---
+metadata:
+  namespace: frontend-ns
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/namespace: frontend-ns
+      kuma.io/zone: zone-with-frontend
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+```
 
 ### Namespace-scoped policies and multizone
 
@@ -70,200 +234,30 @@ namespaces on Global.
 After a user applied a policy on zone's custom namespace, the webhook automatically adds a `k8s.kuma.io/namespace` label to the policy.
 The label is part of the hash suffix when policy is synced to global.
 
-As mentioned previously, a policy applied in producer namespace can affect envoy configs of consumers.
-Consumers can reside not only in different namespaces, but also in different zones.
-That's why, the policy applied in `backend-ns` in `zone-1` has to be synced to global and then to other zones.
-With the increased blast radius of the policies comes great responsibility, 
-we don't want small mistake in the policy to break traffic on the other side of the world.
-A few things could be done to protect users from impactful mistakes:
-* Enhanced validation. If policy is created in `backend-ns` of the `zone-1` and the top-level targetRef is `Mesh`, 
-then `to[].targetRef` should have both `k8s.kuma.io/namespace: backend-ns` and `kuma.io/zone: zone-1`. 
-* Ability to opt-in or opt-out from syncing the policy to other zones.
-
-#### Enhanced validation
-
-Since applying a policy to the custom namespace of a zone has a potential to change envoy configs of all pods in the mesh including pods in other zones,
-we need to restrict "to" section, so it affect only the requests going to the custom namespace.
-For example, the following policy when applied to `backend-ns` is too intrusive toward the backend consumers:
+Either implicitly or explicitly a policy can have a `kuma.io/zone` tag in the top-level targetRef.
+Based on the actual or assumed value of `kuma.io/zone` tag Kuma makes a decision if policy needs to be synced to other zones.
 
 ```yaml
-kind: MeshTimeout
+# Producer policy, zone tag is not specified which means the policy has to be synced to all other zones,
 metadata:
   namespace: backend-ns
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
-        labels:
-          kuma.io/display-name: redis
-          k8s.kuma.io/namespace: redis-ns
-      default:
-        connectionTimeout: 5s # why does the Backend Service Owner try to change the way clients use the 'redis' service?
+        name: backend
+---
+# consumer policy, 'kuma.io/zone' tag is implicitly equal to the zone's name where policy is applied. 
+# No need to sync this policy to other zones.
+metadata:
+  namespace: frontend-ns
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
 ```
-
-Such policy should not be allowed, if Backend Service Owner needs to change the way clients use `redis`
-they have to put the policy into `kuma-system` namespace by checking with Mesh Operator first.
-
-The validation rules for namespace-scoped policy are the following:
-* to-policy when placed into the custom namespace must have the namespace and zone either in the top-level targetRef or in each to-item
-* from-policy when placed into the custom namespace must always have the namespace and zone in the top-level targetRef
-
-For example, allowed policies are:
-```yaml
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-    - targetRef:
-        kind: MeshService
-        labels:
-          kuma.io/display-name: backend
-          k8s.kuma.io/namespace: backend-ns
-          kuma.io/zone: producer-zone
----
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      k8s.kuma.io/namespace: backend-ns
-  to:
-    - targetRef:
-        kind: MeshService
-        labels:
-          kuma.io/display-name: redis
-          kuma.io/zone: producer-zone
----
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      k8s.kuma.io/namespace: backend-ns
-      kuma.io/zone: producer-zone
-  to:
-    - targetRef:
-        kind: MeshService
-        name: redis
-        namespace: redis-ns
-    - targetRef:
-        kind: Mesh
----
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: MeshSubset
-    tags:
-      k8s.kuma.io/namespace: backend-ns
-      kuma.io/zone: producer-zone
-  from:
-    - targetRef:
-        kind: MeshService
-        name: redis
-        namespace: redis-ns
-```
-
-Not allowed:
-
-```yaml
-# The top-level targetRef references the Mesh, so consumers in all zones will be affected by the policy.
-# Label 'kuma.io/zone: producer-zone' is missing from 'to[0].targetRef.labels'. 
-# Without it, the policy is going to affect requests to 'backend' service in any zone.
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-    - targetRef:
-        kind: MeshService
-        labels:
-          kuma.io/display-name: backend
-          k8s.kuma.io/namespace: backend-ns
----
-# The top-level targetRef references the Mesh, but this is an inbound policy, 
-# and we try to affect requests from all consumers to redis service.
-# This should not be allowed.
-metadata:
-  namespace: backend-ns
-  labels:
-    kuma.io/origin: zone
-    kuma.io/zone: producer-zone
-spec:
-  targetRef:
-    kind: Mesh
-  from:
-    - targetRef:
-        kind: MeshService
-        name: redis
-        namespace: redis-ns
-```
-
-#### Considered options on opting-in(out) to cross-zone policy syncing
-
-* Introduce `spec.export.mode` for all policies, the default is `None`
-* Introduce `spec.export.mode` for all policies, the default is `All`
-* Automatically detect if a policy needs to be exported
-
-##### Decision Outcome
-
-Automatically detect if a policy needs to be exported.
-
-##### Pros and Cons of introducing `spec.export.mode`, the default is `None`
-
-* Good, because backwards compatible. 
-If the field is not set, the behaviour is similar to what we have in 2.7.
-* Good, because it's the least surprising behaviour. 
-No matter what policy looks like you won't find it affecting pods in other zones. 
-* Bad, because user can forget about it. 
-User assumes MeshHTTPRoute affects all consumers while in reality it affects only consumers in the same zone.
-
-##### Pros and Cons of introducing `spec.export.mode`, the default is `All`
-
-* Good, because coherent with MeshService.
-* Good, because treats all consumers equally by default without favoring the local ones.
-* Bad, because it's not backwards compatible.
-* Bad, because it doesn't add much value.
-It can be easily replaced with the top-level `targetRef{kind:MeshSubset,tags{"kuma.io/zone":"my-zone"}}` when user wants to opt-out.
-
-##### Pros and Cons of automatically detecting if a policy needs to be exported
-
-Having `spec.export.mode` might be excessive taking into account we already have a top-level targetRef.
-If the top-level targetRef specifies a tag `kuma.io/zone` then it's clear whether we need to export the policy or not.
-
-Zone-originated policies in `kuma-system` won't be synced to other zones. 
-This eliminated the problem of backwards compatibility. 
-Also, with the introduction of namespace-originated policies, applying policies to `kuma-system` becomes an edge use case.
-The only reason to apply a policy on zone's `kuma-system` is Zone Cluster Operator stepping in to fix the undesired behaviour.
-
-Zone-originated policies on Universal won't be synced to other zones as well. 
-We might want to introduce namespaces to Universal in the future.
-
-* Good, because we don't introduce new fields, no need for users to learn new concepts.
-* Good, because all consumers are treated equally by default without favoring the local ones.
-* Bad, because if you want to keep this only to your local zone, you need to specify the name of the zone in the policy
 
 ### Order when merging
 
@@ -286,31 +280,83 @@ Introducing namespace-scoped policies adds another steps to the policy compariso
 
 ### Cross-resource references
 
-Kuma policies support cross-policy references.
-At this moment, it works only between MeshTimeout and MeshHTTPRoute, but there are plans to support it for other
-policies, i.e. [#6645](https://github.com/kumahq/kuma/issues/6645).
-Referencing a policy from another namespace or another zone should be done in a similar way MeshService is referenced.
-Fields `name/namespace` and `labels` are mutually exclusive.
+When a policy in `zone-1` references a resource (MeshService or MeshHTTPRoute), 
+the reference should work after policy is synced to `zone-2`.
+
+Using `to[].targetRef.labels` is a reliable way to reference the resource, because labels are constant across zones. 
+For example, the label `kuma.io/display-name` has the same value no matter what zone or global we're using to read the resource. 
+That's why targetRefs like
 
 ```yaml
-# reference an object with name/namespace in the storage
-targetRef:
-  kind: MeshHTTPRoute
-  name: orders-route
-  namespace: backend-ns
----
-# reference MeshHTTPRoute that was synced from 'us-east-1' 
-targetRef:
-  kind: MeshHTTPRoute
-  labels:
-    kuma.io/display-name: orders-route
-    k8s.kuma.io/namespace: backend-ns
-    kuma.io/zone: us-east-1
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: backend
+```
+are going to work even when policy is synced to another zone.
+The downside of this approach is that multiple MeshServices can be selected, 
+because we didn't specify `kuma.io/zone` and `k8s.kuma.io/namespace` labels.
+
+Another way to reference the resource is by using `name` and `namespace` fields:
+
+```yaml
+to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: backend-ns
 ```
 
-As mentioned previously, applying a policy on the custom namespace affects requests to the pods in the custom namespace.
-This means, no matter where MeshHTTPRoute is created it can be a "producer" route and affect consumers' configurations.
-It's always justifiable to reference any MeshHTTPRoute from any MeshTimeout.
+but we have to implement "smart" de-referencing when the policy is synced to another zone.
+The code that performs de-referencing should take into account `kuma.io/zone`, `k8s.kuma.io/namespace` labels of the policy
+and find the single correct resource that was referenced. For example:
+
+```yaml
+# zone-1, producer-timeout references backend service
+kind: MeshService
+metadata:
+  name: backend
+  namespace: backend-ns
+---
+kind: MeshTimeout
+metadata:
+  name: producer-timeout
+  namespace: backend-ns
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+```
+
+these resources are synced to `zone-2`:
+
+```yaml
+# zone-2, producer-timeout references backend service
+kind: MeshService
+metadata:
+  name: backend-w3r3jwi90l8dyuix
+  namespace: kuma-system
+  labels:
+    kuma.io/zone: zone-1
+    k8s.kuma.io/namespace: backend-ns
+    kuma.io/display-name: backend
+---
+kind: MeshTimeout
+metadata:
+  name: producer-timeout-qwea89uy739jdgmu
+  namespace: kuma-system
+  labels:
+    kuma.io/zone: zone-1
+    k8s.kuma.io/namespace: backend-ns
+    kuma.io/display-name: producer-timeout
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend # based on labels we should be able to de-reference this to 'backend-w3r3jwi90l8dyuix'
+```
 
 ### Referencing MeshGateway
 
