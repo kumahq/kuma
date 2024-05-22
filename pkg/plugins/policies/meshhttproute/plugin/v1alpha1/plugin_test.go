@@ -130,7 +130,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
 						Port:       80,
-						TargetPort: 8084,
+						TargetPort: intstr.FromInt(8084),
 						Protocol:   core_mesh.ProtocolHTTP,
 					}},
 				},

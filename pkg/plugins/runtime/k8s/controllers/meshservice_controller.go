@@ -8,9 +8,10 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,9 +31,22 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
+const (
+	// CreatedMeshServiceReason is added to an event when
+	// a new MeshService is successfully created.
+	CreatedMeshServiceReason = "CreatedMeshService"
+	// UpdatedMeshServiceReason is added to an event when
+	// an existing MeshService is successfully updated.
+	UpdatedMeshServiceReason = "UpdatedMeshService"
+	// FailedToGenerateMeshServiceReason is added to an event when
+	// a MeshService cannot be generated.
+	FailedToGenerateMeshServiceReason = "FailedToGenerateMeshService"
+)
+
 // MeshServiceReconciler reconciles a MeshService object
 type MeshServiceReconciler struct {
 	kube_client.Client
+	kube_record.EventRecorder
 	Log    logr.Logger
 	Scheme *kube_runtime.Scheme
 }
@@ -101,16 +115,22 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			Namespace: svc.GetNamespace(),
 		},
 	}
-	if err := kube_controllerutil.SetOwnerReference(svc, ms, r.Scheme); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not set owner reference")
-	}
 
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
+		if ms.ObjectMeta.GetGeneration() != 0 {
+			if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
+				r.EventRecorder.Eventf(
+					svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Service",
+				)
+				return errors.Errorf("MeshService already exists and isn't owned by Service")
+			}
+		}
 		ms.ObjectMeta.Labels = maps.Clone(svc.GetLabels())
 		if ms.ObjectMeta.Labels == nil {
 			ms.ObjectMeta.Labels = map[string]string{}
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
+		ms.ObjectMeta.Labels[metadata.KumaSerivceName] = svc.GetName()
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
 		}
@@ -126,7 +146,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
 				Port:       uint32(port.Port),
-				TargetPort: uint32(port.TargetPort.IntVal), // todo(jakubdyszkiewicz): update after API changes
+				TargetPort: port.TargetPort,
 				Protocol:   core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
@@ -139,12 +159,20 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 				IP: svc.Spec.ClusterIP,
 			},
 		}
+		if err := kube_controllerutil.SetOwnerReference(svc, ms, r.Scheme); err != nil {
+			return errors.Wrap(err, "could not set owner reference")
+		}
 		return nil
 	})
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
-
+	switch operationResult {
+	case kube_controllerutil.OperationResultCreated:
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created Kuma MeshService: %s", ms.Name)
+	case kube_controllerutil.OperationResultUpdated:
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated Kuma MeshService: %s", ms.Name)
+	}
 	log.V(1).Info("mesh service reconciled", "result", operationResult)
 	return kube_ctrl.Result{}, nil
 }

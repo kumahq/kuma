@@ -89,6 +89,8 @@ func validateTCP(tcp *TCP) validators.ValidationError {
 	path := validators.RootedAt("tcp")
 	if tcp.MaxConnectAttempt == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
+	} else if *tcp.MaxConnectAttempt == 0 {
+		verr.AddViolationAt(path.Field("maxConnectAttempt"), validators.HasToBeGreaterThanZero)
 	}
 	return verr
 }

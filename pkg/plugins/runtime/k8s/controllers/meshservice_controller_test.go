@@ -12,6 +12,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -62,9 +63,10 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client: kubeClient,
-				Log:    logr.Discard(),
-				Scheme: k8sClientScheme,
+				Client:        kubeClient,
+				Log:           logr.Discard(),
+				Scheme:        k8sClientScheme,
+				EventRecorder: kube_record.NewFakeRecorder(10),
 			}
 
 			key := kube_types.NamespacedName{

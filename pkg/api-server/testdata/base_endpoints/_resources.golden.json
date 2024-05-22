@@ -117,6 +117,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshExternalService",
+   "path": "meshexternalservices",
+   "pluralDisplayName": "Mesh External Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh External Service"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshFaultInjection",
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",

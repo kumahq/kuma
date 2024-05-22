@@ -282,6 +282,22 @@ violations:
   - field: spec.to[0].default.conf.grpc
     message: must not be empty`,
 			}),
+			Entry("0 for tcp.maxConnectAttempt", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      tcp:
+        maxConnectAttempt: 0
+`,
+				expected: `
+violations:
+  - field: spec.to[0].default.conf.tcp.maxConnectAttempt
+    message: must be greater than 0`,
+			}),
 			Entry("empty http.backOff", testCase{
 				inputYaml: `
 targetRef:
