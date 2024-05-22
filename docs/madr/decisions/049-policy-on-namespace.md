@@ -98,7 +98,7 @@ We can formally define what's producer and consumer Kuma policies:
   * the policy has a `from` array
 * The policy is a **consumer policy**, when:
   * for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace`
-  * there are no `from` or `to` arrays (i.e. MeshTrace, MeshProxyPatch)
+  * there are no `from` or `to` arrays (i.e. MeshTrace, MeshMetric, MeshProxyPatch)
 
 If a policy is neither producer nor consumer then such policy should be rejected by the validation webhook.
 
@@ -140,6 +140,10 @@ spec:
 
 There are few things in policies syntax Kuma can figure out without requiring user to specify them explicitly.
 The syntactic sugar is very important as it allows user to not specify zone's name and namespace explicitly in the policy's yaml. 
+
+We don't want to change `spec` on the fly, because it might be surprising for user to see completely different resource in the store.
+Also, in case of the future changes in the logic, it's preferable to store the less explicit version. 
+But we probably have to implement a new feature in the Inspect API that allows viewing the most explicit version of the resource.
 
 #### Empty namespace in `to[].targetRef`
 
@@ -193,8 +197,8 @@ spec:
   targetRef:
     kind: MeshSubset
     tags:
-      k8s.kuma.io/namespace: frontend-ns
-      kuma.io/zone: zone-with-frontend
+      k8s.kuma.io/namespace: backend-ns
+      kuma.io/zone: zone-with-backend
   from:
     - targetRef:
         kind: Mesh
@@ -225,6 +229,33 @@ spec:
         kind: MeshService
         name: backend
         namespace: backend-ns
+```
+
+#### Empty `from[].targetRef`
+
+Most of the policies support only `kind: Mesh` in `from[].targetRef` so it makes sense to allow the field to be empty.
+If `from[].targetRef` is not specified we're going to assume it's equal to `kind: Mesh`.
+The following policies are semantically equal:
+
+```yaml
+metadata:
+  namespace: backend-ns
+spec:
+  from:
+    - default: {}
+---
+metadata:
+  namespace: backend-ns
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      k8s.kuma.io/namespace: backend-ns
+      kuma.io/zone: zone-with-backend
+  from:
+    - targetRef:
+        kind: Mesh
+      default: {}
 ```
 
 ### Namespace-scoped policies and multizone
@@ -260,24 +291,24 @@ spec:
         namespace: backend-ns
 ```
 
+Zone-originated policies in `kuma-system` won't be synced to other zones.
+Zone-originated policies on Universal won't be synced to other zones as well.
+We might want to introduce namespaces to Universal in the future.
+
 ### Order when merging
 
 By design, several policies can select the same DPP.
-In that case, policies are ordered and their `to` (or `from`) lists are merged.
-Introducing namespace-scoped policies adds another steps to the policy comparison process:
+In that case, policies are ordered and their `to` (or `from`) arrays are merged.
+Introducing namespace-scoped policies adds other steps to the policy comparison process.
 
 1. Is top-level `targetRef.kind` more specific (MeshServiceSubset > MeshService > MeshSubset > Mesh)?
    When kinds are equal, go to the next step.
 2. Zone originated policy is more specific than global originated policy.
    When policies originates at the same place, go to the next step.
-3. **[new step]** Policy in any custom namespace is more specific than any policy in the `kuma-system` namespace.
-   When both policies either from custom namespaces or from `kuma-system`, go to the next step.
-4. **[new step]** Policy from local zone is more specific than a policy from another zone. 
-   When policies have the same zone, go to the next step.
-5. **[new step]** Policy from local namespace is more specific than a policy from another namespace.
-   When namespaces are equal, go to the next step.
-6. The policy is more specific if it's name is lexicographically less than other policy's name ("aaa" < "bbb" so that "
-   aaa" policy is more specific)
+3. **[new step]** Compare namespaces so that `consumer-ns` > `producer-ns` > `kuma-system`.
+   If namespaces are equal, go to the next step.
+4. The policy is more specific if it's name is lexicographically less than other policy's name ("aaa" < "bbb" so that "
+   aaa" policy is more specific).
 
 ### Cross-resource references
 
@@ -357,6 +388,84 @@ spec:
     - targetRef:
         kind: MeshService
         name: backend # based on labels we should be able to de-reference this to 'backend-w3r3jwi90l8dyuix'
+```
+
+#### Example
+
+As a **Backend Service Owner** I want to route all requests with `/v2` prefix to `version: v2` instances
+so that requests that need v2 version of the API ended up on correct instances.
+
+As a **Backend Service Owner** I want all requests routed to `version: v2` instances to have a 5s timeout
+so that consumers didn't wait longer than max possible processing time.
+
+As a **Frontend Service Owner** I want all requests routed to `version: v2` instances of `backend` to have 3s timeout
+so that my service meets SLO and responds withing 3s.
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: backend-v2
+  namespace: backend-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /v2
+          default:
+            backendRefs:
+              - kind: MeshServiceSubset
+                name: backend
+                tags:
+                  version: v2
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: backend-route-timeout
+  namespace: backend-ns
+  labels:
+    kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: backend-route # we can use 'name' here because the namespace is the same
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 5s
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: frontend-to-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/zone: zone-2
+spec:
+  targetRef:
+    kind: MeshHTTPRoute # we can't use 'name' and 'namespace' because we're referencing resource from another zone and namespace
+    labels:
+      kuma.io/display-name: backend-route
+      k8s.kuma.io/namespace: backend-ns
+      kuma.io/zone: zone-1
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 3s
 ```
 
 ### Referencing MeshGateway
@@ -529,86 +638,3 @@ Since our `MeshGateway` is cluster scoped it is not limited to single namespace.
 by applying policy in `kuma-system` namespace, to which not everyone should have access. Because of this we don't need
 to implement `ReferenceGrant` yet. But this will probably be needed after adding namespace
 scoped [MeshBuiltinGateway](https://github.com/kumahq/kuma/issues/10014) in the future.
-
-## Examples - where should we put this section? It does not fit in the previous place
-
-### Producer and consumer routes
-
-As a **Backend Service Owner** I want to route all requests with `/v2` prefix to `version: v2` instances
-so that requests that need v2 version of the API ended up on correct instances.
-
-As a **Backend Service Owner** I want all requests routed to `version: v2` instances to have a 5s timeout
-so that consumers didn't wait longer than max possible processing time.
-
-As a **Frontend Service Owner** I want all requests routed to `version: v2` instances of `backend` to have 3s timeout
-so that my service meets SLO and responds withing 3s.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: backend-v2
-  namespace: backend-ns
-  labels:
-    kuma.io/zone: zone-1
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-    - targetRef:
-        kind: MeshService
-        labels:
-          kuma.io/display-name: backend
-          k8s.kuma.io/namespace: backend-ns
-          kuma.io/zone: zone-1
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /v2
-          default:
-            backendRefs:
-              - kind: MeshServiceSubset
-                name: backend
-                tags:
-                  version: v2
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: backend-route-timeout
-  namespace: backend-ns
-  labels:
-    kuma.io/zone: zone-1
-spec:
-  targetRef:
-    kind: MeshHTTPRoute
-    name: backend-route # name is enough as both policies are in the same namespace
-  to:
-    - targetRef:
-        kind: Mesh
-      default:
-        http:
-          requestTimeout: 5s
----
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: frontend-to-backend
-  namespace: frontend-ns
-  labels:
-    kuma.io/zone: zone-2
-spec:
-  targetRef:
-    kind: MeshHTTPRoute
-    labels:
-      kuma.io/display-name: backend-route
-      k8s.kuma.io/namespace: backend-ns
-      kuma.io/zone: zone-2
-  to:
-    - targetRef:
-        kind: Mesh
-      default:
-        http:
-          requestTimeout: 3s
-```
