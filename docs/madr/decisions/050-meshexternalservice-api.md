@@ -72,7 +72,7 @@ spec:
     allowRenegotiation: false
     verification:
       enabled: true
-      skipVerification: Secured
+      mode: Secured
       subjectAltNames: # if subjectAltNames is not defined then take domain or ips
         - type: Exact
           value: example.com
@@ -119,7 +119,7 @@ status:
       * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
-      * **skipVerification**: defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default `Secured`.
+      * **mode**: defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default `Secured`.
       * **subjectAltNames**: list of names to verify in the certificate.
         * **type**: specify matching type, one of `Exact`, `Prefix`. Default: `Exact`
         * **value**: name to verify.
