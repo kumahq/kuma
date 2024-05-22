@@ -54,6 +54,7 @@ type Context struct {
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
+	CreateZoneOnFirstConnect bool
 }
 
 func DefaultContext(
@@ -100,13 +101,14 @@ func DefaultContext(
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
 
 	return &Context{
-		ZoneClientCtx:        ctx,
-		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
-		ZoneProvidedFilter:   ZoneProvidedFilter,
-		Configs:              configs,
-		GlobalResourceMapper: CompositeResourceMapper(globalMappers...),
-		ZoneResourceMapper:   CompositeResourceMapper(zoneMappers...),
-		EnvoyAdminRPCs:       service.NewEnvoyAdminRPCs(),
+		ZoneClientCtx:            ctx,
+		GlobalProvidedFilter:     GlobalProvidedFilter(manager, configs),
+		ZoneProvidedFilter:       ZoneProvidedFilter,
+		Configs:                  configs,
+		GlobalResourceMapper:     CompositeResourceMapper(globalMappers...),
+		ZoneResourceMapper:       CompositeResourceMapper(zoneMappers...),
+		EnvoyAdminRPCs:           service.NewEnvoyAdminRPCs(),
+		CreateZoneOnFirstConnect: true,
 	}
 }
 
