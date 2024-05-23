@@ -58,7 +58,7 @@ type Extension struct {
 
 // +kubebuilder:validation:Minimum=1
 // +kubebuilder:validation:Maximum=65535
-type EndpointPort int
+type Port int
 
 type Endpoint struct {
 	// Address defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets.
@@ -68,7 +68,7 @@ type Endpoint struct {
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint
-	Port *EndpointPort `json:"port,omitempty"`
+	Port *Port `json:"port,omitempty"`
 }
 
 type Tls struct {
@@ -76,7 +76,7 @@ type Tls struct {
 	// +kubebuilder:default=false
 	Enabled bool `json:"enabled,omitempty"`
 	// Version section for providing version specification.
-	Version *TlsVersion `json:"version,omitempty"`
+	Version *Version `json:"version,omitempty"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
 	// Setting this to true is not recommended for security reasons.
 	// +kubebuilder:default=false
@@ -86,23 +86,30 @@ type Tls struct {
 }
 
 // +kubebuilder:validation:Enum=TLSAuto;TLS10;TLS11;TLS12;TLS13
-type TlsMinMaxVersion string
+type TlsVersion string
 
 const (
-	TLSVersionAuto TlsMinMaxVersion = "TLSAuto"
-	TLSVersion10   TlsMinMaxVersion = "TLS10"
-	TLSVersion11   TlsMinMaxVersion = "TLS11"
-	TLSVersion12   TlsMinMaxVersion = "TLS12"
-	TLSVersion13   TlsMinMaxVersion = "TLS13"
+	TLSVersionAuto TlsVersion = "TLSAuto"
+	TLSVersion10   TlsVersion = "TLS10"
+	TLSVersion11   TlsVersion = "TLS11"
+	TLSVersion12   TlsVersion = "TLS12"
+	TLSVersion13   TlsVersion = "TLS13"
 )
 
-type TlsVersion struct {
+var tlsVersionOrder = map[TlsVersion]int {
+	TLSVersion10: 0,
+	TLSVersion11: 1,
+	TLSVersion12: 2,
+	TLSVersion13: 3,
+}
+
+type Version struct {
 	// Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
 	// +kubebuilder:default=TLSAuto
-	Min *TlsMinMaxVersion `json:"min,omitempty"`
+	Min *TlsVersion `json:"min,omitempty"`
 	// Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
 	// +kubebuilder:default=TLSAuto
-	Max *TlsMinMaxVersion `json:"max,omitempty"`
+	Max *TlsVersion `json:"max,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=SkipSAN;SkipCA;Secured;SkipAll

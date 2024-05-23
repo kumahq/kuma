@@ -45,28 +45,16 @@ func validateTls(tls *Tls) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if tls.Version != nil {
-		path := validators.RootedAt("version")
-		if tls.Version.Min != nil {
-			if !slices.Contains(allTlsVersions, string(*tls.Version.Min)) {
-				verr.AddErrorAt(path.Field("min"), validators.MakeFieldMustBeOneOfErr("min", allTlsVersions...))
-			}
-		}
-		if tls.Version.Max != nil {
-			if !slices.Contains(allTlsVersions, string(*tls.Version.Max)) {
-				verr.AddErrorAt(path.Field("max"), validators.MakeFieldMustBeOneOfErr("max", allTlsVersions...))
-			}
-		}
+		verr.AddError(validators.RootedAt("version").String(), validateVersion(tls.Version))
 	}
 
 	if tls.Verification != nil {
 		path := validators.RootedAt("verification")
-
 		if tls.Verification.Mode != nil {
 			if !slices.Contains(allVerificationModes, string(*tls.Verification.Mode)) {
 				verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))
 			}
 		}
-
 		if tls.Verification.SubjectAltNames != nil {
 			for i, san := range *tls.Verification.SubjectAltNames {
 				if !slices.Contains(allSANMatchTypes, string(san.Type)) {
@@ -81,6 +69,33 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
 			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
+	}
+
+	return verr
+}
+
+func validateVersion(version *Version) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.Root()
+	validMin := false
+	validMax := false
+	if version.Min != nil {
+		if !slices.Contains(allTlsVersions, string(*version.Min)) {
+			verr.AddErrorAt(path.Field("min"), validators.MakeFieldMustBeOneOfErr("min", allTlsVersions...))
+		} else {
+			validMin = true
+		}
+	}
+	if version.Max != nil {
+		if !slices.Contains(allTlsVersions, string(*version.Max)) {
+			verr.AddErrorAt(path.Field("max"), validators.MakeFieldMustBeOneOfErr("max", allTlsVersions...))
+		} else {
+			validMax = true
+		}
+	}
+
+	if validMin && validMax && tlsVersionOrder[*version.Min] > tlsVersionOrder[*version.Max] {
+		verr.AddViolationAt(path.Field("min"), "min version must be lower than max")
 	}
 
 	return verr

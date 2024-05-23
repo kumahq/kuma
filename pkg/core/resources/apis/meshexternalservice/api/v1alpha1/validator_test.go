@@ -59,6 +59,9 @@ var _ = Describe("MeshExternalService", func() {
 			Entry("full failing example", testCase{
 				file: "full-invalid",
 			}),
+			Entry("min tls version higher than max", testCase{
+				file: "min-higher-than-max-invalid",
+			}),
 		)
 	})
 })
