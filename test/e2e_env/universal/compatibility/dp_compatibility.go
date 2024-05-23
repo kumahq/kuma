@@ -2,12 +2,14 @@ package compatibility
 
 import (
 	"fmt"
+	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"strings"
 )
 
 func UniversalCompatibility() {

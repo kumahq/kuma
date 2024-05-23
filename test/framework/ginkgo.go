@@ -2,10 +2,10 @@ package framework
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/test/framework/versions"
 	"reflect"
-
 	"github.com/onsi/ginkgo/v2"
+
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 var suiteFailed bool

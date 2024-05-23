@@ -2,12 +2,13 @@ package versions
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/version"
 	"os"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 const previewVersion = "preview"
