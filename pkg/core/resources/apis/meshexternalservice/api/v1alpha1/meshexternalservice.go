@@ -96,7 +96,7 @@ const (
 	TLSVersion13   TlsVersion = "TLS13"
 )
 
-var tlsVersionOrder = map[TlsVersion]int {
+var tlsVersionOrder = map[TlsVersion]int{
 	TLSVersion10: 0,
 	TLSVersion11: 1,
 	TLSVersion12: 2,
