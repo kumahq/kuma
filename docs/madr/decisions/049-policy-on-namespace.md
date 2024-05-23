@@ -171,7 +171,7 @@ If the `spec.to[idx].targetRef.namespace` is not specified then it's equal to `m
 
 * if the top-level targetRef is not specified in **producer policy**
   then it's assumed to be `Mesh`
-* if the top-level targetRef is not specified in **consumer policy** or **workload-owner policy**
+* if the top-level targetRef is not specified  or is `targetRef.kind: Mesh` in **consumer policy** or **workload-owner policy**
   then it's assumed to be `MeshSubset` with `kuma.io/zone` and `k8s.kuma.io/namespace` tags.
 
 The following producer policies semantically equal:
