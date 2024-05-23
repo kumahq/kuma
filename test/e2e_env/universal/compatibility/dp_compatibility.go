@@ -41,7 +41,6 @@ func UniversalCompatibility() {
 		func(version string) {
 			serverName := fmt.Sprintf("test-server-%s", strings.ReplaceAll(version, ".", "-"))
 			Expect(universal.Cluster.Install(TestServerUniversal(serverName, meshName,
-				WithVerbose(),
 				WithServiceName(serverName),
 				WithArgs([]string{"echo", "--instance", serverName}),
 				WithDPVersion(version),
@@ -49,7 +48,6 @@ func UniversalCompatibility() {
 
 			clientName := fmt.Sprintf("demo-client-%s", strings.ReplaceAll(version, ".", "-"))
 			Expect(universal.Cluster.Install(DemoClientUniversal(clientName, meshName,
-				WithVerbose(),
 				WithTransparentProxy(true),
 				WithDPVersion(version),
 			))).To(Succeed())
