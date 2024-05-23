@@ -94,7 +94,7 @@ spec:
 We can formally define what's producer and consumer Kuma policies:
 
 * if for each `idx` the value of `spec.to[idx].targetRef.namespace` is equal to `metadata.namespace` then it's a producer policy
-* for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace` then it's a consumer policy
+* if for each `idx` the value of `spec.to[idx].targetRef.namespace` is **not** equal to `metadata.namespace` then it's a consumer policy
 
 The concept of producer/consumer policies is applied only to policies with `to` array.
 Other policies, i.e. with `from` or without `from/to` are neither producer nor consumer policies.
@@ -363,20 +363,20 @@ but we have to implement "smart" de-referencing when the policy is synced to ano
 
 #### Considered Options
 
-* explicitly de-reference all `to[].targetRef.name` before syncing the resource to another zone
-* implicitly de-reference `to[].targetRef.name` in the destination zone when needed
+* update all `to[].targetRef.name` with hashed name before syncing the resource to another zone
+* de-reference `to[].targetRef.name` in the destination zone when needed (policy's spec is not changed)
 
 #### Decision Outcome
 
-* explicitly de-reference all `to[].targetRef.name` before syncing the resource to another zone
+* update all `to[].targetRef.name` with hashed name before syncing the resource to another zone
 
-#### Pros and Cons of explicitly de-referencing all `to[].targetRef.name` before syncing the resource to another zone
+#### Pros and Cons of updating all `to[].targetRef.name` with hashed name before syncing the resource to another zone
 
 * Good, because `name` and `namespace` always refer to the real object
 * Good, because more predictable for users. They can always copy the name with hash suffix and find the resource in the store
 * Bad, because we're modifying the original spec provided by user
 
-#### Pros and Cons of implicitly de-referencing `to[].targetRef.name` in the destination zone when needed
+#### Pros and Cons of de-referencing `to[].targetRef.name` in the destination zone when needed (policy's spec is not changed)
 
 * Good, because we're not modifying the spec on the fly
 * Bad, because de-referencing is not straightforward and hides extra logic
