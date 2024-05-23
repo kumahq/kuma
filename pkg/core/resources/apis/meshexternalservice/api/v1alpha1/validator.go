@@ -32,10 +32,10 @@ func (r *MeshExternalServiceResource) validate() error {
 		if r.Spec.Tls != nil {
 			verr.AddErrorAt(path.Field("tls"), validateTls(r.Spec.Tls))
 		}
-	} else {
-		if r.Spec.Extension.Type == "" {
-			verr.AddViolationAt(path.Field("extension").Field("type"), validators.MustNotBeEmpty)
-		}
+	}
+
+	if r.Spec.Extension != nil && r.Spec.Extension.Type == "" {
+		verr.AddViolationAt(path.Field("extension").Field("type"), validators.MustNotBeEmpty)
 	}
 
 	return verr.OrNil()
