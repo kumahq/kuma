@@ -25,6 +25,11 @@ func UpgradingWithHelmChartMultizone() {
 	releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
 	var oldestSupportedVersion string
 
+	AfterEachFailure(func() {
+		DebugKube(global, "default", TestNamespace, Config.KumaNamespace)
+		DebugKube(zoneK8s, "default", TestNamespace, Config.KumaNamespace)
+	})
+
 	BeforeAll(func() {
 		oldestSupportedVersion = versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
 	})
