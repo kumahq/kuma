@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -59,26 +58,13 @@ func Ignored() ServicePredicate {
 	}
 }
 
-func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) []*kube_core.Service {
-	matching := make([]*kube_core.Service, 0)
-	for i := range svcs.Items {
-		svc := &svcs.Items[i]
-		allMatched := true
-		for _, predicate := range predicates {
-			if !predicate(svc) {
-				allMatched = false
-				break
-			}
-		}
-		if allMatched {
-			matching = append(matching, svc)
+func MatchService(svc *kube_core.Service, predicates ...ServicePredicate) bool {
+	for _, predicate := range predicates {
+		if !predicate(svc) {
+			return false
 		}
 	}
-	// Sort by name so that inbound order is similar across zones regardless of the order services got created.
-	sort.Slice(matching, func(i, j int) bool {
-		return matching[i].Name < matching[j].Name
-	})
-	return matching
+	return true
 }
 
 // FindPort locates the container port for the given pod and portName.  If the

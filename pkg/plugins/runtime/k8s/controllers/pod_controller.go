@@ -6,6 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -25,6 +26,7 @@ import (
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 const (
@@ -224,6 +226,28 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 	return nil
 }
 
+func (r *PodReconciler) findByEndpointSlices(ctx context.Context, svc *kube_core.Service, objUID kube_types.UID) (bool, error) {
+	endpointSlices := &kube_discovery.EndpointSliceList{}
+	if err := r.List(
+		ctx,
+		endpointSlices,
+		kube_client.InNamespace(svc.Namespace),
+		kube_client.MatchingLabels(map[string]string{
+			kube_discovery.LabelServiceName: svc.Name,
+		}),
+	); err != nil {
+		return false, errors.Wrap(err, "unable to list EndpointSlices for service")
+	}
+	for _, slice := range endpointSlices.Items {
+		for _, endpoint := range slice.Endpoints {
+			if endpoint.TargetRef.UID == objUID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
 func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}
@@ -233,9 +257,29 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 		return nil, err
 	}
 
+	servicesByName := map[string]*kube_core.Service{}
 	// only consider Services that match this Pod
-	matchingServices := util_k8s.FindServices(allServices, util_k8s.Not(util_k8s.Ignored()), util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod, r.IgnoredServiceSelectorLabels))
+	for svcIndex := range allServices.Items {
+		svc := &allServices.Items[svcIndex]
+		if util_k8s.MatchService(svc, util_k8s.Ignored()) {
+			continue
+		}
+		if len(svc.Spec.Selector) == 0 {
+			if endpointMatched, err := r.findByEndpointSlices(ctx, svc, pod.UID); err != nil {
+				return nil, errors.Wrap(err, "unable to match services by EndpointSlices")
+			} else if endpointMatched {
+				servicesByName[svc.Name] = svc
+			}
+		} else if util_k8s.MatchServiceThatSelectsPod(pod, r.IgnoredServiceSelectorLabels)(svc) {
+			servicesByName[svc.Name] = svc
+		}
+	}
 
+	// Sort by name so that inbound order is similar across zones regardless of the order services got created.
+	var matchingServices []*kube_core.Service
+	for _, name := range util_maps.SortedKeys(servicesByName) {
+		matchingServices = append(matchingServices, servicesByName[name])
+	}
 	return matchingServices, nil
 }
 
@@ -382,16 +426,48 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }
 
 func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		svc := obj.(*kube_core.Service)
+		l := l.WithValues(
+			"Service",
+			kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+		)
 		// List Pods in the same namespace as a Service
 		pods := &kube_core.PodList{}
-		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(obj.(*kube_core.Service).Spec.Selector)); err != nil {
-			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
+		if len(svc.Spec.Selector) == 0 {
+			endpointSlices := &kube_discovery.EndpointSliceList{}
+			if err := client.List(
+				ctx,
+				endpointSlices,
+				kube_client.InNamespace(svc.Namespace),
+				kube_client.MatchingLabels(map[string]string{
+					kube_discovery.LabelServiceName: svc.Name,
+				}),
+			); err != nil {
+				l.Error(err, "failed to fetch EndpointSlices")
+				return nil
+			}
+			var req []kube_reconcile.Request
+			for _, slice := range endpointSlices.Items {
+				for _, endpoint := range slice.Endpoints {
+					if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() {
+						req = append(req, kube_reconcile.Request{
+							NamespacedName: kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace},
+						})
+					}
+				}
+			}
+			return req
+		}
+
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(svc.Spec.Selector)); err != nil {
+			l.Error(err, "failed to fetch Pods matching selector")
 			return nil
 		}
 		var req []kube_reconcile.Request
@@ -399,6 +475,55 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 			req = append(req, kube_reconcile.Request{
 				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
 			})
+		}
+		return req
+	}
+}
+
+func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("endpoint-slice-to-pods-mapper")
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		slice := obj.(*kube_discovery.EndpointSlice)
+
+		l := l.WithValues(
+			"EndpointSlice",
+			kube_types.NamespacedName{Namespace: slice.Namespace, Name: slice.Name},
+		)
+
+		var req []kube_reconcile.Request
+		for _, endpoint := range slice.Endpoints {
+			l := l.WithValues(
+				"Endpoint",
+				endpoint,
+			)
+			svcName, ok := slice.Labels[kube_discovery.LabelServiceName]
+			if !ok {
+				continue
+			}
+
+			l = l.WithValues(
+				"Service",
+				kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName},
+			)
+
+			svc := &kube_core.Service{}
+			if err := client.Get(ctx, kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName}, svc); err != nil {
+				if kube_apierrs.IsNotFound(err) {
+					continue
+				}
+				l.Error(err, "failed to get Service")
+				// We intentionally continue here because we can't confirm we
+				// can skip this EndpointSlice
+			} else if len(svc.Spec.Selector) > 0 {
+				// We don't consider EndpointSlices for this kind of Service
+				continue
+			}
+
+			if endpoint.TargetRef != nil && endpoint.TargetRef.Kind == "Pod" && endpoint.TargetRef.APIVersion == kube_core.SchemeGroupVersion.String() {
+				req = append(req, kube_reconcile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: endpoint.TargetRef.Namespace, Name: endpoint.TargetRef.Name},
+				})
+			}
 		}
 		return req
 	}
