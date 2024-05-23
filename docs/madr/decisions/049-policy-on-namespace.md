@@ -526,8 +526,12 @@ spec:
 `MeshGateway` at this moment is not namespace-scoped. It can change in the future with
 the [MeshBuiltinGateway resource](https://github.com/kumahq/kuma/issues/10014).
 
-For policies in custom namespaces, we've decided that we would allow targeting `MeshGateway` in topLevel targetRef in 
-`MeshHTTPRoute` and `MeshTCPRoute`, and policies that configures only Envoy clusters (policies that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`). 
+We decide that we won't allow creating Mesh*Routes in custom namespace. Mesh Operator should be responsible for deciding
+which traffic should enter the Mesh, and create route in system namespace.
+
+For policies in custom namespaces, we've decided that we would allow targeting `MeshGateway` in topLevel targetRef only in 
+policies that configures only Envoy clusters (policies that allows configuring: `to[].targetRef.kind: MeshService` like `MeshCircuitBreaker`).
+
 For other policies we would allow referencing Mesh*Routes that reference `MeshGateway` in topLevel targetRef.
 
 #### Examples
@@ -553,44 +557,12 @@ spec:
         kuma.io/service: edge-gateway
 ```
 
-##### Targeting MeshGateway in MeshHttpRoute
-
-As a **Frontend Service Owner** I want to configure routes on `MeshGateway` without the access to
-cluster-scoped CRDs so that I could manage my routes independently.
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: http-route-1
-  namespace: frontend-ns
-  labels:
-    kuma.io/origin: zone-1
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: edge-gateway
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /gui
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: frontend
-                # namespace: frontend-ns - is added automatically
-```
-
-##### Targeting MeshGateway in other policies
+##### Targeting MeshGateway policies
 
 ###### Producer policies
 
 As a **Frontend Service Owner** I want to configure circuit breaker on `MeshGateway` without the access to
-cluster-scoped CRDs so that I could manage my routes independently.
+cluster-scoped CRDs so that I could manage my policies independently. `MeshGateway` behaves like `MeshSubset`. 
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
@@ -684,7 +656,7 @@ spec:
 ```
 
 This `MeshHTTPRoute` is created in a `payment-ns` namespace and routes traffic straight to `internal-ns` which should
-not be possible. We want to forbid selecting `backendRef` from namespace different than policy namespace if top level
+not be possible. We want to forbid selecting `backendRef` from namespace different from policy namespace if top level
 targetRef is `MeshGateway`.
 
 Since our `MeshGateway` is cluster scoped it is not limited to single namespace. You can direct traffic to any namespace
