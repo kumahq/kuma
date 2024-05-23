@@ -159,6 +159,8 @@ We choose:
 The policy is applied
 on both the Envoy outbound listeners and clusters
 that correspond to the `MeshService`.
+Note that more than one `MeshService` can be matched in which case it applies to
+all matched `MeshServices`.
 
 References for `kind: MeshService` have the following structure:
 
@@ -225,7 +227,7 @@ and the other zone's namespace.
 
 #### Examples
 
-These examples assume the `frontend` namespace and the zone named `local-zone`.
+These examples assume the policy is in the `frontend` namespace and the zone named `local-zone`.
 
 ##### `MeshService`
 
@@ -240,7 +242,12 @@ spec:
      name: backend
 ```
 
-or by using `labels` without `name`. The below examples search _any namespace_.
+###### Multi-zone
+
+In order to refer to objects via their display name, `labels` must be used.
+In general, `labels` match _any_ `MeshService`, from any namespace or zone.
+
+Match a specific name in a specific namespace in a specific zone:
 
 ```yaml
 spec:
@@ -252,6 +259,8 @@ spec:
        k8s.kuma.io/namespace: zk-namespace # this must be set to target a namespace, even the local one
        kuma.io/zone: local-zone # must also be set to target a local zone, otherwise all zones are targeted
 ```
+
+Or match a name in _any namespace_ in a specific zone:
 
 ```yaml
 spec:
@@ -295,7 +304,7 @@ spec:
 #### Status
 
 Similar to Gateway API conditions, we report back as status conditions
-if a route targets a
+on the policy/route if a policy/route targets a
 `MeshService`/port tuple that doesn't exist.
 
 ### Positive Consequences
