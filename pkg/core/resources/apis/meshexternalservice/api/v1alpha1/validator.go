@@ -76,10 +76,10 @@ func validateTls(tls *Tls) validators.ValidationError {
 		}
 
 		if tls.Verification.ClientCert != nil && tls.Verification.ClientKey == nil {
-			verr.AddViolation(path.Field("clientKey").String(), validators.MustBeDefined+"when clientCert is defined")
+			verr.AddViolation(path.Field("clientKey").String(), validators.MustBeDefined+" when clientCert is defined")
 		}
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
-			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+"when clientKey is defined")
+			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
 	}
 
@@ -105,8 +105,24 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 	var verr validators.ValidationError
 
 	for i, endpoint := range endpoints {
-		if endpoint.Port == 0 || endpoint.Port > math.MaxUint16 {
-			verr.AddViolationAt(validators.Root().Index(i).Field("port"), "port must be a valid (1-65535)")
+		if govalidator.IsIP(endpoint.Address) {
+			if endpoint.Port == nil {
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined + " when endpoint is an IP")
+			} else if *endpoint.Port == 0 || *endpoint.Port > math.MaxUint16 {
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), "port must be a valid (1-65535)")
+			}
+		}
+
+		if isValidUnixPath(endpoint.Address) {
+			if endpoint.Port != nil {
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustNotBeDefined + " when endpoint is a unix path")
+			}
+		}
+
+		if govalidator.IsDNSName(endpoint.Address) {
+			if endpoint.Port == nil {
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined + " when endpoint is a hostname")
+			}
 		}
 
 		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address) || isValidUnixPath(endpoint.Address)) {

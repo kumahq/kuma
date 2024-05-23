@@ -68,7 +68,7 @@ type Endpoint struct {
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint
-	Port EndpointPort `json:"port"`
+	Port *EndpointPort `json:"port,omitempty"`
 }
 
 type Tls struct {

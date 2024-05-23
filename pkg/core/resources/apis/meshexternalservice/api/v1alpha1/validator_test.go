@@ -32,13 +32,22 @@ var _ = Describe("MeshExternalService", func() {
 				// and
 				verr := MeshExternalService.Validate()
 				actual, err := yaml.Marshal(verr)
+				if string(actual) == "null\n" {
+					actual = []byte{}
+				}
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
 				Expect(actual).To(matchers.MatchGoldenYAML(path.Join("testdata", given.file+".output.yaml")))
 			},
-			Entry("empty 'from' and 'to' array", testCase{
+			Entry("minimal passing example", testCase{
 				file: "minimal-valid",
+			}),
+			Entry("full example without extension", testCase{
+				file: "full-without-extension-valid",
+			}),
+			Entry("minimal failing example with unknown port", testCase{
+				file: "minimal-invalid",
 			}),
 		)
 	})
