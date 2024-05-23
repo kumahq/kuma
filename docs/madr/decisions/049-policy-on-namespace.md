@@ -279,7 +279,7 @@ spec:
 ### Namespace-scoped policies and multizone
 
 Namespace-scoped policies can be applied to a custom namespace only on zones as there are simply no DPPs and custom
-namespaces on Global.
+namespaces on Global. This will be enforced by validation webhook.
 
 After a user applied a policy on zone's custom namespace, the webhook automatically adds a `k8s.kuma.io/namespace` label to the policy.
 The label is part of the hash suffix when policy is synced to global.
