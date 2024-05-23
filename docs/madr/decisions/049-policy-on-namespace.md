@@ -34,9 +34,7 @@ The CRDs for new policies are already namespace-scoped, but they can be applied 
 
 * Good, because it's familiar to users who know GAMMA
 * Good, because creating policies in `kuma-system` becomes an edge use-case, the vast majority of use cases is covered by namespace-scoped policies
-* Bad, because it requires syncing policies across zones. 
-  Today zone-originated policies are synced only to global for visibility. 
-  It will be possible to apply policy to `zone-a` and it'll be synced to `zone-b`.
+* Bad, because the logic of syncing policies cross zones can be complex
 
 ## Implementation
 
