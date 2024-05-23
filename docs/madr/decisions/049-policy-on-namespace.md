@@ -152,7 +152,7 @@ spec:
         namespace: redis-ns # this indicates the policy is a consumer policy
 ```
 
-Policies that support both `from` and `to` and specify them at the same time shouldn't be allowed as well.
+Namespace-scoped policies that support both `from` and `to` and specify them at the same time shouldn't be allowed as well.
 
 ### Syntactic sugar
 
