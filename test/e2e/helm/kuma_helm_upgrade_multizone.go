@@ -1,9 +1,9 @@
 package helm
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -11,25 +11,19 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/api"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
-	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UpgradingWithHelmChartMultizone() {
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
-	releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
-	var oldestSupportedVersion string
-
-	BeforeAll(func() {
-		oldestSupportedVersion = versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
-	})
-
-	BeforeAll(func() {
+	BeforeEach(func() {
 		global = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
@@ -39,75 +33,61 @@ func UpgradingWithHelmChartMultizone() {
 		zoneUniversal = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	})
 
-	E2EAfterAll(func() {
-		Expect(zoneUniversal.DismissCluster()).To(Succeed())
-		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(zoneK8s.DeleteKuma()).To(Succeed())
-		Expect(zoneK8s.DismissCluster()).To(Succeed())
-		Expect(global.DeleteKuma()).To(Succeed())
-		Expect(global.DismissCluster()).To(Succeed())
+	E2EAfterEach(func() {
+		grp := sync.WaitGroup{}
+		grp.Add(3)
+		go func() {
+			defer grp.Done()
+			Expect(zoneUniversal.DismissCluster()).To(Succeed())
+		}()
+		go func() {
+			defer grp.Done()
+			Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
+			Expect(zoneK8s.DeleteKuma()).To(Succeed())
+			Expect(zoneK8s.DismissCluster()).To(Succeed())
+		}()
+		go func() {
+			defer grp.Done()
+			Expect(global.DeleteKuma()).To(Succeed())
+			Expect(global.DismissCluster()).To(Succeed())
+		}()
+		grp.Wait()
 	})
+	DescribeTable("upgrade helm multizone",
+		func(version string) {
+			releaseName := fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))
+			By("Install global with version: " + version)
+			err := NewClusterSetup().
+				Install(Kuma(core.Global,
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmChartPath(Config.HelmChartName),
+					WithHelmReleaseName(releaseName),
+					WithHelmChartVersion(version),
+					WithoutHelmOpt("global.image.tag"),
+				)).
+				Setup(global)
+			Expect(err).ToNot(HaveOccurred())
 
-	It("should install a Kuma version 2 minor releases behind the current version on Global", func() {
-		err := NewClusterSetup().
-			Install(Kuma(core.Global,
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartName),
-				WithHelmReleaseName(releaseName),
-				WithHelmChartVersion(oldestSupportedVersion),
-				WithoutHelmOpt("global.image.tag"),
-			)).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
+			globalCP = global.GetKuma()
+			Expect(globalCP).ToNot(BeNil())
 
-		globalCP = global.GetKuma()
-		Expect(globalCP).ToNot(BeNil())
-	})
+			By("Install zone with version: " + version)
+			err = NewClusterSetup().
+				Install(Kuma(core.Zone,
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmChartPath(Config.HelmChartName),
+					WithHelmReleaseName(releaseName),
+					WithHelmChartVersion(version),
+					WithGlobalAddress(globalCP.GetKDSServerAddress()),
+					WithHelmOpt("ingress.enabled", "true"),
+					WithoutHelmOpt("global.image.tag"),
+				)).
+				Setup(zoneK8s)
+			Expect(err).ToNot(HaveOccurred())
 
-	It("should install a Kuma version 2 minor releases behind the current version on Zone", func() {
-		err := NewClusterSetup().
-			Install(Kuma(core.Zone,
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartName),
-				WithHelmReleaseName(releaseName),
-				WithHelmChartVersion(oldestSupportedVersion),
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-				WithHelmOpt("ingress.enabled", "true"),
-				WithoutHelmOpt("global.image.tag"),
-			)).
-			Setup(zoneK8s)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	numberOfResources := func(c Cluster, resource string) (int, error) {
-		output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", resource, "-o", "json")
-		if err != nil {
-			return 0, err
-		}
-		t := struct {
-			Total int `json:"total"`
-		}{}
-		if err := json.Unmarshal([]byte(output), &t); err != nil {
-			return 0, err
-		}
-		return t.Total, nil
-	}
-
-	numberOfPolicies := func(c Cluster) (int, error) {
-		return numberOfResources(c, "meshtimeouts")
-	}
-
-	numberOfDPPs := func(c Cluster) (int, error) {
-		return numberOfResources(c, "dataplanes")
-	}
-
-	numberOfZoneIngresses := func(c Cluster) (int, error) {
-		return numberOfResources(c, "zone-ingresses")
-	}
-
-	It("should sync policies from Global to Zone", func() {
-		// when apply policy on Global
-		Expect(YamlK8s(fmt.Sprintf(`
+			By("Sync policies from Global to Zone")
+			// when apply policy on Global
+			Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -127,96 +107,93 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, Config.KumaNamespace, "default"))(global)).To(Succeed())
 
-		// then the policy is synced to Zone
-		Eventually(func(g Gomega) int {
-			n, err := numberOfPolicies(zoneK8s)
-			g.Expect(err).ToNot(HaveOccurred())
-			return n
-		}, "30s", "1s").Should(Equal(3))
-	})
+			Eventually(func(g Gomega) (int, error) {
+				return NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
+			}, "30s", "1s").Should(Equal(3), "meshtimeouts are not synced to zone")
 
-	It("should sync DPPs from Zone to Global", func() {
-		// when start test server on Zone
-		err := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(testserver.Install()).Setup(zoneK8s)
-		Expect(err).ToNot(HaveOccurred())
+			By("Sync DPPs from Zone to Global")
+			// when start test server on Zone
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(TestNamespace)).
+				Install(testserver.Install()).Setup(zoneK8s)
+			Expect(err).ToNot(HaveOccurred())
 
-		// then the DPP is synced to Global
-		Eventually(func(g Gomega) int {
-			n, err := numberOfDPPs(global)
-			g.Expect(err).ToNot(HaveOccurred())
-			return n
-		}, "30s", "1s").Should(Equal(1))
-	})
+			Eventually(func(g Gomega) (int, error) {
+				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
+			}, "30s", "1s").Should(Equal(1), "dpp should be synced to global")
 
-	It("should upgrade Kuma on Global", func() {
-		err := global.(*K8sCluster).UpgradeKuma(core.Global,
-			WithHelmReleaseName(releaseName),
-			WithHelmChartPath(Config.HelmChartPath),
-			ClearNoHelmOpts(),
-		)
-		Expect(err).ToNot(HaveOccurred())
-	})
+			By("upgrade global")
+			err = global.(*K8sCluster).UpgradeKuma(core.Global,
+				WithHelmReleaseName(releaseName),
+				WithHelmChartPath(Config.HelmChartPath),
+				ClearNoHelmOpts(),
+			)
+			Expect(err).ToNot(HaveOccurred())
 
-	It("should deploy a universal zone with the latest Kuma", func() {
-		err := NewClusterSetup().
-			Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
-			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
-			Setup(zoneUniversal)
-		Expect(err).ToNot(HaveOccurred())
+			By("deploy a new universal zone with latest version")
+			err = NewClusterSetup().
+				Install(Kuma(core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
+				Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
+				Setup(zoneUniversal)
+			Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func(g Gomega) int {
-			n, err := numberOfZoneIngresses(zoneK8s)
-			g.Expect(err).ToNot(HaveOccurred())
-			return n
-		}, "30s", "1s").Should(Equal(2))
-	})
+			Eventually(func(g Gomega) (int, error) {
+				return NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+			}, "30s", "1s").Should(Equal(2), "have remote and local zoneIngress")
 
-	It("should upgrade Kuma on Zone", func() {
-		// when
-		err := zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
-			WithHelmReleaseName(releaseName),
-			WithHelmChartPath(Config.HelmChartPath),
-			ClearNoHelmOpts(),
-		)
-		Expect(err).ToNot(HaveOccurred())
+			By("upgrade Zone")
+			// when
+			err = zoneK8s.(*K8sCluster).UpgradeKuma(core.Zone,
+				WithHelmReleaseName(releaseName),
+				WithHelmChartPath(Config.HelmChartPath),
+				ClearNoHelmOpts(),
+			)
+			Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func(g Gomega) {
-			result := &system.ZoneInsightResource{}
-			api.FetchResource(g, global, result, "", "kuma-2")
-			g.Expect(len(result.Spec.Subscriptions)).To(BeNumerically(">", 1))
-			newZoneConnected := false
-			for _, sub := range result.Spec.Subscriptions {
-				if sub.Version.KumaCp.Version != oldestSupportedVersion {
-					newZoneConnected = true
-					break
+			Eventually(func(g Gomega) {
+				result := &system.ZoneInsightResource{}
+				api.FetchResource(g, global, result, "", "kuma-2")
+				g.Expect(len(result.Spec.Subscriptions)).To(BeNumerically(">", 1))
+				newZoneConnected := false
+				for _, sub := range result.Spec.Subscriptions {
+					if sub.Version.KumaCp.Version != version {
+						newZoneConnected = true
+						break
+					}
 				}
-			}
-			g.Expect(newZoneConnected).To(BeTrue())
-		}, "30s", "100ms").Should(Succeed())
+				g.Expect(newZoneConnected).To(BeTrue())
+			}, "30s", "100ms").Should(Succeed())
 
-		// then
-		Consistently(func(g Gomega) {
-			policiesGlobal, err := numberOfPolicies(global)
-			g.Expect(err).ToNot(HaveOccurred())
+			// then
+			Consistently(func(g Gomega) {
+				policiesGlobal, err := NumberOfResources(global, meshtimeout.MeshTimeoutResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				policiesK8sZone, err := NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				policiesUniversalZone, err := NumberOfResources(zoneUniversal, meshtimeout.MeshTimeoutResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(3)))
 
-			policiesZone, err := numberOfPolicies(zoneK8s)
-			g.Expect(err).ToNot(HaveOccurred())
+				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dppsGlobal).To(And(Equal(dppsK8sZone), Equal(1)))
+				// Dpps don't get copied to other zones
+				dppsUniversalZone, err := NumberOfResources(zoneUniversal, mesh.DataplaneResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(dppsUniversalZone).To(Equal(0))
 
-			g.Expect(policiesGlobal).To(And(Equal(policiesZone), Equal(3)))
-
-			dppsGlobal, err := numberOfDPPs(global)
-			g.Expect(err).ToNot(HaveOccurred())
-
-			dppsZone, err := numberOfDPPs(zoneK8s)
-			g.Expect(err).ToNot(HaveOccurred())
-
-			g.Expect(dppsGlobal).To(And(Equal(dppsZone), Equal(1)))
-
-			zoneIngressesGlobal, err := numberOfZoneIngresses(global)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(zoneIngressesGlobal).To(Equal(2))
-		}, "5s", "100ms").Should(Succeed())
-	})
+				zoneIngressesGlobal, err := NumberOfResources(global, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				zoneIngressesK8sZone, err := NumberOfResources(zoneK8s, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				zoneIngressesUniversalZone, err := NumberOfResources(zoneUniversal, mesh.ZoneIngressResourceTypeDescriptor)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(zoneIngressesGlobal).To(And(Equal(2), Equal(zoneIngressesUniversalZone), Equal(zoneIngressesK8sZone)))
+			}, "5s", "100ms").Should(Succeed())
+		},
+		EntryDescription("from version: %s"),
+		SupportedVersionEntries(),
+	)
 }

@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/test/framework/versions"
 	"reflect"
 
 	"github.com/onsi/ginkgo/v2"
@@ -95,4 +96,12 @@ func E2EDeferCleanup(args ...interface{}) {
 	}
 
 	ginkgo.DeferCleanup(fn, args[1:])
+}
+
+func SupportedVersionEntries() []ginkgo.TableEntry {
+	var res []ginkgo.TableEntry
+	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
+		res = append(res, ginkgo.Entry(nil, v))
+	}
+	return res
 }
