@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"reflect"
+
 	"github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/test/framework/versions"
