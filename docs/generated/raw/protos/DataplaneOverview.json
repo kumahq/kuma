@@ -171,6 +171,10 @@
                         }
                     ],
                     "title": "State"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name adds another way of referencing this port, usable with MeshService"
                 }
             },
             "additionalProperties": true,

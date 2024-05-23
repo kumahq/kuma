@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -125,7 +126,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:       80,
-								TargetPort: 80,
+								TargetPort: intstr.FromInt(80),
 								Protocol:   "http",
 							},
 						},
@@ -235,7 +236,7 @@ func ExecuteStoreTests(
 						Ports: []meshservice_api.Port{
 							{
 								Port:       80,
-								TargetPort: 80,
+								TargetPort: intstr.FromInt(80),
 								Protocol:   "http",
 							},
 						},

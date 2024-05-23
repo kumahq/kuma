@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -31,7 +32,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("Zone Sync", func() {
@@ -237,12 +237,12 @@ var _ = Describe("Zone Sync", func() {
 
 	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer
-		runtimeInfo := runtime.TestRuntimeInfo{InstanceId: "global-inst", Mode: config_core.Global}
+		runtimeInfo := core_runtime.NewRuntimeInfo("global-inst", config_core.Global)
 		newPolicySyncClient := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) kds_client_v2.KDSSyncClient {
 			return kds_client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-				kds_client_v2.NewDeltaKDSStream(cs, zoneName, &runtimeInfo, ""),
+				kds_client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
 				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 				0,
 			)

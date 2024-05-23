@@ -117,13 +117,14 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 			return nil, err
 		}
 	}
-	enableIpV6, err := transparentproxy.ShouldEnableIPv6(inboundPortV6)
+
+	cfg.IPv6, err = transparentproxy.ShouldEnableIPv6(inboundPortV6)
 	if err != nil {
 		return nil, err
 	}
-	cfg.IPv6 = enableIpV6
-	redirectInbound := !isGateway
-	if redirectInbound {
+
+	cfg.Redirect.Inbound.Enabled = !isGateway
+	if cfg.Redirect.Inbound.Enabled {
 		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
 		if err != nil {
 			return nil, err
@@ -134,23 +135,21 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 			return nil, err
 		}
 
-		cfg.Redirect.Inbound.Enabled = true
 		cfg.Redirect.Inbound.Port = inboundPort
 		cfg.Redirect.Inbound.PortIPv6 = inboundPortV6
 		cfg.Redirect.Inbound.ExcludePorts = excludedPorts
 	}
 
-	useBuiltinDNS, err := GetEnabled(intermediateConfig.builtinDNS)
+	cfg.Redirect.DNS.Enabled, err = GetEnabled(intermediateConfig.builtinDNS)
 	if err != nil {
 		return nil, err
 	}
-	if useBuiltinDNS {
+	if cfg.Redirect.DNS.Enabled {
 		builtinDnsPort, err := convertToUint16("builtin dns port", intermediateConfig.builtinDNSPort)
 		if err != nil {
 			return nil, err
 		}
 
-		cfg.Redirect.DNS.Enabled = true
 		cfg.Redirect.DNS.Port = builtinDnsPort
 		cfg.Redirect.DNS.CaptureAll = true
 		cfg.Redirect.DNS.ConntrackZoneSplit = true

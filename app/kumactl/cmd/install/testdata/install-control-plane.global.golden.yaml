@@ -137,6 +137,14 @@ rules:
       - update
       - patch
   - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -182,6 +190,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - meshexternalservices
       - meshservices
     verbs:
       - get
@@ -377,7 +386,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: a3d5c9effc94234a57a3b2f2ca414a44112507563a39f41b937eabdf278320b2
+        checksum/tls-secrets: 98fc0793c5e95b409edfbe8b33fbd85ef6c09eb0e76b9ec5a04a5aa243b6a71e
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -567,6 +576,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -620,6 +630,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
   
       
@@ -692,6 +703,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
     
       

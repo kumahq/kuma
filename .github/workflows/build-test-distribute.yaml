@@ -34,13 +34,14 @@ jobs:
       REGISTRY: ${{ steps.metadata.outputs.registry }}
       VERSION_NAME: ${{ steps.metadata.outputs.version }}
       NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
+      CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
@@ -65,7 +66,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@a98be0184f832cb24a9dd233f99074e8ba17b488 # v2.2.3
+        uses: Kong/public-shared-actions/security-actions/sca@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
         with:
           dir: .
           config: .syft.yaml
@@ -75,6 +76,7 @@ jobs:
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
+          echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
   test:
     permissions:
       contents: read
@@ -121,6 +123,12 @@ jobs:
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read # For getting workflow run info
+    env:
+      SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
+      SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
       - name: "Halt due to previous failures"
         run: |-
@@ -129,3 +137,46 @@ jobs:
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
           [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
           echo "All dependent jobs succeeded"
+      - name: "Download all SBOM assets"
+        id: collect_sbom
+        if: ${{ needs.build_publish.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          pattern: "*sbom.{cyclonedx,spdx}.json"
+          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Download binary artifact provenance"
+        if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
+        id: collect_provenance
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          pattern: ${{ github.event.repository.name }}.intoto.jsonl
+          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Generate security assets TAR"
+        if: ${{ needs.build_publish.result == 'success' }}
+        id: security_assets_metadata
+        run: |
+          cd ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          find . -maxdepth 1 -type f \( -name '*sbom.*.json' -o -name '*.intoto.jsonl' \) -print | tar -cvzf ${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz -T -
+          ls -alR .
+        # Publish aggregated zip file of SBOMs and/or Binary Provenance to artifact regstry
+      - name: Push security assets to cloudsmith
+        id: push_security_assets
+        if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
+        uses: cloudsmith-io/action@f04b4de7550751e32961ac16543116f8f5f9bfc2 # v0.6.6
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "raw"
+          owner: "kong"
+          repo: "${{ needs.check.outputs.CLOUDSMITH_REPOSITORY }}"
+          version: "${{ needs.check.outputs.VERSION_NAME }}"
+          file: "${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}/${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz"
+          name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
+          summary: "SLSA security artifacts for ${{ github.repository }}"
+          description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"

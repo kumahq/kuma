@@ -137,6 +137,14 @@ rules:
       - update
       - patch
   - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -182,6 +190,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - meshexternalservices
       - meshservices
     verbs:
       - get
@@ -551,6 +560,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -604,6 +614,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
   
       
@@ -730,6 +741,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - meshexternalservices
           - meshservices
     
       

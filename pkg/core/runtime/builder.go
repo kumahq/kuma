@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
@@ -100,7 +99,7 @@ type Builder struct {
 	tokenIssuers   builtin.TokenIssuers
 	meshCache      *mesh.Cache
 	interCpPool    *client.Pool
-	*runtimeInfo
+	RuntimeInfo
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	apiWebServiceCustomize   []func(*restful.WebService) error
@@ -113,15 +112,11 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	}
 	suffix := core.NewUUID()[0:4]
 	return &Builder{
-		cfg: cfg,
-		ext: context.Background(),
-		cam: core_ca.Managers{},
-		runtimeInfo: &runtimeInfo{
-			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
-			startTime:  time.Now(),
-			mode:       cfg.Mode,
-		},
-		appCtx: appCtx,
+		cfg:         cfg,
+		ext:         context.Background(),
+		cam:         core_ca.Managers{},
+		RuntimeInfo: NewRuntimeInfo(fmt.Sprintf("%s-%s", hostname, suffix), cfg.Mode),
+		appCtx:      appCtx,
 	}, nil
 }
 
@@ -372,7 +367,7 @@ func (b *Builder) Build() (Runtime, error) {
 		return nil, errors.Errorf("Tenants has not been configured")
 	}
 	return &runtime{
-		RuntimeInfo: b.runtimeInfo,
+		RuntimeInfo: b.RuntimeInfo,
 		RuntimeContext: &runtimeContext{
 			cfg:                      b.cfg,
 			rm:                       b.rm,

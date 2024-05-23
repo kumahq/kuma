@@ -3,6 +3,7 @@ services:
   db:
     build:
       context: .
+      dockerfile: postgres.dockerfile
       args:
         MODE: ${POSTGRES_MODE:-standard}
     restart: always

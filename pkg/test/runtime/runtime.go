@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -56,35 +54,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
-
-var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
-
-type TestRuntimeInfo struct {
-	InstanceId string
-	ClusterId  string
-	StartTime  time.Time
-	Mode       config_core.CpMode
-}
-
-func (i *TestRuntimeInfo) GetMode() config_core.CpMode {
-	return i.Mode
-}
-
-func (i *TestRuntimeInfo) GetInstanceId() string {
-	return i.InstanceId
-}
-
-func (i *TestRuntimeInfo) SetClusterId(clusterId string) {
-	i.ClusterId = clusterId
-}
-
-func (i *TestRuntimeInfo) GetClusterId() string {
-	return i.ClusterId
-}
-
-func (i *TestRuntimeInfo) GetStartTime() time.Time {
-	return i.StartTime
-}
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	if cfg.DpServer.Authn.DpProxy.Type == "" {

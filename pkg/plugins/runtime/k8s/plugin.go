@@ -142,9 +142,10 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 
 func addMeshServiceReconciler(mgr kube_ctrl.Manager) error {
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Log:           core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:        mgr.GetScheme(),
+		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
