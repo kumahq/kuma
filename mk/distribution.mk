@@ -107,6 +107,10 @@ endif
 build/distributions/out: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 	cd $@; sha256sum *.tar.gz > $(DISTRIBUTION_TARGET_NAME).sha256
 
+.PHONY: build/info/distribution/repo
+build/info/cloudsmith_repository:
+	@echo $(PULP_PACKAGE_TYPE)-binaries-$(PULP_DIST_VERSION)
+
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions
 publish/pulp: $(addprefix publish/pulp/$(DISTRIBUTION_TARGET_NAME)-,$(ENABLED_DIST_NAMES))
