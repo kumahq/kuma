@@ -77,24 +77,24 @@ func validateTls(tls *Tls) validators.ValidationError {
 func validateVersion(version *Version) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.Root()
-	validMin := false
-	validMax := false
+	specificMin := false
+	specificMax := false
 	if version.Min != nil {
 		if !slices.Contains(allTlsVersions, string(*version.Min)) {
 			verr.AddErrorAt(path.Field("min"), validators.MakeFieldMustBeOneOfErr("min", allTlsVersions...))
-		} else {
-			validMin = true
+		} else if *version.Min != TLSVersionAuto {
+			specificMin = true
 		}
 	}
 	if version.Max != nil {
 		if !slices.Contains(allTlsVersions, string(*version.Max)) {
 			verr.AddErrorAt(path.Field("max"), validators.MakeFieldMustBeOneOfErr("max", allTlsVersions...))
-		} else {
-			validMax = true
+		} else if *version.Max != TLSVersionAuto {
+			specificMax = true
 		}
 	}
 
-	if validMin && validMax && tlsVersionOrder[*version.Min] > tlsVersionOrder[*version.Max] {
+	if specificMin && specificMax && tlsVersionOrder[*version.Min] > tlsVersionOrder[*version.Max] {
 		verr.AddViolationAt(path.Field("min"), "min version must be lower than max")
 	}
 
