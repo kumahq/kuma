@@ -307,6 +307,10 @@ spec:
         namespace: backend-ns
 ```
 
+Policies that reference `MeshExternalService` in `to[].targetRef` won't be synced to other zones.
+MeshExternalService can be created only in `kuma-system` namespace and that's why the policy it's referenced by is always a consumer policy.
+That's why the policies that have potential to indirectly change ZoneEgress configuration are never synced to other zones.
+
 Zone-originated policies in `kuma-system` won't be synced to other zones.
 Zone-originated policies on Universal won't be synced to other zones as well.
 We might want to introduce namespaces to Universal in the future.
@@ -378,6 +382,16 @@ but we have to implement "smart" de-referencing when the policy is synced to ano
 
 * Good, because we're not modifying the spec on the fly
 * Bad, because de-referencing is not straightforward and hides extra logic
+
+#### Implementation
+
+The update of `to[].targetRef` is going to happen in 2 steps:
+
+1. Global KDS client updates `to[].targetRef.name` and `to[].targetRef.namespace` when receives policies from the source zone
+2. KDS client of the destination zone updates `to[].targetRef.namespace` when receives policies from Global
+
+All clients should update `to[].targetRef.namespace` because this is an environment specific information 
+(i.e. system namespaces can be different, Universal deployments don't have namespaces at all).
 
 #### Examples
 
