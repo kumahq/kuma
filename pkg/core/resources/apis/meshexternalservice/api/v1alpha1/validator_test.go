@@ -49,6 +49,9 @@ var _ = Describe("MeshExternalService", func() {
 			Entry("minimal failing example with unknown port", testCase{
 				file: "minimal-invalid",
 			}),
+			Entry("full failing example", testCase{
+				file: "full-invalid",
+			}),
 		)
 	})
 })
