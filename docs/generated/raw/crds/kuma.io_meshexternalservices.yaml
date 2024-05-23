@@ -60,7 +60,6 @@ spec:
                       type: integer
                   required:
                   - address
-                  - port
                   type: object
                 type: array
               extension:

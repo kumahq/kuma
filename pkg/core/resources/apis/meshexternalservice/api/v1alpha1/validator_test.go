@@ -1,11 +1,12 @@
 package v1alpha1_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"os"
 	"path"
 
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -32,6 +33,7 @@ var _ = Describe("MeshExternalService", func() {
 				// and
 				verr := MeshExternalService.Validate()
 				actual, err := yaml.Marshal(verr)
+				// have to do this otherwise valid cases will have null in the contents
 				if string(actual) == "null\n" {
 					actual = []byte{}
 				}
@@ -48,6 +50,12 @@ var _ = Describe("MeshExternalService", func() {
 			}),
 			Entry("minimal failing example with unknown port", testCase{
 				file: "minimal-invalid",
+			}),
+			Entry("failing example with missing extension type", testCase{
+				file: "minimal-invalid-extension",
+			}),
+			Entry("missing client-cert", testCase{
+				file: "missing-client-cert-invalid",
 			}),
 			Entry("full failing example", testCase{
 				file: "full-invalid",

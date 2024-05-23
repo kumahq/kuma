@@ -107,7 +107,7 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 	for i, endpoint := range endpoints {
 		if govalidator.IsIP(endpoint.Address) {
 			if endpoint.Port == nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined + " when endpoint is an IP")
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined+" when endpoint is an IP")
 			} else if *endpoint.Port == 0 || *endpoint.Port > math.MaxUint16 {
 				verr.AddViolationAt(validators.Root().Index(i).Field("port"), "port must be a valid (1-65535)")
 			}
@@ -115,13 +115,13 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 
 		if isValidUnixPath(endpoint.Address) {
 			if endpoint.Port != nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustNotBeDefined + " when endpoint is a unix path")
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustNotBeDefined+" when endpoint is a unix path")
 			}
 		}
 
 		if govalidator.IsDNSName(endpoint.Address) {
 			if endpoint.Port == nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined + " when endpoint is a hostname")
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined+" when endpoint is a hostname")
 			}
 		}
 
