@@ -32,9 +32,9 @@ const (
 type ProtocolType string
 
 const (
-	TcpProtocol ProtocolType = "tcp"
-	GrpcProtocol ProtocolType = "grpc"
-	HttpProtocol ProtocolType = "http"
+	TcpProtocol   ProtocolType = "tcp"
+	GrpcProtocol  ProtocolType = "grpc"
+	HttpProtocol  ProtocolType = "http"
 	Http2Protocol ProtocolType = "http2"
 )
 
@@ -90,10 +90,10 @@ type TlsMinMaxVersion string
 
 const (
 	TLSVersionAuto TlsMinMaxVersion = "TLSAuto"
-	TLSVersion10 TlsMinMaxVersion = "TLS10"
-	TLSVersion11 TlsMinMaxVersion = "TLS11"
-	TLSVersion12 TlsMinMaxVersion = "TLS12"
-	TLSVersion13 TlsMinMaxVersion = "TLS13"
+	TLSVersion10   TlsMinMaxVersion = "TLS10"
+	TLSVersion11   TlsMinMaxVersion = "TLS11"
+	TLSVersion12   TlsMinMaxVersion = "TLS12"
+	TLSVersion13   TlsMinMaxVersion = "TLS13"
 )
 
 type TlsVersion struct {
@@ -110,7 +110,7 @@ type VerificationMode string
 
 const (
 	TLSVerificationSkipSAN VerificationMode = "SkipSAN"
-	TLSVerificationSkipCA VerificationMode = "SkipCA"
+	TLSVerificationSkipCA  VerificationMode = "SkipCA"
 	TLSVerificationSkipAll VerificationMode = "SkipAll"
 	TLSVerificationSecured VerificationMode = "Secured"
 )
@@ -133,7 +133,7 @@ type Verification struct {
 type SANMatchType string
 
 const (
-	SANMatchExact SANMatchType = "Exact"
+	SANMatchExact  SANMatchType = "Exact"
 	SANMatchPrefix SANMatchType = "Prefix"
 )
 

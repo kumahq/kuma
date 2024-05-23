@@ -2,17 +2,21 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/asaskevich/govalidator"
-	"github.com/kumahq/kuma/pkg/core/validators"
 	"math"
 	"slices"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
+
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-var allMatchProtocols = []string{string(TcpProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
-var allTlsVersions = []string{string(TLSVersionAuto), string(TLSVersion10), string(TLSVersion11), string(TLSVersion12), string(TLSVersion13)}
-var allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
-var allSANMatchTypes = []string{string(SANMatchPrefix), string(SANMatchExact)}
+var (
+	allMatchProtocols    = []string{string(TcpProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
+	allTlsVersions       = []string{string(TLSVersionAuto), string(TLSVersion10), string(TLSVersion11), string(TLSVersion12), string(TLSVersion13)}
+	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
+	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
+)
 
 func (r *MeshExternalServiceResource) validate() error {
 	var verr validators.ValidationError
@@ -72,10 +76,10 @@ func validateTls(tls *Tls) validators.ValidationError {
 		}
 
 		if tls.Verification.ClientCert != nil && tls.Verification.ClientKey == nil {
-			verr.AddViolation(path.Field("clientKey").String(), validators.MustBeDefined + "when clientCert is defined")
+			verr.AddViolation(path.Field("clientKey").String(), validators.MustBeDefined+"when clientCert is defined")
 		}
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
-			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined + "when clientKey is defined")
+			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+"when clientKey is defined")
 		}
 	}
 

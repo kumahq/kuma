@@ -1,15 +1,16 @@
 package v1alpha1_test
 
 import (
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"os"
 	"path"
+
 	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("MeshExternalService", func() {
@@ -24,7 +25,7 @@ var _ = Describe("MeshExternalService", func() {
 				MeshExternalService := v1alpha1.NewMeshExternalServiceResource()
 
 				// when
-				contents, err := os.ReadFile(path.Join("testdata", given.file + "input.yaml"))
+				contents, err := os.ReadFile(path.Join("testdata", given.file+".input.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				err = core_model.FromYAML(contents, &MeshExternalService.Spec)
 				Expect(err).ToNot(HaveOccurred())
@@ -34,7 +35,7 @@ var _ = Describe("MeshExternalService", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
-				Expect(actual).To(matchers.MatchGoldenYAML(given.file + "output.yaml"))
+				Expect(actual).To(matchers.MatchGoldenYAML(path.Join("testdata", given.file+".output.yaml")))
 			},
 			Entry("empty 'from' and 'to' array", testCase{
 				file: "minimal-valid",
