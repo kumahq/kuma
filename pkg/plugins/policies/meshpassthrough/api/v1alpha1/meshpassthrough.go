@@ -1,0 +1,44 @@
+// +kubebuilder:object:generate=true
+package v1alpha1
+
+import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+)
+
+// +kuma:policy:skip_registration=false
+// +kuma:policy:is_policy=true
+type MeshPassthrough struct {
+	// TargetRef is a reference to the resource the policy takes an effect on.
+	// The resource could be either a real store object or virtual resource
+	// defined in-place.
+	TargetRef common_api.TargetRef `json:"targetRef"`
+	// MeshPassthrough configuration.
+	Default Conf `json:"default,omitempty"`
+}
+
+type Conf struct {
+	// Enabled defines whether passthrough behavior, where all traffic going
+	// outside of the cluster is allowed, is active. If true, AppendMatch
+	// has no effect.
+	Enabled *bool `json:"enabled,omitempty"`
+	// AppendMatch is a list of destinations that should be allowes through the sidecar.
+	AppendMatch []Match `json:"appendMatch,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Domain;IP;CIDR
+type MatchType string
+
+// +kubebuilder:validation:Enum=tcp;tls;grpc;http;http2
+type ProtocolType string
+
+type Match struct {
+	// Type of the match, one of `Domain`, `IP` or `CIDR` is available.
+	Type MatchType `json:"type,omitempty"`
+	// Value for the specified Type.
+	Value string `json:"value,omitempty"`
+	// Port defines a port to which a user does request.
+	Port *int `json:"port"`
+	// Protocol defines a protocol of the communication. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
+	// +kubebuilder:default=tcp
+	Protocol ProtocolType `json:"protocol,omitempty"`
+}
