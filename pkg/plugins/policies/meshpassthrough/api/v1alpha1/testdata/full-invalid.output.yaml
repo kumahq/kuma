@@ -1,0 +1,15 @@
+violations:
+- field: spec.default.appendMatch[0].port
+  message: port must be a valid (1-65535)
+- field: spec.default.appendMatch[0].type
+  message: provided type test is not supported, one of Domain, IP, or CIDR is supported
+- field: spec.default.appendMatch[1].value
+  message: provided DNS has incorrect value
+- field: spec.default.appendMatch[1].protocol
+  message: protocol tcp is not supported for a domain
+- field: spec.default.appendMatch[2].value
+  message: provided IP has incorrect value
+- field: spec.default.appendMatch[3].protocol
+  message: protocol tcp is not supported for a domain
+- field: spec.default.appendMatch[4].value
+  message: provided CIDR has incorrect value
