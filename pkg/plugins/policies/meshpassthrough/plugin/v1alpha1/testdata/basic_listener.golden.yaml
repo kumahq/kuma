@@ -1,0 +1,13 @@
+address:
+  socketAddress:
+    address: 0.0.0.0
+    portValue: 15001
+filterChains:
+- filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      cluster: outbound:passthrough:ipv4
+      statPrefix: outbound_passthrough_ipv4
+name: outbound:0.0.0.0:15001
+trafficDirection: OUTBOUND
