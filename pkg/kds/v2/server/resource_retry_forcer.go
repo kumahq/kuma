@@ -1,6 +1,7 @@
 package server
 
 import (
+	"slices"
 	"sync"
 	"time"
 
@@ -46,12 +47,14 @@ import (
 // We cannot simply invalidate existing snapshot because versions are also set in StreamState
 type kdsRetryForcer struct {
 	util_xds_v3.NoopCallbacks
-	forceFn func(*envoy_core.Node, model.ResourceType)
-	log     logr.Logger
-	nodes   map[xds.StreamID]*envoy_core.Node
-	backoff time.Duration
-	emitter events.Emitter
-	hasher  envoy_cache.NodeHash
+	forceFn        func(*envoy_core.Node, model.ResourceType)
+	removeForceFn  func(*envoy_core.Node, model.ResourceType)
+	log            logr.Logger
+	nodes          map[xds.StreamID]*envoy_core.Node
+	backoff        time.Duration
+	emitter        events.Emitter
+	hasher         envoy_cache.NodeHash
+	nackedResource map[xds.StreamID][]model.ResourceType
 
 	sync.Mutex
 }
@@ -59,17 +62,20 @@ type kdsRetryForcer struct {
 func newKdsRetryForcer(
 	log logr.Logger,
 	forceFn func(*envoy_core.Node, model.ResourceType),
+	removeForceFn func(*envoy_core.Node, model.ResourceType),
 	backoff time.Duration,
 	emitter events.Emitter,
 	hasher envoy_cache.NodeHash,
 ) *kdsRetryForcer {
 	return &kdsRetryForcer{
-		forceFn: forceFn,
-		log:     log,
-		nodes:   map[xds.StreamID]*envoy_core.Node{},
-		backoff: backoff,
-		emitter: emitter,
-		hasher:  hasher,
+		forceFn:        forceFn,
+		removeForceFn:  removeForceFn,
+		log:            log,
+		nodes:          map[xds.StreamID]*envoy_core.Node{},
+		backoff:        backoff,
+		emitter:        emitter,
+		hasher:         hasher,
+		nackedResource: map[int64][]model.ResourceType{},
 	}
 }
 
@@ -87,6 +93,10 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	}
 
 	if request.ErrorDetail == nil {
+		if _, found := r.nackedResource[streamID]; !found {
+			return nil // not NACK, no need to retry
+		}
+		r.stopRetryingAckedResource(streamID, model.ResourceType(request.TypeUrl))
 		return nil // not NACK, no need to retry
 	}
 
@@ -95,6 +105,8 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	if !ok {
 		node = request.Node
 		r.nodes[streamID] = node
+		// store information about NACK resources, to delete force retries once ACK
+		r.nackedResource[streamID] = append(r.nackedResource[streamID], model.ResourceType(request.TypeUrl))
 	}
 	r.Unlock()
 	r.log.Info("received NACK, will retry", "nodeID", r.hasher.ID(request.Node), "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
@@ -106,4 +118,26 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	})
 	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
 	return nil
+}
+
+func (r *kdsRetryForcer) stopRetryingAckedResource(streamID xds.StreamID, typeUrl model.ResourceType) {
+	r.Lock()
+	defer r.Unlock()
+	if slices.Contains(r.nackedResource[streamID], typeUrl) {
+		if node, ok := r.nodes[streamID]; ok {
+			r.removeForceFn(node, typeUrl)
+		}
+		if resources, ok := r.nackedResource[streamID]; ok {
+			newResources := make([]model.ResourceType, 0, len(resources))
+			for _, res := range resources {
+				if res != typeUrl {
+					newResources = append(newResources, res)
+				}
+			}
+			r.nackedResource[streamID] = newResources
+		}
+		if len(r.nackedResource[streamID]) == 0 {
+			delete(r.nackedResource, streamID)
+		}
+	}
 }
