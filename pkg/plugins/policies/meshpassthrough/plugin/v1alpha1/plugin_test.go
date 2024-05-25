@@ -1,7 +1,7 @@
 package v1alpha1_test
 
 import (
-	"path/filepath"
+	"fmt"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -13,22 +13,37 @@ import (
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/plugin/v1alpha1"
-	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+func getResource(
+	resourceSet *core_xds.ResourceSet,
+	typ envoy_resource.Type,
+) []byte {
+	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
+	Expect(err).ToNot(HaveOccurred())
+	actual, err := util_proto.ToYAML(resources)
+	Expect(err).ToNot(HaveOccurred())
+
+	return actual
+}
+
 var _ = Describe("MeshPassthrough", func() {
 	type sidecarTestCase struct {
-		resources         []*core_xds.Resource
-		singleItemRules   core_rules.SingleItemRules
-		expectedListeners []string
+		resources               []*core_xds.Resource
+		singleItemRules         core_rules.SingleItemRules
+		meshPassthroughDisabled bool
+		listenersGolden         string
+		clustersGolden          string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -36,7 +51,13 @@ var _ = Describe("MeshPassthrough", func() {
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
 
-			context := xds_samples.SampleContext()
+			mesh := samples.MeshDefaultBuilder()
+			if given.meshPassthroughDisabled {
+				mesh.WithoutPassthrough()
+			}
+			context := *xds_builders.Context().
+				WithMesh(mesh).
+				Build()
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(
@@ -62,9 +83,10 @@ var _ = Describe("MeshPassthrough", func() {
 			Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
 
 			// then
-			for i, expected := range given.expectedListeners {
-				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", expected)))
-			}
+			Expect(getResource(resourceSet, envoy_resource.ListenerType)).
+				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.listenersGolden)))
+			Expect(getResource(resourceSet, envoy_resource.ClusterType)).
+				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.clustersGolden)))
 		},
 		Entry("basic listener", sidecarTestCase{
 			resources: []*core_xds.Resource{
@@ -153,7 +175,68 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			},
-			expectedListeners: []string{"basic_listener.golden.yaml"},
+			listenersGolden: "basic.listener.golden.yaml",
+			clustersGolden:  "basic.clusters.golden.yaml",
+		}),
+		Entry("disabled on policy but enabled on mesh", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:     "outbound:passthrough:ipv4",
+					Origin:   generator.OriginTransparent,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							Enabled: pointer.To[bool](false),
+						},
+					},
+				},
+			},
+			listenersGolden: "disabled_on_policy.listeners.golden.yaml",
+			clustersGolden:  "disabled_on_policy.clusters.golden.yaml",
+		}),
+		Entry("enabled on policy but disabled on mesh", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							Enabled: pointer.To[bool](true),
+						},
+					},
+				},
+			},
+			meshPassthroughDisabled: true,
+			listenersGolden:         "enabled_on_policy.listeners.golden.yaml",
+			clustersGolden:          "enabled_on_policy.clusters.golden.yaml",
 		}),
 	)
 })

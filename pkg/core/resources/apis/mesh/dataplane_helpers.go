@@ -35,7 +35,7 @@ func ParseProtocol(tag string) Protocol {
 	case ProtocolTCP:
 		return ProtocolTCP
 	case ProtocolTLS:
-		return ProtocolTCP
+		return ProtocolTLS
 	case ProtocolGRPC:
 		return ProtocolGRPC
 	case ProtocolKafka:

@@ -16,9 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var (
-	_   core_plugins.PolicyPlugin = &plugin{}
-)
+var _ core_plugins.PolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -115,5 +113,5 @@ func disableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool 
 }
 
 func enabledDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
-	return !meshPassthroughEnabled && conf.Enabled != nil && !pointer.Deref[bool](conf.Enabled)
+	return !meshPassthroughEnabled && conf.Enabled != nil && pointer.Deref[bool](conf.Enabled)
 }

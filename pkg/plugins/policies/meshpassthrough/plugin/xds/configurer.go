@@ -3,7 +3,6 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 )
@@ -19,12 +18,13 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, _ *envoy_listener.L
 	matcherConfigurer := FilterChainMatcherConfigurer{
 		Conf: c.Conf,
 	}
+	// TODO: add IPv6 support
 	clustersAccumulator := map[string]bool{}
 	filterChainsToGenerate := matcherConfigurer.Configure(ipv4)
 	for name, config := range filterChainsToGenerate {
 		configurer := FilterChainConfigurer{
 			Name:       name,
-			Protocol:   mesh.ParseProtocol(config.Protocol),
+			Protocol:   config.Protocol,
 			Routes:     config.Routes,
 			APIVersion: c.APIVersion,
 		}

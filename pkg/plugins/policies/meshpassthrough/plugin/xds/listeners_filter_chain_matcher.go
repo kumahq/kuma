@@ -2,12 +2,15 @@ package xds
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	xds "github.com/cncf/xds/go/xds/core/v3"
 	v32 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	network "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
+	network_input "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -15,23 +18,23 @@ import (
 var (
 	DestinationPortInput = &xds.TypedExtensionConfig{
 		Name:        "port",
-		TypedConfig: proto.MustMarshalAny(&network.DestinationPortInput{}),
+		TypedConfig: proto.MustMarshalAny(&network_input.DestinationPortInput{}),
 	}
 	DestinationIPInput = &xds.TypedExtensionConfig{
 		Name:        "ip",
-		TypedConfig: proto.MustMarshalAny(&network.DestinationIPInput{}),
+		TypedConfig: proto.MustMarshalAny(&network_input.DestinationIPInput{}),
 	}
 	SNIInput = &xds.TypedExtensionConfig{
 		Name:        "sni",
-		TypedConfig: proto.MustMarshalAny(&network.ServerNameInput{}),
+		TypedConfig: proto.MustMarshalAny(&network_input.ServerNameInput{}),
 	}
 	TransportProtocolInput = &xds.TypedExtensionConfig{
 		Name:        "transport-protocol",
-		TypedConfig: proto.MustMarshalAny(&network.TransportProtocolInput{}),
+		TypedConfig: proto.MustMarshalAny(&network_input.TransportProtocolInput{}),
 	}
 	ApplicationProtocolInput = &xds.TypedExtensionConfig{
 		Name:        "application-protocol",
-		TypedConfig: proto.MustMarshalAny(&network.ApplicationProtocolInput{}),
+		TypedConfig: proto.MustMarshalAny(&network_input.ApplicationProtocolInput{}),
 	}
 )
 
@@ -114,7 +117,7 @@ func appProtocolMatcher(filterChainName string) *v32.Matcher_MatcherList_FieldMa
 				},
 			},
 		},
-		&v32.Matcher_MatcherList_Predicate{
+		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
 				SinglePredicate: &v32.Matcher_MatcherList_Predicate_SinglePredicate{
 					Input: ApplicationProtocolInput,
@@ -159,7 +162,7 @@ func ipMatcher(ip, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher
 }
 
 func cidrMatcher(cidr string, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
-	prefixLength := GetCIDRPrefixLength(cidr)
+	ip, mask := getIPandMask(cidr)
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -171,8 +174,8 @@ func cidrMatcher(cidr string, filterChainName string) *v32.Matcher_MatcherList_F
 							TypedConfig: proto.MustMarshalAny(&v32.IPMatcher_IPRangeMatcher{
 								Ranges: []*xds.CidrRange{
 									{
-										AddressPrefix: cidr,
-										PrefixLen:     proto.UInt32(prefixLength),
+										AddressPrefix: ip,
+										PrefixLen:     proto.UInt32(mask),
 									},
 								},
 							}),
@@ -228,13 +231,13 @@ func addFilterChainToGenerate(
 		if match.Protocol != api.ProtocolType("tcp") && match.Protocol != api.ProtocolType("tls") {
 			routes := append(value.Routes, Route{ClusterName: clusterName(match), Domain: match.Value})
 			filterChainsAccumulator[filterChainName] = FilterChainConfiguration{
-				Protocol: value.Protocol,
+				Protocol: core_mesh.ParseProtocol(string(value.Protocol)),
 				Routes:   routes,
 			}
 		}
 	} else {
 		filterChainsAccumulator[filterChainName] = FilterChainConfiguration{
-			Protocol: string(match.Protocol),
+			Protocol: core_mesh.ParseProtocol(string(match.Protocol)),
 			Routes: []Route{
 				{
 					ClusterName: clusterName(match),
@@ -341,8 +344,19 @@ func filterChainName(match api.Match) string {
 	return fmt.Sprintf("meshpassthrough_http_%s", port)
 }
 
+func getIPandMask(cidr string) (string, uint32) {
+	parts := strings.Split(cidr, "/")
+	prefixLength, err := strconv.Atoi(parts[1])
+	// that shouldn't happened because we validate object when adding
+	// TODO: add IPv6 support
+	if err != nil {
+		prefixLength = 32
+	}
+	return parts[0], uint32(prefixLength)
+}
+
 type FilterChainConfiguration struct {
-	Protocol string
+	Protocol core_mesh.Protocol
 	Routes   []Route
 }
 
@@ -359,7 +373,7 @@ type FilterChainMatcherConfigurer struct {
 func (c FilterChainMatcherConfigurer) Configure(listener *envoy_listener.Listener) map[string]FilterChainConfiguration {
 	tls, rawBuffer := GetOrderedMatchers(c.Conf)
 	filterChainsAccumulator := map[string]FilterChainConfiguration{}
-
+	// TODO: add IPv6 support
 	protocol := map[string]*v32.Matcher_OnMatch{}
 	protocol["tls"] = generateProtocolMatchers(tls, filterChainsAccumulator)
 	protocol["raw_buffer"] = generateProtocolMatchers(rawBuffer, filterChainsAccumulator)
