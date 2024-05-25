@@ -26,9 +26,9 @@ import (
 
 var _ = Describe("MeshPassthrough", func() {
 	type sidecarTestCase struct {
-		resources            []*core_xds.Resource
-    singleItemRules      core_rules.SingleItemRules  
-		expectedListeners    []string
+		resources         []*core_xds.Resource
+		singleItemRules   core_rules.SingleItemRules
+		expectedListeners []string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
@@ -38,12 +38,13 @@ var _ = Describe("MeshPassthrough", func() {
 
 			context := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
+				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(
 					builders.Dataplane().
 						WithName("test").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-            WithTransparentProxying(15006, 15001, "ipv4").
+						WithTransparentProxying(15006, 15001, "ipv4").
 						AddInbound(
 							builders.Inbound().
 								WithAddress("127.0.0.1").
@@ -67,51 +68,92 @@ var _ = Describe("MeshPassthrough", func() {
 		},
 		Entry("basic listener", sidecarTestCase{
 			resources: []*core_xds.Resource{
-        {
+				{
 					Name:   "outbound:passthrough:ipv4",
-					Origin: generator.OriginOutbound,
-					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP).
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
-                plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
-              }...)),
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
 						)).MustBuild(),
 				},
 			},
-      singleItemRules: core_rules.SingleItemRules{
+			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
-                {
-                  Type:  api.MatchType("Domain"),
-                  Value: "example.com",
-                  Port:  pointer.To[int](443),
-                  Protocol: api.ProtocolType("tls"),
-                },
-                {
-                  Type:  api.MatchType("Domain"),
-                  Value: "example.com",
-                  Port:  pointer.To[int](8080),
-                  Protocol: api.ProtocolType("http"),
-                },
-                {
-                  Type:  api.MatchType("IP"),
-                  Value: "192.168.0.1",
-                  Port:  pointer.To[int](9091),
-                  Protocol: api.ProtocolType("tcp"),
-                },
-                {
-                  Type:  api.MatchType("CIDR"),
-                  Value: "192.168.0.1/24",
-                  Protocol: api.ProtocolType("tcp"),
-                },
-              },
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[int](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example.com",
+									Port:     pointer.To[int](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "*.example.com",
+									Port:     pointer.To[int](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "example.com",
+									Port:     pointer.To[int](8080),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "other.com",
+									Port:     pointer.To[int](8080),
+									Protocol: api.ProtocolType("http"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "http2.com",
+									Port:     pointer.To[int](8080),
+									Protocol: api.ProtocolType("http2"),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "*.example.com",
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.19.1",
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.0.1",
+									Port:     pointer.To[int](9091),
+									Protocol: api.ProtocolType("tcp"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "192.168.0.1/24",
+									Protocol: api.ProtocolType("tcp"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "192.168.0.1/30",
+									Protocol: api.ProtocolType("tcp"),
+								},
+							},
 						},
 					},
 				},
 			},
-			expectedListeners:    []string{"basic_listener.golden.yaml"},
+			expectedListeners: []string{"basic_listener.golden.yaml"},
 		}),
-  )})
+	)
+})

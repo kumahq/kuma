@@ -1,11 +1,8 @@
 package v1alpha1
 
 import (
-	"fmt"
-	"strings"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -13,14 +10,14 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var (
 	_   core_plugins.PolicyPlugin = &plugin{}
-	log                           = core.Log.WithName("MeshPassthrough")
 )
 
 type plugin struct{}
@@ -42,22 +39,23 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	if proxy.Dataplane != nil && proxy.Dataplane.Spec.Networking.TransparentProxying == nil {
-		policies.Warnings = append(policies.Warnings, fmt.Sprintf("policy doesn't support proxy running without transparent-proxy"))
+		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
-	
+
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToInbounds(ctx, policies.SingleItemRules, listeners.Ipv4Passthrough, proxy.Dataplane); err != nil {
+	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
 		return err
 	}
 	return nil
 }
 
-func applyToInbounds(
+func applyToOutboundPassthrough(
 	ctx xds_context.Context,
+	rs *core_xds.ResourceSet,
 	rules core_rules.SingleItemRules,
-	passthrough *envoy_listener.Listener,
-	dataplane *core_mesh.DataplaneResource,
+	listeners policies_xds.Listeners,
+	proxy *core_xds.Proxy,
 ) error {
 	if len(rules.Rules) == 0 {
 		return nil
@@ -65,108 +63,57 @@ func applyToInbounds(
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
-	if ctx.Mesh.Resource.Spec.IsPassthrough() && !pointer.Deref[bool](conf.Enabled) && len(conf.AppendMatch) == 0 {
-		// remove cluster
-	} else if !ctx.Mesh.Resource.Spec.IsPassthrough() && pointer.Deref[bool](conf.Enabled) {
-		// add cluster
-	} else if ctx.Mesh.Resource.Spec.IsPassthrough() && !pointer.Deref[bool](conf.Enabled) && len(conf.AppendMatch) > 0 {
-		// remove default and add matchers
-		_ = orderRules(conf)
-		// generateMatchers := generateMatchers(ordered, passthrough)
-	} else if !ctx.Mesh.Resource.Spec.IsPassthrough() && !pointer.Deref[bool](conf.Enabled) && len(conf.AppendMatch) > 0{
-		// ordered := orderRules(conf)
+	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
+		removeDefaultPassthroughCluster(rs)
+	}
+	if enabledDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
+		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
 	}
 
+	if len(conf.AppendMatch) > 0 {
+		configurer := xds.Configurer{
+			APIVersion: proxy.APIVersion,
+			Conf:       conf,
+		}
+		err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func generateMatchers(orderedRules map[string]map[int]map[MatchInfo][]api.Match, passthrough *envoy_listener.Listener) error {
-	configurer := &v3.TLSInspectorConfigurer{}
-	err := configurer.Configure(passthrough)
+func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet) {
+	rs.Remove(envoy_resource.ClusterType, generator.OutboundNameIPv4)
+	rs.Remove(envoy_resource.ClusterType, generator.OutboundNameIPv6)
+}
+
+func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds.APIVersion) error {
+	outboundPassThroughCluster, err := xds.CreateCluster(apiVersion, generator.OutboundNameIPv4)
 	if err != nil {
 		return err
 	}
-
-	// passthrough.FilterChainMatcher := &v32.Matcher{
-	// 	MatcherType: &v32.Matcher_MatcherTree_{
-	// 		MatcherTree: &v32.Matcher_MatcherTree{
-	// 			Input: &v3.TypedExtensionConfig{
-
-	// 			}},
-	// 	},
-	// }
-
-
+	rs.Add(&core_xds.Resource{
+		Name:     outboundPassThroughCluster.GetName(),
+		Origin:   generator.OriginTransparent,
+		Resource: outboundPassThroughCluster,
+	})
+	outboundPassThroughCluster, err = xds.CreateCluster(apiVersion, generator.OutboundNameIPv6)
+	if err != nil {
+		return err
+	}
+	rs.Add(&core_xds.Resource{
+		Name:     outboundPassThroughCluster.GetName(),
+		Origin:   generator.OriginTransparent,
+		Resource: outboundPassThroughCluster,
+	})
 	return nil
 }
 
-func orderRules(conf api.Conf) map[string]map[int]map[MatchInfo][]api.Match {
-	ordered := map[string]map[int]map[MatchInfo][]api.Match{}
-	for _, match := range conf.AppendMatch{
-		matchInfo := MatchInfo{
-			Type: match.Type,
-			IsWildcard: strings.HasPrefix(match.Value, "*"),
-		}
-		switch match.Protocol {
-		case "tls":
-			if _, ok := ordered["tls"]; !ok {
-				ordered["tls"] = map[int]map[MatchInfo][]api.Match{}
-			}
-			port := 0
-			if match.Port != nil {
-				port = *match.Port
-			}
-			if _, ok := ordered["tls"][port]; !ok {
-				ordered["tls"][port] = map[MatchInfo][]api.Match{}
-			}
-			if _, ok := ordered["tls"][port][matchInfo]; !ok {
-				ordered["tls"][port][matchInfo] = []api.Match{}
-			}
-			ordered["tls"][port][matchInfo] = append(ordered["tls"][port][matchInfo], match)
-		default:
-			if _, ok := ordered["raw_buffer"]; !ok {
-				ordered["raw_buffer"] = map[int]map[MatchInfo][]api.Match{}
-			}
-			port := 0
-			if match.Port != nil {
-				port = *match.Port
-			}
-			if _, ok := ordered["raw_buffer"][port]; !ok {
-				ordered["raw_buffer"][port] = map[MatchInfo][]api.Match{}
-			}
-			if _, ok := ordered["raw_buffer"][port][matchInfo]; !ok {
-				ordered["raw_buffer"][port][matchInfo] = []api.Match{}
-			}
-			ordered["raw_buffer"][port][matchInfo] = append(ordered["raw_buffer"][port][matchInfo], match)
-		}
-	}
-
-	// for _, protocol := range ordered {
-	// 	for _, port := range ordered[protocol] {
-	// 		orderedList := []MatchInfo{}
-
-	// 		for orderedList
-			
-	// 	}
-	// }
-	return ordered
+func disableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
+	return meshPassthroughEnabled && conf.Enabled != nil && !pointer.Deref[bool](conf.Enabled)
 }
 
-type MatchInfo struct {
-	Type api.MatchType
-	IsWildcard bool
+func enabledDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
+	return !meshPassthroughEnabled && conf.Enabled != nil && !pointer.Deref[bool](conf.Enabled)
 }
-
-// tls 
-// 		port
-//			server name
-//			ip address
-//		ip address
-// raw_buffer
-// 		port
-//			http listener/hostheader
-//			source ip
-//		source ip
-// 
-
-// map[protocol]map[port][] string

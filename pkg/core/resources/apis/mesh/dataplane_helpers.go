@@ -19,6 +19,7 @@ type Protocol string
 const (
 	ProtocolUnknown = "<unknown>"
 	ProtocolTCP     = "tcp"
+	ProtocolTLS     = "tls"
 	ProtocolHTTP    = "http"
 	ProtocolHTTP2   = "http2"
 	ProtocolGRPC    = "grpc"
@@ -32,6 +33,8 @@ func ParseProtocol(tag string) Protocol {
 	case ProtocolHTTP2:
 		return ProtocolHTTP2
 	case ProtocolTCP:
+		return ProtocolTCP
+	case ProtocolTLS:
 		return ProtocolTCP
 	case ProtocolGRPC:
 		return ProtocolGRPC
