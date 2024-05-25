@@ -181,6 +181,14 @@ func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 
 		var requests []kube_reconcile.Request
 		for _, parentRef := range route.Spec.ParentRefs {
+			if parentRef.Group != nil && *parentRef.Group != gatewayapi.GroupName {
+				continue
+			}
+
+			if parentRef.Kind != nil && *parentRef.Kind != "Gateway" {
+				continue
+			}
+
 			namespace := route.Namespace
 			if parentRef.Namespace != nil {
 				namespace = string(*parentRef.Namespace)
@@ -350,6 +358,14 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		var names []string
 
 		for _, parentRef := range route.Spec.ParentRefs {
+			if parentRef.Group != nil && *parentRef.Group != gatewayapi.GroupName {
+				continue
+			}
+
+			if parentRef.Kind != nil && *parentRef.Kind != "Gateway" {
+				continue
+			}
+
 			namespace := route.Namespace
 			if parentRef.Namespace != nil {
 				namespace = string(*parentRef.Namespace)
