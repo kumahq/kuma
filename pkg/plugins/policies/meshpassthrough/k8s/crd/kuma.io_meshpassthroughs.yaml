@@ -52,15 +52,16 @@ spec:
                 properties:
                   appendMatch:
                     description: AppendMatch is a list of destinations that should
-                      be allowes through the sidecar.
+                      be allowed through the sidecar.
                     items:
                       properties:
                         port:
-                          description: Port defines a port to which a user does request.
+                          description: Port defines the port to which a user makes
+                            a request.
                           type: integer
                         protocol:
                           default: tcp
-                          description: 'Protocol defines a protocol of the communication.
+                          description: 'Protocol defines the communication protocol.
                             Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
                           enum:
                           - tcp
@@ -86,8 +87,8 @@ spec:
                     type: array
                   enabled:
                     description: |-
-                      Enabled defines whether passthrough behavior, where all traffic going
-                      outside of the cluster is allowed, is active. If true, AppendMatch
+                      Enabled defines whether the passthrough behavior, which allows all traffic going
+                      outside of the cluster, is active. If true, AppendMatch
                       has no effect.
                     type: boolean
                 type: object

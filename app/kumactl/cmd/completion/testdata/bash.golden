@@ -2319,6 +2319,76 @@ _kumactl_get_meshmetrics()
     noun_aliases=()
 }
 
+_kumactl_get_meshpassthrough()
+{
+    last_command="kumactl_get_meshpassthrough"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_meshpassthroughs()
+{
+    last_command="kumactl_get_meshpassthroughs"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_meshproxypatch()
 {
     last_command="kumactl_get_meshproxypatch"
@@ -3830,6 +3900,8 @@ _kumactl_get()
     commands+=("meshloadbalancingstrategy")
     commands+=("meshmetric")
     commands+=("meshmetrics")
+    commands+=("meshpassthrough")
+    commands+=("meshpassthroughs")
     commands+=("meshproxypatch")
     commands+=("meshproxypatches")
     commands+=("meshratelimit")
@@ -4385,6 +4457,42 @@ _kumactl_inspect_meshloadbalancingstrategy()
 _kumactl_inspect_meshmetric()
 {
     last_command="kumactl_inspect_meshmetric"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--new-api")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_inspect_meshpassthrough()
+{
+    last_command="kumactl_inspect_meshpassthrough"
 
     command_aliases=()
 
@@ -5166,6 +5274,7 @@ _kumactl_inspect()
     commands+=("meshhttproute")
     commands+=("meshloadbalancingstrategy")
     commands+=("meshmetric")
+    commands+=("meshpassthrough")
     commands+=("meshproxypatch")
     commands+=("meshratelimit")
     commands+=("meshretry")
