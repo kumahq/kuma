@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	"github.com/kumahq/kuma/pkg/intercp"
+	"github.com/kumahq/kuma/pkg/ipam"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
@@ -143,6 +144,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := intercp.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Control Plane Intercommunication")
+				return err
+			}
+			if err := ipam.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up IPAM")
 				return err
 			}
 
