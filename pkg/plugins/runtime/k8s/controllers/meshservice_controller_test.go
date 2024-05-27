@@ -94,8 +94,8 @@ var _ = Describe("MeshServiceController", func() {
 			outputFile: "01.meshservice.yaml",
 		}),
 		Entry("with service with mesh label", testCase{
-			inputFile:  "01.resources.yaml",
-			outputFile: "01.meshservice.yaml",
+			inputFile:  "02.resources.yaml",
+			outputFile: "02.meshservice.yaml",
 		}),
 		Entry("without mesh label and sidecar injection namespace", testCase{
 			inputFile:  "03.resources.yaml",
