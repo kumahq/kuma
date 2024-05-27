@@ -17,11 +17,11 @@ type MeshPassthrough struct {
 }
 
 type Conf struct {
-	// Enabled defines whether passthrough behavior, where all traffic going
-	// outside of the cluster is allowed, is active. If true, AppendMatch
+	// Enabled defines whether the passthrough behavior, which allows all traffic going
+	// outside of the cluster, is active. If true, AppendMatch
 	// has no effect.
 	Enabled *bool `json:"enabled,omitempty"`
-	// AppendMatch is a list of destinations that should be allowes through the sidecar.
+	// AppendMatch is a list of destinations that should be allowed through the sidecar.
 	AppendMatch []Match `json:"appendMatch,omitempty"`
 }
 
@@ -36,9 +36,9 @@ type Match struct {
 	Type MatchType `json:"type,omitempty"`
 	// Value for the specified Type.
 	Value string `json:"value,omitempty"`
-	// Port defines a port to which a user does request.
+	// Port defines the port to which a user makes a request.
 	Port *int `json:"port"`
-	// Protocol defines a protocol of the communication. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
+	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
 	Protocol ProtocolType `json:"protocol,omitempty"`
 }
