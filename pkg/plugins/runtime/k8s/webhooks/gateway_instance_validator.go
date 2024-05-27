@@ -2,23 +2,28 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
-func NewGatewayInstanceValidatorWebhook(converter k8s_common.Converter, resourceManager manager.ResourceManager) k8s_common.AdmissionValidator {
+func NewGatewayInstanceValidatorWebhook(converter k8s_common.Converter, resourceManager manager.ResourceManager, cpMode config_core.CpMode) k8s_common.AdmissionValidator {
 	return &GatewayInstanceValidator{
 		converter:       converter,
 		resourceManager: resourceManager,
+		cpMode:          cpMode,
 	}
 }
 
@@ -26,6 +31,7 @@ type GatewayInstanceValidator struct {
 	converter       k8s_common.Converter
 	decoder         *admission.Decoder
 	resourceManager manager.ResourceManager
+	cpMode          config_core.CpMode
 }
 
 func (h *GatewayInstanceValidator) InjectDecoder(d *admission.Decoder) {
@@ -49,6 +55,11 @@ func (h *GatewayInstanceValidator) ValidateDelete(ctx context.Context, req admis
 }
 
 func (h *GatewayInstanceValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
+	if h.cpMode == config_core.Global {
+		return admission.Denied(fmt.Sprintf("Operation not allowed. %s resources like %s can be created only from the %s control plane and not from a %s control plane.",
+			version.Product, "MeshGatewayInstance", strings.ToUpper(config_core.Zone), strings.ToUpper(h.cpMode)))
+	}
+
 	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := h.decoder.Decode(req, gatewayInstance); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
