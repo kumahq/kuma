@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/asaskevich/govalidator"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
+
+var allMatchProtocols = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
 
 func (r *MeshPassthroughResource) validate() error {
 	var verr validators.ValidationError
@@ -35,6 +38,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 	for i, match := range conf.AppendMatch {
 		if match.Port != nil && pointer.Deref[int](match.Port) == 0 || pointer.Deref[int](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
+		}
+		if !slices.Contains(allMatchProtocols, string(match.Protocol)) {
+			verr.AddErrorAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), validators.MakeFieldMustBeOneOfErr("protocol", allMatchProtocols...))
 		}
 		switch match.Type {
 		case "CIDR":

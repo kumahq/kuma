@@ -31,6 +31,14 @@ type MatchType string
 // +kubebuilder:validation:Enum=tcp;tls;grpc;http;http2
 type ProtocolType string
 
+const (
+	TcpProtocol   ProtocolType = "tcp"
+	TlsProtocol   ProtocolType = "tls"
+	GrpcProtocol  ProtocolType = "grpc"
+	HttpProtocol  ProtocolType = "http"
+	Http2Protocol ProtocolType = "http2"
+)
+
 type Match struct {
 	// Type of the match, one of `Domain`, `IP` or `CIDR` is available.
 	Type MatchType `json:"type,omitempty"`
