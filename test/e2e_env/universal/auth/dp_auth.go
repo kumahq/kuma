@@ -103,6 +103,7 @@ data: %s`, base64.StdEncoding.EncodeToString([]byte(claims.ID)))
 		Eventually(func(g Gomega) {
 			// we need to trigger XDS config change for this DP to disconnect it
 			// this limitation may be lifted in the future
+			randomRetries := rand.Int()%100 + 1 // #nosec G404 -- this is for tests no need to use secure rand
 			yaml = fmt.Sprintf(`
 type: MeshRetry
 name: retry-policy
@@ -123,7 +124,7 @@ spec:
             maxInterval: 20m
           retryOn:
             - "5xx"
-`, rand.Int()%100+1) // #nosec G404 -- this is for tests no need to use secure rand
+`, randomRetries)
 			g.Expect(universal.Cluster.Install(YamlUniversal(yaml))).To(Succeed())
 
 			online, _, err := IsDataplaneOnline(universal.Cluster, meshName, serviceName)
