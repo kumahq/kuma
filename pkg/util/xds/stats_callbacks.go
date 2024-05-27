@@ -151,18 +151,9 @@ func (s *statsCallbacks) OnStreamClosed(streamID int64) {
 	}
 }
 
-func (s *statsCallbacks) OnStreamRequest(streamID int64, request DiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamRequest(_ int64, request DiscoveryRequest) error {
 	if request.VersionInfo() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
-	}
-
-	if ver := s.versionExtractor(request.Metadata()); ver != "" {
-		s.Lock()
-		if _, ok := s.versionsForStream[streamID]; !ok {
-			s.versionsForStream[streamID] = ver
-			s.versionsMetric.WithLabelValues(ver).Inc()
-		}
-		s.Unlock()
 	}
 
 	if request.HasErrors() {
@@ -185,7 +176,16 @@ func (s *statsCallbacks) takeConfigTimeFromQueue(configVersion string) (time.Tim
 	return generatedTime, ok
 }
 
-func (s *statsCallbacks) OnStreamResponse(_ int64, _ DiscoveryRequest, response DiscoveryResponse) {
+func (s *statsCallbacks) OnStreamResponse(streamID int64, request DiscoveryRequest, response DiscoveryResponse) {
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versionsMetric.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
+	}
+
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
 }
 
@@ -206,18 +206,9 @@ func (s *statsCallbacks) OnDeltaStreamClosed(streamID int64) {
 	}
 }
 
-func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDiscoveryRequest) error {
+func (s *statsCallbacks) OnStreamDeltaRequest(_ int64, request DeltaDiscoveryRequest) error {
 	if request.GetResponseNonce() == "" {
 		return nil // It's initial DiscoveryRequest to ask for resources. It's neither ACK nor NACK.
-	}
-
-	if ver := s.versionExtractor(request.Metadata()); ver != "" {
-		s.Lock()
-		if _, ok := s.versionsForStream[streamID]; !ok {
-			s.versionsForStream[streamID] = ver
-			s.versionsMetric.WithLabelValues(ver).Inc()
-		}
-		s.Unlock()
 	}
 
 	if request.HasErrors() {
@@ -233,7 +224,16 @@ func (s *statsCallbacks) OnStreamDeltaRequest(streamID int64, request DeltaDisco
 	return nil
 }
 
-func (s *statsCallbacks) OnStreamDeltaResponse(_ int64, _ DeltaDiscoveryRequest, response DeltaDiscoveryResponse) {
+func (s *statsCallbacks) OnStreamDeltaResponse(streamID int64, request DeltaDiscoveryRequest, response DeltaDiscoveryResponse) {
+	if ver := s.versionExtractor(request.Metadata()); ver != "" {
+		s.Lock()
+		if _, ok := s.versionsForStream[streamID]; !ok {
+			s.versionsForStream[streamID] = ver
+			s.versionsMetric.WithLabelValues(ver).Inc()
+		}
+		s.Unlock()
+	}
+
 	s.responsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
 }
 
