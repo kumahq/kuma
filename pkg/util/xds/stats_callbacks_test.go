@@ -118,13 +118,13 @@ var _ = Describe("Stats callbacks", func() {
 			adaptedCallbacks.OnStreamResponse(context.Background(), streamId, req, resp)
 
 			// then
-			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
 
 			// when
 			adaptedCallbacks.OnStreamClosed(streamId, node)
 
 			// then
-			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
 		})
 
 		It("should track NACK", func() {
@@ -303,7 +303,7 @@ var _ = Describe("Stats callbacks", func() {
 			adaptedCallbacks.OnStreamDeltaResponse(streamId, req, resp)
 
 			// then
-			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
 
 			// when
 			adaptedCallbacks.OnDeltaStreamClosed(streamId, node)
