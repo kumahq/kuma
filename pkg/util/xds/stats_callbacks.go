@@ -126,7 +126,7 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 	stats.versionsMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: dsType + "_client_versions",
 		Help: "Number of clients for each version. It only counts connections where they sent at least one request",
-	}, []string{"version"})
+	}, []string{"client_version"})
 	if err := metrics.Register(stats.versionsMetric); err != nil {
 		return nil, err
 	}
