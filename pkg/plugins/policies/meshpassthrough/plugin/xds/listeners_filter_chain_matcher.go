@@ -58,7 +58,7 @@ func createFieldMatcher(predicate []*v32.Matcher_MatcherList_Predicate, filterCh
 	}
 }
 
-func sniWildcardDomainMatcher(domain, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+func (c FilterChainMatcherConfigurer) sniWildcardDomainMatcher(domain, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -81,7 +81,7 @@ func sniWildcardDomainMatcher(domain, filterChainName string) *v32.Matcher_Match
 	return createFieldMatcher(predicate, filterChainName)
 }
 
-func sniDomainMatcher(domain, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+func (c FilterChainMatcherConfigurer) sniDomainMatcher(domain, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -101,7 +101,7 @@ func sniDomainMatcher(domain, filterChainName string) *v32.Matcher_MatcherList_F
 	return createFieldMatcher(predicate, filterChainName)
 }
 
-func appProtocolMatcher(filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+func (c FilterChainMatcherConfigurer) appProtocolMatcher(filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -135,7 +135,11 @@ func appProtocolMatcher(filterChainName string) *v32.Matcher_MatcherList_FieldMa
 	return createFieldMatcher(predicate, filterChainName)
 }
 
-func ipMatcher(ip, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+func (c FilterChainMatcherConfigurer) ipMatcher(ip, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+	var prefixLength uint32 = 32
+	if c.IsIPv6 {
+		prefixLength = 128
+	}
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -148,7 +152,7 @@ func ipMatcher(ip, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher
 								Ranges: []*xds.CidrRange{
 									{
 										AddressPrefix: ip,
-										PrefixLen:     proto.UInt32(32),
+										PrefixLen:     proto.UInt32(prefixLength),
 									},
 								},
 							}),
@@ -161,8 +165,8 @@ func ipMatcher(ip, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher
 	return createFieldMatcher(predicate, filterChainName)
 }
 
-func cidrMatcher(cidr string, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
-	ip, mask := getIPandMask(cidr)
+func (c FilterChainMatcherConfigurer) cidrMatcher(cidr string, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+	ip, mask := c.getIPandMask(cidr)
 	predicate := []*v32.Matcher_MatcherList_Predicate{
 		{
 			MatchType: &v32.Matcher_MatcherList_Predicate_SinglePredicate_{
@@ -188,7 +192,7 @@ func cidrMatcher(cidr string, filterChainName string) *v32.Matcher_MatcherList_F
 	return createFieldMatcher(predicate, filterChainName)
 }
 
-func portMatchers(matchers []*v32.Matcher_MatcherList_FieldMatcher) *v32.Matcher_OnMatch {
+func (c FilterChainMatcherConfigurer) portMatchers(matchers []*v32.Matcher_MatcherList_FieldMatcher) *v32.Matcher_OnMatch {
 	return &v32.Matcher_OnMatch{
 		OnMatch: &v32.Matcher_OnMatch_Matcher{
 			Matcher: &v32.Matcher{
@@ -202,7 +206,7 @@ func portMatchers(matchers []*v32.Matcher_MatcherList_FieldMatcher) *v32.Matcher
 	}
 }
 
-func destinationPortsMatcher(allPortsMatcher *v32.Matcher_OnMatch, portsMatcher map[string]*v32.Matcher_OnMatch) *v32.Matcher_OnMatch {
+func (c FilterChainMatcherConfigurer) destinationPortsMatcher(allPortsMatcher *v32.Matcher_OnMatch, portsMatcher map[string]*v32.Matcher_OnMatch) *v32.Matcher_OnMatch {
 	return &v32.Matcher_OnMatch{
 		OnMatch: &v32.Matcher_OnMatch_Matcher{
 			Matcher: &v32.Matcher{
@@ -222,7 +226,7 @@ func destinationPortsMatcher(allPortsMatcher *v32.Matcher_OnMatch, portsMatcher 
 	}
 }
 
-func addFilterChainToGenerate(
+func (c FilterChainMatcherConfigurer) addFilterChainToGenerate(
 	filterChainName string,
 	match api.Match,
 	filterChainsAccumulator map[string]FilterChainConfiguration,
@@ -248,40 +252,57 @@ func addFilterChainToGenerate(
 	}
 }
 
-func getValueMatchers(matchers MatchersPerType, filterChainsAccumulator map[string]FilterChainConfiguration) []*v32.Matcher_MatcherList_FieldMatcher {
+func (c FilterChainMatcherConfigurer) getValueMatchers(matchers MatchersPerType, filterChainsAccumulator map[string]FilterChainConfiguration) []*v32.Matcher_MatcherList_FieldMatcher {
 	allPortsMatchers := []*v32.Matcher_MatcherList_FieldMatcher{}
 	for _, match := range matchers[Domain] {
-		name := filterChainName(match)
-		addFilterChainToGenerate(name, match, filterChainsAccumulator)
+		name := c.filterChainName(match)
+		c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
 		if match.Protocol == api.ProtocolType("tls") {
-			allPortsMatchers = append(allPortsMatchers, sniDomainMatcher(match.Value, name))
+			allPortsMatchers = append(allPortsMatchers, c.sniDomainMatcher(match.Value, name))
 		} else {
-			allPortsMatchers = append(allPortsMatchers, appProtocolMatcher(name))
+			allPortsMatchers = append(allPortsMatchers, c.appProtocolMatcher(name))
 		}
 	}
-	for _, match := range matchers[IP] {
-		name := filterChainName(match)
-		addFilterChainToGenerate(name, match, filterChainsAccumulator)
-		allPortsMatchers = append(allPortsMatchers, ipMatcher(match.Value, name))
+	if c.IsIPv6 {
+		for _, match := range matchers[IPV6] {
+			name := c.filterChainName(match)
+			c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
+			allPortsMatchers = append(allPortsMatchers, c.ipMatcher(match.Value, name))
+		}
+	} else {
+		for _, match := range matchers[IP] {
+			name := c.filterChainName(match)
+			c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
+			allPortsMatchers = append(allPortsMatchers, c.ipMatcher(match.Value, name))
+		}
 	}
 	for _, match := range matchers[WildcardDomain] {
-		name := filterChainName(match)
-		addFilterChainToGenerate(name, match, filterChainsAccumulator)
+		name := c.filterChainName(match)
+		c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
 		if match.Protocol == api.ProtocolType("tls") {
-			allPortsMatchers = append(allPortsMatchers, sniWildcardDomainMatcher(match.Value, name))
+			allPortsMatchers = append(allPortsMatchers, c.sniWildcardDomainMatcher(match.Value, name))
 		} else {
-			allPortsMatchers = append(allPortsMatchers, appProtocolMatcher(name))
+			allPortsMatchers = append(allPortsMatchers, c.appProtocolMatcher(name))
 		}
 	}
-	for _, match := range matchers[CIDR] {
-		name := filterChainName(match)
-		addFilterChainToGenerate(name, match, filterChainsAccumulator)
-		allPortsMatchers = append(allPortsMatchers, cidrMatcher(match.Value, name))
+	if c.IsIPv6 {
+		for _, match := range matchers[CIDRV6] {
+			name := c.filterChainName(match)
+			c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
+			allPortsMatchers = append(allPortsMatchers, c.cidrMatcher(match.Value, name))
+		}
+	} else {
+		for _, match := range matchers[CIDR] {
+			name := c.filterChainName(match)
+			c.addFilterChainToGenerate(name, match, filterChainsAccumulator)
+			allPortsMatchers = append(allPortsMatchers, c.cidrMatcher(match.Value, name))
+		}
 	}
+
 	return allPortsMatchers
 }
 
-func transportProtocolsMatcher(protocols map[string]*v32.Matcher_OnMatch) *v32.Matcher {
+func (c FilterChainMatcherConfigurer) transportProtocolsMatcher(protocols map[string]*v32.Matcher_OnMatch) *v32.Matcher {
 	return &v32.Matcher{
 		MatcherType: &v32.Matcher_MatcherTree_{
 			MatcherTree: &v32.Matcher_MatcherTree{
@@ -296,21 +317,21 @@ func transportProtocolsMatcher(protocols map[string]*v32.Matcher_OnMatch) *v32.M
 	}
 }
 
-func generateProtocolMatchers(protocolMatchers MatchersPerPort, filterChainsAccumulator map[string]FilterChainConfiguration) *v32.Matcher_OnMatch {
+func (c FilterChainMatcherConfigurer) generateProtocolMatchers(protocolMatchers MatchersPerPort, filterChainsAccumulator map[string]FilterChainConfiguration) *v32.Matcher_OnMatch {
 	portsMatchers := map[string]*v32.Matcher_OnMatch{}
 	for port, matchers := range protocolMatchers {
 		// port 0 means traffic goes to all port so we resolv them at the end
 		if port == 0 {
 			continue
 		}
-		portMatcher := getValueMatchers(matchers, filterChainsAccumulator)
-		portsMatchers[fmt.Sprint(port)] = portMatchers(portMatcher)
+		portMatcher := c.getValueMatchers(matchers, filterChainsAccumulator)
+		portsMatchers[fmt.Sprint(port)] = c.portMatchers(portMatcher)
 	}
 
 	matchAllPorts := &v32.Matcher_OnMatch{}
 	matchers, ok := protocolMatchers[0]
 	if ok {
-		allPortsMatchers := getValueMatchers(matchers, filterChainsAccumulator)
+		allPortsMatchers := c.getValueMatchers(matchers, filterChainsAccumulator)
 		matchAllPorts = &v32.Matcher_OnMatch{
 			OnMatch: &v32.Matcher_OnMatch_Matcher{
 				Matcher: &v32.Matcher{
@@ -323,7 +344,7 @@ func generateProtocolMatchers(protocolMatchers MatchersPerPort, filterChainsAccu
 			},
 		}
 	}
-	return destinationPortsMatcher(matchAllPorts, portsMatchers)
+	return c.destinationPortsMatcher(matchAllPorts, portsMatchers)
 }
 
 func clusterName(match api.Match) string {
@@ -333,7 +354,7 @@ func clusterName(match api.Match) string {
 	return fmt.Sprintf("meshpassthrough_%s_%d", match.Value, *match.Port)
 }
 
-func filterChainName(match api.Match) string {
+func (c FilterChainMatcherConfigurer) filterChainName(match api.Match) string {
 	port := "*"
 	if match.Port != nil {
 		port = fmt.Sprintf("%d", *match.Port)
@@ -344,13 +365,16 @@ func filterChainName(match api.Match) string {
 	return fmt.Sprintf("meshpassthrough_http_%s", port)
 }
 
-func getIPandMask(cidr string) (string, uint32) {
+func (c FilterChainMatcherConfigurer) getIPandMask(cidr string) (string, uint32) {
 	parts := strings.Split(cidr, "/")
 	prefixLength, err := strconv.Atoi(parts[1])
 	// that shouldn't happened because we validate object when adding
-	// TODO: add IPv6 support
 	if err != nil {
-		prefixLength = 32
+		if c.IsIPv6 {
+			prefixLength = 128
+		} else {
+			prefixLength = 32
+		}
 	}
 	return parts[0], uint32(prefixLength)
 }
@@ -367,17 +391,20 @@ type Route struct {
 }
 
 type FilterChainMatcherConfigurer struct {
-	Conf api.Conf
+	Conf   api.Conf
+	IsIPv6 bool
 }
 
-func (c FilterChainMatcherConfigurer) Configure(listener *envoy_listener.Listener) map[string]FilterChainConfiguration {
-	tls, rawBuffer := GetOrderedMatchers(c.Conf)
+func (c FilterChainMatcherConfigurer) Configure(
+	tls MatchersPerPort,
+	rawBuffer MatchersPerPort,
+	listener *envoy_listener.Listener,
+) map[string]FilterChainConfiguration {
 	filterChainsAccumulator := map[string]FilterChainConfiguration{}
-	// TODO: add IPv6 support
 	protocol := map[string]*v32.Matcher_OnMatch{}
-	protocol["tls"] = generateProtocolMatchers(tls, filterChainsAccumulator)
-	protocol["raw_buffer"] = generateProtocolMatchers(rawBuffer, filterChainsAccumulator)
-	config := transportProtocolsMatcher(protocol)
+	protocol["tls"] = c.generateProtocolMatchers(tls, filterChainsAccumulator)
+	protocol["raw_buffer"] = c.generateProtocolMatchers(rawBuffer, filterChainsAccumulator)
+	config := c.transportProtocolsMatcher(protocol)
 	listener.FilterChainMatcher = config
 	return filterChainsAccumulator
 }

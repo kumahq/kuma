@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
+
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 )
 
@@ -15,6 +17,8 @@ const (
 	WildcardDomain
 	IP
 	CIDR
+	IPV6
+	CIDRV6
 )
 
 type (
@@ -35,9 +39,18 @@ func GetOrderedMatchers(conf api.Conf) (MatchersPerPort, MatchersPerPort) {
 				matchType = Domain
 			}
 		case api.MatchType("IP"):
-			matchType = IP
+			if govalidator.IsIPv6(match.Value) {
+				matchType = IPV6
+			} else {
+				matchType = IP
+			}
 		case api.MatchType("CIDR"):
-			matchType = CIDR
+			split := strings.Split(match.Value, "/")
+			if govalidator.IsIPv6(split[0]) {
+				matchType = CIDRV6
+			} else {
+				matchType = CIDR
+			}
 		}
 
 		switch match.Protocol {
@@ -84,7 +97,7 @@ func orderValues(matchersPerPort MatchersPerPort) {
 				sort.SliceStable(values, func(i, j int) bool {
 					return sortDomains(values[i].Value, values[j].Value)
 				})
-			case CIDR:
+			case CIDR, CIDRV6:
 				sort.SliceStable(values, func(i, j int) bool {
 					return sortCIDR(values[i].Value, values[j].Value)
 				})

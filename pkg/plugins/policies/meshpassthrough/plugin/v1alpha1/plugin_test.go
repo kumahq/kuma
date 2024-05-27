@@ -101,6 +101,17 @@ var _ = Describe("MeshPassthrough", func() {
 							}...)),
 						)).MustBuild(),
 				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
@@ -168,6 +179,27 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("CIDR"),
 									Value:    "192.168.0.1/30",
+									Protocol: api.ProtocolType("tcp"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
+									Protocol: api.ProtocolType("tls"),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
+									Port:     pointer.To[int](9091),
+									Protocol: api.ProtocolType("tcp"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "b0ce:f616:4e74:28f7:427c:b969:8016:6344/64",
+									Protocol: api.ProtocolType("tcp"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "b0ce:f616:4e74:28f7:427c:b969:8016:6344/96",
 									Protocol: api.ProtocolType("tcp"),
 								},
 							},

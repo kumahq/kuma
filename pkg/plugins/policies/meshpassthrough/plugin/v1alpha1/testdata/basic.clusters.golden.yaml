@@ -47,6 +47,14 @@ resources:
     lbPolicy: CLUSTER_PROVIDED
     name: meshpassthrough_192.168.19.1_*
     type: ORIGINAL_DST
+- name: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_9942_9abf_d0e0_f2da_2290_333b_e590_f497_9091
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
+    type: ORIGINAL_DST
 - name: meshpassthrough_api.example.com_443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -54,6 +62,30 @@ resources:
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: meshpassthrough_api.example.com_443
+    type: ORIGINAL_DST
+- name: meshpassthrough_b0ce:f616:4e74:28f7:427c:b969:8016:6344/64_*
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_b0ce_f616_4e74_28f7_427c_b969_8016_6344_64__
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_b0ce:f616:4e74:28f7:427c:b969:8016:6344/64_*
+    type: ORIGINAL_DST
+- name: meshpassthrough_b0ce:f616:4e74:28f7:427c:b969:8016:6344/96_*
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_b0ce_f616_4e74_28f7_427c_b969_8016_6344_96__
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_b0ce:f616:4e74:28f7:427c:b969:8016:6344/96_*
+    type: ORIGINAL_DST
+- name: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6__
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
     type: ORIGINAL_DST
 - name: meshpassthrough_example.com_443
   resource:
