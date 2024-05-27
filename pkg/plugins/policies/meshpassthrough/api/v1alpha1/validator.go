@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/asaskevich/govalidator"
 
@@ -10,6 +11,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+)
+
+var (
+	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
+	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
 )
 
 func (r *MeshPassthroughResource) validate() error {
@@ -32,9 +38,20 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
+	portAndProtocol := map[int]ProtocolType{}
 	for i, match := range conf.AppendMatch {
 		if match.Port != nil && pointer.Deref[int](match.Port) == 0 || pointer.Deref[int](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
+		}
+		if match.Port != nil {
+			if value, found := portAndProtocol[pointer.Deref[int](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("protocol needs to be the same across different port when using: %v", notAllowedProtocolsOnTheSamePort))
+			} else {
+				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
+			}
+		}
+		if !slices.Contains(allMatchProtocols, string(match.Protocol)) {
+			verr.AddErrorAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), validators.MakeFieldMustBeOneOfErr("protocol", allMatchProtocols...))
 		}
 		switch match.Type {
 		case "CIDR":

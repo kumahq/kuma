@@ -22,3 +22,11 @@ default:
     value: 1.2.3.4
     port: 999
     protocol: tcp
+  - type: Domain
+    value: example.com
+    port: 8080
+    protocol: http
+  - type: Domain
+    value: example.com
+    port: 8080
+    protocol: http2

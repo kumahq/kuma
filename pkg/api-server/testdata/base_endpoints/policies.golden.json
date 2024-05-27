@@ -122,6 +122,17 @@
    "isOutbound": false
   },
   {
+   "name": "MeshPassthrough",
+   "readOnly": false,
+   "path": "meshpassthroughs",
+   "singularDisplayName": "Mesh Passthrough",
+   "pluralDisplayName": "Mesh Passthroughs",
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": false,
+   "isOutbound": false
+  },
+  {
    "name": "MeshProxyPatch",
    "readOnly": false,
    "path": "meshproxypatches",

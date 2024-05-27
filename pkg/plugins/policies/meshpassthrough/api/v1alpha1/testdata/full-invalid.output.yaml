@@ -1,6 +1,8 @@
 violations:
 - field: spec.default.appendMatch[0].port
   message: port must be a valid (1-65535)
+- field: spec.default.appendMatch[0].protocol
+  message: '"protocol" must be one of ["tcp", "tls", "grpc", "http", "http2"]'
 - field: spec.default.appendMatch[0].type
   message: provided type test is not supported, one of Domain, IP, or CIDR is supported
 - field: spec.default.appendMatch[1].value
@@ -13,3 +15,6 @@ violations:
   message: protocol tcp is not supported for a domain
 - field: spec.default.appendMatch[4].value
   message: provided CIDR has incorrect value
+- field: spec.default.appendMatch[6].port
+  message: 'protocol needs to be the same accross different port when using: [grpc
+    http http2]'
