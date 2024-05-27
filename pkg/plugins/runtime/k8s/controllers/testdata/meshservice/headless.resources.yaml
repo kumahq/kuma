@@ -1,0 +1,45 @@
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: example-ip4
+  namespace: demo
+  labels:
+    kubernetes.io/service-name: example
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 192.168.0.5
+    targetRef:
+      kind: Pod
+      name: example-1
+      namespace: demo
+      uid: 12350sd0fds0f
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: None
+  ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - port: 443
+      targetPort: 8443
+      protocol: TCP
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+  labels:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
