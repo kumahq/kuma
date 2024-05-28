@@ -1,6 +1,7 @@
 package kuma_cp
 
 import (
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -176,6 +177,8 @@ type Config struct {
 	Policies *policies.Config `json:"policies"`
 	// CoreResources holds configuration for generated core resources like MeshService
 	CoreResources *apis.Config `json:"coreResources"`
+	// IP administration and management config
+	IPAM IPAMConfig `json:"ipam"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -277,6 +280,12 @@ var DefaultConfig = func() Config {
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
 		CoreResources: apis.Default(),
+		IPAM: IPAMConfig{
+			MeshService: MeshServiceIPAM{
+				CIDR:               "241.0.0.0/8",
+				AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+			},
+		},
 	}
 }
 
@@ -338,6 +347,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Policies.Validate(); err != nil {
 		return errors.Wrap(err, "Policies validation failed")
+	}
+	if err := c.IPAM.Validate(); err != nil {
+		return errors.Wrap(err, "IPAM validation failed")
 	}
 	return nil
 }
@@ -451,6 +463,31 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
+}
+
+type IPAMConfig struct {
+	MeshService MeshServiceIPAM `json:"meshService"`
+}
+
+func (i IPAMConfig) Validate() error {
+	if err := i.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshServie validation failed")
+	}
+	return nil
+}
+
+type MeshServiceIPAM struct {
+	// CIDR for MeshService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_SERVICE_CIDR"`
+	// Interval on which Kuma will allocate new IPs for MeshServices
+	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_MESH_SERVICE_ALLOCATION_INTERVAL"`
+}
+
+func (i MeshServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshServiceCIDR is invalid")
+	}
+	return nil
 }
 
 func (c Config) GetEnvoyAdminPort() uint32 {
