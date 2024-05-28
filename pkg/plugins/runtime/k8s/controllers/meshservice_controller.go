@@ -182,8 +182,6 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 	}
 
-	log.V(1).Info("", "MeshServiceEndpoints", trackedPodEndpoints, "EndpointSliceEndpoints", servicePodEndpoints)
-
 	// Delete trackedPodEndpoints - servicePodEndpoints
 	for tracked := range trackedPodEndpoints {
 		if _, ok := servicePodEndpoints[tracked]; ok {

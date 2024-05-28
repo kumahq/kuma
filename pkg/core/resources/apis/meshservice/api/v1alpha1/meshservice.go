@@ -18,14 +18,6 @@ type DataplaneRef struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (r *DataplaneRef) Matches() bool {
-	if r == nil {
-		return false
-	}
-
-	return false
-}
-
 type Port struct {
 	Port       uint32             `json:"port"`
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
