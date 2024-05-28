@@ -47,7 +47,6 @@ import (
 type kdsRetryForcer struct {
 	util_xds_v3.NoopCallbacks
 	forceFn       func(*envoy_core.Node, model.ResourceType)
-	removeForceFn func(*envoy_core.Node, model.ResourceType)
 	log           logr.Logger
 	nodes         map[xds.StreamID]*envoy_core.Node
 	backoff       time.Duration
@@ -61,14 +60,12 @@ type kdsRetryForcer struct {
 func newKdsRetryForcer(
 	log logr.Logger,
 	forceFn func(*envoy_core.Node, model.ResourceType),
-	removeForceFn func(*envoy_core.Node, model.ResourceType),
 	backoff time.Duration,
 	emitter events.Emitter,
 	hasher envoy_cache.NodeHash,
 ) *kdsRetryForcer {
 	return &kdsRetryForcer{
 		forceFn:       forceFn,
-		removeForceFn: removeForceFn,
 		log:           log,
 		nodes:         map[xds.StreamID]*envoy_core.Node{},
 		backoff:       backoff,

@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds"
@@ -136,7 +135,6 @@ func (s *stream) ACK(resourceType core_model.ResourceType) error {
 
 func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 	latestReceived, found := s.latestReceived[resourceType]
-	core.Log.Info("NACK", "resourceType", resourceType, "latestReceived", latestReceived, "found", found)
 	if !found {
 		return nil
 	}
