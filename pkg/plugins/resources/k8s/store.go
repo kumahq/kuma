@@ -91,6 +91,18 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 
+<<<<<<< HEAD
+=======
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, annotations := splitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+	obj.GetObjectMeta().SetLabels(labels)
+	obj.GetObjectMeta().SetAnnotations(annotations)
+	obj.SetMesh(r.GetMeta().GetMesh())
+
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())

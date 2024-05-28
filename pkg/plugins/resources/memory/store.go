@@ -167,6 +167,12 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
+<<<<<<< HEAD
+=======
+	if opts.ModifyLabels {
+		meta.Labels = opts.Labels
+	}
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 	r.SetMeta(meta)
 
 	record.Version = meta.Version

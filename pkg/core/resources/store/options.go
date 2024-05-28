@@ -49,6 +49,11 @@ func CreateWithOwner(owner core_model.Resource) CreateOptionsFunc {
 
 type UpdateOptions struct {
 	ModificationTime time.Time
+<<<<<<< HEAD
+=======
+	Labels           map[string]string
+	ModifyLabels     bool
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 }
 
 func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
@@ -57,6 +62,16 @@ func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
 	}
 }
 
+<<<<<<< HEAD
+=======
+func UpdateWithLabels(labels map[string]string) UpdateOptionsFunc {
+	return func(opts *UpdateOptions) {
+		opts.Labels = labels
+		opts.ModifyLabels = true
+	}
+}
+
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 type UpdateOptionsFunc func(*UpdateOptions)
 
 func NewUpdateOptions(fs ...UpdateOptionsFunc) *UpdateOptions {

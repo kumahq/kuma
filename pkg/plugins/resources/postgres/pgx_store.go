@@ -142,7 +142,26 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 	if err != nil {
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
+<<<<<<< HEAD
 	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3 WHERE name=$4 AND mesh=$5 AND type=$6 AND version=$7;`
+=======
+
+	updateLabels := resource.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, err := prepareLabels(updateLabels)
+	if err != nil {
+		return err
+	}
+
+	status, err := prepareStatus(resource)
+	if err != nil {
+		return err
+	}
+
+	statement := `UPDATE resources SET spec=$1, version=$2, modification_time=$3, labels=$4, status=$5 WHERE name=$6 AND mesh=$7 AND type=$8 AND version=$9;`
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 	args := []any{
 		string(bytes),
 		newVersion,

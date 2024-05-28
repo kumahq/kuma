@@ -160,6 +160,89 @@ func ExecuteStoreTests(
 				}
 			})
 
+<<<<<<< HEAD
+=======
+			It("should preserve labels", func() {
+				// given
+				name := "to-be-updated.demo"
+				resource := createResource(name, "foo", "bar")
+
+				// when
+				resource.Spec.Conf.Destination["path"] = "new-path"
+				err := s.Update(context.Background(), resource)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				res := core_mesh.NewTrafficRouteResource()
+				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
+			})
+
+			It("should delete labels", func() {
+				// given a resources in storage
+				name := "to-be-updated.demo"
+				resource := createResource(name, "foo", "bar")
+
+				// when
+				resource.Spec.Conf.Destination["path"] = "new-path"
+				err := s.Update(context.Background(), resource, store.UpdateWithLabels(map[string]string{}))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				res := core_mesh.NewTrafficRouteResource()
+				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Meta.GetLabels()).ToNot(HaveKeyWithValue("foo", "bar"))
+			})
+
+			It("should update resource with status", func() {
+				// given
+				updated := meshservice_api.MeshServiceResource{
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{
+							DataplaneTags: map[string]string{
+								"a": "b",
+							},
+						},
+						Ports: []meshservice_api.Port{
+							{
+								Port:       80,
+								TargetPort: intstr.FromInt(80),
+								Protocol:   "http",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{
+							{
+								IP: "10.0.0.1",
+							},
+						},
+					},
+				}
+				err := s.Create(context.Background(), &updated, store.CreateByKey("ms-2.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				updated.Status.VIPs[0].IP = "10.0.0.2"
+				updated.Spec.Ports[0].Port = 81
+				err = s.Update(context.Background(), &updated)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// and
+				ms := meshservice_api.NewMeshServiceResource()
+				err = s.Get(context.Background(), ms, store.GetByKey("ms-2.demo", mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ms.Status).To(Equal(updated.Status))
+				Expect(ms.Spec).To(Equal(updated.Spec))
+			})
+
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 			// todo(jakubdyszkiewicz) write tests for optimistic locking
 		})
 
