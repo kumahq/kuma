@@ -14,7 +14,14 @@ endpoints:
       kind: Pod
       name: example-1
       namespace: demo
-      uid: 12350sd0fds0f
+      uid: example-1-1
+  - addresses:
+      - 192.168.0.6
+    targetRef:
+      kind: Pod
+      name: example-2
+      namespace: demo
+      uid: example-2-1
 ---
 apiVersion: v1
 kind: Service

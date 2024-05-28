@@ -10,7 +10,7 @@ items:
     - apiVersion: v1
       kind: Pod
       name: example-1
-      uid: 12350sd0fds0f
+      uid: example-1-1
     resourceVersion: "1"
   spec:
     ports:
@@ -27,4 +27,32 @@ items:
     tls: {}
     vips:
     - ip: 192.168.0.5
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: example-2-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-2
+      uid: example-2-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-2
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.6
 metadata: {}
