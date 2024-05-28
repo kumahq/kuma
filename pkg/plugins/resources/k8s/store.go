@@ -103,7 +103,11 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	if opts.ModifyLabels {
 		updateLabels = opts.Labels
 	}
+<<<<<<< HEAD
 	labels, annotations := SplitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+=======
+	labels, annotations := splitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+>>>>>>> b0abc25a4 (feat(store): update does not wipe out labels (#10335))
 	obj.GetObjectMeta().SetLabels(labels)
 	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(r.GetMeta().GetMesh())
