@@ -114,10 +114,10 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 }
 
 func (r *kdsRetryForcer) OnStreamDeltaResponse(streamID int64, req *envoy_sd.DeltaDiscoveryRequest, resp *envoy_sd.DeltaDiscoveryResponse) {
-	r.Lock()
 	if _, found := r.streamToDelay[streamID]; found {
 		time.Sleep(r.backoff)
 	}
+	r.Lock()
 	delete(r.streamToDelay, streamID)
 	r.Unlock()
 }
