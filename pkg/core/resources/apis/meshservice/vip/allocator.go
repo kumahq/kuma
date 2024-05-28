@@ -132,7 +132,7 @@ func (a *Allocator) allocateVips(ctx context.Context, kumaIpam *ipam.IPAM) error
 				},
 			}
 
-			if err := a.resManager.Update(ctx, svc, store.UpdateWithLabels(svc.GetMeta().GetLabels())); err != nil {
+			if err := a.resManager.Update(ctx, svc); err != nil {
 				msg := "could not update service with allocated Kuma VIP. Will try to update in the next allocation window"
 				if errors.Is(err, &store.ResourceConflictError{}) {
 					log.Info(msg, "cause", "conflict", "interval", a.interval)
