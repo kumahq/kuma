@@ -392,7 +392,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 6822a8761a3906a432914504b3bc867fcf7f1c6f115239a7de9e9305c74520c2
+        checksum/tls-secrets: f53884b507930ca08356e2e9cefe9a38856496f047b78a5ccfea350ae837111f
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -744,7 +744,7 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - gatewayinstances
+          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways
