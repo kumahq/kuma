@@ -3,7 +3,6 @@ package meshexternalservice
 import (
 	"context"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -93,7 +92,6 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, version core_xds.
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)
 	clusterName := names.GetMeshExternalServiceClusterName(name)
-	splits := xds.NewSplitBuilder().WithClusterName(clusterName).WithExternalService(true) // do we need this?
 
 	builder := listeners.NewInboundListenerBuilder(version, address, uint32(port), core_xds.SocketAddressProtocolTCP)
 	builder.WithOverwriteName(listenerName)
@@ -111,7 +109,7 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, version core_xds.
 	case v1alpha1.TcpProtocol:
 		fallthrough
 	default:
-		filterChainBuilder.Configure(listeners.TCPProxy(listenerName, splits.Build()))
+		filterChainBuilder.Configure(listeners.TCPProxy(listenerName))
 	}
 
 	builder.Configure(listeners.FilterChain(filterChainBuilder))

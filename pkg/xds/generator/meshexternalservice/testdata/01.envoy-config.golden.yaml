@@ -1,0 +1,21 @@
+resources:
+- name: meshexternalservice_mes1
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        portValue: 8080
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: meshexternalservice_mes1
+      name: meshexternalservice_filterchain_mes1
+    name: meshexternalservice_mes1
+    trafficDirection: INBOUND

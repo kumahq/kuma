@@ -1,0 +1,30 @@
+type: MeshExternalService
+name: mes1
+mesh: default
+match:
+  type: HostnameGenerator
+  port: 8080
+  protocol: http
+endpoints:
+  - address: 1.1.1.1
+    port: 12345
+  - address: example.com
+    port: 80
+  - address: unix:///tmp/example.sock
+tls:
+  version:
+    min: TLS12
+    max: TLS13
+  allowRenegotiation: false
+  verification:
+    subjectAltNames:
+      - type: Exact
+        value: example.com
+      - type: Prefix
+        value: "spiffe://example.local/ns/local"
+    caCert:
+      inline: dGVzdA==
+    clientCert:
+      secret: "123"
+    clientKey:
+      secret: "123"
