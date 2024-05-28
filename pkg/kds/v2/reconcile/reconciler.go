@@ -51,13 +51,6 @@ func (r *reconciler) ForceVersion(node *envoy_core.Node, resourceType core_model
 	r.forceVersionsLock.Unlock()
 }
 
-func (r *reconciler) RemoveForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
-	id := r.hasher.ID(node)
-	r.forceVersionsLock.Lock()
-	delete(r.forceVersions, id)
-	r.forceVersionsLock.Unlock()
-}
-
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
 	id := r.hasher.ID(node)
 	r.lock.Lock()
@@ -138,6 +131,7 @@ func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_
 func (r *reconciler) forceNewVersion(snapshot envoy_cache.ResourceSnapshot, id string) {
 	r.forceVersionsLock.Lock()
 	forceVersionsForTypes := r.forceVersions[id]
+	delete(r.forceVersions, id)
 	r.forceVersionsLock.Unlock()
 	for _, typ := range forceVersionsForTypes {
 		cacheSnapshot, ok := snapshot.(*cache_v2.Snapshot)
