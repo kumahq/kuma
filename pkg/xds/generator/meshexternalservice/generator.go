@@ -65,7 +65,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 	resources := core_xds.NewResourceSet()
 
 	if mes.Spec.Extension != nil {
-		res, err := extensions[mes.Spec.Extension.Type].Generate(mes.Spec.Extension.Config)
+		res, err := extensions[mes.Spec.Extension.Type].Generate(mes.Spec.Extension.Config) // pass tls / endpoints as well
 		if err != nil {
 			return nil, err
 		}
