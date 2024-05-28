@@ -14,7 +14,7 @@ tidy:
 
 .PHONY: shellcheck
 shellcheck:
-	find . -name "*.sh" -not -path "./.git/*" $(SHELLCHECK_FIND_EXTRA_ARGS) -exec $(SHELLCHECK) -P SCRIPTDIR -x {} +
+	find . -path "*/.git/*" -prune -o -type f -name "*.sh" -exec $(SHELLCHECK) -P SCRIPTDIR -x {} +
 
 .PHONY: golangci-lint
 golangci-lint: ## Dev: Runs golangci-lint linter
