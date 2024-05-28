@@ -190,6 +190,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - hostnamegenerators
       - meshexternalservices
       - meshservices
     verbs:
@@ -560,6 +561,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     sideEffects: None
@@ -614,6 +616,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
   
@@ -741,6 +744,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     
