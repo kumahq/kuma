@@ -238,6 +238,7 @@ func ExecuteStoreTests(
 
 				res := core_mesh.NewTrafficRouteResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
 			})
 
@@ -255,6 +256,7 @@ func ExecuteStoreTests(
 
 				res := core_mesh.NewTrafficRouteResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
 				Expect(res.Meta.GetLabels()).ToNot(HaveKeyWithValue("foo", "bar"))
 			})
 
