@@ -22,6 +22,13 @@ endpoints:
       name: example-2
       namespace: demo
       uid: example-2-1
+  - addresses:
+      - 192.168.0.7
+    targetRef:
+      kind: Pod
+      name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+      namespace: demo
+      uid: very-long-1
 ---
 apiVersion: v1
 kind: Service

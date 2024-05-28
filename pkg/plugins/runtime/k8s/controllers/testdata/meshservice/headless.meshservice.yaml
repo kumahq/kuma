@@ -55,4 +55,32 @@ items:
     tls: {}
     vips:
     - ip: 192.168.0.6
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-lo-86d6685d5b
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+      uid: very-long-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.7
 metadata: {}

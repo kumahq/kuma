@@ -201,10 +201,16 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 	for current, endpoint := range servicePodEndpoints {
 		// Our name is unique depending on the service identity and pod name
-		canonicalNameHash := k8s.NewHasher()
-		canonicalNameHash.Write([]byte(svc.Name))
-		canonicalNameHash.Write([]byte(svc.Namespace))
-		canonicalName := fmt.Sprintf("%s-%s", current.Name, k8s.HashToString(canonicalNameHash))
+		// but we also might hash the pod name because it might need to be truncated
+		namePrefix := current.Name
+		canonicalNameHasher := k8s.NewHasher()
+		canonicalNameHasher.Write([]byte(svc.Name))
+		canonicalNameHasher.Write([]byte(svc.Namespace))
+		if len(current.Name)+k8s.MaxHashStringLength+1 > 253 {
+			canonicalNameHasher.Write([]byte(current.Name))
+			namePrefix = k8s.EnsureMaxLength(namePrefix, 253-k8s.MaxHashStringLength-1)
+		}
+		canonicalName := fmt.Sprintf("%s-%s", namePrefix, k8s.HashToString(canonicalNameHasher))
 		op, err := r.manageMeshService(
 			ctx,
 			svc,

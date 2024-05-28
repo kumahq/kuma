@@ -31,6 +31,17 @@ func NewHasher() hash.Hash32 {
 	return fnv.New32a()
 }
 
+// HashToString calculates a hash the same way Pod template hashes are computed
 func HashToString(h hash.Hash32) string {
 	return rand.SafeEncodeString(fmt.Sprint(h.Sum32()))
+}
+
+// MaxHashStringLength is the max length of a string returned by HashToString
+const MaxHashStringLength = 10
+
+func EnsureMaxLength(s string, length int) string {
+	if len(s) <= length {
+		return s
+	}
+	return s[0:length]
 }
