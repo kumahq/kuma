@@ -81,7 +81,7 @@ func (a *Allocator) Start(stop <-chan struct{}) error {
 			if err := a.allocateVips(ctx, kumaIpam); err != nil {
 				return err
 			}
-			a.metric.Observe(float64(time.Now().Sub(start).Milliseconds()))
+			a.metric.Observe(float64(time.Since(start).Milliseconds()))
 		case <-stop:
 			a.logger.Info("stopping")
 			return nil
