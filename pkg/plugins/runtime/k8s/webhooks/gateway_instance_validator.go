@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 
 	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -56,8 +55,8 @@ func (h *GatewayInstanceValidator) ValidateDelete(ctx context.Context, req admis
 
 func (h *GatewayInstanceValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
 	if h.cpMode == config_core.Global {
-		return admission.Denied(fmt.Sprintf("Operation not allowed. %s resources like %s can be created only from the %s control plane and not from a %s control plane.",
-			version.Product, "MeshGatewayInstance", strings.ToUpper(config_core.Zone), strings.ToUpper(h.cpMode)))
+		return admission.Denied(fmt.Sprintf("Operation not allowed. %s resources like %s can be created only from the '%s' control plane and not from a '%s' control plane.",
+			version.Product, "MeshGatewayInstance", config_core.Zone, h.cpMode))
 	}
 
 	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
