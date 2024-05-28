@@ -1,0 +1,192 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChainMatcher:
+      matcherTree:
+        exactMatchMap:
+          map:
+            raw_buffer:
+              matcher:
+                matcherTree:
+                  exactMatchMap:
+                    map:
+                      "80":
+                        matcher:
+                          matcherList:
+                            matchers:
+                            - onMatch:
+                                action:
+                                  name: meshpassthrough_http_80
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_80
+                              predicate:
+                                orMatcher:
+                                  predicate:
+                                  - singlePredicate:
+                                      input:
+                                        name: application-protocol
+                                        typedConfig:
+                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                                      valueMatch:
+                                        exact: '''http/1.1'''
+                                  - singlePredicate:
+                                      input:
+                                        name: application-protocol
+                                        typedConfig:
+                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                                      valueMatch:
+                                        exact: '''h2c'''
+                            - onMatch:
+                                action:
+                                  name: meshpassthrough_192.168.0.0_80
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_192.168.0.0_80
+                              predicate:
+                                singlePredicate:
+                                  customMatch:
+                                    name: ip-matcher
+                                    typedConfig:
+                                      '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
+                                      cidrRanges:
+                                      - addressPrefix: 192.168.0.0
+                                        prefixLen: 32
+                                      statPrefix: meshpassthrough_192.168.0.0_80
+                                  input:
+                                    name: ip
+                                    typedConfig:
+                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
+                  input:
+                    name: port
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+        input:
+          name: transport-protocol
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.TransportProtocolInput
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_80
+            virtualHosts:
+            - domains:
+              - api.example.com
+              name: api.example.com
+              routes:
+              - match:
+                  path: /
+                route:
+                  cluster: meshpassthrough_api.example.com_80
+          statPrefix: meshpassthrough_http_80
+      name: meshpassthrough_http_80
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_192.168.0.0_80
+          statPrefix: meshpassthrough_192_168_0_0_80
+      name: meshpassthrough_192.168.0.0_80
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    filterChainMatcher:
+      matcherTree:
+        exactMatchMap:
+          map:
+            raw_buffer:
+              matcher:
+                matcherTree:
+                  exactMatchMap:
+                    map:
+                      "80":
+                        matcher:
+                          matcherList:
+                            matchers:
+                            - onMatch:
+                                action:
+                                  name: meshpassthrough_http_80
+                                  typedConfig:
+                                    '@type': type.googleapis.com/google.protobuf.StringValue
+                                    value: meshpassthrough_http_80
+                              predicate:
+                                orMatcher:
+                                  predicate:
+                                  - singlePredicate:
+                                      input:
+                                        name: application-protocol
+                                        typedConfig:
+                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                                      valueMatch:
+                                        exact: '''http/1.1'''
+                                  - singlePredicate:
+                                      input:
+                                        name: application-protocol
+                                        typedConfig:
+                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
+                                      valueMatch:
+                                        exact: '''h2c'''
+                  input:
+                    name: port
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
+        input:
+          name: transport-protocol
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.TransportProtocolInput
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_80
+            virtualHosts:
+            - domains:
+              - api.example.com
+              name: api.example.com
+              routes:
+              - match:
+                  path: /
+                route:
+                  cluster: meshpassthrough_api.example.com_80
+          statPrefix: meshpassthrough_http_80
+      name: meshpassthrough_http_80
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv6
+    trafficDirection: OUTBOUND

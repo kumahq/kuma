@@ -69,6 +69,7 @@ func applyToOutboundPassthrough(
 	}
 
 	if len(conf.AppendMatch) > 0 {
+		removeDefaultPassthroughCluster(rs)
 		configurer := xds.Configurer{
 			APIVersion: proxy.APIVersion,
 			Conf:       conf,

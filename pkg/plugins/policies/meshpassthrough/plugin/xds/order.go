@@ -27,6 +27,7 @@ type (
 )
 
 func GetOrderedMatchers(conf api.Conf) (MatchersPerPort, MatchersPerPort) {
+	// validate port and protocol conflict 
 	rawBuffer := MatchersPerPort{}
 	tls := MatchersPerPort{}
 	for _, match := range conf.AppendMatch {

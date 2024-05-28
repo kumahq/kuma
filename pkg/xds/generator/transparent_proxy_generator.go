@@ -71,7 +71,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	var err error
 
 	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion, OutboundNameIPv4).
+		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion, outboundName).
 			Configure(envoy_clusters.PassThroughCluster()).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()

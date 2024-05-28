@@ -10,8 +10,6 @@ import (
 
 const (
 	OriginMeshPassthrough = "meshpassthrough"
-	TlsInspectorName      = "envoy.filters.listener.tls_inspector"
-	HttpInspectorName     = "envoy.filters.listener.http_inspector"
 )
 
 type Configurer struct {
@@ -52,6 +50,8 @@ func (c Configurer) configureListener(
 	if listener == nil {
 		return nil
 	}
+	// remove default filter chain provided by `transparent_proxy_generator`
+	listener.FilterChains =  []*envoy_listener.FilterChain{}
 	matcherConfigurer := FilterChainMatcherConfigurer{
 		Conf:   c.Conf,
 		IsIPv6: isIPv6,
@@ -83,20 +83,24 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {
-		if filter.Name == TlsInspectorName {
+		if filter.Name == xds_listeners.TlsInspectorName {
 			hasTlsInspector = true
 		}
-		if filter.Name == HttpInspectorName {
+		if filter.Name == xds_listeners.HttpInspectorName {
 			hasHttpInspector = true
 		}
 	}
+	var err error
 	if !hasTlsInspector {
 		configurer := xds_listeners.TLSInspectorConfigurer{}
-		return configurer.Configure(listener)
+		err = configurer.Configure(listener)
+	}
+	if err != nil {
+		return err
 	}
 	if !hasHttpInspector {
 		configurer := xds_listeners.HTTPInspectorConfigurer{}
-		return configurer.Configure(listener)
+		err = configurer.Configure(listener)
 	}
-	return nil
+	return err
 }

@@ -7,8 +7,10 @@ import (
 
 	xds "github.com/cncf/xds/go/xds/core/v3"
 	v32 "github.com/cncf/xds/go/xds/type/matcher/v3"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	network_input "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/common_inputs/network/v3"
+	input_matcher "github.com/envoyproxy/go-control-plane/envoy/extensions/matching/input_matchers/ip/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -39,6 +41,19 @@ var (
 )
 
 func createFieldMatcher(predicate []*v32.Matcher_MatcherList_Predicate, filterChainName string) *v32.Matcher_MatcherList_FieldMatcher {
+	if len(predicate) == 1 {
+		return &v32.Matcher_MatcherList_FieldMatcher{
+			OnMatch: &v32.Matcher_OnMatch{
+				OnMatch: &v32.Matcher_OnMatch_Action{
+					Action: &xds.TypedExtensionConfig{
+						Name:        filterChainName,
+						TypedConfig: proto.MustMarshalAny(proto.String(filterChainName)),
+					},
+				},
+			},
+			Predicate: predicate[0],
+		}
+	}
 	return &v32.Matcher_MatcherList_FieldMatcher{
 		OnMatch: &v32.Matcher_OnMatch{
 			OnMatch: &v32.Matcher_OnMatch_Action{
@@ -110,7 +125,7 @@ func (c FilterChainMatcherConfigurer) appProtocolMatcher(filterChainName string)
 					Matcher: &v32.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
 						ValueMatch: &v32.StringMatcher{
 							MatchPattern: &v32.StringMatcher_Exact{
-								Exact: "http/1.1",
+								Exact: "'http/1.1'",
 							},
 						},
 					},
@@ -124,7 +139,7 @@ func (c FilterChainMatcherConfigurer) appProtocolMatcher(filterChainName string)
 					Matcher: &v32.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
 						ValueMatch: &v32.StringMatcher{
 							MatchPattern: &v32.StringMatcher_Exact{
-								Exact: "h2c",
+								Exact: "'h2c'",
 							},
 						},
 					},
@@ -148,13 +163,14 @@ func (c FilterChainMatcherConfigurer) ipMatcher(ip, filterChainName string) *v32
 					Matcher: &v32.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
 						CustomMatch: &xds.TypedExtensionConfig{
 							Name: "ip-matcher",
-							TypedConfig: proto.MustMarshalAny(&v32.IPMatcher_IPRangeMatcher{
-								Ranges: []*xds.CidrRange{
+							TypedConfig: proto.MustMarshalAny(&input_matcher.Ip{
+								CidrRanges: []*envoy_core.CidrRange{
 									{
 										AddressPrefix: ip,
 										PrefixLen:     proto.UInt32(prefixLength),
 									},
 								},
+								StatPrefix: filterChainName,
 							}),
 						},
 					},
@@ -174,7 +190,7 @@ func (c FilterChainMatcherConfigurer) cidrMatcher(cidr string, filterChainName s
 					Input: DestinationIPInput,
 					Matcher: &v32.Matcher_MatcherList_Predicate_SinglePredicate_CustomMatch{
 						CustomMatch: &xds.TypedExtensionConfig{
-							Name: "ip-matcher",
+							Name: "ip",
 							TypedConfig: proto.MustMarshalAny(&v32.IPMatcher_IPRangeMatcher{
 								Ranges: []*xds.CidrRange{
 									{
@@ -207,21 +223,24 @@ func (c FilterChainMatcherConfigurer) portMatchers(matchers []*v32.Matcher_Match
 }
 
 func (c FilterChainMatcherConfigurer) destinationPortsMatcher(allPortsMatcher *v32.Matcher_OnMatch, portsMatcher map[string]*v32.Matcher_OnMatch) *v32.Matcher_OnMatch {
-	return &v32.Matcher_OnMatch{
-		OnMatch: &v32.Matcher_OnMatch_Matcher{
-			Matcher: &v32.Matcher{
-				OnNoMatch: allPortsMatcher,
-				MatcherType: &v32.Matcher_MatcherTree_{
-					MatcherTree: &v32.Matcher_MatcherTree{
-						Input: DestinationPortInput,
-						TreeType: &v32.Matcher_MatcherTree_ExactMatchMap{
-							ExactMatchMap: &v32.Matcher_MatcherTree_MatchMap{
-								Map: portsMatcher,
-							},
-						},
+	matcher := &v32.Matcher{
+		MatcherType: &v32.Matcher_MatcherTree_{
+			MatcherTree: &v32.Matcher_MatcherTree{
+				Input: DestinationPortInput,
+				TreeType: &v32.Matcher_MatcherTree_ExactMatchMap{
+					ExactMatchMap: &v32.Matcher_MatcherTree_MatchMap{
+						Map: portsMatcher,
 					},
 				},
 			},
+		},
+	}
+	if allPortsMatcher != nil {
+		matcher.OnNoMatch = allPortsMatcher
+	}
+	return &v32.Matcher_OnMatch{
+		OnMatch: &v32.Matcher_OnMatch_Matcher{
+			Matcher: matcher,
 		},
 	}
 }
@@ -328,7 +347,7 @@ func (c FilterChainMatcherConfigurer) generateProtocolMatchers(protocolMatchers 
 		portsMatchers[fmt.Sprint(port)] = c.portMatchers(portMatcher)
 	}
 
-	matchAllPorts := &v32.Matcher_OnMatch{}
+	var matchAllPorts *v32.Matcher_OnMatch
 	matchers, ok := protocolMatchers[0]
 	if ok {
 		allPortsMatchers := c.getValueMatchers(matchers, filterChainsAccumulator)
@@ -402,8 +421,12 @@ func (c FilterChainMatcherConfigurer) Configure(
 ) map[string]FilterChainConfiguration {
 	filterChainsAccumulator := map[string]FilterChainConfiguration{}
 	protocol := map[string]*v32.Matcher_OnMatch{}
-	protocol["tls"] = c.generateProtocolMatchers(tls, filterChainsAccumulator)
-	protocol["raw_buffer"] = c.generateProtocolMatchers(rawBuffer, filterChainsAccumulator)
+	if len(tls) > 0 {
+		protocol["tls"] = c.generateProtocolMatchers(tls, filterChainsAccumulator)
+	}
+	if len(rawBuffer) > 0 {
+		protocol["raw_buffer"] = c.generateProtocolMatchers(rawBuffer, filterChainsAccumulator)
+	}
 	config := c.transportProtocolsMatcher(protocol)
 	listener.FilterChainMatcher = config
 	return filterChainsAccumulator

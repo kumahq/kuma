@@ -210,6 +210,57 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "basic.listener.golden.yaml",
 			clustersGolden:  "basic.clusters.golden.yaml",
 		}),
+    Entry("simple policy", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							AppendMatch: []api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[int](80),
+									Protocol: api.ProtocolType("http"),
+								},
+                {
+									Type:     api.MatchType("IP"),
+									Value:    "192.168.0.0",
+									Port:     pointer.To[int](80),
+									Protocol: api.ProtocolType("tcp"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "simple.listener.golden.yaml",
+			clustersGolden:  "simple.clusters.golden.yaml",
+		}),
 		Entry("disabled on policy but enabled on mesh", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
