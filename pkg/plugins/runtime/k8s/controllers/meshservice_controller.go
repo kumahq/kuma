@@ -150,7 +150,9 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			continue
 		}
 		owner := svc.GetOwnerReferences()[0]
-		// TODO check kinds of owner
+		if owner.Kind != "Pod" || owner.APIVersion != kube_core.SchemeGroupVersion.String() {
+			continue
+		}
 		trackedPodEndpoints[kube_types.NamespacedName{Namespace: svc.Namespace, Name: owner.Name}] = struct{}{}
 	}
 
