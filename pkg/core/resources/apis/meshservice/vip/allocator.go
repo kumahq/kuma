@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/core"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -66,6 +65,7 @@ func NewAllocator(
 }
 
 func (a *Allocator) Start(stop <-chan struct{}) error {
+	a.logger.Info("starting")
 	ticker := time.NewTicker(a.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
@@ -77,11 +77,11 @@ func (a *Allocator) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			start := core.Now()
+			start := time.Now()
 			if err := a.allocateVips(ctx, kumaIpam); err != nil {
 				return err
 			}
-			a.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
+			a.metric.Observe(float64(time.Now().Sub(start).Milliseconds()))
 		case <-stop:
 			a.logger.Info("stopping")
 			return nil
@@ -132,7 +132,7 @@ func (a *Allocator) allocateVips(ctx context.Context, kumaIpam *ipam.IPAM) error
 				},
 			}
 
-			if err := a.resManager.Update(ctx, svc); err != nil {
+			if err := a.resManager.Update(ctx, svc, store.UpdateWithLabels(svc.GetMeta().GetLabels())); err != nil {
 				msg := "could not update service with allocated Kuma VIP. Will try to update in the next allocation window"
 				if errors.Is(err, &store.ResourceConflictError{}) {
 					log.Info(msg, "cause", "conflict", "interval", a.interval)

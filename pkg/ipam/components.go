@@ -3,6 +3,7 @@ package ipam
 import (
 	"slices"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/vip"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -10,10 +11,14 @@ import (
 )
 
 func Setup(rt runtime.Runtime) error {
-	if !slices.Contains(rt.Config().CoreResources.Enabled, "meshservice") {
+	if rt.GetMode() == config_core.Global {
 		return nil
 	}
 	logger := core.Log.WithName("meshservice").WithName("vips").WithName("allocator")
+	if !slices.Contains(rt.Config().CoreResources.Enabled, "meshservices") {
+		logger.Info("MeshService is not enabled. Not enabling VIP allocator for MeshService.")
+		return nil
+	}
 	allocator, err := vip.NewAllocator(
 		logger,
 		rt.Metrics(),
