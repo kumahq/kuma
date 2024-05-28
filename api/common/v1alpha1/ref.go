@@ -13,21 +13,23 @@ import (
 type TargetRefKind string
 
 var (
-	Mesh              TargetRefKind = "Mesh"
-	MeshSubset        TargetRefKind = "MeshSubset"
-	MeshGateway       TargetRefKind = "MeshGateway"
-	MeshService       TargetRefKind = "MeshService"
-	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
-	MeshHTTPRoute     TargetRefKind = "MeshHTTPRoute"
+	Mesh                TargetRefKind = "Mesh"
+	MeshSubset          TargetRefKind = "MeshSubset"
+	MeshGateway         TargetRefKind = "MeshGateway"
+	MeshService         TargetRefKind = "MeshService"
+	MeshServiceSubset   TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute       TargetRefKind = "MeshHTTPRoute"
+	MeshExternalService TargetRefKind = "MeshExternalService"
 )
 
 var order = map[TargetRefKind]int{
-	Mesh:              1,
-	MeshSubset:        2,
-	MeshGateway:       3,
-	MeshService:       4,
-	MeshServiceSubset: 5,
-	MeshHTTPRoute:     6,
+	Mesh:                1,
+	MeshSubset:          2,
+	MeshGateway:         3,
+	MeshService:         4,
+	MeshExternalService: 5,
+	MeshServiceSubset:   6,
+	MeshHTTPRoute:       7,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
