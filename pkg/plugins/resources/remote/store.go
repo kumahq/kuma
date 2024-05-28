@@ -164,6 +164,11 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 		return err
 	}
 	res.SetMeta(restRes.GetMeta())
+	if res.Descriptor().HasStatus {
+		if err := res.SetStatus(restRes.GetStatus()); err != nil {
+			return err
+		}
+	}
 	return res.SetSpec(restRes.GetSpec())
 }
 

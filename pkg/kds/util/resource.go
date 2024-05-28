@@ -6,6 +6,7 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -49,6 +50,13 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		if err != nil {
 			return nil, err
 		}
+		var pbanyStatus *anypb.Any
+		if r.Descriptor().HasStatus {
+			pbanyStatus, err = model.ToAny(r.GetStatus())
+			if err != nil {
+				return nil, err
+			}
+		}
 		rv = append(rv, &mesh_proto.KumaResource{
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:    r.GetMeta().GetName(),
@@ -56,7 +64,8 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 				Labels:  r.GetMeta().GetLabels(),
 				Version: "",
 			},
-			Spec: pbany,
+			Spec:   pbany,
+			Status: pbanyStatus,
 		})
 	}
 	return rv, nil
@@ -132,6 +141,11 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		}
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
+		}
+		if obj.Descriptor().HasStatus {
+			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
+				return nil, err
+			}
 		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
 		if err := list.AddItem(obj); err != nil {

@@ -196,6 +196,9 @@ func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.R
 		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(newName))
 		newObj.SetMeta(newMeta)
 		_ = newObj.SetSpec(r.GetSpec())
+		if newObj.Descriptor().HasStatus {
+			_ = newObj.SetStatus(r.GetStatus())
+		}
 		return newObj, nil
 	}
 }
@@ -217,6 +220,9 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...)))
 		newObj.SetMeta(newMeta)
 		_ = newObj.SetSpec(r.GetSpec())
+		if newObj.Descriptor().HasStatus {
+			_ = newObj.SetStatus(r.GetStatus())
+		}
 
 		return newObj, nil
 	}
