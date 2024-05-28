@@ -60,7 +60,6 @@ spec:
                       type: integer
                   required:
                   - address
-                  - port
                   type: object
                 type: array
               extension:
@@ -171,13 +170,13 @@ spec:
                       mode:
                         default: Secured
                         description: Mode defines if proxy should skip verification,
-                          one of `SkipSAN`, `SkipCA`, `Secured`, `SkipALL`. Default
+                          one of `SkipSAN`, `SkipCA`, `Secured`, `SkipAll`. Default
                           `Secured`.
                         enum:
                         - SkipSAN
                         - SkipCA
                         - Secured
-                        - SkipALL
+                        - SkipAll
                         type: string
                       subjectAltNames:
                         description: SubjectAltNames list of names to verify in the
@@ -225,14 +224,7 @@ spec:
                         - TLS12
                         - TLS13
                         type: string
-                    required:
-                    - max
-                    - min
                     type: object
-                required:
-                - allowRenegotiation
-                - verification
-                - version
                 type: object
             required:
             - match

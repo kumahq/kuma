@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -80,22 +79,17 @@ var _ = Describe("MeshServiceController", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			ms := &meshservice_k8s.MeshService{}
-			actual := []byte("{}")
-			err = kubeClient.Get(context.Background(), key, ms)
-			if !kube_errors.IsNotFound(err) {
-				actual, err = yaml.Marshal(ms)
-				Expect(err).ToNot(HaveOccurred())
-			}
-			Expect(actual).To(MatchGoldenYAML("testdata", "meshservice", given.outputFile))
+			mss := &meshservice_k8s.MeshServiceList{}
+			Expect(kubeClient.List(context.Background(), mss)).To(Succeed())
+			Expect(yaml.Marshal(mss)).To(MatchGoldenYAML("testdata", "meshservice", given.outputFile))
 		},
 		Entry("with service in sidecar injection namespace", testCase{
 			inputFile:  "01.resources.yaml",
 			outputFile: "01.meshservice.yaml",
 		}),
 		Entry("with service with mesh label", testCase{
-			inputFile:  "01.resources.yaml",
-			outputFile: "01.meshservice.yaml",
+			inputFile:  "02.resources.yaml",
+			outputFile: "02.meshservice.yaml",
 		}),
 		Entry("without mesh label and sidecar injection namespace", testCase{
 			inputFile:  "03.resources.yaml",

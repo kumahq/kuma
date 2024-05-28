@@ -51,7 +51,7 @@ jobs:
       - uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64 # v6.0.1
         with:
           args: --fix=false --verbose
-          version: v1.56.1
+          version: v1.59.0
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
@@ -168,7 +168,7 @@ jobs:
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@f04b4de7550751e32961ac16543116f8f5f9bfc2 # v0.6.6
+        uses: cloudsmith-io/action@468883caf5ea64dd980d5266ff72dcf281c83df6 # v0.6.7
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           command: "push"

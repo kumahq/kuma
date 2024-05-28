@@ -294,8 +294,8 @@ func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
 	if r.roPool == nil {
 		return r.pool
 	}
-	// #nosec G404 - math rand is enough
-	if rand.Int31n(101) <= int32(r.roRatio) {
+	randomPool := rand.Int31n(101) // #nosec G404 - math rand is enough
+	if randomPool <= int32(r.roRatio) {
 		return r.roPool
 	}
 	return r.pool

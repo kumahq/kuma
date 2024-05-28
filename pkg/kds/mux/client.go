@@ -319,9 +319,8 @@ func (c *client) NeedLeaderElection() bool {
 }
 
 func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
-	// #nosec G402 -- we let the user decide if they want to ignore verification
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: skipVerify,
+		InsecureSkipVerify: skipVerify, // #nosec G402 -- we let the user decide if they want to ignore verification
 		MinVersion:         tls.VersionTLS12,
 	}
 	if rootCaFile != "" {
