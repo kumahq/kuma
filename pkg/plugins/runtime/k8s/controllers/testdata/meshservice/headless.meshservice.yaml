@@ -60,12 +60,12 @@ items:
     labels:
       k8s.kuma.io/service-name: example
       kuma.io/mesh: default
-    name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-lo-86d6685d5b
+    name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98
     namespace: demo
     ownerReferences:
     - apiVersion: v1
       kind: Pod
-      name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+      name: very-long-very-long-very-long-very-long-very-long-v
       uid: very-long-1
     resourceVersion: "1"
   spec:
@@ -78,7 +78,7 @@ items:
       targetPort: 8443
     selector:
       dataplaneRef:
-        name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+        name: very-long-very-long-very-long-very-long-very-long-v
   status:
     tls: {}
     vips:

@@ -26,7 +26,7 @@ endpoints:
       - 192.168.0.7
     targetRef:
       kind: Pod
-      name: very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-very-long-long-name
+      name: very-long-very-long-very-long-very-long-very-long-v
       namespace: demo
       uid: very-long-1
 ---

@@ -38,10 +38,3 @@ func HashToString(h hash.Hash32) string {
 
 // MaxHashStringLength is the max length of a string returned by HashToString
 const MaxHashStringLength = 10
-
-func EnsureMaxLength(s string, length int) string {
-	if len(s) <= length {
-		return s
-	}
-	return s[0:length]
-}
