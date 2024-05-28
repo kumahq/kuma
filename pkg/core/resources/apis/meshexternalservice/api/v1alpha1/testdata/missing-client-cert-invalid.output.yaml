@@ -1,0 +1,3 @@
+violations:
+- field: spec.tls.verification.clientCert
+  message: must be defined when clientKey is defined
