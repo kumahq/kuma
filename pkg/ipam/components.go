@@ -16,7 +16,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 	logger := core.Log.WithName("meshservice").WithName("vips").WithName("allocator")
 	if !slices.Contains(rt.Config().CoreResources.Enabled, "meshservices") {
-		logger.Info("MeshService is not enabled. Not enabling VIP allocator for MeshService.")
+		logger.Info("MeshService is not enabled. Skip starting VIP allocator for MeshService.")
 		return nil
 	}
 	allocator, err := vip.NewAllocator(
