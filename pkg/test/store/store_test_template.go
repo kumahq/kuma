@@ -223,6 +223,42 @@ func ExecuteStoreTests(
 				}
 			})
 
+			It("should preserve labels", func() {
+				// given
+				name := "to-be-updated.demo"
+				resource := createResource(name, "foo", "bar")
+
+				// when
+				resource.Spec.Conf.Destination["path"] = "new-path"
+				err := s.Update(context.Background(), resource)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				res := core_mesh.NewTrafficRouteResource()
+				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
+			})
+
+			It("should delete labels", func() {
+				// given a resources in storage
+				name := "to-be-updated.demo"
+				resource := createResource(name, "foo", "bar")
+
+				// when
+				resource.Spec.Conf.Destination["path"] = "new-path"
+				err := s.Update(context.Background(), resource, store.UpdateWithLabels(map[string]string{}))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				res := core_mesh.NewTrafficRouteResource()
+				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Meta.GetLabels()).ToNot(HaveKeyWithValue("foo", "bar"))
+			})
+
 			It("should update resource with status", func() {
 				// given
 				updated := meshservice_api.MeshServiceResource{
