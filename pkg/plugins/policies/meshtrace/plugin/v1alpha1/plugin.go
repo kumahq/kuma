@@ -191,7 +191,7 @@ func applyToClusters(rules core_rules.SingleItemRules, rs *xds.ResourceSet, prox
 		builder.Configure(clusters.Http2())
 	}
 
-	res, err := builder.Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), *endpoint)).
+	res, err := builder.Configure(clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), false, *endpoint)).
 		Configure(clusters.ClientSideTLS([]xds.Endpoint{*endpoint})).
 		Configure(clusters.DefaultTimeout()).Build()
 	if err != nil {

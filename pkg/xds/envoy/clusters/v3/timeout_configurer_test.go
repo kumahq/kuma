@@ -210,7 +210,7 @@ typedExtensionProtocolOptions:
 	It("should set timeouts for inbound HTTP cluster", func() {
 		// given
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "localhost:8080").
-			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
+			Configure(clusters.ProvidedEndpointCluster(false, false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
 			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)).
 			Build()
 		Expect(err).ToNot(HaveOccurred())

@@ -5,9 +5,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"strings"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -51,7 +53,7 @@ func (g Generator) Generate(
 	meshExternalServices := xdsCtx.Mesh.Resources.MeshExternalServices().Items
 
 	for _, mes := range meshExternalServices {
-		res, err := g.generateResources(mes, proxy.APIVersion)
+		res, err := g.generateResources(mes, proxy)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +64,7 @@ func (g Generator) Generate(
 	return resources, nil
 }
 
-func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, version core_xds.APIVersion) (*core_xds.ResourceSet, error) {
+func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	if mes.Spec.Extension != nil {
@@ -72,7 +74,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 		}
 		resources.AddSet(res)
 	} else {
-		cluster, err := createCluster(mes, version)
+		cluster, err := createCluster(mes, proxy)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +84,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 			Resource: cluster,
 		})
 
-		listener, err := createListener(mes, version)
+		listener, err := createListener(mes, proxy.APIVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -96,18 +98,38 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 	return resources, nil
 }
 
-func createCluster(mes *v1alpha1.MeshExternalServiceResource, version core_xds.APIVersion) (envoy_common.NamedResource, error) {
+func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
 	clusterName := names.GetMeshExternalServiceClusterName(name)
-	builder := envoy_clusters.NewClusterBuilder(version, clusterName)
+	builder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
 	var endpoints []core_xds.Endpoint
 	for _, e := range mes.Spec.Endpoints {
-		endpoints = append(endpoints, core_xds.Endpoint{
-			Target: e.Address,
-		})
+		if strings.HasPrefix("unix://", e.Address) {
+			endpoints = append(endpoints, core_xds.Endpoint{
+				UnixDomainPath: e.Address,
+			})
+		} else {
+			endpoints = append(endpoints, core_xds.Endpoint{
+				Target: e.Address,
+				Port: uint32(*e.Port),
+			})
+		}
 	}
-	builder.Configure(envoy_clusters.ProvidedEndpointCluster(false))
+	builder.Configure(
+		envoy_clusters.ClusterBuilderOptFunc(func(builder *envoy_clusters.ClusterBuilder) {
+			builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
+				Name:      clusterName,
+				Endpoints: endpoints,
+				HasIPv6:   proxy.Dataplane.IsIPv6(),
+				AllowMixingIpAndNonIpEndpoints: true,
+			})
+			builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+		}))
+
+	if mes.Spec.Tls != nil {
+		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls))
+	}
 
 	return builder.Build()
 }
