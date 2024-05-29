@@ -1,6 +1,30 @@
 resources:
 - name: meshexternalservice_mes1
   resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshexternalservice_mes1
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: unix:///tmp/example.sock
+        - endpoint:
+            address:
+              socketAddress:
+                address: 1.1.1.1
+                portValue: 12345
+        - endpoint:
+            address:
+              socketAddress:
+                address: example.com
+                portValue: 80
+    name: meshexternalservice_mes1
+    type: STRICT_DNS
+- name: meshexternalservice_mes1
+  resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:

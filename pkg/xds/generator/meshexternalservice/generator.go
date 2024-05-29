@@ -105,7 +105,7 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 
 	var endpoints []core_xds.Endpoint
 	for _, e := range mes.Spec.Endpoints {
-		if strings.HasPrefix("unix://", e.Address) {
+		if strings.HasPrefix(e.Address, "unix://") {
 			endpoints = append(endpoints, core_xds.Endpoint{
 				UnixDomainPath: e.Address,
 			})
