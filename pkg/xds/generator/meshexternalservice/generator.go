@@ -53,7 +53,7 @@ func (g Generator) Generate(
 	meshExternalServices := xdsCtx.Mesh.Resources.MeshExternalServices().Items
 
 	for _, mes := range meshExternalServices {
-		res, err := g.generateResources(mes, proxy)
+		res, err := g.generateResources(mes, proxy, xdsCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +64,7 @@ func (g Generator) Generate(
 	return resources, nil
 }
 
-func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
 	if mes.Spec.Extension != nil {
@@ -74,7 +74,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 		}
 		resources.AddSet(res)
 	} else {
-		cluster, err := createCluster(mes, proxy)
+		cluster, err := createCluster(mes, proxy, xdsCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +98,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 	return resources, nil
 }
 
-func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
 	clusterName := names.GetMeshExternalServiceClusterName(name)
 	builder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
@@ -128,7 +128,7 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 		}))
 
 	if mes.Spec.Tls != nil {
-		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls))
+		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls, xdsCtx.Mesh.DataSourceLoader, xdsCtx.Mesh.Resource.GetMeta().GetName()))
 	}
 
 	return builder.Build()

@@ -2,6 +2,7 @@ package clusters
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -72,9 +73,9 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func MeshExternalServiceTLS(tls *v1alpha1.Tls) ClusterBuilderOpt {
+func MeshExternalServiceTLS(tls *v1alpha1.Tls, loader datasource.Loader, name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.MesClientSideTLSConfigurer{Tls: tls})
+		builder.AddConfigurer(&v3.MesClientSideTLSConfigurer{Tls: tls, Loader: loader, Mesh: name})
 	})
 }
 
