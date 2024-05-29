@@ -90,7 +90,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require github.com/cncf/xds/go v0.0.0-20240318125728-8a4994d93e50
+require github.com/cncf/xds/go v0.0.0-20240318125728-8a4994d93e50 // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

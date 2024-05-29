@@ -1,12 +1,13 @@
 package xds
 
 import (
+	"net"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 )
 
@@ -16,20 +17,29 @@ const (
 	Domain MatchType = iota + 1
 	WildcardDomain
 	IP
-	CIDR
 	IPV6
+	CIDR
 	CIDRV6
 )
 
-type (
-	MatchersPerType map[MatchType][]api.Match
-	MatchersPerPort map[int]MatchersPerType
-)
+type Route struct {
+	Value     string
+	MatchType MatchType
+}
 
-func GetOrderedMatchers(conf api.Conf) (MatchersPerPort, MatchersPerPort) {
-	// validate port and protocol conflict 
-	rawBuffer := MatchersPerPort{}
-	tls := MatchersPerPort{}
+type Matcher struct {
+	Protocol core_mesh.Protocol
+	Port     uint32
+}
+
+type FilterChainMatcher struct {
+	Protocol core_mesh.Protocol
+	Port     uint32
+	Routes   []Route
+}
+
+func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
+	matchers := map[Matcher][]Route{}
 	for _, match := range conf.AppendMatch {
 		var matchType MatchType
 		switch match.Type {
@@ -53,58 +63,61 @@ func GetOrderedMatchers(conf api.Conf) (MatchersPerPort, MatchersPerPort) {
 				matchType = CIDR
 			}
 		}
-
-		switch match.Protocol {
-		case "tls":
-			port := 0
-			if match.Port != nil {
-				port = *match.Port
-			}
-			if _, ok := tls[port]; !ok {
-				tls[port] = MatchersPerType{}
-			}
-			if _, ok := tls[port][matchType]; !ok {
-				tls[port][matchType] = []api.Match{}
-			}
-			tls[port][matchType] = append(tls[port][matchType], match)
-		default:
-			port := 0
-			if match.Port != nil {
-				port = *match.Port
-			}
-			if _, ok := rawBuffer[port]; !ok {
-				rawBuffer[port] = MatchersPerType{}
-			}
-			if _, ok := rawBuffer[port][matchType]; !ok {
-				rawBuffer[port][matchType] = []api.Match{}
-			}
-			rawBuffer[port][matchType] = append(rawBuffer[port][matchType], match)
+		port := 0
+		if match.Port != nil {
+			port = *match.Port
 		}
+		matcher := Matcher{
+			Protocol: core_mesh.ParseProtocol(string(match.Protocol)),
+			Port:     uint32(port),
+		}
+		matchers[matcher] = append(matchers[matcher], Route{
+			Value:     match.Value,
+			MatchType: matchType,
+		})
 	}
-	orderValues(tls)
-	orderValues(rawBuffer)
-	return tls, rawBuffer
+	filterChainMatchers := []FilterChainMatcher{}
+	for matcher, routes := range matchers {
+		orderRoutes(routes)
+		filterChainMatcher := FilterChainMatcher{
+			Protocol: matcher.Protocol,
+			Port:     matcher.Port,
+			Routes:   routes,
+		}
+		filterChainMatchers = append(filterChainMatchers, filterChainMatcher)
+	}
+
+	orderValues(filterChainMatchers)
+	return filterChainMatchers, nil
 }
 
-func orderValues(matchersPerPort MatchersPerPort) {
-	for _, matchers := range matchersPerPort {
-		for matchType, values := range matchers {
-			switch matchType {
-			case Domain:
-				sort.SliceStable(values, func(i, j int) bool {
-					return sortDomains(values[i].Value, values[j].Value)
-				})
-			case WildcardDomain:
-				sort.SliceStable(values, func(i, j int) bool {
-					return sortDomains(values[i].Value, values[j].Value)
-				})
-			case CIDR, CIDRV6:
-				sort.SliceStable(values, func(i, j int) bool {
-					return sortCIDR(values[i].Value, values[j].Value)
-				})
-			}
+func orderRoutes(routes []Route) {
+	sort.SliceStable(routes, func(i, j int) bool {
+		if routes[i].MatchType != routes[j].MatchType {
+			return routes[i].MatchType < routes[j].MatchType
 		}
-	}
+		if routes[i].MatchType == Domain || routes[i].MatchType == WildcardDomain {
+			return sortDomains(routes[i].Value, routes[j].Value) &&
+				routes[i].MatchType < routes[j].MatchType
+		}
+		if routes[i].MatchType == CIDR || routes[i].MatchType == CIDRV6 {
+			_, prefixI := getIpAndMask(routes[i].Value)
+			_, prefixJ := getIpAndMask(routes[j].Value)
+			return prefixI > prefixJ
+		}
+
+		return routes[i].MatchType < routes[j].MatchType
+	})
+}
+
+func orderValues(matchers []FilterChainMatcher) {
+	sort.SliceStable(matchers, func(i, j int) bool {
+		if matchers[i].Protocol != matchers[j].Protocol {
+			return matchers[i].Protocol > matchers[j].Protocol
+		}
+		return matchers[i].Port > matchers[j].Port &&
+			matchers[i].Protocol > matchers[j].Protocol
+	})
 }
 
 func sortDomains(i string, j string) bool {
@@ -121,25 +134,12 @@ func sortDomains(i string, j string) bool {
 	return i < j
 }
 
-func sortCIDR(i string, j string) bool {
-	// Compare CIDR prefix lengths
-	lenI := GetCIDRPrefixLength(i)
-	lenJ := GetCIDRPrefixLength(j)
-
-	return lenI > lenJ
-}
-
-func GetCIDRPrefixLength(cidr string) uint32 {
-	// Split CIDR into address and prefix
-	parts := strings.Split(cidr, "/")
-	if len(parts) != 2 {
-		return 0
-	}
-
-	// Convert prefix length to integer
-	prefixLength, err := strconv.Atoi(parts[1])
+func getIpAndMask(cidr string) (string, uint32) {
+	_, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return 0
+		return "", 0
 	}
-	return uint32(prefixLength)
+	ip := ipNet.IP.String()
+	mask, _ := ipNet.Mask.Size()
+	return ip, uint32(mask)
 }

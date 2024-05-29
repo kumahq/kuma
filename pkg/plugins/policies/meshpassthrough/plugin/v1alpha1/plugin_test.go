@@ -210,7 +210,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "basic.listener.golden.yaml",
 			clustersGolden:  "basic.clusters.golden.yaml",
 		}),
-    Entry("simple policy", sidecarTestCase{
+		Entry("simple policy", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
@@ -247,7 +247,7 @@ var _ = Describe("MeshPassthrough", func() {
 									Port:     pointer.To[int](80),
 									Protocol: api.ProtocolType("http"),
 								},
-                {
+								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.0",
 									Port:     pointer.To[int](80),

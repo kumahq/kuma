@@ -19,11 +19,11 @@ type Configurer struct {
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]bool{}
-	tls, rawBuffer := GetOrderedMatchers(c.Conf)
-	if err := c.configureListener(tls, rawBuffer, ipv4, clustersAccumulator, false); err != nil {
+	orderedMatchers, _ := GetOrderedMatchers(c.Conf)
+	if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
 		return err
 	}
-	if err := c.configureListener(tls, rawBuffer, ipv6, clustersAccumulator, true); err != nil {
+	if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
 		return err
 	}
 	for name := range clustersAccumulator {
@@ -41,8 +41,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 }
 
 func (c Configurer) configureListener(
-	tls MatchersPerPort,
-	rawBuffer MatchersPerPort,
+	orderedMatchers []FilterChainMatcher,
 	listener *envoy_listener.Listener,
 	clustersAccumulator map[string]bool,
 	isIPv6 bool,
@@ -51,32 +50,21 @@ func (c Configurer) configureListener(
 		return nil
 	}
 	// remove default filter chain provided by `transparent_proxy_generator`
-	listener.FilterChains =  []*envoy_listener.FilterChain{}
-	matcherConfigurer := FilterChainMatcherConfigurer{
-		Conf:   c.Conf,
-		IsIPv6: isIPv6,
-	}
-	filterChainsToGenerate := matcherConfigurer.Configure(tls, rawBuffer, listener)
-	for name, config := range filterChainsToGenerate {
+	listener.FilterChains = []*envoy_listener.FilterChain{}
+	for _, matcher := range orderedMatchers {
 		configurer := FilterChainConfigurer{
-			Name:       name,
-			Protocol:   config.Protocol,
-			Routes:     config.Routes,
 			APIVersion: c.APIVersion,
+			Protocol:   matcher.Protocol,
+			Port:       matcher.Port,
+			Routes:     matcher.Routes,
+			IsIPv6:     isIPv6,
 		}
-		for _, route := range config.Routes {
-			clustersAccumulator[route.ClusterName] = true
-		}
-		err := configurer.Configure(listener)
+		err := configurer.Configure(listener, clustersAccumulator)
 		if err != nil {
 			return err
 		}
 	}
-
-	if len(filterChainsToGenerate) > 0 {
-		c.configureListenerFilter(listener)
-	}
-	return nil
+	return c.configureListenerFilter(listener)
 }
 
 func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) error {

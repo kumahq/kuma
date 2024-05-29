@@ -6,72 +6,26 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15001
-    filterChainMatcher:
-      matcherTree:
-        exactMatchMap:
-          map:
-            raw_buffer:
-              matcher:
-                matcherTree:
-                  exactMatchMap:
-                    map:
-                      "80":
-                        matcher:
-                          matcherList:
-                            matchers:
-                            - onMatch:
-                                action:
-                                  name: meshpassthrough_http_80
-                                  typedConfig:
-                                    '@type': type.googleapis.com/google.protobuf.StringValue
-                                    value: meshpassthrough_http_80
-                              predicate:
-                                orMatcher:
-                                  predicate:
-                                  - singlePredicate:
-                                      input:
-                                        name: application-protocol
-                                        typedConfig:
-                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
-                                      valueMatch:
-                                        exact: '''http/1.1'''
-                                  - singlePredicate:
-                                      input:
-                                        name: application-protocol
-                                        typedConfig:
-                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
-                                      valueMatch:
-                                        exact: '''h2c'''
-                            - onMatch:
-                                action:
-                                  name: meshpassthrough_192.168.0.0_80
-                                  typedConfig:
-                                    '@type': type.googleapis.com/google.protobuf.StringValue
-                                    value: meshpassthrough_192.168.0.0_80
-                              predicate:
-                                singlePredicate:
-                                  customMatch:
-                                    name: ip-matcher
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.input_matchers.ip.v3.Ip
-                                      cidrRanges:
-                                      - addressPrefix: 192.168.0.0
-                                        prefixLen: 32
-                                      statPrefix: meshpassthrough_192.168.0.0_80
-                                  input:
-                                    name: ip
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationIPInput
-                  input:
-                    name: port
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-        input:
-          name: transport-protocol
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.TransportProtocolInput
     filterChains:
-    - filters:
+    - filterChainMatch:
+        destinationPort: 80
+        prefixRanges:
+        - addressPrefix: 192.168.0.0
+          prefixLen: 32
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_192.168.0.0_80
+          statPrefix: meshpassthrough_192_168_0_0_80
+      name: meshpassthrough_192.168.0.0_80
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        transportProtocol: raw_buffer
+      filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -92,13 +46,6 @@ resources:
                   cluster: meshpassthrough_api.example.com_80
           statPrefix: meshpassthrough_http_80
       name: meshpassthrough_http_80
-    - filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.0_80
-          statPrefix: meshpassthrough_192_168_0_0_80
-      name: meshpassthrough_192.168.0.0_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
@@ -115,52 +62,23 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15001
-    filterChainMatcher:
-      matcherTree:
-        exactMatchMap:
-          map:
-            raw_buffer:
-              matcher:
-                matcherTree:
-                  exactMatchMap:
-                    map:
-                      "80":
-                        matcher:
-                          matcherList:
-                            matchers:
-                            - onMatch:
-                                action:
-                                  name: meshpassthrough_http_80
-                                  typedConfig:
-                                    '@type': type.googleapis.com/google.protobuf.StringValue
-                                    value: meshpassthrough_http_80
-                              predicate:
-                                orMatcher:
-                                  predicate:
-                                  - singlePredicate:
-                                      input:
-                                        name: application-protocol
-                                        typedConfig:
-                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
-                                      valueMatch:
-                                        exact: '''http/1.1'''
-                                  - singlePredicate:
-                                      input:
-                                        name: application-protocol
-                                        typedConfig:
-                                          '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ApplicationProtocolInput
-                                      valueMatch:
-                                        exact: '''h2c'''
-                  input:
-                    name: port
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.DestinationPortInput
-        input:
-          name: transport-protocol
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.TransportProtocolInput
     filterChains:
-    - filters:
+    - filterChainMatch:
+        destinationPort: 80
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_192.168.0.0_80
+          statPrefix: meshpassthrough_192_168_0_0_80
+      name: meshpassthrough_192.168.0.0_80
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        transportProtocol: raw_buffer
+      filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager

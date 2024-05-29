@@ -98,5 +98,5 @@ var (
 	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 	_ = Describe("Connectivity - Exclude Outbound Port", connectivity.ExcludeOutboundPort, Ordered)
 	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
-	_ = FDescribe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
+	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 )

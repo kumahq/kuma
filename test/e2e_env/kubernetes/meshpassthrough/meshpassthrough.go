@@ -137,7 +137,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Exitcode).To(Equal(56))
 		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
-		
 
 		meshPassthrough = fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1 

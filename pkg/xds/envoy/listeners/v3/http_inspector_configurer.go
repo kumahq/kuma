@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-const HttpInspectorName     = "envoy.filters.listener.http_inspector"
+const HttpInspectorName = "envoy.filters.listener.http_inspector"
 
 type HTTPInspectorConfigurer struct{}
 

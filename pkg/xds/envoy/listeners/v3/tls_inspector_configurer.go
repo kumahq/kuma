@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
-const TlsInspectorName      = "envoy.filters.listener.tls_inspector"
+const TlsInspectorName = "envoy.filters.listener.tls_inspector"
 
 type TLSInspectorConfigurer struct{}
 

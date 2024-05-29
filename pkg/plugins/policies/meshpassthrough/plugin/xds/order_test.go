@@ -5,26 +5,28 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/plugin/xds"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
+
 var _ = Describe("Match order", func() {
 	type sidecarTestCase struct {
-		conf 			api.Conf
-		tlsGolden 		string
-		rawBufferGolden string
+		conf          api.Conf
+		orderedGolden string
 	}
 	DescribeTable("should generate proper order",
 		func(given sidecarTestCase) {
 			// when
-			tls, rawBuffer := plugin_xds.GetOrderedMatchers(given.conf)
+			ordered, _ := plugin_xds.GetOrderedMatchers(given.conf)
 
+			yaml, err := yaml.Marshal(ordered)
 			// then
-			Expect(tls).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.tlsGolden)))
-			Expect(rawBuffer).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.rawBufferGolden)))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
 		},
 		Entry("1", sidecarTestCase{
 			conf: api.Conf{
@@ -33,6 +35,11 @@ var _ = Describe("Match order", func() {
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
 						Port:     pointer.To[int](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
@@ -82,6 +89,11 @@ var _ = Describe("Match order", func() {
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
+						Type:     api.MatchType("Domain"),
+						Value:    "otherexample.com",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
 						Type:     api.MatchType("CIDR"),
 						Value:    "192.168.0.1/24",
 						Protocol: api.ProtocolType("tcp"),
@@ -114,8 +126,7 @@ var _ = Describe("Match order", func() {
 					},
 				},
 			},
-			tlsGolden: "tls.golden.yaml",
-			rawBufferGolden: "rawBuffer.golden.yaml",
+			orderedGolden: "ordered.golden.yaml",
 		}),
 	)
 })
