@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
+	"github.com/kumahq/kuma/pkg/dns"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/hds"
@@ -148,6 +149,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := ipam.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up IPAM")
+				return err
+			}
+			if err := dns.SetupHostnameGenerator(rt); err != nil {
+				runLog.Error(err, "unable to set up hostname generator")
 				return err
 			}
 
