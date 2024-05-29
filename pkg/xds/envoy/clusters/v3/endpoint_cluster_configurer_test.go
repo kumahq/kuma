@@ -36,7 +36,7 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
-			Configure(clusters.ProvidedEndpointCluster(false, false, core_xds.Endpoint{
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{
 			Target: address,
 			Port:   port,
 			Tags:   nil,

@@ -22,8 +22,8 @@ type PrometheusConfigurer struct {
 func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	return envoy_clusters.NewClusterBuilder(proxy.APIVersion, pc.ClusterName).
 		Configure(envoy_clusters.ProvidedEndpointCluster(proxy.Dataplane.IsIPv6(), core_xds.Endpoint{
-        UnixDomainPath: proxy.Metadata.MetricsSocketPath,
-    })).
+			UnixDomainPath: proxy.Metadata.MetricsSocketPath,
+		})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 }

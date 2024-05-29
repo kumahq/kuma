@@ -11,9 +11,9 @@ import (
 )
 
 type ProvidedEndpointClusterConfigurer struct {
-	Name      string
-	Endpoints []xds.Endpoint
-	HasIPv6   bool
+	Name                           string
+	Endpoints                      []xds.Endpoint
+	HasIPv6                        bool
 	AllowMixingIpAndNonIpEndpoints bool
 }
 

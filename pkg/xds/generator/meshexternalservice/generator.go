@@ -2,18 +2,19 @@ package meshexternalservice
 
 import (
 	"context"
+	"strings"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"strings"
-
-	"github.com/kumahq/kuma/pkg/core"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 )
 
@@ -22,9 +23,9 @@ const OriginMeshExternalService = "meshexternalservice"
 
 var extensions map[string]Extension
 
-type Generator struct {}
+type Generator struct{}
 
-type Extension interface{
+type Extension interface {
 	Generate(config *apiextensionsv1.JSON) (*core_xds.ResourceSet, error)
 }
 
@@ -45,11 +46,6 @@ func (g Generator) Generate(
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	log := core.Log.WithName("secrets-generator").WithValues("proxyID", proxy.Id.String())
-	if proxy.Dataplane != nil {
-		log = log.WithValues("mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
-	}
-
 	meshExternalServices := xdsCtx.Mesh.Resources.MeshExternalServices().Items
 
 	for _, mes := range meshExternalServices {
@@ -112,16 +108,16 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 		} else {
 			endpoints = append(endpoints, core_xds.Endpoint{
 				Target: e.Address,
-				Port: uint32(*e.Port),
+				Port:   uint32(*e.Port),
 			})
 		}
 	}
 	builder.Configure(
 		envoy_clusters.ClusterBuilderOptFunc(func(builder *envoy_clusters.ClusterBuilder) {
 			builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
-				Name:      clusterName,
-				Endpoints: endpoints,
-				HasIPv6:   proxy.Dataplane.IsIPv6(),
+				Name:                           clusterName,
+				Endpoints:                      endpoints,
+				HasIPv6:                        proxy.Dataplane.IsIPv6(),
 				AllowMixingIpAndNonIpEndpoints: true,
 			})
 			builder.AddConfigurer(&v3.AltStatNameConfigurer{})

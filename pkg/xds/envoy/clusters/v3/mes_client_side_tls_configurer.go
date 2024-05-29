@@ -2,11 +2,13 @@ package clusters
 
 import (
 	"context"
+
 	"github.com/asaskevich/govalidator"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -92,7 +94,6 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 					})
 				}
 			}
-
 		}
 
 		tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
@@ -130,7 +131,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 		}
 
 		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
-			Name: cluster.Name,
+			Name:            cluster.Name,
 			TransportSocket: transportSocket,
 		})
 	}
@@ -182,4 +183,3 @@ func mapTlsToEnvoyVersion(version v1alpha1.TlsVersion) envoy_tls.TlsParameters_T
 		return envoy_tls.TlsParameters_TLS_AUTO
 	}
 }
-
