@@ -158,7 +158,8 @@ func sortRulesToHosts(
 	meshLocalResources xds_context.ResourceMap,
 	rawRules rules.GatewayRules,
 	address string,
-	listener *mesh_proto.MeshGateway_Listener,
+	port uint32,
+	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []meshroute.Sublistener,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
@@ -167,7 +168,6 @@ func sortRulesToHosts(
 			Hostname: hostnameTag.Hostname,
 			Routes:   nil,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
-			TLS:      listener.Tls,
 			Tags:     hostnameTag.Tags,
 		}
 		hostInfo := plugin_gateway.GatewayHostInfo{
@@ -175,7 +175,7 @@ func sortRulesToHosts(
 		}
 		inboundListener := rules.NewInboundListenerHostname(
 			address,
-			listener.GetPort(),
+			port,
 			hostnameTag.Hostname,
 		)
 		rulesForListener, ok := rawRules.ToRules.ByListenerAndHostname[inboundListener]
@@ -185,9 +185,9 @@ func sortRulesToHosts(
 		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
 		meshroute.AddToListenerByHostname(
 			hostInfosByHostname,
-			listener.Protocol,
+			protocol,
 			hostnameTag.Hostname,
-			listener.Tls,
+			hostnameTag.TLS,
 			hostInfo,
 		)
 	}
