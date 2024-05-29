@@ -22,7 +22,6 @@ const (
 	FieldDataplaneAdminPort         = "dataplane.admin.port"
 	FieldDataplaneAdminAddress      = "dataplane.admin.address"
 	FieldDataplaneDNSPort           = "dataplane.dns.port"
-	FieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	FieldDataplaneDataplaneResource = "dataplane.resource"
 	FieldDynamicMetadata            = "dynamicMetadata"
 	FieldDataplaneProxyType         = "dataplane.proxyType"
@@ -55,7 +54,6 @@ type DataplaneMetadata struct {
 	AdminPort           uint32
 	AdminAddress        string
 	DNSPort             uint32
-	EmptyDNSPort        uint32
 	DynamicMetadata     map[string]string
 	ProxyType           mesh_proto.ProxyType
 	Version             *mesh_proto.Version
@@ -131,13 +129,6 @@ func (m *DataplaneMetadata) GetDNSPort() uint32 {
 	return m.DNSPort
 }
 
-func (m *DataplaneMetadata) GetEmptyDNSPort() uint32 {
-	if m == nil {
-		return 0
-	}
-	return m.EmptyDNSPort
-}
-
 func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 	if m == nil || m.DynamicMetadata == nil {
 		return ""
@@ -166,7 +157,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
-	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSEmptyPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
 		if err != nil {

@@ -41,7 +41,6 @@ var DefaultConfig = func() Config {
 			Enabled:                   true,
 			CoreDNSPort:               15053,
 			EnvoyDNSPort:              15054,
-			CoreDNSEmptyPort:          15055,
 			CoreDNSBinaryPath:         "coredns",
 			CoreDNSConfigTemplatePath: "",
 			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
@@ -351,8 +350,6 @@ type DNS struct {
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
-	// CoreDNSEmptyPort defines a port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS
-	CoreDNSEmptyPort uint32 `json:"coreDnsEmptyPort,omitempty" envconfig:"kuma_dns_core_dns_empty_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.
 	EnvoyDNSPort uint32 `json:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
 	// CoreDNSBinaryPath defines a path to CoreDNS binary.
@@ -373,9 +370,6 @@ func (d *DNS) Validate() error {
 	}
 	if d.CoreDNSPort > 65353 {
 		return errors.New(".CoreDNSPort has to be in [0, 65353] range")
-	}
-	if d.CoreDNSEmptyPort > 65353 {
-		return errors.New(".CoreDNSEmptyPort has to be in [0, 65353] range")
 	}
 	if d.EnvoyDNSPort > 65353 {
 		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")

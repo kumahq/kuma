@@ -335,9 +335,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.DNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
-	if parameters.EmptyDNSPort != 0 {
-		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSEmptyPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
-	}
 	if parameters.ProxyType != "" {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
 	}
