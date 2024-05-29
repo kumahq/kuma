@@ -2,7 +2,10 @@ package meshexternalservice_test
 
 import (
     "context"
+    system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+    "github.com/kumahq/kuma/pkg/core/datasource"
     "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+    "github.com/kumahq/kuma/pkg/core/resources/apis/system"
     "github.com/kumahq/kuma/pkg/xds/generator/meshexternalservice"
     "os"
     "path/filepath"
@@ -58,12 +61,28 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
             Expect(err).ToNot(HaveOccurred())
             parseResource(bytes, meshExternalService)
 
+            // mesh
             mesh := core_mesh.NewMeshResource()
             mesh.SetMeta(&model.ResourceMeta{Name: "default"})
+
+            // loader
+            secrets := []*system.SecretResource{
+                {
+                    Meta: &model.ResourceMeta{
+                        Mesh: "default",
+                        Name: "123",
+                    },
+                    Spec: &system_proto.Secret{
+                        Data: util_proto.Bytes([]byte("abc")),
+                    },
+                },
+            }
+            dataSourceLoader := datasource.NewStaticLoader(secrets)
 
             ctx := xds_context.Context{
                 ControlPlane: nil,
                 Mesh: xds_context.MeshContext{
+                    DataSourceLoader: dataSourceLoader,
                     Resource: mesh,
                     Resources: xds_context.Resources{
                         MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{

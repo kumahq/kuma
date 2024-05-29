@@ -12,6 +12,7 @@ endpoints:
     port: 80
   - address: unix:///tmp/example.sock
 tls:
+  enabled: true
   version:
     min: TLS12
     max: TLS13

@@ -22,6 +22,29 @@ resources:
                 address: example.com
                 portValue: 80
     name: meshexternalservice_mes1
+    transportSocketMatches:
+    - name: meshexternalservice_mes1
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            tlsCertificates:
+            - certificateChain:
+                inlineBytes: YWJj
+              privateKey:
+                inlineBytes: YWJj
+            tlsParams:
+              tlsMaximumProtocolVersion: TLSv1_3
+              tlsMinimumProtocolVersion: TLSv1_2
+            validationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: example.com
+                sanType: DNS
+              - matcher:
+                  prefix: spiffe://example.local/ns/local
+                sanType: URI
     type: STRICT_DNS
 - name: meshexternalservice_mes1
   resource:

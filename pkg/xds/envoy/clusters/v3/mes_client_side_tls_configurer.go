@@ -2,6 +2,7 @@ package clusters
 
 import (
 	"context"
+	"github.com/asaskevich/govalidator"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -38,7 +39,13 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 			} else {
 				ca = defaultSystemCa()
 			}
-			tlsContext.CommonTlsContext.ValidationContextType.(*envoy_tls.CommonTlsContext_ValidationContext).ValidationContext.TrustedCa = ca
+			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
+				ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
+					ValidationContext: &envoy_tls.CertificateValidationContext{
+						TrustedCa: ca,
+					},
+				},
+			}
 		}
 
 		if c.Tls.Verification.ClientCert != nil && c.Tls.Verification.ClientKey != nil {
@@ -56,30 +63,33 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
 		if c.Tls.Verification.SubjectAltNames != nil {
 			for _, san := range *c.Tls.Verification.SubjectAltNames {
-				for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
-					envoy_tls.SubjectAltNameMatcher_DNS,
-					envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
-					envoy_tls.SubjectAltNameMatcher_URI,
-				} {
-					if san.Type == v1alpha1.SANMatchExact {
-						matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
-							SanType: typ,
-							Matcher: &envoy_type_matcher.StringMatcher{
-								MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-									Exact: san.Value,
-								},
+				var typ envoy_tls.SubjectAltNameMatcher_SanType
+				switch {
+				case govalidator.IsIP(san.Value):
+					typ = envoy_tls.SubjectAltNameMatcher_IP_ADDRESS
+				case govalidator.IsDNSName(san.Value):
+					typ = envoy_tls.SubjectAltNameMatcher_DNS
+				default:
+					typ = envoy_tls.SubjectAltNameMatcher_URI
+				}
+				if san.Type == v1alpha1.SANMatchExact {
+					matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+						SanType: typ,
+						Matcher: &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+								Exact: san.Value,
 							},
-						})
-					} else {
-						matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
-							SanType: typ,
-							Matcher: &envoy_type_matcher.StringMatcher{
-								MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-									Prefix: san.Value,
-								},
+						},
+					})
+				} else {
+					matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+						SanType: typ,
+						Matcher: &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+								Prefix: san.Value,
 							},
-						})
-					}
+						},
+					})
 				}
 			}
 
@@ -97,6 +107,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 					MatchTypedSubjectAltNames: matchNames,
 				},
 			},
+			TlsParams: &envoy_tls.TlsParameters{},
 		}
 
 		if c.Tls.Version.Min != nil {
@@ -136,7 +147,7 @@ func shouldVerifyCa(verification *v1alpha1.Verification) bool {
 		return true
 	}
 
-	if *verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipCA {
+	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipCA) {
 		return false
 	}
 
