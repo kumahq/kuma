@@ -38,20 +38,40 @@ import (
 // The change of version in the map triggers update to be sent.
 type kdsRetryForcer struct {
 	util_xds_v3.NoopCallbacks
+<<<<<<< HEAD
 	hasher  envoy_cache.NodeHash
 	cache   envoy_cache.SnapshotCache
 	log     logr.Logger
 	nodeIDs map[xds.StreamID]string
+=======
+	forceFn       func(*envoy_core.Node, model.ResourceType)
+	log           logr.Logger
+	nodes         map[xds.StreamID]*envoy_core.Node
+	backoff       time.Duration
+	emitter       events.Emitter
+	hasher        envoy_cache.NodeHash
+	streamToDelay map[xds.StreamID]bool
+>>>>>>> cd189ee75 (fix(kds): fix the case when webhook/db reject resource (#10315))
 
 	sync.Mutex
 }
 
 func newKdsRetryForcer(log logr.Logger, cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash) *kdsRetryForcer {
 	return &kdsRetryForcer{
+<<<<<<< HEAD
 		cache:   cache,
 		hasher:  hasher,
 		log:     log,
 		nodeIDs: map[xds.StreamID]string{},
+=======
+		forceFn:       forceFn,
+		log:           log,
+		nodes:         map[xds.StreamID]*envoy_core.Node{},
+		backoff:       backoff,
+		emitter:       emitter,
+		hasher:        hasher,
+		streamToDelay: map[int64]bool{},
+>>>>>>> cd189ee75 (fix(kds): fix the case when webhook/db reject resource (#10315))
 	}
 }
 
@@ -73,6 +93,7 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	}
 
 	r.Lock()
+<<<<<<< HEAD
 	nodeID := r.nodeIDs[streamID]
 	if nodeID == "" {
 		nodeID = r.hasher.ID(request.Node) // request.Node can be set only on first request therefore we need to save it
@@ -93,5 +114,36 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 	}
 
 	r.log.V(1).Info("forced the new verion of resources", "nodeID", nodeID, "type", request.TypeUrl)
+=======
+	node, ok := r.nodes[streamID]
+	if !ok {
+		node = request.Node
+		r.nodes[streamID] = node
+		// store information about NACK resources, to delete force retries once ACK
+	}
+	if _, found := r.streamToDelay[streamID]; !found {
+		r.streamToDelay[streamID] = true
+	}
+	r.Unlock()
+	r.log.Info("received NACK, will retry", "nodeID", r.hasher.ID(request.Node), "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
+	r.forceFn(node, model.ResourceType(request.TypeUrl))
+	r.emitter.Send(events.TriggerKDSResyncEvent{
+		Type:   model.ResourceType(request.TypeUrl),
+		NodeID: node.Id,
+	})
+	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
+>>>>>>> cd189ee75 (fix(kds): fix the case when webhook/db reject resource (#10315))
 	return nil
+}
+
+func (r *kdsRetryForcer) OnStreamDeltaResponse(streamID int64, req *envoy_sd.DeltaDiscoveryRequest, resp *envoy_sd.DeltaDiscoveryResponse) {
+	r.Lock()
+	_, found := r.streamToDelay[streamID]
+	r.Unlock()
+	if found {
+		time.Sleep(r.backoff)
+		r.Lock()
+		delete(r.streamToDelay, streamID)
+		r.Unlock()
+	}
 }
