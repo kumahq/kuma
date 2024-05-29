@@ -80,6 +80,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "HostnameGenerator",
+   "path": "hostnamegenerators",
+   "pluralDisplayName": "Hostname Generators",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Hostname Generator"
+  },
+  {
+   "includeInFederation": true,
    "name": "Mesh",
    "path": "meshes",
    "pluralDisplayName": "Meshes",

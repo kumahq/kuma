@@ -1,0 +1,30 @@
+type: object
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - HostnameGenerator
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  spec:
+    description: Spec is the specification of the Kuma HostnameGenerator resource.
+    properties:
+      selector:
+        properties:
+          meshService:
+            properties:
+              matchLabels:
+                additionalProperties:
+                  type: string
+                type: object
+            type: object
+        type: object
+      template:
+        type: string
+    type: object
