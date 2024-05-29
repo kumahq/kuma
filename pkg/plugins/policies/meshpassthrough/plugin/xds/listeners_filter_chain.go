@@ -35,6 +35,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 	switch c.Protocol {
 	case core_mesh.ProtocolTCP:
 		for _, route := range c.Routes {
+			if c.IsIPv6 {
+				switch route.MatchType{
+				case IP, CIDR:
+					continue;
+				}
+			}
 			chainName := FilterChainName(route.Value, core_mesh.ProtocolTCP, c.Port)
 			clusterName := ClusterName(route, core_mesh.ProtocolTCP, c.Port)
 			split := plugins_xds.NewSplitBuilder().
@@ -58,6 +64,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 		}
 	case core_mesh.ProtocolTLS:
 		for _, route := range c.Routes {
+			if c.IsIPv6 {
+				switch route.MatchType{
+				case IP, CIDR:
+					continue;
+				}
+			}
 			chainName := FilterChainName(route.Value, core_mesh.ProtocolTLS, c.Port)
 			clusterName := ClusterName(route, core_mesh.ProtocolTLS, c.Port)
 			split := plugins_xds.NewSplitBuilder().
@@ -92,6 +104,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 		)
 		routeBuilder := xds_routes.NewRouteConfigurationBuilder(c.APIVersion, chainName)
 		for _, route := range c.Routes {
+			if c.IsIPv6 {
+				switch route.MatchType{
+				case IP:
+					continue;
+				}
+			}
 			switch route.MatchType {
 			case Domain, WildcardDomain, IP, IPV6:
 				clusterName := ClusterName(route, c.Protocol, c.Port)
@@ -118,30 +136,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 }
 
 func (c FilterChainConfigurer) configureAddressMatch(route Route, builder *xds_listeners.FilterChainBuilder) {
-	if c.IsIPv6 {
-		c.configureIPv6Match(route, builder)
-	} else {
-		c.configureIPv4Match(route, builder)
-	}
-}
-
-func (c FilterChainConfigurer) configureIPv4Match(route Route, builder *xds_listeners.FilterChainBuilder) {
 	switch route.MatchType {
-	case CIDR:
+	case CIDR, CIDRV6:
 		ip, mask := getIpAndMask(route.Value)
 		builder.Configure(xds_listeners.MatchDestiantionAddressesRange(ip, mask))
-	case IP:
-		builder.Configure(xds_listeners.MatchDestiantionAddress(route.Value, false))
-	}
-}
-
-func (c FilterChainConfigurer) configureIPv6Match(route Route, builder *xds_listeners.FilterChainBuilder) {
-	switch route.MatchType {
-	case CIDRV6:
-		ip, mask := getIpAndMask(route.Value)
-		builder.Configure(xds_listeners.MatchDestiantionAddressesRange(ip, mask))
-	case IPV6:
-		builder.Configure(xds_listeners.MatchDestiantionAddress(route.Value, true))
+	case IP, IPV6:
+		builder.Configure(xds_listeners.MatchDestiantionAddress(route.Value, c.IsIPv6))
 	}
 }
 

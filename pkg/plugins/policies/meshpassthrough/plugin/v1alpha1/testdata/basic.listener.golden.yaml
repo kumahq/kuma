@@ -67,6 +67,9 @@ resources:
           statPrefix: meshpassthrough_192_168_19_1__
       name: meshpassthrough_192.168.19.1_*
     - filterChainMatch:
+        prefixRanges:
+        - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+          prefixLen: 32
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy
@@ -90,6 +93,9 @@ resources:
       name: meshpassthrough_192.168.0.1_9091
     - filterChainMatch:
         destinationPort: 9091
+        prefixRanges:
+        - addressPrefix: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
+          prefixLen: 32
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
@@ -123,6 +129,9 @@ resources:
           statPrefix: meshpassthrough_192_168_0_1_24__
       name: meshpassthrough_192.168.0.1/24_*
     - filterChainMatch:
+        prefixRanges:
+        - addressPrefix: 'b0ce:f616:4e74:28f7:427c:b969::'
+          prefixLen: 96
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
@@ -132,6 +141,9 @@ resources:
           statPrefix: meshpassthrough_b0ce_f616_4e74_28f7_427c_b969_8016_6344_96__
       name: meshpassthrough_b0ce:f616:4e74:28f7:427c:b969:8016:6344/96_*
     - filterChainMatch:
+        prefixRanges:
+        - addressPrefix: 'b0ce:f616:4e74:28f7::'
+          prefixLen: 64
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
@@ -265,15 +277,6 @@ resources:
           statPrefix: meshpassthrough___example_com__
       name: meshpassthrough_*.example.com_*
     - filterChainMatch:
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.19.1_*
-          statPrefix: meshpassthrough_192_168_19_1__
-      name: meshpassthrough_192.168.19.1_*
-    - filterChainMatch:
         prefixRanges:
         - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
           prefixLen: 128
@@ -287,16 +290,6 @@ resources:
       name: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
     - filterChainMatch:
         destinationPort: 9091
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.1_9091
-          statPrefix: meshpassthrough_192_168_0_1_9091
-      name: meshpassthrough_192.168.0.1_9091
-    - filterChainMatch:
-        destinationPort: 9091
         prefixRanges:
         - addressPrefix: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
           prefixLen: 128
@@ -308,24 +301,6 @@ resources:
           cluster: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
           statPrefix: meshpassthrough_9942_9abf_d0e0_f2da_2290_333b_e590_f497_9091
       name: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
-    - filterChainMatch:
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.1/30_*
-          statPrefix: meshpassthrough_192_168_0_1_30__
-      name: meshpassthrough_192.168.0.1/30_*
-    - filterChainMatch:
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.1/24_*
-          statPrefix: meshpassthrough_192_168_0_1_24__
-      name: meshpassthrough_192.168.0.1/24_*
     - filterChainMatch:
         prefixRanges:
         - addressPrefix: 'b0ce:f616:4e74:28f7:427c:b969::'

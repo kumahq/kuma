@@ -64,16 +64,6 @@ resources:
         portValue: 15001
     filterChains:
     - filterChainMatch:
-        destinationPort: 80
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.0_80
-          statPrefix: meshpassthrough_192_168_0_0_80
-      name: meshpassthrough_192.168.0.0_80
-    - filterChainMatch:
         applicationProtocols:
         - http/1.1
         - h2c
