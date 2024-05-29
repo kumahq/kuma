@@ -18,7 +18,7 @@ type OpenTelemetryConfigurer struct {
 func (oc *OpenTelemetryConfigurer) ConfigureCluster(isIPv6 bool) (envoy_common.NamedResource, error) {
 	return envoy_clusters.NewClusterBuilder(oc.ApiVersion, oc.ClusterName).
 		Configure(envoy_clusters.Http2()).
-		Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, false, *oc.Endpoint)).
+		Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, *oc.Endpoint)).
 		Configure(envoy_clusters.ClientSideTLS([]core_xds.Endpoint{*oc.Endpoint})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
