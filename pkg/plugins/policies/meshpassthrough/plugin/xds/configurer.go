@@ -3,6 +3,7 @@ package xds
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -18,16 +19,19 @@ type Configurer struct {
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
-	clustersAccumulator := map[string]bool{}
-	orderedMatchers, _ := GetOrderedMatchers(c.Conf)
+	clustersAccumulator := map[string]core_mesh.Protocol{}
+	orderedMatchers, err := GetOrderedMatchers(c.Conf)
+	if err != nil {
+		return err
+	}
 	if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
 		return err
 	}
 	if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
 		return err
 	}
-	for name := range clustersAccumulator {
-		config, err := CreateCluster(c.APIVersion, name)
+	for name, protocol := range clustersAccumulator {
+		config, err := CreateCluster(c.APIVersion, name, protocol)
 		if err != nil {
 			return err
 		}
@@ -43,7 +47,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 func (c Configurer) configureListener(
 	orderedMatchers []FilterChainMatcher,
 	listener *envoy_listener.Listener,
-	clustersAccumulator map[string]bool,
+	clustersAccumulator map[string]core_mesh.Protocol,
 	isIPv6 bool,
 ) error {
 	if listener == nil {

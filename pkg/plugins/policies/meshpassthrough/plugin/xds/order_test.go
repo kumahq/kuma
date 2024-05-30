@@ -2,6 +2,7 @@ package xds_test
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,12 +15,12 @@ import (
 )
 
 var _ = Describe("Match order", func() {
-	type sidecarTestCase struct {
+	type validTestCase struct {
 		conf          api.Conf
 		orderedGolden string
 	}
 	DescribeTable("should generate proper order",
-		func(given sidecarTestCase) {
+		func(given validTestCase) {
 			// when
 			ordered, _ := plugin_xds.GetOrderedMatchers(given.conf)
 
@@ -28,7 +29,7 @@ var _ = Describe("Match order", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
 		},
-		Entry("1", sidecarTestCase{
+		Entry("many different protocols", validTestCase{
 			conf: api.Conf{
 				AppendMatch: []api.Match{
 					{
@@ -68,9 +69,21 @@ var _ = Describe("Match order", func() {
 					},
 					{
 						Type:     api.MatchType("Domain"),
-						Value:    "http2.com",
+						Value:    "anotherhttp.com",
 						Port:     pointer.To[int](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "http2.com",
+						Port:     pointer.To[int](9000),
 						Protocol: api.ProtocolType("http2"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "grpc.com",
+						Port:     pointer.To[int](90001),
+						Protocol: api.ProtocolType("grpc"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
@@ -127,6 +140,127 @@ var _ = Describe("Match order", func() {
 				},
 			},
 			orderedGolden: "ordered.golden.yaml",
+		}),
+		Entry("different protocols on the same port but only one L7", validTestCase{
+			conf: api.Conf{
+				AppendMatch: []api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](443),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "127.0.0.1",
+						Port:     pointer.To[int](443),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](9090),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](9090),
+						Protocol: api.ProtocolType("http2"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "127.0.0.1",
+						Port:     pointer.To[int](9090),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](9091),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "api.example.com",
+						Port:     pointer.To[int](9091),
+						Protocol: api.ProtocolType("grpc"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "127.0.0.1",
+						Port:     pointer.To[int](9091),
+						Protocol: api.ProtocolType("tcp"),
+					},
+				},
+			},
+			orderedGolden: "ordered-diff-protocols.golden.yaml",
+		}),
+	)
+	type invalidTestCase struct {
+		conf      api.Conf
+		errorMsgs []string
+	}
+	DescribeTable("should fail when many protocols L7 on the same port",
+		func(given invalidTestCase) {
+			// when
+			_, err := plugin_xds.GetOrderedMatchers(given.conf)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			for _, errorMsg := range given.errorMsgs {
+				Expect(err.Error()).To(ContainSubstring(errorMsg))
+			}
+			Expect(strings.Split(err.Error(), ";")).To(HaveLen(len(given.errorMsgs)))
+		},
+		Entry("many different protocols", invalidTestCase{
+			conf: api.Conf{
+				AppendMatch: []api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "example.com",
+						Port:     pointer.To[int](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "another.com",
+						Port:     pointer.To[int](8080),
+						Protocol: api.ProtocolType("http2"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "other.com",
+						Port:     pointer.To[int](8080),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "anotherhttp.com",
+						Port:     pointer.To[int](9001),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "http2.com",
+						Port:     pointer.To[int](9001),
+						Protocol: api.ProtocolType("http2"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "grpc.com",
+						Port:     pointer.To[int](9001),
+						Protocol: api.ProtocolType("grpc"),
+					},
+				},
+			},
+			errorMsgs: []string{"you cannot configure http, http2, grpc on the same port 8080", "you cannot configure http, http2, grpc on the same port 9001"},
 		}),
 	)
 })

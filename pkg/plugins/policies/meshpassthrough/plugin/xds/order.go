@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -40,6 +42,7 @@ type FilterChainMatcher struct {
 
 func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
 	matchers := map[Matcher][]Route{}
+	portProtocols := map[int]map[core_mesh.Protocol]bool{}
 	for _, match := range conf.AppendMatch {
 		var matchType MatchType
 		switch match.Type {
@@ -67,8 +70,15 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
 		if match.Port != nil {
 			port = *match.Port
 		}
+		protocol := core_mesh.ParseProtocol(string(match.Protocol))
+		if _, found := portProtocols[port]; !found {
+			portProtocols[port] = map[core_mesh.Protocol]bool{}
+			portProtocols[port][protocol] = true
+		} else {
+			portProtocols[port][protocol] = true
+		}
 		matcher := Matcher{
-			Protocol: core_mesh.ParseProtocol(string(match.Protocol)),
+			Protocol: protocol,
 			Port:     uint32(port),
 		}
 		matchers[matcher] = append(matchers[matcher], Route{
@@ -86,9 +96,31 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
 		}
 		filterChainMatchers = append(filterChainMatchers, filterChainMatcher)
 	}
-
+	if err := validatePortAndProtocol(portProtocols); err != nil {
+		return nil, err
+	}
 	orderValues(filterChainMatchers)
 	return filterChainMatchers, nil
+}
+
+func validatePortAndProtocol(portProtocols map[int]map[core_mesh.Protocol]bool) error {
+	var errs error
+	for port, protocols := range portProtocols {
+		var counter int
+		if _, found := protocols[core_mesh.ProtocolHTTP]; found {
+			counter++
+		}
+		if _, found := protocols[core_mesh.ProtocolHTTP2]; found {
+			counter++
+		}
+		if _, found := protocols[core_mesh.ProtocolGRPC]; found {
+			counter++
+		}
+		if counter > 1 {
+			errs = multierr.Append(errs, errors.Errorf("you cannot configure http, http2, grpc on the same port %d", port))
+		}
+	}
+	return errs
 }
 
 func orderRoutes(routes []Route) {
@@ -115,8 +147,7 @@ func orderValues(matchers []FilterChainMatcher) {
 		if matchers[i].Protocol != matchers[j].Protocol {
 			return matchers[i].Protocol > matchers[j].Protocol
 		}
-		return matchers[i].Port > matchers[j].Port &&
-			matchers[i].Protocol > matchers[j].Protocol
+		return matchers[i].Port > matchers[j].Port
 	})
 }
 

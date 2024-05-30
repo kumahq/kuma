@@ -88,7 +88,7 @@ func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet) {
 }
 
 func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds.APIVersion) error {
-	outboundPassThroughCluster, err := xds.CreateCluster(apiVersion, generator.OutboundNameIPv4)
+	outboundPassThroughCluster, err := xds.CreateCluster(apiVersion, generator.OutboundNameIPv4, core_mesh.ProtocolTCP)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds
 		Origin:   generator.OriginTransparent,
 		Resource: outboundPassThroughCluster,
 	})
-	outboundPassThroughCluster, err = xds.CreateCluster(apiVersion, generator.OutboundNameIPv6)
+	outboundPassThroughCluster, err = xds.CreateCluster(apiVersion, generator.OutboundNameIPv6, core_mesh.ProtocolTCP)
 	if err != nil {
 		return err
 	}

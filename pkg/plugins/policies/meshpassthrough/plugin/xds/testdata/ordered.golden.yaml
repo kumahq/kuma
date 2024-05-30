@@ -36,7 +36,7 @@
     Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
   - MatchType: 6
     Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
-- Port: 8080
+- Port: 9000
   Protocol: http2
   Routes:
   - MatchType: 1
@@ -48,8 +48,15 @@
     Value: example.com
   - MatchType: 1
     Value: other.com
+  - MatchType: 1
+    Value: anotherhttp.com
 - Port: 0
   Protocol: http
   Routes:
   - MatchType: 1
     Value: otherexample.com
+- Port: 90001
+  Protocol: grpc
+  Routes:
+  - MatchType: 1
+    Value: grpc.com
