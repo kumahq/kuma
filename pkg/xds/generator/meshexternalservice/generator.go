@@ -79,7 +79,7 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 			Resource: cluster,
 		})
 
-		listener, err := createListener(mes, proxy.APIVersion)
+		listener, err := createListener(mes, proxy)
 		if err != nil {
 			return nil, err
 		}
@@ -129,25 +129,30 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 	return builder.Build()
 }
 
-func createListener(mes *v1alpha1.MeshExternalServiceResource, version core_xds.APIVersion) (envoy_common.NamedResource, error) {
+func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
 	// address := mes.Status.Vip.Value // not yet available, TODO: implement
-	address := "240.0.0.100" // just random ip, shouldn't be occupied
+	address := "240.0.0.37" // just random ip, shouldn't be occupied
 	port := mes.Spec.Match.Port
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)
 	clusterName := names.GetMeshExternalServiceClusterName(name)
 
-	builder := listeners.NewInboundListenerBuilder(version, address, uint32(port), core_xds.SocketAddressProtocolTCP)
+	builder := listeners.NewOutboundListenerBuilder(proxy.APIVersion, address, uint32(port), core_xds.SocketAddressProtocolTCP)
 	builder.WithOverwriteName(listenerName)
 
-	filterChainBuilder := listeners.NewFilterChainBuilder(version, names.GetMeshExternalServiceFilterChainName(name))
+	filterChainBuilder := listeners.NewFilterChainBuilder(proxy.APIVersion, names.GetMeshExternalServiceFilterChainName(name))
 
 	switch protocol {
-	case v1alpha1.HttpProtocol:
+	case v1alpha1.HttpProtocol, v1alpha1.Http2Protocol:
 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
-	case v1alpha1.Http2Protocol:
-		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
+		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
+			Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService(clusterName),
+				envoy_common.WithWeight(100),
+				envoy_common.WithExternalService(true),
+			)},
+		}}, proxy.Dataplane.Spec.TagSet()))
 	case v1alpha1.GrpcProtocol:
 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
 		filterChainBuilder.Configure(listeners.GrpcStats())
@@ -157,6 +162,7 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, version core_xds.
 		filterChainBuilder.Configure(listeners.TCPProxy(listenerName))
 	}
 
+	builder.Configure(listeners.NoBindToPort())
 	builder.Configure(listeners.FilterChain(filterChainBuilder))
 
 	return builder.Build()

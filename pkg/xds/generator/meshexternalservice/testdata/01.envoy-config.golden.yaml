@@ -51,9 +51,9 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 240.0.0.100
+        address: 240.0.0.37
         portValue: 8080
-    enableReusePort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -63,7 +63,24 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:mes1
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: mes1
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshexternalservice_mes1
+                  timeout: 0s
           statPrefix: meshexternalservice_mes1
       name: meshexternalservice_filterchain_mes1
     name: meshexternalservice_mes1
-    trafficDirection: INBOUND
+    trafficDirection: OUTBOUND
