@@ -1,0 +1,3 @@
+violations:
+- field: spec.extension.type
+  message: must not be empty

@@ -191,6 +191,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - hostnamegenerators
       - meshexternalservices
       - meshservices
     verbs:
@@ -371,7 +372,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: aa27dc7325b433c178ddc8432511a94385e88c35a15e0e40a6e64c90af5040c2
+        checksum/tls-secrets: 31d2a666f62aa9bb7ed631b29dea95b3e82e47e9f490fb976200767f51185f14
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -573,6 +574,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     sideEffects: None
@@ -628,6 +630,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
   
@@ -726,7 +729,7 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - gatewayinstances
+          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways
@@ -756,6 +759,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     

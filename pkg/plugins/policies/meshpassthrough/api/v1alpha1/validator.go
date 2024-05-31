@@ -3,7 +3,9 @@ package v1alpha1
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -16,6 +18,7 @@ import (
 var (
 	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
 	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
+	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^\.]+`)
 )
 
 func (r *MeshPassthroughResource) validate() error {
@@ -65,12 +68,17 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided IP has incorrect value")
 			}
 		case "Domain":
-			isValid := govalidator.IsDNSName(match.Value)
-			if !isValid {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value")
-			}
 			if match.Protocol == "tcp" {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), "protocol tcp is not supported for a domain")
+			}
+			if wildcardPartialPrefixPattern.MatchString(match.Value) {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, cannot support partial wildcard")
+			}
+			if !strings.HasPrefix(match.Value, "*") {
+				isValid := govalidator.IsDNSName(match.Value)
+				if !isValid {
+					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value")
+				}
 			}
 		default:
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("type"), fmt.Sprintf("provided type %s is not supported, one of Domain, IP, or CIDR is supported", match.Type))

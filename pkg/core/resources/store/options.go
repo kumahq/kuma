@@ -57,6 +57,7 @@ func CreateWithLabels(labels map[string]string) CreateOptionsFunc {
 type UpdateOptions struct {
 	ModificationTime time.Time
 	Labels           map[string]string
+	ModifyLabels     bool
 }
 
 func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
@@ -68,6 +69,7 @@ func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
 func UpdateWithLabels(labels map[string]string) UpdateOptionsFunc {
 	return func(opts *UpdateOptions) {
 		opts.Labels = labels
+		opts.ModifyLabels = true
 	}
 }
 

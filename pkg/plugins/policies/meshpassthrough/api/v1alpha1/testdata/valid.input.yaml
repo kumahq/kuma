@@ -15,5 +15,9 @@ default:
     protocol: tcp
   - type: Domain
     value: example.com
-    port: 999
+    port: 9999
+    protocol: http
+  - type: Domain
+    value: '*.example.com'
+    port: 9090
     protocol: http
