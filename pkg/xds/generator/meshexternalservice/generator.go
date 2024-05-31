@@ -131,7 +131,8 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 
 func createListener(mes *v1alpha1.MeshExternalServiceResource, version core_xds.APIVersion) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
-	address := mes.Status.Vip.Value // is this always available right away?
+	// address := mes.Status.Vip.Value // not yet available, TODO: implement
+	address := "240.0.0.100" // just random ip, shouldn't be occupied
 	port := mes.Spec.Match.Port
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)

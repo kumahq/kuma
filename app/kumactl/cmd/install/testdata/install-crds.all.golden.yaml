@@ -2018,9 +2018,6 @@ spec:
                 - type
                 - value
                 type: object
-            required:
-            - addresses
-            - vip
             type: object
         type: object
     served: true

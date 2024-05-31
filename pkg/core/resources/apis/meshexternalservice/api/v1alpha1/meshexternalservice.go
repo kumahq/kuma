@@ -154,9 +154,9 @@ type SANMatch struct {
 
 type MeshExternalServiceStatus struct {
 	// Vip section for allocated IP
-	Vip VipStatus `json:"vip"`
+	Vip *VipStatus `json:"vip,omitempty"`
 	// Addresses section for generated domains
-	Addresses []Address `json:"addresses"`
+	Addresses *[]Address `json:"addresses,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Kuma
