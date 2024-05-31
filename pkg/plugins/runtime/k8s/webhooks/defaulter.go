@@ -38,7 +38,7 @@ type defaultingHandler struct {
 	decoder   *admission.Decoder
 }
 
-func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) admission.Response {
 	resource, err := registry.Global().NewObject(core_model.ResourceType(req.Kind.Kind))
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -69,7 +69,7 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resp := h.IsOperationAllowed(req.UserInfo, resource); !resp.Allowed {
+	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
 		return resp
 	}
 

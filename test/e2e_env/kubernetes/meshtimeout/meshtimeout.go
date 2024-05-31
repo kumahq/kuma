@@ -91,6 +91,10 @@ func MeshTimeout() {
 			g.Expect(response.ResponseCode).To(Equal(504))
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
+		for {
+			time.Sleep(1 * time.Hour)
+		}
+
 		Expect(DeleteYamlK8s(timeoutConfig)(kubernetes.Cluster)).To(Succeed())
 	},
 		Entry("outbound timeout", fmt.Sprintf(`
@@ -131,5 +135,24 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, Config.KumaNamespace, mesh)),
+		FEntry("consumer MeshTimeout policy", fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, namespace, mesh)),
 	)
 }

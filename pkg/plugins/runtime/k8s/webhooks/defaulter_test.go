@@ -42,6 +42,7 @@ var _ = Describe("Defaulter", func() {
 			Mode:                         core.Global,
 			FederatedZone:                false,
 			DisableOriginLabelValidation: false,
+			SystemNamespace:              "kuma-system",
 		}
 	}
 
@@ -51,6 +52,7 @@ var _ = Describe("Defaulter", func() {
 			Mode:                         core.Zone,
 			FederatedZone:                federatedZone,
 			DisableOriginLabelValidation: !originValidation,
+			SystemNamespace:              "kuma-system",
 		}
 	}
 
@@ -61,7 +63,8 @@ var _ = Describe("Defaulter", func() {
 
 			req := kube_admission.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
-					UID: kube_types.UID("12345"),
+					Namespace: "kuma-system",
+					UID:       kube_types.UID("12345"),
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.inputObject),
 					},

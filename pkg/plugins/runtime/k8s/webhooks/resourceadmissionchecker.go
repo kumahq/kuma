@@ -21,11 +21,16 @@ type ResourceAdmissionChecker struct {
 	Mode                         core.CpMode
 	FederatedZone                bool
 	DisableOriginLabelValidation bool
+	SystemNamespace              string
 }
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource) admission.Response {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
+	}
+
+	if c.Mode == core.Global && r.Descriptor().IsPluginOriginated && ns != c.SystemNamespace {
+		return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
 	}
 
 	if !c.isResourceTypeAllowed(r.Descriptor()) {
