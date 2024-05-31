@@ -10,6 +10,13 @@
 * fix(kuma-cp): filter out old dangling zone resources in global (backport of #10245) [#10268](https://github.com/kumahq/kuma/pull/10268) @michaelbeaumont
 
 
+## 2.6.7
+> Released on 2024/05/29
+
+* fix(MeshRoute): properly map listener TLS certs to DownstreamTlsContext (backport of #10272) [#10344](https://github.com/kumahq/kuma/pull/10344) @kumahq
+* fix(kds): fix the case when webhook/db reject resource (backport of #10315) [#10351](https://github.com/kumahq/kuma/pull/10351) @kumahq
+
+
 ## 2.6.6
 > Released on 2024/05/17
 

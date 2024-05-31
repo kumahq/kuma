@@ -207,6 +207,7 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - hostnamegenerators
       - meshexternalservices
       - meshservices
     verbs:
@@ -392,7 +393,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 6822a8761a3906a432914504b3bc867fcf7f1c6f115239a7de9e9305c74520c2
+        checksum/tls-secrets: 1162e3a0f004c4dbf0ff747159a8bbaa84316d8f830e6fd73fb8576558e9c2ae
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -591,6 +592,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     sideEffects: None
@@ -645,6 +647,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
   
@@ -744,7 +747,7 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - gatewayinstances
+          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways
@@ -773,6 +776,7 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
           - meshexternalservices
           - meshservices
     

@@ -791,5 +791,14 @@ policies:
     - meshtrafficpermissions
 coreResources:
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
+    - hostnamegenerators
     - meshexternalservices
     - meshservices
+# IP address management configuration
+ipam:
+  # MeshService address management
+  meshService:
+    # CIDR for MeshService IPs
+    cidr: 241.0.0.0/8 # ENV: IPAM_MESH_SERVICE_CIDR
+    # Interval on which Kuma will allocate new IPs for MeshServices
+    allocationInterval: 5s # ENV: IPAM_MESH_SERVICE_ALLOCATION_INTERVAL
