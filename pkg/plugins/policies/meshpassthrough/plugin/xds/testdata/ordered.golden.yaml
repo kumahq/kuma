@@ -55,7 +55,7 @@
   Routes:
   - MatchType: 1
     Value: otherexample.com
-- Port: 90001
+- Port: 9001
   Protocol: grpc
   Routes:
   - MatchType: 1

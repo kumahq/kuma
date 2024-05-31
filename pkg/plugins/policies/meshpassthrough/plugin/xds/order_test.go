@@ -82,7 +82,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "grpc.com",
-						Port:     pointer.To[int](90001),
+						Port:     pointer.To[int](9001),
 						Protocol: api.ProtocolType("grpc"),
 					},
 					{

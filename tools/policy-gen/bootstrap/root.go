@@ -65,12 +65,10 @@ var rootCmd = &cobra.Command{
 				return err
 			}
 		}
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generated plugin\n")
 		path := fmt.Sprintf("generate/policy/%s", cfg.lowercase())
 		if err := exec.Command("make", path, "POLICIES_DIR="+cfg.basePath).Run(); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Generated plugin\n")
 		_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf(`
 Successfully bootstrapped policy
 regenerate auto generated files with: make generate/policy/%s
