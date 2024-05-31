@@ -30,3 +30,7 @@ default:
     value: example.com
     port: 8080
     protocol: http2
+  - type: Domain
+    value: "*w.example.com"
+    port: 9090
+    protocol: http2
