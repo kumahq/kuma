@@ -41,8 +41,11 @@ func (p Program) LoadAndAttach(cfg config.InitializedConfig, programs embed.FS, 
 	}
 
 	programPath := path.Join(cfg.Ebpf.ProgramsSourcePath, p.Name)
-	// #nosec
-	if err := os.WriteFile(programPath, programBytes, 0o744); err != nil {
+	if err := os.WriteFile(
+		programPath,
+		programBytes,
+		0o744, // #nosec G306
+	); err != nil {
 		return fmt.Errorf("writing program bytes to file failed with error: %s", err)
 	}
 

@@ -16,5 +16,5 @@ violations:
 - field: spec.default.appendMatch[4].value
   message: provided CIDR has incorrect value
 - field: spec.default.appendMatch[6].port
-  message: 'protocol needs to be the same accross different port when using: [grpc
+  message: 'protocol needs to be the same across different port when using: [grpc
     http http2]'

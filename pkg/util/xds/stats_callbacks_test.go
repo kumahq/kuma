@@ -111,17 +111,20 @@ var _ = Describe("Stats callbacks", func() {
 				VersionInfo: "123",
 				Node:        node,
 			}
-			err := adaptedCallbacks.OnStreamRequest(streamId, req)
+			resp := &envoy_discovery.DiscoveryResponse{
+				TypeUrl:     resource.RouteType,
+				VersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamResponse(context.Background(), streamId, req, resp)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
 
 			// when
 			adaptedCallbacks.OnStreamClosed(streamId, node)
 
 			// then
-			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
+			Expect(test_metrics.FindMetric(metrics, "xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(0.0))
 		})
 
 		It("should track NACK", func() {
@@ -293,11 +296,14 @@ var _ = Describe("Stats callbacks", func() {
 				Node:          node,
 				ResponseNonce: "1",
 			}
-			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
+			resp := &envoy_discovery.DeltaDiscoveryResponse{
+				TypeUrl:           resource.RouteType,
+				SystemVersionInfo: "123",
+			}
+			adaptedCallbacks.OnStreamDeltaResponse(streamId, req, resp)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_client_versions", "client_version", "1.0.0").GetGauge().GetValue()).To(Equal(1.0))
 
 			// when
 			adaptedCallbacks.OnDeltaStreamClosed(streamId, node)
