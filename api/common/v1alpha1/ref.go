@@ -101,7 +101,7 @@ type BackendRefHash string
 func (in BackendRef) Hash() BackendRefHash {
 	keys := maps.Keys(in.Tags)
 	sort.Strings(keys)
-	orderedTags := make([]string, len(keys))
+	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}

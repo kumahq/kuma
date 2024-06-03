@@ -79,6 +79,7 @@ node:
     metricsCertPath: /path/cert/pem
     metricsKeyPath: /path/key/pem
     metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
+    systemCaPath: ""
     version:
       envoy:
         build: hash/1.15.0/RELEASE

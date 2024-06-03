@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -129,4 +130,18 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 		}
 	}
 	return nil
+}
+
+func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (int, error) {
+	output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", resource.KumactlListArg, "-o", "json")
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal([]byte(output), &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
 }
