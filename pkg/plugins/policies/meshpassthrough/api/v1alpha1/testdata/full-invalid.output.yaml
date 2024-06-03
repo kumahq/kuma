@@ -19,4 +19,4 @@ violations:
   message: 'using the same port in multiple matches requires the same protocol for
     the following protocols: [grpc http http2]'
 - field: spec.default.appendMatch[7].value
-  message: provided DNS has incorrect value, cannot support partial wildcard
+  message: provided DNS has incorrect value, partial wildcard is currently not supported
