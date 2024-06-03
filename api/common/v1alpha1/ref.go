@@ -38,8 +38,8 @@ var (
 	Gateway TargetRefProxyType = "Gateway"
 )
 
-func (k TargetRefKind) Less(o TargetRefKind) bool {
-	return order[k] < order[o]
+func (k TargetRefKind) Compare(o TargetRefKind) int {
+	return order[k] - order[o]
 }
 
 func AllTargetRefKinds() []TargetRefKind {

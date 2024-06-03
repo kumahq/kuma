@@ -289,6 +289,7 @@ func addResourcesEndpoints(
 			meshContextBuilder:           meshContextBuilder,
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 			xdsHooks:                     xdsHooks,
+			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name

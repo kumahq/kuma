@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 const (
@@ -433,6 +434,42 @@ func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
 		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
 	}
 	return "", false
+}
+
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string) map[string]string {
+	labels := r.GetMeta().GetLabels()
+	if len(labels) == 0 {
+		labels = map[string]string{}
+	}
+
+	setIfNotExist := func(k, v string) {
+		if _, ok := labels[k]; !ok {
+			labels[k] = v
+		}
+	}
+
+	if isK8s && r.Descriptor().Scope == ScopeMesh {
+		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
+	}
+
+	if mode == config_core.Zone {
+		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
+	}
+
+	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && ns == systemNamespace {
+		setIfNotExist(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole))
+	}
+
+	// todo(lobkovilya): detect producer/consumer and workload-owner policies here
+
+	return labels
+}
+
+func PolicyRole(rm ResourceMeta) mesh_proto.PolicyRole {
+	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.PolicyRoleLabel] != "" {
+		return mesh_proto.PolicyRole(labels[mesh_proto.PolicyRoleLabel])
+	}
+	return mesh_proto.SystemPolicyRole
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

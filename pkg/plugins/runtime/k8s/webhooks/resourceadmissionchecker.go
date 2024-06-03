@@ -37,7 +37,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return c.resourceTypeIsNotAllowedResponse(r.Descriptor().Name)
 	}
 
-	if !c.isResourceAllowed(r) {
+	if !c.isResourceAllowed(r, ns) {
 		return c.resourceIsNotAllowedResponse()
 	}
 
@@ -57,11 +57,11 @@ func (c *ResourceAdmissionChecker) isResourceTypeAllowed(d core_model.ResourceTy
 	return true
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource) bool {
+func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) bool {
 	if !c.FederatedZone || !r.Descriptor().IsPluginOriginated {
 		return true
 	}
-	if !c.DisableOriginLabelValidation {
+	if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 		if origin, ok := core_model.ResourceOrigin(r.GetMeta()); !ok || origin != mesh_proto.ZoneResourceOrigin {
 			return false
 		}
