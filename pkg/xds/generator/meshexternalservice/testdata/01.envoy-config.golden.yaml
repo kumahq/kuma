@@ -78,6 +78,7 @@ resources:
               - match:
                   prefix: /
                 route:
+                  autoHostRewrite: true
                   cluster: meshexternalservice_mes1
                   timeout: 0s
           statPrefix: meshexternalservice_mes1

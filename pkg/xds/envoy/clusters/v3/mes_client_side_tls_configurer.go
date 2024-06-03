@@ -16,9 +16,10 @@ import (
 )
 
 type MesClientSideTLSConfigurer struct {
-	Tls    *v1alpha1.Tls
-	Loader datasource.Loader
-	Mesh   string
+	Tls          *v1alpha1.Tls
+	Loader       datasource.Loader
+	Mesh         string
+	SystemCaPath string
 }
 
 var _ ClusterConfigurer = &MesClientSideTLSConfigurer{}
@@ -39,7 +40,11 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 					return err
 				}
 			} else {
-				ca = defaultSystemCa()
+				ca = &envoy_core.DataSource{
+					Specifier: &envoy_core.DataSource_Filename{
+						Filename: c.SystemCaPath,
+					},
+				}
 			}
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
 				ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
@@ -137,10 +142,6 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 	}
 
 	return nil
-}
-
-func defaultSystemCa() *envoy_core.DataSource {
-	panic("TODO")
 }
 
 func shouldVerifyCa(verification *v1alpha1.Verification) bool {

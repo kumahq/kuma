@@ -122,8 +122,13 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 			builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 		}))
 
+	systemCaPath := ""
+	if proxy.Metadata != nil {
+		systemCaPath = proxy.Metadata.SystemCaPath
+	}
+
 	if mes.Spec.Tls != nil {
-		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls, xdsCtx.Mesh.DataSourceLoader, xdsCtx.Mesh.Resource.GetMeta().GetName()))
+		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls, xdsCtx.Mesh.DataSourceLoader, xdsCtx.Mesh.Resource.GetMeta().GetName(), systemCaPath))
 	}
 
 	return builder.Build()
