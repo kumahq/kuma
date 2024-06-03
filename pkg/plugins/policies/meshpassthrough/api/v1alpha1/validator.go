@@ -48,7 +48,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 		}
 		if match.Port != nil {
 			if value, found := portAndProtocol[pointer.Deref[int](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("protocol needs to be the same across different port when using: %v", notAllowedProtocolsOnTheSamePort))
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			} else {
 				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
 			}
