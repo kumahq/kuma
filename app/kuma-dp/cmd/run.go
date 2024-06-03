@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/certificate"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
@@ -123,6 +124,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.DataplaneRuntime.SystemCaPath == "" {
+				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
+			}
+
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
 				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
@@ -186,6 +191,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
 				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
 				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
+				SystemCaPath:        cfg.DataplaneRuntime.SystemCaPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
