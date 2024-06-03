@@ -72,7 +72,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), "protocol tcp is not supported for a domain")
 			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, cannot support partial wildcard")
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
 			}
 			if !strings.HasPrefix(match.Value, "*") {
 				isValid := govalidator.IsDNSName(match.Value)
