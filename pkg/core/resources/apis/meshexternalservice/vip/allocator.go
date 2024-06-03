@@ -11,15 +11,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-var _ vip.VIPAllocator = &MeshServiceAllocator{}
+var _ vip.VIPAllocator = &MeshExternalServiceAllocator{}
 
-type MeshServiceAllocator struct {
+type MeshExternalServiceAllocator struct {
 	logger     logr.Logger
 	cidr       string
 	resManager manager.ResourceManager
@@ -28,22 +28,22 @@ type MeshServiceAllocator struct {
 	metric     prometheus.Summary
 }
 
-func NewMeshServiceAllocator(
+func NewMeshExternalServiceAllocator(
 	logger logr.Logger,
 	cidr string,
 	resManager manager.ResourceManager,
 	interval time.Duration,
 	metrics core_metrics.Metrics,
-) (*MeshServiceAllocator, error) {
+) (*MeshExternalServiceAllocator, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_ms_vip_allocator",
+		Name:       "component_mes_vip_allocator",
 		Help:       "Summary of Inter CP Heartbeat component interval",
 		Objectives: core_metrics.DefaultObjectives,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
 	}
-	return &MeshServiceAllocator{
+	return &MeshExternalServiceAllocator{
 		logger:     logger,
 		cidr:       cidr,
 		resManager: resManager,
@@ -52,46 +52,41 @@ func NewMeshServiceAllocator(
 	}, nil
 }
 
-func (a *MeshServiceAllocator) InitIPAM(ctx context.Context) error {
+func (a *MeshExternalServiceAllocator) InitIPAM(ctx context.Context) error {
 	newIPAM, err := ipam.New(a.cidr)
 	if err != nil {
 		return errors.Wrapf(err, "could not allocate IPAM of CIDR %s", a.cidr)
 	}
-	services := &meshservice_api.MeshServiceResourceList{}
-	if err := a.resManager.List(ctx, services); err != nil {
-		return errors.Wrap(err, "could not list mesh services for initialization of ipam")
+
+	es := &meshexternalservice_api.MeshExternalServiceResourceList{}
+	if err := a.resManager.List(ctx, es); err != nil {
+		return errors.Wrap(err, "could not list mesh external services for initialization of ipam")
 	}
-	for _, service := range services.Items {
-		for _, vip := range service.Status.VIPs {
-			_ = newIPAM.Reserve(net.ParseIP(vip.IP)) // ignore error for outside of range
-		}
+	for _, service := range es.Items {
+		_ = newIPAM.Reserve(net.ParseIP(service.Status.VIP.IP)) // ignore error for outside of range
 	}
 	a.kumaIpam = newIPAM
 	return nil
 }
 
-func (a *MeshServiceAllocator) AllocateVIPs(ctx context.Context) error {
-	services := &meshservice_api.MeshServiceResourceList{}
+func (a *MeshExternalServiceAllocator) AllocateVIPs(ctx context.Context) error {
+	services := &meshexternalservice_api.MeshExternalServiceResourceList{}
 	if err := a.resManager.List(ctx, services); err != nil {
 		return errors.Wrap(err, "could not list mesh services for ip allocation")
 	}
 
 	for _, svc := range services.Items {
-		if len(svc.Status.VIPs) == 0 {
-			log := a.logger.WithValues("service", svc.Meta.GetName(), "mesh", svc.Meta.GetMesh())
+		if svc.Status.VIP.IP == "" {
+			log := a.logger.WithValues("external service", svc.Meta.GetName(), "mesh", svc.Meta.GetMesh())
 			ip, err := a.kumaIpam.Allocate()
 			if err != nil {
-				return errors.Wrapf(err, "could not allocate the address for svc %s", svc.Meta.GetName())
+				return errors.Wrapf(err, "could not allocate the address for external service %s", svc.Meta.GetName())
 			}
-			log.Info("allocating IP for a service", "ip", ip.String())
-			svc.Status.VIPs = []meshservice_api.VIP{
-				{
-					IP: ip.String(),
-				},
-			}
+			log.Info("allocating IP for a external service", "ip", ip.String())
+			svc.Status.VIP = meshexternalservice_api.VIP{IP: ip.String()}
 
 			if err := a.resManager.Update(ctx, svc); err != nil {
-				msg := "could not update service with allocated Kuma VIP. Will try to update in the next allocation window"
+				msg := "could not update external service with allocated Kuma VIP. Will try to update in the next allocation window"
 				if errors.Is(err, &store.ResourceConflictError{}) {
 					log.Info(msg, "cause", "conflict", "interval", a.interval)
 				} else {
@@ -103,6 +98,6 @@ func (a *MeshServiceAllocator) AllocateVIPs(ctx context.Context) error {
 	return nil
 }
 
-func (a *MeshServiceAllocator) ReportDuration(start time.Time) {
+func (a *MeshExternalServiceAllocator) ReportDuration(start time.Time) {
 	a.metric.Observe(float64(time.Since(start).Milliseconds()))
 }

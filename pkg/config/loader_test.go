@@ -374,7 +374,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
 			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
-			Expect(cfg.IPAM.MeshService.AllocationInterval.Duration).To(Equal(7 * time.Second))
+			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
+			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -754,7 +755,9 @@ tracing:
 ipam:
   meshService:
     cidr: 251.0.0.0/8
-    allocationInterval: 7s
+  meshExternalService:
+    cidr: 252.0.0.0/8
+  allocationInterval: 7s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1034,7 +1037,8 @@ ipam:
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
-				"KUMA_IPAM_MESH_SERVICE_ALLOCATION_INTERVAL":                                               "7s",
+				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
+				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 			},
 			yamlFileConfig: "",
 		}),

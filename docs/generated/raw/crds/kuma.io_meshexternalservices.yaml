@@ -240,58 +240,31 @@ spec:
                     hostname:
                       description: Hostname of the generated domain
                       type: string
+                    hostnameGeneratorRef:
+                      description: HostnameGeneratorRef informes which generator was
+                        used
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
                     origin:
                       description: Origin provides information what generated the
                         vip
-                      properties:
-                        kind:
-                          description: Kind points to entity kind that generated the
-                            domain.
-                          enum:
-                          - HostnameGenerator
-                          type: string
-                        name:
-                          description: Name of the entity that generated the domain.
-                          type: string
-                      required:
-                      - kind
-                      - name
-                      type: object
-                    reason:
-                      example: addresses are overlapping with my-mesh-external-service-2
-                      type: string
-                    status:
-                      description: Status indicates if an address is available
-                      enum:
-                      - Available
-                      - NotAvailable
                       type: string
                   required:
-                  - hostname
                   - origin
-                  - reason
-                  - status
                   type: object
                 type: array
               vip:
                 description: Vip section for allocated IP
                 properties:
-                  type:
-                    description: Type provides information about the way IP was provided.
-                    enum:
-                    - Kuma
-                    type: string
-                  value:
+                  ip:
                     description: Value allocated IP for a provided domain with `HostnameGenerator`
-                      type in a match section or provided IP.
+                      type in a match section.
                     type: string
-                required:
-                - type
-                - value
                 type: object
-            required:
-            - addresses
-            - vip
             type: object
         type: object
     served: true
