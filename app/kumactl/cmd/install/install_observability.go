@@ -39,7 +39,7 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			combinedResources := make([]data.File, len(metrics)+len(logging)+len(tracing))
+			combinedResources := make([]data.File, 0, len(metrics)+len(logging)+len(tracing))
 			combinedResources = append(combinedResources, metrics...)
 			combinedResources = append(combinedResources, logging...)
 			combinedResources = append(combinedResources, tracing...)
