@@ -121,7 +121,10 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null
+				"creationTimestamp": null,
+				"labels": {
+				  "kuma.io/display-name": "empty"
+				}
               },
               "spec": {
 				"metrics": {
@@ -174,7 +177,10 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null
+				"creationTimestamp": null,
+				"labels": {
+				  "kuma.io/display-name": "empty"
+				}
               },
               "spec": {
 				"metrics": {
@@ -223,7 +229,9 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "kuma.io/mesh": "my-mesh-1"
+                  "kuma.io/mesh": "my-mesh-1",
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {}
@@ -260,6 +268,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone",
+                  "kuma.io/mesh": "default",
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default"
                 }
               },
@@ -295,8 +306,10 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone"
                 }
               },
               "spec": {
@@ -331,8 +344,10 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone"
                 }
               },
               "spec": {
@@ -378,8 +393,10 @@ var _ = Describe("Defaulter", func() {
                 "name":"empty",
                 "creationTimestamp":null,
                 "labels": {
-                  "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone"
                 }
               },
               "spec":{
@@ -423,6 +440,8 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default"
                 }
               },
