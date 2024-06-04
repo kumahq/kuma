@@ -306,7 +306,21 @@ spec:
                  kuma.io/zone: east
 ```
 
-`backendRef` cannot match more than one MeshService. When backendRef matches multiple MeshServices this should result in error, and route should be applied as if no services were matched.
+**NOTE**: `backendRef` must not match more than one `MeshService`.
+
+However, whether or not a `backendRefs[].labels` could match more than one
+`MeshService` is something that depends on the type of the referenced zone.
+For example, if the above zone `east` is a Kubernetes zone, it's not clear
+which namespaces to match.
+
+However, in that case the above `backendRef` must _always_ be ignored, even if only
+one MeshService would be matched.
+Otherwise the simple creation of a second `MeshService` would break a previously working route.
+We can determine this by detecting whether or not the referenced zone is a Kubernetes
+zone.
+
+In this case, the route should be applied to configuration as if no `MeshServices`
+were matched by this ref.
 
 #### Status
 
