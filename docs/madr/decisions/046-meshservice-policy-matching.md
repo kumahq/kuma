@@ -160,7 +160,7 @@ The policy is applied
 on both the Envoy outbound listeners and clusters
 that correspond to the `MeshService`.
 Note that more than one `MeshService` can be matched in which case it applies to
-all matched `MeshServices`.
+each matched `MeshService`.
 
 References for `kind: MeshService` have the following structure:
 
@@ -208,6 +208,11 @@ On a universal zone, `namespace` is not valid.
 
 Note that this means it's possible to refer to synced `MeshServices` via their
 transformed `<service>-<hash-suffix>` name.
+
+##### Backwards compatibility
+
+If there is no `MeshService` with matching `name`, it is interpreted as
+a legacy style `kuma.io/service`.
 
 #### `labels`
 
