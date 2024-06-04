@@ -157,7 +157,7 @@ type MeshExternalServiceStatus struct {
 	// Vip section for allocated IP
 	VIP VIP `json:"vip,omitempty"`
 	// Addresses section for generated domains
-	Addresses          []Address                                       `json:"addresses,omitempty"`
+	Addresses          []hostnamegenerator_api.Address                 `json:"addresses,omitempty"`
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }
 
@@ -167,29 +167,4 @@ type StatusType string
 type VIP struct {
 	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section.
 	IP string `json:"ip,omitempty"`
-}
-
-type Origin string
-
-const (
-	OriginGenerator Origin = "HostnameGenerator"
-)
-
-type Address struct {
-	// Hostname of the generated domain
-	Hostname string `json:"hostname,omitempty"`
-	// Origin provides information what generated the vip
-	Origin Origin `json:"origin"`
-	// HostnameGeneratorRef informes which generator was used
-	HostnameGeneratorRef hostnamegenerator_api.HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
-}
-
-// +kubebuilder:validation:Enum=HostnameGenerator
-type OriginKind string
-
-type AddressOrigin struct {
-	// Kind points to entity kind that generated the domain.
-	Kind OriginKind `json:"kind"`
-	// Name of the entity that generated the domain.
-	Name string `json:"name"`
 }

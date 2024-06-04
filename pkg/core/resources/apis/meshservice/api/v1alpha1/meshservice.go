@@ -34,19 +34,6 @@ type MeshService struct {
 	Ports []Port `json:"ports,omitempty"`
 }
 
-type Origin string
-
-const (
-	OriginGenerator  Origin = "HostnameGenerator"
-	OriginKubernetes Origin = "Kubernetes"
-)
-
-type Address struct {
-	Hostname             string                                     `json:"hostname,omitempty"`
-	Origin               Origin                                     `json:"origin,omitempty"`
-	HostnameGeneratorRef hostnamegenerator_api.HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
-}
-
 type VIP struct {
 	IP string `json:"ip,omitempty"`
 }
@@ -64,7 +51,7 @@ type TLS struct {
 }
 
 type MeshServiceStatus struct {
-	Addresses          []Address                                       `json:"addresses,omitempty"`
+	Addresses          []hostnamegenerator_api.Address                 `json:"addresses,omitempty"`
 	VIPs               []VIP                                           `json:"vips,omitempty"`
 	TLS                TLS                                             `json:"tls,omitempty"`
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`

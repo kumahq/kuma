@@ -238,11 +238,8 @@ spec:
                 items:
                   properties:
                     hostname:
-                      description: Hostname of the generated domain
                       type: string
                     hostnameGeneratorRef:
-                      description: HostnameGeneratorRef informes which generator was
-                        used
                       properties:
                         name:
                           type: string
@@ -250,11 +247,7 @@ spec:
                       - name
                       type: object
                     origin:
-                      description: Origin provides information what generated the
-                        vip
                       type: string
-                  required:
-                  - origin
                   type: object
                 type: array
               hostnameGenerators:

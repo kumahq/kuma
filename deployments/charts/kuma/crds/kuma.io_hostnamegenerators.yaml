@@ -48,7 +48,7 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                      name:
+                      matchName:
                         type: string
                     type: object
                   meshService:

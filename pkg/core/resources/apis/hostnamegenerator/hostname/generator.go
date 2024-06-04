@@ -3,10 +3,8 @@ package hostname
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -16,7 +14,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -26,7 +23,10 @@ import (
 )
 
 type HostnameGenerator interface {
-	Generate(context.Context, hostnamegenerator_api.HostnameGeneratorResourceList) error
+	GetResources(context.Context) (model.ResourceList, error)
+	UpdateResourceStatus(context.Context, model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) error
+	HasStatusChanged(model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) bool
+	GenerateHostname(*hostnamegenerator_api.HostnameGeneratorResource, model.Resource) (string, error)
 }
 
 type Generator struct {
@@ -44,21 +44,22 @@ func NewGenerator(
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 	interval time.Duration,
+	generators []HostnameGenerator,
 ) (*Generator, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_hostname_generator_ms",
+		Name:       "component_hostname_generator",
 		Help:       "Summary of hostname generator interval",
 		Objectives: core_metrics.DefaultObjectives,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
 	}
-
 	return &Generator{
 		logger:     logger,
 		resManager: resManager,
 		interval:   interval,
 		metric:     metric,
+		generators: generators,
 	}, nil
 }
 
@@ -82,45 +83,6 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 	}
 }
 
-func apply(generator *hostnamegenerator_api.HostnameGeneratorResource, service *meshservice_api.MeshServiceResource) (string, error) {
-	if !generator.Spec.Selector.MeshService.Matches(service.Meta.GetLabels()) {
-		return "", nil
-	}
-	sb := strings.Builder{}
-	tmpl := template.New("").Funcs(
-		map[string]any{
-			"label": func(key string) (string, error) {
-				val, ok := service.GetMeta().GetLabels()[key]
-				if !ok {
-					return "", errors.Errorf("label %s not found", key)
-				}
-				return val, nil
-			},
-		},
-	)
-	tmpl, err := tmpl.Parse(generator.Spec.Template)
-	if err != nil {
-		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
-	}
-	type meshedName struct {
-		Name      string
-		Namespace string
-		Mesh      string
-	}
-	err = tmpl.Execute(&sb, meshedName{
-		Name:      service.GetMeta().GetNameExtensions()[model.K8sNameComponent],
-		Namespace: service.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
-		Mesh:      service.GetMeta().GetMesh(),
-	})
-	if err != nil {
-		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
-	}
-	return sb.String(), nil
-}
-
-
-
-///
 func sortGenerators(generators []*hostnamegenerator_api.HostnameGeneratorResource) []*hostnamegenerator_api.HostnameGeneratorResource {
 	sorted := slices.Clone(generators)
 	slices.SortFunc(sorted, func(a, b *hostnamegenerator_api.HostnameGeneratorResource) int {
@@ -146,125 +108,121 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 	if err := g.resManager.List(ctx, generators); err != nil {
 		return errors.Wrap(err, "could not list HostnameGenerators")
 	}
-	services := &meshservice_api.MeshServiceResourceList{}
-	if err := g.resManager.List(ctx, services); err != nil {
-		return errors.Wrap(err, "could not list MeshServices")
-	}
-
 	type serviceKey struct {
 		name string
 		mesh string
 	}
 	type status struct {
 		hostname   string
-		conditions []meshservice_api.Condition
+		conditions []hostnamegenerator_api.Condition
 	}
-	type meshName string
-	type serviceName string
-	type hostname string
-	generatedHostnames := map[meshName]map[hostname]serviceName{}
-	newStatuses := map[serviceKey]map[string]status{}
-	
-	for _, generator := range sortGenerators(generators.Items) {
-		for _, service := range services.Items {
-			serviceKey := serviceKey{
-				name: service.GetMeta().GetName(),
-				mesh: service.GetMeta().GetMesh(),
-			}
-			generatorStatuses, ok := newStatuses[serviceKey]
-			if !ok {
-				generatorStatuses = map[string]status{}
-			}
-
-			generated, err := apply(generator, service)
-
-			var conditions []meshservice_api.Condition
-			if generated != "" || err != nil {
-				generationConditionStatus := kube_meta.ConditionUnknown
-				reason := "Pending"
-				var message string
-				if err != nil {
-					generationConditionStatus = kube_meta.ConditionFalse
-					reason = meshservice_api.TemplateErrorReason
-					message = err.Error()
+	for _, hostnameGenerator := range g.generators {
+		resources, err := hostnameGenerator.GetResources(ctx)
+		if err != nil {
+			return err
+		}
+		type meshName string
+		type serviceName string
+		type hostname string
+		generatedHostnames := map[meshName]map[hostname]serviceName{}
+		newStatuses := map[serviceKey]map[string]status{}
+		for _, generator := range sortGenerators(generators.Items) {
+			for _, service := range resources.GetItems() {
+				serviceKey := serviceKey{
+					name: service.GetMeta().GetName(),
+					mesh: service.GetMeta().GetMesh(),
 				}
-				if generated != "" {
-					if svcName, ok := generatedHostnames[meshName(serviceKey.mesh)][hostname(generated)]; ok && string(svcName) != serviceKey.name {
+				generatorStatuses, ok := newStatuses[serviceKey]
+				if !ok {
+					generatorStatuses = map[string]status{}
+				}
+
+				generated, err := hostnameGenerator.GenerateHostname(generator, service)
+
+				var conditions []hostnamegenerator_api.Condition
+				if generated != "" || err != nil {
+					generationConditionStatus := kube_meta.ConditionUnknown
+					reason := "Pending"
+					var message string
+					if err != nil {
 						generationConditionStatus = kube_meta.ConditionFalse
-						reason = meshservice_api.CollisionReason
-						message = fmt.Sprintf("Hostname collision with MeshService %s", serviceKey.name)
-						generated = ""
-					} else {
-						generationConditionStatus = kube_meta.ConditionTrue
-						reason = meshservice_api.GeneratedReason
-						meshHostnames, ok := generatedHostnames[meshName(serviceKey.mesh)]
-						if !ok {
-							meshHostnames = map[hostname]serviceName{}
+						reason = hostnamegenerator_api.TemplateErrorReason
+						message = err.Error()
+					}
+					if generated != "" {
+						if svcName, ok := generatedHostnames[meshName(serviceKey.mesh)][hostname(generated)]; ok && string(svcName) != serviceKey.name {
+							generationConditionStatus = kube_meta.ConditionFalse
+							reason = hostnamegenerator_api.CollisionReason
+							message = fmt.Sprintf("Hostname collision with %s: %s", resources.GetItemType(), serviceKey.name)
+							generated = ""
+						} else {
+							generationConditionStatus = kube_meta.ConditionTrue
+							reason = hostnamegenerator_api.GeneratedReason
+							meshHostnames, ok := generatedHostnames[meshName(serviceKey.mesh)]
+							if !ok {
+								meshHostnames = map[hostname]serviceName{}
+							}
+							meshHostnames[hostname(generated)] = serviceName(serviceKey.name)
+							generatedHostnames[meshName(serviceKey.mesh)] = meshHostnames
 						}
-						meshHostnames[hostname(generated)] = serviceName(serviceKey.name)
-						generatedHostnames[meshName(serviceKey.mesh)] = meshHostnames
+					}
+					condition := hostnamegenerator_api.Condition{
+						Type:    hostnamegenerator_api.GeneratedCondition,
+						Status:  generationConditionStatus,
+						Reason:  reason,
+						Message: message,
+					}
+					conditions = []hostnamegenerator_api.Condition{
+						condition,
 					}
 				}
-				condition := meshservice_api.Condition{
-					Type:    meshservice_api.GeneratedCondition,
-					Status:  generationConditionStatus,
-					Reason:  reason,
-					Message: message,
-				}
-				conditions = []meshservice_api.Condition{
-					condition,
-				}
-			}
 
-			generatorStatuses[generator.GetMeta().GetName()] = status{
-				hostname:   generated,
-				conditions: conditions,
+				generatorStatuses[generator.GetMeta().GetName()] = status{
+					hostname:   generated,
+					conditions: conditions,
+				}
+				newStatuses[serviceKey] = generatorStatuses
 			}
-			newStatuses[serviceKey] = generatorStatuses
 		}
-	}
+		for _, service := range resources.GetItems() {
+			statuses := newStatuses[serviceKey{
+				name: service.GetMeta().GetName(),
+				mesh: service.GetMeta().GetMesh(),
+			}]
+			var addresses []hostnamegenerator_api.Address
+			var generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus
 
-	for _, service := range services.Items {
-		statuses := newStatuses[serviceKey{
-			name: service.GetMeta().GetName(),
-			mesh: service.GetMeta().GetMesh(),
-		}]
-		var addresses []meshservice_api.Address
-		var generatorStatuses []meshservice_api.HostnameGeneratorStatus
-
-		for _, generator := range maps.SortedKeys(statuses) {
-			status := statuses[generator]
-			ref := meshservice_api.HostnameGeneratorRef{
-				CoreName: generator,
+			for _, generator := range maps.SortedKeys(statuses) {
+				status := statuses[generator]
+				ref := hostnamegenerator_api.HostnameGeneratorRef{
+					CoreName: generator,
+				}
+				if status.hostname == "" && len(status.conditions) == 0 {
+					continue
+				}
+				if status.hostname != "" {
+					addresses = append(
+						addresses,
+						hostnamegenerator_api.Address{
+							Hostname:             status.hostname,
+							Origin:               hostnamegenerator_api.OriginGenerator,
+							HostnameGeneratorRef: ref,
+						},
+					)
+				}
+				generatorStatuses = append(generatorStatuses, hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: ref,
+					Conditions:           status.conditions,
+				})
 			}
-			if status.hostname == "" && len(status.conditions) == 0 {
+			if !hostnameGenerator.HasStatusChanged(service, generatorStatuses, addresses) {
 				continue
 			}
-			if status.hostname != "" {
-				addresses = append(
-					addresses,
-					meshservice_api.Address{
-						Hostname:             status.hostname,
-						Origin:               meshservice_api.OriginGenerator,
-						HostnameGeneratorRef: ref,
-					},
-				)
+			if err := hostnameGenerator.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
+				return errors.Wrapf(err, "couldn't update %s status", resources.GetItemType())
 			}
-			generatorStatuses = append(generatorStatuses, meshservice_api.HostnameGeneratorStatus{
-				HostnameGeneratorRef: ref,
-				Conditions:           status.conditions,
-			})
-		}
-		if reflect.DeepEqual(addresses, service.Status.Addresses) && reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators) {
-			continue
-		}
-		service.Status.Addresses = addresses
-		service.Status.HostnameGenerators = generatorStatuses
-		if err := g.resManager.Update(ctx, service); err != nil {
-			return errors.Wrap(err, "couldn't update MeshService status")
 		}
 	}
-
 	return nil
 }
 

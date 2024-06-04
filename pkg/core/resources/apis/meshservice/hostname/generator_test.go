@@ -12,6 +12,7 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshservice_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/hostname"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,7 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
-var _ = Describe("Hostname Generator", func() {
+var _ = Describe("MeshService Hostname Generator", func() {
 	var stopChSend chan<- struct{}
 	var resManager manager.ResourceManager
 
@@ -30,7 +31,10 @@ var _ = Describe("Hostname Generator", func() {
 		m, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
 		resManager = manager.NewResourceManager(memory.NewStore())
-		allocator, err := hostname.NewGenerator(logr.Discard(), m, resManager, 50*time.Millisecond)
+		allocator, err := hostname.NewGenerator(
+			logr.Discard(), m, resManager, 50*time.Millisecond,
+			[]hostname.HostnameGenerator{meshservice_hostname.NewMeshServiceHostnameGenerator(resManager)},
+		)
 		Expect(err).ToNot(HaveOccurred())
 		ch := make(chan struct{})
 		var stopChRecv <-chan struct{}
@@ -141,7 +145,7 @@ var _ = Describe("Hostname Generator", func() {
 						Type:    hostnamegenerator_api.GeneratedCondition,
 						Status:  kube_meta.ConditionFalse,
 						Reason:  hostnamegenerator_api.CollisionReason,
-						Message: "Hostname collision with MeshService other",
+						Message: "Hostname collision with MeshService: other",
 					}},
 				},
 			))

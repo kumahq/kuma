@@ -10,7 +10,7 @@ type LabelSelector struct {
 }
 
 type NameLabelsSelector struct {
-	Name        string            `json:"name,omitempty"`
+	MatchName   string            `json:"matchName,omitempty"`
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
@@ -33,7 +33,7 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 }
 
 func (s NameLabelsSelector) Matches(name string, labels map[string]string) bool {
-	if s.Name == "" || s.Name != name {
+	if s.MatchName != "" && s.MatchName != name {
 		return false
 	}
 	for tag, matchValue := range s.MatchLabels {
@@ -53,6 +53,19 @@ func (s NameLabelsSelector) Matches(name string, labels map[string]string) bool 
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
 	Template string   `json:"template,omitempty"`
+}
+
+type Origin string
+
+const (
+	OriginGenerator  Origin = "HostnameGenerator"
+	OriginKubernetes Origin = "Kubernetes"
+)
+
+type Address struct {
+	Hostname             string               `json:"hostname,omitempty"`
+	Origin               Origin               `json:"origin,omitempty"`
+	HostnameGeneratorRef HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
 }
 
 const (
