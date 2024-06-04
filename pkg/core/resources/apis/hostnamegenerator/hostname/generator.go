@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
