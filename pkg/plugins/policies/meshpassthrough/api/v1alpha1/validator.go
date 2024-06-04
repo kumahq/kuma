@@ -48,7 +48,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 		}
 		if match.Port != nil {
 			if value, found := portAndProtocol[pointer.Deref[int](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("protocol needs to be the same across different port when using: %v", notAllowedProtocolsOnTheSamePort))
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			} else {
 				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
 			}
@@ -72,7 +72,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), "protocol tcp is not supported for a domain")
 			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, cannot support partial wildcard")
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
 			}
 			if !strings.HasPrefix(match.Value, "*") {
 				isValid := govalidator.IsDNSName(match.Value)

@@ -57,6 +57,7 @@ node:
     metricsCertPath: ""
     metricsKeyPath: ""
     metricsSocketPath: /tmp/kuma-mh-dp-1.default-default.sock
+    systemCaPath: ""
     version:
       envoy:
         build: hash/1.15.0/RELEASE

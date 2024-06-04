@@ -20,6 +20,7 @@ type BootstrapRequest struct {
 	Workdir             string            `json:"workdir"`
 	AccessLogSocketPath string            `json:"accessLogSocketPath"`
 	MetricsResources    MetricsResources  `json:"metricsResources"`
+	SystemCaPath        string            `json:"systemCaPath"`
 }
 
 type Version struct {
