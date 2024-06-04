@@ -205,6 +205,11 @@ func (in *Verification) DeepCopyInto(out *Verification) {
 		*out = new(VerificationMode)
 		**out = **in
 	}
+	if in.ServerName != nil {
+		in, out := &in.ServerName, &out.ServerName
+		*out = new(string)
+		**out = **in
+	}
 	if in.SubjectAltNames != nil {
 		in, out := &in.SubjectAltNames, &out.SubjectAltNames
 		*out = new([]SANMatch)
