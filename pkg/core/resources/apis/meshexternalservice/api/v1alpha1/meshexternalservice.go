@@ -5,6 +5,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
 // MeshExternalService
@@ -156,7 +157,8 @@ type MeshExternalServiceStatus struct {
 	// Vip section for allocated IP
 	VIP VIP `json:"vip,omitempty"`
 	// Addresses section for generated domains
-	Addresses []Address `json:"addresses,omitempty"`
+	Addresses          []Address                                       `json:"addresses,omitempty"`
+	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Kuma
@@ -179,11 +181,7 @@ type Address struct {
 	// Origin provides information what generated the vip
 	Origin Origin `json:"origin"`
 	// HostnameGeneratorRef informes which generator was used
-	HostnameGeneratorRef HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
-}
-
-type HostnameGeneratorRef struct {
-	CoreName string `json:"name"`
+	HostnameGeneratorRef hostnamegenerator_api.HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=HostnameGenerator

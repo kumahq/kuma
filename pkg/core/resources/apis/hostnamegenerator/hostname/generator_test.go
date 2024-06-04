@@ -135,24 +135,24 @@ var _ = Describe("Hostname Generator", func() {
 			backendStatus := vipOfMeshService("backend")
 			g.Expect(otherStatus.Addresses).Should(BeEmpty())
 			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
-				meshservice_api.HostnameGeneratorStatus{
-					HostnameGeneratorRef: meshservice_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []meshservice_api.Condition{{
-						Type:    meshservice_api.GeneratedCondition,
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:    hostnamegenerator_api.GeneratedCondition,
 						Status:  kube_meta.ConditionFalse,
-						Reason:  meshservice_api.CollisionReason,
+						Reason:  hostnamegenerator_api.CollisionReason,
 						Message: "Hostname collision with MeshService other",
 					}},
 				},
 			))
 			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
 			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
-				meshservice_api.HostnameGeneratorStatus{
-					HostnameGeneratorRef: meshservice_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []meshservice_api.Condition{{
-						Type:   meshservice_api.GeneratedCondition,
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:   hostnamegenerator_api.GeneratedCondition,
 						Status: kube_meta.ConditionTrue,
-						Reason: meshservice_api.GeneratedReason,
+						Reason: hostnamegenerator_api.GeneratedReason,
 					}},
 				},
 			))

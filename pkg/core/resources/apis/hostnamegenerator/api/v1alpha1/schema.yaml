@@ -17,6 +17,15 @@ properties:
     properties:
       selector:
         properties:
+          meshExternalService:
+            properties:
+              matchLabels:
+                additionalProperties:
+                  type: string
+                type: object
+              name:
+                type: string
+            type: object
           meshService:
             properties:
               matchLabels:

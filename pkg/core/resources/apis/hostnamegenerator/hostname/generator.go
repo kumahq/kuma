@@ -25,11 +25,16 @@ import (
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
+type HostnameGenerator interface {
+	Generate(context.Context, hostnamegenerator_api.HostnameGeneratorResourceList) error
+}
+
 type Generator struct {
 	logger     logr.Logger
 	interval   time.Duration
 	metric     prometheus.Summary
 	resManager manager.ResourceManager
+	generators []HostnameGenerator
 }
 
 var _ component.Component = &Generator{}
@@ -113,6 +118,9 @@ func apply(generator *hostnamegenerator_api.HostnameGeneratorResource, service *
 	return sb.String(), nil
 }
 
+
+
+///
 func sortGenerators(generators []*hostnamegenerator_api.HostnameGeneratorResource) []*hostnamegenerator_api.HostnameGeneratorResource {
 	sorted := slices.Clone(generators)
 	slices.SortFunc(sorted, func(a, b *hostnamegenerator_api.HostnameGeneratorResource) int {
@@ -134,14 +142,13 @@ func sortGenerators(generators []*hostnamegenerator_api.HostnameGeneratorResourc
 }
 
 func (g *Generator) generateHostnames(ctx context.Context) error {
-	services := &meshservice_api.MeshServiceResourceList{}
-	if err := g.resManager.List(ctx, services); err != nil {
-		return errors.Wrap(err, "could not list MeshServices")
-	}
-
 	generators := &hostnamegenerator_api.HostnameGeneratorResourceList{}
 	if err := g.resManager.List(ctx, generators); err != nil {
 		return errors.Wrap(err, "could not list HostnameGenerators")
+	}
+	services := &meshservice_api.MeshServiceResourceList{}
+	if err := g.resManager.List(ctx, services); err != nil {
+		return errors.Wrap(err, "could not list MeshServices")
 	}
 
 	type serviceKey struct {
@@ -157,6 +164,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 	type hostname string
 	generatedHostnames := map[meshName]map[hostname]serviceName{}
 	newStatuses := map[serviceKey]map[string]status{}
+	
 	for _, generator := range sortGenerators(generators.Items) {
 		for _, service := range services.Items {
 			serviceKey := serviceKey{
