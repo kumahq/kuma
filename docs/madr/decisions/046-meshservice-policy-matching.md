@@ -306,6 +306,8 @@ spec:
                  kuma.io/zone: east
 ```
 
+`backendRef` cannot match more than one MeshService. When backendRef matches multiple MeshServices this should result in error, and route should be applied as if no services were matched.
+
 #### Status
 
 Similar to Gateway API conditions, we report back as status conditions
