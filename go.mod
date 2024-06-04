@@ -12,7 +12,7 @@ require (
 	github.com/cilium/ebpf v0.15.0
 	github.com/containernetworking/cni v1.2.0
 	github.com/containernetworking/plugins v1.5.0
-	github.com/emicklei/go-restful/v3 v3.12.0
+	github.com/emicklei/go-restful/v3 v3.12.1
 	github.com/envoyproxy/go-control-plane v0.12.0
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/evanphx/json-patch/v5 v5.9.0
@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.53.0
+	github.com/prometheus/common v0.54.0
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.11.0

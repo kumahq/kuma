@@ -333,6 +333,41 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.metrics-config.kubernetes.golden.yaml",
 			hdsEnabled:         false,
 		}),
+		Entry("default config, kubernetes with custom system ca path", testCase{
+			dpAuthForProxyType: authEnabled,
+			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				return cfg
+			}(),
+			dataplane: func() *core_mesh.DataplaneResource {
+				dp := defaultDataplane()
+				dp.Spec.Networking.Admin.Port = 1234
+				dp.Spec.Metrics = &mesh_proto.MetricsBackend{
+					Type: mesh_proto.MetricsPrometheusType,
+					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+							{
+								Name: "app1",
+								Port: 123,
+								Path: "/stats",
+							},
+						},
+					}),
+				}
+				return dp
+			},
+			request: types.BootstrapRequest{
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				DataplaneToken: "token",
+				Version:        defaultVersion,
+				SystemCaPath:   "/etc/certs/cert.pem",
+			},
+			expectedConfigFile: "generator.system-cert-config.kubernetes.golden.yaml",
+			hdsEnabled:         false,
+		}),
 		Entry("backwards compatibility, adminPort both in bootstrapRequest and in DPP resource", testCase{ // https://github.com/kumahq/kuma/issues/4002
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
