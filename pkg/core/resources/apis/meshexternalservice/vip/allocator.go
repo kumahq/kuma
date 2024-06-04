@@ -37,7 +37,7 @@ func NewMeshExternalServiceAllocator(
 ) (*MeshExternalServiceAllocator, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_mes_vip_allocator",
-		Help:       "Summary of Inter CP Heartbeat component interval",
+		Help:       "Summary of MeshExternalService VIP allocation duration",
 		Objectives: core_metrics.DefaultObjectives,
 	})
 	if err := metrics.Register(metric); err != nil {
@@ -77,7 +77,7 @@ func (a *MeshExternalServiceAllocator) AllocateVIPs(ctx context.Context) error {
 
 	for _, svc := range services.Items {
 		if svc.Status.VIP.IP == "" {
-			log := a.logger.WithValues("external service", svc.Meta.GetName(), "mesh", svc.Meta.GetMesh())
+			log := a.logger.WithValues("externalService", svc.Meta.GetName(), "mesh", svc.Meta.GetMesh())
 			ip, err := a.kumaIpam.Allocate()
 			if err != nil {
 				return errors.Wrapf(err, "could not allocate the address for external service %s", svc.Meta.GetName())
