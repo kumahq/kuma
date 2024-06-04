@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
@@ -57,6 +58,22 @@ var _ = Describe("Hostname Generator", func() {
 			},
 		}
 		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
+		generator = hostnamegenerator_api.NewHostnameGeneratorResource()
+		generator.Meta = &test_model.ResourceMeta{
+			Mesh: core_model.DefaultMesh,
+			Name: "static",
+		}
+		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
+			Template: "static.mesh",
+			Selector: hostnamegenerator_api.Selector{
+				MeshService: hostnamegenerator_api.LabelSelector{
+					MatchLabels: map[string]string{
+						"generate": "static",
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -96,6 +113,39 @@ var _ = Describe("Hostname Generator", func() {
 			status := vipOfMeshService("backend")
 			g.Expect(status.Addresses).Should(Not(BeEmpty()))
 			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should set an error if there's a collision", func() {
+		// when
+		Expect(
+			samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+				"generate": "static",
+			}).Create(resManager),
+		).To(Succeed())
+		Expect(
+			samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+				"generate": "static",
+			}).WithName("other").Create(resManager),
+		).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			otherStatus := vipOfMeshService("other")
+			backendStatus := vipOfMeshService("backend")
+			g.Expect(otherStatus.Addresses).Should(BeEmpty())
+			g.Expect(otherStatus.HostnameGenerators).Should(Not(BeEmpty()))
+			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
+			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
+				meshservice_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: meshservice_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []meshservice_api.Condition{{
+						Type:   meshservice_api.GeneratedCondition,
+						Status: kube_meta.ConditionTrue,
+						Reason: meshservice_api.GeneratedReason,
+					}},
+				},
+			))
 		}, "2s", "100ms").Should(Succeed())
 	})
 })
