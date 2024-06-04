@@ -117,5 +117,11 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 		Entry("for mode: SkipAll", testCase{
 			file: "02.skip-all",
 		}),
+		Entry("for match: TCP", testCase{
+			file: "03.tcp",
+		}),
+		Entry("for match: gRPC", testCase{
+			file: "04.grpc",
+		}),
 	)
 })

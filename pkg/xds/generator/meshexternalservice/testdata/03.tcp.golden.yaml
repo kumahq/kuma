@@ -1,0 +1,26 @@
+resources:
+- name: meshexternalservice_mes1
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    loadAssignment:
+      clusterName: meshexternalservice_mes1
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 1.1.1.1
+                portValue: 12345
+    name: meshexternalservice_mes1
+    type: STATIC
+- name: meshexternalservice_mes1
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.37
+        portValue: 8080
+    filterChains:
+    - name: meshexternalservice_filterchain_mes1
+    name: meshexternalservice_mes1
+    trafficDirection: OUTBOUND
