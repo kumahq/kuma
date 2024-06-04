@@ -19,19 +19,6 @@ type Selector struct {
 	MeshExternalService NameLabelsSelector `json:"meshExternalService,omitempty"`
 }
 
-func (s LabelSelector) Matches(labels map[string]string) bool {
-	for tag, matchValue := range s.MatchLabels {
-		labelValue, exist := labels[tag]
-		if !exist {
-			return false
-		}
-		if matchValue != labelValue {
-			return false
-		}
-	}
-	return true
-}
-
 func (s NameLabelsSelector) Matches(name string, labels map[string]string) bool {
 	if s.MatchName != "" && s.MatchName != name {
 		return false
