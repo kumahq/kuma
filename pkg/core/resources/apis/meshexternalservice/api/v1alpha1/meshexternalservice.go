@@ -156,33 +156,36 @@ type SANMatch struct {
 
 type MeshExternalServiceStatus struct {
 	// Vip section for allocated IP
-	Vip *VipStatus `json:"vip,omitempty"`
+	VIP VIP `json:"vip,omitempty"`
 	// Addresses section for generated domains
-	Addresses *[]Address `json:"addresses,omitempty"`
+	Addresses []Address `json:"addresses,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Kuma
 type StatusType string
 
-type VipStatus struct {
-	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section or provided IP.
-	Value string `json:"value"`
-	// Type provides information about the way IP was provided.
-	Type StatusType `json:"type"`
+type VIP struct {
+	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section.
+	IP string `json:"ip,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Available;NotAvailable
-type AddressStatus string
+type Origin string
+
+const (
+	OriginGenerator Origin = "HostnameGenerator"
+)
 
 type Address struct {
 	// Hostname of the generated domain
-	Hostname string `json:"hostname"`
-	// Status indicates if an address is available
-	Status AddressStatus `json:"status"`
+	Hostname string `json:"hostname,omitempty"`
 	// Origin provides information what generated the vip
-	Origin AddressOrigin `json:"origin"`
-	// +kubebuilder:example="addresses are overlapping with my-mesh-external-service-2"
-	Reason string `json:"reason"`
+	Origin Origin `json:"origin"`
+	// HostnameGeneratorRef informes which generator was used
+	HostnameGeneratorRef HostnameGeneratorRef `json:"hostnameGeneratorRef,omitempty"`
+}
+
+type HostnameGeneratorRef struct {
+	CoreName string `json:"name"`
 }
 
 // +kubebuilder:validation:Enum=HostnameGenerator

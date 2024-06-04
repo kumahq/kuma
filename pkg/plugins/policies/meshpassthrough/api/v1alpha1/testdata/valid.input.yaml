@@ -1,0 +1,23 @@
+targetRef:
+  kind: Mesh
+default:
+  appendMatch:
+  - type: IP
+    value: 192.168.1.1
+    port: 8000
+    protocol: tcp
+  - type: Domain
+    value: example.com
+    protocol: tls
+  - type: CIDR
+    value: 1.2.3.4/24
+    port: 9900
+    protocol: tcp
+  - type: Domain
+    value: example.com
+    port: 9999
+    protocol: http
+  - type: Domain
+    value: '*.example.com'
+    port: 9090
+    protocol: http
