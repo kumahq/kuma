@@ -34,7 +34,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
@@ -42,7 +41,7 @@ import (
 )
 
 type testRuntimeContext struct {
-	test_runtime.TestRuntimeInfo
+	runtime.RuntimeInfo
 	rom                      manager.ReadOnlyResourceManager
 	rm                       manager.ResourceManager
 	cfg                      kuma_cp.Config
@@ -222,12 +221,10 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.Mode = config_core.Global
+	runtimeInfo := runtime.NewRuntimeInfo("global-cp", cfg.Mode)
+	runtimeInfo.SetClusterInfo("my-cluster", time.Now())
 	rt := &testRuntimeContext{
-		TestRuntimeInfo: test_runtime.TestRuntimeInfo{
-			InstanceId: "global-cp",
-			ClusterId:  "my-cluster",
-			Mode:       cfg.Mode,
-		},
+		RuntimeInfo:              runtimeInfo,
 		rom:                      rm,
 		rm:                       rm,
 		cfg:                      cfg,
@@ -246,8 +243,8 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
-	b.rt.TestRuntimeInfo.InstanceId = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
 }
 

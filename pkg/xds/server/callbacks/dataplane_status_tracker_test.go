@@ -13,9 +13,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -25,11 +26,11 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	var tracker DataplaneStatusTracker
 	var callbacks envoy_server.Callbacks
 
-	runtimeInfo := test_runtime.TestRuntimeInfo{InstanceId: "test"}
+	runtimeInfo := core_runtime.NewRuntimeInfo("test", core.Zone)
 	var ctx context.Context
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(&runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		callbacks = v3.AdaptCallbacks(tracker)

@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/emicklei/go-restful/v3"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -24,7 +23,6 @@ import (
 	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -59,7 +57,27 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg.ApiServer = config
 	resManager := manager.NewResourceManager(store)
 	apiServer, err := api_server.NewApiServer(
-		resManager,
+		test_runtime.NewTestRuntime(
+			resManager,
+			cfg,
+			metrics,
+			wsManager,
+			runtime.Access{
+				ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+				DataplaneTokenAccess: nil,
+				EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
+					cfg.Access.Static.ViewConfigDump,
+					cfg.Access.Static.ViewStats,
+					cfg.Access.Static.ViewClusters,
+				),
+				ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
+			},
+			builtin.TokenIssuers{
+				DataplaneToken: builtin.NewDataplaneTokenIssuer(resManager),
+				ZoneToken:      builtin.NewZoneTokenIssuer(resManager),
+			},
+			globalinsight.NewDefaultGlobalInsightService(store),
+		),
 		xds_context.NewMeshContextBuilder(
 			resManager,
 			server.MeshResourceTypes(),
@@ -71,26 +89,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			cfg.Experimental.SkipPersistedVIPs,
 		),
-		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,
-		metrics,
-		func() string { return "instance-id" },
-		func() string { return "cluster-id" },
-		certs.ClientCertAuthenticator,
-		runtime.Access{
-			ResourceAccess:             resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-			DataplaneTokenAccess:       nil,
-			EnvoyAdminAccess:           envoyadmin_access.NewStaticEnvoyAdminAccess(cfg.Access.Static.ViewConfigDump, cfg.Access.Static.ViewStats, cfg.Access.Static.ViewClusters),
-			ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
-		},
-		&test_runtime.DummyEnvoyAdminClient{},
-		builtin.TokenIssuers{
-			DataplaneToken: builtin.NewDataplaneTokenIssuer(resManager),
-			ZoneToken:      builtin.NewZoneTokenIssuer(resManager),
-		},
-		func(*restful.WebService) error { return nil },
-		globalinsight.NewDefaultGlobalInsightService(store),
 		nil,
 	)
 	Expect(err).ToNot(HaveOccurred())

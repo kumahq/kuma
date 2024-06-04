@@ -1,5 +1,5 @@
 # until there is a distroless iptables image we have to use something else
-FROM ubuntu:jammy-20240227@sha256:77906da86b60585ce12215807090eb327e7386c8fafb5402369e421f44eff17e
+FROM ubuntu:jammy-20240427@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
 ARG ARCH
 
 RUN apt-get update && \

@@ -41,6 +41,11 @@ func GatewayIPV6CNIV2() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugKube(multizone.KubeZone2, meshName, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())

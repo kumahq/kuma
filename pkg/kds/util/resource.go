@@ -6,10 +6,12 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -49,6 +51,13 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		if err != nil {
 			return nil, err
 		}
+		var pbanyStatus *anypb.Any
+		if r.Descriptor().HasStatus {
+			pbanyStatus, err = model.ToAny(r.GetStatus())
+			if err != nil {
+				return nil, err
+			}
+		}
 		rv = append(rv, &mesh_proto.KumaResource{
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:    r.GetMeta().GetName(),
@@ -56,7 +65,8 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 				Labels:  r.GetMeta().GetLabels(),
 				Version: "",
 			},
-			Spec: pbany,
+			Spec:   pbany,
+			Status: pbanyStatus,
 		})
 	}
 	return rv, nil
@@ -133,6 +143,11 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
+		if obj.Descriptor().HasStatus && kr.Status != nil {
+			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
+				return nil, err
+			}
+		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
 		if err := list.AddItem(obj); err != nil {
 			return nil, err
@@ -151,4 +166,15 @@ func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.Reso
 		status.Stat[string(resourceType)] = stat
 	}
 	return stat
+}
+
+func CloneResource(res core_model.Resource, fs ...CloneResourceMetaOpt) core_model.Resource {
+	newObj := res.Descriptor().NewObject()
+	newMeta := CloneResourceMeta(res.GetMeta(), fs...)
+	newObj.SetMeta(newMeta)
+	_ = newObj.SetSpec(res.GetSpec())
+	if newObj.Descriptor().HasStatus {
+		_ = newObj.SetStatus(res.GetStatus())
+	}
+	return newObj
 }

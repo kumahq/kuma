@@ -21,10 +21,8 @@ on:
         description: "check that everything is published correctly"
 env:
   CHARTS_REPO: "kumahq/charts"
-  LEGACY_BINARIES: "centos-amd64,darwin-amd64,darwin-arm64,debian-amd64,darwin-amd64,rhel-amd64,ubuntu-amd64,ubuntu-arm64"
   BINARIES: "darwin-amd64,darwin-arm64,linux-amd64,linux-arm64"
   DOCKER_REPO: "kumahq"
-  PULP_URL: "https://download.konghq.com/kuma-binaries-release/"
   DOCKER_IMAGES: "kumactl,kuma-cp,kuma-dp,kuma-init,kuma-cni"
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check || 'false' }}
@@ -38,19 +36,19 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           ref: "master"
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version-file: go.mod
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.10.2
+          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.13.1
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        uses: actions/create-github-app-token@c8f55efbd427e7465d6da1106e7979bc8aaee856 # v1.10.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -66,18 +64,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ env.RELEASE }}
-      - name: check-pulp-legacy
+      - name: check-binaries
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: fromJSON(env.CHECK) && (startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
+        if: fromJSON(env.CHECK)
         run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.LEGACY_BINARIES }}
-      - name: check-pulp
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        if: fromJSON(env.CHECK) && !(startsWith(env.RELEASE, '2.1') || startsWith(env.RELEASE, '2.0') || startsWith(env.RELEASE, '1.'))
-        run: |
-          release-tool release pulp-binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }} --base-url ${{ env.PULP_URL }}
+          release-tool release binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
       - name: check-docker
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -100,7 +92,7 @@ jobs:
         run: |
           release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
-        uses: peter-evans/create-pull-request@c55203cfde3e5c11a452d352b4393e68b85b4533 # v6.0.3
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
         with:
           commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true

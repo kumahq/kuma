@@ -95,18 +95,18 @@ var _ = Describe("Util", func() {
 	})
 
 	exampleTime := time.Date(2020, 0o1, 0o1, 0o1, 12, 0o0, 0o0, time.UTC)
-	DescribeTable("FindServices",
+	DescribeTable("MatchService",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
-			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod, nil))
-			// then
-			Expect(matchingServices).To(WithTransform(func(svcs []*kube_core.Service) []string {
-				var res []string
-				for i := range svcs {
-					res = append(res, svcs[i].Name)
+			var svcNames []string
+			for _, svc := range svcs.Items {
+				s := svc
+				if util.MatchService(&s, util.AnySelector(), util.MatchServiceThatSelectsPod(pod, nil)) {
+					svcNames = append(svcNames, svc.Name)
 				}
-				return res
-			}, Equal(matchSvcNames)))
+			}
+			// then
+			Expect(svcNames).To(ConsistOf(matchSvcNames))
 		},
 		Entry("should match services by a predicate",
 			&kube_core.Pod{

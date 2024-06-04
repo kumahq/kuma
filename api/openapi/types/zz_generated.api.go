@@ -164,7 +164,7 @@ type GetMeshesMeshDataplanesNameConfigParams struct {
 	Shadow *bool `form:"shadow,omitempty" json:"shadow,omitempty"`
 
 	// Include An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
-	// between the XDS config returned in 'xds' and the current proxy XDS config.
+	// between the current proxy XDS config and the config returned in the 'xds' field.
 	Include *[]GetMeshesMeshDataplanesNameConfigParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 }
 

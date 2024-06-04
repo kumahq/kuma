@@ -321,6 +321,10 @@ controlPlane:
   containerSecurityContext:
     readOnlyRootFilesystem: true
 
+  # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
+  # The downside is that control plane requires permission to read Secrets in all namespaces.
+  supportGatewaySecretsInAllNamespaces: false
+
 cni:
   # -- Install Kuma with CNI instead of proxy init container
   enabled: false
@@ -678,8 +682,6 @@ hooks:
       readOnlyRootFilesystem: false
 
 experimental:
-  # -- If true, it installs experimental Gateway API support
-  gatewayAPI: false
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:
     # -- If true, ebpf will be used instead of using iptables to install/configure transparent proxy
@@ -725,6 +727,8 @@ postgres:
 # @ignored for helm-docs
 plugins:
   resources:
+    hostnamegenerators: true
+    meshexternalservices: true
     meshservices: true
   policies:
     meshaccesslogs: true
@@ -734,6 +738,7 @@ plugins:
     meshhttproutes: true
     meshloadbalancingstrategies: true
     meshmetrics: true
+    meshpassthroughs: true
     meshproxypatches: true
     meshratelimits: true
     meshretries: true

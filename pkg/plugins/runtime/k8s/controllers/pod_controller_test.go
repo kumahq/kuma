@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	kube_discovery "k8s.io/api/discovery/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -52,6 +53,7 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "sample",
 					},
+					UID: "pod-with-kuma-sidecar-but-no-ip-demo",
 				},
 			},
 			&kube_core.Pod{
@@ -65,6 +67,7 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "sample",
 					},
+					UID: "pod-with-kuma-sidecar-and-ip-demo",
 				},
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
@@ -76,6 +79,11 @@ var _ = Describe("PodReconciler", func() {
 						{
 							Ports: []kube_core.ContainerPort{
 								{ContainerPort: 6060, Name: "metrics"},
+							},
+						},
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 9090},
 							},
 						},
 					},
@@ -100,9 +108,10 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "ingress",
 					},
+					UID: "pod-ingress-kuma-demo",
 				},
 				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.1",
+					PodIP: "192.168.0.2",
 					ContainerStatuses: []kube_core.ContainerStatus{
 						{
 							State: kube_core.ContainerState{},
@@ -121,9 +130,10 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "ingress",
 					},
+					UID: "pod-ingress-kuma-system",
 				},
 				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.1",
+					PodIP: "192.168.0.3",
 					ContainerStatuses: []kube_core.ContainerStatus{
 						{
 							State: kube_core.ContainerState{},
@@ -153,6 +163,25 @@ var _ = Describe("PodReconciler", func() {
 					},
 				},
 			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "kuma-system",
+					Name:      "ingress-ip4",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "ingress",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.3"},
+					TargetRef: &kube_core.ObjectReference{
+						Kind:      "Pod",
+						Name:      "pod-ingress",
+						Namespace: "kuma-system",
+						UID:       "pod-ingress-kuma-system",
+					},
+				}},
+			},
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -164,9 +193,10 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "egress",
 					},
+					UID: "pod-egress-demo",
 				},
 				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.1",
+					PodIP: "192.168.0.4",
 					ContainerStatuses: []kube_core.ContainerStatus{
 						{
 							State: kube_core.ContainerState{},
@@ -185,9 +215,10 @@ var _ = Describe("PodReconciler", func() {
 					Labels: map[string]string{
 						"app": "egress",
 					},
+					UID: "pod-egress-kuma-system",
 				},
 				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.1",
+					PodIP: "192.168.0.5",
 					ContainerStatuses: []kube_core.ContainerStatus{
 						{
 							State: kube_core.ContainerState{},
@@ -216,6 +247,25 @@ var _ = Describe("PodReconciler", func() {
 						"app": "egress",
 					},
 				},
+			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "kuma-system",
+					Name:      "egress-ip4",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "egress",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.5"},
+					TargetRef: &kube_core.ObjectReference{
+						Kind:      "Pod",
+						Name:      "pod-egress",
+						Namespace: "kuma-system",
+						UID:       "pod-egress-kuma-system",
+					},
+				}},
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -246,6 +296,63 @@ var _ = Describe("PodReconciler", func() {
 						"app": "sample",
 					},
 				},
+			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example-ip4",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "example",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.1"},
+					TargetRef: &kube_core.ObjectReference{
+						Kind:      "Pod",
+						Name:      "pod-with-kuma-sidecar-and-ip",
+						Namespace: "demo",
+						UID:       "pod-with-kuma-sidecar-and-ip-demo",
+					},
+				}},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "manual-example",
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 90,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 9090,
+							},
+							AppProtocol: pointer.To("http"),
+						},
+					},
+				},
+			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "manual-example-ip4",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "manual-example",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.1"},
+					TargetRef: &kube_core.ObjectReference{
+						Kind:      "Pod",
+						Name:      "pod-with-kuma-sidecar-and-ip",
+						Namespace: "demo",
+						UID:       "pod-with-kuma-sidecar-and-ip-demo",
+					},
+				}},
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -469,7 +576,7 @@ var _ = Describe("PodReconciler", func() {
             controller: true
             kind: Pod
             name: pod-with-kuma-sidecar-and-ip
-            uid: ""
+            uid: pod-with-kuma-sidecar-and-ip-demo
           resourceVersion: "1"
         spec:
           networking:
@@ -494,6 +601,16 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/protocol: tcp
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
+                k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 9090
+              tags:
+                app: sample
+                kuma.io/service: manual-example_demo_svc_90
+                kuma.io/protocol: http
+                k8s.kuma.io/service-name: manual-example
+                k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
 `))
 	})
@@ -549,7 +666,7 @@ var _ = Describe("PodReconciler", func() {
             controller: true
             kind: Pod
             name: pod-with-kuma-sidecar-and-ip
-            uid: ""
+            uid: "pod-with-kuma-sidecar-and-ip-demo"
           resourceVersion: "2"
         spec:
           networking:
@@ -574,6 +691,16 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/protocol: tcp
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
+                k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 9090
+              tags:
+                app: sample
+                kuma.io/service: manual-example_demo_svc_90
+                kuma.io/protocol: http
+                k8s.kuma.io/service-name: manual-example
+                k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
 `))
 	})

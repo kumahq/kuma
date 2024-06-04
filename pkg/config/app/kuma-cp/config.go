@@ -1,6 +1,7 @@
 package kuma_cp
 
 import (
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -176,6 +177,8 @@ type Config struct {
 	Policies *policies.Config `json:"policies"`
 	// CoreResources holds configuration for generated core resources like MeshService
 	CoreResources *apis.Config `json:"coreResources"`
+	// IP administration and management config
+	IPAM IPAMConfig `json:"ipam"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -260,7 +263,6 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			GatewayAPI:                      false,
 			KubeOutboundsAsVIPs:             true,
 			KDSDeltaEnabled:                 true,
 			UseTagFirstVirtualOutboundModel: false,
@@ -278,6 +280,15 @@ var DefaultConfig = func() Config {
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
 		CoreResources: apis.Default(),
+		IPAM: IPAMConfig{
+			MeshService: MeshServiceIPAM{
+				CIDR: "241.0.0.0/8",
+			},
+			MeshExternalService: MeshExternalServiceIPAM{
+				CIDR: "242.0.0.0/8",
+			},
+			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+		},
 	}
 }
 
@@ -339,6 +350,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Policies.Validate(); err != nil {
 		return errors.Wrap(err, "Policies validation failed")
+	}
+	if err := c.IPAM.Validate(); err != nil {
+		return errors.Wrap(err, "IPAM validation failed")
 	}
 	return nil
 }
@@ -412,8 +426,6 @@ func DefaultDefaultsConfig() *Defaults {
 type ExperimentalConfig struct {
 	config.BaseConfig
 
-	// If true, experimental Gateway API is enabled
-	GatewayAPI bool `json:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `json:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
@@ -454,6 +466,47 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL"`
 	// If true, then initial full resync is going to be delayed by 0 to FullResyncInterval.
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
+}
+
+type IPAMConfig struct {
+	MeshService         MeshServiceIPAM         `json:"meshService"`
+	MeshExternalService MeshExternalServiceIPAM `json:"meshExternalService"`
+	// Interval on which Kuma will allocate new IPs and generate hostnames.
+	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
+}
+
+func (i IPAMConfig) Validate() error {
+	if err := i.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshServie validation failed")
+	}
+	if err := i.MeshExternalService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshExternalServie validation failed")
+	}
+	return nil
+}
+
+type MeshServiceIPAM struct {
+	// CIDR for MeshService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_SERVICE_CIDR"`
+}
+
+func (i MeshServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshServiceCIDR is invalid")
+	}
+	return nil
+}
+
+type MeshExternalServiceIPAM struct {
+	// CIDR for MeshExternalService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"`
+}
+
+func (i MeshExternalServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshExternalServiceCIDR is invalid")
+	}
+	return nil
 }
 
 func (c Config) GetEnvoyAdminPort() uint32 {

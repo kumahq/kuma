@@ -32,9 +32,6 @@ func (t *TestClaims) ID() string {
 	return t.RegisteredClaims.ID
 }
 
-func (t *TestClaims) KeyIDFallback() {
-}
-
 func (t *TestClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
 	t.RegisteredClaims = claims
 }

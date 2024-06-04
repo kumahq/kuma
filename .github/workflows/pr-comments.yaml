@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@7bfa3a4717ef143a604ee0a99d859b8886a96d00 # v1.9.3
+        uses: actions/create-github-app-token@c8f55efbd427e7465d6da1106e7979bc8aaee856 # v1.10.1
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -38,13 +38,13 @@ jobs:
           echo "REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
         with:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version-file: go.mod
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2

@@ -4,6 +4,7 @@
 package uninstall
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
@@ -14,54 +15,39 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
-type transparentProxyArgs struct {
-	EbpfEnabled   bool
-	EbpfBPFFSPath string
-	DryRun        bool
-	Verbose       bool
-}
-
 func newUninstallTransparentProxy() *cobra.Command {
-	args := transparentProxyArgs{
-		EbpfEnabled:   false,
-		EbpfBPFFSPath: "/sys/fs/bpf",
-		DryRun:        false,
-		Verbose:       false,
-	}
+	cfg := config.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
 		Short: "Uninstall Transparent Proxy pre-requisites on the host",
 		Long: "Uninstall Transparent Proxy by restoring the hosts iptables " +
 			"and /etc/resolv.conf or removing leftover ebpf objects",
+		PreRun: func(cmd *cobra.Command, _ []string) {
+			cfg.RuntimeStdout = cmd.OutOrStdout()
+			cfg.RuntimeStderr = cmd.ErrOrStderr()
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if !args.DryRun && runtime.GOOS != "linux" {
+			if !cfg.DryRun && runtime.GOOS != "linux" {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
-			cfg := &config.TransparentProxyConfig{
-				EbpfEnabled:   args.EbpfEnabled,
-				EbpfBPFFSPath: args.EbpfBPFFSPath,
-				DryRun:        args.DryRun,
-				Verbose:       args.Verbose,
-				Stderr:        cmd.ErrOrStderr(),
-				Stdout:        cmd.OutOrStdout(),
+			initializedConfig, err := cfg.Initialize()
+			if err != nil {
+				return errors.Wrap(err, "failed to initialize config")
 			}
 
-			tp := transparentproxy.V2()
-
-			output, err := tp.Cleanup(cfg)
+			output, err := transparentproxy.Cleanup(initializedConfig)
 			if err != nil {
 				return errors.Wrap(err, "transparent proxy cleanup failed")
 			}
 
-			if args.EbpfEnabled {
+			if cfg.Ebpf.Enabled {
 				return nil
 			}
 
-			if args.DryRun {
-				_, _ = cmd.OutOrStdout().Write([]byte(output))
-				_, _ = cmd.OutOrStdout().Write([]byte("\n"))
+			if cfg.DryRun {
+				fmt.Fprintln(cfg.RuntimeStdout, output)
 			}
 
 			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
@@ -70,27 +56,28 @@ func newUninstallTransparentProxy() *cobra.Command {
 					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
 				}
 
-				if !args.DryRun {
+				if !cfg.DryRun {
 					err = os.WriteFile("/etc/resolv.conf", content, 0o600)
 					if err != nil {
 						return errors.Wrap(err, "unable to write /etc/resolv.conf")
 					}
 				}
 
-				_, _ = cmd.OutOrStdout().Write(content)
+				fmt.Fprintln(cfg.RuntimeStdout, string(content))
 			}
-			_, _ = cmd.OutOrStdout().Write([]byte("\nTransparent proxy cleaned up successfully\n"))
+
+			fmt.Fprintln(cfg.RuntimeStdout, "Transparent proxy cleaned up successfully")
 
 			return nil
 		},
 	}
 
 	// ebpf
-	cmd.Flags().BoolVar(&args.EbpfEnabled, "ebpf-enabled", args.EbpfEnabled, "uninstall transparent proxy with ebpf mode")
-	cmd.Flags().StringVar(&args.EbpfBPFFSPath, "ebpf-bpffs-path", args.EbpfBPFFSPath, "the path of the BPF filesystem")
+	cmd.Flags().BoolVar(&cfg.Ebpf.Enabled, "ebpf-enabled", cfg.Ebpf.Enabled, "uninstall transparent proxy with ebpf mode")
+	cmd.Flags().StringVar(&cfg.Ebpf.BPFFSPath, "ebpf-bpffs-path", cfg.Ebpf.BPFFSPath, "the path of the BPF filesystem")
 
-	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
-	cmd.Flags().BoolVar(&args.Verbose, "verbose", args.Verbose, "verbose")
+	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
+	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
 
 	return cmd
 }

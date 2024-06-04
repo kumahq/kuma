@@ -5,6 +5,8 @@ import (
 	"reflect"
 
 	"github.com/onsi/ginkgo/v2"
+
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 var suiteFailed bool
@@ -23,6 +25,15 @@ func doIfNoSkipCleanup(fn func()) func() {
 
 		fn()
 	}
+}
+
+func AfterEachFailure(fn func()) bool {
+	return ginkgo.AfterEach(func() {
+		if !ginkgo.CurrentSpecReport().Failed() {
+			return
+		}
+		fn()
+	})
 }
 
 func E2EAfterEach(fn func()) bool {
@@ -86,4 +97,12 @@ func E2EDeferCleanup(args ...interface{}) {
 	}
 
 	ginkgo.DeferCleanup(fn, args[1:])
+}
+
+func SupportedVersionEntries() []ginkgo.TableEntry {
+	var res []ginkgo.TableEntry
+	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
+		res = append(res, ginkgo.Entry(nil, v))
+	}
+	return res
 }

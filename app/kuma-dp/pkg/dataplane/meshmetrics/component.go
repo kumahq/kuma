@@ -89,7 +89,7 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 				continue
 			}
 			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar)
+			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
 			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
 			err = cf.configureOpenTelemetryExporter(ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
 			if err != nil {
@@ -251,7 +251,7 @@ func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
 	return prometheusBackends
 }
 
-func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar) []metrics.ApplicationToScrape {
+func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
 	for _, application := range applications {
@@ -265,6 +265,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 			Path:              application.Path,
 			Port:              application.Port,
 			IsIPv6:            utilnet.IsAddressIPv6(address),
+			ExtraLabels:       extraLabels,
 			QueryModifier:     metrics.RemoveQueryParameters,
 			MeshMetricMutator: metrics.AggregatedOtelMutator(),
 		})
@@ -276,6 +277,7 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 		Address:           cf.envoyAdminAddress,
 		Port:              cf.envoyAdminPort,
 		IsIPv6:            false,
+		ExtraLabels:       extraLabels,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
 		MeshMetricMutator: metrics.AggregatedOtelMutator(metrics.ProfileMutatorGenerator(sidecar)),
 	})

@@ -75,6 +75,12 @@ func ZoneDisable() {
 		wg.Wait()
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(global, nonDefaultMesh)
+		DebugUniversal(zone1, nonDefaultMesh)
+		DebugUniversal(zone2, nonDefaultMesh)
+	})
+
 	E2EAfterEach(func() {
 		Expect(zone1.DismissCluster()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())

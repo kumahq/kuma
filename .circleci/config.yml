@@ -5,13 +5,13 @@ parameters:
   # These parameters are not meant to be changed they are more constants for the build change these in mk/dev.mk
   go_version:
     type: string
-    default: "1.21.9"
+    default: "1.21.10"
   first_k8s_version:
     type: string
     default: "v1.23.17-k3s1"
   last_k8s_version:
     type: string
-    default: "v1.29.1-k3s2"
+    default: "v1.30.0-k3s1"
   ubuntu_image:
     type: string
     default: "ubuntu-2204:2022.10.2"

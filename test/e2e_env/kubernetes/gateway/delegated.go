@@ -109,7 +109,7 @@ spec:
 			To(Succeed())
 	})
 
-	XContext("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
+	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
 	Context("MeshRetry", delegated.MeshRetry(&config))

@@ -48,11 +48,25 @@ rules:
       - pods
       - configmaps
       - nodes
-      - secrets
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:
@@ -131,6 +145,14 @@ rules:
       - update
       - patch
   - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -169,6 +191,7 @@ rules:
       - meshhttproutes
       - meshloadbalancingstrategies
       - meshmetrics
+      - meshpassthroughs
       - meshproxypatches
       - meshratelimits
       - meshretries
@@ -176,6 +199,8 @@ rules:
       - meshtimeouts
       - meshtraces
       - meshtrafficpermissions
+      - hostnamegenerators
+      - meshexternalservices
       - meshservices
     verbs:
       - get
@@ -355,7 +380,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: 78426437c5cfc1153b8cbb96647d3d8cb2c7e189a62b31a080c5bbe4b360dc25
+        checksum/tls-secrets: e34142b1733c18f9055c82ad6f9a159712146b466faa38931d19e3844a7fcc98
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -413,8 +438,6 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_GATEWAY_API
-              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
@@ -430,7 +453,7 @@ spec:
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
-              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -566,6 +589,7 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - meshgateways
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -573,6 +597,7 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
+          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -580,6 +605,8 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
           - meshservices
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
@@ -626,6 +653,7 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
+          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -633,6 +661,8 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
           - meshservices
   
       
@@ -730,7 +760,7 @@ webhooks:
           - dataplanes
           - externalservices
           - faultinjections
-          - gatewayinstances
+          - meshgatewayinstances
           - healthchecks
           - meshes
           - meshgateways
@@ -752,6 +782,7 @@ webhooks:
           - meshhttproutes
           - meshloadbalancingstrategies
           - meshmetrics
+          - meshpassthroughs
           - meshproxypatches
           - meshratelimits
           - meshretries
@@ -759,6 +790,8 @@ webhooks:
           - meshtimeouts
           - meshtraces
           - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
           - meshservices
     
       

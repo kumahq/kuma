@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/certificate"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
@@ -123,6 +124,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.DataplaneRuntime.SystemCaPath == "" {
+				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
+			}
+
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
 				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
@@ -148,7 +153,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			// gracefulCtx indicate that the process received a signal to shutdown
-			gracefulCtx, ctx := opts.SetupSignalHandler()
+			gracefulCtx, ctx, usr2Recv := opts.SetupSignalHandler()
 			// componentCtx indicates that components should shutdown (you can use cancel to trigger the shutdown of all components)
 			componentCtx, cancelComponents := context.WithCancel(gracefulCtx)
 			components := []component.Component{tokenComp}
@@ -186,6 +191,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
 				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
 				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
+				SystemCaPath:        cfg.DataplaneRuntime.SystemCaPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -239,22 +245,46 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			stopComponents := make(chan struct{})
 			go func() {
-				select {
-				case <-gracefulCtx.Done():
-					runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
-					if err := envoyComponent.DrainConnections(); err != nil {
-						runLog.Error(err, "could not drain connections")
-					} else {
-						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-						select {
-						case <-time.After(cfg.Dataplane.DrainTime.Duration):
-						case <-ctx.Done():
+				var draining bool
+				for {
+					select {
+					case _, ok := <-usr2Recv:
+						if !ok {
+							// If our channel is closed, never take this branch
+							// again
+							usr2Recv = nil
+							continue
 						}
+						if !draining {
+							runLog.Info("draining Envoy connections")
+							if err := envoyComponent.DrainForever(); err != nil {
+								runLog.Error(err, "could not drain connections")
+							}
+						}
+						draining = true
+						continue
+					case <-gracefulCtx.Done():
+						runLog.Info("Kuma DP caught an exit signal")
+						if draining {
+							runLog.Info("already drained, exit immediately")
+						} else {
+							runLog.Info("draining Envoy connections")
+							if err := envoyComponent.FailHealthchecks(); err != nil {
+								runLog.Error(err, "could not drain connections")
+							} else {
+								runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+								select {
+								case <-time.After(cfg.Dataplane.DrainTime.Duration):
+								case <-ctx.Done():
+								}
+							}
+						}
+					case <-componentCtx.Done():
 					}
-				case <-componentCtx.Done():
+					runLog.Info("stopping all Kuma DP components")
+					close(stopComponents)
+					return
 				}
-				runLog.Info("stopping all Kuma DP components")
-				close(stopComponents)
 			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)

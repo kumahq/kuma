@@ -14,8 +14,8 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )

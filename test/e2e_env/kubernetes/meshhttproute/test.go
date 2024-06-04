@@ -40,6 +40,10 @@ func Test() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, meshName, namespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, v1alpha1.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(kubernetes.Cluster, meshName, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())

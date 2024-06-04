@@ -17,11 +17,11 @@ import (
 	"sigs.k8s.io/yaml"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/data"
 )
 
 type componentVersion struct {
@@ -132,10 +132,7 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			mesh_k8s.RegisterK8sGatewayTypes()
-
-			if args.ExperimentalGatewayAPI {
-				mesh_k8s.RegisterK8sGatewayAPITypes()
-			}
+			mesh_k8s.RegisterK8sGatewayAPITypes()
 
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
@@ -295,7 +292,6 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringToStringVar(&args.Egress_nodeSelector, "egress-node-selector", args.Egress_nodeSelector, "node selector for Zone Egress")
 	cmd.Flags().StringToStringVar(&args.Hooks_nodeSelector, "hooks-node-selector", args.Hooks_nodeSelector, "node selector for Helm hooks")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
-	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
 	cmd.Flags().StringArrayVar(&args.SkipKinds, "skip-kinds", []string{}, "INTERNAL: A list of kubernetes kinds to not generate (useful, to ignore CRDs for example)")

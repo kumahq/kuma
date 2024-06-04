@@ -77,9 +77,7 @@ func (h *GatewayInstanceValidator) ValidateUpdate(ctx context.Context, req admis
 func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) admission.Response {
 	tags := gatewayInstance.Spec.Tags
 
-	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{
-		RequireService: true,
-	})
+	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{})
 
 	if err.HasViolations() {
 		return convertValidationErrorOf(err, gatewayInstance, gatewayInstance.GetObjectMeta())

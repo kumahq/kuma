@@ -118,10 +118,13 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	select {
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
-		return nil
+		return status.Error(codes.Canceled, "stream canceled - zone hc failed")
 	case <-stream.Context().Done():
 		logger.Info("ZoneToGlobalSync rpc stream stopped")
-		return nil
+		return status.Error(codes.Canceled, "stream canceled - stream stopped")
+	case <-g.context.Done():
+		logger.Info("app context done")
+		return status.Error(codes.Unavailable, "stream unavailable")
 	case err := <-processingErrorsCh:
 		if status.Code(err) == codes.Unimplemented {
 			return errors.Wrap(err, "ZoneToGlobalSync rpc stream failed, because Global CP does not implement this rpc. Upgrade Global CP.")

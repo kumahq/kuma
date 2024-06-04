@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 )
 
 var _ = Describe("kumactl config control-planes use", func() {
@@ -32,7 +32,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = test.DefaultTestingRootCmd()
+		_, _, rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
 		// or stderr. It's too fragile to depend on precisely what

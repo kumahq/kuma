@@ -11,9 +11,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/data"
 )
 
 func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
@@ -24,10 +24,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			mesh_k8s.RegisterK8sGatewayTypes()
-
-			if args.ExperimentalGatewayAPI {
-				mesh_k8s.RegisterK8sGatewayAPITypes()
-			}
+			mesh_k8s.RegisterK8sGatewayAPITypes()
 
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
@@ -86,7 +83,6 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&args.OnlyMissing, "only-missing", false, "install only resources which are not already present in a cluster")
-	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 
 	return cmd
 }

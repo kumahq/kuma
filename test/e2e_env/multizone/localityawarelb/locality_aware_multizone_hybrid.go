@@ -127,6 +127,14 @@ func LocalityAwareLB() {
 			Setup(multizone.KubeZone2)).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, mesh)
+		DebugUniversal(multizone.UniZone1, mesh)
+		DebugUniversal(multizone.UniZone2, mesh)
+		DebugKube(multizone.KubeZone1, mesh, namespace)
+		DebugKube(multizone.KubeZone2, mesh, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.UniZone1.DeleteMeshApps(mesh)).To(Succeed())
 		Expect(multizone.UniZone2.DeleteMeshApps(mesh)).To(Succeed())

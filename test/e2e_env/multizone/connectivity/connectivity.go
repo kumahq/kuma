@@ -49,6 +49,14 @@ func Connectivity() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(multizone.Global, meshName)
+		DebugUniversal(multizone.UniZone1, meshName)
+		DebugUniversal(multizone.UniZone2, meshName)
+		DebugKube(multizone.KubeZone1, meshName, namespace)
+		DebugKube(multizone.KubeZone2, meshName, namespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())

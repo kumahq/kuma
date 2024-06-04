@@ -11,7 +11,8 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/config/core"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -51,10 +52,11 @@ type Runtime interface {
 
 type RuntimeInfo interface {
 	GetInstanceId() string
-	SetClusterId(clusterId string)
+	SetClusterInfo(clusterId string, clusterCreationTime time.Time)
 	GetClusterId() string
+	GetClusterCreationTime() time.Time
 	GetStartTime() time.Time
-	GetMode() core.CpMode
+	GetMode() config_core.CpMode
 }
 
 type RuntimeContext interface {
@@ -117,25 +119,37 @@ type runtime struct {
 	component.Manager
 }
 
-var _ RuntimeInfo = &runtimeInfo{}
+func NewRuntimeInfo(instanceId string, mode config_core.CpMode) RuntimeInfo {
+	return &runtimeInfo{
+		instanceId: instanceId,
+		startTime:  core.Now(),
+		mode:       mode,
+	}
+}
 
 type runtimeInfo struct {
 	mtx sync.RWMutex
 
-	instanceId string
-	clusterId  string
-	startTime  time.Time
-	mode       core.CpMode
+	instanceId          string
+	clusterId           string
+	startTime           time.Time
+	mode                config_core.CpMode
+	clusterCreationTime time.Time
+}
+
+func (i *runtimeInfo) GetClusterCreationTime() time.Time {
+	return i.clusterCreationTime
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
 	return i.instanceId
 }
 
-func (i *runtimeInfo) SetClusterId(clusterId string) {
+func (i *runtimeInfo) SetClusterInfo(clusterId string, clusterCreationTime time.Time) {
 	i.mtx.Lock()
 	defer i.mtx.Unlock()
 	i.clusterId = clusterId
+	i.clusterCreationTime = clusterCreationTime
 }
 
 func (i *runtimeInfo) GetClusterId() string {
@@ -148,7 +162,7 @@ func (i *runtimeInfo) GetStartTime() time.Time {
 	return i.startTime
 }
 
-func (i *runtimeInfo) GetMode() core.CpMode {
+func (i *runtimeInfo) GetMode() config_core.CpMode {
 	return i.mode
 }
 

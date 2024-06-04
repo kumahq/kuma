@@ -142,19 +142,14 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh str
 		},
 	}
 
-	tags := mesh_proto.Merge(
-		common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
-		config.Tags,
-	)
-
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
-		if instance.Annotations == nil {
-			instance.Annotations = map[string]string{}
+		if instance.Labels == nil {
+			instance.Labels = map[string]string{}
 		}
-		instance.Annotations[metadata.KumaMeshAnnotation] = mesh
+		instance.Labels[metadata.KumaMeshAnnotation] = mesh
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
-			Tags:                    tags,
+			Tags:                    config.Tags,
 			MeshGatewayCommonConfig: config.MeshGatewayCommonConfig,
 		}
 
@@ -186,6 +181,11 @@ func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 
 		var requests []kube_reconcile.Request
 		for _, parentRef := range route.Spec.ParentRefs {
+			// parentRef.Group & Kind won't be nil as they have a default value
+			if *parentRef.Group != gatewayapi.GroupName || *parentRef.Kind != "Gateway" {
+				continue
+			}
+
 			namespace := route.Namespace
 			if parentRef.Namespace != nil {
 				namespace = string(*parentRef.Namespace)
@@ -330,7 +330,7 @@ func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.Ma
 		if err := client.List(ctx, &gateways, kube_client.MatchingFields{
 			secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
 		}); err != nil {
-			l.Error(nil, "unexpected error listing Gateways")
+			l.Error(err, "unexpected error listing Gateways")
 			return nil
 		}
 
@@ -355,6 +355,11 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		var names []string
 
 		for _, parentRef := range route.Spec.ParentRefs {
+			// parentRef.Group & Kind won't be nil as they have a default value
+			if *parentRef.Group != gatewayapi.GroupName || *parentRef.Kind != "Gateway" {
+				continue
+			}
+
 			namespace := route.Namespace
 			if parentRef.Namespace != nil {
 				namespace = string(*parentRef.Namespace)

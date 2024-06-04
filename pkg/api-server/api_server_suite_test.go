@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emicklei/go-restful/v3"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -38,7 +37,6 @@ import (
 	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -170,7 +168,27 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 
 	resManager := manager.NewResourceManager(t.store)
 	apiServer, err := api_server.NewApiServer(
-		resManager,
+		test_runtime.NewTestRuntime(
+			resManager,
+			cfg,
+			t.metrics(),
+			customization.NewAPIList(),
+			runtime.Access{
+				ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+				DataplaneTokenAccess: nil,
+				EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
+					cfg.Access.Static.ViewConfigDump,
+					cfg.Access.Static.ViewStats,
+					cfg.Access.Static.ViewClusters,
+				),
+				ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
+			},
+			builtin.TokenIssuers{
+				DataplaneToken: builtin.NewDataplaneTokenIssuer(resManager),
+				ZoneToken:      builtin.NewZoneTokenIssuer(resManager),
+			},
+			globalinsight.NewDefaultGlobalInsightService(t.store),
+		),
 		xds_context.NewMeshContextBuilder(
 			resManager,
 			server.MeshResourceTypes(),
@@ -182,30 +200,8 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			cfg.Experimental.SkipPersistedVIPs,
 		),
-		customization.NewAPIList(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
-		t.metrics(),
-		func() string { return "instance-id" },
-		func() string { return "cluster-id" },
-		certs.ClientCertAuthenticator,
-		runtime.Access{
-			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-			DataplaneTokenAccess: nil,
-			EnvoyAdminAccess: envoyadmin_access.NewStaticEnvoyAdminAccess(
-				cfg.Access.Static.ViewConfigDump,
-				cfg.Access.Static.ViewStats,
-				cfg.Access.Static.ViewClusters,
-			),
-			ControlPlaneMetadataAccess: access.NewStaticControlPlaneMetadataAccess(cfg.Access.Static.ControlPlaneMetadata),
-		},
-		&test_runtime.DummyEnvoyAdminClient{},
-		builtin.TokenIssuers{
-			DataplaneToken: builtin.NewDataplaneTokenIssuer(resManager),
-			ZoneToken:      builtin.NewZoneTokenIssuer(resManager),
-		},
-		func(*restful.WebService) error { return nil },
-		globalinsight.NewDefaultGlobalInsightService(t.store),
 		nil,
 	)
 	if err != nil {

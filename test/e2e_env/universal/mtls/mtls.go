@@ -15,10 +15,16 @@ import (
 
 func Policy() {
 	meshName := "mtls-test"
+
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterEach(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
+
 	curlAddr := func(addr string, fn ...client.CollectResponsesOptsFn) (string, string, error) {
 		fn = append(fn, client.WithVerbose())
 

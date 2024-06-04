@@ -29,13 +29,28 @@ rules:
       - pods
       - configmaps
       - nodes
-  {{- if .Values.experimental.gatewayAPI }}
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
-  {{- end }}
+{{- end }}
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
   - apiGroups:
       - "apps"
     resources:
@@ -114,6 +129,14 @@ rules:
       - update
       - patch
   - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
       - kuma.io
     resources:
       - dataplanes
@@ -144,9 +167,7 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
-  {{- if .Values.experimental.gatewayAPI }}
       - meshgatewayconfigs
-  {{- end }}
   {{- range $policy, $v := .Values.plugins.policies }}
   {{- if $v }}
       - {{ $policy }}

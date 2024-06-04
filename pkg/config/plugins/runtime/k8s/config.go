@@ -99,7 +99,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			},
 			IgnoredServiceSelectorLabels: []string{},
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
-			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region"},
+			NodeLabelsToCopy: []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 		},
 		MarshalingCacheExpirationTime: config_types.Duration{Duration: 5 * time.Minute},
 		NodeTaintController: NodeTaintController{
@@ -153,6 +153,9 @@ type KubernetesRuntimeConfig struct {
 	// If this is set to true, deleting a Mesh will not delete resources that belong to that Mesh.
 	// This can be useful when resources are managed in Argo CD where creation/deletion is managed there.
 	SkipMeshOwnerReference bool `json:"skipMeshOwnerReference" envconfig:"kuma_runtime_kubernetes_skip_mesh_owner_reference"`
+	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
+	// The downside is that control plane requires permission to read Secrets in all namespaces.
+	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
 }
 
 type ControllersConcurrency struct {

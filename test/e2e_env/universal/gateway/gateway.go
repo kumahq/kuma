@@ -40,6 +40,10 @@ func Gateway() {
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, mesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteApp("gateway-client")).To(Succeed())
 		Expect(universal.Cluster.DeleteMeshApps(mesh)).To(Succeed())

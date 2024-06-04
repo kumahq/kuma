@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,18 +18,27 @@ import (
 )
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
-	var errs []error
+	_, err := retry.DoWithRetryE(
+		cluster.GetTesting(),
+		"delete mesh resources",
+		10,
+		time.Second,
+		func() (string, error) {
+			var errs []error
 
-	for _, desc := range descriptor {
-		if _, ok := cluster.(*K8sCluster); ok {
-			errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
-			continue
-		}
+			for _, desc := range descriptor {
+				if _, ok := cluster.(*K8sCluster); ok {
+					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+					continue
+				}
 
-		errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
-	}
+				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
+			}
 
-	return errors.Join(errs...)
+			return "", errors.Join(errs...)
+		},
+	)
+	return err
 }
 
 func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceTypeDescriptor, policyName string) error {
@@ -120,4 +130,18 @@ func WaitForResource(descriptor core_model.ResourceTypeDescriptor, key core_mode
 		}
 	}
 	return nil
+}
+
+func NumberOfResources(c Cluster, resource core_model.ResourceTypeDescriptor) (int, error) {
+	output, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", resource.KumactlListArg, "-o", "json")
+	if err != nil {
+		return 0, err
+	}
+	t := struct {
+		Total int `json:"total"`
+	}{}
+	if err := json.Unmarshal([]byte(output), &t); err != nil {
+		return 0, err
+	}
+	return t.Total, nil
 }

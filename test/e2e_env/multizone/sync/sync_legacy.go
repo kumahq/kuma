@@ -80,6 +80,13 @@ func SyncLegacy() {
 		}()
 		wg.Wait()
 	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(global, meshName)
+		DebugUniversal(zone1, meshName)
+		DebugUniversal(zone2, meshName)
+	})
+
 	E2EAfterAll(func() {
 		Expect(zone2.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())

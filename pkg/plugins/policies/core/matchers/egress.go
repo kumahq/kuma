@@ -7,20 +7,32 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string, resources xds_context.Resources) (core_xds.TypedMatchingPolicies, error) {
-	policies := resources.ListOrEmpty(rType)
+func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string, resources xds_context.Resources, opts ...plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	mpOpts := plugins.NewMatchedPoliciesConfig(opts...)
 
-	if len(policies.GetItems()) == 0 {
+	rl := resources.ListOrEmpty(rType)
+	policies := []core_model.Resource{}
+
+	for _, item := range rl.GetItems() {
+		if !mpOpts.IncludeShadow && core_model.IsShadowedResource(item) {
+			continue
+		}
+		policies = append(policies, item)
+	}
+
+	if len(policies) == 0 {
 		return core_xds.TypedMatchingPolicies{Type: rType}, nil
 	}
 
-	p := policies.GetItems()[0]
+	// pick one item to cast and figure characteristics of all policies in the list
+	p := policies[0]
 
 	if _, ok := p.GetSpec().(core_model.Policy); !ok {
 		return core_xds.TypedMatchingPolicies{}, errors.Errorf("resource type %v doesn't support TargetRef matching", p.Descriptor().Name)
@@ -61,11 +73,11 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 
 func processFromRules(
 	tags map[string]string,
-	rl core_model.ResourceList,
+	policies []core_model.Resource,
 ) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
-	for _, policy := range rl.GetItems() {
+	for _, policy := range policies {
 		spec := policy.GetSpec().(core_model.Policy)
 		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
 			continue
@@ -117,10 +129,10 @@ func processFromRules(
 //	        disabled: true
 //
 // that's why processToRules() method produces FromRules for the Egress.
-func processToRules(tags map[string]string, rl core_model.ResourceList) (core_rules.FromRules, error) {
+func processToRules(tags map[string]string, policies []core_model.Resource) (core_rules.FromRules, error) {
 	var matchedPolicies []core_model.Resource
 
-	for _, policy := range rl.GetItems() {
+	for _, policy := range policies {
 		spec := policy.GetSpec().(core_model.Policy)
 
 		to, ok := spec.(core_model.PolicyWithToList)

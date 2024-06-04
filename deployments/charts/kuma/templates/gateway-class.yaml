@@ -1,4 +1,5 @@
-{{- if and .Values.experimental.gatewayAPI (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass") }}
+{{- if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "zone") }}
+{{- if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1/GatewayClass" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
@@ -6,7 +7,7 @@ metadata:
  name: kuma
 spec:
  controllerName: "gateways.kuma.io/controller"
-{{- else if and .Values.experimental.gatewayAPI (.Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass") }}
+{{- else if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1beta1/GatewayClass" }}
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
@@ -14,4 +15,5 @@ metadata:
  name: kuma
 spec:
  controllerName: "gateways.kuma.io/controller"
+{{- end }}
 {{- end }}

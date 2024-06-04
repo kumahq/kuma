@@ -39,6 +39,10 @@ func MeshTrafficPermissionUniversal() {
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
 	E2EAfterEach(func() {
 		// remove all MeshTrafficPermissions
 		items, err := universal.Cluster.GetKumactlOptions().KumactlList("meshtrafficpermissions", meshName)

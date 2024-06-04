@@ -46,6 +46,11 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 		return err
 	}
 
+	initializedConfig, err := cfg.Initialize()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize config")
+	}
+
 	namespace, err := ns.GetNS(netns)
 	if err != nil {
 		return errors.Wrap(err, "failed to open namespace")
@@ -53,7 +58,7 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
-		if _, err := transparentproxy.Setup(context.Background(), *cfg); err != nil {
+		if _, err := transparentproxy.Setup(context.Background(), initializedConfig); err != nil {
 			return err
 		}
 
@@ -69,6 +74,8 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 }
 
 func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*config.Config, error) {
+	cfg := config.DefaultConfig()
+
 	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
 	if err != nil {
 		return nil, err
@@ -88,20 +95,13 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	cfg := config.Config{
-		RuntimeStdout: logWriter,
-		Owner: config.Owner{
-			UID: intermediateConfig.noRedirectUID,
-		},
-		Redirect: config.Redirect{
-			Outbound: config.TrafficFlow{
-				Enabled:             true,
-				Port:                port,
-				ExcludePorts:        excludePorts,
-				ExcludePortsForUIDs: excludePortsForUIDsParsed,
-			},
-		},
-	}
+	cfg.Verbose = true
+	cfg.RuntimeStdout = logWriter
+	cfg.Owner.UID = intermediateConfig.noRedirectUID
+	cfg.Redirect.Outbound.Enabled = true
+	cfg.Redirect.Outbound.Port = port
+	cfg.Redirect.Outbound.ExcludePorts = excludePorts
+	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDsParsed
 
 	isGateway, err := GetEnabled(intermediateConfig.isGateway)
 	if err != nil {
@@ -117,13 +117,14 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 			return nil, err
 		}
 	}
-	enableIpV6, err := transparentproxy.ShouldEnableIPv6(inboundPortV6)
+
+	cfg.IPv6, err = transparentproxy.ShouldEnableIPv6(inboundPortV6)
 	if err != nil {
 		return nil, err
 	}
-	cfg.IPv6 = enableIpV6
-	redirectInbound := !isGateway
-	if redirectInbound {
+
+	cfg.Redirect.Inbound.Enabled = !isGateway
+	if cfg.Redirect.Inbound.Enabled {
 		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
 		if err != nil {
 			return nil, err
@@ -133,30 +134,27 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		if err != nil {
 			return nil, err
 		}
-		cfg.Redirect.Inbound = config.TrafficFlow{
-			Enabled:      true,
-			Port:         inboundPort,
-			PortIPv6:     inboundPortV6,
-			ExcludePorts: excludedPorts,
-		}
+
+		cfg.Redirect.Inbound.Port = inboundPort
+		cfg.Redirect.Inbound.PortIPv6 = inboundPortV6
+		cfg.Redirect.Inbound.ExcludePorts = excludedPorts
 	}
 
-	useBuiltinDNS, err := GetEnabled(intermediateConfig.builtinDNS)
+	cfg.Redirect.DNS.Enabled, err = GetEnabled(intermediateConfig.builtinDNS)
 	if err != nil {
 		return nil, err
 	}
-	if useBuiltinDNS {
+	if cfg.Redirect.DNS.Enabled {
 		builtinDnsPort, err := convertToUint16("builtin dns port", intermediateConfig.builtinDNSPort)
 		if err != nil {
 			return nil, err
 		}
-		cfg.Redirect.DNS = config.DNS{
-			Enabled:            true,
-			Port:               builtinDnsPort,
-			CaptureAll:         true,
-			ConntrackZoneSplit: true,
-		}
+
+		cfg.Redirect.DNS.Port = builtinDnsPort
+		cfg.Redirect.DNS.CaptureAll = true
+		cfg.Redirect.DNS.ConntrackZoneSplit = true
 	}
+
 	return &cfg, nil
 }
 

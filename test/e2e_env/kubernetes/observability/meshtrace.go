@@ -55,6 +55,11 @@ func PluginTest() {
 		obsClient = obs.From(obsDeployment, kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, mesh, ns, obsNs)
+	})
+
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(ns)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(mesh)).To(Succeed())

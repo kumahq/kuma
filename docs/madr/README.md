@@ -2,14 +2,14 @@
 
 This is mostly built on: https://github.com/adr/madr
 
-To start an MADR see: (001-adopt-madr.md)[001-adopt-madr.md].
+To start an MADR see: [001-adopt-madr.md](./decisions/001-adopt-madr.md).
 
 Accepted MADR:
-- [001-adopt-madr](001-adopt-madr.md) The proposal to describe how MADR will work. 
+- [001-adopt-madr](./decisions/001-adopt-madr.md) The proposal to describe how MADR will work. 
 
 Implemented MADR:
 
-- [002-psat](002-past.md) The proposal how support projected service account token
+- [002-psat](./decisions/002-psat.md) The proposal how support projected service account token
 
 Deprecated MADR:
 

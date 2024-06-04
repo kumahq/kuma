@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -63,11 +62,12 @@ type E2eConfig struct {
 	CleanupLogsOnSuccess              bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 	VersionsYamlPath                  string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
+	DebugDir                          string            `json:"debugDir" envconfig:"KUMA_DEBUG_DIR"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
 
-func (c E2eConfig) SupportedVersions() []*semver.Version {
+func (c E2eConfig) SupportedVersions() []versions.Version {
 	return versions.ParseFromFile(c.VersionsYamlPath)
 }
 
@@ -261,6 +261,7 @@ var defaultConf = E2eConfig{
 	UniversalE2ELogsPath:              path.Join(os.TempDir(), "e2e"),
 	CleanupLogsOnSuccess:              false,
 	KumaExperimentalSidecarContainers: false,
+	DebugDir:                          path.Join(os.TempDir(), "e2e-debug"),
 }
 
 func init() {

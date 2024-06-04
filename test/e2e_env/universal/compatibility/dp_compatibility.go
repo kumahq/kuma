@@ -1,43 +1,69 @@
 package compatibility
 
 import (
+	"fmt"
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/versions"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func UniversalCompatibility() {
-	var cluster Cluster
+	meshName := "compatibility"
 
-	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), "kuma-compat", Silent)
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
 
-		oldestUpgradble := versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
+	E2EAfterAll(func() {
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
+	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(Kuma(core.Zone)).
-			Install(TestServerUniversal("test-server", "default",
-				WithArgs([]string{"echo", "--instance", "universal1"}),
-				WithDPVersion(oldestUpgradble))).
-			Install(DemoClientUniversal(AppModeDemoClient, "default",
-				WithDPVersion(oldestUpgradble),
+			Install(MeshUniversal(meshName)).
+			Install(DemoClientUniversal("demo-client-latest", meshName,
 				WithTransparentProxy(true)),
 			).
-			SetupWithRetries(cluster, 3)
+			Install(TestServerUniversal("test-server-latest", meshName,
+				WithArgs([]string{"echo", "--instance", "test-server-latest"}),
+				WithServiceName("test-server-latest")),
+			).
+			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	E2EAfterEach(func() {
-		Expect(cluster.DismissCluster()).To(Succeed())
-	})
+	DescribeTable("connection between old and new DPP",
+		func(version string) {
+			serverName := fmt.Sprintf("test-server-%s", strings.ReplaceAll(version, ".", "-"))
+			Expect(universal.Cluster.Install(TestServerUniversal(serverName, meshName,
+				WithServiceName(serverName),
+				WithArgs([]string{"echo", "--instance", serverName}),
+				WithDPVersion(version),
+			))).To(Succeed())
 
-	It("client should access server", func() {
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(cluster, "demo-client", "test-server.mesh")
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "20s", "250ms").Should(Succeed())
-	})
+			clientName := fmt.Sprintf("demo-client-%s", strings.ReplaceAll(version, ".", "-"))
+			Expect(universal.Cluster.Install(DemoClientUniversal(clientName, meshName,
+				WithTransparentProxy(true),
+				WithDPVersion(version),
+			))).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				// New client can reach new server
+				_, err := client.CollectEchoResponse(universal.Cluster, "demo-client-latest", "test-server-latest.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				// Old client can reach new server
+				_, err = client.CollectEchoResponse(universal.Cluster, clientName, "test-server-latest.mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+				// New client can reach old server
+				_, err = client.CollectEchoResponse(universal.Cluster, "demo-client-latest", serverName+".mesh")
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "20s", "250ms").Should(Succeed())
+		},
+		EntryDescription("from version: %s"),
+		SupportedVersionEntries())
 }

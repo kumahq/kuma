@@ -2,6 +2,7 @@ linters:
   enable:
     - bodyclose
     - contextcheck
+    - depguard
     - errcheck
     - gci
     - ginkgolinter
@@ -23,6 +24,7 @@ linters:
     - whitespace
     - nosprintfhostport
     - loggercheck
+    - makezero
 
 run:
   skip-files:
@@ -91,6 +93,16 @@ linters-settings:
             recommandations:
               - io
               - os
+  depguard:
+    rules:
+      pkg-import:
+        list-mode: lax # only disallow some imports
+        files:
+          - "!**/app/**/*.go"
+          - "!**/pkg/api-server/gui_handler.go"
+        deny:
+          - pkg: "github.com/kumahq/kuma/app"
+            desc: "pkg can't import app"
 
   misspell:
     locale: US
