@@ -104,7 +104,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 			},
 			ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
 				ValidationContext: &envoy_tls.CertificateValidationContext{
-					TrustedCa: ca,
+					TrustedCa:                 ca,
 					MatchTypedSubjectAltNames: matchNames,
 				},
 			},
@@ -157,7 +157,7 @@ func shouldVerifyClientCertAndKey(verification *v1alpha1.Verification) bool {
 	}
 
 	// should we have a skip TLSVerificationSkipServer?
-	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll) && verification.ClientCert != nil && verification.ClientKey != nil  {
+	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll) && verification.ClientCert != nil && verification.ClientKey != nil {
 		return false
 	}
 
