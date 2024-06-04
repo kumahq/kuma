@@ -738,6 +738,7 @@ plugins:
     meshhttproutes: true
     meshloadbalancingstrategies: true
     meshmetrics: true
+    meshpassthroughs: true
     meshproxypatches: true
     meshratelimits: true
     meshretries: true

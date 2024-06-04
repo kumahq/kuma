@@ -11,6 +11,7 @@ var DefaultEnabled = []string{
 	"meshhttproutes",
 	"meshloadbalancingstrategies",
 	"meshmetrics",
+	"meshpassthroughs",
 	"meshproxypatches",
 	"meshratelimits",
 	"meshretries",

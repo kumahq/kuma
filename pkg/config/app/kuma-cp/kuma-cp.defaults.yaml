@@ -782,6 +782,7 @@ policies:
     - meshhttproutes
     - meshloadbalancingstrategies
     - meshmetrics
+    - meshpassthroughs
     - meshproxypatches
     - meshratelimits
     - meshretries

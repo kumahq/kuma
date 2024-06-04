@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry"
@@ -28,6 +29,7 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshhttproutes":              {InitFn: meshhttproute.InitPlugin, Initialized: false},
 	"meshloadbalancingstrategies": {InitFn: meshloadbalancingstrategy.InitPlugin, Initialized: false},
 	"meshmetrics":                 {InitFn: meshmetric.InitPlugin, Initialized: false},
+	"meshpassthroughs":            {InitFn: meshpassthrough.InitPlugin, Initialized: false},
 	"meshproxypatches":            {InitFn: meshproxypatch.InitPlugin, Initialized: false},
 	"meshratelimits":              {InitFn: meshratelimit.InitPlugin, Initialized: false},
 	"meshretries":                 {InitFn: meshretry.InitPlugin, Initialized: false},
