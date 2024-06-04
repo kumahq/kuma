@@ -152,7 +152,10 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 		hostname   string
 		conditions []meshservice_api.Condition
 	}
-	generatedHostnames := map[string]serviceKey{}
+	type meshName string
+	type serviceName string
+	type hostname string
+	generatedHostnames := map[meshName]map[hostname]serviceName{}
 	newStatuses := map[serviceKey]map[string]status{}
 	for _, generator := range sortGenerators(generators.Items) {
 		for _, service := range services.Items {
@@ -178,7 +181,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					message = err.Error()
 				}
 				if generated != "" {
-					if key, ok := generatedHostnames[generated]; ok && key != serviceKey {
+					if svcName, ok := generatedHostnames[meshName(serviceKey.mesh)][hostname(generated)]; ok && string(svcName) != serviceKey.name {
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = meshservice_api.CollisionReason
 						message = fmt.Sprintf("Hostname collision with MeshService %s", serviceKey.name)
@@ -186,7 +189,12 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					} else {
 						generationConditionStatus = kube_meta.ConditionTrue
 						reason = meshservice_api.GeneratedReason
-						generatedHostnames[generated] = serviceKey
+						meshHostnames, ok := generatedHostnames[meshName(serviceKey.mesh)]
+						if !ok {
+							meshHostnames = map[hostname]serviceName{}
+						}
+						meshHostnames[hostname(generated)] = serviceName(serviceKey.name)
+						generatedHostnames[meshName(serviceKey.mesh)] = meshHostnames
 					}
 				}
 				condition := meshservice_api.Condition{
