@@ -5106,6 +5106,11 @@ spec:
                 x-kubernetes-list-type: map
               selector:
                 properties:
+                  dataplaneRef:
+                    properties:
+                      name:
+                        type: string
+                    type: object
                   dataplaneTags:
                     additionalProperties:
                       type: string
@@ -8484,6 +8489,14 @@ rules:
     resources:
       - secrets
     verbs:
+    - list
+    - watch
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
     - list
     - watch
   - apiGroups:
