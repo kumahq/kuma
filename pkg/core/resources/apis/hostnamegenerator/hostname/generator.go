@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/go-logr/logr"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,6 +113,26 @@ func apply(generator *hostnamegenerator_api.HostnameGeneratorResource, service *
 	return sb.String(), nil
 }
 
+func sortGenerators(generators []*hostnamegenerator_api.HostnameGeneratorResource) []*hostnamegenerator_api.HostnameGeneratorResource {
+	sorted := slices.Clone(generators)
+	slices.SortFunc(sorted, func(a, b *hostnamegenerator_api.HostnameGeneratorResource) int {
+		if a, b := a.Meta.GetLabels()[mesh_proto.ResourceOriginLabel], b.Meta.GetLabels()[mesh_proto.ResourceOriginLabel]; a != b {
+			if a == string(mesh_proto.ZoneResourceOrigin) {
+				return -1
+			} else if b == string(mesh_proto.ZoneResourceOrigin) {
+				return 1
+			}
+		}
+		if a, b := a.Meta.GetCreationTime(), b.Meta.GetCreationTime(); a.Before(b) {
+			return -1
+		} else if a.After(b) {
+			return 1
+		}
+		return strings.Compare(a.Meta.GetName(), b.Meta.GetName())
+	})
+	return sorted
+}
+
 func (g *Generator) generateHostnames(ctx context.Context) error {
 	services := &meshservice_api.MeshServiceResourceList{}
 	if err := g.resManager.List(ctx, services); err != nil {
@@ -130,8 +152,9 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 		hostname   string
 		conditions []meshservice_api.Condition
 	}
+	generatedHostnames := map[string]serviceKey{}
 	newStatuses := map[serviceKey]map[string]status{}
-	for _, generator := range generators.Items {
+	for _, generator := range sortGenerators(generators.Items) {
 		for _, service := range services.Items {
 			serviceKey := serviceKey{
 				name: service.GetMeta().GetName(),
@@ -155,8 +178,16 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					message = err.Error()
 				}
 				if generated != "" {
-					generationConditionStatus = kube_meta.ConditionTrue
-					reason = meshservice_api.GeneratedReason
+					if key, ok := generatedHostnames[generated]; ok && key != serviceKey {
+						generationConditionStatus = kube_meta.ConditionFalse
+						reason = meshservice_api.CollisionReason
+						message = "Hostname collision"
+						generated = ""
+					} else {
+						generationConditionStatus = kube_meta.ConditionTrue
+						reason = meshservice_api.GeneratedReason
+						generatedHostnames[generated] = serviceKey
+					}
 				}
 				condition := meshservice_api.Condition{
 					Type:    meshservice_api.GeneratedCondition,
@@ -193,14 +224,16 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			if status.hostname == "" && len(status.conditions) == 0 {
 				continue
 			}
-			addresses = append(
-				addresses,
-				meshservice_api.Address{
-					Hostname:             status.hostname,
-					Origin:               meshservice_api.OriginGenerator,
-					HostnameGeneratorRef: ref,
-				},
-			)
+			if status.hostname != "" {
+				addresses = append(
+					addresses,
+					meshservice_api.Address{
+						Hostname:             status.hostname,
+						Origin:               meshservice_api.OriginGenerator,
+						HostnameGeneratorRef: ref,
+					},
+				)
+			}
 			generatorStatuses = append(generatorStatuses, meshservice_api.HostnameGeneratorStatus{
 				HostnameGeneratorRef: ref,
 				Conditions:           status.conditions,

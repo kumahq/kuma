@@ -74,6 +74,7 @@ const (
 const (
 	GeneratedReason     string = "Generated"
 	TemplateErrorReason string = "TemplateError"
+	CollisionReason     string = "Collision"
 )
 
 type Condition struct {
