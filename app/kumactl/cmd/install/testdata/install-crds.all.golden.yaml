@@ -6518,6 +6518,11 @@ spec:
                 x-kubernetes-list-type: map
               selector:
                 properties:
+                  dataplaneRef:
+                    properties:
+                      name:
+                        type: string
+                    type: object
                   dataplaneTags:
                     additionalProperties:
                       type: string
