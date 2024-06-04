@@ -190,16 +190,9 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 // from names of resources if resources are stored in kubernetes.
 func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		newObj := r.Descriptor().NewObject()
 		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
 		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
-		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(newName))
-		newObj.SetMeta(newMeta)
-		_ = newObj.SetSpec(r.GetSpec())
-		if newObj.Descriptor().HasStatus {
-			_ = newObj.SetStatus(r.GetStatus())
-		}
-		return newObj, nil
+		return util.CloneResource(r, util.WithName(newName)), nil
 	}
 }
 
@@ -216,15 +209,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 			values = append(values, r.GetMeta().GetLabels()[lbl])
 		}
 
-		newObj := r.Descriptor().NewObject()
-		newMeta := util.CloneResourceMeta(r.GetMeta(), util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...)))
-		newObj.SetMeta(newMeta)
-		_ = newObj.SetSpec(r.GetSpec())
-		if newObj.Descriptor().HasStatus {
-			_ = newObj.SetStatus(r.GetStatus())
-		}
-
-		return newObj, nil
+		return util.CloneResource(r, util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
 	}
 }
 

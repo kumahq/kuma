@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -165,4 +166,15 @@ func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.Reso
 		status.Stat[string(resourceType)] = stat
 	}
 	return stat
+}
+
+func CloneResource(res core_model.Resource, fs ...CloneResourceMetaOpt) core_model.Resource {
+	newObj := res.Descriptor().NewObject()
+	newMeta := CloneResourceMeta(res.GetMeta(), fs...)
+	newObj.SetMeta(newMeta)
+	_ = newObj.SetSpec(res.GetSpec())
+	if newObj.Descriptor().HasStatus {
+		_ = newObj.SetStatus(res.GetStatus())
+	}
+	return newObj
 }
