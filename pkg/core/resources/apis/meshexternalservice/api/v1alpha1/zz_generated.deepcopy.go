@@ -149,12 +149,8 @@ func (in *MeshExternalServiceStatus) DeepCopyInto(out *MeshExternalServiceStatus
 	out.VIP = in.VIP
 	if in.Addresses != nil {
 		in, out := &in.Addresses, &out.Addresses
-		*out = new([]Address)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]Address, len(*in))
-			copy(*out, *in)
-		}
+		*out = make([]Address, len(*in))
+		copy(*out, *in)
 	}
 }
 
