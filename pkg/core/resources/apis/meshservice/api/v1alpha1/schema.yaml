@@ -18,6 +18,8 @@ properties:
       ports:
         items:
           properties:
+            name:
+              type: string
             port:
               format: int32
               type: integer

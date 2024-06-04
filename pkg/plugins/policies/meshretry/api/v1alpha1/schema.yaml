@@ -31,6 +31,14 @@ properties:
               - MeshServiceSubset
               - MeshHTTPRoute
             type: string
+          labels:
+            additionalProperties:
+              type: string
+            description: |-
+              Labels are used to select group of MeshServices that match labels. Either Labels or
+              Name and Namespace can be used.
+              Labels can be used only with MeshService kind.
+            type: object
           mesh:
             description: Mesh is reserved for future use to identify cross mesh resources.
             type: string
@@ -38,6 +46,12 @@ properties:
             description: |-
               Name of the referenced resource. Can only be used with kinds: `MeshService`,
               `MeshServiceSubset` and `MeshGatewayRoute`
+            type: string
+          namespace:
+            description: |-
+              Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+              will be targeted.
+              Namespace can be used only with MeshService kind, and when targeting resources in Kubernetes zone.
             type: string
           proxyTypes:
             description: |-
@@ -50,6 +64,11 @@ properties:
               type: string
             minItems: 1
             type: array
+          sectionName:
+            description: |-
+              SectionName is used to target specific port from MeshService.ports[]. Only traffic to this port will be affected.
+              SectionName can be used only with MeshService kind.
+            type: string
           tags:
             additionalProperties:
               type: string
@@ -386,6 +405,14 @@ properties:
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Labels are used to select group of MeshServices that match labels. Either Labels or
+                    Name and Namespace can be used.
+                    Labels can be used only with MeshService kind.
+                  type: object
                 mesh:
                   description: Mesh is reserved for future use to identify cross mesh resources.
                   type: string
@@ -393,6 +420,12 @@ properties:
                   description: |-
                     Name of the referenced resource. Can only be used with kinds: `MeshService`,
                     `MeshServiceSubset` and `MeshGatewayRoute`
+                  type: string
+                namespace:
+                  description: |-
+                    Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                    will be targeted.
+                    Namespace can be used only with MeshService kind, and when targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: |-
@@ -405,6 +438,11 @@ properties:
                     type: string
                   minItems: 1
                   type: array
+                sectionName:
+                  description: |-
+                    SectionName is used to target specific port from MeshService.ports[]. Only traffic to this port will be affected.
+                    SectionName can be used only with MeshService kind.
+                  type: string
                 tags:
                   additionalProperties:
                     type: string
