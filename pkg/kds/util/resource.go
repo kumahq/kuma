@@ -143,7 +143,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
-		if obj.Descriptor().HasStatus {
+		if obj.Descriptor().HasStatus && kr.Status != nil {
 			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
 				return nil, err
 			}
