@@ -2,7 +2,6 @@ package dns
 
 import (
 	"slices"
-	"time"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -24,8 +23,7 @@ func SetupHostnameGenerator(rt runtime.Runtime) error {
 		logger,
 		rt.Metrics(),
 		rt.ResourceManager(),
-		100*time.Millisecond,
-		// rt.Config().IPAM.MeshService.AllocationInterval.Duration, // TODO
+		rt.Config().IPAM.AllocationInterval.Duration,
 	)
 	if err != nil {
 		return err
