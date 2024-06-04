@@ -159,7 +159,11 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 
-	labels, err := prepareLabels(opts.Labels)
+	updateLabels := resource.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, err := prepareLabels(updateLabels)
 	if err != nil {
 		return err
 	}
@@ -294,8 +298,8 @@ func (r *pgxResourceStore) pickRoPool() *pgxpool.Pool {
 	if r.roPool == nil {
 		return r.pool
 	}
-	// #nosec G404 - math rand is enough
-	if rand.Int31n(101) <= int32(r.roRatio) {
+	randomPool := rand.Int31n(101) // #nosec G404 - math rand is enough
+	if randomPool <= int32(r.roRatio) {
 		return r.roPool
 	}
 	return r.pool

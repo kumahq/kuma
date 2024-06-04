@@ -43,9 +43,8 @@ func New(serverURL string) (*Client, error) {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		// #nosec G402 -- it's acceptable as this is only to be used in testing
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // #nosec G402 -- it's acceptable as this is only to be used in testing
 		})))
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})

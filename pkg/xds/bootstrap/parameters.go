@@ -52,4 +52,5 @@ type configParameters struct {
 	Features            []string
 	IsGatewayDataplane  bool
 	Resources           types.ProxyResources
+	SystemCaPath        string
 }

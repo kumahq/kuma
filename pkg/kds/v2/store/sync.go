@@ -364,11 +364,15 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
-				if !supportsHashSuffixes {
-					// todo: remove in 2 releases after 2.6.x
-					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
-				}
-				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
+				// Assuming the global CP was updated first, the prefix check is only necessary
+				// if the client doesn't have `supportsHashSuffixes`.
+				// But maybe some prefixed resources were previously synced, we
+				// can filter them and the zone won't sync them again.
+				// When we are further from this migration we can remove this
+				// check.
+				hasOldStylePrefix := strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				hasZoneLabel := r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
+				return hasOldStylePrefix || hasZoneLabel
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}

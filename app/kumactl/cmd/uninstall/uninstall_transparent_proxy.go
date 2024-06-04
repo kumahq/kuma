@@ -32,7 +32,12 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
-			output, err := transparentproxy.Cleanup(cfg)
+			initializedConfig, err := cfg.Initialize()
+			if err != nil {
+				return errors.Wrap(err, "failed to initialize config")
+			}
+
+			output, err := transparentproxy.Cleanup(initializedConfig)
 			if err != nil {
 				return errors.Wrap(err, "transparent proxy cleanup failed")
 			}

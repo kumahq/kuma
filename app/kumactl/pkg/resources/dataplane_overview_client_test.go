@@ -27,8 +27,8 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 				Client: &http.Client{
 					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 						Expect(req.URL.String()).To(Or(
-							Equal("/meshes/default/dataplanes+insights?tag=service%3Amobile&tag=version%3Av1"),
-							Equal("/meshes/default/dataplanes+insights?tag=version%3Av1&tag=service%3Amobile"),
+							Equal("/meshes/default/dataplanes/_overview?tag=service%3Amobile&tag=version%3Av1"),
+							Equal("/meshes/default/dataplanes/_overview?tag=version%3Av1&tag=service%3Amobile"),
 						))
 
 						file, err := os.Open(filepath.Join("testdata", "list-dataplane-overviews.json"))
@@ -62,7 +62,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 				Client: &http.Client{
 					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 						Expect(req.URL.String()).To(Or(
-							Equal("/meshes/default/dataplanes+insights?gateway=true"),
+							Equal("/meshes/default/dataplanes/_overview?gateway=true"),
 						))
 
 						file, err := os.Open(filepath.Join("testdata", "list-gateway-dataplane-overviews.json"))

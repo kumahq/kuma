@@ -34,7 +34,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 			// given
 			tcpServerAddress := fmt.Sprintf(":%d", serverPort)
 			peerAddress := ns.Veth().PeerAddress()
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -49,7 +49,8 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -113,7 +114,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			// given
 			tcpServerAddress := fmt.Sprintf(":%d", serverPort)
 			peerAddress := ns.Veth().PeerAddress()
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:  true,
@@ -128,7 +129,8 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -190,7 +192,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 	DescribeTable("should be redirected to the inbound_redirection port",
 		func(serverPort, randomPort, excludedPort uint16) {
 			// given
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
@@ -202,7 +204,9 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -279,7 +283,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 	DescribeTable("should be redirected to the inbound_redirection port",
 		func(serverPort, randomPort, excludedPort uint16) {
 			// given
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
@@ -292,7 +296,9 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -369,7 +375,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 	DescribeTable("should be redirected to the inbound_redirection port",
 		func(serverPort, randomPort, includedPort uint16) {
 			// given
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
@@ -382,7 +388,9 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -460,7 +468,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 	DescribeTable("should be redirected to the inbound_redirection port",
 		func(serverPort, randomPort, includedPort uint16) {
 			// given
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
@@ -474,7 +482,9 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -554,7 +564,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 			// given
 			peerAddress := ns.Veth().PeerAddress()
 			address := fmt.Sprintf("%s:%d", peerAddress.To4(), randomPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: false,
@@ -565,7 +575,8 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -629,7 +640,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			// given
 			peerAddress := ns.Veth().PeerAddress()
 			address := fmt.Sprintf(":%d", randomPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:  false,
@@ -641,7 +652,8 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,

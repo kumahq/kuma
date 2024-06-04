@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	std_errors "errors"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -91,12 +92,23 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
-		d.EnvoyCpCtx.Secrets.Cleanup(d.key)
+		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key)
 		return d.DataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.IngressReconciler.Clear(&proxyID)
 	case mesh_proto.EgressProxyType:
-		return d.EgressReconciler.Clear(&proxyID)
+		aggregatedMeshCtxs, aggregateMeshContextsErr := xds_context.AggregateMeshContexts(
+			context.TODO(),
+			d.ResManager,
+			d.MeshCache.GetMeshContext,
+		)
+		for _, mesh := range aggregatedMeshCtxs.Meshes {
+			d.EnvoyCpCtx.Secrets.Cleanup(
+				mesh_proto.EgressProxyType,
+				core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+			)
+		}
+		return std_errors.Join(aggregateMeshContextsErr, d.EgressReconciler.Clear(&proxyID))
 	default:
 		return nil
 	}
@@ -110,7 +122,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 		return SyncResult{}, errors.Wrap(err, "could not get mesh context")
 	}
 
-	certInfo := d.EnvoyCpCtx.Secrets.Info(d.key)
+	certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.DataplaneProxyType, d.key)
 	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
 	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
 	result := SyncResult{
@@ -148,7 +160,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xd
 	}
 	proxy.EnvoyAdminMTLSCerts = envoyAdminMTLS
 	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
-		d.EnvoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
+		d.EnvoyCpCtx.Secrets.Cleanup(mesh_proto.DataplaneProxyType, d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	proxy.Metadata = metadata
 	changed, err := d.DataplaneReconciler.Reconcile(ctx, *envoyCtx, proxy)
@@ -184,7 +196,10 @@ func (d *DataplaneWatchdog) syncIngress(ctx context.Context, metadata *core_xds.
 	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	var syncForCert bool
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		certInfo := d.EnvoyCpCtx.Secrets.Info(
+			mesh_proto.IngressProxyType,
+			core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+		)
 		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
 	}
 	if !syncForConfig && !syncForCert {
@@ -242,7 +257,10 @@ func (d *DataplaneWatchdog) syncEgress(ctx context.Context, metadata *core_xds.D
 	syncForConfig := aggregatedMeshCtxs.Hash != d.lastHash
 	var syncForCert bool
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		certInfo := d.EnvoyCpCtx.Secrets.Info(core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+		certInfo := d.EnvoyCpCtx.Secrets.Info(
+			mesh_proto.EgressProxyType,
+			core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name},
+		)
 		syncForCert = syncForCert || (certInfo != nil && certInfo.ExpiringSoon()) // check if we need to regenerate config because identity cert is expiring soon.
 	}
 	if !syncForConfig && !syncForCert {

@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+### MeshRetry tcp.MaxConnectAttempt
+
+With [#10250](https://github.com/kumahq/kuma/pull/10250) `MeshRetry` policies with `spec.tcp.MaxConnectAttempt=0` will be rejected.
+Prior to 2.8.x these were semantically valid but would create invalid Envoy configuration and would cause issues on the dataplane.
+Now this is rejected sooner to avoid service disruption.
+
+### Removal of legacy tokens
+
+Tokens issued from versions before 2.1.x needs to renewed before upgrading.
+
 ## Upgrade to `2.7.x`
 
 ### MeshMetric and cluster stats merging

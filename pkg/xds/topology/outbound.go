@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -156,14 +157,24 @@ func fillLocalMeshServices(
 
 		for _, meshSvc := range meshServices {
 			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
+			if meshSvc.Spec.Selector.DataplaneRef != nil {
+				continue
+			}
 
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
 				if !tagSelector.Matches(inbound.GetTags()) {
 					continue
 				}
 				for _, port := range meshSvc.Spec.Ports {
-					if port.TargetPort != inbound.Port {
-						continue
+					switch port.TargetPort.Type {
+					case intstr.Int:
+						if uint32(port.TargetPort.IntVal) != inbound.Port {
+							continue
+						}
+					case intstr.String:
+						if port.TargetPort.StrVal != inbound.Name {
+							continue
+						}
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())

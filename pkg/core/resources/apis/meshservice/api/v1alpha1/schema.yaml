@@ -26,8 +26,10 @@ properties:
               description: Protocol identifies a protocol supported by a service.
               type: string
             targetPort:
-              format: int32
-              type: integer
+              anyOf:
+                - type: integer
+                - type: string
+              x-kubernetes-int-or-string: true
           required:
             - port
           type: object
@@ -38,6 +40,11 @@ properties:
         x-kubernetes-list-type: map
       selector:
         properties:
+          dataplaneRef:
+            properties:
+              name:
+                type: string
+            type: object
           dataplaneTags:
             additionalProperties:
               type: string

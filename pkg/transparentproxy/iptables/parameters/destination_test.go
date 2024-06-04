@@ -11,7 +11,7 @@ var _ = Describe("DestinationParameter", func() {
 	Describe("Destination", func() {
 		Describe("should build valid destination parameter with, provided address", func() {
 			DescribeTable("when not negated",
-				func(address, want, wantVerbose string) {
+				func(address string, want, wantVerbose []string) {
 					// when
 					got := Destination(address).Build(false)
 
@@ -25,25 +25,25 @@ var _ = Describe("DestinationParameter", func() {
 					Expect(got).To(Equal(wantVerbose))
 				},
 				Entry("IPv4 IP address", "254.254.254.254",
-					"-d 254.254.254.254",
-					"--destination 254.254.254.254",
+					[]string{"-d", "254.254.254.254"},
+					[]string{"--destination", "254.254.254.254"},
 				),
 				Entry("IPv4 IP address with CIDR mask", "127.0.0.1/32",
-					"-d 127.0.0.1/32",
-					"--destination 127.0.0.1/32",
+					[]string{"-d", "127.0.0.1/32"},
+					[]string{"--destination", "127.0.0.1/32"},
 				),
 				Entry("IPv6 IP address", "::1",
-					"-d ::1",
-					"--destination ::1",
+					[]string{"-d", "::1"},
+					[]string{"--destination", "::1"},
 				),
 				Entry("IPv6 IP address with CIDR mask", "::1/128",
-					"-d ::1/128",
-					"--destination ::1/128",
+					[]string{"-d", "::1/128"},
+					[]string{"--destination", "::1/128"},
 				),
 			)
 
 			DescribeTable("when negated",
-				func(address, want, wantVerbose string) {
+				func(address string, want, wantVerbose []string) {
 					// when
 					got := Destination(address).Negate().Build(false)
 
@@ -57,20 +57,20 @@ var _ = Describe("DestinationParameter", func() {
 					Expect(got).To(Equal(wantVerbose))
 				},
 				Entry("IPv4 IP address", "254.254.254.254",
-					"! -d 254.254.254.254",
-					"! --destination 254.254.254.254",
+					[]string{"!", "-d", "254.254.254.254"},
+					[]string{"!", "--destination", "254.254.254.254"},
 				),
 				Entry("IPv4 IP address with CIDR mask", "127.0.0.1/32",
-					"! -d 127.0.0.1/32",
-					"! --destination 127.0.0.1/32",
+					[]string{"!", "-d", "127.0.0.1/32"},
+					[]string{"!", "--destination", "127.0.0.1/32"},
 				),
 				Entry("IPv6 IP address", "::1",
-					"! -d ::1",
-					"! --destination ::1",
+					[]string{"!", "-d", "::1"},
+					[]string{"!", "--destination", "::1"},
 				),
 				Entry("IPv6 IP address with CIDR mask", "::1/128",
-					"! -d ::1/128",
-					"! --destination ::1/128",
+					[]string{"!", "-d", "::1/128"},
+					[]string{"!", "--destination", "::1/128"},
 				),
 			)
 		})
