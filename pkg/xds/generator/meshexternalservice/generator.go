@@ -160,6 +160,13 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.P
 		}}, proxy.Dataplane.Spec.TagSet()))
 	case v1alpha1.GrpcProtocol:
 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
+		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
+			Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService(clusterName),
+				envoy_common.WithWeight(100),
+				envoy_common.WithExternalService(true),
+			)},
+		}}, proxy.Dataplane.Spec.TagSet()))
 		filterChainBuilder.Configure(listeners.GrpcStats())
 	case v1alpha1.TcpProtocol:
 		fallthrough
@@ -167,7 +174,7 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.P
 		filterChainBuilder.Configure(listeners.TCPProxy(listenerName))
 	}
 
-	builder.Configure(listeners.NoBindToPort())
+	builder.Configure(listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
 	builder.Configure(listeners.FilterChain(filterChainBuilder))
 
 	return builder.Build()

@@ -111,11 +111,13 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 			TlsParams: &envoy_tls.TlsParameters{},
 		}
 
-		if c.Tls.Version.Min != nil {
-			tlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Min)
-		}
-		if c.Tls.Version.Max != nil {
-			tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Max)
+		if c.Tls.Version != nil {
+			if c.Tls.Version.Min != nil {
+				tlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Min)
+			}
+			if c.Tls.Version.Max != nil {
+				tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Max)
+			}
 		}
 
 		pbst, err := proto.MarshalAnyDeterministic(tlsContext)

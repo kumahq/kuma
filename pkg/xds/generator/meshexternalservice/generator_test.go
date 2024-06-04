@@ -40,9 +40,7 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 	generator := meshexternalservice.Generator{}
 
 	type testCase struct {
-		dataplaneFile           string
-		meshExternalServiceFile string
-		expected                string
+		file string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -51,19 +49,19 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 
 			// dataplane
 			dataplane := core_mesh.NewDataplaneResource()
-			bytes, err := os.ReadFile(filepath.Join("testdata", given.dataplaneFile))
+			bytes, err := os.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
-
-			// MeshExternalService
-			meshExternalService := v1alpha1.NewMeshExternalServiceResource()
-			bytes, err = os.ReadFile(filepath.Join("testdata", given.meshExternalServiceFile))
-			Expect(err).ToNot(HaveOccurred())
-			parseResource(bytes, meshExternalService)
 
 			// mesh
 			mesh := core_mesh.NewMeshResource()
 			mesh.SetMeta(&model.ResourceMeta{Name: "default"})
+
+			// MeshExternalService
+			meshExternalService := v1alpha1.NewMeshExternalServiceResource()
+			bytes, err = os.ReadFile(filepath.Join("testdata", given.file + ".input.yaml"))
+			Expect(err).ToNot(HaveOccurred())
+			parseResource(bytes, meshExternalService)
 
 			// loader
 			secrets := []*system.SecretResource{
@@ -111,12 +109,13 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expected)))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.file + ".golden.yaml")))
 		},
-		Entry("should not generate resources when transparent proxy is off", testCase{
-			dataplaneFile:           "01.dataplane.input.yaml",
-			meshExternalServiceFile: "01.meshexternalservice.input.yaml",
-			expected:                "01.envoy-config.golden.yaml",
+		Entry("for a sample MeshExternalService", testCase{
+			file: "01.sample",
+		}),
+		Entry("for mode: SkipAll", testCase{
+			file: "02.skip-all",
 		}),
 	)
 })

@@ -55,7 +55,6 @@ resources:
       socketAddress:
         address: 240.0.0.37
         portValue: 8080
-    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
