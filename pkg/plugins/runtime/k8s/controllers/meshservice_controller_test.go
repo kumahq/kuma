@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	kube_discovery "k8s.io/api/discovery/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -47,6 +48,8 @@ var _ = Describe("MeshServiceController", func() {
 					obj = &meshservice_k8s.MeshService{}
 				case strings.Contains(yamlObj, "kind: Service"):
 					obj = &kube_core.Service{}
+				case strings.Contains(yamlObj, "kind: EndpointSlice"):
+					obj = &kube_discovery.EndpointSlice{}
 				case strings.Contains(yamlObj, "kind: Namespace"):
 					obj = &kube_core.Namespace{}
 				case strings.Contains(yamlObj, "kind: Mesh"):
@@ -102,6 +105,10 @@ var _ = Describe("MeshServiceController", func() {
 		Entry("service for kuma gateway", testCase{
 			inputFile:  "05.resources.yaml",
 			outputFile: "05.meshservice.yaml",
+		}),
+		Entry("service for headless Service", testCase{
+			inputFile:  "headless.resources.yaml",
+			outputFile: "headless.meshservice.yaml",
 		}),
 	)
 })
