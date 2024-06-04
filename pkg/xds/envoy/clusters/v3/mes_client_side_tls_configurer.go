@@ -29,10 +29,11 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 		tlsContext := &envoy_tls.UpstreamTlsContext{
 			AllowRenegotiation: c.Tls.AllowRenegotiation,
 		}
-
-		var cert, key *envoy_core.DataSource
+		if c.Tls.Verification != nil && c.Tls.Verification.ServerName != nil {
+			tlsContext.Sni = *c.Tls.Verification.ServerName
+		}
+		var ca, cert, key *envoy_core.DataSource
 		if shouldVerifyCa(c.Tls.Verification) {
-			var ca *envoy_core.DataSource
 			if c.Tls.Verification.CaCert != nil {
 				var err error
 				ca, err = c.toEnvoyDataSource(c.Tls.Verification.CaCert)
@@ -46,16 +47,9 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 					},
 				}
 			}
-			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
-				ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
-					ValidationContext: &envoy_tls.CertificateValidationContext{
-						TrustedCa: ca,
-					},
-				},
-			}
 		}
 
-		if c.Tls.Verification.ClientCert != nil && c.Tls.Verification.ClientKey != nil {
+		if shouldVerifyClientCertAndKey(c.Tls.Verification) {
 			var err error
 			cert, err = c.toEnvoyDataSource(c.Tls.Verification.ClientCert)
 			if err != nil {
@@ -68,7 +62,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 		}
 
 		var matchNames []*envoy_tls.SubjectAltNameMatcher
-		if c.Tls.Verification.SubjectAltNames != nil {
+		if shouldVerifySAN(c.Tls.Verification) {
 			for _, san := range *c.Tls.Verification.SubjectAltNames {
 				var typ envoy_tls.SubjectAltNameMatcher_SanType
 				switch {
@@ -110,6 +104,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 			},
 			ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
 				ValidationContext: &envoy_tls.CertificateValidationContext{
+					TrustedCa: ca,
 					MatchTypedSubjectAltNames: matchNames,
 				},
 			},
@@ -150,6 +145,31 @@ func shouldVerifyCa(verification *v1alpha1.Verification) bool {
 	}
 
 	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipCA) {
+		return false
+	}
+
+	return true
+}
+
+func shouldVerifyClientCertAndKey(verification *v1alpha1.Verification) bool {
+	if verification == nil {
+		return false
+	}
+
+	// should we have a skip TLSVerificationSkipServer?
+	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll) && verification.ClientCert != nil && verification.ClientKey != nil  {
+		return false
+	}
+
+	return true
+}
+
+func shouldVerifySAN(verification *v1alpha1.Verification) bool {
+	if verification == nil {
+		return false
+	}
+
+	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipSAN) && verification.SubjectAltNames != nil {
 		return false
 	}
 

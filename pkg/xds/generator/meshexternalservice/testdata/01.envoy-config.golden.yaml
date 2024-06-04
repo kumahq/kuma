@@ -45,6 +45,8 @@ resources:
               - matcher:
                   prefix: spiffe://example.local/ns/local
                 sanType: URI
+              trustedCa:
+                inlineBytes: dGVzdA==
     type: STRICT_DNS
 - name: meshexternalservice_mes1
   resource:

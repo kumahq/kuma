@@ -50,6 +50,9 @@ func validateTls(tls *Tls) validators.ValidationError {
 
 	if tls.Verification != nil {
 		path := validators.RootedAt("verification")
+		if tls.Verification.ServerName != nil && govalidator.IsDNSName(*tls.Verification.ServerName) {
+			verr.AddViolationAt(path.Field("serverName"), "must be a valid DNS name")
+		}
 		if tls.Verification.Mode != nil {
 			if !slices.Contains(allVerificationModes, string(*tls.Verification.Mode)) {
 				verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))

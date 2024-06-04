@@ -126,6 +126,8 @@ type Verification struct {
 	// Mode defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipAll`. Default `Secured`.
 	// +kubebuilder:default=Secured
 	Mode *VerificationMode `json:"mode,omitempty"`
+	// ServerName overrides the default Server Name Indicator set by Kuma.
+	ServerName *string `json:"serverName,omitempty"`
 	// SubjectAltNames list of names to verify in the certificate.
 	SubjectAltNames *[]SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.

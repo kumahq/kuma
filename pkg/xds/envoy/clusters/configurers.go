@@ -73,9 +73,9 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func MeshExternalServiceTLS(tls *v1alpha1.Tls, loader datasource.Loader, name string, systemCaPath string) ClusterBuilderOpt {
+func MeshExternalServiceTLS(tls *v1alpha1.Tls, loader datasource.Loader, meshName string, systemCaPath string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.MesClientSideTLSConfigurer{Tls: tls, Loader: loader, Mesh: name, SystemCaPath: systemCaPath})
+		builder.AddConfigurer(&v3.MesClientSideTLSConfigurer{Tls: tls, Loader: loader, Mesh: meshName, SystemCaPath: systemCaPath})
 	})
 }
 
