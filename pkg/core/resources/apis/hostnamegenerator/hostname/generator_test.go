@@ -134,7 +134,17 @@ var _ = Describe("Hostname Generator", func() {
 			otherStatus := vipOfMeshService("other")
 			backendStatus := vipOfMeshService("backend")
 			g.Expect(otherStatus.Addresses).Should(BeEmpty())
-			g.Expect(otherStatus.HostnameGenerators).Should(Not(BeEmpty()))
+			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
+				meshservice_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: meshservice_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []meshservice_api.Condition{{
+						Type:    meshservice_api.GeneratedCondition,
+						Status:  kube_meta.ConditionFalse,
+						Reason:  meshservice_api.CollisionReason,
+						Message: "Hostname collision with MeshService other",
+					}},
+				},
+			))
 			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
 			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
 				meshservice_api.HostnameGeneratorStatus{

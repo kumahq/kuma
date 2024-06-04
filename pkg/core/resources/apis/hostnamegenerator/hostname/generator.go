@@ -181,7 +181,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					if key, ok := generatedHostnames[generated]; ok && key != serviceKey {
 						generationConditionStatus = kube_meta.ConditionFalse
 						reason = meshservice_api.CollisionReason
-						message = "Hostname collision"
+						message = fmt.Sprintf("Hostname collision with MeshService %s", serviceKey.name)
 						generated = ""
 					} else {
 						generationConditionStatus = kube_meta.ConditionTrue
