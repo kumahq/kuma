@@ -85,7 +85,7 @@ type HostnameGeneratorRef struct {
 type HostnameGeneratorStatus struct {
 	HostnameGeneratorRef HostnameGeneratorRef `json:"hostnameGeneratorRef"`
 
-	// Conditions is an array of gateway instance conditions.
+	// Conditions is an array of hostname generator conditions.
 	//
 	// +optional
 	// +patchMergeKey=type

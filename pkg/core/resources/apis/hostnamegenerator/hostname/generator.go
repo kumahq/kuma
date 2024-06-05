@@ -25,7 +25,7 @@ import (
 type HostnameGenerator interface {
 	GetResources(context.Context) (model.ResourceList, error)
 	UpdateResourceStatus(context.Context, model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) error
-	HasStatusChanged(model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) bool
+	HasStatusChanged(model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) (bool, error)
 	GenerateHostname(*hostnamegenerator_api.HostnameGeneratorResource, model.Resource) (string, error)
 }
 
@@ -116,8 +116,8 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 		hostname   string
 		conditions []hostnamegenerator_api.Condition
 	}
-	for _, hostnameGenerator := range g.generators {
-		resources, err := hostnameGenerator.GetResources(ctx)
+	for _, generatorType := range g.generators {
+		resources, err := generatorType.GetResources(ctx)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					generatorStatuses = map[string]status{}
 				}
 
-				generated, err := hostnameGenerator.GenerateHostname(generator, service)
+				generated, err := generatorType.GenerateHostname(generator, service)
 
 				var conditions []hostnamegenerator_api.Condition
 				if generated != "" || err != nil {
@@ -215,10 +215,14 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					Conditions:           status.conditions,
 				})
 			}
-			if !hostnameGenerator.HasStatusChanged(service, generatorStatuses, addresses) {
+			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
+			if changedErr != nil {
+				return errors.Wrapf(changedErr, "couldn't check %s status", resources.GetItemType())
+			}
+			if !changed {
 				continue
 			}
-			if err := hostnameGenerator.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
+			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
 				return errors.Wrapf(err, "couldn't update %s status", resources.GetItemType())
 			}
 		}

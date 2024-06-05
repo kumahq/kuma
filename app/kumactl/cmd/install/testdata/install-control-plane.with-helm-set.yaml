@@ -521,7 +521,7 @@ spec:
                 items:
                   properties:
                     conditions:
-                      description: Conditions is an array of gateway instance conditions.
+                      description: Conditions is an array of hostname generator conditions.
                       items:
                         properties:
                           message:
@@ -5196,7 +5196,7 @@ spec:
                 items:
                   properties:
                     conditions:
-                      description: Conditions is an array of gateway instance conditions.
+                      description: Conditions is an array of hostname generator conditions.
                       items:
                         properties:
                           message:

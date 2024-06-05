@@ -39,21 +39,32 @@ func (g *MeshServiceHostnameGenerator) GetResources(ctx context.Context) (model.
 }
 
 func (g *MeshServiceHostnameGenerator) UpdateResourceStatus(ctx context.Context, resource model.Resource, statuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) error {
-	resource.(*meshservice_api.MeshServiceResource).Status.Addresses = addresses
-	resource.(*meshservice_api.MeshServiceResource).Status.HostnameGenerators = statuses
+	service, ok := resource.(*meshservice_api.MeshServiceResource)
+	if !ok {
+		return errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+	}
+	service.Status.Addresses = addresses
+	service.Status.HostnameGenerators = statuses
 	if err := g.resManager.Update(ctx, resource); err != nil {
 		return errors.Wrap(err, "couldn't update MeshService status")
 	}
 	return nil
 }
 
-func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) bool {
-	es := resource.(*meshservice_api.MeshServiceResource)
-	return !reflect.DeepEqual(addresses, es.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, es.Status.HostnameGenerators)
+func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource, generatorStatuses []hostnamegenerator_api.HostnameGeneratorStatus, addresses []hostnamegenerator_api.Address) (bool, error) {
+	service, ok := resource.(*meshservice_api.MeshServiceResource)
+	if !ok {
+		return false, errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+	}
+
+	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
 }
 
 func (g *MeshServiceHostnameGenerator) GenerateHostname(generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
-	service := resource.(*meshservice_api.MeshServiceResource)
+	service, ok := resource.(*meshservice_api.MeshServiceResource)
+	if !ok {
+		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
+	}
 	if !generator.Spec.Selector.MeshService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}

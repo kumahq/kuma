@@ -108,11 +108,11 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 
 	It("should not generate hostname if no generator selects a given MeshExternalService", func() {
 		// when
-		err := samples.MeshExternalServiceExampleBuilder().WithoutVIP().Create(resManager)
+		err := samples.MeshExternalServiceExampleBuilder().WithoutVIP().WithName("example").Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Eventually(func(g Gomega) {
+		Consistently(func(g Gomega) {
 			status := vipOfMeshExternalService("example")
 			g.Expect(status.Addresses).Should(BeEmpty())
 			g.Expect(status.HostnameGenerators).Should(BeEmpty())
