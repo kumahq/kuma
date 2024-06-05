@@ -78,8 +78,9 @@ func VIPOutbounds(
 	return vipDomains, outbounds
 }
 
-func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) []*mesh_proto.Dataplane_Networking_Outbound {
+func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var vipDomains []xds.VIPDomains
 	for _, svc := range meshServices {
 		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
@@ -94,6 +95,16 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) [
 				})
 			}
 		}
+		if len(svc.Status.VIPs) > 0 {
+			var domains []string
+			for _, addr := range svc.Status.Addresses {
+				domains = append(domains, addr.Hostname)
+			}
+			vipDomains = append(vipDomains, xds.VIPDomains{
+				Address: svc.Status.VIPs[0].IP,
+				Domains: domains,
+			})
+		}
 	}
-	return outbounds
+	return vipDomains, outbounds
 }
