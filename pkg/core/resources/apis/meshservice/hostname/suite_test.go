@@ -7,5 +7,5 @@ import (
 )
 
 func TestHostnameGenerator(t *testing.T) {
-	test.RunSpecs(t, "HostnameGenerator Suite")
+	test.RunSpecs(t, "MeshService HostnameGenerator Suite")
 }
