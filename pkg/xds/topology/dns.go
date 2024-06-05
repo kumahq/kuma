@@ -6,6 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -96,4 +97,30 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) [
 		}
 	}
 	return outbounds
+}
+
+func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+	var vipDomains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
+	for _, meshExternalService := range meshExternalServices {
+		if meshExternalService.Status.VIP.IP != "" {
+			outbound := &mesh_proto.Dataplane_Networking_Outbound{
+				Address:    meshExternalService.Status.VIP.IP,
+				Port: uint32(meshExternalService.Spec.Match.Port),
+				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+					Kind: string(meshexternalservice_api.MeshExternalServiceType),
+					Name: meshExternalService.Meta.GetName(),
+					Port: uint32(meshExternalService.Spec.Match.Port),
+				},
+			}
+			outbounds = append(outbounds, outbound)
+
+			for _, address := range meshExternalService.Status.Addresses {
+				vipDomains = append(vipDomains, xds.VIPDomains{Address: address.Hostname})
+			}
+		}
+	}
+
+	return vipDomains, outbounds
 }

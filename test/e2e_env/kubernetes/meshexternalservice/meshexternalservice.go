@@ -20,12 +20,12 @@ func MeshExternalServices() {
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator
 metadata:
-  name: route-1
+  name: mes-hg
 spec:
   selector:
     meshExternalService:
       matchLabels:
-        hostname: true
+        hostname: "true"
   template: "{{ .Name }}.mesh"
 `
 

@@ -165,6 +165,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, ms := range meshServices {
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
+	meshExternalServices := resources.MeshExternalServices().Items
 
 	var domains []xds.VIPDomains
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
@@ -177,6 +178,9 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
 	}
 	outbounds = append(outbounds, xds_topology.MeshServiceOutbounds(meshServices)...)
+	mesDomains, mesOutbounds := xds_topology.MeshExternalServiceOutbounds(meshExternalServices)
+	outbounds = append(outbounds, mesOutbounds...)
+	domains = append(domains, mesDomains...)
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
