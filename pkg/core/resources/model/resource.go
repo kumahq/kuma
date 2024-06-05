@@ -456,20 +456,44 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 	}
 
-	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && ns == systemNamespace {
-		setIfNotExist(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole))
+	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+		var role mesh_proto.PolicyRole
+		switch ns {
+		case systemNamespace:
+			role = mesh_proto.SystemPolicyRole
+		default:
+			role = ComputePolicyRole(r.GetSpec().(Policy))
+		}
+		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
 	}
-
-	// todo(lobkovilya): detect producer/consumer and workload-owner policies here
 
 	return labels
 }
 
-func PolicyRole(rm ResourceMeta) mesh_proto.PolicyRole {
-	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.PolicyRoleLabel] != "" {
-		return mesh_proto.PolicyRole(labels[mesh_proto.PolicyRoleLabel])
+func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
+	hasTo := false
+	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
+		hasTo = true
 	}
-	return mesh_proto.SystemPolicyRole
+
+	hasFrom := false
+	if pwfl, ok := p.(PolicyWithFromList); ok && len(pwfl.GetFromList()) > 0 {
+		hasFrom = true
+	}
+
+	if hasTo && !hasFrom {
+		// todo(lobkovilya): detect if the policy is a producer policy when they're supported
+		return mesh_proto.ConsumerPolicyRole
+	} else {
+		return mesh_proto.WorkloadOwnerPolicyRole
+	}
+}
+
+func PolicyRole(r Resource) mesh_proto.PolicyRole {
+	if r.GetMeta() == nil || r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
+		return mesh_proto.SystemPolicyRole
+	}
+	return mesh_proto.PolicyRole(r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel])
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP
