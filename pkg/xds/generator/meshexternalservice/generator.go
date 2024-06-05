@@ -79,17 +79,17 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 			Resource: cluster,
 		})
 
-		//listener, err := createListener(mes, proxy)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//if listener != nil {
-		//	resources.Add(&core_xds.Resource{
-		//		Name:     listener.GetName(),
-		//		Origin:   OriginMeshExternalService,
-		//		Resource: listener,
-		//	})
-		//}
+		listener, err := createListener(mes, proxy)
+		if err != nil {
+			return nil, err
+		}
+		if listener != nil {
+			resources.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   OriginMeshExternalService,
+				Resource: listener,
+			})
+		}
 	}
 
 	return resources, nil
