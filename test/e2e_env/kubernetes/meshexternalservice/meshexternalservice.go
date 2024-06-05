@@ -1,8 +1,6 @@
-package externalservices
+package meshexternalservices
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,33 +12,26 @@ import (
 )
 
 func MeshExternalServices() {
-	meshName := "external-services"
-	namespace := "external-services"
-	clientNamespace := "client-external-services"
+	meshName := "mesh-external-services"
+	namespace := "mesh-external-services"
+	clientNamespace := "client-mesh-external-services"
 
-	mesh := `
+	hostnameGenerator := `
 apiVersion: kuma.io/v1alpha1
-kind: Mesh
+kind: HostnameGenerator
 metadata:
-  name: external-services
+  name: route-1
 spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-  networking:
-    outbound:
-      passthrough: %s
-  routing:
-    zoneEgress: true
+  selector:
+    meshExternalService:
+      matchLabels:
+        hostname: true
+  template: "{{ .Name }}.mesh"
 `
-	meshPassthroughEnabled := fmt.Sprintf(mesh, "true")
-	meshPassthroughDisabled := fmt.Sprintf(mesh, "false")
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(YamlK8s(meshPassthroughEnabled)).
+			Install(MeshKubernetes(meshName)).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -59,33 +50,22 @@ spec:
 	})
 
 	Context("non-TLS", func() {
-		externalService := `
+		meshExternalService := `
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
-mesh: external-services
+kind: MeshExternalService
+mesh: mesh-external-services
 metadata:
-  name: external-service-1
+  name: mesh-external-service-1
+  labels:
+    hostname: true
 spec:
-  tags:
-    kuma.io/service: external-service
-    kuma.io/protocol: http
-  networking:
-    address: external-service.external-services.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-`
-
-		trafficPermission := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: external-services
-metadata:
-  name: traffic-to-es
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: external-service
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service.mesh-external-services.svc.cluster.local
+      port: 80
 `
 
 		BeforeAll(func() {
@@ -106,48 +86,14 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
 
-			// when passthrough is disabled on the Mesh
-			Expect(kubernetes.Cluster.Install(YamlK8s(meshPassthroughDisabled))).To(Succeed())
-
-			// then accessing the external service is no longer possible
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Exitcode).To(Or(Equal(56), Equal(7), Equal(28)))
-			}, "30s", "1s").Should(Succeed())
-
-			// when apply external service
-			Expect(kubernetes.Cluster.Install(YamlK8s(externalService))).To(Succeed())
-
-			// then traffic is still blocked because of lack of the traffic permission
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(403))
-			}, "30s", "1s").Should(Succeed())
-
-			// when TrafficPermission is added
-			Expect(kubernetes.Cluster.Install(YamlK8s(trafficPermission))).To(Succeed())
-
-			// then you can access external service again
-			Eventually(func(g Gomega) {
-				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
-					client.FromKubernetesPod(clientNamespace, "demo-client"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s").Should(Succeed())
+			// when apply external service and hostname generator
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(hostnameGenerator))).To(Succeed())
 
 			// and you can also use .mesh on port of the provided host
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service.mesh",
+					kubernetes.Cluster, "demo-client", "mesh-external-service-1.mesh",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -158,33 +104,22 @@ spec:
 	Context("TLS", func() {
 		tlsExternalService := `
 apiVersion: kuma.io/v1alpha1
-kind: ExternalService
-mesh: external-services
+kind: MeshExternalService
+mesh: mesh-external-services
 metadata:
-  name: tls-external-service
+  name: tls-mesh-external-service-1
+  labels:
+    hostname: true
 spec:
-  tags:
-    kuma.io/service: tls-external-service
-    kuma.io/protocol: http
-  networking:
-    address: tls-external-service.external-services.svc.cluster.local:80 # .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-    tls:
-      enabled: true
-`
-
-		tlsTrafficPermission := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: external-services
-metadata:
-  name: traffic-to-es
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: tls-external-service
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: tls-external-service.mesh-external-services.svc.cluster.local
+      port: 443
+  tls:
+    enabled: true
 `
 
 		BeforeAll(func() {
@@ -196,7 +131,7 @@ spec:
 					testserver.WithoutProbes(), // not compatible with TLS
 				)).
 				Install(YamlK8s(tlsExternalService)).
-				Install(YamlK8s(tlsTrafficPermission)).
+				Install(YamlK8s(hostnameGenerator)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -204,7 +139,7 @@ spec:
 		It("should access tls external service", func() {
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "tls-external-service.mesh",
+					kubernetes.Cluster, "demo-client", "tls-mesh-external-service-1.mesh",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())

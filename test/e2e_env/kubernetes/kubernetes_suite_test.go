@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	meshexternalservices "github.com/kumahq/kuma/test/e2e_env/kubernetes/meshexternalservice"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -78,6 +79,7 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
 	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
+	_ = Describe("Mesh External Services", meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Kong Ingress Controller", kic.KICKubernetes, Ordered)
