@@ -29,6 +29,7 @@ type Port struct {
 // MeshService
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
+// +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag
 type MeshService struct {
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port
