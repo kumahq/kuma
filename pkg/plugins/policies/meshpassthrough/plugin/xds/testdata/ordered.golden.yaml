@@ -45,11 +45,11 @@
   Protocol: http
   Routes:
   - MatchType: 1
+    Value: anotherhttp.com
+  - MatchType: 1
     Value: example.com
   - MatchType: 1
     Value: other.com
-  - MatchType: 1
-    Value: anotherhttp.com
 - Port: 0
   Protocol: http
   Routes:

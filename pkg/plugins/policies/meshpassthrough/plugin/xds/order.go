@@ -41,7 +41,7 @@ type FilterChainMatcher struct {
 }
 
 func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
-	matchers := map[Matcher][]Route{}
+	matchers := map[Matcher]map[Route]bool{}
 	portProtocols := map[int]map[core_mesh.Protocol]bool{}
 	for _, match := range conf.AppendMatch {
 		var matchType MatchType
@@ -80,13 +80,24 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
 			Protocol: protocol,
 			Port:     uint32(port),
 		}
-		matchers[matcher] = append(matchers[matcher], Route{
+		route := Route{
 			Value:     match.Value,
 			MatchType: matchType,
-		})
+		}
+		if _, found := matchers[matcher]; found {
+			matchers[matcher][route] = true
+		} else {
+			matchers[matcher] = map[Route]bool{
+				route: true,
+			}
+		}
 	}
 	filterChainMatchers := []FilterChainMatcher{}
-	for matcher, routes := range matchers {
+	for matcher, routesMap := range matchers {
+		routes := []Route{}
+		for route := range routesMap {
+			routes = append(routes, route)
+		}
 		orderRoutes(routes)
 		filterChainMatcher := FilterChainMatcher{
 			Protocol: matcher.Protocol,
@@ -128,8 +139,7 @@ func orderRoutes(routes []Route) {
 			return routes[i].MatchType < routes[j].MatchType
 		}
 		if routes[i].MatchType == Domain || routes[i].MatchType == WildcardDomain {
-			return sortDomains(routes[i].Value, routes[j].Value) &&
-				routes[i].MatchType < routes[j].MatchType
+			return sortDomains(routes[i].Value, routes[j].Value)
 		}
 		if routes[i].MatchType == CIDR || routes[i].MatchType == CIDRV6 {
 			_, prefixI := getIpAndMask(routes[i].Value)
