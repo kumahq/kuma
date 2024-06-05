@@ -47,7 +47,6 @@ type configParameters struct {
 	HdsEnabled          bool
 	DynamicMetadata     map[string]string
 	DNSPort             uint32
-	EmptyDNSPort        uint32
 	ProxyType           string
 	Features            []string
 	IsGatewayDataplane  bool
