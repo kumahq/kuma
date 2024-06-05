@@ -39,6 +39,11 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 	}
 }
 
+func (m *MeshExternalServiceBuilder) WithLabels(labels map[string]string) *MeshExternalServiceBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Labels = labels
+	return m
+}
+
 func (m *MeshExternalServiceBuilder) WithName(name string) *MeshExternalServiceBuilder {
 	m.res.Meta.(*test_model.ResourceMeta).Name = name
 	return m
@@ -67,7 +72,13 @@ func (m *MeshExternalServiceBuilder) Build() *v1alpha1.MeshExternalServiceResour
 }
 
 func (m *MeshExternalServiceBuilder) Create(s store.ResourceStore) error {
-	return s.Create(context.Background(), m.Build(), store.CreateBy(m.Key()))
+	opts := []store.CreateOptionsFunc{
+		store.CreateBy(m.Key()),
+	}
+	if ls := m.res.GetMeta().GetLabels(); len(ls) > 0 {
+		opts = append(opts, store.CreateWithLabels(ls))
+	}
+	return s.Create(context.Background(), m.Build(), opts...)
 }
 
 func (m *MeshExternalServiceBuilder) Key() core_model.ResourceKey {
