@@ -73,7 +73,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 		case <-ticker.C:
 			start := time.Now()
 			if err := g.generateHostnames(ctx); err != nil {
-				return err
+				g.logger.Error(err, "couldn't generate hostnames")
 			}
 			g.metric.Observe(float64(time.Since(start).Milliseconds()))
 		case <-stop:
@@ -119,7 +119,8 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 	for _, generatorType := range g.generators {
 		resources, err := generatorType.GetResources(ctx)
 		if err != nil {
-			return err
+			g.logger.Error(err, "couldn't get resources", "type", generatorType)
+			continue
 		}
 		type meshName string
 		type serviceName string
@@ -217,13 +218,15 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
 			if changedErr != nil {
-				return errors.Wrapf(changedErr, "couldn't check %s status", resources.GetItemType())
+				g.logger.Error(err, "couldn't update status", "type", resources.GetItemType())
+				continue
 			}
 			if !changed {
 				continue
 			}
 			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
-				return errors.Wrapf(err, "couldn't update %s status", resources.GetItemType())
+				g.logger.Error(err, "couldn't update status", "type", resources.GetItemType())
+				continue
 			}
 		}
 	}
