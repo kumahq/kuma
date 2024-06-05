@@ -83,11 +83,13 @@ func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, 
 		if err != nil {
 			return nil, err
 		}
-		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   OriginMeshExternalService,
-			Resource: listener,
-		})
+		if listener != nil {
+			resources.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   OriginMeshExternalService,
+				Resource: listener,
+			})
+		}
 	}
 
 	return resources, nil
@@ -137,6 +139,10 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
 	address := mes.Status.VIP.IP
+	if address == "" {
+		// address not yet assigned
+		return nil, nil
+	}
 	port := mes.Spec.Match.Port
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)
