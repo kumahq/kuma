@@ -116,9 +116,11 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 			}
 			outbounds = append(outbounds, outbound)
 
+			var domains []string
 			for _, address := range meshExternalService.Status.Addresses {
-				vipDomains = append(vipDomains, xds.VIPDomains{Address: address.Hostname})
+				domains = append(domains, address.Hostname)
 			}
+			vipDomains = append(vipDomains, xds.VIPDomains{Address: meshExternalService.Status.VIP.IP, Domains: domains})
 		}
 	}
 
