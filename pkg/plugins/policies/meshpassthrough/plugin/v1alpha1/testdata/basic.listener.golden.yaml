@@ -128,14 +128,6 @@ resources:
                 route:
                   cluster: meshpassthrough_example.com_8080
             - domains:
-              - other.com
-              name: other.com
-              routes:
-              - match:
-                  path: /
-                route:
-                  cluster: meshpassthrough_other.com_8080
-            - domains:
               - http2.com
               name: http2.com
               routes:
@@ -143,6 +135,14 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_http2.com_8080
+            - domains:
+              - other.com
+              name: other.com
+              routes:
+              - match:
+                  path: /
+                route:
+                  cluster: meshpassthrough_other.com_8080
           statPrefix: meshpassthrough_http_8080
       name: meshpassthrough_http_8080
     - filterChainMatch:
@@ -313,14 +313,6 @@ resources:
                 route:
                   cluster: meshpassthrough_example.com_8080
             - domains:
-              - other.com
-              name: other.com
-              routes:
-              - match:
-                  path: /
-                route:
-                  cluster: meshpassthrough_other.com_8080
-            - domains:
               - http2.com
               name: http2.com
               routes:
@@ -328,6 +320,14 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_http2.com_8080
+            - domains:
+              - other.com
+              name: other.com
+              routes:
+              - match:
+                  path: /
+                route:
+                  cluster: meshpassthrough_other.com_8080
           statPrefix: meshpassthrough_http_8080
       name: meshpassthrough_http_8080
     - filterChainMatch:
