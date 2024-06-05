@@ -1,7 +1,6 @@
 package kubernetes_test
 
 import (
-	meshexternalservices "github.com/kumahq/kuma/test/e2e_env/kubernetes/meshexternalservice"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/kic"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshcircuitbreaker"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshexternalservice"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhttproute"

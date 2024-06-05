@@ -59,7 +59,7 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 
 			// MeshExternalService
 			meshExternalService := v1alpha1.NewMeshExternalServiceResource()
-			bytes, err = os.ReadFile(filepath.Join("testdata", given.file + ".input.yaml"))
+			bytes, err = os.ReadFile(filepath.Join("testdata", given.file+".input.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, meshExternalService)
 
@@ -109,7 +109,7 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.file + ".golden.yaml")))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.file+".golden.yaml")))
 		},
 		Entry("for a sample MeshExternalService", testCase{
 			file: "01.sample",
