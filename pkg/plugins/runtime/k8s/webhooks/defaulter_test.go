@@ -269,9 +269,9 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "kuma.io/origin": "zone",
                   "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner",
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/display-name": "empty",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -309,7 +309,8 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "zone"
+                  "kuma.io/origin": "zone",
+                  "kuma.io/policy-role": "workload-owner"
                 }
               },
               "spec": {
@@ -347,7 +348,8 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "zone"
+                  "kuma.io/origin": "zone",
+                  "kuma.io/policy-role": "workload-owner"
                 }
               },
               "spec": {
@@ -442,7 +444,8 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/display-name": "empty",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner"
                 }
               },
               "spec": {
