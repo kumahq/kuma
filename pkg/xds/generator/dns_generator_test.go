@@ -61,9 +61,8 @@ var _ = Describe("DNSGenerator", func() {
 				APIVersion: envoy_common.APIV3,
 				Routing:    model.Routing{},
 				Metadata: &model.DataplaneMetadata{
-					DNSPort:      53001,
-					EmptyDNSPort: 53002,
-					Version:      &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
+					DNSPort: 53001,
+					Version: &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
 				},
 			}
 

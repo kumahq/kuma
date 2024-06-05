@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -109,34 +112,213 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, err
 	}
 
-	ms := &meshservice_k8s.MeshService{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      svc.GetName(),
-			Namespace: svc.GetNamespace(),
+	if svc.Spec.ClusterIP != kube_core.ClusterIPNone {
+		name := kube_client.ObjectKeyFromObject(svc)
+		op, err := r.manageMeshService(
+			ctx,
+			svc,
+			mesh,
+			r.setFromClusterIPSvc,
+			name,
+		)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		switch op {
+		case kube_controllerutil.OperationResultCreated:
+			r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created Kuma MeshService: %s", name.Name)
+		case kube_controllerutil.OperationResultUpdated:
+			r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated Kuma MeshService: %s", name.Name)
+		}
+
+		return kube_ctrl.Result{}, nil
+	}
+
+	trackedPodEndpoints := map[kube_types.NamespacedName]struct{}{}
+	meshServices := &meshservice_k8s.MeshServiceList{}
+	if err := r.List(
+		ctx,
+		meshServices,
+		kube_client.MatchingLabels(map[string]string{
+			metadata.KumaServiceName: svc.Name,
+		}),
+	); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+	}
+	for _, svc := range meshServices.Items {
+		if len(svc.GetOwnerReferences()) == 0 {
+			continue
+		}
+		owner := svc.GetOwnerReferences()[0]
+		if owner.Kind != "Pod" || owner.APIVersion != kube_core.SchemeGroupVersion.String() {
+			continue
+		}
+		trackedPodEndpoints[kube_types.NamespacedName{Namespace: svc.Namespace, Name: owner.Name}] = struct{}{}
+	}
+
+	endpointSlices := &kube_discovery.EndpointSliceList{}
+	if err := r.List(
+		ctx,
+		endpointSlices,
+		kube_client.InNamespace(svc.Namespace),
+		kube_client.MatchingLabels(map[string]string{
+			kube_discovery.LabelServiceName: svc.Name,
+		}),
+	); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list EndpointSlices for headless Service")
+	}
+
+	servicePodEndpoints := map[kube_types.NamespacedName]kube_discovery.Endpoint{}
+	// We need to look at our EndpointSlice to see which Pods this headless
+	// service points to
+	var created, updated int
+	for _, slice := range endpointSlices.Items {
+		for _, endpoint := range slice.Endpoints {
+			if endpoint.TargetRef == nil ||
+				endpoint.TargetRef.Kind != "Pod" ||
+				(endpoint.TargetRef.APIVersion != kube_core.SchemeGroupVersion.String() &&
+					endpoint.TargetRef.APIVersion != "") {
+				continue
+			}
+			servicePodEndpoints[kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace}] = endpoint
+		}
+	}
+
+	// Delete trackedPodEndpoints - servicePodEndpoints
+	for tracked := range trackedPodEndpoints {
+		if _, ok := servicePodEndpoints[tracked]; ok {
+			continue
+		}
+		delete(trackedPodEndpoints, tracked)
+		ms := meshservice_k8s.MeshService{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: tracked.Namespace,
+				Name:      tracked.Name,
+			},
+		}
+		if err := r.Delete(ctx, &ms); err != nil && !kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to delete MeshService tracking headless Service endpoint")
+		}
+	}
+
+	for current, endpoint := range servicePodEndpoints {
+		// Our name is unique depending on the service identity and pod name
+		// Note that a Pod name can be max 63 characters so we won't hit the 253
+		// limit with our MeshService name
+		canonicalNameHasher := k8s.NewHasher()
+		canonicalNameHasher.Write([]byte(svc.Name))
+		canonicalNameHasher.Write([]byte(svc.Namespace))
+		canonicalName := fmt.Sprintf("%s-%s", current.Name, k8s.HashToString(canonicalNameHasher))
+		op, err := r.manageMeshService(
+			ctx,
+			svc,
+			mesh,
+			r.setFromPodAndHeadlessSvc(endpoint),
+			kube_types.NamespacedName{Namespace: current.Namespace, Name: canonicalName},
+		)
+		if err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to create/update MeshService for headless Service")
+		}
+		switch op {
+		case kube_controllerutil.OperationResultCreated:
+			created++
+		case kube_controllerutil.OperationResultUpdated:
+			updated++
+		}
+	}
+	if created > 0 {
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created %d MeshServices", created)
+	}
+	if updated > 0 {
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated %d MeshServices", updated)
+	}
+
+	return kube_ctrl.Result{}, nil
+}
+
+func (r *MeshServiceReconciler) setFromClusterIPSvc(ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
+	if ms.ObjectMeta.GetGeneration() != 0 {
+		if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
+			r.EventRecorder.Eventf(
+				svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Service",
+			)
+			return errors.Errorf("MeshService already exists and isn't owned by Service")
+		}
+	}
+	ms.Spec.Selector = meshservice_api.Selector{
+		DataplaneTags: svc.Spec.Selector,
+	}
+
+	ms.Status.VIPs = []meshservice_api.VIP{
+		{
+			IP: svc.Spec.ClusterIP,
 		},
 	}
 
-	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
+	if err := kube_controllerutil.SetOwnerReference(svc, ms, r.Scheme); err != nil {
+		return errors.Wrap(err, "could not set owner reference")
+	}
+	return nil
+}
+
+func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery.Endpoint) func(*meshservice_k8s.MeshService, *kube_core.Service) error {
+	return func(ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
 		if ms.ObjectMeta.GetGeneration() != 0 {
-			if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
+			if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != endpoint.TargetRef.UID {
 				r.EventRecorder.Eventf(
-					svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Service",
+					svc, kube_core.EventTypeWarning, FailedToGenerateMeshServiceReason, "MeshService already exists and isn't owned by Pod",
 				)
-				return errors.Errorf("MeshService already exists and isn't owned by Service")
+				return errors.Errorf("MeshService already exists and isn't owned by Pod")
 			}
 		}
+		ms.Spec.Selector = meshservice_api.Selector{
+			DataplaneRef: &meshservice_api.DataplaneRef{
+				Name: endpoint.TargetRef.Name,
+			},
+		}
+		for _, address := range endpoint.Addresses {
+			ms.Status.VIPs = append(ms.Status.VIPs,
+				meshservice_api.VIP{
+					IP: address,
+				})
+		}
+		owner := kube_core.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      endpoint.TargetRef.Name,
+				Namespace: endpoint.TargetRef.Namespace,
+				UID:       endpoint.TargetRef.UID,
+			},
+		}
+		if err := kube_controllerutil.SetOwnerReference(&owner, ms, r.Scheme); err != nil {
+			return errors.Wrap(err, "could not set owner reference")
+		}
+		return nil
+	}
+}
+
+func (r *MeshServiceReconciler) manageMeshService(
+	ctx context.Context,
+	svc *kube_core.Service,
+	mesh string,
+	setSpec func(*meshservice_k8s.MeshService, *kube_core.Service) error,
+	meshServiceName kube_types.NamespacedName,
+) (kube_controllerutil.OperationResult, error) {
+	ms := &meshservice_k8s.MeshService{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      meshServiceName.Name,
+			Namespace: meshServiceName.Namespace,
+		},
+	}
+
+	return kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
 		ms.ObjectMeta.Labels = maps.Clone(svc.GetLabels())
 		if ms.ObjectMeta.Labels == nil {
 			ms.ObjectMeta.Labels = map[string]string{}
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
-		ms.ObjectMeta.Labels[metadata.KumaSerivceName] = svc.GetName()
+		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
-		}
-
-		ms.Spec.Selector = meshservice_api.Selector{
-			DataplaneTags: svc.Spec.Selector,
 		}
 
 		ms.Spec.Ports = []meshservice_api.Port{}
@@ -154,27 +336,8 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		if ms.Status == nil {
 			ms.Status = &meshservice_api.MeshServiceStatus{}
 		}
-		ms.Status.VIPs = []meshservice_api.VIP{
-			{
-				IP: svc.Spec.ClusterIP,
-			},
-		}
-		if err := kube_controllerutil.SetOwnerReference(svc, ms, r.Scheme); err != nil {
-			return errors.Wrap(err, "could not set owner reference")
-		}
-		return nil
+		return setSpec(ms, svc)
 	})
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-	switch operationResult {
-	case kube_controllerutil.OperationResultCreated:
-		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, CreatedMeshServiceReason, "Created Kuma MeshService: %s", ms.Name)
-	case kube_controllerutil.OperationResultUpdated:
-		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, UpdatedMeshServiceReason, "Updated Kuma MeshService: %s", ms.Name)
-	}
-	log.V(1).Info("mesh service reconciled", "result", operationResult)
-	return kube_ctrl.Result{}, nil
 }
 
 func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_types.NamespacedName) error {
@@ -185,7 +348,7 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 		},
 	}
 	if err := r.Client.Delete(ctx, ms); err != nil && !kube_apierrs.IsNotFound(err) {
-		return errors.Wrap(err, "could not delete mesh service")
+		return errors.Wrap(err, "could not delete MeshService")
 	}
 	return nil
 }
@@ -193,11 +356,25 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Service{}).
-		// on Namespace update we reconcile Services in this namespace
 		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
-		// on Mesh create or delete reconcile all Services
-		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToMeshService(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
+		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
+}
+
+func EndpointSliceToServicesMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
+		slice := obj.(*kube_discovery.EndpointSlice)
+
+		svcName, ok := slice.Labels[kube_discovery.LabelServiceName]
+		if !ok {
+			return nil
+		}
+		req := []kube_reconcile.Request{
+			{NamespacedName: kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName}},
+		}
+		return req
+	}
 }
 
 func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
@@ -218,7 +395,7 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 	}
 }
 
-func MeshToMeshService(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func MeshToAllMeshServices(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("mesh-to-service-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		services := &kube_core.ServiceList{}

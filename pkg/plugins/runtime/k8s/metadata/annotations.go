@@ -117,7 +117,7 @@ const (
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 
 	// KumaServiceName points to the Service that a MeshService is derived from
-	KumaSerivceName = "k8s.kuma.io/service-name"
+	KumaServiceName = "k8s.kuma.io/service-name"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

@@ -183,7 +183,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:           opts.Dataplane,
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
-				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
 				Workdir:             cfg.DataplaneRuntime.SocketDir,
 				AccessLogSocketPath: core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
@@ -317,14 +316,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
-	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSEmptyPort, "dns-coredns-empty-port", cfg.DNS.CoreDNSEmptyPort, "A port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS.")
 	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSBinaryPath, "dns-coredns-path", cfg.DNS.CoreDNSBinaryPath, "A path to CoreDNS binary.")
 	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
 	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.CoreDNSLogging, "dns-enable-logging", cfg.DNS.CoreDNSLogging, "If true then CoreDNS logging is enabled")
 
-	_ = cmd.PersistentFlags().MarkDeprecated("dns-coredns-empty-port", "It's not used anymore. It will be removed in 2.7.x version")
 	return cmd
 }
 

@@ -30,7 +30,6 @@ var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 type BootstrapParams struct {
 	Dataplane           rest.Resource
 	DNSPort             uint32
-	EmptyDNSPort        uint32
 	EnvoyVersion        EnvoyVersion
 	DynamicMetadata     map[string]string
 	Workdir             string

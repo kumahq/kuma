@@ -8,10 +8,3 @@
     errors{{ if .CoreDNSLogging}}
     log{{end}}
 }
-
-.:{{ .CoreDNSEmptyPort }} {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }{{ if .CoreDNSLogging}}
-    log{{end}}
-}

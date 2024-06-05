@@ -101,6 +101,11 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 		if err := r.SetSpec(ri.GetSpec()); err != nil {
 			return err
 		}
+		if r.Descriptor().HasStatus {
+			if err := r.SetStatus(ri.GetStatus()); err != nil {
+				return err
+			}
+		}
 		r.SetMeta(ri.GetMeta())
 		_ = rs.AddItem(r)
 	}

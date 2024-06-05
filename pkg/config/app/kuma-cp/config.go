@@ -471,7 +471,7 @@ type ExperimentalKDSEventBasedWatchdog struct {
 type IPAMConfig struct {
 	MeshService         MeshServiceIPAM         `json:"meshService"`
 	MeshExternalService MeshExternalServiceIPAM `json:"meshExternalService"`
-	// Interval on which Kuma will allocate new IPs.
+	// Interval on which Kuma will allocate new IPs and generate hostnames.
 	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
 }
 
