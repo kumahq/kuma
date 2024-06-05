@@ -38,7 +38,7 @@ func getResource(
 }
 
 var _ = Describe("MeshPassthrough", func() {
-	type sidecarTestCase struct {
+	type testCase struct {
 		resources               []*core_xds.Resource
 		singleItemRules         core_rules.SingleItemRules
 		meshPassthroughDisabled bool
@@ -46,7 +46,7 @@ var _ = Describe("MeshPassthrough", func() {
 		clustersGolden          string
 	}
 	DescribeTable("should generate proper Envoy config",
-		func(given sidecarTestCase) {
+		func(given testCase) {
 			// given
 			resourceSet := core_xds.NewResourceSet()
 			resourceSet.Add(given.resources...)
@@ -88,7 +88,7 @@ var _ = Describe("MeshPassthrough", func() {
 			Expect(getResource(resourceSet, envoy_resource.ClusterType)).
 				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.clustersGolden)))
 		},
-		Entry("basic listener", sidecarTestCase{
+		Entry("basic listener", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
@@ -216,7 +216,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "basic.listener.golden.yaml",
 			clustersGolden:  "basic.clusters.golden.yaml",
 		}),
-		Entry("simple policy", sidecarTestCase{
+		Entry("simple policy", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
@@ -267,7 +267,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "simple.listener.golden.yaml",
 			clustersGolden:  "simple.clusters.golden.yaml",
 		}),
-		Entry("disabled on policy but enabled on mesh", sidecarTestCase{
+		Entry("disabled on policy but enabled on mesh", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",
@@ -299,7 +299,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "disabled_on_policy.listeners.golden.yaml",
 			clustersGolden:  "disabled_on_policy.clusters.golden.yaml",
 		}),
-		Entry("enabled on policy but disabled on mesh", sidecarTestCase{
+		Entry("enabled on policy but disabled on mesh", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   "outbound:passthrough:ipv4",

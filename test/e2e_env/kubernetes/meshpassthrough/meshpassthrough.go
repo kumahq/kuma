@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
+const curlRecvError = 56
+
 func MeshPassthrough() {
 	const meshName = "mesh-passthrough"
 	const mesNamespace = "mesh-passthrough-mes"
@@ -101,11 +103,11 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Equal(56))
+			g.Expect(resp.Exitcode).To(Equal(curlRecvError))
 		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 
-	It("should control traffic to domains", func() {
+	It("should control traffic to domains and IPs", func() {
 		// given
 		meshPassthrough := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1 
@@ -135,7 +137,7 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Equal(56))
+			g.Expect(resp.Exitcode).To(Equal(curlRecvError))
 		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 
 		meshPassthrough = fmt.Sprintf(`

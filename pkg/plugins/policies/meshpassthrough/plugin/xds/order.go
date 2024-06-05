@@ -72,8 +72,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatcher, error) {
 		}
 		protocol := core_mesh.ParseProtocol(string(match.Protocol))
 		if _, found := portProtocols[port]; !found {
-			portProtocols[port] = map[core_mesh.Protocol]bool{}
-			portProtocols[port][protocol] = true
+			portProtocols[port] = map[core_mesh.Protocol]bool{protocol: true}
 		} else {
 			portProtocols[port][protocol] = true
 		}

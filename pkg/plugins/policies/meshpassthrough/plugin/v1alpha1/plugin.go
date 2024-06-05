@@ -64,7 +64,7 @@ func applyToOutboundPassthrough(
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		removeDefaultPassthroughCluster(rs)
 	}
-	if enabledDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
+	if enableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
 	}
 
@@ -113,6 +113,6 @@ func disableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool 
 	return meshPassthroughEnabled && conf.Enabled != nil && !pointer.Deref[bool](conf.Enabled)
 }
 
-func enabledDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
+func enableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
 	return !meshPassthroughEnabled && conf.Enabled != nil && pointer.Deref[bool](conf.Enabled)
 }
