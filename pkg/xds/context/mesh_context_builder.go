@@ -174,9 +174,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			return nil, errors.Wrap(err, "could not fetch vips")
 		}
 		// resolve all the domains
-		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+		vipDomains, vipOutbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain, m.vipPort)
+		outbounds = append(outbounds, vipOutbounds...)
+		domains = append(domains, vipDomains...)
 	}
-	outbounds = append(outbounds, xds_topology.MeshServiceOutbounds(meshServices)...)
+	msDomains, msOutbounds := xds_topology.MeshServiceOutbounds(meshServices)
+	outbounds = append(outbounds, msOutbounds...)
+	domains = append(domains, msDomains...)
+
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
