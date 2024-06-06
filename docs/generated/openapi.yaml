@@ -2306,8 +2306,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -2327,9 +2325,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -2346,11 +2341,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -2394,8 +2390,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -2415,9 +2409,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -2434,11 +2425,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -2647,8 +2637,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -2668,9 +2656,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -2687,11 +2672,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -3227,8 +3213,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -3248,9 +3232,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -3267,11 +3248,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -3315,8 +3297,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -3336,9 +3316,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -3355,11 +3332,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -3857,8 +3833,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -3878,9 +3852,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -3897,11 +3868,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -4085,8 +4057,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -4106,9 +4076,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -4125,11 +4092,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -4173,8 +4141,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -4194,9 +4160,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -4213,11 +4176,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -4361,8 +4323,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -4382,9 +4342,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -4401,11 +4358,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -4485,8 +4443,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -4506,9 +4462,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -4525,11 +4478,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -4837,8 +4789,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -4858,9 +4808,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -4877,11 +4824,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -4961,8 +4909,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -4982,9 +4928,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -5001,11 +4944,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -5075,9 +5017,6 @@ components:
                                       Labels or
 
                                       Name and Namespace can be used.
-
-                                      Labels can be used only with MeshService
-                                      kind.
                                     type: object
                                   mesh:
                                     description: >-
@@ -5098,10 +5037,6 @@ components:
                                       in policy namespace
 
                                       will be targeted.
-
-                                      Namespace can be used only with
-                                      MeshService kind, and when targeting
-                                      resources in Kubernetes zone.
                                     type: string
                                   port:
                                     description: >-
@@ -5127,11 +5062,11 @@ components:
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
-                                      port from MeshService.ports[]. Only
-                                      traffic to this port will be affected.
+                                      section of resource.
 
-                                      SectionName can be used only with
-                                      MeshService kind.
+                                      For example, you can target port from
+                                      MeshService.ports[]. Only traffic to this
+                                      port will be affected.
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -5230,9 +5165,6 @@ components:
                                               Labels or
 
                                               Name and Namespace can be used.
-
-                                              Labels can be used only with MeshService
-                                              kind.
                                             type: object
                                           mesh:
                                             description: >-
@@ -5254,10 +5186,6 @@ components:
                                               in policy namespace
 
                                               will be targeted.
-
-                                              Namespace can be used only with
-                                              MeshService kind, and when targeting
-                                              resources in Kubernetes zone.
                                             type: string
                                           port:
                                             description: >-
@@ -5283,11 +5211,11 @@ components:
                                           sectionName:
                                             description: >-
                                               SectionName is used to target specific
-                                              port from MeshService.ports[]. Only
-                                              traffic to this port will be affected.
+                                              section of resource.
 
-                                              SectionName can be used only with
-                                              MeshService kind.
+                                              For example, you can target port from
+                                              MeshService.ports[]. Only traffic to
+                                              this port will be affected.
                                             type: string
                                           tags:
                                             additionalProperties:
@@ -5641,8 +5569,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -5662,9 +5588,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -5681,11 +5604,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -5763,8 +5687,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -5784,9 +5706,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -5803,11 +5722,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -6387,8 +6305,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -6408,9 +6324,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -6427,11 +6340,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -6710,8 +6624,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -6731,9 +6643,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -6750,11 +6659,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -6880,8 +6788,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -6901,9 +6807,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -6920,11 +6823,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -7592,8 +7494,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -7613,9 +7513,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -7632,11 +7529,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -7854,8 +7750,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -7875,9 +7769,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -7894,11 +7785,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -7942,8 +7834,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -7963,9 +7853,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -7982,11 +7869,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -8167,8 +8053,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -8188,9 +8072,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -8207,11 +8088,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -8291,8 +8173,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -8312,9 +8192,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -8331,11 +8208,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -8802,8 +8678,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -8823,9 +8697,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -8842,11 +8713,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -8926,8 +8798,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -8947,9 +8817,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -8966,11 +8833,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -9028,9 +8894,6 @@ components:
                                       Labels or
 
                                       Name and Namespace can be used.
-
-                                      Labels can be used only with MeshService
-                                      kind.
                                     type: object
                                   mesh:
                                     description: >-
@@ -9051,10 +8914,6 @@ components:
                                       in policy namespace
 
                                       will be targeted.
-
-                                      Namespace can be used only with
-                                      MeshService kind, and when targeting
-                                      resources in Kubernetes zone.
                                     type: string
                                   port:
                                     description: >-
@@ -9080,11 +8939,11 @@ components:
                                   sectionName:
                                     description: >-
                                       SectionName is used to target specific
-                                      port from MeshService.ports[]. Only
-                                      traffic to this port will be affected.
+                                      section of resource.
 
-                                      SectionName can be used only with
-                                      MeshService kind.
+                                      For example, you can target port from
+                                      MeshService.ports[]. Only traffic to this
+                                      port will be affected.
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -9135,8 +8994,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -9156,9 +9013,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -9175,11 +9029,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -9347,8 +9202,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -9368,9 +9221,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -9387,11 +9237,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -9435,8 +9286,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -9456,9 +9305,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -9475,11 +9321,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -9606,8 +9451,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -9627,9 +9470,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -9646,11 +9486,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -9947,8 +9788,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -9968,9 +9807,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -9987,11 +9823,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -10089,8 +9924,6 @@ components:
                           match labels. Either Labels or
 
                           Name and Namespace can be used.
-
-                          Labels can be used only with MeshService kind.
                         type: object
                       mesh:
                         description: >-
@@ -10110,9 +9943,6 @@ components:
                           If empty only resources in policy namespace
 
                           will be targeted.
-
-                          Namespace can be used only with MeshService kind, and
-                          when targeting resources in Kubernetes zone.
                         type: string
                       proxyTypes:
                         description: >-
@@ -10129,11 +9959,12 @@ components:
                         type: array
                       sectionName:
                         description: >-
-                          SectionName is used to target specific port from
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
                           MeshService.ports[]. Only traffic to this port will be
                           affected.
-
-                          SectionName can be used only with MeshService kind.
                         type: string
                       tags:
                         additionalProperties:
@@ -10177,8 +10008,6 @@ components:
                     labels. Either Labels or
 
                     Name and Namespace can be used.
-
-                    Labels can be used only with MeshService kind.
                   type: object
                 mesh:
                   description: >-
@@ -10198,9 +10027,6 @@ components:
                     empty only resources in policy namespace
 
                     will be targeted.
-
-                    Namespace can be used only with MeshService kind, and when
-                    targeting resources in Kubernetes zone.
                   type: string
                 proxyTypes:
                   description: >-
@@ -10217,11 +10043,10 @@ components:
                   type: array
                 sectionName:
                   description: >-
-                    SectionName is used to target specific port from
-                    MeshService.ports[]. Only traffic to this port will be
-                    affected.
+                    SectionName is used to target specific section of resource.
 
-                    SectionName can be used only with MeshService kind.
+                    For example, you can target port from MeshService.ports[].
+                    Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:

@@ -222,7 +222,6 @@ spec:
                           description: |-
                             Labels are used to select group of MeshServices that match labels. Either Labels or
                             Name and Namespace can be used.
-                            Labels can be used only with MeshService kind.
                           type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -237,7 +236,6 @@ spec:
                           description: |-
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
-                            Namespace can be used only with MeshService kind, and when targeting resources in Kubernetes zone.
                           type: string
                         proxyTypes:
                           description: |-
@@ -252,8 +250,8 @@ spec:
                           type: array
                         sectionName:
                           description: |-
-                            SectionName is used to target specific port from MeshService.ports[]. Only traffic to this port will be affected.
-                            SectionName can be used only with MeshService kind.
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[]. Only traffic to this port will be affected.
                           type: string
                         tags:
                           additionalProperties:
@@ -289,7 +287,6 @@ spec:
                     description: |-
                       Labels are used to select group of MeshServices that match labels. Either Labels or
                       Name and Namespace can be used.
-                      Labels can be used only with MeshService kind.
                     type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
@@ -304,7 +301,6 @@ spec:
                     description: |-
                       Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                       will be targeted.
-                      Namespace can be used only with MeshService kind, and when targeting resources in Kubernetes zone.
                     type: string
                   proxyTypes:
                     description: |-
@@ -319,8 +315,8 @@ spec:
                     type: array
                   sectionName:
                     description: |-
-                      SectionName is used to target specific port from MeshService.ports[]. Only traffic to this port will be affected.
-                      SectionName can be used only with MeshService kind.
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[]. Only traffic to this port will be affected.
                     type: string
                   tags:
                     additionalProperties:
@@ -505,7 +501,6 @@ spec:
                           description: |-
                             Labels are used to select group of MeshServices that match labels. Either Labels or
                             Name and Namespace can be used.
-                            Labels can be used only with MeshService kind.
                           type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
@@ -520,7 +515,6 @@ spec:
                           description: |-
                             Namespace specifies the namespace of target resource. If empty only resources in policy namespace
                             will be targeted.
-                            Namespace can be used only with MeshService kind, and when targeting resources in Kubernetes zone.
                           type: string
                         proxyTypes:
                           description: |-
@@ -535,8 +529,8 @@ spec:
                           type: array
                         sectionName:
                           description: |-
-                            SectionName is used to target specific port from MeshService.ports[]. Only traffic to this port will be affected.
-                            SectionName can be used only with MeshService kind.
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[]. Only traffic to this port will be affected.
                           type: string
                         tags:
                           additionalProperties:
