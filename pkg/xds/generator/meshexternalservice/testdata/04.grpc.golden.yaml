@@ -13,6 +13,11 @@ resources:
                 portValue: 12345
     name: meshexternalservice_mes1
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: meshexternalservice_mes1
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

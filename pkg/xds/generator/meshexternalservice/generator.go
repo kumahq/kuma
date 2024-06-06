@@ -151,6 +151,11 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.P
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)
 	clusterName := names.GetMeshExternalServiceClusterName(name)
+	cluster := envoy_common.NewCluster(
+		envoy_common.WithService(clusterName),
+		envoy_common.WithWeight(100),
+		envoy_common.WithExternalService(true),
+	)
 
 	builder := listeners.NewOutboundListenerBuilder(proxy.APIVersion, address, uint32(port), core_xds.SocketAddressProtocolTCP)
 	builder.WithOverwriteName(listenerName)
@@ -161,26 +166,18 @@ func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.P
 	case v1alpha1.HttpProtocol, v1alpha1.Http2Protocol:
 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
 		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
-			Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService(clusterName),
-				envoy_common.WithWeight(100),
-				envoy_common.WithExternalService(true),
-			)},
+			Clusters: []envoy_common.Cluster{cluster},
 		}}, proxy.Dataplane.Spec.TagSet()))
 	case v1alpha1.GrpcProtocol:
 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
 		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
-			Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService(clusterName),
-				envoy_common.WithWeight(100),
-				envoy_common.WithExternalService(true),
-			)},
+			Clusters: []envoy_common.Cluster{cluster},
 		}}, proxy.Dataplane.Spec.TagSet()))
 		filterChainBuilder.Configure(listeners.GrpcStats())
 	case v1alpha1.TcpProtocol:
 		fallthrough
 	default:
-		filterChainBuilder.Configure(listeners.TCPProxy(listenerName))
+		filterChainBuilder.Configure(listeners.TcpProxyDeprecated(listenerName, cluster))
 	}
 
 	builder.Configure(listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))

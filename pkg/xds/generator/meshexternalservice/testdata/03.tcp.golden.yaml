@@ -21,6 +21,12 @@ resources:
         address: 242.0.0.1
         portValue: 8080
     filterChains:
-    - name: meshexternalservice_filterchain_mes1
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshexternalservice_mes1
+          statPrefix: meshexternalservice_mes1
+      name: meshexternalservice_filterchain_mes1
     name: meshexternalservice_mes1
     trafficDirection: OUTBOUND
