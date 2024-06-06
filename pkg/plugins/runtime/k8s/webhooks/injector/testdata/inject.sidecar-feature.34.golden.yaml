@@ -55,6 +55,7 @@ spec:
       capabilities:
         drop:
         - ALL
+      readOnlyRootFilesystem: true
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
