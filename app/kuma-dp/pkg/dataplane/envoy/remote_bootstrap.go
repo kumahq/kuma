@@ -163,7 +163,6 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		DataplaneToken:        token,
 		DataplaneTokenPath:    cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:     dataplaneResource,
-		DataplaneSystemCaPath: cfg.DataplaneRuntime.SystemCaPath,
 		CaCert:                cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{

@@ -101,7 +101,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		DataplaneToken:        request.DataplaneToken,
 		DataplaneTokenPath:    request.DataplaneTokenPath,
 		DataplaneResource:     request.DataplaneResource,
-		DataplaneSystemCaPath: request.DataplaneSystemCaPath,
 		Version: &mesh_proto.Version{
 			KumaDp: &mesh_proto.KumaDpVersion{
 				Version:   request.Version.KumaDp.Version,

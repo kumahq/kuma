@@ -42,7 +42,6 @@ type configParameters struct {
 	DataplaneToken        string
 	DataplaneTokenPath    string
 	DataplaneResource     string
-	DataplaneSystemCaPath string
 	CertBytes             []byte
 	Version               *mesh_proto.Version
 	HdsEnabled            bool

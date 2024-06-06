@@ -7,7 +7,6 @@ type BootstrapRequest struct {
 	DataplaneToken        string  `json:"dataplaneToken,omitempty"`
 	DataplaneTokenPath    string  `json:"dataplaneTokenPath,omitempty"`
 	DataplaneResource     string  `json:"dataplaneResource,omitempty"`
-	DataplaneSystemCaPath string  `json:"dataplaneSystemCaPath,omitempty"`
 	Host                  string  `json:"-"`
 	Version               Version `json:"version"`
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
