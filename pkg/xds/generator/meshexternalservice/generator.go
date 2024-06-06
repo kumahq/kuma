@@ -128,6 +128,10 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 			builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 		}))
 
+	if mes.Spec.Match.Protocol == v1alpha1.GrpcProtocol || mes.Spec.Match.Protocol == v1alpha1.Http2Protocol {
+		builder.Configure(envoy_clusters.Http2())
+	}
+
 	systemCaPath := ""
 	if proxy.Metadata != nil {
 		systemCaPath = proxy.Metadata.SystemCaPath
