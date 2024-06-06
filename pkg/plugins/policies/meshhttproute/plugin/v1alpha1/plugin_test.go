@@ -119,7 +119,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 		Entry("default-meshservice", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_svc_8084", xds_builders.Endpoint().
+				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
