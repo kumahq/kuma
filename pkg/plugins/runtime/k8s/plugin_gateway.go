@@ -199,6 +199,6 @@ func gatewayValidators(rt core_runtime.Runtime, converter k8s_common.Converter) 
 	}
 
 	return []k8s_common.AdmissionValidator{
-		k8s_webhooks.NewGatewayInstanceValidatorWebhook(converter, rt.ResourceManager()),
+		k8s_webhooks.NewGatewayInstanceValidatorWebhook(converter, rt.ResourceManager(), rt.Config().Mode),
 	}
 }
