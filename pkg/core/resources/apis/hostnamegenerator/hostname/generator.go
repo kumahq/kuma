@@ -218,7 +218,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
 			if changedErr != nil {
-				g.logger.Error(err, "couldn't update status", "type", resources.GetItemType())
+				g.logger.Error(err, "couldn't check status", "type", resources.GetItemType())
 				continue
 			}
 			if !changed {
