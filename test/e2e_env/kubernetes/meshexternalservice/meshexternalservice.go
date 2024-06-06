@@ -20,6 +20,8 @@ func MeshExternalServices() {
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator
 metadata:
+  labels:
+    kuma.io/mesh: mesh-external-services
   name: mes-hg
 spec:
   selector:
@@ -53,11 +55,11 @@ spec:
 		meshExternalService := `
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
-mesh: mesh-external-services
 metadata:
   name: mesh-external-service-1
   labels:
-    hostname: true
+    kuma.io/mesh: mesh-external-services
+    hostname: "true"
 spec:
   match:
     type: HostnameGenerator
@@ -80,7 +82,7 @@ spec:
 			// given working communication outside the mesh with passthrough enabled and no traffic permission
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service.external-services",
+					kubernetes.Cluster, "demo-client", "external-service.mesh-external-services",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
@@ -105,11 +107,11 @@ spec:
 		tlsExternalService := `
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
-mesh: mesh-external-services
 metadata:
   name: tls-mesh-external-service-1
   labels:
-    hostname: true
+    kuma.io/mesh: mesh-external-services
+    hostname: "true"
 spec:
   match:
     type: HostnameGenerator

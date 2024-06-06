@@ -34,7 +34,7 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 		}
 		var ca, cert, key *envoy_core.DataSource
 		if shouldVerifyCa(c.Tls.Verification) {
-			if c.Tls.Verification.CaCert != nil {
+			if c.Tls.Verification != nil && c.Tls.Verification.CaCert != nil {
 				var err error
 				ca, err = c.toEnvoyDataSource(c.Tls.Verification.CaCert)
 				if err != nil {
