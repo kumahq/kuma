@@ -282,9 +282,12 @@ var DefaultConfig = func() Config {
 		CoreResources: apis.Default(),
 		IPAM: IPAMConfig{
 			MeshService: MeshServiceIPAM{
-				CIDR:               "241.0.0.0/8",
-				AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+				CIDR: "241.0.0.0/8",
 			},
+			MeshExternalService: MeshExternalServiceIPAM{
+				CIDR: "242.0.0.0/8",
+			},
+			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
 		},
 	}
 }
@@ -466,12 +469,18 @@ type ExperimentalKDSEventBasedWatchdog struct {
 }
 
 type IPAMConfig struct {
-	MeshService MeshServiceIPAM `json:"meshService"`
+	MeshService         MeshServiceIPAM         `json:"meshService"`
+	MeshExternalService MeshExternalServiceIPAM `json:"meshExternalService"`
+	// Interval on which Kuma will allocate new IPs and generate hostnames.
+	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
 }
 
 func (i IPAMConfig) Validate() error {
 	if err := i.MeshService.Validate(); err != nil {
 		return errors.Wrap(err, "MeshServie validation failed")
+	}
+	if err := i.MeshExternalService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshExternalServie validation failed")
 	}
 	return nil
 }
@@ -479,13 +488,23 @@ func (i IPAMConfig) Validate() error {
 type MeshServiceIPAM struct {
 	// CIDR for MeshService IPs
 	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_SERVICE_CIDR"`
-	// Interval on which Kuma will allocate new IPs for MeshServices
-	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_MESH_SERVICE_ALLOCATION_INTERVAL"`
 }
 
 func (i MeshServiceIPAM) Validate() error {
 	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
 		return errors.Wrap(err, ".MeshServiceCIDR is invalid")
+	}
+	return nil
+}
+
+type MeshExternalServiceIPAM struct {
+	// CIDR for MeshExternalService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"`
+}
+
+func (i MeshExternalServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshExternalServiceCIDR is invalid")
 	}
 	return nil
 }

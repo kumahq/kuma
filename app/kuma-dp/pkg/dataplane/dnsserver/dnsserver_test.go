@@ -62,7 +62,6 @@ var _ = Describe("DNS Server", func() {
 				DNS: kuma_dp.DNS{
 					Enabled:           true,
 					CoreDNSPort:       16001,
-					CoreDNSEmptyPort:  16002,
 					EnvoyDNSPort:      16002,
 					PrometheusPort:    16003,
 					CoreDNSBinaryPath: filepath.Join("testdata", "binary-mock.exit-0.sh"),
@@ -127,12 +126,6 @@ var _ = Describe("DNS Server", func() {
     prometheus localhost:16003
     errors
 }
-
-.:16002 {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }
-}
 `))
 		}))
 
@@ -194,7 +187,6 @@ var _ = Describe("DNS Server", func() {
 				DNS: kuma_dp.DNS{
 					Enabled:           true,
 					CoreDNSPort:       16001,
-					CoreDNSEmptyPort:  16002,
 					EnvoyDNSPort:      16002,
 					PrometheusPort:    16003,
 					CoreDNSBinaryPath: filepath.Join("testdata", "binary-mock.exit-0.sh"),
@@ -259,13 +251,6 @@ var _ = Describe("DNS Server", func() {
     alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:16003
     errors
-    log
-}
-
-.:16002 {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }
     log
 }
 `))

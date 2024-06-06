@@ -71,6 +71,9 @@ func CollectServices(
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		if outbound.BackendRef != nil {
+			if outbound.GetAddress() == proxy.Dataplane.Spec.GetNetworking().GetAddress() {
+				continue
+			}
 			ms, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
 			if !ok {
 				// we want to ignore service which is not found. Logging might be excessive here.

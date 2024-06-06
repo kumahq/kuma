@@ -30,7 +30,6 @@ var runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 type BootstrapParams struct {
 	Dataplane           rest.Resource
 	DNSPort             uint32
-	EmptyDNSPort        uint32
 	EnvoyVersion        EnvoyVersion
 	DynamicMetadata     map[string]string
 	Workdir             string
@@ -38,6 +37,7 @@ type BootstrapParams struct {
 	AccessLogSocketPath string
 	MetricsCertPath     string
 	MetricsKeyPath      string
+	SystemCaPath        string
 }
 
 type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)

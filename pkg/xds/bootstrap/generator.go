@@ -116,7 +116,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		},
 		DynamicMetadata:     request.DynamicMetadata,
 		DNSPort:             request.DNSPort,
-		EmptyDNSPort:        request.EmptyDNSPort,
 		ProxyType:           request.ProxyType,
 		Features:            request.Features,
 		Resources:           request.Resources,
@@ -125,6 +124,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsSocketPath:   metricsSocketPath,
 		MetricsCertPath:     request.MetricsResources.CertPath,
 		MetricsKeyPath:      request.MetricsResources.KeyPath,
+		SystemCaPath:        request.SystemCaPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

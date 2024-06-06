@@ -31,5 +31,6 @@
   "socketPath": "/tmp/metric",
   "certPath": "",
   "keyPath": ""
- }
+ },
+ "systemCaPath": ""
 }

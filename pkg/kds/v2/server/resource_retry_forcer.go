@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/kds/v2/util"
+	"github.com/kumahq/kuma/pkg/log"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
@@ -103,13 +105,20 @@ func (r *kdsRetryForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *en
 		r.streamToDelay[streamID] = true
 	}
 	r.Unlock()
-	r.log.Info("received NACK, will retry", "nodeID", r.hasher.ID(request.Node), "type", request.TypeUrl, "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
+	logger := r.log.WithValues(
+		"nodeID", r.hasher.ID(request.Node),
+		"type", request.TypeUrl,
+	)
+	if tenantID, found := util.TenantFromMetadata(node); found {
+		logger = logger.WithValues(log.TenantLoggerKey, tenantID)
+	}
+	logger.Info("received NACK, will retry", "err", request.GetErrorDetail().GetMessage(), "backoff", r.backoff)
 	r.forceFn(node, model.ResourceType(request.TypeUrl))
 	r.emitter.Send(events.TriggerKDSResyncEvent{
 		Type:   model.ResourceType(request.TypeUrl),
 		NodeID: node.Id,
 	})
-	r.log.V(1).Info("forced the new verion of resources", "nodeID", node.Id, "type", request.TypeUrl)
+	logger.V(1).Info("forced the new version of resources")
 	return nil
 }
 

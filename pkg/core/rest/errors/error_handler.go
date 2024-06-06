@@ -20,11 +20,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/intercp/envoyadmin"
 	kds_envoyadmin "github.com/kumahq/kuma/pkg/kds/envoyadmin"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := logr.FromContextOrDiscard(ctx)
+	log := kuma_log.AddFieldsFromCtx(logr.FromContextOrDiscard(ctx), ctx, context.Background())
 
 	var kumaErr *types.Error
 	switch {

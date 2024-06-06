@@ -92,7 +92,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		WithOptions(opts...)
 }
 
-const tenantLoggerKey = "tenantID"
+const TenantLoggerKey = "tenantID"
 
 // AddFieldsFromCtx will check if provided context contain tracing span and
 // if the span is currently recording. If so, it will call spanLogValuesProcessor
@@ -105,7 +105,7 @@ func AddFieldsFromCtx(
 	extensions context.Context,
 ) logr.Logger {
 	if tenantId, ok := multitenant.TenantFromCtx(ctx); ok {
-		logger = logger.WithValues(tenantLoggerKey, tenantId)
+		logger = logger.WithValues(TenantLoggerKey, tenantId)
 	}
 
 	return addSpanValuesToLogger(logger, ctx, extensions)

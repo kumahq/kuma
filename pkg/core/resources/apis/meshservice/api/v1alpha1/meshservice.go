@@ -4,6 +4,7 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
@@ -11,6 +12,11 @@ type DataplaneTags map[string]string
 
 type Selector struct {
 	DataplaneTags DataplaneTags `json:"dataplaneTags,omitempty"`
+	DataplaneRef  *DataplaneRef `json:"dataplaneRef,omitempty"`
+}
+
+type DataplaneRef struct {
+	Name string `json:"name,omitempty"`
 }
 
 type Port struct {
@@ -33,10 +39,6 @@ type MeshService struct {
 	Ports []Port `json:"ports,omitempty"`
 }
 
-type Address struct {
-	Hostname string `json:"hostname,omitempty"`
-}
-
 type VIP struct {
 	IP string `json:"ip,omitempty"`
 }
@@ -54,7 +56,8 @@ type TLS struct {
 }
 
 type MeshServiceStatus struct {
-	Addresses []Address `json:"addresses,omitempty"`
-	VIPs      []VIP     `json:"vips,omitempty"`
-	TLS       TLS       `json:"tls,omitempty"`
+	Addresses          []hostnamegenerator_api.Address                 `json:"addresses,omitempty"`
+	VIPs               []VIP                                           `json:"vips,omitempty"`
+	TLS                TLS                                             `json:"tls,omitempty"`
+	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }

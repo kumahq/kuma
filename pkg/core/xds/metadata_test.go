@@ -54,11 +54,6 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "8000",
 						},
 					},
-					"dataplane.dns.empty.port": {
-						Kind: &structpb.Value_StringValue{
-							StringValue: "8001",
-						},
-					},
 					"accessLogSocketPath": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "/tmp/logs",
@@ -69,14 +64,19 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "/tmp/metrics",
 						},
 					},
+					"systemCaPath": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "/etc/certs/cert.pem",
+						},
+					},
 				},
 			},
 			expected: xds.DataplaneMetadata{
 				AdminPort:           1234,
 				DNSPort:             8000,
-				EmptyDNSPort:        8001,
 				AccessLogSocketPath: "/tmp/logs",
 				MetricsSocketPath:   "/tmp/metrics",
+				SystemCaPath:        "/etc/certs/cert.pem",
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{

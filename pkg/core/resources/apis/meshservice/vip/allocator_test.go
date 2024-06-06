@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -28,7 +29,9 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		metrics = m
 		resManager = manager.NewResourceManager(memory.NewStore())
-		allocator, err := NewAllocator(logr.Discard(), m, resManager, "241.0.0.0/8", 50*time.Millisecond)
+		meshServiceAllocator, err := NewMeshServiceAllocator(logr.Discard(), "241.0.0.0/8", resManager, 50*time.Millisecond, m)
+		Expect(err).ToNot(HaveOccurred())
+		allocator, err := vip.NewAllocator(logr.Discard(), 50*time.Millisecond, []vip.VIPAllocator{meshServiceAllocator})
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
 		go func() {

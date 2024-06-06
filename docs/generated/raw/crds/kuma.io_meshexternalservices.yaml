@@ -238,60 +238,89 @@ spec:
                 items:
                   properties:
                     hostname:
-                      description: Hostname of the generated domain
                       type: string
-                    origin:
-                      description: Origin provides information what generated the
-                        vip
+                    hostnameGeneratorRef:
                       properties:
-                        kind:
-                          description: Kind points to entity kind that generated the
-                            domain.
-                          enum:
-                          - HostnameGenerator
-                          type: string
                         name:
-                          description: Name of the entity that generated the domain.
                           type: string
                       required:
-                      - kind
                       - name
                       type: object
-                    reason:
-                      example: addresses are overlapping with my-mesh-external-service-2
+                    origin:
                       type: string
-                    status:
-                      description: Status indicates if an address is available
-                      enum:
-                      - Available
-                      - NotAvailable
-                      type: string
+                  type: object
+                type: array
+              hostnameGenerators:
+                items:
+                  properties:
+                    conditions:
+                      description: Conditions is an array of hostname generator conditions.
+                      items:
+                        properties:
+                          message:
+                            description: |-
+                              message is a human readable message indicating details about the transition.
+                              This may be an empty string.
+                            maxLength: 32768
+                            type: string
+                          reason:
+                            description: |-
+                              reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                              Producers of specific condition types may define expected values and meanings for this field,
+                              and whether the values are considered a guaranteed API.
+                              The value should be a CamelCase string.
+                              This field may not be empty.
+                            maxLength: 1024
+                            minLength: 1
+                            pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                            type: string
+                          status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            description: |-
+                              type of condition in CamelCase or in foo.example.com/CamelCase.
+                              ---
+                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                              useful (see .node.status.conditions), the ability to deconflict is important.
+                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            maxLength: 316
+                            pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                            type: string
+                        required:
+                        - message
+                        - reason
+                        - status
+                        - type
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - type
+                      x-kubernetes-list-type: map
+                    hostnameGeneratorRef:
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
                   required:
-                  - hostname
-                  - origin
-                  - reason
-                  - status
+                  - hostnameGeneratorRef
                   type: object
                 type: array
               vip:
                 description: Vip section for allocated IP
                 properties:
-                  type:
-                    description: Type provides information about the way IP was provided.
-                    enum:
-                    - Kuma
-                    type: string
-                  value:
+                  ip:
                     description: Value allocated IP for a provided domain with `HostnameGenerator`
-                      type in a match section or provided IP.
+                      type in a match section.
                     type: string
-                required:
-                - type
-                - value
                 type: object
-            required:
-            - addresses
-            - vip
             type: object
         type: object
     served: true

@@ -22,6 +22,7 @@ message KumaResource {
   }
   Meta meta = 1;
   google.protobuf.Any spec = 2;
+  google.protobuf.Any status = 3;
 }
 
 message ZoneHealthCheckRequest {}

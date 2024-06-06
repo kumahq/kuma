@@ -122,6 +122,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
 					core_xds.FieldMetricsCertPath:     util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
 					core_xds.FieldMetricsKeyPath:      util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldSystemCaPath:        util_proto.MustNewValueForStruct(parameters.SystemCaPath),
 				},
 			},
 		},
@@ -334,9 +335,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 	if parameters.DNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
-	}
-	if parameters.EmptyDNSPort != 0 {
-		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSEmptyPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
 	}
 	if parameters.ProxyType != "" {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
