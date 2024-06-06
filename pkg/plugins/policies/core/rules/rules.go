@@ -209,6 +209,12 @@ func MeshService(name string) Subset {
 	}}
 }
 
+func MeshExternalService(name string) Subset {
+	return Subset{{
+		Key: mesh_proto.ServiceTag, Value: name,
+	}}
+}
+
 func SubsetFromTags(tags map[string]string) Subset {
 	subset := Subset{}
 	for k, v := range tags {

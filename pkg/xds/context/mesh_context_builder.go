@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -166,6 +167,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
 	meshExternalServices := resources.MeshExternalServices().Items
+	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource, len(dataplanes))
+	for _, mes := range meshExternalServices {
+		meshExternalServicesByName[mes.Meta.GetName()] = mes
+	}
 
 	var domains []xds.VIPDomains
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
@@ -191,7 +196,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
@@ -213,6 +218,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
 		MeshServiceByName:           meshServicesByName,
+		MeshExternalServiceByName: meshExternalServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,

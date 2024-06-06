@@ -15,6 +15,7 @@ import (
 
 var allowedKinds = map[string]struct{}{
 	"MeshService": {},
+	"MeshExternalService": {},
 }
 
 func (d *DataplaneResource) Validate() error {

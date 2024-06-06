@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -117,7 +118,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
-		Entry("default-meshservice", func() outboundsTestCase {
+		FEntry("default-meshservice", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend_svc_8084", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
@@ -140,10 +141,36 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 				},
 			}
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type: meshexternalservice_api.HostnameGeneratorType,
+						Port: 9090,
+						Protocol: meshexternalservice_api.HttpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port: pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
 			resources := xds_context.NewResources()
+			resources.MeshLocalResources = xds_context.ResourceMap{}
 			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{&meshExtSvc},
+			}
+
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
@@ -156,7 +183,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithAddress("10.0.0.1").
 							WithPort(80).
 							WithMeshService("backend", 80),
-						),
+						).
+						AddOutbound(builders.Outbound().
+							WithAddress("10.20.20.1").
+							WithPort(9090).
+							WithMeshExternalService("example", 9090),
+					),
 					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),

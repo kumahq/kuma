@@ -2,6 +2,7 @@ package builders
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -22,6 +23,7 @@ func Context() *ContextBuilder {
 				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
 				ServicesInformation: map[string]*xds_context.ServiceInformation{},
 				MeshServiceByName:   map[string]*meshservice_api.MeshServiceResource{},
+				MeshExternalServiceByName:  map[string]*meshexternalservice_api.MeshExternalServiceResource{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -35,6 +37,9 @@ func Context() *ContextBuilder {
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
 		mc.res.Mesh.MeshServiceByName[ms.GetMeta().GetName()] = ms
+	}
+	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
+		mc.res.Mesh.MeshExternalServiceByName[mes.GetMeta().GetName()] = mes
 	}
 	return mc.res
 }

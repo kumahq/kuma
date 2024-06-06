@@ -2,18 +2,11 @@ package meshexternalservice
 
 import (
 	"context"
-	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 )
 
@@ -45,143 +38,143 @@ func (g Generator) Generate(
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	meshExternalServices := xdsCtx.Mesh.Resources.MeshExternalServices().Items
+	// meshExternalServices := xdsCtx.Mesh.Resources.MeshExternalServices().Items
 
-	for _, mes := range meshExternalServices {
-		res, err := g.generateResources(mes, proxy, xdsCtx)
-		if err != nil {
-			return nil, err
-		}
+	// for _, mes := range meshExternalServices {
+	// 	res, err := g.generateResources(mes, proxy, xdsCtx)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 
-		resources.AddSet(res)
-	}
-
-	return resources, nil
-}
-
-func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (*core_xds.ResourceSet, error) {
-	// address not assigned, no need to generate resources
-	if mes.Status.VIP.IP == "" {
-		return nil, nil
-	}
-	resources := core_xds.NewResourceSet()
-
-	if mes.Spec.Extension != nil {
-		res, err := extensions[mes.Spec.Extension.Type].Generate(mes.Spec.Extension.Config) // pass tls / endpoints as well
-		if err != nil {
-			return nil, err
-		}
-		resources.AddSet(res)
-	} else {
-		cluster, err := createCluster(mes, proxy, xdsCtx)
-		if err != nil {
-			return nil, err
-		}
-		resources.Add(&core_xds.Resource{
-			Name:     cluster.GetName(),
-			Origin:   OriginMeshExternalService,
-			Resource: cluster,
-		})
-
-		listener, err := createListener(mes, proxy)
-		if err != nil {
-			return nil, err
-		}
-		if listener != nil {
-			resources.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   OriginMeshExternalService,
-				Resource: listener,
-			})
-		}
-	}
+	// 	resources.AddSet(res)
+	// }
 
 	return resources, nil
 }
 
-func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (envoy_common.NamedResource, error) {
-	name := mes.Meta.GetName()
-	clusterName := names.GetMeshExternalServiceClusterName(name)
-	builder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
+// func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (*core_xds.ResourceSet, error) {
+// 	// address not assigned, no need to generate resources
+// 	if mes.Status.VIP.IP == "" {
+// 		return nil, nil
+// 	}
+// 	resources := core_xds.NewResourceSet()
 
-	var endpoints []core_xds.Endpoint
-	for _, e := range mes.Spec.Endpoints {
-		if strings.HasPrefix(e.Address, "unix://") {
-			endpoints = append(endpoints, core_xds.Endpoint{
-				UnixDomainPath: e.Address,
-			})
-		} else {
-			endpoints = append(endpoints, core_xds.Endpoint{
-				Target: e.Address,
-				Port:   uint32(*e.Port),
-			})
-		}
-	}
-	builder.Configure(
-		envoy_clusters.ClusterBuilderOptFunc(func(builder *envoy_clusters.ClusterBuilder) {
-			builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
-				Name:                           clusterName,
-				Endpoints:                      endpoints,
-				HasIPv6:                        proxy.Dataplane.IsIPv6(),
-				AllowMixingIpAndNonIpEndpoints: true,
-			})
-			builder.AddConfigurer(&v3.AltStatNameConfigurer{})
-		}))
+// 	if mes.Spec.Extension != nil {
+// 		res, err := extensions[mes.Spec.Extension.Type].Generate(mes.Spec.Extension.Config) // pass tls / endpoints as well
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		resources.AddSet(res)
+// 	} else {
+// 		cluster, err := createCluster(mes, proxy, xdsCtx)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		resources.Add(&core_xds.Resource{
+// 			Name:     cluster.GetName(),
+// 			Origin:   OriginMeshExternalService,
+// 			Resource: cluster,
+// 		})
 
-	if mes.Spec.Match.Protocol == v1alpha1.GrpcProtocol || mes.Spec.Match.Protocol == v1alpha1.Http2Protocol {
-		builder.Configure(envoy_clusters.Http2())
-	}
+// 		listener, err := createListener(mes, proxy)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if listener != nil {
+// 			resources.Add(&core_xds.Resource{
+// 				Name:     listener.GetName(),
+// 				Origin:   OriginMeshExternalService,
+// 				Resource: listener,
+// 			})
+// 		}
+// 	}
 
-	systemCaPath := ""
-	if proxy.Metadata != nil {
-		systemCaPath = proxy.Metadata.SystemCaPath
-	}
+// 	return resources, nil
+// }
 
-	if mes.Spec.Tls != nil {
-		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls, xdsCtx.Mesh.DataSourceLoader, xdsCtx.Mesh.Resource.GetMeta().GetName(), systemCaPath))
-	}
+// func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (envoy_common.NamedResource, error) {
+// 	name := mes.Meta.GetName()
+// 	clusterName := names.GetMeshExternalServiceClusterName(name)
+// 	builder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName)
 
-	return builder.Build()
-}
+// 	var endpoints []core_xds.Endpoint
+// 	for _, e := range mes.Spec.Endpoints {
+// 		if strings.HasPrefix(e.Address, "unix://") {
+// 			endpoints = append(endpoints, core_xds.Endpoint{
+// 				UnixDomainPath: e.Address,
+// 			})
+// 		} else {
+// 			endpoints = append(endpoints, core_xds.Endpoint{
+// 				Target: e.Address,
+// 				Port:   uint32(*e.Port),
+// 			})
+// 		}
+// 	}
+// 	builder.Configure(
+// 		envoy_clusters.ClusterBuilderOptFunc(func(builder *envoy_clusters.ClusterBuilder) {
+// 			builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
+// 				Name:                           clusterName,
+// 				Endpoints:                      endpoints,
+// 				HasIPv6:                        proxy.Dataplane.IsIPv6(),
+// 				AllowMixingIpAndNonIpEndpoints: true,
+// 			})
+// 			builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+// 		}))
 
-func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
-	name := mes.Meta.GetName()
-	address := mes.Status.VIP.IP
-	port := mes.Spec.Match.Port
-	protocol := mes.Spec.Match.Protocol
-	listenerName := names.GetMeshExternalServiceListenerName(name)
-	clusterName := names.GetMeshExternalServiceClusterName(name)
-	cluster := envoy_common.NewCluster(
-		envoy_common.WithService(clusterName),
-		envoy_common.WithWeight(100),
-		envoy_common.WithExternalService(true),
-	)
+// 	if mes.Spec.Match.Protocol == v1alpha1.GrpcProtocol || mes.Spec.Match.Protocol == v1alpha1.Http2Protocol {
+// 		builder.Configure(envoy_clusters.Http2())
+// 	}
 
-	builder := listeners.NewOutboundListenerBuilder(proxy.APIVersion, address, uint32(port), core_xds.SocketAddressProtocolTCP)
-	builder.WithOverwriteName(listenerName)
+// 	systemCaPath := ""
+// 	if proxy.Metadata != nil {
+// 		systemCaPath = proxy.Metadata.SystemCaPath
+// 	}
 
-	filterChainBuilder := listeners.NewFilterChainBuilder(proxy.APIVersion, names.GetMeshExternalServiceFilterChainName(name))
+// 	if mes.Spec.Tls != nil {
+// 		builder.Configure(envoy_clusters.MeshExternalServiceTLS(mes.Spec.Tls, xdsCtx.Mesh.DataSourceLoader, xdsCtx.Mesh.Resource.GetMeta().GetName(), systemCaPath))
+// 	}
 
-	switch protocol {
-	case v1alpha1.HttpProtocol, v1alpha1.Http2Protocol:
-		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
-		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
-			Clusters: []envoy_common.Cluster{cluster},
-		}}, proxy.Dataplane.Spec.TagSet()))
-	case v1alpha1.GrpcProtocol:
-		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
-		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
-			Clusters: []envoy_common.Cluster{cluster},
-		}}, proxy.Dataplane.Spec.TagSet()))
-		filterChainBuilder.Configure(listeners.GrpcStats())
-	case v1alpha1.TcpProtocol:
-		fallthrough
-	default:
-		filterChainBuilder.Configure(listeners.TcpProxyDeprecated(listenerName, cluster))
-	}
+// 	return builder.Build()
+// }
 
-	builder.Configure(listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
-	builder.Configure(listeners.FilterChain(filterChainBuilder))
+// func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+// 	name := mes.Meta.GetName()
+// 	address := mes.Status.VIP.IP
+// 	port := mes.Spec.Match.Port
+// 	protocol := mes.Spec.Match.Protocol
+// 	listenerName := names.GetMeshExternalServiceListenerName(name)
+// 	clusterName := names.GetMeshExternalServiceClusterName(name)
+// 	cluster := envoy_common.NewCluster(
+// 		envoy_common.WithService(clusterName),
+// 		envoy_common.WithWeight(100),
+// 		envoy_common.WithExternalService(true),
+// 	)
 
-	return builder.Build()
-}
+// 	builder := listeners.NewOutboundListenerBuilder(proxy.APIVersion, address, uint32(port), core_xds.SocketAddressProtocolTCP)
+// 	builder.WithOverwriteName(listenerName)
+
+// 	filterChainBuilder := listeners.NewFilterChainBuilder(proxy.APIVersion, names.GetMeshExternalServiceFilterChainName(name))
+
+// 	switch protocol {
+// 	case v1alpha1.HttpProtocol, v1alpha1.Http2Protocol:
+// 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
+// 		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
+// 			Clusters: []envoy_common.Cluster{cluster},
+// 		}}, proxy.Dataplane.Spec.TagSet()))
+// 	case v1alpha1.GrpcProtocol:
+// 		filterChainBuilder.Configure(listeners.HttpConnectionManager(clusterName, false)) //
+// 		filterChainBuilder.Configure(listeners.HttpOutboundRoute(name, envoy_common.Routes{{
+// 			Clusters: []envoy_common.Cluster{cluster},
+// 		}}, proxy.Dataplane.Spec.TagSet()))
+// 		filterChainBuilder.Configure(listeners.GrpcStats())
+// 	case v1alpha1.TcpProtocol:
+// 		fallthrough
+// 	default:
+// 		filterChainBuilder.Configure(listeners.TcpProxyDeprecated(listenerName, cluster))
+// 	}
+
+// 	builder.Configure(listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
+// 	builder.Configure(listeners.FilterChain(filterChainBuilder))
+
+// 	return builder.Build()
+// }

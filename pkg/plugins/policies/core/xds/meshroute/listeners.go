@@ -74,32 +74,51 @@ func CollectServices(
 			if outbound.GetAddress() == proxy.Dataplane.Spec.GetNetworking().GetAddress() {
 				continue
 			}
-			ms, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
-			if !ok {
+			ms, msOk := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
+			mes, mesOk := meshCtx.MeshExternalServiceByName[outbound.BackendRef.Name]
+			if !msOk && !mesOk {
 				// we want to ignore service which is not found. Logging might be excessive here.
 				// We don't have other mechanism to bubble up warnings yet.
 				continue
 			}
-			port, ok := ms.FindPort(outbound.BackendRef.Port)
-			if !ok {
-				continue
-			}
-			protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-			if port.Protocol != "" {
-				protocol = port.Protocol
-			}
-			dests = append(dests, DestinationService{
-				Outbound:    oface,
-				Protocol:    protocol,
-				ServiceName: ms.DestinationName(outbound.BackendRef.Port),
-				BackendRef: common_api.BackendRef{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.MeshService,
-						Name: ms.GetMeta().GetName(),
+			if msOk {
+				port, ok := ms.FindPort(outbound.BackendRef.Port)
+				if !ok {
+					continue
+				}
+				protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
+				if port.Protocol != "" {
+					protocol = port.Protocol
+				}
+				dests = append(dests, DestinationService{
+					Outbound:    oface,
+					Protocol:    protocol,
+					ServiceName: ms.DestinationName(outbound.BackendRef.Port),
+					BackendRef: common_api.BackendRef{
+						TargetRef: common_api.TargetRef{
+							Kind: common_api.MeshService,
+							Name: ms.GetMeta().GetName(),
+						},
+						Port: &port.Port,
 					},
-					Port: &port.Port,
-				},
-			})
+				})
+			}
+			if mesOk {
+				port := mes.Spec.Match.Port
+				protocol := mes.Spec.Match.Protocol
+				dests = append(dests, DestinationService{
+					Outbound:    oface,
+					Protocol: core_mesh.Protocol(protocol),
+					ServiceName: mes.DestinationName(outbound.BackendRef.Port),
+					BackendRef: common_api.BackendRef{
+						TargetRef: common_api.TargetRef{
+							Kind: common_api.MeshExternalService,
+							Name: mes.GetMeta().GetName(),
+						},
+						Port: pointer.To(uint32(port)),
+					},
+				})
+			}
 		} else {
 			serviceName := outbound.GetService()
 			dests = append(dests, DestinationService{
@@ -130,7 +149,7 @@ func makeSplit(
 
 	for _, ref := range refs {
 		switch ref.Kind {
-		case common_api.MeshService, common_api.MeshServiceSubset:
+		case common_api.MeshService, common_api.MeshExternalService, common_api.MeshServiceSubset:
 		default:
 			continue
 		}
@@ -140,7 +159,15 @@ func makeSplit(
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
-		if ref.Port != nil { // in this case, reference real MeshService instead of kuma.io/service tag
+		if ref.Kind == common_api.MeshExternalService {
+			mes, ok := meshCtx.MeshExternalServiceByName[ref.Name]
+			if !ok {
+				continue
+			}
+			port := pointer.Deref(ref.Port)
+			service = mes.DestinationName(port)
+			protocol = core_mesh.ProtocolHTTP // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		}else if ref.Kind == common_api.MeshService { // in this case, reference real MeshService instead of kuma.io/service tag
 			ms, ok := meshCtx.MeshServiceByName[ref.Name]
 			if !ok {
 				continue
