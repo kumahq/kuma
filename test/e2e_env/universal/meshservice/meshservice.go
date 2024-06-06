@@ -16,7 +16,7 @@ func MeshService() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshUniversal(meshName)).
+			Install(MTLSMeshUniversal(meshName)).
 			Install(TestServerUniversal(
 				"first-test-server",
 				meshName,
@@ -25,6 +25,7 @@ func MeshService() {
 				WithAdditionalTags(map[string]string{
 					"app": "test-server",
 				}))).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
