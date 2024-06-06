@@ -95,23 +95,36 @@ func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) e
 			}
 		}
 
-		tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
-			TlsCertificates: []*envoy_tls.TlsCertificate{
-				{
-					CertificateChain: cert,
-					PrivateKey:       key,
+		if cert != nil && key != nil {
+			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
+				TlsCertificates: []*envoy_tls.TlsCertificate{
+					{
+						CertificateChain: cert,
+						PrivateKey:       key,
+					},
 				},
-			},
-			ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
+			}
+		}
+
+		if ca != nil {
+			if tlsContext.CommonTlsContext == nil {
+				tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
+			}
+
+			tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 				ValidationContext: &envoy_tls.CertificateValidationContext{
 					TrustedCa:                 ca,
 					MatchTypedSubjectAltNames: matchNames,
 				},
-			},
-			TlsParams: &envoy_tls.TlsParameters{},
+			}
 		}
 
 		if c.Tls.Version != nil {
+			if tlsContext.CommonTlsContext == nil {
+				tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
+			}
+			tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{}
+
 			if c.Tls.Version.Min != nil {
 				tlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Min)
 			}

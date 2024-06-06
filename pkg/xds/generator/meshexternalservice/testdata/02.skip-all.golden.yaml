@@ -28,11 +28,6 @@ resources:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            tlsCertificates:
-            - {}
-            tlsParams: {}
-            validationContext: {}
     type: STRICT_DNS
 - name: meshexternalservice_mes1
   resource:
