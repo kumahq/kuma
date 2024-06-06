@@ -78,7 +78,7 @@ type TargetRef struct {
 	// Name and Namespace can be used.
 	Labels map[string]string `json:"labels,omitempty"`
 	// SectionName is used to target specific section of resource.
-	// For example, you can target port from MeshService.ports[]. Only traffic to this port will be affected.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
 	SectionName string `json:"sectionName,omitempty"`
 }
 

@@ -2345,8 +2345,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -2427,8 +2427,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -2676,8 +2676,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -3252,8 +3252,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -3334,8 +3334,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -3872,8 +3872,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -4096,8 +4096,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -4178,8 +4178,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -4362,8 +4362,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -4480,8 +4480,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -4828,8 +4828,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -4946,8 +4946,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -5065,8 +5065,8 @@ components:
                                       section of resource.
 
                                       For example, you can target port from
-                                      MeshService.ports[]. Only traffic to this
-                                      port will be affected.
+                                      MeshService.ports[] by its name. Only
+                                      traffic to this port will be affected.
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -5214,8 +5214,8 @@ components:
                                               section of resource.
 
                                               For example, you can target port from
-                                              MeshService.ports[]. Only traffic to
-                                              this port will be affected.
+                                              MeshService.ports[] by its name. Only
+                                              traffic to this port will be affected.
                                             type: string
                                           tags:
                                             additionalProperties:
@@ -5608,8 +5608,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -5724,8 +5724,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -6344,8 +6344,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -6661,8 +6661,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -6825,8 +6825,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -7531,8 +7531,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -7789,8 +7789,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -7871,8 +7871,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -8092,8 +8092,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -8210,8 +8210,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -8717,8 +8717,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -8835,8 +8835,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -8942,8 +8942,8 @@ components:
                                       section of resource.
 
                                       For example, you can target port from
-                                      MeshService.ports[]. Only traffic to this
-                                      port will be affected.
+                                      MeshService.ports[] by its name. Only
+                                      traffic to this port will be affected.
                                     type: string
                                   tags:
                                     additionalProperties:
@@ -9033,8 +9033,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -9241,8 +9241,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -9323,8 +9323,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -9490,8 +9490,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -9825,8 +9825,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
@@ -9963,8 +9963,8 @@ components:
                           resource.
 
                           For example, you can target port from
-                          MeshService.ports[]. Only traffic to this port will be
-                          affected.
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
                         type: string
                       tags:
                         additionalProperties:
@@ -10045,8 +10045,8 @@ components:
                   description: >-
                     SectionName is used to target specific section of resource.
 
-                    For example, you can target port from MeshService.ports[].
-                    Only traffic to this port will be affected.
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
                   type: string
                 tags:
                   additionalProperties:
