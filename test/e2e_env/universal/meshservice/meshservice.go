@@ -47,7 +47,7 @@ name: basic
 labels:
   kuma.io/origin: zone
 spec:
-  template: "{{ .Name }}.mesh"
+  template: "{{ .Name }}.meshservice.mesh"
   selector:
     meshService:
       matchLabels:
@@ -75,7 +75,7 @@ spec:
 		Eventually(func(g Gomega) {
 			// when
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "backend.mesh",
+				universal.Cluster, "demo-client", "backend.meshservice.mesh",
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
