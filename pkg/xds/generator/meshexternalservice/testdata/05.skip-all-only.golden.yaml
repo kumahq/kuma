@@ -9,15 +9,6 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              pipe:
-                path: unix:///tmp/example.sock
-        - endpoint:
-            address:
-              socketAddress:
-                address: 1.1.1.1
-                portValue: 12345
-        - endpoint:
-            address:
               socketAddress:
                 address: example.com
                 portValue: 80

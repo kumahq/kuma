@@ -119,7 +119,7 @@ spec:
     protocol: http
   endpoints:
     - address: tls-external-service.mesh-external-services.svc.cluster.local
-      port: 443
+      port: 80
   tls:
     enabled: true
 `

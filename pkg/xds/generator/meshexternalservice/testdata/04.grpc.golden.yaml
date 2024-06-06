@@ -18,7 +18,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 240.0.0.37
+        address: 242.0.0.1
         portValue: 8080
     filterChains:
     - filters:

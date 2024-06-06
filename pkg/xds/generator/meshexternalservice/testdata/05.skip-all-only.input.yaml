@@ -4,10 +4,14 @@ mesh: default
 match:
   type: HostnameGenerator
   port: 8080
-  protocol: tcp
+  protocol: http
 endpoints:
-  - address: 1.1.1.1
-    port: 12345
+  - address: example.com
+    port: 80
+tls:
+  enabled: true
+  verification:
+    mode: SkipAll
 status:
   vip:
     ip: 242.0.0.1

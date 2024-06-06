@@ -29,3 +29,6 @@ tls:
       secret: "123"
     clientKey:
       secret: "123"
+status:
+  vip:
+    ip: 242.0.0.1

@@ -159,7 +159,7 @@ func shouldVerifyClientCertAndKey(verification *v1alpha1.Verification) bool {
 	}
 
 	// should we have a skip TLSVerificationSkipServer?
-	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll) && verification.ClientCert != nil && verification.ClientKey != nil {
+	if (verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll)) || (verification.ClientCert == nil || verification.ClientKey == nil) {
 		return false
 	}
 
@@ -171,7 +171,7 @@ func shouldVerifySAN(verification *v1alpha1.Verification) bool {
 		return false
 	}
 
-	if verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipSAN) && verification.SubjectAltNames != nil {
+	if (verification.Mode != nil && (*verification.Mode == v1alpha1.TLSVerificationSkipAll || *verification.Mode == v1alpha1.TLSVerificationSkipSAN)) || verification.SubjectAltNames == nil {
 		return false
 	}
 

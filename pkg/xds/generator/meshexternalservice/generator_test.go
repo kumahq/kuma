@@ -62,6 +62,7 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 			bytes, err = os.ReadFile(filepath.Join("testdata", given.file+".input.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, meshExternalService)
+			meshExternalService.Status.VIP.IP = "242.0.0.1"
 
 			// loader
 			secrets := []*system.SecretResource{
@@ -122,6 +123,9 @@ var _ = Describe("MeshExternalServiceGenerator", func() {
 		}),
 		Entry("for match: gRPC", testCase{
 			file: "04.grpc",
+		}),
+		Entry("for mode: SkipAll only", testCase{
+			file: "05.skip-all-only",
 		}),
 	)
 })
