@@ -106,8 +106,8 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 	for _, meshExternalService := range meshExternalServices {
 		if meshExternalService.Status.VIP.IP != "" {
 			outbound := &mesh_proto.Dataplane_Networking_Outbound{
-				Address:    meshExternalService.Status.VIP.IP,
-				Port: uint32(meshExternalService.Spec.Match.Port),
+				Address: meshExternalService.Status.VIP.IP,
+				Port:    uint32(meshExternalService.Spec.Match.Port),
 				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 					Kind: string(meshexternalservice_api.MeshExternalServiceType),
 					Name: meshExternalService.Meta.GetName(),

@@ -157,13 +157,13 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 	resources := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
 
 	request := types.BootstrapRequest{
-		Mesh:                  cfg.Dataplane.Mesh,
-		Name:                  cfg.Dataplane.Name,
-		ProxyType:             cfg.Dataplane.ProxyType,
-		DataplaneToken:        token,
-		DataplaneTokenPath:    cfg.DataplaneRuntime.TokenPath,
-		DataplaneResource:     dataplaneResource,
-		CaCert:                cfg.ControlPlane.CaCert,
+		Mesh:               cfg.Dataplane.Mesh,
+		Name:               cfg.Dataplane.Name,
+		ProxyType:          cfg.Dataplane.ProxyType,
+		DataplaneToken:     token,
+		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		DataplaneResource:  dataplaneResource,
+		CaCert:             cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,
