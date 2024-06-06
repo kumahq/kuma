@@ -60,6 +60,10 @@ func (g Generator) Generate(
 }
 
 func (g Generator) generateResources(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy, xdsCtx xds_context.Context) (*core_xds.ResourceSet, error) {
+	// address not assigned, no need to generate resources
+	if mes.Status.VIP.IP == "" {
+		return nil, nil
+	}
 	resources := core_xds.NewResourceSet()
 
 	if mes.Spec.Extension != nil {
@@ -139,10 +143,6 @@ func createCluster(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Pr
 func createListener(mes *v1alpha1.MeshExternalServiceResource, proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	name := mes.Meta.GetName()
 	address := mes.Status.VIP.IP
-	if address == "" {
-		// address not yet assigned
-		return nil, nil
-	}
 	port := mes.Spec.Match.Port
 	protocol := mes.Spec.Match.Protocol
 	listenerName := names.GetMeshExternalServiceListenerName(name)
