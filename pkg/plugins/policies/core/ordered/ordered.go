@@ -25,6 +25,8 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
 	// For other policies order isn't important at the moment
 	plugins.PluginName(meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor.KumactlArg),
+	// has to be before MeshAccessLog so logs can access logs are added to the chains
+	plugins.PluginName(meshpassthrough_api.MeshPassthroughResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor.KumactlArg),
@@ -35,7 +37,6 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshretry_api.MeshRetryResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshmetric_api.MeshMetricResourceTypeDescriptor.KumactlArg),
-	plugins.PluginName(meshpassthrough_api.MeshPassthroughResourceTypeDescriptor.KumactlArg),
 	// MeshProxyPatch comes after all others
 	plugins.PluginName(meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor.KumactlArg),
 }
