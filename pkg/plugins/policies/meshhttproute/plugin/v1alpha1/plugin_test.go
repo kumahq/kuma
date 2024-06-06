@@ -125,6 +125,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			esOutboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("example_svc_9090", xds_builders.Endpoint().
+					WithTarget("example.com").
+					WithPort(10000).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "example", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{
@@ -174,8 +180,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
+					WithExternalServicesEndpointMap(esOutboundTargets).
 					WithResources(resources).
 					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("example_svc_9090", core_mesh.ProtocolHTTP).
+					AddExternalService("example_svc_9090").
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder().

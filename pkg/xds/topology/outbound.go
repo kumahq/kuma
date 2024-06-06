@@ -466,7 +466,8 @@ func createMeshExternalServiceEndpoint(
 ) error {
 	tls := mes.Spec.Tls
 	meshName := mesh.GetMeta().GetName()
-
+	service := mes.Meta.GetName()
+	// TODO: if cacert is empty use path
 	caCert, err := loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
 	if err != nil {
 		return errors.Wrap(err, "could not load caCert")
@@ -485,13 +486,22 @@ func createMeshExternalServiceEndpoint(
 		CaCert:                   caCert,
 		ClientCert:               clientCert,
 		ClientKey:                clientKey,
-		AllowRenegotiation:       tls.GetAllowRenegotiation().GetValue(),
-		SkipHostnameVerification: tls.GetSkipHostnameVerification().GetValue(),
-		ServerName:               tls.GetServerName().GetValue(),
+		AllowRenegotiation:       tls.AllowRenegotiation,
 	}
-
-	if es.TLSEnabled {
-		name := mes.Meta.GetName()
+	// Server anem and SNI we need to add
+	// mes.Spec.Tls.Verification.SubjectAltNames
+	if tls.Verification.Mode != nil {
+		switch *tls.Verification.Mode{
+		case meshexternalservice_api.TLSVerificationSkipSAN:
+			es.ServerName = ""
+		case meshexternalservice_api.TLSVerificationSkipCA:
+			es.CaCert = nil
+		case meshexternalservice_api.TLSVerificationSkipAll:
+			es.CaCert = nil
+			es.ClientKey = nil
+			es.ClientCert = nil
+			es.ServerName = ""
+		}
 	}
 
 	for _, endpoint := range mes.Spec.Endpoints {
@@ -499,14 +509,13 @@ func createMeshExternalServiceEndpoint(
 			Target:          endpoint.Address,
 			Port:            uint32(*endpoint.Port),
 			Weight:          1,
-			// ExternalService: es,
+			ExternalService: &core_xds.ExternalService{},
 			// Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
 		outbound[service] = append(outbound[service], *endpoint)
 
 	}
-	
-	outbound[service] = append(outbound[service], *endpoint)
+	return nil
 }
 
 func createExternalServiceEndpoint(

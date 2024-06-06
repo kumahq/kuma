@@ -3,7 +3,3 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend_svc_80
-- name: example_svc_9090
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: example_svc_9090
