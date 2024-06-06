@@ -19,6 +19,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -39,6 +40,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -146,11 +148,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
+					WithMesh(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
 					WithEndpointMap(outboundTargets).
 					WithResources(resources).
 					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
 					Build(),
 				proxy: xds_builders.Proxy().
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
 					WithDataplane(samples.DataplaneWebBuilder().
 						AddOutbound(builders.Outbound().
 							WithAddress("10.0.0.1").
