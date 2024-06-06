@@ -160,4 +160,3 @@ func isValidUnixPath(path string) bool {
 		return false
 	}
 }
-
