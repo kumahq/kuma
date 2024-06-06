@@ -87,7 +87,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, skipHostnameVerification bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, skipHostnameVerification bool, hostname string, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -125,6 +125,31 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 						},
 					},
 				})
+			}
+			for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+				envoy_tls.SubjectAltNameMatcher_DNS,
+				envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+			} {
+				for _, san := range sans {
+					matcher := &envoy_tls.SubjectAltNameMatcher{
+						SanType: typ,
+					}
+					switch san.MatchType {
+					case core_xds.SANMatchExact:
+						matcher.Matcher = &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+								Exact: san.Value,
+							},
+						}
+					case core_xds.SANMatchPrefix:
+						matcher.Matcher = &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+								Prefix: san.Value,
+							},
+						}
+					}
+					matchNames = append(matchNames, matcher)
+				}
 			}
 		}
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{

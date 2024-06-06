@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -17,6 +18,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -488,12 +490,26 @@ func createMeshExternalServiceEndpoint(
 		ClientKey:                clientKey,
 		AllowRenegotiation:       tls.AllowRenegotiation,
 	}
+	if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
+		es.ServerName = pointer.Deref(tls.Verification.ServerName)
+	}
+	if tls.Verification.SubjectAltNames != nil {
+		for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+			es.SANs = append(es.SANs, core_xds.SAN{
+				MatchType: core_xds.MatchType(san.Type),
+				Value: san.Value,
+			})
+		}
+	}
+
 	// Server anem and SNI we need to add
 	// mes.Spec.Tls.Verification.SubjectAltNames
 	if tls.Verification.Mode != nil {
 		switch *tls.Verification.Mode{
 		case meshexternalservice_api.TLSVerificationSkipSAN:
 			es.ServerName = ""
+			es.SANs = []core_xds.SAN{}
+			es.SkipHostnameVerification = true
 		case meshexternalservice_api.TLSVerificationSkipCA:
 			es.CaCert = nil
 		case meshexternalservice_api.TLSVerificationSkipAll:
@@ -501,19 +517,23 @@ func createMeshExternalServiceEndpoint(
 			es.ClientKey = nil
 			es.ClientCert = nil
 			es.ServerName = ""
+			es.SANs = []core_xds.SAN{}
+			es.SkipHostnameVerification = true
 		}
 	}
 
-	for _, endpoint := range mes.Spec.Endpoints {
-		endpoint := &core_xds.Endpoint{
+	// if all ip make it static - it's done in endpoint_cluster_configurer
+	for i, endpoint := range mes.Spec.Endpoints {
+		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) {
+			es.ServerName = endpoint.Address
+		}
+ 		endpoint := &core_xds.Endpoint{
 			Target:          endpoint.Address,
 			Port:            uint32(*endpoint.Port),
 			Weight:          1,
 			ExternalService: &core_xds.ExternalService{},
-			// Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
 		outbound[service] = append(outbound[service], *endpoint)
-
 	}
 	return nil
 }

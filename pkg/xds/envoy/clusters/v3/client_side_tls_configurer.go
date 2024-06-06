@@ -37,6 +37,7 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 				ep.ExternalService.SkipHostnameVerification,
 				ep.Target,
 				sni,
+				ep.ExternalService.SANs,
 			)
 			if err != nil {
 				return err
