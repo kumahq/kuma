@@ -18,7 +18,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: spiffe://default/backend_svc_80
+                  exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
               name: mesh_ca:secret:default
