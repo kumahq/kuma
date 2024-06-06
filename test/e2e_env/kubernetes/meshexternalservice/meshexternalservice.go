@@ -122,6 +122,8 @@ spec:
       port: 80
   tls:
     enabled: true
+    verification:
+      mode: SkipCA # test-server certificate is not signed by a CA that is in the system trust store
 `
 
 		BeforeAll(func() {
