@@ -4,7 +4,7 @@ DISTRIBUTION_CONFIG_PATH ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 # OS:ARCH:COREDNS:ENVOY_FLAVOUR
 # COREDNS is always coredns(CORDNS_EXT)
 # If you don't want to include just put skip
-DISTRIBUTION_LIST ?= linux:amd64:coredns:envoy linux:arm64:coredns:envoy darwin:amd64:coredns:envoy darwin:arm64:coredns:envoy
+DISTRIBUTION_LIST ?= linux:amd64:coredns:envoy:$(ENVOY_VERSION) linux:arm64:coredns:envoy:$(ENVOY_VERSION) darwin:amd64:coredns:envoy:$(ENVOY_VERSION) darwin:arm64:coredns:envoy:$(ENVOY_VERSION)
 
 PULP_HOST ?= "https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE ?= $(PROJECT_NAME)
@@ -38,7 +38,7 @@ ifneq ($(3),skip)
 endif
 
 # Package envoy
-	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
+	$(MAKE) build/artifacts-$(1)-$(2)/envoy ENVOY_VERSION=$(5) ENVOY_EXT_$(1)_$(2)=$(subst envoy,,$(4))
 	cp -r build/artifacts-$(1)-$(2)/envoy/* $$@/bin
 
 	# Set permissions correctly
@@ -90,9 +90,10 @@ dist_arch = $(word 2, $(subst :, ,$(elt)))
 dist_coredns = $(word 3, $(subst :, ,$(elt)))
 dist_envoy = $(word 4, $(subst :, ,$(elt)))
 dist_envoy_alt = $(word 5, $(subst :, ,$(elt)))
+dist_envoy_version = $(word 6, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
 # Call make_distribution_target with each combination
-$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_coredns),$(dist_envoy),$(dist_envoy_alt))))
+$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_coredns),$(dist_envoy),$(dist_envoy_alt),$(dist_envoy_version))))
 ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution
