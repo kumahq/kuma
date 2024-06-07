@@ -63,6 +63,7 @@ type ExternalService struct {
 	SkipHostnameVerification bool
 	ServerName               string
 	SANs					 []SAN
+	AllowMixingEndpoints     bool
 }
 
 type MatchType string
@@ -279,6 +280,10 @@ func (s TagSelectorSet) Matches(tags map[string]string) bool {
 
 func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
+}
+
+func (e Endpoint) IsMeshExternalService() bool {
+	return e.ExternalService != nil && e.ExternalService.AllowMixingEndpoints
 }
 
 func (e Endpoint) LocalityString() string {

@@ -218,7 +218,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
 		MeshServiceByName:           meshServicesByName,
-		MeshExternalServiceByName: meshExternalServicesByName,
+		MeshExternalServiceByName:   meshExternalServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,

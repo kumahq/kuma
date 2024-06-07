@@ -47,7 +47,7 @@ func GenerateClusters(
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, endpoints...)).
+						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, allowMixingEndpoints(endpoints), endpoints...)).
 						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
@@ -95,4 +95,11 @@ func GenerateClusters(
 	}
 
 	return resources, nil
+}
+
+func allowMixingEndpoints(endpoints []core_xds.Endpoint) bool {
+	if len(endpoints) > 0 {
+		return endpoints[0].IsMeshExternalService()
+	}
+	return false
 }

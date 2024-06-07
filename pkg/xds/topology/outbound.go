@@ -5,6 +5,7 @@ import (
 	"maps"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -463,21 +464,29 @@ func fillExternalServicesOutbounds(
 
 func createMeshExternalServiceEndpoint(
 	ctx context.Context,
-	outbound core_xds.EndpointMap,
+	outbounds core_xds.EndpointMap,
 	mes *meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
 	zone string,
 ) error {
-	tls := mes.Spec.Tls
 	meshName := mesh.GetMeta().GetName()
-	service := mes.Meta.GetName()
+	name := mes.Meta.GetName()
+	tags := maps.Clone(mes.Meta.GetLabels())
+	if tags == nil {
+		tags = map[string]string{
+			mesh_proto.ProtocolTag: string(mes.Spec.Match.Protocol),
+		}
+	}
 	var caCert, clientCert, clientKey []byte
-	es := &core_xds.ExternalService{}
-	if tls != nil {
+	es := &core_xds.ExternalService{
+		AllowMixingEndpoints: true,
+	}
+	tls := mes.Spec.Tls
+	if tls != nil && tls.Enabled {
 		es.TLSEnabled = tls.Enabled
-		es.AllowRenegotiation = tls.AllowRenegotiation
 		es.FallbackToSystemCa = true
+		es.AllowRenegotiation = tls.AllowRenegotiation
 
 		// TODO: if cacert is empty use path - this can't be configured here
 		var err error
@@ -542,13 +551,25 @@ func createMeshExternalServiceEndpoint(
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) {
 			es.ServerName = endpoint.Address
 		}
- 		endpoint := &core_xds.Endpoint{
-			Target:          endpoint.Address,
-			Port:            uint32(*endpoint.Port),
-			Weight:          1,
-			ExternalService: es,
+		var outboundEndpoint *core_xds.Endpoint
+		if strings.HasPrefix(endpoint.Address, "unix://") {
+			outboundEndpoint = &core_xds.Endpoint{
+				UnixDomainPath:   endpoint.Address,
+				Weight:           1,
+				ExternalService:  es,
+				Locality:         GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
+			}
+		} else {
+			outboundEndpoint = &core_xds.Endpoint{
+				Target:           endpoint.Address,
+				Port:             uint32(*endpoint.Port),
+				Weight:           1,
+				ExternalService:  es,
+				Tags:             tags,
+				Locality:         GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
+			}
 		}
-		outbound[service] = append(outbound[service], *endpoint)
+		outbounds[name] = append(outbounds[name], *outboundEndpoint)
 	}
 	return nil
 }

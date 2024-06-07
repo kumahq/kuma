@@ -98,6 +98,18 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 	})
 }
 
+func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
+			Name:      builder.name,
+			Endpoints: endpoints,
+			HasIPv6:   hasIPv6,
+			AllowMixingIpAndNonIpEndpoints: allowsMixingEndpoints,
+		})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+	})
+}
+
 func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.HealthCheckConfigurer{
