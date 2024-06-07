@@ -52,7 +52,7 @@ var _ = Describe("MeshRetry", func() {
 		}
 
 		context := *xds_builders.Context().
-			WithMesh(samples.MeshDefaultBuilder()).
+            WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
 			AddServiceProtocol("http-service", core_mesh.ProtocolHTTP).
 			AddServiceProtocol("tcp-service", core_mesh.ProtocolTCP).

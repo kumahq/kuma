@@ -469,56 +469,61 @@ func createMeshExternalServiceEndpoint(
 	tls := mes.Spec.Tls
 	meshName := mesh.GetMeta().GetName()
 	service := mes.Meta.GetName()
-	// TODO: if cacert is empty use path
-	caCert, err := loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
-	if err != nil {
-		return errors.Wrap(err, "could not load caCert")
-	}
-	clientCert, err := loadBytes(ctx,tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
-	if err != nil {
-		return errors.Wrap(err, "could not load clientCert")
-	}
-	clientKey, err := loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
-	if err != nil {
-		return errors.Wrap(err, "could not load clientKey")
-	}
-
-	es := &core_xds.ExternalService{
-		TLSEnabled:               tls.Enabled,
-		CaCert:                   caCert,
-		ClientCert:               clientCert,
-		ClientKey:                clientKey,
-		AllowRenegotiation:       tls.AllowRenegotiation,
-	}
-	if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
-		es.ServerName = pointer.Deref(tls.Verification.ServerName)
-	}
-	if tls.Verification.SubjectAltNames != nil {
-		for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
-			es.SANs = append(es.SANs, core_xds.SAN{
-				MatchType: core_xds.MatchType(san.Type),
-				Value: san.Value,
-			})
+	var caCert, clientCert, clientKey []byte
+	es := &core_xds.ExternalService{}
+	if tls != nil {
+		// TODO: if cacert is empty use path
+		var err error
+		caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+		if err != nil {
+			return errors.Wrap(err, "could not load caCert")
 		}
-	}
+		clientCert, err = loadBytes(ctx,tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+		if err != nil {
+			return errors.Wrap(err, "could not load clientCert")
+		}
+		clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+		if err != nil {
+			return errors.Wrap(err, "could not load clientKey")
+		}
 
-	// Server anem and SNI we need to add
-	// mes.Spec.Tls.Verification.SubjectAltNames
-	if tls.Verification.Mode != nil {
-		switch *tls.Verification.Mode{
-		case meshexternalservice_api.TLSVerificationSkipSAN:
-			es.ServerName = ""
-			es.SANs = []core_xds.SAN{}
-			es.SkipHostnameVerification = true
-		case meshexternalservice_api.TLSVerificationSkipCA:
-			es.CaCert = nil
-		case meshexternalservice_api.TLSVerificationSkipAll:
-			es.CaCert = nil
-			es.ClientKey = nil
-			es.ClientCert = nil
-			es.ServerName = ""
-			es.SANs = []core_xds.SAN{}
-			es.SkipHostnameVerification = true
+		es = &core_xds.ExternalService{
+			TLSEnabled:               tls.Enabled,
+			CaCert:                   caCert,
+			ClientCert:               clientCert,
+			ClientKey:                clientKey,
+			AllowRenegotiation:       tls.AllowRenegotiation,
+		}
+		if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
+			es.ServerName = pointer.Deref(tls.Verification.ServerName)
+		}
+		if tls.Verification.SubjectAltNames != nil {
+			for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+				es.SANs = append(es.SANs, core_xds.SAN{
+					MatchType: core_xds.MatchType(san.Type),
+					Value: san.Value,
+				})
+			}
+		}
+
+		// Server anem and SNI we need to add
+		// mes.Spec.Tls.Verification.SubjectAltNames
+		if tls.Verification.Mode != nil {
+			switch *tls.Verification.Mode{
+			case meshexternalservice_api.TLSVerificationSkipSAN:
+				es.ServerName = ""
+				es.SANs = []core_xds.SAN{}
+				es.SkipHostnameVerification = true
+			case meshexternalservice_api.TLSVerificationSkipCA:
+				es.CaCert = nil
+			case meshexternalservice_api.TLSVerificationSkipAll:
+				es.CaCert = nil
+				es.ClientKey = nil
+				es.ClientCert = nil
+				es.ServerName = ""
+				es.SANs = []core_xds.SAN{}
+				es.SkipHostnameVerification = true
+			}
 		}
 	}
 
@@ -531,7 +536,7 @@ func createMeshExternalServiceEndpoint(
 			Target:          endpoint.Address,
 			Port:            uint32(*endpoint.Port),
 			Weight:          1,
-			ExternalService: &core_xds.ExternalService{},
+			ExternalService: es,
 		}
 		outbound[service] = append(outbound[service], *endpoint)
 	}

@@ -405,7 +405,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			}
 
 			xdsCtx := *xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+                WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				Build()

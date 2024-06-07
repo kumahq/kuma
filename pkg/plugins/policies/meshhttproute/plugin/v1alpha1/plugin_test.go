@@ -2,6 +2,13 @@ package v1alpha1_test
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/config/manager"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
+	"net"
 	"path/filepath"
 	"strings"
 	"time"
@@ -125,12 +132,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
-			esOutboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("example_svc_9090", xds_builders.Endpoint().
-					WithTarget("example.com").
-					WithPort(10000).
-					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "example", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{
@@ -161,6 +162,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Port: pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
+					//Tls: &meshexternalservice_api.Tls{
+					//	Enabled:            true,
+					//},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
 					VIP: meshexternalservice_api.VIP{
@@ -168,39 +172,56 @@ var _ = Describe("MeshHTTPRoute", func() {
 					},
 				},
 			}
-			resources := xds_context.NewResources()
-			resources.MeshLocalResources = xds_context.ResourceMap{}
-			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
-				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+
+			resourceStore := memory.NewStore()
+			dp := samples.DataplaneWebBuilder().
+				AddOutbound(builders.Outbound().
+					WithAddress("10.0.0.1").
+					WithPort(80).
+					WithMeshService("backend", 80),
+				).
+				AddOutbound(builders.Outbound().
+					WithAddress("10.20.20.1").
+					WithPort(9090).
+					WithMeshExternalService("example", 9090),
+				)
+			proxy := xds_builders.Proxy().
+				WithDataplane(dp).
+				WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+				Build()
+
+			err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resourceStore.Create(context.Background(), &meshSvc, store.CreateByKey("backend", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			lookupIPFunc := func(s string) ([]net.IP, error) {
+				return []net.IP{net.ParseIP(s)}, nil
 			}
-			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
-				Items: []*meshexternalservice_api.MeshExternalServiceResource{&meshExtSvc},
-			}
+			meshContextBuilder := xds_context.NewMeshContextBuilder(
+				resourceStore,
+				xds_server.MeshResourceTypes(),
+				lookupIPFunc,
+				"zone-1",
+				vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+				"mesh",
+				80,
+				xds_context.AnyToAnyReachableServicesGraphBuilder,
+				false,
+			)
+			mc, err := meshContextBuilder.Build(context.Background(), "default")
+			Expect(err).ToNot(HaveOccurred())
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().
-					WithEndpointMap(outboundTargets).
-					WithExternalServicesEndpointMap(esOutboundTargets).
-					WithResources(resources).
-					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
-					AddServiceProtocol("example_svc_9090", core_mesh.ProtocolHTTP).
-					AddExternalService("example_svc_9090").
-					Build(),
-				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder().
-						AddOutbound(builders.Outbound().
-							WithAddress("10.0.0.1").
-							WithPort(80).
-							WithMeshService("backend", 80),
-						).
-						AddOutbound(builders.Outbound().
-							WithAddress("10.20.20.1").
-							WithPort(9090).
-							WithMeshExternalService("example", 9090),
-					),
-					).
-					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					Build(),
+				xdsContext: *xds_builders.Context().WithMesh(&mc).Build(),
+				proxy: proxy,
 			}
 		}()),
 		Entry("basic", func() outboundsTestCase {
@@ -816,7 +837,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 
@@ -960,7 +981,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 			return outboundsTestCase{
@@ -1111,7 +1132,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 			return outboundsTestCase{
