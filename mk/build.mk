@@ -2,7 +2,8 @@ build_info_fields = \
 	version=$(BUILD_INFO_VERSION) \
 	gitTag=$(GIT_TAG) \
 	gitCommit=$(GIT_COMMIT) \
-	buildDate=$(BUILD_DATE)
+	buildDate=$(BUILD_DATE) \
+	Envoy=$(ENVOY_VERSION)
 
 build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
 
