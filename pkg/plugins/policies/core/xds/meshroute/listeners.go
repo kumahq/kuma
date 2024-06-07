@@ -159,6 +159,7 @@ func makeSplit(
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
+		
 		if ref.Kind == common_api.MeshExternalService {
 			mes, ok := meshCtx.MeshExternalServiceByName[ref.Name]
 			if !ok {
@@ -167,7 +168,7 @@ func makeSplit(
 			port := pointer.Deref(ref.Port)
 			service = mes.DestinationName(port)
 			protocol = core_mesh.ProtocolHTTP // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		}else if ref.Kind == common_api.MeshService { // in this case, reference real MeshService instead of kuma.io/service tag
+		} else if ref.Port != nil  { // in this case, reference real MeshService instead of kuma.io/service tag
 			ms, ok := meshCtx.MeshServiceByName[ref.Name]
 			if !ok {
 				continue

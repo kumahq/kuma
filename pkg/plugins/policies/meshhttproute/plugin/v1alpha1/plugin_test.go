@@ -2,16 +2,17 @@ package v1alpha1_test
 
 import (
 	"context"
+	"net"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
-	"net"
-	"path/filepath"
-	"strings"
-	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
