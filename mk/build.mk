@@ -1,13 +1,12 @@
-build_info_fields = \
-	version=$(BUILD_INFO_VERSION) \
-	gitTag=$(GIT_TAG) \
-	gitCommit=$(GIT_COMMIT) \
-	buildDate=$(BUILD_DATE) \
-	Envoy=$(ENVOY_VERSION)
-
-build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumahq/kuma/pkg/version.$(entry))
-
-LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
+define LD_FLAGS
+-ldflags="-s -w \
+-X github.com/kumahq/kuma/pkg/version.version=$(BUILD_INFO_VERSION) \
+-X github.com/kumahq/kuma/pkg/version.gitTag=$(GIT_TAG) \
+-X github.com/kumahq/kuma/pkg/version.gitCommit=$(gitCommit) \
+-X github.com/kumahq/kuma/pkg/version.buildDate=$(BUILD_DATE) \
+-X github.com/kumahq/kuma/pkg/version.Envoy=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION)) \
+$(EXTRA_LD_FLAGS)"
+endef
 
 EXTRA_GOENV ?=
 GOENV=CGO_ENABLED=0 $(EXTRA_GOENV)
@@ -48,7 +47,11 @@ ENABLED_ARCH_OS = $(filter-out $(IGNORED_ARCH_OS), $(foreach os,$(ENABLED_GOOSES
 
 .PHONY: build/info
 build/info: ## Dev: Show build info
-	@echo build-info: $(build_info_fields)
+	@echo version=$(BUILD_INFO_VERSION)
+	@echo gitTag=$(GIT_TAG)
+	@echo gitCommit=$(GIT_COMMIT)
+	@echo buildDate=$(BUILD_DATE)
+	@echo Envoy=$(ENVOY_VERSION_$(GOOS)_$(GOARCH))
 	@echo tools-dir: $(CI_TOOLS_DIR)
 	@echo arch: supported=$(SUPPORTED_GOARCHES), enabled=$(ENABLED_GOARCHES)
 	@echo os: supported=$(SUPPORTED_GOOSES), enabled=$(ENABLED_GOOSES)
@@ -81,12 +84,13 @@ endef
 $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call LOCAL_BUILD_TARGET,$(target))))
 
 # Build_Go_Application is a build command for the Kuma Go applications.
-Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $$(LD_FLAGS) -o $$@/$$(notdir $$@)
+Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@/$$(notdir $$@)
 
 # create targets to build binaries for each OS/ARCH combination
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
 define BUILD_TARGET
+ENVOY_VERSION_$(1)_$(2)=$(ENVOY_VERSION)
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cp
 build/artifacts-$(1)-$(2)/kuma-cp:
 	$(Build_Go_Application) ./app/kuma-cp
@@ -113,7 +117,6 @@ build/artifacts-$(1)-$(2)/coredns:
 	[ -f $$(@)/coredns ] || \
 	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
-ENVOY_VERSION_$(1)_$(2)?=$(ENVOY_VERSION)
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
