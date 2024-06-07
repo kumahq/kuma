@@ -45,10 +45,17 @@ func GenerateClusters(
 				} else {
 					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
-
+					
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, allowMixingEndpoints(endpoints), endpoints...)).
-						Configure(envoy_clusters.ClientSideTLS(endpoints))
+						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
+					if isMeshExternalService(endpoints) {
+						edsClusterBuilder.Configure(
+							envoy_clusters.MesClientSideTLS(endpoints, proxy.Metadata.SystemCaPath),
+						)
+					} else {
+						edsClusterBuilder.
+							Configure(envoy_clusters.ClientSideTLS(endpoints))
+					}
 				}
 
 				switch protocol {
@@ -97,7 +104,7 @@ func GenerateClusters(
 	return resources, nil
 }
 
-func allowMixingEndpoints(endpoints []core_xds.Endpoint) bool {
+func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 	if len(endpoints) > 0 {
 		return endpoints[0].IsMeshExternalService()
 	}

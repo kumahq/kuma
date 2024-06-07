@@ -5,9 +5,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -73,9 +71,9 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func MeshExternalServiceTLS(tls *v1alpha1.Tls, loader datasource.Loader, meshName string, systemCaPath string) ClusterBuilderOpt {
+func MesClientSideTLS(endpoints []core_xds.Endpoint, systemCaPath string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.MesClientSideTLSConfigurer{Tls: tls, Loader: loader, Mesh: meshName, SystemCaPath: systemCaPath})
+		builder.AddConfigurer(&v3.ClientSideTLSConfigurer{Endpoints: endpoints, SystemCaPath: systemCaPath})
 	})
 }
 

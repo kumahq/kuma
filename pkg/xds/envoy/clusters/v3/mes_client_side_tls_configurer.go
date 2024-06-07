@@ -3,20 +3,18 @@ package clusters
 import (
 	"context"
 
-	"github.com/asaskevich/govalidator"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type MesClientSideTLSConfigurer struct {
-	Tls          *v1alpha1.Tls
+	Endpoints    []xds.Endpoint
 	Loader       datasource.Loader
 	Mesh         string
 	SystemCaPath string
@@ -25,131 +23,131 @@ type MesClientSideTLSConfigurer struct {
 var _ ClusterConfigurer = &MesClientSideTLSConfigurer{}
 
 func (c *MesClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	if c.Tls != nil && c.Tls.Enabled {
-		tlsContext := &envoy_tls.UpstreamTlsContext{
-			AllowRenegotiation: c.Tls.AllowRenegotiation,
-		}
-		if c.Tls.Verification != nil && c.Tls.Verification.ServerName != nil {
-			tlsContext.Sni = *c.Tls.Verification.ServerName
-		}
-		var ca, cert, key *envoy_core.DataSource
-		if shouldVerifyCa(c.Tls.Verification) {
-			if c.Tls.Verification != nil && c.Tls.Verification.CaCert != nil {
-				var err error
-				ca, err = c.toEnvoyDataSource(c.Tls.Verification.CaCert)
-				if err != nil {
-					return err
-				}
-			} else {
-				ca = &envoy_core.DataSource{
-					Specifier: &envoy_core.DataSource_Filename{
-						Filename: c.SystemCaPath,
-					},
-				}
-			}
-		}
+	// if c.Tls != nil && c.Tls.Enabled {
+	// 	tlsContext := &envoy_tls.UpstreamTlsContext{
+	// 		AllowRenegotiation: c.Tls.AllowRenegotiation,
+	// 	}
+	// 	if c.Tls.Verification != nil && c.Tls.Verification.ServerName != nil {
+	// 		tlsContext.Sni = *c.Tls.Verification.ServerName
+	// 	}
+	// 	var ca, cert, key *envoy_core.DataSource
+	// 	if shouldVerifyCa(c.Tls.Verification) {
+	// 		if c.Tls.Verification != nil && c.Tls.Verification.CaCert != nil {
+	// 			var err error
+	// 			ca, err = c.toEnvoyDataSource(c.Tls.Verification.CaCert)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+	// 		} else {
+	// 			ca = &envoy_core.DataSource{
+	// 				Specifier: &envoy_core.DataSource_Filename{
+	// 					Filename: c.SystemCaPath,
+	// 				},
+	// 			}
+	// 		}
+	// 	}
 
-		if shouldVerifyClientCertAndKey(c.Tls.Verification) {
-			var err error
-			cert, err = c.toEnvoyDataSource(c.Tls.Verification.ClientCert)
-			if err != nil {
-				return err
-			}
-			key, err = c.toEnvoyDataSource(c.Tls.Verification.ClientKey)
-			if err != nil {
-				return err
-			}
-		}
+	// 	if shouldVerifyClientCertAndKey(c.Tls.Verification) {
+	// 		var err error
+	// 		cert, err = c.toEnvoyDataSource(c.Tls.Verification.ClientCert)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		key, err = c.toEnvoyDataSource(c.Tls.Verification.ClientKey)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
 
-		var matchNames []*envoy_tls.SubjectAltNameMatcher
-		if shouldVerifySAN(c.Tls.Verification) {
-			for _, san := range *c.Tls.Verification.SubjectAltNames {
-				var typ envoy_tls.SubjectAltNameMatcher_SanType
-				switch {
-				case govalidator.IsIP(san.Value):
-					typ = envoy_tls.SubjectAltNameMatcher_IP_ADDRESS
-				case govalidator.IsDNSName(san.Value):
-					typ = envoy_tls.SubjectAltNameMatcher_DNS
-				default:
-					typ = envoy_tls.SubjectAltNameMatcher_URI
-				}
-				if san.Type == v1alpha1.SANMatchExact {
-					matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
-						SanType: typ,
-						Matcher: &envoy_type_matcher.StringMatcher{
-							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-								Exact: san.Value,
-							},
-						},
-					})
-				} else {
-					matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
-						SanType: typ,
-						Matcher: &envoy_type_matcher.StringMatcher{
-							MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-								Prefix: san.Value,
-							},
-						},
-					})
-				}
-			}
-		}
+	// 	var matchNames []*envoy_tls.SubjectAltNameMatcher
+	// 	if shouldVerifySAN(c.Tls.Verification) {
+	// 		for _, san := range *c.Tls.Verification.SubjectAltNames {
+	// 			var typ envoy_tls.SubjectAltNameMatcher_SanType
+	// 			switch {
+	// 			case govalidator.IsIP(san.Value):
+	// 				typ = envoy_tls.SubjectAltNameMatcher_IP_ADDRESS
+	// 			case govalidator.IsDNSName(san.Value):
+	// 				typ = envoy_tls.SubjectAltNameMatcher_DNS
+	// 			default:
+	// 				typ = envoy_tls.SubjectAltNameMatcher_URI
+	// 			}
+	// 			if san.Type == v1alpha1.SANMatchExact {
+	// 				matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+	// 					SanType: typ,
+	// 					Matcher: &envoy_type_matcher.StringMatcher{
+	// 						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+	// 							Exact: san.Value,
+	// 						},
+	// 					},
+	// 				})
+	// 			} else {
+	// 				matchNames = append(matchNames, &envoy_tls.SubjectAltNameMatcher{
+	// 					SanType: typ,
+	// 					Matcher: &envoy_type_matcher.StringMatcher{
+	// 						MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+	// 							Prefix: san.Value,
+	// 						},
+	// 					},
+	// 				})
+	// 			}
+	// 		}
+	// 	}
 
-		if cert != nil && key != nil {
-			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
-				TlsCertificates: []*envoy_tls.TlsCertificate{
-					{
-						CertificateChain: cert,
-						PrivateKey:       key,
-					},
-				},
-			}
-		}
+	// 	if cert != nil && key != nil {
+	// 		tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
+	// 			TlsCertificates: []*envoy_tls.TlsCertificate{
+	// 				{
+	// 					CertificateChain: cert,
+	// 					PrivateKey:       key,
+	// 				},
+	// 			},
+	// 		}
+	// 	}
 
-		if ca != nil {
-			if tlsContext.CommonTlsContext == nil {
-				tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
-			}
+	// 	if ca != nil {
+	// 		if tlsContext.CommonTlsContext == nil {
+	// 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
+	// 		}
 
-			tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
-				ValidationContext: &envoy_tls.CertificateValidationContext{
-					TrustedCa:                 ca,
-					MatchTypedSubjectAltNames: matchNames,
-				},
-			}
-		}
+	// 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
+	// 			ValidationContext: &envoy_tls.CertificateValidationContext{
+	// 				TrustedCa:                 ca,
+	// 				MatchTypedSubjectAltNames: matchNames,
+	// 			},
+	// 		}
+	// 	}
 
-		if c.Tls.Version != nil {
-			if tlsContext.CommonTlsContext == nil {
-				tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
-			}
-			tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{}
+	// 	if c.Tls.Version != nil {
+	// 		if tlsContext.CommonTlsContext == nil {
+	// 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
+	// 		}
+	// 		tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{}
 
-			if c.Tls.Version.Min != nil {
-				tlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Min)
-			}
-			if c.Tls.Version.Max != nil {
-				tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Max)
-			}
-		}
+	// 		if c.Tls.Version.Min != nil {
+	// 			tlsContext.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Min)
+	// 		}
+	// 		if c.Tls.Version.Max != nil {
+	// 			tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = mapTlsToEnvoyVersion(*c.Tls.Version.Max)
+	// 		}
+	// 	}
 
-		pbst, err := proto.MarshalAnyDeterministic(tlsContext)
-		if err != nil {
-			return err
-		}
+	// 	pbst, err := proto.MarshalAnyDeterministic(tlsContext)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		transportSocket := &envoy_core.TransportSocket{
-			Name: "envoy.transport_sockets.tls",
-			ConfigType: &envoy_core.TransportSocket_TypedConfig{
-				TypedConfig: pbst,
-			},
-		}
+	// 	transportSocket := &envoy_core.TransportSocket{
+	// 		Name: "envoy.transport_sockets.tls",
+	// 		ConfigType: &envoy_core.TransportSocket_TypedConfig{
+	// 			TypedConfig: pbst,
+	// 		},
+	// 	}
 
-		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
-			Name:            cluster.Name,
-			TransportSocket: transportSocket,
-		})
-	}
+	// 	cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
+	// 		Name:            cluster.Name,
+	// 		TransportSocket: transportSocket,
+	// 	})
+	// }
 
 	return nil
 }

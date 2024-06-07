@@ -27,36 +27,22 @@ resources:
                 address: 192.168.1.1
                 portValue: 10000
           loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: tcp
-              envoy.transport_socket_match:
-                kuma.io/protocol: tcp
         - endpoint:
             address:
               socketAddress:
                 address: example.com
                 portValue: 10000
           loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: tcp
-              envoy.transport_socket_match:
-                kuma.io/protocol: tcp
     name: example
     transportSocketMatches:
-    - match:
-        kuma.io/protocol: tcp
+    - match: {}
       name: example.com
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           sni: example.com
-    - match:
-        kuma.io/protocol: tcp
+    - match: {}
       name: 192.168.1.1
       transportSocket:
         name: envoy.transport_sockets.tls

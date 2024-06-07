@@ -53,6 +53,7 @@ type TagSelectorSet []mesh_proto.TagSelector
 type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
+	Protocol                 core_mesh.Protocol
 	TLSEnabled               bool
 	FallbackToSystemCa       bool
 	CaCert                   []byte
@@ -62,7 +63,6 @@ type ExternalService struct {
 	SkipHostnameVerification bool
 	ServerName               string
 	SANs                     []SAN
-	AllowMixingEndpoints     bool
 }
 
 type MatchType string
@@ -282,7 +282,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.AllowMixingEndpoints
+	return e.ExternalService != nil && e.ExternalService.Protocol != ""
 }
 
 func (e Endpoint) LocalityString() string {

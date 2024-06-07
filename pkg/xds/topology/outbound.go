@@ -469,20 +469,15 @@ func createMeshExternalServiceEndpoint(
 	loader datasource.Loader,
 	zone string,
 ) error {
+	es := &core_xds.ExternalService{
+		Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+	}
+	tags := maps.Clone(mes.Meta.GetLabels())
 	meshName := mesh.GetMeta().GetName()
 	name := mes.Meta.GetName()
-	tags := maps.Clone(mes.Meta.GetLabels())
-	if tags == nil {
-		tags = map[string]string{
-			mesh_proto.ProtocolTag: string(mes.Spec.Match.Protocol),
-		}
-	}
-	var caCert, clientCert, clientKey []byte
-	es := &core_xds.ExternalService{
-		AllowMixingEndpoints: true,
-	}
 	tls := mes.Spec.Tls
 	if tls != nil && tls.Enabled {
+		var caCert, clientCert, clientKey []byte
 		es.TLSEnabled = tls.Enabled
 		es.FallbackToSystemCa = true
 		es.AllowRenegotiation = tls.AllowRenegotiation
@@ -520,7 +515,6 @@ func createMeshExternalServiceEndpoint(
 					})
 				}
 			}
-
 			// Server name and SNI we need to add
 			// mes.Spec.Tls.Verification.SubjectAltNames
 			if tls.Verification.Mode != nil {

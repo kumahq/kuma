@@ -13,16 +13,9 @@ resources:
                 address: example.com
                 portValue: 10000
           loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/protocol: http
-              envoy.transport_socket_match:
-                kuma.io/protocol: http
     name: example
     transportSocketMatches:
-    - match:
-        kuma.io/protocol: http
+    - match: {}
       name: example.com
       transportSocket:
         name: envoy.transport_sockets.tls

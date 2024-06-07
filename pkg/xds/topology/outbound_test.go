@@ -1324,6 +1324,9 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Mesh: "default",
 							Name: "another-mes",
+							Labels: map[string]string{
+								"custom-label": "label",
+							},
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
@@ -1381,16 +1384,18 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:   "example.com",
 							Port:     443,
-							Tags:     map[string]string{mesh_proto.ProtocolTag: "tcp"},
+							Tags:     map[string]string{
+								"custom-label": "label",
+							},
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
+								Protocol: core_mesh.ProtocolTCP,
 								TLSEnabled: true,
 								FallbackToSystemCa: true,
 								AllowRenegotiation: false,
 								SkipHostnameVerification: true,
 								ServerName: "example.com",
-								AllowMixingEndpoints: true,
 								SANs: []core_xds.SAN{},
 							},
 						},
@@ -1398,13 +1403,13 @@ var _ = Describe("TrafficRoute", func() {
 					"no-tls-mes": []core_xds.Endpoint{
 						{
 							UnixDomainPath: "unix://no-tls-mes",
-							Tags:     map[string]string{mesh_proto.ProtocolTag: "grpc"},
+							Tags:     nil,
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
+								Protocol: core_mesh.ProtocolGRPC,
 								TLSEnabled: false,
 								FallbackToSystemCa: false,
-								AllowMixingEndpoints: true,
 							},
 						},
 					},
@@ -1416,6 +1421,7 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
+								Protocol: core_mesh.ProtocolHTTP,
 								TLSEnabled: true,
 								FallbackToSystemCa: true,
 								CaCert: []byte("ca"),
@@ -1434,7 +1440,6 @@ var _ = Describe("TrafficRoute", func() {
 										Value: "test.com",
 									},
 								},
-								AllowMixingEndpoints: true,
 							},
 						},
 					},
