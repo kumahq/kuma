@@ -89,7 +89,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			}
 
 			context := *xds_builders.Context().
-                WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(xds_context.NewResources()).
 				AddServiceProtocol(httpServiceTag, core_mesh.ProtocolHTTP).
 				AddServiceProtocol(tcpServiceTag, core_mesh.ProtocolTCP).
@@ -297,7 +297,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			}
 
 			xdsCtx := *xds_builders.Context().
-                WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				Build()

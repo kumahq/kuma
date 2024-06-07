@@ -7,13 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/config/manager"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	xds_server "github.com/kumahq/kuma/pkg/xds/server"
-
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,15 +16,20 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -48,6 +46,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -176,18 +175,18 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type: meshexternalservice_api.HostnameGeneratorType,
-						Port: 9090,
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
 						Protocol: meshexternalservice_api.HttpProtocol,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port: pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
-						Enabled:            true,
+						Enabled: true,
 					},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
@@ -241,7 +240,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMesh(&mc).Build(),
-				proxy: proxy,
+				proxy:      proxy,
 			}
 		}()),
 		Entry("basic", func() outboundsTestCase {

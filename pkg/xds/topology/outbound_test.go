@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -206,7 +207,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", nil, dataplanes.Items, nil, nil, externalServices.Items,
+				defaultMeshWithMTLS, "zone-1", nil, nil, dataplanes.Items, nil, nil, externalServices.Items,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -284,22 +285,23 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			dataplanes       []*core_mesh.DataplaneResource
-			meshServices     []*v1alpha1.MeshServiceResource
-			zoneIngresses    []*core_mesh.ZoneIngressResource
-			zoneEgresses     []*core_mesh.ZoneEgressResource
-			externalServices []*core_mesh.ExternalServiceResource
-			mesh             *core_mesh.MeshResource
-			expected         core_xds.EndpointMap
+			dataplanes           []*core_mesh.DataplaneResource
+			meshServices         []*v1alpha1.MeshServiceResource
+			meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
+			zoneIngresses        []*core_mesh.ZoneIngressResource
+			zoneEgresses         []*core_mesh.ZoneEgressResource
+			externalServices     []*core_mesh.ExternalServiceResource
+			mesh                 *core_mesh.MeshResource
+			expected             core_xds.EndpointMap
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
 				endpoints := BuildEdsEndpointMap(
-					given.mesh, "zone-1", given.meshServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
+					given.mesh, "zone-1", given.meshServices, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
-					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
+					context.Background(), given.mesh, given.externalServices, given.meshExternalServices, dataSourceLoader, "zone-1",
 				)
 				for k, v := range esEndpoints {
 					endpoints[k] = v

@@ -166,7 +166,7 @@ func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, al
 
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
-				TrustedCa:                trustedCa ,
+				TrustedCa:                 trustedCa,
 				MatchTypedSubjectAltNames: matchNames,
 			},
 		}

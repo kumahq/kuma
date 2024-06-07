@@ -8,6 +8,10 @@ import (
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -42,9 +46,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func getResource(
@@ -310,27 +311,27 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 			}
 		}()),
-		FEntry("default-meshexternalservice", func() outboundsTestCase {
+		Entry("default-meshexternalservice", func() outboundsTestCase {
 			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type: meshexternalservice_api.HostnameGeneratorType,
-						Port: 9090,
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
 						Protocol: meshexternalservice_api.TcpProtocol,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port: pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
 						},
 						{
 							Address: "192.168.1.1",
-							Port: pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
-						Enabled:            true,
+						Enabled: true,
 					},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
@@ -379,7 +380,7 @@ var _ = Describe("MeshTCPRoute", func() {
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMesh(&mc).Build(),
-				proxy: proxy,
+				proxy:      proxy,
 			}
 		}()),
 		Entry("basic-no-policies", func() outboundsTestCase {
@@ -777,7 +778,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolTCP, "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
-                WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 

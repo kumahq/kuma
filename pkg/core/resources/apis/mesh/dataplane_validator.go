@@ -14,7 +14,7 @@ import (
 )
 
 var allowedKinds = map[string]struct{}{
-	"MeshService": {},
+	"MeshService":         {},
 	"MeshExternalService": {},
 }
 

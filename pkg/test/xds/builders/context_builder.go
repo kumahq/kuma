@@ -19,11 +19,11 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:            samples.MeshDefault(),
-				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation: map[string]*xds_context.ServiceInformation{},
-				MeshServiceByName:   map[string]*meshservice_api.MeshServiceResource{},
-				MeshExternalServiceByName:  map[string]*meshexternalservice_api.MeshExternalServiceResource{},
+				Resource:                  samples.MeshDefault(),
+				EndpointMap:               map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation:       map[string]*xds_context.ServiceInformation{},
+				MeshServiceByName:         map[string]*meshservice_api.MeshServiceResource{},
+				MeshExternalServiceByName: map[string]*meshexternalservice_api.MeshExternalServiceResource{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},

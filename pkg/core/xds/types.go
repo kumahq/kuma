@@ -54,15 +54,15 @@ type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
 	TLSEnabled               bool
-	FallbackToSystemCa		 bool
-	SystemCaPath			 string
+	FallbackToSystemCa       bool
+	SystemCaPath             string
 	CaCert                   []byte
 	ClientCert               []byte
 	ClientKey                []byte
 	AllowRenegotiation       bool
 	SkipHostnameVerification bool
 	ServerName               string
-	SANs					 []SAN
+	SANs                     []SAN
 	AllowMixingEndpoints     bool
 }
 
@@ -75,7 +75,7 @@ const (
 
 type SAN struct {
 	MatchType MatchType
-	Value string
+	Value     string
 }
 
 type Locality struct {

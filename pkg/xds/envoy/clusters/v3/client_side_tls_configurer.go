@@ -15,7 +15,7 @@ import (
 )
 
 type ClientSideTLSConfigurer struct {
-	Endpoints []xds.Endpoint
+	Endpoints          []xds.Endpoint
 	FallbackToSystemCa bool
 }
 

@@ -180,8 +180,6 @@ func gatewayListenerInfoFromProxy(
 	for k, v := range meshCtx.EndpointMap {
 		outboundEndpoints[k] = v
 	}
-
-
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
