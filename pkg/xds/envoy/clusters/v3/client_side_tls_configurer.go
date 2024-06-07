@@ -16,6 +16,7 @@ import (
 
 type ClientSideTLSConfigurer struct {
 	Endpoints []xds.Endpoint
+	FallbackToSystemCa bool
 }
 
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
@@ -29,7 +30,12 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 				sni = ep.Target
 			}
 
+			systemCaPath := ""
+			if ep.ExternalService.FallbackToSystemCa {
+				systemCaPath = ep.ExternalService.SystemCaPath
+			}
 			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
+				systemCaPath,
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,

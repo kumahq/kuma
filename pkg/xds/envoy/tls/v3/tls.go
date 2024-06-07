@@ -87,7 +87,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, skipHostnameVerification bool, hostname string, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification bool, hostname, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -103,7 +103,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 		}
 	}
 
-	if ca != nil {
+	if ca != nil || systemCaPath != "" {
 		if tlsContext.CommonTlsContext == nil {
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
@@ -152,9 +152,21 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 				}
 			}
 		}
+
+		var trustedCa *envoy_core.DataSource
+		if ca == nil {
+			trustedCa = &envoy_core.DataSource{
+				Specifier: &envoy_core.DataSource_Filename{
+					Filename: systemCaPath,
+				},
+			}
+		} else {
+			trustedCa = dataSourceFromBytes(ca)
+		}
+
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
-				TrustedCa:                 dataSourceFromBytes(ca),
+				TrustedCa:                trustedCa ,
 				MatchTypedSubjectAltNames: matchNames,
 			},
 		}

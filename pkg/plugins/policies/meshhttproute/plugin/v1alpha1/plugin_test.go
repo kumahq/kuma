@@ -185,6 +185,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Port: pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled:            true,
+					},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
 					VIP: meshexternalservice_api.VIP{

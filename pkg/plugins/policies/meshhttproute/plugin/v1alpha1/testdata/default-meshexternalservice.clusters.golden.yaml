@@ -14,4 +14,12 @@ resources:
                 portValue: 10000
           loadBalancingWeight: 1
     name: example
+    transportSocketMatches:
+    - match: {}
+      name: example.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: example.com
     type: STRICT_DNS

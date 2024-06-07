@@ -453,7 +453,10 @@ func fillExternalServicesOutbounds(
 	}
 
 	for _, mes := range meshExternalServices {
-		createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
+		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
+		if err != nil {
+			core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+		}
 	}
 }
 
@@ -472,57 +475,64 @@ func createMeshExternalServiceEndpoint(
 	var caCert, clientCert, clientKey []byte
 	es := &core_xds.ExternalService{}
 	if tls != nil {
-		// TODO: if cacert is empty use path
+		es.TLSEnabled = tls.Enabled
+		es.AllowRenegotiation = tls.AllowRenegotiation
+		es.FallbackToSystemCa = true
+
+		// TODO: if cacert is empty use path - this can't be configured here
 		var err error
-		caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
-		if err != nil {
-			return errors.Wrap(err, "could not load caCert")
-		}
-		clientCert, err = loadBytes(ctx,tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
-		if err != nil {
-			return errors.Wrap(err, "could not load clientCert")
-		}
-		clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
-		if err != nil {
-			return errors.Wrap(err, "could not load clientKey")
-		}
-
-		es = &core_xds.ExternalService{
-			TLSEnabled:               tls.Enabled,
-			CaCert:                   caCert,
-			ClientCert:               clientCert,
-			ClientKey:                clientKey,
-			AllowRenegotiation:       tls.AllowRenegotiation,
-		}
-		if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
-			es.ServerName = pointer.Deref(tls.Verification.ServerName)
-		}
-		if tls.Verification.SubjectAltNames != nil {
-			for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
-				es.SANs = append(es.SANs, core_xds.SAN{
-					MatchType: core_xds.MatchType(san.Type),
-					Value: san.Value,
-				})
+		if tls.Verification != nil {
+			if tls.Verification.CaCert != nil {
+				caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+				if err != nil {
+					return errors.Wrap(err, "could not load caCert")
+				}
+				es.CaCert = caCert
 			}
-		}
+			if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
+				clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+				if err != nil {
+					return errors.Wrap(err, "could not load clientCert")
+				}
+				clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+				if err != nil {
+					return errors.Wrap(err, "could not load clientKey")
+				}
+				es.ClientCert = clientCert
+				es.ClientKey = clientKey
+			}
+			if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
+				es.ServerName = pointer.Deref(tls.Verification.ServerName)
+			}
+			if tls.Verification.SubjectAltNames != nil {
+				for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+					es.SANs = append(es.SANs, core_xds.SAN{
+						MatchType: core_xds.MatchType(san.Type),
+						Value:     san.Value,
+					})
+				}
+			}
 
-		// Server anem and SNI we need to add
-		// mes.Spec.Tls.Verification.SubjectAltNames
-		if tls.Verification.Mode != nil {
-			switch *tls.Verification.Mode{
-			case meshexternalservice_api.TLSVerificationSkipSAN:
-				es.ServerName = ""
-				es.SANs = []core_xds.SAN{}
-				es.SkipHostnameVerification = true
-			case meshexternalservice_api.TLSVerificationSkipCA:
-				es.CaCert = nil
-			case meshexternalservice_api.TLSVerificationSkipAll:
-				es.CaCert = nil
-				es.ClientKey = nil
-				es.ClientCert = nil
-				es.ServerName = ""
-				es.SANs = []core_xds.SAN{}
-				es.SkipHostnameVerification = true
+			// Server name and SNI we need to add
+			// mes.Spec.Tls.Verification.SubjectAltNames
+			if tls.Verification.Mode != nil {
+				switch *tls.Verification.Mode{
+				case meshexternalservice_api.TLSVerificationSkipSAN:
+					es.ServerName = ""
+					es.SANs = []core_xds.SAN{}
+					es.SkipHostnameVerification = true
+				case meshexternalservice_api.TLSVerificationSkipCA:
+					es.CaCert = nil
+					es.FallbackToSystemCa = false
+				case meshexternalservice_api.TLSVerificationSkipAll:
+					es.FallbackToSystemCa = false
+					es.CaCert = nil
+					es.ClientKey = nil
+					es.ClientCert = nil
+					es.ServerName = ""
+					es.SANs = []core_xds.SAN{}
+					es.SkipHostnameVerification = true
+				}
 			}
 		}
 	}
