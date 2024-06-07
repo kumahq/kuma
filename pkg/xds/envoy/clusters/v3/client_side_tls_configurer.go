@@ -31,9 +31,6 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 			}
 
 			systemCaPath := ""
-			if ep.ExternalService.FallbackToSystemCa {
-				systemCaPath = ep.ExternalService.SystemCaPath
-			}
 			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				systemCaPath,
 				ep.ExternalService.CaCert,

@@ -547,7 +547,7 @@ func createMeshExternalServiceEndpoint(
 
 	// if all ip make it static - it's done in endpoint_cluster_configurer
 	for i, endpoint := range mes.Spec.Endpoints {
-		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) {
+		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
 		var outboundEndpoint *core_xds.Endpoint
@@ -556,6 +556,7 @@ func createMeshExternalServiceEndpoint(
 				UnixDomainPath:  endpoint.Address,
 				Weight:          1,
 				ExternalService: es,
+				Tags:            tags,
 				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 			}
 		} else {

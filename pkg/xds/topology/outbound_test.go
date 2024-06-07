@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,6 +19,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -1262,6 +1264,178 @@ var _ = Describe("TrafficRoute", func() {
 							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
 							Locality: nil,
 							Weight:   1,
+						},
+					},
+				},
+			}),
+			FEntry("uses MeshExternalService", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "example-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type: meshexternalservice_api.HostnameGeneratorType,
+								Port: 10000,
+								Protocol: meshexternalservice_api.HttpProtocol,
+							},
+							Endpoints: []meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port: pointer.To(meshexternalservice_api.Port(443)),
+								},
+							},
+							Tls:  &meshexternalservice_api.Tls{
+								Enabled: true,
+								Version:  &meshexternalservice_api.Version{
+									Min:  pointer.To(meshexternalservice_api.TLSVersion12),
+									Max:  pointer.To(meshexternalservice_api.TLSVersion13),
+								},
+								AllowRenegotiation: true,
+								Verification: &meshexternalservice_api.Verification{
+									Mode: pointer.To(meshexternalservice_api.TLSVerificationSecured),
+									ServerName: pointer.To("example.com"),
+									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
+										{
+											Type: meshexternalservice_api.SANMatchPrefix,
+											Value: "test.com",
+										},
+										{
+											Type: meshexternalservice_api.SANMatchExact,
+											Value: "test.com",
+										},
+									},
+									CaCert: &common_api.DataSource{
+										InlineString: pointer.To("ca"),
+									},
+									ClientCert: &common_api.DataSource{
+										InlineString: pointer.To("cert"),
+									},
+									ClientKey: &common_api.DataSource{
+										InlineString: pointer.To("key"),
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "another-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type: meshexternalservice_api.HostnameGeneratorType,
+								Port: 10000,
+								Protocol: meshexternalservice_api.TcpProtocol,
+							},
+							Endpoints: []meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port: pointer.To(meshexternalservice_api.Port(443)),
+								},
+							},
+							Tls:  &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									Mode: pointer.To(meshexternalservice_api.TLSVerificationSkipSAN),
+									ServerName: pointer.To("example.com"),
+									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
+										{
+											Type: meshexternalservice_api.SANMatchPrefix,
+											Value: "test.com",
+										},
+										{
+											Type: meshexternalservice_api.SANMatchExact,
+											Value: "test.com",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "no-tls-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type: meshexternalservice_api.HostnameGeneratorType,
+								Port: 10000,
+								Protocol: meshexternalservice_api.GrpcProtocol,
+							},
+							Endpoints: []meshexternalservice_api.Endpoint{
+								{
+									Address: "unix://no-tls-mes",
+								},
+							},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"another-mes": []core_xds.Endpoint{
+						{
+							Target:   "example.com",
+							Port:     443,
+							Tags:     map[string]string{mesh_proto.ProtocolTag: "tcp"},
+							Locality: nil,
+							Weight:   1,
+							ExternalService: &core_xds.ExternalService{
+								TLSEnabled: true,
+								FallbackToSystemCa: true,
+								AllowRenegotiation: false,
+								SkipHostnameVerification: true,
+								ServerName: "example.com",
+								AllowMixingEndpoints: true,
+								SANs: []core_xds.SAN{},
+							},
+						},
+					},
+					"no-tls-mes": []core_xds.Endpoint{
+						{
+							UnixDomainPath: "unix://no-tls-mes",
+							Tags:     map[string]string{mesh_proto.ProtocolTag: "grpc"},
+							Locality: nil,
+							Weight:   1,
+							ExternalService: &core_xds.ExternalService{
+								TLSEnabled: false,
+								FallbackToSystemCa: false,
+								AllowMixingEndpoints: true,
+							},
+						},
+					},
+					"example-mes": []core_xds.Endpoint{
+						{
+							Target:   "example.com",
+							Port:     443,
+							Tags:     map[string]string{mesh_proto.ProtocolTag: "http"},
+							Locality: nil,
+							Weight:   1,
+							ExternalService: &core_xds.ExternalService{
+								TLSEnabled: true,
+								FallbackToSystemCa: true,
+								CaCert: []byte("ca"),
+								ClientCert: []byte("cert"),
+								ClientKey: []byte("key"),
+								AllowRenegotiation: true,
+								SkipHostnameVerification: false,
+								ServerName: "example.com",
+								SANs: []core_xds.SAN{
+									{
+										MatchType: core_xds.SANMatchPrefix,
+										Value: "test.com",
+									},
+									{
+										MatchType: core_xds.SANMatchExact,
+										Value: "test.com",
+									},
+								},
+								AllowMixingEndpoints: true,
+							},
 						},
 					},
 				},

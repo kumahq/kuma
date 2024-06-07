@@ -55,7 +55,6 @@ type DestinationMap map[ServiceName]TagSelectorSet
 type ExternalService struct {
 	TLSEnabled               bool
 	FallbackToSystemCa       bool
-	SystemCaPath             string
 	CaCert                   []byte
 	ClientCert               []byte
 	ClientKey                []byte
