@@ -125,7 +125,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
-		FEntry("default-meshservice", func() outboundsTestCase {
+		Entry("default-meshservice", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend_svc_8084", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
@@ -148,6 +148,29 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}},
 				},
 			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					AddServiceProtocol("backend_svc_80", core_mesh.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.DataplaneWebBuilder().
+						AddOutbound(builders.Outbound().
+							WithAddress("10.0.0.1").
+							WithPort(80).
+							WithMeshService("backend", 80),
+						),
+					).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					Build(),
+			}
+		}()),
+		Entry("default-meshexternalservice", func() outboundsTestCase {
 			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
@@ -162,9 +185,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Port: pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
-					//Tls: &meshexternalservice_api.Tls{
-					//	Enabled:            true,
-					//},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
 					VIP: meshexternalservice_api.VIP{
@@ -187,7 +207,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 				)
 			proxy := xds_builders.Proxy().
 				WithDataplane(dp).
-				WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 				Build()
 
 			err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
@@ -197,9 +216,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resourceStore.Create(context.Background(), &meshSvc, store.CreateByKey("backend", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			lookupIPFunc := func(s string) ([]net.IP, error) {
