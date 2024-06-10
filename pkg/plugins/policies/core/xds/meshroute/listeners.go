@@ -71,13 +71,16 @@ func CollectServices(
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		if outbound.BackendRef != nil {
-			ms, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
+			if outbound.GetAddress() == proxy.Dataplane.Spec.GetNetworking().GetAddress() {
+				continue
+			}
+			ms, ok := meshCtx.MeshServiceIdentity[outbound.BackendRef.Name]
 			if !ok {
 				// we want to ignore service which is not found. Logging might be excessive here.
 				// We don't have other mechanism to bubble up warnings yet.
 				continue
 			}
-			port, ok := ms.FindPort(outbound.BackendRef.Port)
+			port, ok := ms.Resource.FindPort(outbound.BackendRef.Port)
 			if !ok {
 				continue
 			}
@@ -88,11 +91,11 @@ func CollectServices(
 			dests = append(dests, DestinationService{
 				Outbound:    oface,
 				Protocol:    protocol,
-				ServiceName: ms.DestinationName(outbound.BackendRef.Port),
+				ServiceName: ms.Resource.DestinationName(outbound.BackendRef.Port),
 				BackendRef: common_api.BackendRef{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.MeshService,
-						Name: ms.GetMeta().GetName(),
+						Name: ms.Resource.GetMeta().GetName(),
 					},
 					Port: &port.Port,
 				},
@@ -137,16 +140,18 @@ func makeSplit(
 		if pointer.DerefOr(ref.Weight, 1) == 0 {
 			continue
 		}
+		var meshServiceName string
 		if ref.Port != nil { // in this case, reference real MeshService instead of kuma.io/service tag
-			ms, ok := meshCtx.MeshServiceByName[ref.Name]
+			ms, ok := meshCtx.MeshServiceIdentity[ref.Name]
 			if !ok {
 				continue
 			}
-			port, ok := ms.FindPort(*ref.Port)
+			meshServiceName = ms.Resource.GetMeta().GetName()
+			port, ok := ms.Resource.FindPort(*ref.Port)
 			if !ok {
 				continue
 			}
-			service = ms.DestinationName(*ref.Port)
+			service = ms.Resource.DestinationName(*ref.Port)
 			protocol = port.Protocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		} else {
 			service = ref.Name
@@ -201,7 +206,11 @@ func makeSplit(
 			clusterBuilder.WithMesh(mesh)
 		}
 
-		servicesAcc.Add(clusterBuilder.Build())
+		if len(meshServiceName) > 0 {
+			servicesAcc.AddMeshService(meshServiceName, clusterBuilder.Build())
+		} else {
+			servicesAcc.Add(clusterBuilder.Build())
+		}
 	}
 
 	return split

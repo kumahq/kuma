@@ -12,7 +12,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UpgradingWithHelmChartStandalone() {
@@ -23,52 +22,50 @@ func UpgradingWithHelmChartStandalone() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	var oldestSupportedVersion string
+	DescribeTable("upgrade Kuma via Helm",
+		func(version string) {
+			cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+				WithTimeout(6 * time.Second).
+				WithRetries(60)
 
-	BeforeAll(func() {
-		oldestSupportedVersion = versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
-	})
+			releaseName := fmt.Sprintf(
+				"kuma-%s",
+				strings.ToLower(random.UniqueId()),
+			)
 
-	It("should successfully upgrade Kuma via Helm", func() {
-		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
-			WithTimeout(6 * time.Second).
-			WithRetries(60)
+			// nolint:staticcheck
+			err := NewClusterSetup().
+				Install(Kuma(core.Standalone,
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmChartPath(Config.HelmChartName),
+					WithHelmReleaseName(releaseName),
+					WithHelmChartVersion(version),
+					WithoutHelmOpt("global.image.tag"),
+				)).
+				Setup(cluster)
+			Expect(err).ToNot(HaveOccurred())
 
-		releaseName := fmt.Sprintf(
-			"kuma-%s",
-			strings.ToLower(random.UniqueId()),
-		)
+			k8sCluster := cluster.(*K8sCluster)
 
-		// nolint:staticcheck
-		err := NewClusterSetup().
-			Install(Kuma(core.Standalone,
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartName),
+			err = k8sCluster.UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
-				WithHelmChartVersion(oldestSupportedVersion),
-				WithoutHelmOpt("global.image.tag"),
-			)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
+				WithHelmChartPath(Config.HelmChartPath),
+				ClearNoHelmOpts(),
+			)
+			Expect(err).ToNot(HaveOccurred())
 
-		k8sCluster := cluster.(*K8sCluster)
+			// when
+			out, err := k8s.RunKubectlAndGetOutputE(
+				k8sCluster.GetTesting(),
+				k8sCluster.GetKubectlOptions(),
+				"get", "crd", "meshtrafficpermissions.kuma.io", "-oyaml",
+			)
 
-		err = k8sCluster.UpgradeKuma(core.Zone,
-			WithHelmReleaseName(releaseName),
-			WithHelmChartPath(Config.HelmChartPath),
-			ClearNoHelmOpts(),
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		out, err := k8s.RunKubectlAndGetOutputE(
-			k8sCluster.GetTesting(),
-			k8sCluster.GetKubectlOptions(),
-			"get", "crd", "meshtrafficpermissions.kuma.io", "-oyaml",
-		)
-
-		// then CRD is upgraded
-		Expect(err).ToNot(HaveOccurred())
-		Expect(out).To(ContainSubstring("AllowWithShadowDeny"))
-	})
+			// then CRD is upgraded
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(ContainSubstring("AllowWithShadowDeny"))
+		},
+		EntryDescription("from version: %s"),
+		SupportedVersionEntries(),
+	)
 }

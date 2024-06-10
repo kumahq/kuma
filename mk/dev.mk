@@ -27,7 +27,6 @@ export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v1.59.0
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
-LATEST_RELEASE_BRANCH := $(shell $(CI_TOOLS_BIN_DIR)/yq e '.[] | select(.latest == true) | .branch' versions.yml)
 
 # A helper to protect calls that push things upstreams (.e.g docker push or github artifact publish)
 # $(1) - the actual command to run, if ALLOW_PUSH is not set we'll prefix this with '#' to prevent execution
@@ -42,6 +41,7 @@ KUBECONFIG_DIR := $(HOME)/.kube
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
+YQ=$(CI_TOOLS_BIN_DIR)/yq
 HELM=$(CI_TOOLS_BIN_DIR)/helm
 K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
@@ -67,6 +67,8 @@ HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
+
+LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | select(.latest == true) | .branch' versions.yml)
 
 # Install all dependencies on tools and protobuf files
 # We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles

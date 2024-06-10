@@ -30,6 +30,7 @@ type PolicyConfig struct {
 	GoModule            string
 	ResourceDir         string
 	IsPolicy            bool
+	KDSFlags            string
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -134,6 +135,11 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:has_status"); ok {
 		res.HasStatus = v
+	}
+	if v, ok := markers["kuma:policy:kds_flags"]; ok {
+		res.KDSFlags = v
+	} else {
+		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag"
 	}
 
 	if v, ok := markers["kuma:policy:singular_display_name"]; ok {

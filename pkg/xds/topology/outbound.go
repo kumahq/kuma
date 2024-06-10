@@ -92,6 +92,32 @@ func BuildEdsEndpointMap(
 	return outbound
 }
 
+type MeshServiceIdentity struct {
+	Resource   *meshservice_api.MeshServiceResource
+	Identities map[string]struct{}
+}
+
+func BuildMeshServiceIdentityMap(
+	meshServices []*meshservice_api.MeshServiceResource,
+	endpointMap core_xds.EndpointMap,
+) map[string]MeshServiceIdentity {
+	serviceIdentities := map[string]MeshServiceIdentity{}
+	for _, meshSvc := range meshServices {
+		identities := map[string]struct{}{}
+		for _, port := range meshSvc.Spec.Ports {
+			name := meshSvc.DestinationName(port.Port)
+			for _, endpoint := range endpointMap[name] {
+				identities[endpoint.Tags[mesh_proto.ServiceTag]] = struct{}{}
+			}
+		}
+		serviceIdentities[meshSvc.GetMeta().GetName()] = MeshServiceIdentity{
+			Resource:   meshSvc,
+			Identities: identities,
+		}
+	}
+	return serviceIdentities
+}
+
 // endpointWeight defines default weight for in-cluster endpoint.
 // Examples of having service "backend":
 //  1. Single-zone deployment, 2 instances in one cluster (zone1)
@@ -157,6 +183,9 @@ func fillLocalMeshServices(
 
 		for _, meshSvc := range meshServices {
 			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
+			if meshSvc.Spec.Selector.DataplaneRef != nil {
+				continue
+			}
 
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
 				if !tagSelector.Matches(inbound.GetTags()) {

@@ -1,0 +1,86 @@
+items:
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: example-1-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-1
+      uid: example-1-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-1
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.5
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: example-2-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-2
+      uid: example-2-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-2
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.6
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/service-name: example
+      kuma.io/mesh: default
+    name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: very-long-very-long-very-long-very-long-very-long-v
+      uid: very-long-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - port: 80
+      protocol: http
+      targetPort: 8080
+    - port: 443
+      protocol: tcp
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: very-long-very-long-very-long-very-long-very-long-v
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.7
+metadata: {}

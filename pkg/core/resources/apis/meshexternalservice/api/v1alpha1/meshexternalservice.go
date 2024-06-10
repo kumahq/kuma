@@ -5,6 +5,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
 // MeshExternalService
@@ -154,41 +155,16 @@ type SANMatch struct {
 
 type MeshExternalServiceStatus struct {
 	// Vip section for allocated IP
-	Vip VipStatus `json:"vip"`
+	VIP VIP `json:"vip,omitempty"`
 	// Addresses section for generated domains
-	Addresses []Address `json:"addresses"`
+	Addresses          []hostnamegenerator_api.Address                 `json:"addresses,omitempty"`
+	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Kuma
 type StatusType string
 
-type VipStatus struct {
-	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section or provided IP.
-	Value string `json:"value"`
-	// Type provides information about the way IP was provided.
-	Type StatusType `json:"type"`
-}
-
-// +kubebuilder:validation:Enum=Available;NotAvailable
-type AddressStatus string
-
-type Address struct {
-	// Hostname of the generated domain
-	Hostname string `json:"hostname"`
-	// Status indicates if an address is available
-	Status AddressStatus `json:"status"`
-	// Origin provides information what generated the vip
-	Origin AddressOrigin `json:"origin"`
-	// +kubebuilder:example="addresses are overlapping with my-mesh-external-service-2"
-	Reason string `json:"reason"`
-}
-
-// +kubebuilder:validation:Enum=HostnameGenerator
-type OriginKind string
-
-type AddressOrigin struct {
-	// Kind points to entity kind that generated the domain.
-	Kind OriginKind `json:"kind"`
-	// Name of the entity that generated the domain.
-	Name string `json:"name"`
+type VIP struct {
+	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section.
+	IP string `json:"ip,omitempty"`
 }

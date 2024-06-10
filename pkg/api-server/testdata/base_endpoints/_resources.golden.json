@@ -237,6 +237,20 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshPassthrough",
+   "path": "meshpassthroughs",
+   "pluralDisplayName": "Mesh Passthroughs",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Passthrough"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshProxyPatch",
    "path": "meshproxypatches",
    "pluralDisplayName": "Mesh Proxy Patches",
@@ -278,7 +292,7 @@
    "singularDisplayName": "Mesh Retry"
   },
   {
-   "includeInFederation": true,
+   "includeInFederation": false,
    "name": "MeshService",
    "path": "meshservices",
    "pluralDisplayName": "Mesh Services",

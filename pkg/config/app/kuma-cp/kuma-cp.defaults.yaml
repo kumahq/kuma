@@ -782,6 +782,7 @@ policies:
     - meshhttproutes
     - meshloadbalancingstrategies
     - meshmetrics
+    - meshpassthroughs
     - meshproxypatches
     - meshratelimits
     - meshretries
@@ -799,6 +800,9 @@ ipam:
   # MeshService address management
   meshService:
     # CIDR for MeshService IPs
-    cidr: 241.0.0.0/8 # ENV: IPAM_MESH_SERVICE_CIDR
-    # Interval on which Kuma will allocate new IPs for MeshServices
-    allocationInterval: 5s # ENV: IPAM_MESH_SERVICE_ALLOCATION_INTERVAL
+    cidr: 241.0.0.0/8 # ENV: KUMA_IPAM_MESH_SERVICE_CIDR
+  meshExternalService:
+    # CIDR for MeshExternalService IPs
+    cidr: 242.0.0.0/8 # ENV: KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR
+  # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
+  allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL

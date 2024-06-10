@@ -179,7 +179,6 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		},
 		DynamicMetadata:     params.DynamicMetadata,
 		DNSPort:             params.DNSPort,
-		EmptyDNSPort:        params.EmptyDNSPort,
 		OperatingSystem:     b.operatingSystem,
 		Features:            b.features,
 		Resources:           resources,
