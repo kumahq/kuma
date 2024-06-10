@@ -56,7 +56,7 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 					TypedConfig: pbst,
 				},
 			}
-			// TODO: do we need different match for each endpoint i think wedon't need here a match section
+			// TODO: do we need different match for each endpoint i think we don't need here a match section
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: ep.Target,
 				Match: &structpb.Struct{

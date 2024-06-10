@@ -1403,7 +1403,7 @@ var _ = Describe("TrafficRoute", func() {
 					"no-tls-mes": []core_xds.Endpoint{
 						{
 							UnixDomainPath: "unix://no-tls-mes",
-							Tags:           nil,
+							Tags:           map[string]string{},
 							Locality:       nil,
 							Weight:         1,
 							ExternalService: &core_xds.ExternalService{
@@ -1417,7 +1417,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:   "example.com",
 							Port:     443,
-							Tags:     map[string]string{mesh_proto.ProtocolTag: "http"},
+							Tags:     map[string]string{},
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
@@ -1448,16 +1448,17 @@ var _ = Describe("TrafficRoute", func() {
 		)
 		Describe("BuildEgressEndpointMap()", func() {
 			type testCase struct {
-				zoneIngresses    []*core_mesh.ZoneIngressResource
-				externalServices []*core_mesh.ExternalServiceResource
-				mesh             *core_mesh.MeshResource
-				expected         core_xds.EndpointMap
+				zoneIngresses        []*core_mesh.ZoneIngressResource
+				externalServices     []*core_mesh.ExternalServiceResource
+				meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
+				mesh                 *core_mesh.MeshResource
+				expected             core_xds.EndpointMap
 			}
 
 			DescribeTable("should generate endpoints map for zone egress",
 				func(given testCase) {
 					// when
-					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
+					endpoints := BuildEgressEndpointMap(context.Background(), given.mesh, "zone-1", given.zoneIngresses, given.externalServices, given.meshExternalServices, dataSourceLoader)
 					// then
 					Expect(endpoints).To(Equal(given.expected))
 				},
@@ -1499,6 +1500,24 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
+					meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+						{
+							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
+							Spec: &meshexternalservice_api.MeshExternalService{
+								Match: meshexternalservice_api.Match{
+									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Port:     443,
+									Protocol: meshexternalservice_api.TcpProtocol,
+								},
+								Endpoints: []meshexternalservice_api.Endpoint{
+									{
+										Address: "192.168.1.1",
+										Port:    pointer.To(meshexternalservice_api.Port(10000)),
+									},
+								},
+							},
+						},
+					},
 					mesh: defaultMeshWithMTLSAndZoneEgress,
 					expected: core_xds.EndpointMap{
 						"service-in-zone2": []core_xds.Endpoint{
@@ -1526,6 +1545,17 @@ var _ = Describe("TrafficRoute", func() {
 								Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default"},
 								Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
 								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+							},
+						},
+						"example": []core_xds.Endpoint{
+							{
+								Target: "192.168.1.1",
+								Port:   10000,
+								Tags: map[string]string{
+									"mesh": "default",
+								},
+								Weight:          1,
+								ExternalService: &core_xds.ExternalService{TLSEnabled: false, Protocol: core_mesh.ProtocolTCP},
 							},
 						},
 					},

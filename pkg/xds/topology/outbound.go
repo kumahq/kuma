@@ -47,13 +47,14 @@ func BuildEgressEndpointMap(
 	localZone string,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false)
 
-	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, mesh, loader, localZone)
+	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, meshExternalServices, mesh, loader, localZone)
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -429,6 +430,7 @@ func fillExternalServicesReachableFromZone(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
 	zone string,
@@ -436,6 +438,15 @@ func fillExternalServicesReachableFromZone(
 	for _, externalService := range externalServices {
 		if externalService.IsReachableFromZone(zone) {
 			createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
+		}
+	}
+	for _, mes := range meshExternalServices {
+		if mes.IsReachableFromZone(zone) {
+			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
+			if err != nil {
+				core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				return
+			}
 		}
 	}
 }
@@ -473,6 +484,9 @@ func createMeshExternalServiceEndpoint(
 		Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
+	if tags == nil {
+		tags = map[string]string{}
+	}
 	meshName := mesh.GetMeta().GetName()
 	name := mes.Meta.GetName()
 	tls := mes.Spec.Tls
@@ -635,9 +649,11 @@ func fillExternalServicesOutboundsThroughEgress(
 				Tags:   serviceTags,
 				// AS it's a role of zone egress to load balance traffic between
 				// instances, we can safely set weight to 1
-				Weight:          1,
-				Locality:        locality,
-				ExternalService: &core_xds.ExternalService{},
+				Weight:   1,
+				Locality: locality,
+				ExternalService: &core_xds.ExternalService{
+					Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+				},
 			}
 
 			outbound[serviceName] = append(outbound[serviceName], endpoint)
