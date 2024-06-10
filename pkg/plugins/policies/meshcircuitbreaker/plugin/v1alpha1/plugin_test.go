@@ -122,10 +122,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service",
-						}},
+						Subset: core_rules.MeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionLimits: genConnectionLimits(),
 						},
@@ -145,10 +142,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
+						Subset: core_rules.MeshService("second-service"),
 						Conf: api.Conf{
 							OutlierDetection: genOutlierDetection(false),
 						},
@@ -168,10 +162,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
+						Subset: core_rules.MeshService("second-service"),
 						Conf: api.Conf{
 							OutlierDetection: genOutlierDetection(true),
 						},
@@ -191,10 +182,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
+						Subset: core_rules.MeshService("second-service"),
 						Conf: api.Conf{
 							ConnectionLimits: genConnectionLimits(),
 							OutlierDetection: genOutlierDetection(false),
@@ -215,10 +203,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
+						Subset: core_rules.MeshService("second-service"),
 						Conf: api.Conf{
 							ConnectionLimits: genConnectionLimits(),
 							OutlierDetection: genOutlierDetection(true),
@@ -371,10 +356,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service",
-						}},
+						Subset: core_rules.MeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionLimits: genConnectionLimits(),
 							OutlierDetection: genOutlierDetection(false),
@@ -440,10 +422,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.Rules{
 						{Address: "192.168.0.1", Port: 8080}: {{
-							Subset: core_rules.Subset{core_rules.Tag{
-								Key:   mesh_proto.ServiceTag,
-								Value: "backend",
-							}},
+							Subset: core_rules.MeshService("backend"),
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 							},

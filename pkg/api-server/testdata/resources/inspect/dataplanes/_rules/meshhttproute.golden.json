@@ -49,7 +49,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/service",
+       "key": "kuma.io/display-name",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
       }
@@ -97,7 +97,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/service",
+       "key": "kuma.io/display-name",
        "not": false,
        "value": "other-svc"
       }
@@ -130,7 +130,7 @@
        "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
       },
       {
-       "key": "kuma.io/service",
+       "key": "kuma.io/display-name",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
       }
@@ -161,7 +161,7 @@
        "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
       },
       {
-       "key": "kuma.io/service",
+       "key": "kuma.io/display-name",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
       }

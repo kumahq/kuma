@@ -1,0 +1,17 @@
+# MeshTimeout targeting MeshService by name and namespace
+type: MeshTimeout
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: backend-ns
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 10s

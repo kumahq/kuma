@@ -14,7 +14,7 @@ Rules:
       name: mtp-2
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: orders
   - Conf:
@@ -31,7 +31,7 @@ Rules:
       name: mtp-2
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: backend
   - Conf:
@@ -43,10 +43,10 @@ Rules:
       name: mtp-2
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: true
       Value: backend
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: true
       Value: orders
   1.1.1.1:8081:

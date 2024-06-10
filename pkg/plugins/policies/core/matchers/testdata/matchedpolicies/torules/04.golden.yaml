@@ -22,6 +22,6 @@ Rules:
     name: ccc
     type: MeshTimeout
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: backend

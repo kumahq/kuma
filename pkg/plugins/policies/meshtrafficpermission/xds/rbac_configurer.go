@@ -176,6 +176,9 @@ func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset) *rbac_config.Pr
 	for _, t := range ss {
 		var principalName *matcherv3.StringMatcher
 		switch t.Key {
+		case mesh_proto.DisplayName:
+			service := t.Value
+			principalName = tls.ServiceSpiffeIDMatcher(c.Mesh, service)
 		case mesh_proto.ServiceTag:
 			service := t.Value
 			principalName = tls.ServiceSpiffeIDMatcher(c.Mesh, service)

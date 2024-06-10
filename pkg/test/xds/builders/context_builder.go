@@ -92,3 +92,12 @@ func (mc *ContextBuilder) AddExternalService(serviceName string) *ContextBuilder
 	}
 	return mc
 }
+
+func (mc *ContextBuilder) AddMeshService(meshService *builders.MeshServiceBuilder) *ContextBuilder {
+	ms := meshService.Build()
+	mc.res.Mesh.MeshServiceIdentity[ms.GetMeta().GetName()] = topology.MeshServiceIdentity{
+		Resource:   ms,
+		Identities: map[string]struct{}{},
+	}
+	return mc
+}

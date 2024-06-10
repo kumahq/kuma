@@ -1,0 +1,18 @@
+# MeshTimeout targeting MeshService by name and namespace
+type: MeshTimeout
+name: default
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: backend
+          k8s.kuma.io/namespace: backend-ns
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 10s

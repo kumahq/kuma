@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph"
@@ -205,8 +207,34 @@ func MeshSubset() Subset {
 
 func MeshService(name string) Subset {
 	return Subset{{
-		Key: mesh_proto.ServiceTag, Value: name,
+		Key: mesh_proto.DisplayName, Value: name,
 	}}
+}
+
+// TODO better naming
+func NewMeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port, localZone string) Subset {
+	subset := Subset{
+		// todo should we just put all labels from MeshService?
+		{Key: mesh_proto.DisplayName, Value: meshService.GetMeta().GetName()},
+	}
+
+	namespace, ok := meshService.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
+	if ok && namespace != "" {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: namespace})
+	}
+
+	zone, ok := meshService.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	if ok && zone != "" {
+		subset = append(subset, Tag{Key: mesh_proto.ZoneTag, Value: zone})
+	} else {
+		subset = append(subset, Tag{Key: mesh_proto.ZoneTag, Value: localZone})
+	}
+
+	if port.Name != "" {
+		subset = append(subset, Tag{Key: mesh_proto.ServiceTag, Value: port.Name})
+	}
+
+	return subset
 }
 
 func SubsetFromTags(tags map[string]string) Subset {
@@ -458,7 +486,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
 	for _, item := range list {
-		ss, err := asSubset(item.GetTargetRef())
+		ss, err := asSubset(item)
 		if err != nil {
 			return nil, err
 		}
@@ -520,7 +548,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 			for i := 0; i < len(list); i++ {
 				item := list[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
+				itemSubset, err := asSubset(item)
 				if err != nil {
 					return nil, err
 				}
@@ -575,7 +603,8 @@ func toStringList(nodes []graph.Node) []string {
 	return rv
 }
 
-func asSubset(tr common_api.TargetRef) (Subset, error) {
+func asSubset(policy PolicyItemWithMeta) (Subset, error) {
+	tr := policy.GetTargetRef()
 	switch tr.Kind {
 	case common_api.Mesh:
 		return Subset{}, nil
@@ -586,9 +615,9 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+		return meshServiceSubset(policy), nil
 	case common_api.MeshServiceSubset:
-		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
+		ss := Subset{{Key: mesh_proto.DisplayName, Value: tr.Name}}
 		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
@@ -596,6 +625,35 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 	default:
 		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
+}
+
+func meshServiceSubset(policy PolicyItemWithMeta) Subset {
+	subset := Subset{}
+	tr := policy.GetTargetRef()
+
+	if tr.Name != "" {
+		subset = append(subset, Tag{Key: mesh_proto.DisplayName, Value: tr.Name})
+	}
+
+	if tr.Namespace != "" {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: tr.Namespace})
+	}
+	// todo change to proper policy-role label after merging namespaced policies
+	if tr.Namespace == "" && policy.GetLabels()["kuma.io/policy-role"] != "system" {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: policy.GetNameExtensions()[mesh_proto.KubeNamespaceTag]})
+	}
+
+	if len(tr.Labels) != 0 {
+		for k, v := range tr.Labels {
+			subset = append(subset, Tag{Key: k, Value: v})
+		}
+	}
+
+	if tr.SectionName != "" {
+		subset = append(subset, Tag{Key: mesh_proto.SectionName, Value: tr.SectionName})
+	}
+
+	return subset
 }
 
 type SubsetIter struct {

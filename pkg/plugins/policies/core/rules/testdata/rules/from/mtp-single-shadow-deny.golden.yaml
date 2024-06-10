@@ -9,7 +9,7 @@ Rules:
       name: mtp
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: c
   - Conf:
@@ -21,7 +21,7 @@ Rules:
       name: mtp
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: b
   - Conf:
@@ -33,7 +33,7 @@ Rules:
       name: mtp
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: a
   - Conf:
@@ -45,12 +45,12 @@ Rules:
       name: mtp
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: true
       Value: a
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: true
       Value: b
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: true
       Value: c

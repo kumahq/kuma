@@ -104,9 +104,7 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Subset: []core_rules.Tag{
-											{Key: mesh_proto.ServiceTag, Value: "frontend"},
-										},
+										Subset: core_rules.MeshService("frontend"),
 										Conf: policies_api.Conf{
 											Action: "Allow",
 										},

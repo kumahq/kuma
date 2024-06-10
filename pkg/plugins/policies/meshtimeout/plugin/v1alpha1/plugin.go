@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -48,7 +49,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, proxy.Zone, ctx.Mesh); err != nil {
 		return err
 	}
 	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
@@ -56,12 +57,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 
 	for serviceName, cluster := range clusters.Outbound {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, proxy.Zone, ctx.Mesh, cluster); err != nil {
 			return err
 		}
 	}
 	for serviceName, clusters := range clusters.OutboundSplit {
-		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), clusters...); err != nil {
+		if err := applyToClusters(policies.ToRules.Rules, serviceName, proxy.Zone, ctx.Mesh, clusters...); err != nil {
 			return err
 		}
 	}
@@ -116,8 +117,33 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
 	dataplane *core_mesh.DataplaneResource,
+	localZone string,
 	meshCtx xds_context.MeshContext,
 ) error {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.WithMeshServiceBackendRefFilter) {
+		meshService, ok := meshCtx.MeshServiceIdentity[outbound.BackendRef.Name]
+		if !ok {
+			continue
+		}
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+
+		listener, ok := outboundListeners[oface]
+		if !ok {
+			continue
+		}
+
+		port, _ := meshService.Resource.FindPort(outbound.BackendRef.Port)
+		configurer := plugin_xds.ListenerConfigurer{
+			Rules:    rules.Rules,
+			Protocol: port.Protocol,
+			Subset:   core_rules.NewMeshService(meshService.Resource, port, localZone),
+		}
+
+		if err := configurer.ConfigureListener(listener); err != nil {
+			return err
+		}
+	}
+
 	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -144,10 +170,27 @@ func applyToOutbounds(
 func applyToClusters(
 	rules core_rules.Rules,
 	serviceName string,
-	protocol core_mesh.Protocol,
+	localZone string,
+	meshCtx xds_context.MeshContext,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf := getConf(rules, core_rules.MeshService(serviceName))
+	var conf *api.Conf
+	var protocol core_mesh.Protocol
+
+	name, portNumber := meshservice_api.MeshServiceNameFromDestination(serviceName)
+	meshService, ok := meshCtx.MeshServiceIdentity[name]
+	if ok {
+		port, ok := meshService.Resource.FindPort(portNumber)
+		if !ok {
+			return nil
+		}
+		protocol = port.Protocol
+		conf = getConf(rules, core_rules.NewMeshService(meshService.Resource, port, localZone))
+	} else {
+		protocol = meshCtx.GetServiceProtocol(serviceName)
+		conf = getConf(rules, core_rules.MeshService(serviceName))
+	}
+
 	if conf == nil {
 		return nil
 	}
@@ -237,7 +280,8 @@ func applyToGateway(
 					if err := applyToClusters(
 						toRules,
 						serviceName,
-						meshCtx.GetServiceProtocol(serviceName),
+						proxy.Zone,
+						meshCtx,
 						cluster,
 					); err != nil {
 						return err

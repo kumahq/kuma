@@ -12,7 +12,7 @@ Rules:
     name: retry-1
     type: MeshRetry
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: backend
 - Conf:
@@ -27,6 +27,6 @@ Rules:
     name: retry-1
     type: MeshRetry
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: true
     Value: backend

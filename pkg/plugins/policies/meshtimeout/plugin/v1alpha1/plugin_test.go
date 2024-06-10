@@ -158,10 +158,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "second-service",
-						}},
+						Subset: core_rules.MeshService("second-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("30s"),
@@ -226,12 +223,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{
-							{
-								Key:   mesh_proto.ServiceTag,
-								Value: "other-service",
-							},
-						},
+						Subset: core_rules.MeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
@@ -268,12 +260,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{
-							{
-								Key:   mesh_proto.ServiceTag,
-								Value: "other-service",
-							},
-						},
+						Subset: core_rules.MeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
@@ -371,7 +358,7 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.ServiceTag,
+								Key:   mesh_proto.DisplayName,
 								Value: "other-service",
 							},
 							{
@@ -389,7 +376,7 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.ServiceTag,
+								Key:   mesh_proto.DisplayName,
 								Value: "other-service",
 							},
 							{
@@ -615,7 +602,105 @@ var _ = Describe("MeshTimeout", func() {
 			},
 		},
 	}))
-})
+
+	DescribeTable("target MeshService", func(given sidecarTestCase) {
+		// given
+		resourceSet := core_xds.NewResourceSet()
+		for _, res := range given.resources {
+			r := res
+			resourceSet.Add(&r)
+		}
+
+		context := *xds_builders.Context().
+			WithMesh(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			AddMeshService(builders.MeshService().
+				WithName("other-service").
+				WithNamespace("main-ns").
+				AddIntPort(10001, 10001, "http").
+				AddIntPort(10002, 10002, "tcp")).
+			AddMeshService(builders.MeshService().
+				WithName("second-service").
+				WithNamespace("main-ns").
+				AddIntPort(10003, 10003, "http")).
+			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
+			Build()
+		proxy := xds_builders.Proxy().
+			WithDataplane(builders.Dataplane().
+				WithName("backend").
+				WithMesh("default").
+				WithAddress("127.0.0.1").
+				AddOutboundToMeshService("other-service", 10001).
+				AddOutboundToMeshService("other-service", 10002).
+				AddOutboundToMeshService("second-service", 10003).
+				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithRouting(
+				xds_builders.Routing().
+					WithOutboundTargets(
+						xds_builders.EndpointMap().
+							AddEndpoint("other-service", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("other-service-c72efb5be46fae6b", xds_samples.HttpEndpointBuilder()).
+							AddEndpoint("second-service", xds_samples.TcpEndpointBuilder()),
+					),
+			).
+			WithPolicies(
+				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
+			).
+			WithZone("local-zone").
+			Build()
+
+		// when
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(resourceSet, context, proxy)).To(Succeed())
+
+		// then
+		for i, expectedListener := range given.expectedListeners {
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", expectedListener)))
+		}
+		for i, expectedCluster := range given.expectedClusters {
+			Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", expectedCluster)))
+		}
+	},
+		Entry("base case", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: httpOutboundListener(),
+				},
+				{
+					Name:     "outbound",
+					Origin:   generator.OriginOutbound,
+					Resource: test_xds.ClusterWithName("other-service_svc_10001"),
+				},
+			},
+			toRules: core_rules.ToRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: core_rules.Subset{
+							{Key: mesh_proto.DisplayName, Value: "other-service"},
+							{Key: mesh_proto.KubeNamespaceTag, Value: "main-ns"},
+							{Key: mesh_proto.ZoneTag, Value: "local-zone"},
+						},
+						Conf: api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"mesh_service_outbound_listener.golden.yaml"},
+			expectedClusters:  []string{"mesh_service_outbound_cluster.golden.yaml"},
+		}))
+},
+)
 
 func getResourceYaml(list core_xds.ResourceList) []byte {
 	actualResource, err := util_proto.ToYAML(list[0].Resource)

@@ -452,10 +452,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other-service",
-						}},
+						Subset: core_rules.MeshService("other-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -465,10 +462,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "foo-service",
-						}},
+						Subset: core_rules.MeshService("foo-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -481,10 +475,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "bar-service",
-						}},
+						Subset: core_rules.MeshService("bar-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -785,10 +776,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{{
-							Key:   mesh_proto.ServiceTag,
-							Value: "other",
-						}},
+						Subset: core_rules.MeshService("other"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{

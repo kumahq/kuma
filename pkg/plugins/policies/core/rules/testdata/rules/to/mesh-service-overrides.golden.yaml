@@ -1,0 +1,430 @@
+Rules:
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 15s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: override
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 20s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: override
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 15s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: override
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: false
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: false
+    Value: bar
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: false
+    Value: bar-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port
+- Conf:
+    connectionTimeout: 2s
+    http:
+      requestTimeout: 10s
+    idleTimeout: 20s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: default
+    type: MeshTimeout
+  Subset:
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: bar-ns
+  - Key: k8s.kuma.io/namespace
+    Not: true
+    Value: foo-ns
+  - Key: kuma.io/display-name
+    Not: true
+    Value: bar
+  - Key: kuma.io/display-name
+    Not: true
+    Value: foo
+  - Key: kuma.io/sectionName
+    Not: true
+    Value: http-port

@@ -209,10 +209,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "grpc-service",
-						}},
+						Subset: core_rules.MeshService("grpc-service"),
 						Conf: api.Conf{
 							GRPC: &api.GRPC{
 								NumRetries:    pointer.To[uint32](11),
@@ -257,10 +254,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
-							Key:   mesh_proto.ServiceTag,
-							Value: "grpc-service",
-						}},
+						Subset: core_rules.MeshService("grpc-service"),
 						Conf: api.Conf{
 							GRPC: &api.GRPC{
 								NumRetries:    pointer.To[uint32](0),
@@ -305,7 +299,7 @@ var _ = Describe("MeshRetry", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.ServiceTag,
+								Key:   mesh_proto.DisplayName,
 								Value: "http-service",
 							},
 							{
@@ -395,7 +389,7 @@ var _ = Describe("MeshRetry", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.ServiceTag,
+								Key:   mesh_proto.DisplayName,
 								Value: "http-service",
 							},
 							{

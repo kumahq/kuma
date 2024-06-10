@@ -98,7 +98,11 @@ func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy
 func (c *Configurer) createHeaders(from core_xds.Subset) []*envoy_route.HeaderMatcher {
 	tagsMap := map[bool]map[string]string{false: {}, true: {}}
 	for _, tag := range from {
-		tagsMap[tag.Not][tag.Key] = tag.Value
+		if tag.Key == mesh_proto.DisplayName {
+			tagsMap[tag.Not][mesh_proto.ServiceTag] = tag.Value
+		} else {
+			tagsMap[tag.Not][tag.Key] = tag.Value
+		}
 	}
 
 	var matchers []*envoy_route.HeaderMatcher

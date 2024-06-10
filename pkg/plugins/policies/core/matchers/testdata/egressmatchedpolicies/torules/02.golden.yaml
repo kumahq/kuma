@@ -15,7 +15,7 @@ Rules:
       name: mlbs-2
       type: MeshLoadBalancingStrategy
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: backend
     - Key: version
@@ -31,7 +31,7 @@ Rules:
       name: mlbs-1
       type: MeshLoadBalancingStrategy
     Subset:
-    - Key: kuma.io/service
+    - Key: kuma.io/display-name
       Not: false
       Value: backend
     - Key: version

@@ -56,6 +56,9 @@ const (
 	// at this moment is "shadow". When effect is "shadow" the policy doesn't change the DPPs configs, but could be
 	// observed using the Inspect API.
 	EffectLabel = "kuma.io/effect"
+
+	// TODO description and probably better name
+	SectionName = "kuma.io/sectionName"
 )
 
 type ResourceOrigin string
@@ -134,6 +137,10 @@ func (i OutboundInterface) String() string {
 
 func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 	return outbound.BackendRef == nil
+}
+
+func WithMeshServiceBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef != nil && outbound.BackendRef.Kind == "MeshService"
 }
 
 func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {
