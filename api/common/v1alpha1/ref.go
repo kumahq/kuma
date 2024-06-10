@@ -71,6 +71,15 @@ type TargetRef struct {
 	// all data plane types are targeted by the policy.
 	// +kubebuilder:validation:MinItems=1
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
+	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+	// will be targeted.
+	Namespace string `json:"namespace,omitempty"`
+	// Labels are used to select group of MeshServices that match labels. Either Labels or
+	// Name and Namespace can be used.
+	Labels map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target specific section of resource.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+	SectionName string `json:"sectionName,omitempty"`
 }
 
 func IncludesGateways(ref TargetRef) bool {
