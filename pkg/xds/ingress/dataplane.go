@@ -1,17 +1,14 @@
 package ingress
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strings"
 
 	"golang.org/x/exp/slices"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	envoy "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/topology"
@@ -62,15 +59,12 @@ func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableServic
 	return result
 }
 
-func UpdateAvailableServices(
-	ctx context.Context,
-	rm manager.ResourceManager,
-	ingress *core_mesh.ZoneIngressResource,
+func GetAvailableServices(
 	otherDataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	tagFilters []string,
-) error {
+) []*mesh_proto.ZoneIngress_AvailableService {
 	availableServices := GetIngressAvailableServices(otherDataplanes, tagFilters)
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
@@ -86,26 +80,7 @@ func UpdateAvailableServices(
 		availableServices = append(availableServices, availableMeshGatewayListeners...)
 	}
 
-	if availableServicesEqual(availableServices, ingress.Spec.GetAvailableServices()) {
-		return nil
-	}
-	ingress.Spec.AvailableServices = availableServices
-	if err := rm.Update(ctx, ingress); err != nil {
-		return err
-	}
-	return nil
-}
-
-func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService, other []*mesh_proto.ZoneIngress_AvailableService) bool {
-	if len(services) != len(other) {
-		return false
-	}
-	for i := range services {
-		if !proto.Equal(services[i], other[i]) {
-			return false
-		}
-	}
-	return true
+	return availableServices
 }
 
 // MeshGatewayDataplanes is a helper type to hold the MeshGateways and Dataplanes for a mesh.
