@@ -87,7 +87,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification bool, hostname, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification, fallbackToSystemCa bool, hostname, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -103,7 +103,7 @@ func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, al
 		}
 	}
 
-	if ca != nil || systemCaPath != "" {
+	if ca != nil || (fallbackToSystemCa && systemCaPath != "") {
 		if tlsContext.CommonTlsContext == nil {
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}

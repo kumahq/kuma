@@ -199,5 +199,97 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             type: EDS
 `,
 		}),
+		Entry("cluster with mTLS and multiple endpoint with different configuration", testCase{
+			clusterName: "testCluster",
+			endpoints: []xds.Endpoint{
+				{
+					Target: "httpbin.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:         true,
+						CaCert:             []byte("cacert"),
+						ClientCert:         []byte("clientcert"),
+						ClientKey:          []byte("clientkey"),
+						AllowRenegotiation: true,
+						ServerName:         "httpbin.org",
+					},
+				},
+				{
+					Target: "example.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:         true,
+						CaCert:             []byte("cacert"),
+						ClientCert:         []byte("clientcert"),
+						ClientKey:          []byte("clientkey"),
+						AllowRenegotiation: true,
+						ServerName:         "example.org",
+					},
+				},
+			},
+
+			expected: `
+              connectTimeout: 5s
+              edsClusterConfig:
+                  edsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+              name: testCluster
+              transportSocketMatches:
+                  - match: {}
+                    name: httpbin.org
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                          allowRenegotiation: true
+                          commonTlsContext:
+                              tlsCertificates:
+                                  - certificateChain:
+                                      inlineBytes: Y2xpZW50Y2VydA==
+                                    privateKey:
+                                      inlineBytes: Y2xpZW50a2V5
+                              validationContext:
+                                  matchTypedSubjectAltNames:
+                                      - matcher:
+                                          exact: httpbin.org
+                                        sanType: DNS
+                                      - matcher:
+                                          exact: httpbin.org
+                                        sanType: IP_ADDRESS
+                                  trustedCa:
+                                      inlineBytes: Y2FjZXJ0
+                          sni: httpbin.org
+                  - match: {}
+                    name: example.org
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                          allowRenegotiation: true
+                          commonTlsContext:
+                              tlsCertificates:
+                                  - certificateChain:
+                                      inlineBytes: Y2xpZW50Y2VydA==
+                                    privateKey:
+                                      inlineBytes: Y2xpZW50a2V5
+                              validationContext:
+                                  matchTypedSubjectAltNames:
+                                      - matcher:
+                                          exact: example.org
+                                        sanType: DNS
+                                      - matcher:
+                                          exact: example.org
+                                        sanType: IP_ADDRESS
+                                  trustedCa:
+                                      inlineBytes: Y2FjZXJ0
+                          sni: example.org
+              type: EDS
+`,
+		}),
 	)
 })
