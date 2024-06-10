@@ -15,8 +15,8 @@ import (
 )
 
 type ClientSideTLSConfigurer struct {
-	Endpoints          []xds.Endpoint
-	SystemCaPath       string
+	Endpoints    []xds.Endpoint
+	SystemCaPath string
 }
 
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}

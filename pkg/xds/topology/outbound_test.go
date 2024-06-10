@@ -1268,7 +1268,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			FEntry("uses MeshExternalService", testCase{
+			Entry("uses MeshExternalService", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{
@@ -1277,33 +1277,33 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type: meshexternalservice_api.HostnameGeneratorType,
-								Port: 10000,
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
 								Protocol: meshexternalservice_api.HttpProtocol,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port: pointer.To(meshexternalservice_api.Port(443)),
+									Port:    pointer.To(meshexternalservice_api.Port(443)),
 								},
 							},
-							Tls:  &meshexternalservice_api.Tls{
+							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version:  &meshexternalservice_api.Version{
-									Min:  pointer.To(meshexternalservice_api.TLSVersion12),
-									Max:  pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &meshexternalservice_api.Version{
+									Min: pointer.To(meshexternalservice_api.TLSVersion12),
+									Max: pointer.To(meshexternalservice_api.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode: pointer.To(meshexternalservice_api.TLSVerificationSecured),
+									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSecured),
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
-											Type: meshexternalservice_api.SANMatchPrefix,
+											Type:  meshexternalservice_api.SANMatchPrefix,
 											Value: "test.com",
 										},
 										{
-											Type: meshexternalservice_api.SANMatchExact,
+											Type:  meshexternalservice_api.SANMatchExact,
 											Value: "test.com",
 										},
 									},
@@ -1330,28 +1330,28 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type: meshexternalservice_api.HostnameGeneratorType,
-								Port: 10000,
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
 								Protocol: meshexternalservice_api.TcpProtocol,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port: pointer.To(meshexternalservice_api.Port(443)),
+									Port:    pointer.To(meshexternalservice_api.Port(443)),
 								},
 							},
-							Tls:  &meshexternalservice_api.Tls{
+							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode: pointer.To(meshexternalservice_api.TLSVerificationSkipSAN),
+									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSkipSAN),
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
-											Type: meshexternalservice_api.SANMatchPrefix,
+											Type:  meshexternalservice_api.SANMatchPrefix,
 											Value: "test.com",
 										},
 										{
-											Type: meshexternalservice_api.SANMatchExact,
+											Type:  meshexternalservice_api.SANMatchExact,
 											Value: "test.com",
 										},
 									},
@@ -1366,8 +1366,8 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type: meshexternalservice_api.HostnameGeneratorType,
-								Port: 10000,
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
 								Protocol: meshexternalservice_api.GrpcProtocol,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
@@ -1382,33 +1382,33 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.EndpointMap{
 					"another-mes": []core_xds.Endpoint{
 						{
-							Target:   "example.com",
-							Port:     443,
-							Tags:     map[string]string{
+							Target: "example.com",
+							Port:   443,
+							Tags: map[string]string{
 								"custom-label": "label",
 							},
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol: core_mesh.ProtocolTCP,
-								TLSEnabled: true,
-								FallbackToSystemCa: true,
-								AllowRenegotiation: false,
+								Protocol:                 core_mesh.ProtocolTCP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								AllowRenegotiation:       false,
 								SkipHostnameVerification: true,
-								ServerName: "example.com",
-								SANs: []core_xds.SAN{},
+								ServerName:               "example.com",
+								SANs:                     []core_xds.SAN{},
 							},
 						},
 					},
 					"no-tls-mes": []core_xds.Endpoint{
 						{
 							UnixDomainPath: "unix://no-tls-mes",
-							Tags:     nil,
-							Locality: nil,
-							Weight:   1,
+							Tags:           nil,
+							Locality:       nil,
+							Weight:         1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol: core_mesh.ProtocolGRPC,
-								TLSEnabled: false,
+								Protocol:           core_mesh.ProtocolGRPC,
+								TLSEnabled:         false,
 								FallbackToSystemCa: false,
 							},
 						},
@@ -1421,23 +1421,23 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol: core_mesh.ProtocolHTTP,
-								TLSEnabled: true,
-								FallbackToSystemCa: true,
-								CaCert: []byte("ca"),
-								ClientCert: []byte("cert"),
-								ClientKey: []byte("key"),
-								AllowRenegotiation: true,
+								Protocol:                 core_mesh.ProtocolHTTP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								CaCert:                   []byte("ca"),
+								ClientCert:               []byte("cert"),
+								ClientKey:                []byte("key"),
+								AllowRenegotiation:       true,
 								SkipHostnameVerification: false,
-								ServerName: "example.com",
+								ServerName:               "example.com",
 								SANs: []core_xds.SAN{
 									{
 										MatchType: core_xds.SANMatchPrefix,
-										Value: "test.com",
+										Value:     "test.com",
 									},
 									{
 										MatchType: core_xds.SANMatchExact,
-										Value: "test.com",
+										Value:     "test.com",
 									},
 								},
 							},

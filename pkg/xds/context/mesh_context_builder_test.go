@@ -143,6 +143,5 @@ var _ = Describe("hash", func() {
 	}, test.EntriesForFolder("meshcontext_hash"))
 
 	Describe("", func() {
-
 	})
 })

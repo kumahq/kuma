@@ -45,7 +45,7 @@ func GenerateClusters(
 				} else {
 					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
-					
+
 					edsClusterBuilder.
 						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
 					if isMeshExternalService(endpoints) {
