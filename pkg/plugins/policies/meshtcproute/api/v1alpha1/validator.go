@@ -2,7 +2,9 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -11,16 +13,16 @@ func (r *MeshTCPRouteResource) validate() error {
 
 	path := validators.RootedAt("spec")
 
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
 
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	return mesh.ValidateTargetRef(
-		targetRef,
-		&mesh.ValidateTargetRefOpts{
+func (r *MeshTCPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+	switch core_model.PolicyRole(r) {
+	case mesh_proto.SystemPolicyRole:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -29,8 +31,17 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 				common_api.MeshServiceSubset,
 			},
 			GatewayListenerTagsAllowed: true,
-		},
-	)
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+			},
+		})
+	}
 }
 
 func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.ValidationError {
