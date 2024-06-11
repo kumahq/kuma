@@ -1,16 +1,16 @@
 package clusters_test
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 )
 
 var _ = Describe("ClientSideTLSConfigurer", func() {
@@ -20,8 +20,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 		systemCaPath        string
 		useCommonTlsContext bool
 		expected            string
-		minTlsVersion       xds.TlsVersion
-		maxTlsVersion       xds.TlsVersion
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -126,8 +124,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
 						ServerName:         "custom",
-						MinTlsVersion: pointer.To(xds.TLSVersion10),
-						MaxTlsVersion: pointer.To(xds.TLSVersion13),
+						MinTlsVersion:      pointer.To(xds.TLSVersion10),
+						MaxTlsVersion:      pointer.To(xds.TLSVersion13),
 					},
 				},
 			},
@@ -219,7 +217,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 `,
 		}),
 		Entry("cluster with multiple endpoints from MeshExternalService", testCase{
-			clusterName: "testCluster",
+			clusterName:         "testCluster",
 			useCommonTlsContext: true,
 			endpoints: []xds.Endpoint{
 				{

@@ -74,7 +74,7 @@ type ExternalService struct {
 	ServerName               string
 	SANs                     []SAN
 	MinTlsVersion            *TlsVersion
-	MaxTlsVersion			 *TlsVersion
+	MaxTlsVersion            *TlsVersion
 }
 
 type MatchType string

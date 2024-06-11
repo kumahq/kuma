@@ -15,8 +15,8 @@ import (
 )
 
 type ClientSideTLSConfigurer struct {
-	Endpoints    []xds.Endpoint
-	SystemCaPath string
+	Endpoints           []xds.Endpoint
+	SystemCaPath        string
 	UseCommonTlsContext bool // used to handle MeshExternalService
 }
 
@@ -31,22 +31,21 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 		}
 		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 	} else {
-		for _, ep := range c.Endpoints {
+		for i, ep := range c.Endpoints {
 			if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
-				tsm, err := c.createTransportSocketMatch(&ep, true)
+				tsm, err := c.createTransportSocketMatch(&c.Endpoints[i], true)
 				if err != nil {
 					return err
 				}
 				cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 			}
 		}
-
 	}
 
 	return nil
 }
 
-func  (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, withMatch bool) (*envoy_cluster.Cluster_TransportSocketMatch, error) {
+func (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, withMatch bool) (*envoy_cluster.Cluster_TransportSocketMatch, error) {
 	sni := ep.ExternalService.ServerName
 	if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
 		// SNI can only be a hostname, not IP
@@ -84,7 +83,7 @@ func  (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, 
 	}
 
 	tsm := envoy_cluster.Cluster_TransportSocketMatch{
-		Name: ep.Target,
+		Name:            ep.Target,
 		TransportSocket: transportSocket,
 	}
 
