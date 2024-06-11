@@ -70,11 +70,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-<<<<<<< HEAD
-        uses: Kong/public-shared-actions/security-actions/sca@23929cfda574afc77b018c51794454b6dc99ca57 # v2.2.1
-=======
         uses: Kong/public-shared-actions/security-actions/sca@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
->>>>>>> cf9b78d2b (ci(.github): publish slsa artifacts to cloudsmith (#10215))
         with:
           dir: .
           config: .syft.yaml
