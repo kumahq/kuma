@@ -29,7 +29,6 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 		if err != nil {
 			return err
 		}
-		// TODO: do we need different match for each endpoint i think we don't need here a match section
 		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 	} else {
 		for _, ep := range c.Endpoints {
@@ -38,7 +37,6 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 				if err != nil {
 					return err
 				}
-				// TODO: do we need different match for each endpoint i think we don't need here a match section
 				cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 			}
 		}
