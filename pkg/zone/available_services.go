@@ -66,7 +66,7 @@ func (t *ZoneAvailableServicesTracker) Start(stop <-chan struct{}) error {
 		case <-ticker.C:
 			start := time.Now()
 			if err := t.updateZoneIngresses(ctx); err != nil {
-				t.logger.Error(err, "couldn't update ZoneIngress available services")
+				t.logger.Error(err, "couldn't update ZoneIngress available services, will retry")
 			}
 			t.metric.Observe(float64(time.Since(start).Milliseconds()))
 		case <-stop:
@@ -132,8 +132,9 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 		t.ingressTagFilters,
 	)
 
+	var names []string
 	for _, zi := range zis.Items {
-		// Initially zone is empty
+		// Zone is empty for resources in the local zone
 		if zi.Spec.Zone != "" && zi.Spec.Zone != t.zone {
 			continue
 		}
@@ -142,8 +143,11 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 		}
 		zi.Spec.AvailableServices = availableServices
 		if err := t.resManager.Update(ctx, zi); err != nil {
-			t.logger.Error(err, "couldn't update ZoneIngress", "name", zi.GetMeta().GetName())
+			t.logger.Error(err, "couldn't update ZoneIngress, will retry", "name", zi.GetMeta().GetName())
+		} else {
+			names = append(names, zi.GetMeta().GetName())
 		}
 	}
+	t.logger.Info("updated ZoneIngresses", "names", names)
 	return nil
 }
