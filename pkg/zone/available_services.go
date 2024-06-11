@@ -11,9 +11,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 )
 
@@ -21,6 +22,7 @@ type ZoneAvailableServicesTracker struct {
 	logger            logr.Logger
 	metric            prometheus.Summary
 	resManager        manager.ResourceManager
+	meshCache         *mesh.Cache
 	interval          time.Duration
 	ingressTagFilters []string
 	zone              string
@@ -30,6 +32,7 @@ func NewZoneAvailableServicesTracker(
 	logger logr.Logger,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
+	meshCache *mesh.Cache,
 	interval time.Duration,
 	ingressTagFilters []string,
 	zone string,
@@ -46,6 +49,7 @@ func NewZoneAvailableServicesTracker(
 		logger:            logger,
 		metric:            metric,
 		resManager:        resManager,
+		meshCache:         meshCache,
 		interval:          interval,
 		ingressTagFilters: ingressTagFilters,
 		zone:              zone,
@@ -89,51 +93,29 @@ func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService,
 }
 
 func (t *ZoneAvailableServicesTracker) getIngressExternalServices(
-	ctx context.Context,
-	meshes []*core_mesh.MeshResource,
-) (core_mesh.ExternalServiceResourceList, error) {
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) []*core_mesh.ExternalServiceResource {
 	var externalServices []*core_mesh.ExternalServiceResource
-	allMeshExternalServices := core_mesh.ExternalServiceResourceList{}
 
-	for _, mesh := range meshes {
+	for _, mesh := range aggregatedMeshCtxs.Meshes {
 		if !mesh.ZoneEgressEnabled() {
 			continue
 		}
 
-		ess := core_mesh.ExternalServiceResourceList{}
-		if err := t.resManager.List(ctx, &ess, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
-			return core_mesh.ExternalServiceResourceList{}, err
-		}
-
+		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(mesh.GetMeta().GetName())
 		// look for external services that are only available in my zone and expose them
-		for _, es := range ess.Items {
+		for _, es := range meshCtx.Resources.ExternalServices().Items {
 			if es.Spec.Tags[mesh_proto.ZoneTag] == t.zone {
 				externalServices = append(externalServices, es)
 			}
 		}
 	}
 
-	allMeshExternalServices.Items = externalServices
-	return allMeshExternalServices, nil
+	return externalServices
 }
 
 func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) error {
-	meshes := core_mesh.MeshResourceList{}
-	if err := t.resManager.List(ctx, &meshes); err != nil {
-		return err
-	}
-
-	dps := core_mesh.DataplaneResourceList{}
-	if err := t.resManager.List(ctx, &dps); err != nil {
-		return err
-	}
-
-	mgws := core_mesh.MeshGatewayResourceList{}
-	if err := t.resManager.List(ctx, &mgws); err != nil {
-		return err
-	}
-
-	ess, err := t.getIngressExternalServices(ctx, meshes.Items)
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
 	if err != nil {
 		return err
 	}
@@ -144,11 +126,12 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 	}
 
 	availableServices := ingress.GetAvailableServices(
-		dps.Items,
-		mgws.Items,
-		ess.Items,
+		aggregatedMeshCtxs.AllDataplanes(),
+		aggregatedMeshCtxs.AllMeshGateways(),
+		t.getIngressExternalServices(aggregatedMeshCtxs),
 		t.ingressTagFilters,
 	)
+
 	for _, zi := range zis.Items {
 		// Initially zone is empty
 		if zi.Spec.Zone != "" && zi.Spec.Zone != t.zone {

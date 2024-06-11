@@ -16,6 +16,7 @@ func Setup(rt runtime.Runtime) error {
 		logger,
 		rt.Metrics(),
 		rt.ResourceManager(),
+		rt.MeshCache(),
 		rt.Config().Multizone.Zone.IngressUpdateInterval.Duration,
 		rt.Config().Experimental.IngressTagFilters,
 		rt.Config().Multizone.Zone.Name,
