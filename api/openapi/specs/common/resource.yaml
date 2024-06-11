@@ -41,7 +41,7 @@ components:
           type: boolean
     Meta:
       type: object
-      required: [type, mesh, name]
+      required: [type, mesh, name, labels]
       properties:
         type:
           type: string
@@ -55,14 +55,16 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
-        displayName:
-          type: string
-          example: mtp
-          description: the original name of the resource
-        namespace:
-          type: string
-          example: kuma-system
-          description: the namespace of this resource
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "k8s.kuma.io/namespace": "kuma-system"
+            "kuma.io/display-name": "mtp"
+            "kuma.io/mesh": "default"
+            "kuma.io/origin": "zone"
+          description: the label of the resource
     InspectRule:
       type: object
       required: [type]
