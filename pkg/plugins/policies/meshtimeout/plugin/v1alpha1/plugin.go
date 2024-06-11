@@ -136,7 +136,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: port.Protocol,
-			Subset:   core_rules.NewMeshService(meshService.Resource, port, localZone),
+			Subset:   core_rules.MeshService(meshService.Resource, port, localZone),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -156,7 +156,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Subset:   core_rules.MeshService(serviceName),
+			Subset:   core_rules.DeprecatedMeshService(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -185,10 +185,10 @@ func applyToClusters(
 			return nil
 		}
 		protocol = port.Protocol
-		conf = getConf(rules, core_rules.NewMeshService(meshService.Resource, port, localZone))
+		conf = getConf(rules, core_rules.MeshService(meshService.Resource, port, localZone))
 	} else {
 		protocol = meshCtx.GetServiceProtocol(serviceName)
-		conf = getConf(rules, core_rules.MeshService(serviceName))
+		conf = getConf(rules, core_rules.DeprecatedMeshService(serviceName))
 	}
 
 	if conf == nil {
@@ -272,7 +272,7 @@ func applyToGateway(
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-					conf := getConf(toRules, core_rules.MeshService(serviceName))
+					conf := getConf(toRules, core_rules.DeprecatedMeshService(serviceName))
 					if conf == nil {
 						continue
 					}

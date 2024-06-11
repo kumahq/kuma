@@ -49,7 +49,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
       }
@@ -97,7 +97,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": false,
        "value": "other-svc"
       }
@@ -125,14 +125,14 @@
      },
      "matchers": [
       {
+       "key": "__resource-name__",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      },
+      {
        "key": "__rule-matches-hash__",
        "not": false,
        "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
-      },
-      {
-       "key": "kuma.io/display-name",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [
@@ -156,14 +156,14 @@
      },
      "matchers": [
       {
+       "key": "__resource-name__",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      },
+      {
        "key": "__rule-matches-hash__",
        "not": true,
        "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
-      },
-      {
-       "key": "kuma.io/display-name",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [

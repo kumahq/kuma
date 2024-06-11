@@ -9,7 +9,7 @@ Rules:
       name: mtp-1
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/display-name
+    - Key: __resource-name__
       Not: false
       Value: orders
   - Conf:
@@ -21,7 +21,7 @@ Rules:
       name: mtp-1
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/display-name
+    - Key: __resource-name__
       Not: false
       Value: api
   - Conf:
@@ -33,7 +33,7 @@ Rules:
       name: mtp-1
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/display-name
+    - Key: __resource-name__
       Not: false
       Value: web
   - Conf:
@@ -45,6 +45,6 @@ Rules:
       name: mtp-1
       type: MeshTrafficPermission
     Subset:
-    - Key: kuma.io/display-name
+    - Key: __resource-name__
       Not: false
       Value: backend

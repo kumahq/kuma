@@ -16,7 +16,7 @@ func getBackendRefs(
 	protocol core_mesh.Protocol,
 	tags map[string]string,
 ) []common_api.BackendRef {
-	service := core_xds.MeshService(serviceName)
+	service := core_xds.DeprecatedMeshService(serviceName)
 
 	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
 

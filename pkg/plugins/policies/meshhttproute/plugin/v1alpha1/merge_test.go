@@ -100,7 +100,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: core_rules.DeprecatedMeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{
@@ -206,7 +206,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: core_rules.DeprecatedMeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{
@@ -389,7 +389,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: core_rules.DeprecatedMeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{

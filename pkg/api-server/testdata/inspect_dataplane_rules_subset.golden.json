@@ -125,7 +125,7 @@
    },
    "policyType": "MeshTrafficPermission",
    "subset": {
-    "kuma.io/display-name": "client",
+    "__resource-name__": "client",
     "kuma.io/zone": "east",
     "version": "2"
    },
@@ -156,7 +156,7 @@
    },
    "policyType": "MeshTrafficPermission",
    "subset": {
-    "kuma.io/display-name": "client",
+    "__resource-name__": "client",
     "kuma.io/zone": "east",
     "version": "!2"
    },

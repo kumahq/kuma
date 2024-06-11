@@ -158,7 +158,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.MeshService("second-service"),
+						Subset: core_rules.DeprecatedMeshService("second-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("30s"),
@@ -223,7 +223,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.MeshService("other-service"),
+						Subset: core_rules.DeprecatedMeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
@@ -260,7 +260,7 @@ var _ = Describe("MeshTimeout", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.MeshService("other-service"),
+						Subset: core_rules.DeprecatedMeshService("other-service"),
 						Conf: api.Conf{
 							ConnectionTimeout: test.ParseDuration("10s"),
 							IdleTimeout:       test.ParseDuration("1h"),
@@ -358,7 +358,7 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.DisplayName,
+								Key:   core_rules.ResourceNameTag,
 								Value: "other-service",
 							},
 							{
@@ -376,7 +376,7 @@ var _ = Describe("MeshTimeout", func() {
 					{
 						Subset: core_rules.Subset{
 							{
-								Key:   mesh_proto.DisplayName,
+								Key:   core_rules.ResourceNameTag,
 								Value: "other-service",
 							},
 							{
@@ -523,7 +523,7 @@ var _ = Describe("MeshTimeout", func() {
 				ByListener: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "192.168.0.1", Port: 8080}: {
 						{
-							Subset: core_rules.MeshService("backend"),
+							Subset: core_rules.DeprecatedMeshService("backend"),
 							Conf: api.Conf{
 								Http: &api.Http{
 									RequestTimeout: test.ParseDuration("24s"),
@@ -613,7 +613,6 @@ var _ = Describe("MeshTimeout", func() {
 
 		context := *xds_builders.Context().
 			WithMesh(samples.MeshDefaultBuilder()).
-			WithResources(xds_context.NewResources()).
 			AddMeshService(builders.MeshService().
 				WithName("other-service").
 				WithNamespace("main-ns").
@@ -679,7 +678,7 @@ var _ = Describe("MeshTimeout", func() {
 				Rules: []*core_rules.Rule{
 					{
 						Subset: core_rules.Subset{
-							{Key: mesh_proto.DisplayName, Value: "other-service"},
+							{Key: core_rules.ResourceNameTag, Value: "other-service"},
 							{Key: mesh_proto.KubeNamespaceTag, Value: "main-ns"},
 							{Key: mesh_proto.ZoneTag, Value: "local-zone"},
 						},

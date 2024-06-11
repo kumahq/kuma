@@ -52,7 +52,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": false,
        "value": "foo"
       }
@@ -80,7 +80,7 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": false,
        "value": "bar"
       }
@@ -108,12 +108,12 @@
      },
      "matchers": [
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": true,
        "value": "bar"
       },
       {
-       "key": "kuma.io/display-name",
+       "key": "__resource-name__",
        "not": true,
        "value": "foo"
       }

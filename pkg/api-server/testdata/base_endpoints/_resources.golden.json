@@ -292,7 +292,7 @@
    "singularDisplayName": "Mesh Retry"
   },
   {
-   "includeInFederation": false,
+   "includeInFederation": true,
    "name": "MeshService",
    "path": "meshservices",
    "pluralDisplayName": "Mesh Services",

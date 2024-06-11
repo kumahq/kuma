@@ -130,7 +130,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			expectedRoutes: core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -242,7 +242,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -364,7 +364,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -417,7 +417,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -437,7 +437,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -506,7 +506,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -526,7 +526,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -590,7 +590,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: core_rules.DeprecatedMeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{

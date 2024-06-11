@@ -2,6 +2,8 @@ package builders
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -18,6 +20,9 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
+				Resources: xds_context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					v1alpha1.MeshServiceType: &v1alpha1.MeshServiceResourceList{},
+				}},
 				Resource:            samples.MeshDefault(),
 				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
 				ServicesInformation: map[string]*xds_context.ServiceInformation{},
@@ -95,9 +100,6 @@ func (mc *ContextBuilder) AddExternalService(serviceName string) *ContextBuilder
 
 func (mc *ContextBuilder) AddMeshService(meshService *builders.MeshServiceBuilder) *ContextBuilder {
 	ms := meshService.Build()
-	mc.res.Mesh.MeshServiceIdentity[ms.GetMeta().GetName()] = topology.MeshServiceIdentity{
-		Resource:   ms,
-		Identities: map[string]struct{}{},
-	}
+	_ = mc.res.Mesh.Resources.MeshLocalResources[v1alpha1.MeshServiceType].AddItem(ms)
 	return mc
 }

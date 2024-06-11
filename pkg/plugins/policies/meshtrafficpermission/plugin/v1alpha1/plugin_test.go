@@ -104,7 +104,7 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Subset: core_rules.MeshService("frontend"),
+										Subset: core_rules.DeprecatedMeshService("frontend"),
 										Conf: policies_api.Conf{
 											Action: "Allow",
 										},
@@ -216,7 +216,7 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshService("frontend"),
+														Subset: core_rules.DeprecatedMeshService("frontend"),
 														Conf:   policies_api.Conf{Action: policies_api.Allow},
 													},
 												},

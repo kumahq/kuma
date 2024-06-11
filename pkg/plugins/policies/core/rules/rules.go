@@ -20,7 +20,10 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-const RuleMatchesHashTag = "__rule-matches-hash__"
+const (
+	RuleMatchesHashTag = "__rule-matches-hash__"
+	ResourceNameTag    = "__resource-name__"
+)
 
 type InboundListener struct {
 	Address string
@@ -204,17 +207,15 @@ func MeshSubset() Subset {
 	return Subset{}
 }
 
-func MeshService(name string) Subset {
+func DeprecatedMeshService(name string) Subset {
 	return Subset{{
-		Key: mesh_proto.DisplayName, Value: name,
+		Key: ResourceNameTag, Value: name,
 	}}
 }
 
-// TODO better naming
-func NewMeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port, localZone string) Subset {
+func MeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port, localZone string) Subset {
 	subset := Subset{
-		// todo should we just put all labels from MeshService?
-		{Key: mesh_proto.DisplayName, Value: meshService.GetMeta().GetName()},
+		{Key: ResourceNameTag, Value: meshService.GetMeta().GetName()},
 	}
 
 	namespace, ok := meshService.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
@@ -231,6 +232,10 @@ func NewMeshService(meshService *meshservice_api.MeshServiceResource, port meshs
 
 	if port.Name != "" {
 		subset = append(subset, Tag{Key: mesh_proto.ServiceTag, Value: port.Name})
+	}
+
+	for label, value := range meshService.Meta.GetLabels() {
+		subset = append(subset, Tag{Key: label, Value: value})
 	}
 
 	return subset
@@ -616,7 +621,7 @@ func asSubset(policy PolicyItemWithMeta) (Subset, error) {
 	case common_api.MeshService:
 		return meshServiceSubset(policy), nil
 	case common_api.MeshServiceSubset:
-		ss := Subset{{Key: mesh_proto.DisplayName, Value: tr.Name}}
+		ss := Subset{{Key: ResourceNameTag, Value: tr.Name}}
 		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
@@ -631,14 +636,15 @@ func meshServiceSubset(policy PolicyItemWithMeta) Subset {
 	tr := policy.GetTargetRef()
 
 	if tr.Name != "" {
-		subset = append(subset, Tag{Key: mesh_proto.DisplayName, Value: tr.Name})
+		subset = append(subset, Tag{Key: ResourceNameTag, Value: tr.Name})
 	}
 
 	if tr.Namespace != "" {
 		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: tr.Namespace})
 	}
-	// todo change to proper policy-role label after merging namespaced policies
-	if tr.Namespace == "" && policy.GetLabels()["kuma.io/policy-role"] != "system" {
+	// todo should we use something like PolicyRole method? It operates on Resource which policy item is not
+	policyRole, ok := policy.GetLabels()[mesh_proto.PolicyRoleLabel]
+	if ok && tr.Namespace == "" && policyRole != string(mesh_proto.SystemPolicyRole) {
 		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: policy.GetNameExtensions()[mesh_proto.KubeNamespaceTag]})
 	}
 

@@ -11,9 +11,9 @@ Rules:
     name: default
     type: MeshTimeout
   Subset:
+  - Key: __resource-name__
+    Not: false
+    Value: backend
   - Key: k8s.kuma.io/namespace
     Not: false
     Value: backend-ns
-  - Key: kuma.io/display-name
-    Not: false
-    Value: backend

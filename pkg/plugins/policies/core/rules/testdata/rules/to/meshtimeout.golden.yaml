@@ -16,7 +16,7 @@ Rules:
     name: override
     type: MeshTimeout
   Subset:
-  - Key: kuma.io/display-name
+  - Key: __resource-name__
     Not: false
     Value: foo
 - Conf:
@@ -36,7 +36,7 @@ Rules:
     name: override
     type: MeshTimeout
   Subset:
-  - Key: kuma.io/display-name
+  - Key: __resource-name__
     Not: false
     Value: bar
 - Conf:
@@ -51,9 +51,9 @@ Rules:
     name: default
     type: MeshTimeout
   Subset:
-  - Key: kuma.io/display-name
+  - Key: __resource-name__
     Not: true
     Value: bar
-  - Key: kuma.io/display-name
+  - Key: __resource-name__
     Not: true
     Value: foo

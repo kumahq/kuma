@@ -452,7 +452,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.MeshService("other-service"),
+						Subset: core_rules.DeprecatedMeshService("other-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -462,7 +462,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.MeshService("foo-service"),
+						Subset: core_rules.DeprecatedMeshService("foo-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -475,7 +475,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.MeshService("bar-service"),
+						Subset: core_rules.DeprecatedMeshService("bar-service"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								OpenTelemetry: &api.OtelBackend{
@@ -776,7 +776,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.MeshService("other"),
+						Subset: core_rules.DeprecatedMeshService("other"),
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{

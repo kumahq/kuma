@@ -60,7 +60,7 @@ func applyToOutbounds(
 		serviceName := outbound.GetService()
 
 		configurer := plugin_xds.Configurer{
-			Subset:   core_rules.MeshService(serviceName),
+			Subset:   core_rules.DeprecatedMeshService(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
