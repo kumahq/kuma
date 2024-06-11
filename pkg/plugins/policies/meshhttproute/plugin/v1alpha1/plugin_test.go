@@ -217,7 +217,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
-						Enabled:            true,
+						Enabled: true,
 					},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
@@ -251,7 +251,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
-						Enabled:            true,
+						Enabled: true,
 						Verification: &meshexternalservice_api.Verification{
 							Mode: pointer.To(meshexternalservice_api.TLSVerificationSkipAll),
 						},
@@ -288,9 +288,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
-						Enabled:            true,
+						Enabled: true,
 						Verification: &meshexternalservice_api.Verification{
-							ServerName:      pointer.To("example2.com"),
+							ServerName: pointer.To("example2.com"),
 							SubjectAltNames: &[]meshexternalservice_api.SANMatch{{
 								Type:  meshexternalservice_api.SANMatchPrefix,
 								Value: "example",

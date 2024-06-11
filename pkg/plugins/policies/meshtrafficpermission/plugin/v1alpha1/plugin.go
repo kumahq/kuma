@@ -5,10 +5,10 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -114,12 +114,24 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				"mesh", resource.Mesh.GetMeta().GetName())
 			continue
 		}
+
+		core.Log.Info("NEW VERSION")
+		esNames := []string{}
 		for _, es := range resource.ExternalServices {
-			meshName := resource.Mesh.GetMeta().GetName()
-			esName, ok := es.Spec.GetTags()[mesh_proto.ServiceTag]
-			if !ok {
-				continue
+			name := es.Spec.GetService()
+			if name != "" {
+				esNames = append(esNames, es.Spec.GetService())
 			}
+		}
+		if _, found := resource.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
+			for _, mes := range resource.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
+				esNames = append(esNames, mes.GetMeta().GetName())
+			}
+		}
+
+		for _, esName := range esNames {
+			core.Log.Info("esname", "namee", esName)
+			meshName := resource.Mesh.GetMeta().GetName()
 			if listeners.Egress == nil {
 				log.V(1).Info("skip applying MeshTrafficPermission, Egress has no listener",
 					"proxyName", proxy.ZoneEgressProxy.ZoneEgressResource.GetMeta().GetName(),
