@@ -55,6 +55,13 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
+=======
+
+	labels, annotations := SplitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
+	obj.GetObjectMeta().SetLabels(labels)
+	obj.GetObjectMeta().SetAnnotations(annotations)
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 	obj.SetMesh(opts.Mesh)
 	obj.GetObjectMeta().SetName(name)
 	obj.GetObjectMeta().SetNamespace(namespace)
@@ -91,6 +98,18 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 
+<<<<<<< HEAD
+=======
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, annotations := SplitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+	obj.GetObjectMeta().SetLabels(labels)
+	obj.GetObjectMeta().SetAnnotations(annotations)
+	obj.SetMesh(r.GetMeta().GetMesh())
+
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
@@ -222,6 +241,24 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	}
 }
 
+<<<<<<< HEAD
+=======
+// Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
+// We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
+func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
+	labels := maps.Clone(coreLabels)
+	annotations := maps.Clone(currentAnnotations)
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	if v, ok := labels[v1alpha1.DisplayName]; ok {
+		annotations[v1alpha1.DisplayName] = v
+		delete(labels, v1alpha1.DisplayName)
+	}
+	return labels, annotations
+}
+
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
