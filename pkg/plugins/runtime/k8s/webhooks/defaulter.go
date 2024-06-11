@@ -13,7 +13,11 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+=======
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 )
 
 type Defaulter interface {
@@ -72,6 +76,7 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 	if resp := h.IsOperationAllowed(req.UserInfo, resource); !resp.Allowed {
 		return resp
 	}
+<<<<<<< HEAD
 
 	if resource.Descriptor().Scope == core_model.ScopeMesh {
 		labels := obj.GetLabels()
@@ -94,6 +99,14 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 			obj.SetLabels(labels)
 		}
 	}
+=======
+	labels, annotations := k8s.SplitLabelsAndAnnotations(
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+		obj.GetAnnotations(),
+	)
+	obj.SetLabels(labels)
+	obj.SetAnnotations(annotations)
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 
 	marshaled, err := json.Marshal(obj)
 	if err != nil {
