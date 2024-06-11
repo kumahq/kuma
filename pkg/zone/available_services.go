@@ -148,6 +148,8 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 			names = append(names, zi.GetMeta().GetName())
 		}
 	}
-	t.logger.Info("updated ZoneIngresses", "names", names)
+	if len(names) > 0 {
+		t.logger.Info("updated ZoneIngress available services", "ZoneIngresses", names)
+	}
 	return nil
 }
