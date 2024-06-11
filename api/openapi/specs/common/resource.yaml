@@ -55,6 +55,14 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+        displayName:
+          type: string
+          example: mtp
+          description: the original name of the resource
+        namespace:
+          type: string
+          example: kuma-system
+          description: the namespace of this resource
     InspectRule:
       type: object
       required: [type]
