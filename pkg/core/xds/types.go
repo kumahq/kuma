@@ -52,6 +52,16 @@ type TagSelectorSet []mesh_proto.TagSelector
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
+type TlsVersion int32
+
+const (
+	TLSVersionAuto TlsVersion = 0
+	TLSVersion10   TlsVersion = 1
+	TLSVersion11   TlsVersion = 2
+	TLSVersion12   TlsVersion = 3
+	TLSVersion13   TlsVersion = 4
+)
+
 type ExternalService struct {
 	Protocol                 core_mesh.Protocol
 	TLSEnabled               bool
@@ -63,6 +73,8 @@ type ExternalService struct {
 	SkipHostnameVerification bool
 	ServerName               string
 	SANs                     []SAN
+	MinTlsVersion            *TlsVersion
+	MaxTlsVersion			 *TlsVersion
 }
 
 type MatchType string

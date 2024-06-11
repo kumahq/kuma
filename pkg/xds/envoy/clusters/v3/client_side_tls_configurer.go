@@ -64,6 +64,8 @@ func  (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, 
 		ep.Target,
 		sni,
 		ep.ExternalService.SANs,
+		ep.ExternalService.MinTlsVersion,
+		ep.ExternalService.MaxTlsVersion,
 	)
 	if err != nil {
 		return nil, err

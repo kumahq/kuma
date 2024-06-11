@@ -529,6 +529,14 @@ func createMeshExternalServiceEndpoint(
 					})
 				}
 			}
+			if tls.Version != nil {
+				if tls.Version.Min != nil {
+					es.MinTlsVersion = pointer.To(toTlsVersion(tls.Version.Min))
+				}
+				if tls.Version.Max != nil {
+					es.MaxTlsVersion = pointer.To(toTlsVersion(tls.Version.Max))
+				}
+			}
 			// Server name and SNI we need to add
 			// mes.Spec.Tls.Verification.SubjectAltNames
 			if tls.Verification.Mode != nil {
@@ -580,6 +588,23 @@ func createMeshExternalServiceEndpoint(
 		outbounds[name] = append(outbounds[name], *outboundEndpoint)
 	}
 	return nil
+}
+
+func toTlsVersion(version *meshexternalservice_api.TlsVersion) core_xds.TlsVersion {
+	switch *version {
+	case meshexternalservice_api.TLSVersion13:
+		return core_xds.TLSVersion13
+	case meshexternalservice_api.TLSVersion12:
+		return core_xds.TLSVersion12
+	case meshexternalservice_api.TLSVersion11:
+		return core_xds.TLSVersion11
+	case meshexternalservice_api.TLSVersion10:
+		return core_xds.TLSVersion10
+	case meshexternalservice_api.TLSVersionAuto:
+		fallthrough
+	default:
+		return core_xds.TLSVersionAuto
+	}
 }
 
 func createExternalServiceEndpoint(

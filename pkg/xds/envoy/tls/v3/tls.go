@@ -87,7 +87,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification, fallbackToSystemCa bool, hostname, sni string, sans []core_xds.SAN) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification, fallbackToSystemCa bool, hostname, sni string, sans []core_xds.SAN, minTlsVersion, maxTlsVersion *core_xds.TlsVersion) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -169,6 +169,21 @@ func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, al
 				TrustedCa:                 trustedCa,
 				MatchTypedSubjectAltNames: matchNames,
 			},
+		}
+
+		if minTlsVersion != nil {
+			tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
+				TlsMinimumProtocolVersion: envoy_tls.TlsParameters_TlsProtocol(*minTlsVersion),
+			}
+		}
+		if maxTlsVersion != nil {
+			if tlsContext.CommonTlsContext.TlsParams == nil {
+				tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
+					TlsMaximumProtocolVersion: envoy_tls.TlsParameters_TlsProtocol(*maxTlsVersion),
+				}
+			} else {
+				tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = envoy_tls.TlsParameters_TlsProtocol(*maxTlsVersion)
+			}
 		}
 	}
 	return tlsContext, nil

@@ -1,6 +1,7 @@
 package clusters_test
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 		systemCaPath        string
 		useCommonTlsContext bool
 		expected            string
+		minTlsVersion       xds.TlsVersion
+		maxTlsVersion       xds.TlsVersion
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -108,7 +111,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         type: EDS
 `,
 		}),
-		Entry("cluster with mTLS and certs", testCase{
+		Entry("cluster with mTLS and certs and version", testCase{
 			clusterName: "testCluster",
 			endpoints: []xds.Endpoint{
 				{
@@ -123,6 +126,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
 						ServerName:         "custom",
+						MinTlsVersion: pointer.To(xds.TLSVersion10),
+						MaxTlsVersion: pointer.To(xds.TLSVersion13),
 					},
 				},
 			},
@@ -148,6 +153,9 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                         inlineBytes: Y2xpZW50Y2VydA==
                       privateKey:
                         inlineBytes: Y2xpZW50a2V5
+                    tlsParams:
+                      tlsMaximumProtocolVersion: TLSv1_3
+                      tlsMinimumProtocolVersion: TLSv1_0
                     validationContext:
                       matchTypedSubjectAltNames:
                       - matcher:
