@@ -65,6 +65,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
 		return resp
 	}
+<<<<<<< HEAD
 
 	computed, err := core_model.ComputeLabels(
 		resource.Descriptor(),
@@ -81,6 +82,12 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 	labels, annotations := k8s.SplitLabelsAndAnnotations(computed, obj.GetAnnotations())
 
+=======
+	labels, annotations := k8s.SplitLabelsAndAnnotations(
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+		obj.GetAnnotations(),
+	)
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 	obj.SetLabels(labels)
 	obj.SetAnnotations(annotations)
 

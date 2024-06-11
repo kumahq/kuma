@@ -322,6 +322,7 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+<<<<<<< HEAD
                 }
               },
               "spec": {
@@ -364,6 +365,8 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+=======
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
                 }
               },
               "spec": {
@@ -453,10 +456,15 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
+<<<<<<< HEAD
                   "kuma.io/mesh": "demo",
                   "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1"
+=======
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone"
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
@@ -509,6 +517,7 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+<<<<<<< HEAD
                 }
               },
               "spec": {
@@ -554,6 +563,8 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+=======
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
                 }
               },
               "spec": {
