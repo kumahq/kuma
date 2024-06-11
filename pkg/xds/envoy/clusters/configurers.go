@@ -71,9 +71,13 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func MesClientSideTLS(endpoints []core_xds.Endpoint, systemCaPath string) ClusterBuilderOpt {
+func MesClientSideTLS(endpoints []core_xds.Endpoint, systemCaPath string, useCommonTlsContext bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
-		builder.AddConfigurer(&v3.ClientSideTLSConfigurer{Endpoints: endpoints, SystemCaPath: systemCaPath})
+		builder.AddConfigurer(&v3.ClientSideTLSConfigurer{
+			Endpoints:           endpoints,
+			SystemCaPath:        systemCaPath,
+			UseCommonTlsContext: useCommonTlsContext,
+		})
 	})
 }
 

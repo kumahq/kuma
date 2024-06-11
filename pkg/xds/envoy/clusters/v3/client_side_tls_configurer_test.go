@@ -1,6 +1,7 @@
 package clusters_test
 
 import (
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -13,17 +14,27 @@ import (
 
 var _ = Describe("ClientSideTLSConfigurer", func() {
 	type testCase struct {
-		clusterName string
-		endpoints   []xds.Endpoint
-		expected    string
+		clusterName         string
+		endpoints           []xds.Endpoint
+		systemCaPath        string
+		useCommonTlsContext bool
+		expected            string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+			clusterBuilderOpt := clusters.ClusterBuilderOptFunc(func(builder *clusters.ClusterBuilder) {
+				builder.AddConfigurer(&v3.ClientSideTLSConfigurer{
+					Endpoints:           given.endpoints,
+					SystemCaPath:        given.systemCaPath,
+					UseCommonTlsContext: given.useCommonTlsContext,
+				})
+			})
+
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideTLS(given.endpoints)).
+				Configure(clusterBuilderOpt).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 
@@ -199,8 +210,9 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             type: EDS
 `,
 		}),
-		Entry("cluster with mTLS and multiple endpoint with different configuration", testCase{
+		Entry("cluster with multiple endpoints from MeshExternalService", testCase{
 			clusterName: "testCluster",
+			useCommonTlsContext: true,
 			endpoints: []xds.Endpoint{
 				{
 					Target: "httpbin.org",
@@ -240,8 +252,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                       resourceApiVersion: V3
               name: testCluster
               transportSocketMatches:
-                  - match: {}
-                    name: httpbin.org
+                  - name: httpbin.org
                     transportSocket:
                       name: envoy.transport_sockets.tls
                       typedConfig:
@@ -264,30 +275,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                                   trustedCa:
                                       inlineBytes: Y2FjZXJ0
                           sni: httpbin.org
-                  - match: {}
-                    name: example.org
-                    transportSocket:
-                      name: envoy.transport_sockets.tls
-                      typedConfig:
-                          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-                          allowRenegotiation: true
-                          commonTlsContext:
-                              tlsCertificates:
-                                  - certificateChain:
-                                      inlineBytes: Y2xpZW50Y2VydA==
-                                    privateKey:
-                                      inlineBytes: Y2xpZW50a2V5
-                              validationContext:
-                                  matchTypedSubjectAltNames:
-                                      - matcher:
-                                          exact: example.org
-                                        sanType: DNS
-                                      - matcher:
-                                          exact: example.org
-                                        sanType: IP_ADDRESS
-                                  trustedCa:
-                                      inlineBytes: Y2FjZXJ0
-                          sni: example.org
               type: EDS
 `,
 		}),

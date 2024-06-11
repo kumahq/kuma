@@ -50,7 +50,7 @@ func GenerateClusters(
 						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
 					if isMeshExternalService(endpoints) {
 						edsClusterBuilder.Configure(
-							envoy_clusters.MesClientSideTLS(endpoints, proxy.Metadata.SystemCaPath),
+							envoy_clusters.MesClientSideTLS(endpoints, proxy.Metadata.SystemCaPath, false),
 						)
 					} else {
 						edsClusterBuilder.
