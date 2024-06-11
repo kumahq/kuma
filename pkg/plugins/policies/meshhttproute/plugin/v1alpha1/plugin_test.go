@@ -193,19 +193,131 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp := samples.DataplaneWebBuilder().
-				AddOutbound(builders.Outbound().
-					WithAddress("10.20.20.1").
-					WithPort(9090).
-					WithMeshExternalService("example", 9090),
-				)
-			proxy := xds_builders.Proxy().
-				WithDataplane(dp).
-				WithMetadata(&core_xds.DataplaneMetadata{
-					SystemCaPath: "/tmp/ca-certs.crt",
-				}).
-				Build()
+			dp, proxy := dppForMeshExternalService()
+			mc := meshContextForMeshExternalService(dp, meshExtSvc)
 
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMesh(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
+		Entry("meshexternalservice-with-tls", func() outboundsTestCase {
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: meshexternalservice_api.HttpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled:            true,
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
+			dp, proxy := dppForMeshExternalService()
+			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMesh(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
+		Entry("meshexternalservice-with-tls-and-skipall", func() outboundsTestCase {
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: meshexternalservice_api.HttpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled:            true,
+						Verification: &meshexternalservice_api.Verification{
+							Mode: pointer.To(meshexternalservice_api.TLSVerificationSkipAll),
+						},
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
+			dp, proxy := dppForMeshExternalService()
+			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMesh(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
+		Entry("meshexternalservice-with-tls-and-custom-settings", func() outboundsTestCase {
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: meshexternalservice_api.HttpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled:            true,
+						Verification: &meshexternalservice_api.Verification{
+							ServerName:      pointer.To("example2.com"),
+							SubjectAltNames: &[]meshexternalservice_api.SANMatch{{
+								Type:  meshexternalservice_api.SANMatchPrefix,
+								Value: "example",
+							}, {
+								Type:  meshexternalservice_api.SANMatchExact,
+								Value: "example2.com",
+							}},
+							CaCert: &common_api.DataSource{
+								InlineString: pointer.To("ca"),
+							},
+							ClientCert: &common_api.DataSource{
+								InlineString: pointer.To("cert"),
+							},
+							ClientKey: &common_api.DataSource{
+								InlineString: pointer.To("key"),
+							},
+						},
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
+			dp, proxy := dppForMeshExternalService()
 			mc := meshContextForMeshExternalService(dp, meshExtSvc)
 
 			return outboundsTestCase{
@@ -1449,4 +1561,21 @@ func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc
 	Expect(err).ToNot(HaveOccurred())
 
 	return &mc
+}
+
+func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
+	dp := samples.DataplaneWebBuilder().
+		AddOutbound(builders.Outbound().
+			WithAddress("10.20.20.1").
+			WithPort(9090).
+			WithMeshExternalService("example", 9090),
+		)
+	proxy := xds_builders.Proxy().
+		WithDataplane(dp).
+		WithMetadata(&core_xds.DataplaneMetadata{
+			SystemCaPath: "/tmp/ca-certs.crt",
+		}).
+		Build()
+
+	return dp, proxy
 }
