@@ -1169,8 +1169,8 @@ var _ = Describe("TrafficRoute", func() {
 										ServicePort: 18080,
 									},
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
-										Port:        8001,
+										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8081", "app": "kong"},
+										Port:        8081,
 										ServicePort: 18001,
 									},
 								},
@@ -1253,11 +1253,29 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+					"kong_kong-system_svc_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
-							Port:     8001,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+							Port:     8081,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8081", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong.kong-system_svc_80": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8080,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong.kong-system_svc_8081": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8081,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8081", "app": "kong"},
 							Locality: nil,
 							Weight:   1,
 						},
