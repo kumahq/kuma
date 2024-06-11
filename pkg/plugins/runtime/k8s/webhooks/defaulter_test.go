@@ -122,7 +122,7 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
 				"name": "empty",
 				"creationTimestamp": null,
-				"labels": {
+				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
               },
@@ -178,7 +178,7 @@ var _ = Describe("Defaulter", func() {
               "metadata": {
 				"name": "empty",
 				"creationTimestamp": null,
-				"labels": {
+				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
               },
@@ -230,7 +230,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1",
-                  "k8s.kuma.io/namespace": "example",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
                   "kuma.io/display-name": "empty"
                 }
               },
@@ -270,7 +272,9 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/origin": "zone",
                   "kuma.io/mesh": "default",
                   "kuma.io/policy-role": "workload-owner",
-                  "k8s.kuma.io/namespace": "example",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
                   "kuma.io/display-name": "empty"
                 }
               },
@@ -307,10 +311,12 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
                   "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -346,10 +352,12 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
                   "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -396,9 +404,11 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec":{
@@ -443,9 +453,11 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/display-name": "empty",
                   "kuma.io/mesh": "default",
                   "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {

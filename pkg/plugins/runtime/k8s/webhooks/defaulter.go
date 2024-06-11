@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 type Defaulter interface {
@@ -69,8 +70,12 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
 		return resp
 	}
-
-	obj.SetLabels(core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace))
+	labels, annotations := k8s.SplitLabelsAndAnnotations(
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+		obj.GetAnnotations(),
+	)
+	obj.SetLabels(labels)
+	obj.SetAnnotations(annotations)
 
 	marshaled, err := json.Marshal(obj)
 	if err != nil {
