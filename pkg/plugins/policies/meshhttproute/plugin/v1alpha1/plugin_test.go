@@ -185,9 +185,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Port:    pointer.To(meshexternalservice_api.Port(10000)),
 						},
 					},
-					Tls: &meshexternalservice_api.Tls{
-						Enabled: true,
-					},
 				},
 				Status: &meshexternalservice_api.MeshExternalServiceStatus{
 					VIP: meshexternalservice_api.VIP{
@@ -196,13 +193,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			resourceStore := memory.NewStore()
 			dp := samples.DataplaneWebBuilder().
-				AddOutbound(builders.Outbound().
-					WithAddress("10.0.0.1").
-					WithPort(80).
-					WithMeshService("backend", 80),
-				).
 				AddOutbound(builders.Outbound().
 					WithAddress("10.20.20.1").
 					WithPort(9090).
@@ -210,36 +201,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 				)
 			proxy := xds_builders.Proxy().
 				WithDataplane(dp).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					SystemCaPath: "/tmp/ca-certs.crt",
+				}).
 				Build()
 
-			err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			lookupIPFunc := func(s string) ([]net.IP, error) {
-				return []net.IP{net.ParseIP(s)}, nil
-			}
-			meshContextBuilder := xds_context.NewMeshContextBuilder(
-				resourceStore,
-				xds_server.MeshResourceTypes(),
-				lookupIPFunc,
-				"zone-1",
-				vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
-				"mesh",
-				80,
-				xds_context.AnyToAnyReachableServicesGraphBuilder,
-				false,
-			)
-			mc, err := meshContextBuilder.Build(context.Background(), "default")
-			Expect(err).ToNot(HaveOccurred())
+			mc := meshContextForMeshExternalService(dp, meshExtSvc)
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithMesh(&mc).Build(),
+				xdsContext: *xds_builders.Context().WithMesh(mc).Build(),
 				proxy:      proxy,
 			}
 		}()),
@@ -1449,3 +1419,34 @@ oESyXXAeWPJX3e7ZgdjUHomwhAZpUmqIWribTioaHZTb1I6OpsD+eF6USSayxUaL
 9/atNWDDBSk=
 -----END CERTIFICATE-----
 `
+
+func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
+	resourceStore := memory.NewStore()
+	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	lookupIPFunc := func(s string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(s)}, nil
+	}
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
+		resourceStore,
+		xds_server.MeshResourceTypes(),
+		lookupIPFunc,
+		"zone-1",
+		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+		"mesh",
+		80,
+		xds_context.AnyToAnyReachableServicesGraphBuilder,
+		false,
+	)
+	mc, err := meshContextBuilder.Build(context.Background(), "default")
+	Expect(err).ToNot(HaveOccurred())
+
+	return &mc
+}
