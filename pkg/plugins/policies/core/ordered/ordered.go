@@ -25,7 +25,7 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
 	// For other policies order isn't important at the moment
 	plugins.PluginName(meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor.KumactlArg),
-	// has to be before MeshAccessLog so logs can access logs are added to the chains
+	// has to be before MeshAccessLog so the plugin can access log filters that are added to the filter chains
 	plugins.PluginName(meshpassthrough_api.MeshPassthroughResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshaccesslog_api.MeshAccessLogResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrace_api.MeshTraceResourceTypeDescriptor.KumactlArg),
