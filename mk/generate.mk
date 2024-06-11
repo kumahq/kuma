@@ -2,7 +2,7 @@ ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 RESOURCE_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/resource-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
-PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
+PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./app/kuma-dp/pkg/dataplane/probes/api ./test/server/grpc/api
 GO_MODULE ?= github.com/kumahq/kuma
 
 HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"

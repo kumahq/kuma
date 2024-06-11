@@ -161,5 +161,5 @@ var Health_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "test/server/grpc/api/healthcheck.proto",
+	Metadata: "app/kuma-dp/pkg/dataplane/probes/api/healthcheck.proto",
 }
