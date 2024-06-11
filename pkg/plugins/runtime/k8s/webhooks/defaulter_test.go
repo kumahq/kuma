@@ -320,6 +320,7 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+<<<<<<< HEAD
                 }
               },
               "spec": {
@@ -364,6 +365,8 @@ var _ = Describe("Defaulter", func() {
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
+=======
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
                 }
               },
               "spec": {
@@ -453,8 +456,12 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+<<<<<<< HEAD
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1"
+=======
+                  "kuma.io/origin": "zone"
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"

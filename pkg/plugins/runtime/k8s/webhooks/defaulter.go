@@ -71,7 +71,11 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 	labels, annotations := k8s.SplitLabelsAndAnnotations(
+<<<<<<< HEAD
 		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName),
+=======
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+>>>>>>> da824ce57 (fix(kuma-cp): mistakenly setting 'kuma.io/display-name' as label (#10430))
 		obj.GetAnnotations(),
 	)
 	obj.SetLabels(labels)
