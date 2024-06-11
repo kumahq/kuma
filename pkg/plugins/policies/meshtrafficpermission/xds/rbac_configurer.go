@@ -176,6 +176,7 @@ func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset) *rbac_config.Pr
 	for _, t := range ss {
 		var principalName *matcherv3.StringMatcher
 		switch t.Key {
+		// added for backward compatibility, should be removed after we remove possibility to use MeshService kind in from section
 		case core_xds.ResourceNameTag:
 			service := t.Value
 			principalName = tls.ServiceSpiffeIDMatcher(c.Mesh, service)

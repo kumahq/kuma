@@ -98,6 +98,7 @@ func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy
 func (c *Configurer) createHeaders(from core_xds.Subset) []*envoy_route.HeaderMatcher {
 	tagsMap := map[bool]map[string]string{false: {}, true: {}}
 	for _, tag := range from {
+		// added for backward compatibility, should be removed after we remove possibility to use MeshService kind in from section
 		if tag.Key == core_xds.ResourceNameTag {
 			tagsMap[tag.Not][mesh_proto.ServiceTag] = tag.Value
 		} else {
