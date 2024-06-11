@@ -1,6 +1,7 @@
 package graph_test
 
 import (
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -40,8 +41,8 @@ var _ = Describe("Reachable Services Graph", func() {
 					_, fromAll := given.expectedFromAll[to]
 					_, conn := given.expectedConnections[from][to]
 					Expect(g.CanReach(
-						map[string]string{mesh_proto.ServiceTag: from},
-						map[string]string{mesh_proto.ServiceTag: to},
+						map[string]string{core_rules.ResourceNameTag: from},
+						map[string]string{core_rules.ResourceNameTag: to},
 					)).To(Equal(fromAll || conn))
 				}
 			}
@@ -210,12 +211,12 @@ var _ = Describe("Reachable Services Graph", func() {
 
 		// then
 		Expect(graph.CanReach(
-			map[string]string{mesh_proto.ServiceTag: "b", "version": "v1"},
-			map[string]string{mesh_proto.ServiceTag: "a"},
+			map[string]string{core_rules.ResourceNameTag: "b", "version": "v1"},
+			map[string]string{core_rules.ResourceNameTag: "a"},
 		)).To(BeTrue())
 		Expect(graph.CanReach(
-			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
-			map[string]string{mesh_proto.ServiceTag: "a"},
+			map[string]string{core_rules.ResourceNameTag: "b", "version": "v2"},
+			map[string]string{core_rules.ResourceNameTag: "a"},
 		)).To(BeFalse())
 	})
 
@@ -236,15 +237,15 @@ var _ = Describe("Reachable Services Graph", func() {
 		// then
 		Expect(graph.CanReach(
 			map[string]string{"kuma.io/zone": "east"},
-			map[string]string{mesh_proto.ServiceTag: "a"},
+			map[string]string{core_rules.ResourceNameTag: "a"},
 		)).To(BeTrue())
 		Expect(graph.CanReach(
 			map[string]string{"kuma.io/zone": "west"},
-			map[string]string{mesh_proto.ServiceTag: "a"},
+			map[string]string{core_rules.ResourceNameTag: "a"},
 		)).To(BeFalse())
 		Expect(graph.CanReach(
 			map[string]string{"othertag": "other"},
-			map[string]string{mesh_proto.ServiceTag: "a"},
+			map[string]string{core_rules.ResourceNameTag: "a"},
 		)).To(BeFalse())
 	})
 
@@ -254,8 +255,8 @@ var _ = Describe("Reachable Services Graph", func() {
 
 		// then
 		Expect(graph.CanReach(
-			map[string]string{mesh_proto.ServiceTag: "b"},
-			map[string]string{mesh_proto.ServiceTag: "a", mesh_proto.MeshTag: "other"},
+			map[string]string{core_rules.ResourceNameTag: "b"},
+			map[string]string{core_rules.ResourceNameTag: "a", mesh_proto.MeshTag: "other"},
 		)).To(BeTrue())
 	})
 
@@ -282,12 +283,12 @@ var _ = Describe("Reachable Services Graph", func() {
 
 			// then
 			Expect(graph.CanReach(
-				map[string]string{mesh_proto.ServiceTag: "b"},
-				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
+				map[string]string{core_rules.ResourceNameTag: "b"},
+				map[string]string{core_rules.ResourceNameTag: "a_kuma-demo_svc_1234"},
 			)).To(BeTrue())
 			Expect(graph.CanReach(
-				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
-				map[string]string{mesh_proto.ServiceTag: "b"},
+				map[string]string{core_rules.ResourceNameTag: "a_kuma-demo_svc_1234"},
+				map[string]string{core_rules.ResourceNameTag: "b"},
 			)).To(BeFalse()) // it's not selected by top-level target ref
 		},
 		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(mesh_proto.KubeNamespaceTag, "kuma-demo")),
