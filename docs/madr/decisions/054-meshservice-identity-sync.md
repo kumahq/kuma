@@ -30,7 +30,7 @@ Therefore, we need to "fallback" to `kuma.io/service`.
 
 ## Decision Outcome
 
-Update MeshService with identity and store it in `status`. 
+Update MeshService with identity and store it in `spec`. 
 
 ## Pros and Cons of the Options
 
