@@ -138,15 +138,3 @@ func GetSecretName(category string, scope string, identifier string) string {
 func GetEgressFilterChainName(serviceName string, meshName string) string {
 	return fmt.Sprintf("%s_%s", serviceName, meshName)
 }
-
-func GetMeshExternalServiceListenerName(resourceName string) string {
-	return "meshexternalservice_" + resourceName
-}
-
-func GetMeshExternalServiceClusterName(resourceName string) string {
-	return "meshexternalservice_" + resourceName
-}
-
-func GetMeshExternalServiceFilterChainName(resourceName string) string {
-	return "meshexternalservice_filterchain_" + resourceName
-}

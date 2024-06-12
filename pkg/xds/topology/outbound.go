@@ -522,7 +522,6 @@ func createMeshExternalServiceEndpoint(
 		es.FallbackToSystemCa = true
 		es.AllowRenegotiation = tls.AllowRenegotiation
 
-		// TODO: if cacert is empty use path - this can't be configured here
 		var err error
 		if tls.Verification != nil {
 			if tls.Verification.CaCert != nil {
