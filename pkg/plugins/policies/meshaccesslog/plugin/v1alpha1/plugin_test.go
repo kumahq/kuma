@@ -953,7 +953,7 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			xdsCtx := *xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
