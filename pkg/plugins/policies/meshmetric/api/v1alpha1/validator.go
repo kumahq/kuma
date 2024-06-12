@@ -8,26 +8,43 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (r *MeshMetricResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.Mesh, common_api.MeshSubset, common_api.MeshService, common_api.MeshServiceSubset, common_api.MeshGateway,
-		},
-		GatewayListenerTagsAllowed: true,
-	})
-	return targetRefErr
+func (r *MeshMetricResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+	switch core_model.PolicyRole(r) {
+	case mesh_proto.SystemPolicyRole:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+				common_api.MeshGateway,
+			},
+			GatewayListenerTagsAllowed: true,
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+			},
+		})
+	}
 }
 
 func validateDefault(conf Conf) validators.ValidationError {

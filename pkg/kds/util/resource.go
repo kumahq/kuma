@@ -126,7 +126,8 @@ func ZoneTag(r model.Resource) string {
 	case *mesh_proto.ZoneEgress:
 		return res.GetZone()
 	default:
-		return ""
+		// todo(jakubdyszkiewicz): consider replacing this whole function with just model.ZoneOfResource(r)
+		return model.ZoneOfResource(r)
 	}
 }
 
@@ -168,12 +169,36 @@ func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.Reso
 	return stat
 }
 
-func CloneResource(res core_model.Resource, fs ...CloneResourceMetaOpt) core_model.Resource {
+type cloneResource struct {
+	name          string
+	withoutStatus bool
+}
+
+func WithResourceName(name string) CloneResourceOpt {
+	return func(m *cloneResource) {
+		m.name = name
+	}
+}
+
+func WithoutStatus() CloneResourceOpt {
+	return func(m *cloneResource) {
+		m.withoutStatus = true
+	}
+}
+
+type CloneResourceOpt func(*cloneResource)
+
+func CloneResource(res core_model.Resource, fs ...CloneResourceOpt) core_model.Resource {
+	opts := &cloneResource{}
+	for _, f := range fs {
+		f(opts)
+	}
+
 	newObj := res.Descriptor().NewObject()
-	newMeta := CloneResourceMeta(res.GetMeta(), fs...)
+	newMeta := CloneResourceMeta(res.GetMeta(), WithName(opts.name))
 	newObj.SetMeta(newMeta)
 	_ = newObj.SetSpec(res.GetSpec())
-	if newObj.Descriptor().HasStatus {
+	if newObj.Descriptor().HasStatus && !opts.withoutStatus {
 		_ = newObj.SetStatus(res.GetStatus())
 	}
 	return newObj

@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -27,7 +28,7 @@ type IngressGenerator struct{}
 func (i IngressGenerator) Generate(
 	_ context.Context,
 	_ *core_xds.ResourceSet,
-	_ xds_context.Context,
+	xdsCtx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -46,10 +47,11 @@ func (i IngressGenerator) Generate(
 		meshName := mr.Mesh.GetMeta().GetName()
 		serviceList := maps.Keys(mr.EndpointMap)
 		sort.Strings(serviceList)
-		dest := zoneproxy.BuildMeshDestinations(
-			availableSvcsByMesh[meshName],
-			xds_context.Resources{MeshLocalResources: mr.Resources},
-		)
+
+		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
+		// we only want to expose local mesh services
+		localMs := localMeshServices(xdsCtx.ControlPlane.Zone, meshResources.MeshServices().Items)
+		dest := zoneproxy.BuildMeshDestinations(availableSvcsByMesh[meshName], meshResources, localMs)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 
@@ -85,4 +87,15 @@ func (i IngressGenerator) Generate(
 		Resource: listener,
 	})
 	return resources, nil
+}
+
+func localMeshServices(zone string, meshServices []*meshservice_api.MeshServiceResource) []*meshservice_api.MeshServiceResource {
+	var result []*meshservice_api.MeshServiceResource
+	for _, ms := range meshServices {
+		if labels := ms.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" && labels[mesh_proto.ZoneTag] != zone {
+			continue
+		}
+		result = append(result, ms)
+	}
+	return result
 }

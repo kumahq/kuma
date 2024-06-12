@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshservice"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -73,6 +74,7 @@ var (
 	_ = Describe("External Services", externalservices.Policy, Ordered)
 	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
+	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)

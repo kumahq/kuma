@@ -131,5 +131,24 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, Config.KumaNamespace, mesh)),
+		Entry("consumer MeshTimeout policy", fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, namespace, mesh)),
 	)
 }
