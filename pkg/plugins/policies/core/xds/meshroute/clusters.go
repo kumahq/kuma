@@ -5,8 +5,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -19,6 +19,7 @@ func GenerateClusters(
 	proxy *core_xds.Proxy,
 	meshCtx xds_context.MeshContext,
 	services envoy_common.Services,
+	systemNamespace string,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
@@ -78,14 +79,22 @@ func GenerateClusters(
 					}
 				} else {
 					if msName := service.MeshServiceName(); len(msName) > 0 {
-						identities := meshCtx.MeshServiceIdentity[msName].Identities
-						ms := meshCtx.MeshServiceIdentity[msName].Resource
+						ms := meshCtx.MeshServiceByName[msName]
 						name := ms.Meta.GetName()
 						// we need to use original name and namespace for services that were synced from another cluster
 						if dn := ms.GetMeta().GetLabels()[mesh_proto.DisplayName]; dn != "" {
 							name = dn
 							if ns := ms.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
-								name += "." + ns
+								// when we sync resources from universal to kube, when we retrieve it has KubeNamespaceTag as label value
+								if systemNamespace == "" || systemNamespace != ns {
+									name += "." + ns
+								}
+							}
+						}
+						var serviceTagIdentities []string
+						for _, identity := range ms.Spec.Identities {
+							if identity.Type == v1alpha1.MeshServiceIdentityServiceTagType {
+								serviceTagIdentities = append(serviceTagIdentities, identity.Value)
 							}
 						}
 						sni := tls.SNIForResource(
@@ -95,10 +104,9 @@ func GenerateClusters(
 							service.MeshServicePort(),
 							nil, // todo(jakubdyszkiewicz) splits not yet supported
 						)
-						// todo(jakubdyszkiewicz) use synced identities
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
-							meshCtx.Resource, tlsReady, sni, maps.SortedKeys(identities)))
+							meshCtx.Resource, tlsReady, sni, serviceTagIdentities))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
