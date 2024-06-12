@@ -17,9 +17,9 @@ var (
 	MeshSubset          TargetRefKind = "MeshSubset"
 	MeshGateway         TargetRefKind = "MeshGateway"
 	MeshService         TargetRefKind = "MeshService"
+	MeshExternalService TargetRefKind = "MeshExternalService"
 	MeshServiceSubset   TargetRefKind = "MeshServiceSubset"
 	MeshHTTPRoute       TargetRefKind = "MeshHTTPRoute"
-	MeshExternalService TargetRefKind = "MeshExternalService"
 )
 
 var order = map[TargetRefKind]int{
@@ -40,8 +40,8 @@ var (
 	Gateway TargetRefProxyType = "Gateway"
 )
 
-func (k TargetRefKind) Less(o TargetRefKind) bool {
-	return order[k] < order[o]
+func (k TargetRefKind) Compare(o TargetRefKind) int {
+	return order[k] - order[o]
 }
 
 func AllTargetRefKinds() []TargetRefKind {
@@ -73,6 +73,15 @@ type TargetRef struct {
 	// all data plane types are targeted by the policy.
 	// +kubebuilder:validation:MinItems=1
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
+	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+	// will be targeted.
+	Namespace string `json:"namespace,omitempty"`
+	// Labels are used to select group of MeshServices that match labels. Either Labels or
+	// Name and Namespace can be used.
+	Labels map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target specific section of resource.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+	SectionName string `json:"sectionName,omitempty"`
 }
 
 func IncludesGateways(ref TargetRef) bool {

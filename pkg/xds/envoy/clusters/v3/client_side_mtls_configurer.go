@@ -22,6 +22,7 @@ type ClientSideMTLSConfigurer struct {
 	LocalMesh        *core_mesh.MeshResource
 	Tags             []tags.Tags
 	UpstreamTLSReady bool
+	VerifyIdentities []string
 }
 
 var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
@@ -79,7 +80,11 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	ca := c.SecretsTracker.RequestCa(c.UpstreamMesh.GetMeta().GetName())
 	identity := c.SecretsTracker.RequestIdentityCert()
 
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni)
+	var verifyIdentities []string
+	if c.VerifyIdentities != nil {
+		verifyIdentities = c.VerifyIdentities
+	}
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities)
 	if err != nil {
 		return nil, err
 	}

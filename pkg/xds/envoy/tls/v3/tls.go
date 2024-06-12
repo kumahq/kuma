@@ -35,12 +35,22 @@ func CreateDownstreamTlsContext(downstreamMesh core_xds.CaRequest, mesh core_xds
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
+func CreateUpstreamTlsContext(mesh core_xds.IdentityCertRequest, upstreamMesh core_xds.CaRequest, upstreamService string, sni string, verifyIdentities []string) (*envoy_tls.UpstreamTlsContext, error) {
 	var validationSANMatchers []*envoy_tls.SubjectAltNameMatcher
 	meshNames := upstreamMesh.MeshName()
 	for _, meshName := range meshNames {
 		if upstreamService == "*" {
-			validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
+			if len(verifyIdentities) == 0 {
+				validationSANMatchers = append(validationSANMatchers, MeshSpiffeIDPrefixMatcher(meshName))
+			}
+			for _, identity := range verifyIdentities {
+				stringMatcher := ServiceSpiffeIDMatcher(meshName, identity)
+				matcher := &envoy_tls.SubjectAltNameMatcher{
+					SanType: envoy_tls.SubjectAltNameMatcher_URI,
+					Matcher: stringMatcher,
+				}
+				validationSANMatchers = append(validationSANMatchers, matcher)
+			}
 		} else {
 			stringMatcher := ServiceSpiffeIDMatcher(meshName, upstreamService)
 			matcher := &envoy_tls.SubjectAltNameMatcher{

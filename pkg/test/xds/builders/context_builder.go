@@ -3,12 +3,12 @@ package builders
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type ContextBuilder struct {
@@ -19,10 +19,10 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:                  samples.MeshDefault(),
-				EndpointMap:               map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation:       map[string]*xds_context.ServiceInformation{},
-				MeshServiceByName:         map[string]*meshservice_api.MeshServiceResource{},
+				Resource:            samples.MeshDefault(),
+				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation: map[string]*xds_context.ServiceInformation{},
+				MeshServiceIdentity: map[string]topology.MeshServiceIdentity{},
 				MeshExternalServiceByName: map[string]*meshexternalservice_api.MeshExternalServiceResource{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
@@ -35,9 +35,9 @@ func Context() *ContextBuilder {
 }
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
-	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		mc.res.Mesh.MeshServiceByName[ms.GetMeta().GetName()] = ms
-	}
+	mc.res.Mesh.MeshServiceIdentity = topology.BuildMeshServiceIdentityMap(
+		mc.res.Mesh.Resources.MeshServices().Items, mc.res.Mesh.EndpointMap,
+	)
 	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
 		mc.res.Mesh.MeshExternalServiceByName[mes.GetMeta().GetName()] = mes
 	}

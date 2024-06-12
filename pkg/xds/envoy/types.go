@@ -145,6 +145,7 @@ type Service struct {
 	clusters           []Cluster
 	hasExternalService bool
 	tlsReady           bool
+	meshServiceName    string
 }
 
 func (c *Service) Add(cluster Cluster) {
@@ -172,6 +173,10 @@ func (c *Service) Clusters() []Cluster {
 
 func (c *Service) TLSReady() bool {
 	return c.tlsReady
+}
+
+func (c *Service) MeshServiceName() string {
+	return c.meshServiceName
 }
 
 type Services map[string]*Service
@@ -207,6 +212,19 @@ func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 			sa.services[c.Service()] = &Service{
 				tlsReady: sa.tlsReadiness[c.Service()],
 				name:     c.Service(),
+			}
+		}
+		sa.services[c.Service()].Add(c)
+	}
+}
+
+func (sa ServicesAccumulator) AddMeshService(name string, clusters ...Cluster) {
+	for _, c := range clusters {
+		if sa.services[c.Service()] == nil {
+			sa.services[c.Service()] = &Service{
+				tlsReady:        sa.tlsReadiness[c.Service()],
+				name:            c.Service(),
+				meshServiceName: name,
 			}
 		}
 		sa.services[c.Service()].Add(c)

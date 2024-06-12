@@ -1,10 +1,10 @@
 package matchers
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"slices"
-	"sort"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -77,10 +77,10 @@ func MatchedPolicies(
 		}
 	}
 
-	sort.Sort(ByTargetRef(dpPolicies))
+	SortByTargetRef(dpPolicies)
 
 	for _, ps := range matchedPoliciesByInbound {
-		sort.Sort(ByTargetRef(ps))
+		SortByTargetRef(ps)
 	}
 
 	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
@@ -237,38 +237,49 @@ func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.
 	return inbounds, gwListeners, delegatedGatewaySelected
 }
 
-type ByTargetRef []core_model.Resource
-
-func (b ByTargetRef) Len() int { return len(b) }
-
-func (b ByTargetRef) Less(i, j int) bool {
-	r1, ok1 := b[i].GetSpec().(core_model.Policy)
-	r2, ok2 := b[j].GetSpec().(core_model.Policy)
-	if !(ok1 && ok2) {
-		panic("resource doesn't support TargetRef matching")
-	}
-
-	tr1, tr2 := r1.GetTargetRef(), r2.GetTargetRef()
-
-	if tr1.Kind != tr2.Kind {
-		return tr1.Kind.Less(tr2.Kind)
-	}
-
-	o1, o2 := originToNumber(b[i]), originToNumber(b[j])
-	if o1 != o2 {
-		return o1 < o2
-	}
-
-	if tr1.Kind == common_api.MeshGateway {
-		if len(tr1.Tags) != len(tr2.Tags) {
-			return len(tr1.Tags) < len(tr2.Tags)
+func SortByTargetRef(rs []core_model.Resource) {
+	slices.SortFunc(rs, func(r1, r2 core_model.Resource) int {
+		p1, ok1 := r1.GetSpec().(core_model.Policy)
+		p2, ok2 := r2.GetSpec().(core_model.Policy)
+		if !(ok1 && ok2) {
+			panic("resource doesn't support TargetRef matching")
 		}
-	}
 
-	return core_model.GetDisplayName(b[i].GetMeta()) > core_model.GetDisplayName(b[j].GetMeta())
+		tr1, tr2 := p1.GetTargetRef(), p2.GetTargetRef()
+		if less := tr1.Kind.Compare(tr2.Kind); less != 0 {
+			return less
+		}
+
+		if less := originToNumber(r1) - originToNumber(r2); less != 0 {
+			return less
+		}
+
+		if tr1.Kind == common_api.MeshGateway {
+			if less := len(tr1.Tags) - len(tr2.Tags); less != 0 {
+				return less
+			}
+		}
+
+		if less := roleToNumber(r1) - roleToNumber(r2); less != 0 {
+			return less
+		}
+
+		// TODO(lobkovilya): when producer policies are supported, check here "producer is less than consumer"
+
+		return cmp.Compare(core_model.GetDisplayName(r2.GetMeta()), core_model.GetDisplayName(r1.GetMeta()))
+	})
 }
 
-func (b ByTargetRef) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func roleToNumber(r core_model.Resource) int {
+	switch core_model.PolicyRole(r) {
+	case mesh_proto.SystemPolicyRole:
+		return -1
+	case mesh_proto.ProducerPolicyRole:
+		return 0
+	default:
+		return 1
+	}
+}
 
 // The logic of this method is to recreate the following comparison table:
 

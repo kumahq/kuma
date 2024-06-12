@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -27,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -162,10 +162,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
 	meshServices := resources.MeshServices().Items
-	meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(dataplanes))
-	for _, ms := range meshServices {
-		meshServicesByName[ms.Meta.GetName()] = ms
-	}
 	meshExternalServices := resources.MeshExternalServices().Items
 	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource, len(dataplanes))
 	for _, mes := range meshExternalServices {
@@ -212,12 +208,14 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
+	meshServicesIdentity := topology.BuildMeshServiceIdentityMap(meshServices, endpointMap)
+
 	return &MeshContext{
 		Hash:                        newHash,
 		Resource:                    mesh,
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
-		MeshServiceByName:           meshServicesByName,
+		MeshServiceIdentity:         meshServicesIdentity,
 		MeshExternalServiceByName:   meshExternalServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,

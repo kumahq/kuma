@@ -3,17 +3,20 @@ package model_test
 import (
 	"fmt"
 	"reflect"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -32,9 +35,9 @@ var _ = Describe("Resource", func() {
 })
 
 var _ = Describe("IsReferenced", func() {
-	metaFuncs := map[string]map[string]func(mesh, name string) model.ResourceMeta{
+	metaFuncs := map[string]map[string]func(mesh, name string) core_model.ResourceMeta{
 		"zone": {
-			"k8s": func(mesh, name string) model.ResourceMeta {
+			"k8s": func(mesh, name string) core_model.ResourceMeta {
 				return &test_model.ResourceMeta{
 					Mesh: mesh,
 					Name: fmt.Sprintf("%s.foo", name),
@@ -46,7 +49,7 @@ var _ = Describe("IsReferenced", func() {
 					},
 				}
 			},
-			"universal": func(mesh, name string) model.ResourceMeta {
+			"universal": func(mesh, name string) core_model.ResourceMeta {
 				return &test_model.ResourceMeta{
 					Mesh: mesh,
 					Name: name,
@@ -58,7 +61,7 @@ var _ = Describe("IsReferenced", func() {
 			},
 		},
 		"global": {
-			"k8s": func(mesh, name string) model.ResourceMeta {
+			"k8s": func(mesh, name string) core_model.ResourceMeta {
 				return &test_model.ResourceMeta{
 					Mesh: mesh,
 					Name: fmt.Sprintf("%s.foo", name),
@@ -69,7 +72,7 @@ var _ = Describe("IsReferenced", func() {
 					},
 				}
 			},
-			"universal": func(mesh, name string) model.ResourceMeta {
+			"universal": func(mesh, name string) core_model.ResourceMeta {
 				return &test_model.ResourceMeta{
 					Mesh: mesh,
 					Name: name,
@@ -81,8 +84,8 @@ var _ = Describe("IsReferenced", func() {
 		},
 	}
 
-	syncTo := func(meta func(mesh, name string) model.ResourceMeta, dst string) func(mesh, name string) model.ResourceMeta {
-		return func(mesh, name string) model.ResourceMeta {
+	syncTo := func(meta func(mesh, name string) core_model.ResourceMeta, dst string) func(mesh, name string) core_model.ResourceMeta {
+		return func(mesh, name string) core_model.ResourceMeta {
 			gm := meta(mesh, name)
 
 			var mapper reconcile.ResourceMapper
@@ -93,7 +96,7 @@ var _ = Describe("IsReferenced", func() {
 				mapper = context.HashSuffixMapper(true)
 			}
 
-			r := v1alpha1.NewMeshTimeoutResource() // resource doesn't matter, we just want to call mapper to get a new meta
+			r := meshtimeout_api.NewMeshTimeoutResource() // resource doesn't matter, we just want to call mapper to get a new meta
 			r.SetMeta(gm)
 			nr, err := mapper(kds.Features{}, r)
 			Expect(err).ToNot(HaveOccurred())
@@ -144,23 +147,70 @@ var _ = Describe("IsReferenced", func() {
 			}
 
 			It("should return true when t1 is referencing route-1", func() {
-				Expect(model.IsReferenced(refMeta("m1", "t1"), "route-1", resMeta("m1", "route-1"))).To(BeTrue())
+				Expect(core_model.IsReferenced(refMeta("m1", "t1"), "route-1", resMeta("m1", "route-1"))).To(BeTrue())
 			})
 
 			It("should return false when t1 is referencing route-2", func() {
-				Expect(model.IsReferenced(refMeta("m1", "t1"), "route-2", resMeta("m1", "route-1"))).To(BeFalse())
+				Expect(core_model.IsReferenced(refMeta("m1", "t1"), "route-2", resMeta("m1", "route-1"))).To(BeFalse())
 			})
 
 			It("should return false when meshes are different", func() {
-				Expect(model.IsReferenced(refMeta("m1", "t1"), "route-1", resMeta("m2", "route-1"))).To(BeFalse())
+				Expect(core_model.IsReferenced(refMeta("m1", "t1"), "route-1", resMeta("m2", "route-1"))).To(BeFalse())
 			})
 
 			It("should return true when route name has max allowed length", func() {
 				longRouteName := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
 					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
-				Expect(model.IsReferenced(refMeta("m1", "t1"), longRouteName, resMeta("m1", longRouteName))).To(BeTrue())
+				Expect(core_model.IsReferenced(refMeta("m1", "t1"), longRouteName, resMeta("m1", longRouteName))).To(BeTrue())
 			})
 		}, entries,
+	)
+})
+
+var _ = Describe("ComputePolicyRole", func() {
+	type testCase struct {
+		policy       core_model.Policy
+		expectedRole mesh_proto.PolicyRole
+	}
+
+	DescribeTable("should compute the correct policy role",
+		func(given testCase) {
+			role := core_model.ComputePolicyRole(given.policy)
+			Expect(role).To(Equal(given.expectedRole))
+		},
+		Entry("consumer policy", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			expectedRole: mesh_proto.ConsumerPolicyRole,
+		}),
+		Entry("workload-owner policy with from", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
+		}),
+		Entry("workload-owner policy with both from and to", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
+		}),
 	)
 })
