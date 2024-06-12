@@ -115,7 +115,6 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			continue
 		}
 
-		core.Log.Info("NEW VERSION")
 		esNames := []string{}
 		for _, es := range resource.ExternalServices {
 			name := es.Spec.GetService()
@@ -130,7 +129,6 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		}
 
 		for _, esName := range esNames {
-			core.Log.Info("esname", "namee", esName)
 			meshName := resource.Mesh.GetMeta().GetName()
 			if listeners.Egress == nil {
 				log.V(1).Info("skip applying MeshTrafficPermission, Egress has no listener",
