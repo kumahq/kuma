@@ -15,11 +15,13 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	cache_mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
@@ -32,6 +34,7 @@ var _ = Describe("AvailableServices", func() {
 	var metrics core_metrics.Metrics
 	var meshCache *cache_mesh.Cache
 
+	var stop chan struct{}
 	var done chan struct{}
 	BeforeEach(func() {
 		resourceStore := memory.NewStore()
@@ -57,8 +60,28 @@ var _ = Describe("AvailableServices", func() {
 			metrics,
 		)
 		Expect(err).ToNot(HaveOccurred())
+
+		tracker, err := zone.NewZoneAvailableServicesTracker(
+			core.Log.WithName("test"),
+			metrics,
+			resManager,
+			meshCache,
+			20*time.Millisecond,
+			nil,
+			"zone",
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		stop = make(chan struct{})
+		done = make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			Expect(tracker.Start(stop)).To(Succeed())
+			close(done)
+		}()
 	})
 	AfterEach(func() {
+		close(stop)
 		Eventually(done).Should(BeClosed())
 	})
 	It("should update all ZoneIngresses", func() {
@@ -71,25 +94,10 @@ var _ = Describe("AvailableServices", func() {
 			},
 		}
 		Expect(resManager.Create(context.Background(), ingress, store.CreateByKey("ingress-1", ""))).To(Succeed())
-		mesh := core_mesh.NewMeshResource()
-		mesh.Spec = &mesh_proto.Mesh{
-			Mtls: &mesh_proto.Mesh_Mtls{
-				EnabledBackend: "builtin",
-				Backends: []*mesh_proto.CertificateAuthorityBackend{
-					{
-						Name: "builtin",
-						Type: "builtin",
-					},
-				},
-			},
-			Routing: &mesh_proto.Routing{
-				ZoneEgress: true,
-			},
-		}
-		Expect(resManager.Create(context.Background(), mesh, store.CreateByKey("mesh1", ""))).To(Succeed())
+		Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
 		externalService := &core_mesh.ExternalServiceResource{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
+				Mesh: "default",
 				Name: "es-1",
 			},
 			Spec: &mesh_proto.ExternalService{
@@ -103,100 +111,25 @@ var _ = Describe("AvailableServices", func() {
 				},
 			},
 		}
-		Expect(resManager.Create(context.Background(), externalService, store.CreateByKey("es-1", "mesh1"))).To(Succeed())
-		dp := &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port: 8000,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-								"version":         "v1",
-								"region":          "eu",
-							},
-						},
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh1"))).To(Succeed())
-		dp = &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port: 8000,
-							Tags: map[string]string{
-								"kuma.io/service": "web",
-								"version":         "v2",
-								"region":          "us",
-							},
-						},
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), dp, store.CreateByKey("dp-2", "mesh1"))).To(Succeed())
-		dp = &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port: 8000,
-							Tags: map[string]string{
-								"kuma.io/service": "web",
-								"version":         "v2",
-								"region":          "us",
-							},
-						},
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), dp, store.CreateByKey("dp-3", "mesh1"))).To(Succeed())
-
-		tracker, err := zone.NewZoneAvailableServicesTracker(
-			core.Log.WithName("test"),
-			metrics,
-			resManager,
-			meshCache,
-			20*time.Millisecond,
-			nil,
-			"zone",
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		stop := make(chan struct{})
-		done = make(chan struct{})
-		go func() {
-			defer GinkgoRecover()
-			Expect(tracker.Start(stop)).To(Succeed())
-			close(done)
-		}()
-		defer close(stop)
+		Expect(resManager.Create(context.Background(), externalService, store.CreateByKey("es-1", core_model.DefaultMesh))).To(Succeed())
+		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed())
 
 		expected := []*mesh_proto.ZoneIngress_AvailableService{
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"kuma.io/service": "backend",
-					"version":         "v1",
-					"region":          "eu",
+					"kuma.io/service":  "web",
+					"kuma.io/protocol": "http",
 				},
-				Mesh: "mesh1",
+				Mesh: core_model.DefaultMesh,
 			},
 			{
-				Instances: 2,
+				Instances: 1,
 				Tags: map[string]string{
-					"kuma.io/service": "web",
-					"version":         "v2",
-					"region":          "us",
+					"kuma.io/service": "backend",
 				},
-				Mesh: "mesh1",
+				Mesh: core_model.DefaultMesh,
 			},
 			{
 				Instances: 1,
@@ -205,7 +138,7 @@ var _ = Describe("AvailableServices", func() {
 					"version":          "v1",
 					mesh_proto.ZoneTag: "zone",
 				},
-				Mesh:            "mesh1",
+				Mesh:            core_model.DefaultMesh,
 				ExternalService: true,
 			},
 		}
