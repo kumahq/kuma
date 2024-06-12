@@ -194,7 +194,7 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("provided_tls", testCase{
-			context: *xds_builders.Context().WithMesh(samples.MeshMTLSBuilder()).Build(),
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(),
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
 				WithMetadata(&xds.DataplaneMetadata{

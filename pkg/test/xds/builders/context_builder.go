@@ -66,8 +66,13 @@ func (mc *ContextBuilder) WithResources(resources xds_context.Resources) *Contex
 	return mc
 }
 
-func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
+func (mc *ContextBuilder) WithMeshBuilder(mesh *builders.MeshBuilder) *ContextBuilder {
 	mc.res.Mesh.Resource = mesh.Build()
+	return mc
+}
+
+func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *ContextBuilder {
+	mc.res.Mesh = *mesh
 	return mc
 }
 
