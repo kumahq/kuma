@@ -1,6 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
+  "labels": null,
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -21,6 +22,7 @@
     },
     "origin": [
      {
+      "labels": null,
       "mesh": "default",
       "name": "default",
       "type": "MeshTrace"

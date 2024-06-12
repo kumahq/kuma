@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -222,5 +223,72 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 		}))
+	})
+
+	It("should return the labels from the policy dataplane API response", func() {
+		apiServer, store, stop := createServer(true, true)
+		defer stop()
+
+		meshName := "mesh-2"
+		createMesh(store, meshName)
+
+		// create a dataplane
+		dpName := "demo-app-fcc8bc4cb-m2rbm-7ff4vxf287bbfv9d.kuma-system"
+		dpLabels := map[string]string{
+			mesh_proto.DisplayName:         "demo-app-fcc8bc4cb-m2rbm",
+			mesh_proto.KubeNamespaceTag:    "kuma-demo",
+			mesh_proto.ResourceOriginLabel: "zone",
+		}
+		dpResource := &unversioned.Resource{
+			Meta: rest_v1alpha1.ResourceMeta{
+				Name:   dpName,
+				Mesh:   meshName,
+				Type:   string(core_mesh.DataplaneType),
+				Labels: dpLabels,
+			},
+			Spec: builders.Dataplane().
+				WithName("backend-1").
+				WithHttpServices("backend").
+				AddOutboundsToServices("redis", "elastic", "postgres").
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), meshName, core_mesh.DataplaneResourceTypeDescriptor, dpName, dpResource)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+
+		// create a MeshTrafficPermission policy
+		mtpName := "mtp-1"
+		mtpResource := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: mtpName,
+				Mesh: meshName,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.ResourceOriginLabel: "zone",
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err = put(apiServer.Address(), meshName, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, mtpName, mtpResource)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+
+		// send a request to the kuma api-server to fetch the MeshTrafficPermission dataplanes details
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/meshtrafficpermissions/%s/_resources/dataplanes", apiServer.Address(), meshName, mtpName), nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = http.DefaultClient.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		respBytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+
+		// validate the response labels
+		var data api_types.InspectDataplanesForPolicyResponse
+		err = json.Unmarshal(respBytes, &data)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(data.Items).To(HaveLen(1))
+		Expect(data.Items[0].Labels).To(Equal(dpLabels), fmt.Sprintf("unmatched api-server policy dataplanes response label data: %+v", data.Items[0].Labels))
 	})
 })

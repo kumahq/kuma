@@ -44,6 +44,7 @@
   }
  ],
  "resource": {
+  "labels": null,
   "mesh": "default",
   "name": "gw-1",
   "type": "MeshGateway"
@@ -108,16 +109,19 @@
      "matchers": [],
      "origin": [
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-1",
        "type": "MeshHTTPRoute"
       },
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-2",
        "type": "MeshHTTPRoute"
       },
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-3",
        "type": "MeshHTTPRoute"
@@ -159,16 +163,19 @@
      "matchers": [],
      "origin": [
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-1",
        "type": "MeshHTTPRoute"
       },
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-2",
        "type": "MeshHTTPRoute"
       },
       {
+       "labels": null,
        "mesh": "default",
        "name": "http-route-3",
        "type": "MeshHTTPRoute"

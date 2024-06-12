@@ -1,6 +1,7 @@
 {
  "items": [
   {
+   "labels": null,
    "mesh": "default",
    "name": "the-dp",
    "type": "Dataplane"

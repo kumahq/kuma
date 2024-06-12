@@ -1,6 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
+  "labels": null,
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -20,6 +21,7 @@
      "matchers": [],
      "origin": [
       {
+       "labels": null,
        "mesh": "default",
        "name": "mt-on-gateway",
        "type": "MeshTimeout"
@@ -45,6 +47,7 @@
     },
     "origin": [
      {
+      "labels": null,
       "mesh": "default",
       "name": "mpp-on-gateway",
       "type": "MeshProxyPatch"
