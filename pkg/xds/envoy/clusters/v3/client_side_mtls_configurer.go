@@ -21,6 +21,7 @@ type ClientSideMTLSConfigurer struct {
 	UpstreamService  string
 	LocalMesh        *core_mesh.MeshResource
 	Tags             []tags.Tags
+	SNI              string
 	UpstreamTLSReady bool
 	VerifyIdentities []string
 }
@@ -41,7 +42,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 	distinctTags := tags.DistinctTags(c.Tags)
 	switch {
 	case len(distinctTags) == 0:
-		transportSocket, err := c.createTransportSocket("")
+		transportSocket, err := c.createTransportSocket(c.SNI)
 		if err != nil {
 			return err
 		}

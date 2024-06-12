@@ -34,12 +34,13 @@ func (g *ExternalServicesGenerator) Generate(
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+		nil,
 	)
 	services := g.buildServices(endpointMap, zone, meshResources)
 
 	g.addFilterChains(
 		apiVersion,
-		destinations,
+		destinations.KumaIoServices,
 		endpointMap,
 		meshResources,
 		listenerBuilder,

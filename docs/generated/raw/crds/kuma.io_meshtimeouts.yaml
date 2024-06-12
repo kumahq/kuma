@@ -116,6 +116,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -181,6 +182,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -298,6 +300,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string

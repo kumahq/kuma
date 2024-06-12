@@ -19,6 +19,8 @@ violations:
   message: '"min" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
 - field: spec.tls.version.max
   message: '"max" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
+- field: spec.tls.verification.serverName
+  message: must be a valid DNS name
 - field: spec.tls.verification.mode
   message: '"mode" must be one of ["SkipSAN", "SkipCA", "SkipAll", "Secured"]'
 - field: spec.tls.verification.subjectAltNames[0].type

@@ -715,6 +715,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -780,6 +781,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -994,6 +996,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1359,6 +1362,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1424,6 +1428,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -1729,6 +1734,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1923,6 +1929,8 @@ spec:
                 properties:
                   port:
                     description: Port defines a port to which a user does request.
+                    maximum: 65535
+                    minimum: 1
                     type: integer
                   protocol:
                     default: tcp
@@ -2017,6 +2025,10 @@ spec:
                         - SkipCA
                         - Secured
                         - SkipAll
+                        type: string
+                      serverName:
+                        description: ServerName overrides the default Server Name
+                          Indicator set by Kuma.
                         type: string
                       subjectAltNames:
                         description: SubjectAltNames list of names to verify in the
@@ -2312,6 +2324,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -2377,6 +2390,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -2522,6 +2536,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -3330,6 +3345,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -3589,6 +3605,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -3710,6 +3727,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -3795,6 +3813,7 @@ spec:
                                       - MeshSubset
                                       - MeshGateway
                                       - MeshService
+                                      - MeshExternalService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
@@ -3919,6 +3938,7 @@ spec:
                                               - MeshSubset
                                               - MeshGateway
                                               - MeshService
+                                              - MeshExternalService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                               type: string
@@ -4253,6 +4273,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -4421,6 +4442,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -4869,6 +4891,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -5165,6 +5188,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -5327,6 +5351,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -5885,6 +5910,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -6127,6 +6153,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -6192,6 +6219,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -6377,6 +6405,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -6498,6 +6527,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -6882,6 +6912,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7184,6 +7215,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -7261,6 +7293,7 @@ spec:
                                       - MeshSubset
                                       - MeshGateway
                                       - MeshService
+                                      - MeshExternalService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
@@ -7340,6 +7373,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7518,6 +7552,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7583,6 +7618,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -7700,6 +7736,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7987,6 +8024,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -8123,6 +8161,7 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -8188,6 +8227,7 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string

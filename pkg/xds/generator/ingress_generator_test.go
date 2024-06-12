@@ -10,6 +10,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -17,6 +18,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -55,7 +57,11 @@ var _ = Describe("IngressGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), nil, xds_context.Context{}, proxy)
+			rs, err := gen.Generate(context.Background(), nil, xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Zone: "east",
+				},
+			}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -993,6 +999,60 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("with MeshService", testCase{
+			ingress: `
+            networking:
+              address: 10.0.0.1
+              port: 10001
+`,
+			expected: "mesh-service.envoy.golden.yaml",
+			meshResourceList: []*core_xds.MeshIngressResources{
+				{
+					Mesh: builders.Mesh().WithName("mesh1").Build(),
+					EndpointMap: map[core_xds.ServiceName][]core_xds.Endpoint{
+						"backend": {
+							{
+								Target: "192.168.0.1",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend_svc_80",
+								},
+								Weight: 1,
+							},
+						},
+						"backend2": {
+							{
+								Target: "192.168.0.2",
+								Port:   2521,
+								Tags: map[string]string{
+									"kuma.io/service": "backend2_svc_80",
+								},
+								Weight: 1,
+							},
+						},
+					},
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						meshservice_api.MeshServiceType: &meshservice_api.MeshServiceResourceList{
+							Items: []*meshservice_api.MeshServiceResource{
+								// should be included because of zone label = local zone
+								samples.MeshServiceBackendBuilder().
+									WithLabels(map[string]string{mesh_proto.ZoneTag: "east"}).
+									Build(),
+								// should be included because zone label is missing
+								samples.MeshServiceBackendBuilder().
+									WithName("backend2").
+									Build(),
+								// should be ignored because it's non-local MeshService
+								samples.MeshServiceBackendBuilder().
+									WithName("xyz").
+									WithLabels(map[string]string{mesh_proto.ZoneTag: "west"}).
+									Build(),
 							},
 						},
 					},
