@@ -43,7 +43,6 @@ func MeshService() {
 	It("should be able to create and use MeshService with HostnameGenerator", func() {
 		generator := `
 type: HostnameGenerator
-mesh: mesh-service
 name: basic
 labels:
   kuma.io/origin: zone
