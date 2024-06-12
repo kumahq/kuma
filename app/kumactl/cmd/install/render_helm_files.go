@@ -25,9 +25,9 @@ func labelRegex(label string) *regexp.Regexp {
 }
 
 var stripLabelsRegexps = []*regexp.Regexp{
-	labelRegex("app\.kubernetes\.io/managed-by"),
-	labelRegex("helm\.sh/chart"),
-	labelRegex("app.kubernetes\.io/version"),
+	labelRegex("app\\.kubernetes\\.io/managed-by"),
+	labelRegex("helm\\.sh/chart"),
+	labelRegex("app.kubernetes\\.io/version"),
 }
 
 var kumaSystemNamespace = func(namespace string) string {
