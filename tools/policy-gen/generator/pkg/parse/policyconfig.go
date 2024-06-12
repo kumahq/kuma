@@ -13,6 +13,13 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+type ResourceScope string
+
+const (
+	Mesh   ResourceScope = "Mesh"
+	Global ResourceScope = "Global"
+)
+
 type PolicyConfig struct {
 	Package             string
 	Name                string
@@ -31,6 +38,7 @@ type PolicyConfig struct {
 	ResourceDir         string
 	IsPolicy            bool
 	KDSFlags            string
+	Scope               ResourceScope
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -140,6 +148,18 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		res.KDSFlags = v
 	} else {
 		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag"
+	}
+	if v, ok := markers["kuma:policy:scope"]; ok {
+		switch v {
+		case "Global":
+			res.Scope = Global
+		case "Mesh":
+			res.Scope = Mesh
+		default:
+			return res, errors.Errorf("couldn't parse %s as scope `Global` or `Mesh`", v)
+		}
+	} else {
+		res.Scope = Mesh
 	}
 
 	if v, ok := markers["kuma:policy:singular_display_name"]; ok {
