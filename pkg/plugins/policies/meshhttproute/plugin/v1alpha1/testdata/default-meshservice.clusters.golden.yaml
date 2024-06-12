@@ -33,7 +33,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: backend{mesh=default}
+        sni: a601e0c00295a9fbe.backend.80.default.ms
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
