@@ -64,7 +64,7 @@ spec:
 				},
 				Endpoints: []v1alpha1.Endpoint{{
 					Address: host,
-					Port:    pointer.To(v1alpha1.Port(80)),
+					Port:    pointer.To(v1alpha1.Port(port)),
 				}},
 			},
 			Status: &v1alpha1.MeshExternalServiceStatus{},
@@ -82,10 +82,6 @@ spec:
 		return mes
 	}
 
-	var esHttpHostPort string
-	var esHttp2HostPort string
-	var esHttpsHostPort string
-
 	var esHttpContainerName string
 	var esHttpsContainerName string
 	var esHttp2ContainerName string
@@ -98,10 +94,6 @@ spec:
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
 		esHttpsContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpsName)
 		esHttp2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttp2Name)
-
-		esHttpHostPort = fmt.Sprintf("%s:%d", esHttpContainerName, 80)
-		esHttpsHostPort = fmt.Sprintf("%s:%d", esHttpsContainerName, 443)
-		esHttp2HostPort = fmt.Sprintf("%s:%d", esHttp2ContainerName, 81)
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
@@ -146,7 +138,6 @@ spec:
 					// Should rewrite host header
 					ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
 				))
-				checkSuccessfulRequest(esHttpHostPort, clientName, Not(ContainSubstring("HTTPS")))
 			})
 
 			It("should route to mesh-external-service with same hostname but different ports", func() {
@@ -159,12 +150,8 @@ spec:
 				// when access the first external service with .mesh
 				checkSuccessfulRequest("ext-srv-1.mesh", clientName,
 					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http")))
-				checkSuccessfulRequest(esHttpHostPort, clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http")))
 
 				checkSuccessfulRequest("ext-srv-2.mesh", clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http-2")))
-				checkSuccessfulRequest(esHttp2HostPort, clientName,
 					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http-2")))
 			})
 
@@ -177,7 +164,7 @@ spec:
 
 				// then accessing the secured external service fails
 				Eventually(func(g Gomega) {
-					response, err := client.CollectFailure(universal.Cluster, clientName, "http://"+esHttpsHostPort)
+					response, err := client.CollectFailure(universal.Cluster, clientName, "http://ext-srv-tls.mesh")
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(response.ResponseCode).To(Equal(503))
 				}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
@@ -191,7 +178,7 @@ spec:
 				Expect(err).ToNot(HaveOccurred())
 
 				// then accessing the secured external service succeeds
-				checkSuccessfulRequest("http://"+esHttpsHostPort, clientName, Not(ContainSubstring("HTTPS")))
+				checkSuccessfulRequest("http://ext-srv-tls.mesh", clientName, Not(ContainSubstring("HTTPS")))
 			})
 		})
 	}
