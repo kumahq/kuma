@@ -32,7 +32,7 @@ func generateFromService(
 	serviceName := svc.ServiceName
 	protocol := meshCtx.GetServiceProtocol(serviceName)
 
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.BackendRef)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}

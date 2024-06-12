@@ -11,6 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -78,9 +79,26 @@ func GenerateClusters(
 				} else {
 					if msName := service.MeshServiceName(); len(msName) > 0 {
 						identities := meshCtx.MeshServiceIdentity[msName].Identities
+						ms := meshCtx.MeshServiceIdentity[msName].Resource
+						name := ms.Meta.GetName()
+						// we need to use original name and namespace for services that were synced from another cluster
+						if dn := ms.GetMeta().GetLabels()[mesh_proto.DisplayName]; dn != "" {
+							name = dn
+							if ns := ms.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
+								name += "." + ns
+							}
+						}
+						sni := tls.SNIForResource(
+							name,
+							ms.Meta.GetMesh(),
+							ms.Descriptor().Name,
+							service.MeshServicePort(),
+							nil, // todo(jakubdyszkiewicz) splits not yet supported
+						)
+						// todo(jakubdyszkiewicz) use synced identities
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
-							meshCtx.Resource, tlsReady, clusterTags, maps.SortedKeys(identities)))
+							meshCtx.Resource, tlsReady, sni, maps.SortedKeys(identities)))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,

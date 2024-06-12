@@ -13,21 +13,23 @@ import (
 type TargetRefKind string
 
 var (
-	Mesh              TargetRefKind = "Mesh"
-	MeshSubset        TargetRefKind = "MeshSubset"
-	MeshGateway       TargetRefKind = "MeshGateway"
-	MeshService       TargetRefKind = "MeshService"
-	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
-	MeshHTTPRoute     TargetRefKind = "MeshHTTPRoute"
+	Mesh                TargetRefKind = "Mesh"
+	MeshSubset          TargetRefKind = "MeshSubset"
+	MeshGateway         TargetRefKind = "MeshGateway"
+	MeshService         TargetRefKind = "MeshService"
+	MeshExternalService TargetRefKind = "MeshExternalService"
+	MeshServiceSubset   TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute       TargetRefKind = "MeshHTTPRoute"
 )
 
 var order = map[TargetRefKind]int{
-	Mesh:              1,
-	MeshSubset:        2,
-	MeshGateway:       3,
-	MeshService:       4,
-	MeshServiceSubset: 5,
-	MeshHTTPRoute:     6,
+	Mesh:                1,
+	MeshSubset:          2,
+	MeshGateway:         3,
+	MeshService:         4,
+	MeshExternalService: 5,
+	MeshServiceSubset:   6,
+	MeshHTTPRoute:       7,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
@@ -57,7 +59,7 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`

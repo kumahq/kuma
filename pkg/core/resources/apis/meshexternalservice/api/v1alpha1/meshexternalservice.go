@@ -44,7 +44,7 @@ type Match struct {
 	// +kubebuilder:default=HostnameGenerator
 	Type MatchType `json:"type,omitempty"`
 	// Port defines a port to which a user does request.
-	Port int `json:"port"`
+	Port Port `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
 	Protocol ProtocolType `json:"protocol,omitempty"`
