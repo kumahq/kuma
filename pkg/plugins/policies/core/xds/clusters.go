@@ -13,27 +13,33 @@ import (
 )
 
 type Clusters struct {
-	Inbound       map[string]*envoy_cluster.Cluster
-	Outbound      map[string]*envoy_cluster.Cluster
-	OutboundSplit map[string][]*envoy_cluster.Cluster
-	Gateway       map[string]*envoy_cluster.Cluster
-	Egress        map[string]*envoy_cluster.Cluster
-	Prometheus    *envoy_cluster.Cluster
+	Inbound                 map[string]*envoy_cluster.Cluster
+	Outbound                map[string]*envoy_cluster.Cluster
+	OutboundSplit           map[string][]*envoy_cluster.Cluster
+	Gateway                 map[string]*envoy_cluster.Cluster
+	Egress                  map[string]*envoy_cluster.Cluster
+	Prometheus              *envoy_cluster.Cluster
+	MeshServiceDestinations map[string][]*envoy_cluster.Cluster
 }
 
 func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 	clusters := Clusters{
-		Inbound:       map[string]*envoy_cluster.Cluster{},
-		Outbound:      map[string]*envoy_cluster.Cluster{},
-		OutboundSplit: map[string][]*envoy_cluster.Cluster{},
-		Gateway:       map[string]*envoy_cluster.Cluster{},
-		Egress:        map[string]*envoy_cluster.Cluster{},
+		Inbound:                 map[string]*envoy_cluster.Cluster{},
+		Outbound:                map[string]*envoy_cluster.Cluster{},
+		OutboundSplit:           map[string][]*envoy_cluster.Cluster{},
+		Gateway:                 map[string]*envoy_cluster.Cluster{},
+		Egress:                  map[string]*envoy_cluster.Cluster{},
+		MeshServiceDestinations: map[string][]*envoy_cluster.Cluster{},
 	}
 	for _, res := range rs.Resources(envoy_resource.ClusterType) {
 		cluster := res.Resource.(*envoy_cluster.Cluster)
 
 		switch res.Origin {
 		case generator.OriginOutbound:
+			msName, ok := res.Metadata[core_xds.MeshServiceDestination]
+			if ok {
+				clusters.MeshServiceDestinations[msName] = append(clusters.MeshServiceDestinations[msName], cluster)
+			}
 			serviceName := tags.ServiceFromClusterName(cluster.Name)
 			if serviceName != cluster.Name {
 				// first group is service name and second split number

@@ -671,6 +671,7 @@ var _ = Describe("MeshTimeout", func() {
 				{
 					Name:     "outbound",
 					Origin:   generator.OriginOutbound,
+					Metadata: map[string]string{core_xds.MeshServiceDestination: "other-service"},
 					Resource: test_xds.ClusterWithName("other-service_svc_10001"),
 				},
 			},
