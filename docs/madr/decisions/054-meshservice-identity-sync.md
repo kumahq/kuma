@@ -46,6 +46,9 @@ spec: # or status, see discussion below
 ```
 
 Currently, the only type is `ServiceTag` but we want this API to be extensible to future changes of identity.
+In the future for example the type might be:
+* `SpiffeID` when we have integration with SPIRE
+* `KubeServiceAccount` direct identity instead of indirect like we do now
 
 This is a list because one MeshService can select multiple Dataplane proxies of multiple different `kuma.io/service`, so for mTLS we need to require either one of them.
 
