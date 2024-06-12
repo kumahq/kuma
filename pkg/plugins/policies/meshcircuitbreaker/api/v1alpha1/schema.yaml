@@ -268,6 +268,7 @@ properties:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -332,6 +333,7 @@ properties:
               - MeshSubset
               - MeshGateway
               - MeshService
+              - MeshExternalService
               - MeshServiceSubset
               - MeshHTTPRoute
             type: string
@@ -634,6 +636,7 @@ properties:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
