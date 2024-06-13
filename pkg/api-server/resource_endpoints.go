@@ -532,6 +532,13 @@ func (r *resourceEndpoints) validateLabels(rm model.ResourceMeta) validators.Val
 		}
 	}
 
+	if _, ok := rm.GetLabels()[mesh_proto.PolicyRoleLabel]; ok {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should not be set manually", mesh_proto.PolicyRoleLabel))
+	}
+	if _, ok := rm.GetLabels()[mesh_proto.ZoneTag]; ok {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should not be set manually", mesh_proto.ZoneTag))
+	}
+
 	for _, k := range maps.SortedKeys(rm.GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
