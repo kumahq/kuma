@@ -253,7 +253,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, t
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
 	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, app.dpEnv)
 
-	if err := c.addIngressEnvoyTunnel(); err != nil {
+	if err := c.addIngressEnvoyTunnel(name); err != nil {
 		return err
 	}
 
@@ -489,8 +489,8 @@ func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
-func (c *UniversalCluster) addIngressEnvoyTunnel() error {
-	app := c.apps[AppIngress]
+func (c *UniversalCluster) addIngressEnvoyTunnel(appName string) error {
+	app := c.apps[appName]
 	c.networking[Config.ZoneIngressApp] = UniversalNetworking{
 		IP:            "localhost",
 		ApiServerPort: app.GetPublicPort(sshPort),
