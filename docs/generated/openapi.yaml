@@ -2390,6 +2390,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -3016,6 +3018,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -4218,6 +4222,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -4714,6 +4720,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -5185,6 +5193,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -5968,6 +5978,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -6713,6 +6725,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -7030,6 +7044,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -7198,6 +7214,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -7909,6 +7927,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -8479,6 +8499,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -9109,6 +9131,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -9432,6 +9456,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -9894,6 +9920,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -10229,6 +10257,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -10454,6 +10484,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -10512,6 +10544,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
@@ -10865,6 +10899,8 @@ components:
           description: Name of the Kuma resource
           type: string
         labels:
+          additionalProperties:
+            type: string
           description: The labels to help identity resources
           type: object
         spec:
