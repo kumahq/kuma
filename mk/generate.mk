@@ -13,7 +13,7 @@ GENERATE_OAS_PREREQUISITES ?=
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
-clean/generated: clean/protos clean/builtin-crds clean/resources clean/policies clean/tools
+clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/policies clean/tools
 
 .PHONY: generate/protos
 generate/protos:
@@ -42,22 +42,29 @@ resources/type: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
 	$(RESOURCE_GEN) -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
-.PHONY: clean/resources
-clean/resources:
+.PHONY: clean/legacy-resources
+clean/legacy-resources:
 	find pkg -name 'zz_generated.*.go' -delete
 
 POLICIES_DIR ?= pkg/plugins/policies
+RESOURCES_DIR ?= pkg/core/resources/apis
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
 kuma_policies = $(foreach dir,$(shell find $(KUMA_DIR)/pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
 
-generate/resources: POLICIES_DIR=pkg/core/resources/apis
+
+.PHONY: clean/resources
+clean/resources: POLICIES_DIR=$(RESOURCES_DIR)
+clean/resources:
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) clean/policies
+
+generate/resources: POLICIES_DIR=$(RESOURCES_DIR)
 generate/resources:
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-import
-	POLICIES_DIR=$(POLICIES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-config
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-import
+	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
 
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
