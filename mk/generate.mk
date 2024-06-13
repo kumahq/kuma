@@ -13,7 +13,7 @@ GENERATE_OAS_PREREQUISITES ?=
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
-clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/policies clean/tools
+clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
 generate/protos:
