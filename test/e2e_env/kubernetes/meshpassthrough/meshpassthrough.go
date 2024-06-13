@@ -52,6 +52,13 @@ func MeshPassthrough() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	curlAddress := func(address string) string {
+		if Config.IPV6 {
+			return fmt.Sprintf("[%s]", address)
+		}
+		return address
+	}
+
 	AfterEachFailure(func() {
 		DebugKube(kubernetes.Cluster, meshName, namespace)
 	})
@@ -181,7 +188,7 @@ spec:
 		// and ip address
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				kubernetes.Cluster, "demo-client", anotherEsIP,
+				kubernetes.Cluster, "demo-client", curlAddress(anotherEsIP),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -190,7 +197,7 @@ spec:
 		// and shouldn't access not-accessible-external-service
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectFailure(
-				kubernetes.Cluster, "demo-client", notAccessibleEsIP,
+				kubernetes.Cluster, "demo-client", curlAddress(notAccessibleEsIP),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
