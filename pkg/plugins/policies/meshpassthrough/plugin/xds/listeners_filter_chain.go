@@ -61,11 +61,15 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 			}
 			switch route.MatchType {
 			case Domain, WildcardDomain, IP, IPV6:
+				domains := []string{route.Value}
+				if route.MatchType == IPV6 {
+					domains = append(domains, fmt.Sprintf("[%s]", route.Value))
+				}
 				clusterName := ClusterName(route, c.Protocol, c.Port)
 				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, route.Value).
 					Configure(
 						xds_virtual_hosts.BasicRoute(ClusterName(route, c.Protocol, c.Port)),
-						xds_virtual_hosts.DomainNames(route.Value),
+						xds_virtual_hosts.DomainNames(domains...),
 					)))
 				clustersAccumulator[clusterName] = c.Protocol
 			}
