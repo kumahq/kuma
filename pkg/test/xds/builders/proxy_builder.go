@@ -69,3 +69,8 @@ func (p *ProxyBuilder) WithRouting(routing *RoutingBuilder) *ProxyBuilder {
 	p.res.Routing = *routing.Build()
 	return p
 }
+
+func (p *ProxyBuilder) WithID(id xds.ProxyId) *ProxyBuilder {
+	p.res.Id = id
+	return p
+}

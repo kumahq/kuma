@@ -31,13 +31,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			mesh := "demo"
 			sourceService := "web"
 			destinationService := "backend"
-			metaData := &core_xds.DataplaneMetadata{}
+			metaData := &core_xds.DataplaneMetadata{WorkDir: "/tmp"}
 			if !given.legacyTcpAccessLog {
 				metaData.Features = core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true}
 			}
-			metaData.AccessLogSocketPath = "/tmp/kuma-al-dataplane0-demo.sock"
 			proxy := &core_xds.Proxy{
-				Id:       *core_xds.BuildProxyId("web", "example"),
+				Id:       *core_xds.BuildProxyId(mesh, "dataplane0"),
 				Metadata: metaData,
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &model.ResourceMeta{

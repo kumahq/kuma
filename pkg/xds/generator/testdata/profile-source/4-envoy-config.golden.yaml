@@ -123,7 +123,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /foo/bar
+                path: /tmp/kuma-mh-backend-01-demo.sock
     name: kuma:metrics:hijacker
     type: STATIC
 - name: localhost:8080
@@ -388,7 +388,7 @@ resources:
               name: kuma:metrics:prometheus
               routes:
               - match:
-                  prefix: /non-standard-path
+                  prefix: /foo/bar
                 route:
                   cluster: kuma:metrics:hijacker
                   prefixRewrite: /
@@ -409,7 +409,7 @@ resources:
               name: kuma:metrics:prometheus
               routes:
               - match:
-                  prefix: /non-standard-path
+                  prefix: /foo/bar
                 route:
                   cluster: kuma:metrics:hijacker
                   prefixRewrite: /
