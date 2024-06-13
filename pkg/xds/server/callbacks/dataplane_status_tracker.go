@@ -2,7 +2,6 @@ package callbacks
 
 import (
 	"context"
-	"os"
 	"strings"
 	"sync"
 
@@ -138,7 +137,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = proxyId.ToResourceKey()
 			var dpType core_model.ResourceType
-			md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir(), state.dataplaneId)
+			md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 
 			// If the dataplane was started with a resource YAML, then it
 			// will be serialized in the node metadata and we would know
