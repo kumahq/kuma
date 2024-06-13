@@ -84,7 +84,7 @@
    "path": "hostnamegenerators",
    "pluralDisplayName": "Hostname Generators",
    "readOnly": false,
-   "scope": "Mesh",
+   "scope": "Global",
    "singularDisplayName": "Hostname Generator"
   },
   {

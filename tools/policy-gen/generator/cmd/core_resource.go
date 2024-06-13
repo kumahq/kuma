@@ -202,7 +202,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,
 		Resource: New{{.Name}}Resource(),
 		ResourceList: &{{.Name}}ResourceList{},
-		Scope: model.ScopeMesh,
+		Scope: model.Scope{{.Scope}},
 		KDSFlags: {{.KDSFlags}},
 		WsPath: "{{.Path}}",
 		KumactlArg: "{{index .AlternativeNames 0}}",
