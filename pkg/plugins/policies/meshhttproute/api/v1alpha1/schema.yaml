@@ -1,5 +1,5 @@
 type: object
-required: [type, name, spec]
+required: [type, name, spec, mesh]
 properties:
   type:
     description: 'the type of the resource'

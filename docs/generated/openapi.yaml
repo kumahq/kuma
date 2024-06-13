@@ -1591,18 +1591,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
-  /meshes/{mesh}/hostnamegenerators/{name}:
+  /hostnamegenerators/{name}:
     get:
       summary: Returns HostnameGenerator entity
       tags:
         - HostnameGenerator
       parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
         - in: path
           name: name
           schema:
@@ -1617,12 +1611,6 @@ paths:
       tags:
         - HostnameGenerator
       parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
         - in: path
           name: name
           schema:
@@ -1657,12 +1645,6 @@ paths:
         - HostnameGenerator
       parameters:
         - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
           name: name
           schema:
             type: string
@@ -1671,18 +1653,11 @@ paths:
       responses:
         '200':
           description: Successful response
-  /meshes/{mesh}/hostnamegenerators:
+  /hostnamegenerators:
     get:
       summary: Returns a list of HostnameGenerator in the mesh.
       tags:
         - HostnameGenerator
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorList'
@@ -2389,6 +2364,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -3021,6 +2997,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -4229,6 +4206,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -4731,6 +4709,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -5208,6 +5187,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -5997,6 +5977,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -6748,6 +6729,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7071,6 +7053,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7245,6 +7228,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7962,6 +7946,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -8538,6 +8523,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9174,6 +9160,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9503,6 +9490,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9971,6 +9959,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10312,6 +10301,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10549,12 +10539,6 @@ components:
           type: string
           enum:
             - HostnameGenerator
-        mesh:
-          description: >-
-            Mesh is the name of the Kuma mesh this resource belongs to. It may
-            be omitted for cluster-scoped resources.
-          type: string
-          default: default
         name:
           description: Name of the Kuma resource
           type: string
@@ -10607,6 +10591,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10966,6 +10951,7 @@ components:
         - type
         - name
         - spec
+        - mesh
       properties:
         type:
           description: the type of the resource

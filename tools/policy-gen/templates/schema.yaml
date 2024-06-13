@@ -1,14 +1,16 @@
 type: object
-required: [type, name, spec]
+required: [type, name, spec{{- if eq .Scope "Mesh"}}, mesh{{- end}}]
 properties:
   type:
     description: 'the type of the resource'
     type: string
+  {{- if eq .Scope "Mesh"}}
   mesh:
     description: 'Mesh is the name of the Kuma mesh this resource belongs to.
       It may be omitted for cluster-scoped resources.'
     type: string
     default: default
+  {{- end}}
   name:
     description: 'Name of the Kuma resource'
     type: string
