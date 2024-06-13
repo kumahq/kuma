@@ -2374,13 +2374,13 @@ components:
             description: The value to be used within the operations.
     MeshAccessLogItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -3008,13 +3008,13 @@ components:
             type: string
     MeshCircuitBreakerItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -4218,13 +4218,13 @@ components:
             type: string
     MeshFaultInjectionItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -4722,13 +4722,13 @@ components:
             type: string
     MeshHealthCheckItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -5201,13 +5201,13 @@ components:
             type: string
     MeshHTTPRouteItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -5992,13 +5992,13 @@ components:
             type: string
     MeshLoadBalancingStrategyItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -6745,13 +6745,13 @@ components:
             type: string
     MeshMetricItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -7070,13 +7070,13 @@ components:
             type: string
     MeshPassthroughItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -7246,13 +7246,13 @@ components:
             type: string
     MeshProxyPatchItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -7965,13 +7965,13 @@ components:
             type: string
     MeshRateLimitItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -8543,13 +8543,13 @@ components:
             type: string
     MeshRetryItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -9181,13 +9181,13 @@ components:
             type: string
     MeshTCPRouteItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -9512,13 +9512,13 @@ components:
             type: string
     MeshTimeoutItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -9982,13 +9982,13 @@ components:
             type: string
     MeshTraceItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -10325,13 +10325,13 @@ components:
             type: string
     MeshTrafficPermissionItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -10558,13 +10558,13 @@ components:
             type: string
     HostnameGeneratorItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -10624,13 +10624,13 @@ components:
             type: string
     MeshExternalServiceItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
@@ -10985,13 +10985,13 @@ components:
             type: string
     MeshServiceItem:
       type: object
+      required:
+        - type
+        - mesh
+        - name
+        - labels
+        - spec
       properties:
-        required:
-          - type
-          - mesh
-          - name
-          - labels
-          - spec
         type:
           description: the type of the resource
           type: string
