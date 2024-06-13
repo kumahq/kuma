@@ -235,7 +235,7 @@ func makeSplit(
 		}
 
 		if len(meshServiceName) > 0 {
-			servicesAcc.AddMeshService(meshServiceName, clusterBuilder.Build())
+			servicesAcc.AddMeshService(meshServiceName, *ref.Port, clusterBuilder.Build())
 		} else {
 			servicesAcc.Add(clusterBuilder.Build())
 		}

@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -16,7 +17,42 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
+type MeshDestinations struct {
+	KumaIoServices map[string][]envoy_tags.Tags
+	MeshServices   []MeshServiceDestination
+}
+
+type MeshServiceDestination struct {
+	Name            string
+	Mesh            string
+	Port            uint32
+	DestinationName string
+}
+
 func BuildMeshDestinations(
+	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
+	res xds_context.Resources,
+	meshServices []*meshservice_api.MeshServiceResource,
+) MeshDestinations {
+	var msDestinations []MeshServiceDestination
+	for _, ms := range meshServices {
+		for _, port := range ms.Spec.Ports {
+			msDestinations = append(msDestinations, MeshServiceDestination{
+				Name:            ms.GetMeta().GetName(),
+				Mesh:            ms.GetMeta().GetMesh(),
+				Port:            port.Port,
+				DestinationName: ms.DestinationName(port.Port),
+			})
+		}
+	}
+
+	return MeshDestinations{
+		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
+		MeshServices:   msDestinations,
+	}
+}
+
+func buildKumaIoServiceDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	res xds_context.Resources,
 ) map[string][]envoy_tags.Tags {

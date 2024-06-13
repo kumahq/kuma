@@ -76,7 +76,7 @@ func (mc *ContextBuilder) WithMeshBuilder(mesh *builders.MeshBuilder) *ContextBu
 	return mc
 }
 
-func (mc *ContextBuilder) WithMesh(mesh *xds_context.MeshContext) *ContextBuilder {
+func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *ContextBuilder {
 	mc.res.Mesh = *mesh
 	return mc
 }
