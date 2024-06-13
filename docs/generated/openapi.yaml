@@ -2376,9 +2376,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -3010,9 +3008,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -4220,9 +4216,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -4724,9 +4718,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -5203,9 +5195,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -5994,9 +5984,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -6747,9 +6735,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -7072,9 +7058,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -7248,9 +7232,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -7967,9 +7949,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -8545,9 +8525,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -9183,9 +9161,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -9514,9 +9490,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -9984,9 +9958,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -10327,9 +10299,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -10560,9 +10530,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -10626,9 +10594,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
@@ -10987,9 +10953,7 @@ components:
       type: object
       required:
         - type
-        - mesh
         - name
-        - labels
         - spec
       properties:
         type:
