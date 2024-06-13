@@ -22,6 +22,7 @@ type ResourceAdmissionChecker struct {
 	FederatedZone                bool
 	DisableOriginLabelValidation bool
 	SystemNamespace              string
+	ZoneName                     string
 }
 
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {

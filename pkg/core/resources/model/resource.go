@@ -436,7 +436,7 @@ func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string) map[string]string {
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) map[string]string {
 	labels := r.GetMeta().GetLabels()
 	if len(labels) == 0 {
 		labels = map[string]string{}
@@ -454,6 +454,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 
 	if mode == config_core.Zone {
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
+		setIfNotExist(mesh_proto.ZoneTag, localZone)
 	}
 
 	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
