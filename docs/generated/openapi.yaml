@@ -2375,6 +2375,12 @@ components:
     MeshAccessLogItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -3003,6 +3009,12 @@ components:
     MeshCircuitBreakerItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -4207,6 +4219,12 @@ components:
     MeshFaultInjectionItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -4705,6 +4723,12 @@ components:
     MeshHealthCheckItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -5178,6 +5202,12 @@ components:
     MeshHTTPRouteItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -5963,6 +5993,12 @@ components:
     MeshLoadBalancingStrategyItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -6710,6 +6746,12 @@ components:
     MeshMetricItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -7029,6 +7071,12 @@ components:
     MeshPassthroughItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -7199,6 +7247,12 @@ components:
     MeshProxyPatchItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -7912,6 +7966,12 @@ components:
     MeshRateLimitItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -8484,6 +8544,12 @@ components:
     MeshRetryItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -9116,6 +9182,12 @@ components:
     MeshTCPRouteItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -9441,6 +9513,12 @@ components:
     MeshTimeoutItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -9905,6 +9983,12 @@ components:
     MeshTraceItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -10242,6 +10326,12 @@ components:
     MeshTrafficPermissionItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -10469,6 +10559,12 @@ components:
     HostnameGeneratorItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -10529,6 +10625,12 @@ components:
     MeshExternalServiceItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string
@@ -10884,6 +10986,12 @@ components:
     MeshServiceItem:
       type: object
       properties:
+        required:
+          - type
+          - mesh
+          - name
+          - labels
+          - spec
         type:
           description: the type of the resource
           type: string

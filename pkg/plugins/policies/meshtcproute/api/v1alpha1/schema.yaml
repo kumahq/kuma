@@ -1,5 +1,6 @@
 type: object
 properties:
+  required: [type, mesh, name, labels, spec]
   type:
     description: 'the type of the resource'
     type: string
