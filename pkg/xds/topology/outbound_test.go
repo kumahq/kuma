@@ -1429,6 +1429,8 @@ var _ = Describe("TrafficRoute", func() {
 								ClientKey:                []byte("key"),
 								AllowRenegotiation:       true,
 								SkipHostnameVerification: false,
+								MinTlsVersion:            pointer.To(core_xds.TLSVersion12),
+								MaxTlsVersion:            pointer.To(core_xds.TLSVersion13),
 								ServerName:               "example.com",
 								SANs: []core_xds.SAN{
 									{
