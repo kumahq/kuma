@@ -108,7 +108,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id: *core_xds.BuildProxyId("demo", "backend-01"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "backend-01",
@@ -171,7 +171,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -198,6 +198,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
+
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "profile-source", given.expected)))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
@@ -309,7 +310,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 type: prometheus
                 conf:
                   port: 1234
-                  path: /non-standard-path
+                  path: /foo/bar
                   skipMTLS: false
 `,
 			dataplane: `
