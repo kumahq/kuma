@@ -3,17 +3,18 @@ package meshexternalservice
 import (
 	"encoding/base64"
 	"fmt"
-	v1alpha12 "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
-	"github.com/kumahq/kuma/test/framework/envs/universal"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
+	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/universal"
 )
 
 func MeshExternalService() {
@@ -56,8 +57,8 @@ spec:
 					"hostname": "true",
 				},
 			},
-			Spec:   &v1alpha1.MeshExternalService{
-				Match:     v1alpha1.Match{
+			Spec: &v1alpha1.MeshExternalService{
+				Match: v1alpha1.Match{
 					Type:     v1alpha1.HostnameGeneratorType,
 					Port:     80,
 					Protocol: v1alpha1.HttpProtocol,
@@ -72,9 +73,9 @@ spec:
 
 		if tls {
 			mes.Spec.Tls = &v1alpha1.Tls{
-				Enabled:            true,
-				Verification:       &v1alpha1.Verification{
-					CaCert:         &v1alpha12.DataSource{Inline: &caCert},
+				Enabled: true,
+				Verification: &v1alpha1.Verification{
+					CaCert: &common_api.DataSource{Inline: &caCert},
 				},
 			}
 		}
