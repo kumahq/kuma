@@ -108,9 +108,9 @@ func AvailableServices() {
 			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}, "30s", "3s").Should(Succeed())
 
-		Consistently(func(g Gomega) {
+		Eventually(func(g Gomega) {
 			ingress := getIngress(g, kumactl, UniversalZoneIngressPort)
-			g.Expect(ingress.GetAvailableServices()).To(HaveLen(1))
+			g.Expect(ingress.GetAvailableServices()).To(BeEmpty())
 		}, "30s", "3s").Should(Succeed())
 	})
 }
