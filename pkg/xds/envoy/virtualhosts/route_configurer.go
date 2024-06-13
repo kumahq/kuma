@@ -55,3 +55,25 @@ func (c VirtualHostRouteConfigurer) Configure(virtualHost *envoy_config_route_v3
 	})
 	return nil
 }
+
+type VirtualHostBasicRouteConfigurer struct {
+	Cluster string
+}
+
+func (c VirtualHostBasicRouteConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
+	virtualHost.Routes = append(virtualHost.Routes, &envoy_config_route_v3.Route{
+		Match: &envoy_config_route_v3.RouteMatch{
+			PathSpecifier: &envoy_config_route_v3.RouteMatch_Path{
+				Path: "/",
+			},
+		},
+		Action: &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{
+				ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+					Cluster: c.Cluster,
+				},
+			},
+		},
+	})
+	return nil
+}

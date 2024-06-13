@@ -72,7 +72,14 @@ func Retry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) VirtualH
 	)
 }
 
-func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
+func BasicRoute(cluster string) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		&VirtualHostBasicRouteConfigurer{
+			Cluster: cluster,
+		})
+}
+
+func Route(matchPath string, newPath string, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&VirtualHostRouteConfigurer{
 			MatchPath:    matchPath,
