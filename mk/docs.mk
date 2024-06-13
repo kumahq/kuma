@@ -18,6 +18,9 @@ docs/generated/raw:
 	cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
 	cp $(HELM_VALUES_FILE) $@/helm-values.yaml
 
+	mkdir -p $@/helm-values-prod
+	for f in $$(find deployments/charts -name '*.yaml' | grep 'values.prod.'); do cp $$f $@/helm-values-prod/$$(basename $$f | sed 's/.prod//'); done
+
 	mkdir -p $@/crds
 	for f in $$(find deployments/charts -name '*.yaml' | grep '/crds/'); do cp $$f $@/crds/; done
 
