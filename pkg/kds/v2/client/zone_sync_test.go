@@ -14,6 +14,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -236,12 +237,13 @@ var _ = Describe("Zone Delta Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 4 global-scope types
+		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
+			hostnamegenerator_api.HostnameGeneratorType,
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)

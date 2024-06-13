@@ -114,6 +114,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 					&caRequest{mesh: mesh},
 					given.upstreamService,
 					"",
+					nil,
 				)
 				// then
 				Expect(err).ToNot(HaveOccurred())

@@ -21,18 +21,23 @@ type ResourceAdmissionChecker struct {
 	Mode                         core.CpMode
 	FederatedZone                bool
 	DisableOriginLabelValidation bool
+	SystemNamespace              string
 }
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource) admission.Response {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
+	}
+
+	if c.Mode == core.Global && r.Descriptor().IsPluginOriginated && ns != c.SystemNamespace {
+		return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
 	}
 
 	if !c.isResourceTypeAllowed(r.Descriptor()) {
 		return c.resourceTypeIsNotAllowedResponse(r.Descriptor().Name)
 	}
 
-	if !c.isResourceAllowed(r) {
+	if !c.isResourceAllowed(r, ns) {
 		return c.resourceIsNotAllowedResponse()
 	}
 
@@ -52,11 +57,11 @@ func (c *ResourceAdmissionChecker) isResourceTypeAllowed(d core_model.ResourceTy
 	return true
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource) bool {
+func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) bool {
 	if !c.FederatedZone || !r.Descriptor().IsPluginOriginated {
 		return true
 	}
-	if !c.DisableOriginLabelValidation {
+	if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 		if origin, ok := core_model.ResourceOrigin(r.GetMeta()); !ok || origin != mesh_proto.ZoneResourceOrigin {
 			return false
 		}

@@ -134,7 +134,7 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                HostnameGeneratorType,
 	Resource:            NewHostnameGeneratorResource(),
 	ResourceList:        &HostnameGeneratorResourceList{},
-	Scope:               model.ScopeMesh,
+	Scope:               model.ScopeGlobal,
 	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:              "hostnamegenerators",
 	KumactlArg:          "hostnamegenerator",

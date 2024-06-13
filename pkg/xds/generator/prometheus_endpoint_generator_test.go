@@ -50,7 +50,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id: *core_xds.BuildProxyId("demo", "backend-01"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -74,7 +74,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -121,7 +121,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -169,7 +169,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -245,7 +245,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -266,7 +266,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -301,7 +301,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -322,7 +322,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.1.6",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "default-without-hijacker.envoy-config.golden.yaml",
@@ -357,7 +357,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -386,7 +386,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "custom.envoy-config.golden.yaml",
@@ -433,7 +433,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -454,7 +454,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
@@ -500,7 +500,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -521,7 +521,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
@@ -566,7 +566,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -587,7 +587,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -634,7 +634,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -655,9 +655,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
-					MetricsCertPath:   "/path/cert",
-					MetricsKeyPath:    "/path/key",
+					WorkDir:         "/tmp",
+					MetricsCertPath: "/path/cert",
+					MetricsKeyPath:  "/path/key",
 				},
 			},
 			expected: "delegated-tls.envoy-config.golden.yaml",
@@ -704,7 +704,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -725,9 +725,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
-					MetricsCertPath:   "/path/cert",
-					MetricsKeyPath:    "/path/key",
+					WorkDir:         "/tmp",
+					MetricsCertPath: "/path/cert",
+					MetricsKeyPath:  "/path/key",
 				},
 			},
 			expected: "disabled-tls.envoy-config.golden.yaml",
@@ -774,7 +774,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &core_xds.Proxy{
-				Id:             *core_xds.BuildProxyId("", "demo.backend-01"),
+				Id:             *core_xds.BuildProxyId("demo", "backend-01"),
 				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 				APIVersion:     envoy_common.APIV3,
 				Dataplane: &core_mesh.DataplaneResource{
@@ -795,7 +795,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Version: "1.2.0",
 						},
 					},
-					MetricsSocketPath: "/foo/bar",
+					WorkDir: "/tmp",
 				},
 			},
 			expected: "delegated-tls-fallback.envoy-config.golden.yaml",
@@ -835,7 +835,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				}
 				proxy := &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
+					Id:         *core_xds.BuildProxyId("demo", "backend-01"),
 					APIVersion: envoy_common.APIV3,
 					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
@@ -845,8 +845,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Spec: &mesh_proto.Dataplane{},
 					},
 					Metadata: &core_xds.DataplaneMetadata{
-						AdminPort:         9902,
-						MetricsSocketPath: "/foo/bar",
+						AdminPort: 9902,
 					},
 				}
 				Expect(util_proto.FromYAML([]byte(given.dataplane), proxy.Dataplane.Spec)).To(Succeed())

@@ -43,6 +43,8 @@ spec:
               ports:
                 items:
                   properties:
+                    name:
+                      type: string
                     port:
                       format: int32
                       type: integer
@@ -99,7 +101,7 @@ spec:
                 items:
                   properties:
                     conditions:
-                      description: Conditions is an array of gateway instance conditions.
+                      description: Conditions is an array of hostname generator conditions.
                       items:
                         properties:
                           message:

@@ -15,6 +15,7 @@ tls:
     min: TLS15
     max: TLS16
   verification:
+    serverName: not[]valid
     mode: Unknown
     subjectAltNames:
       - type: Regex

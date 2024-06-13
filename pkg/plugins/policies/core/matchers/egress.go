@@ -1,8 +1,6 @@
 package matchers
 
 import (
-	"sort"
-
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -85,7 +83,7 @@ func processFromRules(
 		matchedPolicies = append(matchedPolicies, policy)
 	}
 
-	sort.Sort(ByTargetRef(matchedPolicies))
+	SortByTargetRef(matchedPolicies)
 
 	return core_rules.BuildFromRules(map[core_rules.InboundListener][]core_model.Resource{
 		{}: matchedPolicies, // egress always has only 1 listener, so we can use empty key
@@ -147,7 +145,7 @@ func processToRules(tags map[string]string, policies []core_model.Resource) (cor
 		}
 	}
 
-	sort.Sort(ByTargetRef(matchedPolicies))
+	SortByTargetRef(matchedPolicies)
 
 	var toList []core_rules.PolicyItemWithMeta
 	for _, policy := range matchedPolicies {

@@ -68,14 +68,11 @@ node:
   cluster: gateway
   id: mesh.name.namespace
   metadata:
-    accessLogSocketPath: /tmp/kuma-al-name.namespace-mesh.sock
-    dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
     features: []
     metricsCertPath: ""
     metricsKeyPath: ""
-    metricsSocketPath: /tmp/kuma-mh-name.namespace-mesh.sock
     systemCaPath: ""
     version:
       envoy:
@@ -86,7 +83,7 @@ node:
         gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
         gitTag: v0.0.1
         version: 0.0.1
-    workdir: ""
+    workdir: "/tmp"
 staticResources:
   clusters:
   - connectTimeout: 1s

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"os"
 	"sync"
 	"time"
 
@@ -118,11 +117,7 @@ func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Discover
 	}
 
 	if s.resource == nil {
-		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
-		if err != nil {
-			return stream{}, errors.Wrap(err, "invalid node ID")
-		}
-		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata(), os.TempDir(), proxyId.ToResourceKey())
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
 		if err != nil {
 			return stream{}, err

@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -77,6 +78,9 @@ func DefaultContext(
 		reconcile.If(
 			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
+		reconcile.If(
+			reconcile.TypeIs(meshservice_api.MeshServiceType),
+			RemoveStatus()),
 		reconcile.If(
 			reconcile.And(
 				reconcile.ScopeIs(core_model.ScopeMesh),
@@ -192,7 +196,13 @@ func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.R
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
 		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
-		return util.CloneResource(r, util.WithName(newName)), nil
+		return util.CloneResource(r, util.WithResourceName(newName)), nil
+	}
+}
+
+func RemoveStatus() reconcile.ResourceMapper {
+	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		return util.CloneResource(r, util.WithoutStatus()), nil
 	}
 }
 
@@ -209,7 +219,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 			values = append(values, r.GetMeta().GetLabels()[lbl])
 		}
 
-		return util.CloneResource(r, util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
+		return util.CloneResource(r, util.WithResourceName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
 	}
 }
 

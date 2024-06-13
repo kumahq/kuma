@@ -1,0 +1,17 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough_ipv4
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough:ipv4
+    type: ORIGINAL_DST
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough_ipv6
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough:ipv6
+    type: ORIGINAL_DST

@@ -70,12 +70,13 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 
 		meshResources := &core_xds.MeshIngressResources{
 			Mesh: mesh,
-			EndpointMap: ingress.BuildEndpointMap(
+			EndpointMap: ingress.BuildEndpointMap( // todo reuse this for all ingress (follow egress pattern)
 				ingress.BuildDestinationMap(meshName, zoneIngress),
 				meshCtx.Resources.Dataplanes().Items,
 				meshCtx.Resources.ExternalServices().Items,
 				zoneEgressesList,
 				meshCtx.Resources.Gateways().Items,
+				meshCtx.Resources.MeshServices().Items,
 			),
 			Resources: meshCtx.Resources.MeshLocalResources,
 		}

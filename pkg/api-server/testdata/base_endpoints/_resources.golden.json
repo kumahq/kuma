@@ -84,7 +84,7 @@
    "path": "hostnamegenerators",
    "pluralDisplayName": "Hostname Generators",
    "readOnly": false,
-   "scope": "Mesh",
+   "scope": "Global",
    "singularDisplayName": "Hostname Generator"
   },
   {
@@ -292,7 +292,7 @@
    "singularDisplayName": "Mesh Retry"
   },
   {
-   "includeInFederation": true,
+   "includeInFederation": false,
    "name": "MeshService",
    "path": "meshservices",
    "pluralDisplayName": "Mesh Services",

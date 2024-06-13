@@ -14,10 +14,12 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - port: 80
+    - name: http-port
+      port: 80
       protocol: http
       targetPort: 8080
-    - port: 443
+    - name: tcp-port
+      port: 443
       protocol: tcp
       targetPort: 8443
     selector: {}
