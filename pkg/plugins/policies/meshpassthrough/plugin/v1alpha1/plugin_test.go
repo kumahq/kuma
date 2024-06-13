@@ -56,7 +56,7 @@ var _ = Describe("MeshPassthrough", func() {
 				mesh.WithoutPassthrough()
 			}
 			context := *xds_builders.Context().
-				WithMesh(mesh).
+				WithMeshBuilder(mesh).
 				Build()
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
