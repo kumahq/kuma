@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshhttproute"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshmetric"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshpassthrough"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/meshretry"
@@ -97,4 +98,5 @@ var (
 	_ = Describe("Connectivity - Headless Services", connectivity.HeadlessServices, Ordered)
 	_ = Describe("Connectivity - Exclude Outbound Port", connectivity.ExcludeOutboundPort, Ordered)
 	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
+	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 )

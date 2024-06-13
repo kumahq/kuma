@@ -67,6 +67,7 @@ type resourceEndpoints struct {
 	filter             func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
+	systemNamespace    string
 
 	disableOriginLabelValidation bool
 }
@@ -382,19 +383,14 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	labels := resRest.GetMeta().GetLabels()
-	if r.mode == config_core.Zone {
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
-	}
-
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
+	res.SetMeta(resRest.GetMeta())
 	if r.descriptor.HasStatus {
 		_ = res.SetStatus(resRest.GetStatus())
 	}
+
+	labels := model.ComputeLabels(res, r.mode, false, r.systemNamespace)
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")

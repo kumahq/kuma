@@ -85,11 +85,80 @@ func BuildEdsEndpointMap(
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, endpointWeight, localZone)
 
+	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone)
+
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh, localZone)
 	}
 
 	return outbound
+}
+
+func fillRemoteMeshServices(
+	outbound core_xds.EndpointMap,
+	services []*meshservice_api.MeshServiceResource,
+	zoneIngress []*core_mesh.ZoneIngressResource,
+	mesh *core_mesh.MeshResource,
+	localZone string,
+) {
+	ziInstances := map[string]struct{}{}
+
+	if !mesh.MTLSEnabled() {
+		// Ingress routes the request by TLS SNI, therefore for cross
+		// cluster communication MTLS is required.
+		// We ignore Ingress from endpoints if MTLS is disabled, otherwise
+		// we would fail anyway.
+		return
+	}
+
+	zoneToEndpoints := map[string][]core_xds.Endpoint{}
+	for _, zi := range zoneIngress {
+		if !zi.IsRemoteIngress(localZone) {
+			continue
+		}
+
+		ziAddress := zi.Spec.GetNetworking().GetAdvertisedAddress()
+		ziPort := zi.Spec.GetNetworking().GetAdvertisedPort()
+		ziCoordinates := buildCoordinates(ziAddress, ziPort)
+
+		if _, ok := ziInstances[ziCoordinates]; ok {
+			// many Ingress instances can be placed in front of one load
+			// balancer (all instances can have the same public address and
+			// port).
+			// In this case we only need one Instance avoiding creating
+			// unnecessary duplicated endpoints
+			continue
+		}
+
+		zoneToEndpoints[zi.Spec.Zone] = append(zoneToEndpoints[zi.Spec.Zone], core_xds.Endpoint{
+			Target:   ziAddress,
+			Port:     ziPort,
+			Tags:     nil,
+			Weight:   1,
+			Locality: GetLocality(localZone, &zi.Spec.Zone, mesh.LocalityAwareLbEnabled()),
+		})
+	}
+
+	for _, ms := range services {
+		if len(ms.GetMeta().GetLabels()) == 0 {
+			continue
+		}
+		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if msZone == "" || msZone == localZone {
+			continue
+		}
+		for _, port := range ms.Spec.Ports {
+			serviceName := ms.DestinationName(port.Port)
+			for _, endpoint := range zoneToEndpoints[msZone] {
+				ep := endpoint
+				ep.Tags = map[string]string{
+					mesh_proto.ServiceTag: serviceName,
+					mesh_proto.ZoneTag:    msZone,
+				}
+				outbound[serviceName] = append(outbound[serviceName], ep)
+			}
+		}
+	}
 }
 
 type MeshServiceIdentity struct {

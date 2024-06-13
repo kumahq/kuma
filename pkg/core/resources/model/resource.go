@@ -13,6 +13,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 const (
@@ -433,6 +434,66 @@ func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
 		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
 	}
 	return "", false
+}
+
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string) map[string]string {
+	labels := r.GetMeta().GetLabels()
+	if len(labels) == 0 {
+		labels = map[string]string{}
+	}
+
+	setIfNotExist := func(k, v string) {
+		if _, ok := labels[k]; !ok {
+			labels[k] = v
+		}
+	}
+
+	if isK8s && r.Descriptor().Scope == ScopeMesh {
+		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
+	}
+
+	if mode == config_core.Zone {
+		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
+	}
+
+	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+		var role mesh_proto.PolicyRole
+		switch ns {
+		case systemNamespace:
+			role = mesh_proto.SystemPolicyRole
+		default:
+			role = ComputePolicyRole(r.GetSpec().(Policy))
+		}
+		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
+	}
+
+	return labels
+}
+
+func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
+	hasTo := false
+	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
+		hasTo = true
+	}
+
+	hasFrom := false
+	if pwfl, ok := p.(PolicyWithFromList); ok && len(pwfl.GetFromList()) > 0 {
+		hasFrom = true
+	}
+
+	if hasTo && !hasFrom {
+		// todo(lobkovilya): detect if the policy is a producer policy when they're supported
+		return mesh_proto.ConsumerPolicyRole
+	} else {
+		return mesh_proto.WorkloadOwnerPolicyRole
+	}
+}
+
+func PolicyRole(r Resource) mesh_proto.PolicyRole {
+	if r.GetMeta() == nil || r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
+		return mesh_proto.SystemPolicyRole
+	}
+	return mesh_proto.PolicyRole(r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel])
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

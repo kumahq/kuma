@@ -56,6 +56,10 @@ const (
 	// at this moment is "shadow". When effect is "shadow" the policy doesn't change the DPPs configs, but could be
 	// observed using the Inspect API.
 	EffectLabel = "kuma.io/effect"
+
+	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
+	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
+	PolicyRoleLabel = "kuma.io/policy-role"
 )
 
 type ResourceOrigin string
@@ -63,6 +67,15 @@ type ResourceOrigin string
 const (
 	GlobalResourceOrigin ResourceOrigin = "global"
 	ZoneResourceOrigin   ResourceOrigin = "zone"
+)
+
+type PolicyRole string
+
+const (
+	ProducerPolicyRole      PolicyRole = "producer"
+	ConsumerPolicyRole      PolicyRole = "consumer"
+	SystemPolicyRole        PolicyRole = "system"
+	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
 )
 
 func (o ResourceOrigin) IsValid() error {
