@@ -2106,6 +2106,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshAccessLog resource.
           properties:
@@ -2729,6 +2732,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshCircuitBreaker resource.
           properties:
@@ -3928,6 +3934,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshFaultInjection resource.
           properties:
@@ -4421,6 +4430,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshHealthCheck resource.
           properties:
@@ -4889,6 +4901,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshHTTPRoute resource.
           properties:
@@ -5669,6 +5684,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: >-
             Spec is the specification of the Kuma MeshLoadBalancingStrategy
@@ -6411,6 +6429,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshMetric resource.
           properties:
@@ -6725,6 +6746,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshPassthrough resource.
           properties:
@@ -6890,6 +6914,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshProxyPatch resource.
           properties:
@@ -7598,6 +7625,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshRateLimit resource.
           properties:
@@ -8165,6 +8195,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshRetry resource.
           properties:
@@ -8792,6 +8825,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshTCPRoute resource.
           properties:
@@ -9112,6 +9148,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshTimeout resource.
           properties:
@@ -9571,6 +9610,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: Spec is the specification of the Kuma MeshTrace resource.
           properties:
@@ -9903,6 +9945,9 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+        labels:
+          description: The labels to help identity resources
+          type: object
         spec:
           description: >-
             Spec is the specification of the Kuma MeshTrafficPermission

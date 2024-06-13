@@ -11,4 +11,7 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
+  labels:
+    description: 'The labels to help identity resources'
+    type: object
   spec: {}
