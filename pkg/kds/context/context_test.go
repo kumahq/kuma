@@ -480,7 +480,9 @@ var _ = Describe("Context", func() {
 			meta := &test_model.ResourceMeta{
 				Name: given.name,
 				Labels: map[string]string{
-					mesh_proto.DisplayName: given.displayName,
+					mesh_proto.DisplayName:      given.displayName,
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "custom-ns",
 				},
 			}
 			r.SetMeta(meta)
@@ -511,7 +513,7 @@ var _ = Describe("Context", func() {
 				},
 				name:         "foo.custom-namespace",
 				displayName:  "foo",
-				expectedName: "foo-zxw6c95d42zfz9cc",
+				expectedName: "foo-696vzv497z4cv4f4",
 				scope:        model.ScopeMesh,
 				features: map[string]bool{
 					kds.FeatureHashSuffix: true,

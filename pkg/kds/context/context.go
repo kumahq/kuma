@@ -88,7 +88,7 @@ func DefaultContext(
 				// particular format to be able to reference them
 				reconcile.Not(reconcile.TypeIs(system.SecretType)),
 			),
-			HashSuffixMapper(true)),
+			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
 	zoneMappers := []reconcile.ResourceMapper{
