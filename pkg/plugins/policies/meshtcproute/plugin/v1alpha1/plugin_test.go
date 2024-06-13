@@ -345,7 +345,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			mc := meshContextForMeshExternalService(dp, meshExtSvc)
 
 			return outboundsTestCase{
-				xdsContext: *xds_builders.Context().WithMesh(mc).Build(),
+				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
 				proxy:      proxy,
 			}
 		}()),
