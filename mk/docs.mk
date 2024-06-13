@@ -1,12 +1,13 @@
 DOCS_PROTOS ?= api/mesh/v1alpha1/*.proto
 DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
+DOCS_EXTRA_TARGETS ?=
 
 .PHONY: clean/docs
 clean/docs:
 	rm -rf docs/generated
 
 .PHONY: docs
-docs: helm-docs docs/generated/raw docs/generated/openapi.yaml ## Dev: Generate local documentation
+docs: helm-docs docs/generated/raw docs/generated/openapi.yaml $(DOCS_EXTRA_TARGETS) ## Dev: Generate local documentation
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
