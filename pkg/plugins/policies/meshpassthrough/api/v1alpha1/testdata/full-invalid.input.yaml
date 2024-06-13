@@ -34,3 +34,11 @@ default:
     value: "*w.example.com"
     port: 9090
     protocol: http2
+  - type: Domain
+    value: google.com
+    port: 10000
+    protocol: http
+  - type: Domain
+    value: google.com
+    port: 10000
+    protocol: http
