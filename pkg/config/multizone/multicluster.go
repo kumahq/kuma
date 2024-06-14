@@ -53,6 +53,14 @@ type ZoneConfig struct {
 	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
 	KDS *KdsClientConfig `json:"kds,omitempty"`
+<<<<<<< HEAD
+=======
+	// DisableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
+	DisableOriginLabelValidation bool `json:"disableOriginLabelValidation,omitempty" envconfig:"kuma_multizone_zone_disable_origin_label_validation"`
+	// IngressUpdateInterval is the interval between the CP updating the list of
+	// available services on ZoneIngress.
+	IngressUpdateInterval config_types.Duration `json:"ingressUpdateInterval,omitempty" envconfig:"kuma_multizone_zone_ingress_update_interval"`
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 }
 
 func (r *ZoneConfig) Sanitize() {
@@ -103,6 +111,11 @@ func DefaultZoneConfig() *ZoneConfig {
 			MsgSendTimeout:  config_types.Duration{Duration: 60 * time.Second},
 			NackBackoff:     config_types.Duration{Duration: 5 * time.Second},
 		},
+<<<<<<< HEAD
+=======
+		DisableOriginLabelValidation: false,
+		IngressUpdateInterval:        config_types.Duration{Duration: 1 * time.Second},
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 	}
 }
 

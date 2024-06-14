@@ -66,4 +66,15 @@ var (
 	_ = Describe("Resilience", resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", resilience.ResilienceMultizoneUniversalPostgres, Ordered)
 	_ = Describe("Virtual Outbounds", virtualoutbound.VirtualOutbound, Ordered)
+<<<<<<< HEAD
+=======
+	_ = Describe("MeshTimeout", meshtimeout.MeshTimeout, Ordered)
+	_ = Describe("LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwarenessWithMeshLoadBalancingStrategy, Ordered)
+	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
+	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
+	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
+	_ = Describe("Defaults", defaults.Defaults, Ordered)
+	_ = Describe("MeshService", Label("ipv6-not-supported"), meshservice.MeshService, Ordered)
+	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 )
