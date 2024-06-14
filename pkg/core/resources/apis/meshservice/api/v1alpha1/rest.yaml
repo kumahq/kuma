@@ -84,7 +84,6 @@ paths:
         '200':
           description: Successful response
 
-
   /meshes/{mesh}/meshservices:
     get:
       summary: Returns a list of MeshService in the mesh.

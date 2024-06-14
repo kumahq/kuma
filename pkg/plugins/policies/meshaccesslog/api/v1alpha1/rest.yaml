@@ -84,7 +84,6 @@ paths:
         '200':
           description: Successful response
 
-
   /meshes/{mesh}/meshaccesslogs:
     get:
       summary: Returns a list of MeshAccessLog in the mesh.
