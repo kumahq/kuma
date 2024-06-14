@@ -2,8 +2,11 @@ items:
 - metadata:
     creationTimestamp: null
     labels:
+      apps.kubernetes.io/pod-index: "1"
+      k8s.kuma.io/headless-service: "true"
       k8s.kuma.io/service-name: example
       kuma.io/mesh: default
+      statefulset.kubernetes.io/pod-name: example-1
     name: example-1-87ff74c98
     namespace: demo
     ownerReferences:
@@ -30,8 +33,11 @@ items:
 - metadata:
     creationTimestamp: null
     labels:
+      apps.kubernetes.io/pod-index: "2"
+      k8s.kuma.io/headless-service: "true"
       k8s.kuma.io/service-name: example
       kuma.io/mesh: default
+      statefulset.kubernetes.io/pod-name: example-2
     name: example-2-87ff74c98
     namespace: demo
     ownerReferences:
@@ -58,6 +64,7 @@ items:
 - metadata:
     creationTimestamp: null
     labels:
+      k8s.kuma.io/headless-service: "true"
       k8s.kuma.io/service-name: example
       kuma.io/mesh: default
     name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98

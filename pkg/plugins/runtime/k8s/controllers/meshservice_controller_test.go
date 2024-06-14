@@ -52,6 +52,8 @@ var _ = Describe("MeshServiceController", func() {
 					obj = &kube_discovery.EndpointSlice{}
 				case strings.Contains(yamlObj, "kind: Namespace"):
 					obj = &kube_core.Namespace{}
+				case strings.Contains(yamlObj, "kind: Pod"):
+					obj = &kube_core.Pod{}
 				case strings.Contains(yamlObj, "kind: Mesh"):
 					obj = &v1alpha1.Mesh{}
 				}
