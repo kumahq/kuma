@@ -40,17 +40,21 @@ const (
 
 type Prober struct {
 	listenPort    uint32
-	podIPAddress  string
-	isPodIPAddrV6 bool
+	podAddress    string
+	isPodAddrIPV6 bool
 }
 
 func NewProber(podIPAddr string, listenPort uint32) *Prober {
-	useIPv6 := strings.Contains(podIPAddr, ":")
+	ipAddr := net.ParseIP(podIPAddr)
+	useIPv6 := false
+	if ipAddr != nil {
+		useIPv6 = len(ipAddr) == net.IPv6len
+	}
 
 	return &Prober{
 		listenPort:    listenPort,
-		podIPAddress:  podIPAddr,
-		isPodIPAddrV6: useIPv6,
+		podAddress:    podIPAddr,
+		isPodAddrIPV6: useIPv6,
 	}
 }
 

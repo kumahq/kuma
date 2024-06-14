@@ -19,13 +19,13 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	upstreamScheme := getScheme(req)
 	timeout := getTimeout(req)
 
-	transport := createHttpTransport(upstreamScheme, p.isPodIPAddrV6)
+	transport := createHttpTransport(upstreamScheme, p.isPodAddrIPV6)
 	client := &http.Client{
 		Timeout:   timeout,
 		Transport: transport,
 	}
 
-	upstreamReq, err := buildUpstreamReq(req, upstreamScheme, p.podIPAddress)
+	upstreamReq, err := buildUpstreamReq(req, upstreamScheme, p.podAddress)
 	if err != nil {
 		logger.V(1).Info("unable to create upstream request", "error", err)
 		writeProbeResult(writer, Unkown)
@@ -71,7 +71,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podIPAddr string) (*http.Request, error) {
+func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podAddr string) (*http.Request, error) {
 	port, err := getPort(downstreamReq, httpPathPattern)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podIPA
 	upstreamURL := &url.URL{
 		Scheme: upstreamScheme,
 		Path:   upstreamPath,
-		Host:   net.JoinHostPort(podIPAddr, strconv.Itoa(port)),
+		Host:   net.JoinHostPort(podAddr, strconv.Itoa(port)),
 	}
 
 	upstreamReq, err := http.NewRequest(http.MethodGet, upstreamURL.String(), nil)

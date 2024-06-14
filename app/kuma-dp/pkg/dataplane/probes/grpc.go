@@ -22,7 +22,7 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			return createProbeDialer(p.isPodIPAddrV6).DialContext(ctx, "tcp", addr)
+			return createProbeDialer(p.isPodAddrIPV6).DialContext(ctx, "tcp", addr)
 		}),
 	}
 
@@ -37,7 +37,7 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	addr := net.JoinHostPort(p.podIPAddress, fmt.Sprintf("%d", port))
+	addr := net.JoinHostPort(p.podAddress, fmt.Sprintf("%d", port))
 	conn, err := grpc.DialContext(ctx, addr, opts...)
 
 	if err != nil {

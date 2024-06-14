@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
 	"os"
 	"path/filepath"
 	"time"
@@ -240,6 +241,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
+			}
+
+			if opts.Config.VirtualProbesServer.Enabled {
+				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.VirtualProbesServer.Port)
+				if err := rootCtx.ComponentManager.Add(prober); err != nil {
+					return err
+				}
 			}
 
 			stopComponents := make(chan struct{})

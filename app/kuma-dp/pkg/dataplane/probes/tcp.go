@@ -14,11 +14,11 @@ func (p *Prober) probeTCP(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	d := createProbeDialer(p.isPodIPAddrV6)
+	d := createProbeDialer(p.isPodAddrIPV6)
 	d.Timeout = getTimeout(req)
-	hostPort := net.JoinHostPort(p.podIPAddress, strconv.Itoa(port))
+	hostPort := net.JoinHostPort(p.podAddress, strconv.Itoa(port))
 	protocol := "tcp"
-	if p.isPodIPAddrV6 {
+	if p.isPodAddrIPV6 {
 		protocol = "tcp6"
 	}
 	conn, err := d.Dial(protocol, hostPort)
