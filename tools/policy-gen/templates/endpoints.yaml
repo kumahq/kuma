@@ -6,17 +6,19 @@ info:
   x-ref-schema-name: "{{ .Name }}"
 
 paths:
-  /meshes/{mesh}/{{ .Path }}/{name}:
+  {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
     get:
       summary: Returns {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
+        {{- if eq .Scope "Mesh"}}
         - in: path
           name: mesh
           schema:
             type: string
           required: true
           description: name of the mesh
+        {{- end}}
         - in: path
           name: name
           schema:
@@ -31,12 +33,14 @@ paths:
       summary: Creates or Updates {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
+        {{- if eq .Scope "Mesh"}}
         - in: path
           name: mesh
           schema:
             type: string
           required: true
           description: name of the mesh
+        {{- end}}
         - in: path
           name: name
           schema:
@@ -68,12 +72,14 @@ paths:
       summary: Deletes {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
+        {{- if eq .Scope "Mesh"}}
         - in: path
           name: mesh
           schema:
             type: string
           required: true
           description: name of the mesh
+        {{- end}}
         - in: path
           name: name
           schema:
@@ -84,11 +90,11 @@ paths:
         '200':
           description: Successful response
 
-
-  /meshes/{mesh}/{{ .Path }}:
+  {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
       summary: Returns a list of {{ .Name }} in the mesh.
       tags: [ "{{ .Name }}" ]
+      {{- if eq .Scope "Mesh"}}
       parameters:
         - in: path
           name: mesh
@@ -96,6 +102,7 @@ paths:
             type: string
           required: true
           description: name of the mesh
+      {{- end}}
       responses:
         '200':
           $ref: "#/components/responses/{{.Name}}List"
