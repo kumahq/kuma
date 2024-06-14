@@ -3,13 +3,13 @@ package hostname
 import (
 	"context"
 	"fmt"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"reflect"
 	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -99,10 +99,10 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 		displayName = name
 	}
 	err = tmpl.Execute(&sb, meshedName{
-		Name:      name,
+		Name:        name,
 		DisplayName: displayName,
-		Namespace: es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
-		Mesh:      es.GetMeta().GetMesh(),
+		Namespace:   es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
+		Mesh:        es.GetMeta().GetMesh(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
