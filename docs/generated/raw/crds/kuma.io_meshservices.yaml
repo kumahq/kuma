@@ -40,6 +40,20 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshService resource.
             properties:
+              identities:
+                items:
+                  properties:
+                    type:
+                      enum:
+                      - ServiceTag
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - type
+                  - value
+                  type: object
+                type: array
               ports:
                 items:
                   properties:

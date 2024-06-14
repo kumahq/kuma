@@ -8,10 +8,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
-	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type Context struct {
@@ -27,9 +27,10 @@ type ConnectionInfo struct {
 // ControlPlaneContext contains shared global data and components that are required for generating XDS
 // This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
-	CLACache envoy.CLACache
-	Secrets  secrets.Secrets
-	Zone     string
+	CLACache        envoy.CLACache
+	Secrets         secrets.Secrets
+	Zone            string
+	SystemNamespace string
 }
 
 // GlobalContext holds resources that are Global
@@ -64,7 +65,7 @@ type MeshContext struct {
 	Resource                    *core_mesh.MeshResource
 	Resources                   Resources
 	DataplanesByName            map[string]*core_mesh.DataplaneResource
-	MeshServiceIdentity         map[string]topology.MeshServiceIdentity
+	MeshServiceByName           map[string]*meshservice_api.MeshServiceResource
 	MeshExternalServiceByName   map[string]*meshexternalservice_api.MeshExternalServiceResource
 	EndpointMap                 xds.EndpointMap
 	ExternalServicesEndpointMap xds.EndpointMap

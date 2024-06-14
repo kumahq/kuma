@@ -6,6 +6,9 @@ name: default
 type: MeshTimeout
 name: on-route
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: on-route
 spec:
   targetRef:
     kind: MeshHTTPRoute
@@ -20,6 +23,9 @@ spec:
 type: MeshTimeout
 name: on-service
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: on-service
 spec:
   targetRef:
     kind: Mesh
@@ -34,6 +40,9 @@ spec:
 type: MeshHTTPRoute
 name: the-http-route
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-http-route
 spec:
   targetRef:
     kind: MeshGateway
@@ -56,6 +65,9 @@ spec:
 type: MeshHTTPRoute
 name: the-other-http-route
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-other-http-route
 spec:
   targetRef:
     kind: MeshGateway
@@ -82,6 +94,9 @@ spec:
 type: MeshGateway
 name: the-gateway
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-gateway
 selectors:
   - match:
       kuma.io/service: gw-1

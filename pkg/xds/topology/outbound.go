@@ -147,13 +147,10 @@ func fillRemoteMeshServices(
 	}
 
 	for _, ms := range services {
-		if len(ms.GetMeta().GetLabels()) == 0 {
+		if ms.IsLocalMeshService(localZone) {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		if msZone == "" || msZone == localZone {
-			continue
-		}
 		for _, port := range ms.Spec.Ports {
 			serviceName := ms.DestinationName(port.Port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
@@ -258,6 +255,10 @@ func fillLocalMeshServices(
 		dpNetworking := dataplane.Spec.GetNetworking()
 
 		for _, meshSvc := range meshServices {
+			if !meshSvc.IsLocalMeshService(localZone) {
+				continue
+			}
+
 			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
 			if meshSvc.Spec.Selector.DataplaneRef != nil {
 				continue

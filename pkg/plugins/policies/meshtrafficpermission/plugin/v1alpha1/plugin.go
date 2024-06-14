@@ -121,7 +121,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, meshCtx xds_context.Co
 				esNames = append(esNames, es.Spec.GetService())
 			}
 		}
-		for key := range meshCtx.Mesh.MeshExternalServiceByName  {
+		for key := range meshCtx.Mesh.MeshExternalServiceByName {
 			esNames = append(esNames, key)
 		}
 

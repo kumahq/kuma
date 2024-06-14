@@ -41,6 +41,9 @@ spec:
 type: Dataplane
 name: not-the-dp
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: not-the-dp
 networking:
   address: 127.0.0.1
   inbound:
@@ -51,6 +54,9 @@ networking:
 type: Dataplane
 name: the-dp
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-dp
 networking:
   address: 127.0.0.1
   inbound:

@@ -99,6 +99,7 @@ var _ = Describe("genConfig", func() {
 	It("should has google grpc and no initial metadata when use path enabled and path provided", func() {
 		// given
 		params := configParameters{
+			Id:                 "default.backend",
 			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,
@@ -153,6 +154,7 @@ var _ = Describe("genConfig", func() {
 	It("should has initial metadata when usePath disabled", func() {
 		// given
 		params := configParameters{
+			Id:                 "default.backend",
 			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,
@@ -189,6 +191,7 @@ var _ = Describe("genConfig", func() {
 	It("should use envoy grpc and has initial metadata when usePath enabled but no path", func() {
 		// given
 		params := configParameters{
+			Id:                 "default.backend",
 			Version:            &mesh_proto.Version{},
 			XdsHost:            "control-plane.host",
 			XdsPort:            5678,

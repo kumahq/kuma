@@ -11,10 +11,17 @@ func ResourceToMeta(m core_model.Resource) api_common.Meta {
 }
 
 func ResourceMetaToMeta(resType core_model.ResourceType, m core_model.ResourceMeta) api_common.Meta {
+	// We use an empty object rather than a nil
+	labels := m.GetLabels()
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
 	return api_common.Meta{
-		Type: string(resType),
-		Mesh: m.GetMesh(),
-		Name: m.GetName(),
+		Type:   string(resType),
+		Mesh:   m.GetMesh(),
+		Name:   m.GetName(),
+		Labels: labels,
 	}
 }
 

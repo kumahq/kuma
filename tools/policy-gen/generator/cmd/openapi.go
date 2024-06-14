@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/spf13/cobra"
@@ -13,7 +16,9 @@ import (
 
 func newOpenAPI(rootArgs *args) *cobra.Command {
 	localArgs := struct {
-		openAPITemplate string
+		openAPITemplate    string
+		jsonSchemaTemplate string
+		yqBin              string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "openapi",
@@ -33,18 +38,41 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			if pconfig.SkipRegistration {
 				return nil
 			}
+			crdPath := filepath.Join(rootArgs.pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
 
 			tmpl, err := template.ParseFiles(localArgs.openAPITemplate)
 			if err != nil {
 				return err
 			}
 
-			outPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
-			return save.PlainTemplate(tmpl, pconfig, outPath)
+			openApiOutPath := filepath.Join(filepath.Dir(policyPath), "rest.yaml")
+			err = save.PlainTemplate(tmpl, pconfig, openApiOutPath)
+			if err != nil {
+				return err
+			}
+			schemaTmpl, err := template.ParseFiles(localArgs.jsonSchemaTemplate)
+			if err != nil {
+				return err
+			}
+			schemaOutPath := filepath.Join(filepath.Dir(policyPath), "schema.yaml")
+			err = save.PlainTemplate(schemaTmpl, pconfig, schemaOutPath)
+			if err != nil {
+				return err
+			}
+
+			yqExec := exec.CommandContext(cmd.Context(), // nolint: gosec
+				localArgs.yqBin, "e", "-i",
+				fmt.Sprintf(`.properties *= (load(%q)| ((.spec.versions[0] | .schema.openAPIV3Schema.properties | del(.apiVersion) | del(.metadata) | del(.kind)) * {"type": {"enum": [.spec.names.kind]}}))`, crdPath),
+				schemaOutPath,
+			)
+			yqExec.Stderr = cmd.ErrOrStderr()
+			return yqExec.Run()
 		},
 	}
 
 	cmd.Flags().StringVar(&localArgs.openAPITemplate, "openapi-template-path", "", "path to the OpenAPI template file")
+	cmd.Flags().StringVar(&localArgs.jsonSchemaTemplate, "jsonschema-template-path", "", "path to the jsonschema template file")
+	cmd.Flags().StringVar(&localArgs.yqBin, "yq-bin", "", "path to a binary of yq")
 
 	return cmd
 }

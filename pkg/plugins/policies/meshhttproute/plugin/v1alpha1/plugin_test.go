@@ -147,6 +147,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						TargetPort: intstr.FromInt(8084),
 						Protocol:   core_mesh.ProtocolHTTP,
 					}},
+					Identities: []meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+					},
 				},
 				Status: &meshservice_api.MeshServiceStatus{
 					VIPs: []meshservice_api.VIP{{
