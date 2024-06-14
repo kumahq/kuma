@@ -2222,6 +2222,7 @@ components:
         - type
         - mesh
         - name
+        - labels
       properties:
         type:
           type: string
@@ -2235,6 +2236,16 @@ components:
           type: string
           example: my-resource
           description: the name of the resource
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            k8s.kuma.io/namespace: kuma-system
+            kuma.io/display-name: mtp
+            kuma.io/mesh: default
+            kuma.io/origin: zone
+          description: the label of the resource
     ProxyRule:
       type: object
       required:
@@ -10978,6 +10989,20 @@ components:
         spec:
           description: Spec is the specification of the Kuma MeshService resource.
           properties:
+            identities:
+              items:
+                properties:
+                  type:
+                    enum:
+                      - ServiceTag
+                    type: string
+                  value:
+                    type: string
+                required:
+                  - type
+                  - value
+                type: object
+              type: array
             ports:
               items:
                 properties:

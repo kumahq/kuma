@@ -70,9 +70,10 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	}
 
 	envoyCpCtx := &xds_context.ControlPlaneContext{
-		CLACache: claCache,
-		Secrets:  secrets,
-		Zone:     rt.Config().Multizone.Zone.Name,
+		CLACache:        claCache,
+		Secrets:         secrets,
+		Zone:            rt.Config().Multizone.Zone.Name,
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {
