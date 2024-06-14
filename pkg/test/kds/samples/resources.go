@@ -53,6 +53,7 @@ var (
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				mesh_proto.ServiceTag: "*",
+				mesh_proto.ProtocolTag: "http",
 			},
 		}},
 		Conf: &mesh_proto.FaultInjection_Conf{

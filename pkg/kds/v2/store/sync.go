@@ -221,9 +221,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 				store.CreatedAt(core.Now()),
 				store.CreateWithLabels(r.GetMeta().GetLabels()),
 			}
-			if opts.Zone != "" {
-				createOpts = append(createOpts, store.CreateWithOwner(zone))
-			}
 
 			// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 			r.SetMeta(nil)

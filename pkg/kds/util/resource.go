@@ -41,6 +41,14 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.R
 		resourceVersions[kr.GetMeta().GetName()] = r.Version
 	}
 	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
+	if err != nil {
+		return list, resourceVersions, err
+	}
+	for _, res := range list.GetItems() {
+		if err = model.Validate(res); err != nil {
+			return list, resourceVersions, &InvalidModelError{err.Error()}
+		}
+	}
 	return list, resourceVersions, err
 }
 
@@ -202,4 +210,12 @@ func CloneResource(res core_model.Resource, fs ...CloneResourceOpt) core_model.R
 		_ = newObj.SetStatus(res.GetStatus())
 	}
 	return newObj
+}
+
+type InvalidModelError struct {
+	msg string
+}
+
+func (e *InvalidModelError) Error() string {
+	return fmt.Sprintf("resource has invalid format: %s", e.msg)
 }

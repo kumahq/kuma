@@ -45,6 +45,7 @@ var _ = Describe("Global Sync", func() {
 				}},
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 					{
+						Port: 10000,
 						Tags: map[string]string{
 							mesh_proto.ServiceTag:  "web",
 							mesh_proto.ProtocolTag: "http",
@@ -70,6 +71,38 @@ var _ = Describe("Global Sync", func() {
 		closeFunc()
 	}
 
+	VerifyResourcesWereNotSynchronizedToGlobal := func() {
+		dp := &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1212,
+					Tags: map[string]string{
+						mesh_proto.ZoneTag:    "kuma-cluster-1",
+						mesh_proto.ServiceTag: "service-1",
+					},
+				}},
+				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+					{
+						Tags: map[string]string{
+							mesh_proto.ServiceTag:  "web",
+							mesh_proto.ProtocolTag: "http",
+						},
+					},
+				},
+			},
+		}
+		err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() int {
+			actual := mesh.DataplaneResourceList{}
+			err := globalStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+			return len(actual.Items)
+		}, "5s", "100ms").Should(Equal(0))
+		closeFunc()
+	}
+
 	VerifyResourcesWereSynchronizedIndependentlyForEachZone := func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
@@ -90,10 +123,10 @@ var _ = Describe("Global Sync", func() {
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := zoneStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = zoneStores[0].Delete(context.Background(),&mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -174,7 +207,7 @@ var _ = Describe("Global Sync", func() {
 					Expect(srv.StreamKumaResources(serverStream)).To(Succeed())
 				}()
 
-				serverStreams = append(serverStreams, serverStream)
+			serverStreams = append(serverStreams, serverStream)
 				zoneStores = append(zoneStores, zoneStore)
 			}
 
@@ -275,6 +308,10 @@ var _ = Describe("Global Sync", func() {
 
 		It("should add resource to global store after adding it to Zone", func() {
 			VerifyResourcesWereSynchronizedToGlobal()
+		})
+
+		It("should not add resource to global store when resource is invalid", func() {
+			VerifyResourcesWereNotSynchronizedToGlobal()
 		})
 
 		It("should sync resources independently for each Zone", func() {
