@@ -612,7 +612,7 @@ func createMeshExternalServiceEndpoint(
 				es.ClientCert = clientCert
 				es.ClientKey = clientKey
 			}
-			if tls.Verification.ServerName != nil && pointer.Deref(tls.Verification.ServerName) != "" {
+			if pointer.Deref(tls.Verification.ServerName) != "" {
 				es.ServerName = pointer.Deref(tls.Verification.ServerName)
 			}
 			if tls.Verification.SubjectAltNames != nil {

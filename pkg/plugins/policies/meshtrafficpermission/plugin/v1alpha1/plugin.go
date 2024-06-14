@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -41,7 +40,7 @@ func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_cont
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.ZoneEgressProxy != nil {
-		return p.configureEgress(rs, proxy)
+		return p.configureEgress(rs, ctx, proxy)
 	}
 
 	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -106,7 +105,7 @@ func (p plugin) denyRules() core_rules.Rules {
 	}
 }
 
-func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+func (p plugin) configureEgress(rs *core_xds.ResourceSet, meshCtx xds_context.Context, proxy *core_xds.Proxy) error {
 	listeners := policies_xds.GatherListeners(rs)
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		if !resource.Mesh.MTLSEnabled() {
@@ -122,10 +121,8 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 				esNames = append(esNames, es.Spec.GetService())
 			}
 		}
-		if _, found := resource.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
-			for _, mes := range resource.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
-				esNames = append(esNames, mes.GetMeta().GetName())
-			}
+		for key := range meshCtx.Mesh.MeshExternalServiceByName  {
+			esNames = append(esNames, key)
 		}
 
 		for _, esName := range esNames {
