@@ -8,6 +8,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type MeshBuilder struct {
@@ -97,6 +98,17 @@ func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
 		m.res.Spec.Routing = &mesh_proto.Routing{}
 	}
 	m.res.Spec.Routing.ZoneEgress = true
+	return m
+}
+
+func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
+	if m.res.Spec.Networking == nil {
+		m.res.Spec.Networking = &mesh_proto.Networking{}
+	}
+	if m.res.Spec.Networking.Outbound == nil {
+		m.res.Spec.Networking.Outbound = &mesh_proto.Networking_Outbound{}
+	}
+	m.res.Spec.Networking.Outbound.Passthrough = proto.Bool(false)
 	return m
 }
 

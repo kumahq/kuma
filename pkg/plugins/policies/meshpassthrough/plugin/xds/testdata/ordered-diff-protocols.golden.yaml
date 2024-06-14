@@ -1,0 +1,45 @@
+- Port: 9091
+  Protocol: tls
+  Routes:
+  - MatchType: 1
+    Value: api.example.com
+- Port: 9090
+  Protocol: tls
+  Routes:
+  - MatchType: 1
+    Value: api.example.com
+- Port: 443
+  Protocol: tls
+  Routes:
+  - MatchType: 1
+    Value: api.example.com
+- Port: 9091
+  Protocol: tcp
+  Routes:
+  - MatchType: 3
+    Value: 127.0.0.1
+- Port: 9090
+  Protocol: tcp
+  Routes:
+  - MatchType: 3
+    Value: 127.0.0.1
+- Port: 443
+  Protocol: tcp
+  Routes:
+  - MatchType: 3
+    Value: 127.0.0.1
+- Port: 9090
+  Protocol: http2
+  Routes:
+  - MatchType: 1
+    Value: api.example.com
+- Port: 443
+  Protocol: http
+  Routes:
+  - MatchType: 1
+    Value: api.example.com
+- Port: 9091
+  Protocol: grpc
+  Routes:
+  - MatchType: 1
+    Value: api.example.com

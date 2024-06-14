@@ -180,6 +180,10 @@ spec:
                         - Secured
                         - SkipAll
                         type: string
+                      serverName:
+                        description: ServerName overrides the default Server Name
+                          Indicator set by Kuma.
+                        type: string
                       subjectAltNames:
                         description: SubjectAltNames list of names to verify in the
                           certificate.

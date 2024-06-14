@@ -181,16 +181,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			runLog.Info("generating bootstrap configuration")
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:           opts.Dataplane,
-				DNSPort:             cfg.DNS.EnvoyDNSPort,
-				EnvoyVersion:        *envoyVersion,
-				Workdir:             cfg.DataplaneRuntime.SocketDir,
-				AccessLogSocketPath: core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
-				MetricsSocketPath:   core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
-				DynamicMetadata:     rootCtx.BootstrapDynamicMetadata,
-				MetricsCertPath:     cfg.DataplaneRuntime.Metrics.CertPath,
-				MetricsKeyPath:      cfg.DataplaneRuntime.Metrics.KeyPath,
-				SystemCaPath:        cfg.DataplaneRuntime.SystemCaPath,
+				Dataplane:       opts.Dataplane,
+				DNSPort:         cfg.DNS.EnvoyDNSPort,
+				EnvoyVersion:    *envoyVersion,
+				Workdir:         cfg.DataplaneRuntime.SocketDir,
+				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
+				MetricsCertPath: cfg.DataplaneRuntime.Metrics.CertPath,
+				MetricsKeyPath:  cfg.DataplaneRuntime.Metrics.KeyPath,
+				SystemCaPath:    cfg.DataplaneRuntime.SystemCaPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)

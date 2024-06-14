@@ -54,6 +54,50 @@ func MatchApplicationProtocols(alpn ...string) FilterChainBuilderOpt {
 	)
 }
 
+// MatchDestiantionAddress sets an exact filter chain match for the given destination address.
+func MatchDestiantionAddress(address string, isIPv6 bool) FilterChainBuilderOpt {
+	var prefixLen uint32 = 32
+	if isIPv6 {
+		prefixLen = 128
+	}
+	return matchDestiantionAddresses(address, prefixLen)
+}
+
+// MatchDestiantionAddressesRange sets an exact filter chain match for the given destination addresses range.
+func MatchDestiantionAddressesRange(address string, prefixLen uint32) FilterChainBuilderOpt {
+	return matchDestiantionAddresses(address, prefixLen)
+}
+
+// matchDestiantionAddresses sets an filter chain match for the given CIDR.
+func matchDestiantionAddresses(address string, prefixLen uint32) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.FilterChainMustConfigureFunc(func(chain *envoy_listener.FilterChain) {
+			if chain.FilterChainMatch == nil {
+				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
+			}
+
+			chain.FilterChainMatch.PrefixRanges = append(chain.FilterChainMatch.PrefixRanges, &envoy_core.CidrRange{
+				AddressPrefix: address,
+				PrefixLen:     util_proto.UInt32(prefixLen),
+			},
+			)
+		}),
+	)
+}
+
+// MatchDestiantionPort sets an exact filter chain match for the given destination port.
+func MatchDestiantionPort(port uint32) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.FilterChainMustConfigureFunc(func(chain *envoy_listener.FilterChain) {
+			if chain.FilterChainMatch == nil {
+				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
+			}
+
+			chain.FilterChainMatch.DestinationPort = util_proto.UInt32(port)
+		}),
+	)
+}
+
 // MatchSourceAddress appends an exact filter chain match for the given source IP address.
 func MatchSourceAddress(address string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(

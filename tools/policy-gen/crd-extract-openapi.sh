@@ -44,5 +44,4 @@ fi
 
 CRD_FILE=$(find "${POLICIES_CRD_DIR}" -type f)
 
-yq e -i ".properties.spec += (load(\"${CRD_FILE}\") | .spec.versions[] | select (.name == \"${VERSION}\") | .schema.openAPIV3Schema.properties.spec)" "${POLICIES_API_DIR}"/schema.yaml
-yq e -i ".properties.type.enum = [load(\"${CRD_FILE}\") | .spec.names.kind]" "${POLICIES_API_DIR}"/schema.yaml
+yq e -i ".properties *= (load(\"${CRD_FILE}\") | ((.spec.versions[] | select (.name == \"${VERSION}\") | .schema.openAPIV3Schema.properties | del(.apiVersion) | del(.metadata) | del(.kind)) * {\"type\": {\"enum\": [.spec.names.kind]}}))" "${POLICIES_API_DIR}"/schema.yaml

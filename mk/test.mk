@@ -13,7 +13,7 @@ endif
 
 # -race requires CGO_ENABLED=1 https://go.dev/doc/articles/race_detector and https://github.com/golang/go/issues/27089
 UNIT_TEST_ENV=$(GOENV) CGO_ENABLED=1 KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS) TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) $(if $(CI),TESTCONTAINERS_RYUK_DISABLED=true,GINKGO_EDITOR_INTEGRATION=true)
-GINKGO_TEST:=$(GINKGO) $(GOFLAGS) $(LD_FLAGS) --keep-going --keep-separate-reports --junit-report results.xml --output-dir $(REPORTS_DIR) $(GINKGO_OPTS) 
+GINKGO_TEST=$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --keep-going --keep-separate-reports --junit-report results.xml --output-dir $(REPORTS_DIR) $(GINKGO_OPTS)
 
 .PHONY: test
 test: build/ebpf | $(REPORTS_DIR) ## Dev: Run tests for all modules. to include reports set `make TEST_REPORTS=1` and `make TEST_REPORTS=coverage` to include coverage. To run only some tests by set `TEST_PKG_LIST=./pkg/...` for example
@@ -25,7 +25,7 @@ ifndef TEST_REPORTS
 ifdef CI
 	go clean -testcache
 endif
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests")
+	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests")
 endif
 
 $(REPORTS_DIR):

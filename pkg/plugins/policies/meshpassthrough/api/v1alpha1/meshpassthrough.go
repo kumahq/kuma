@@ -5,7 +5,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
-// +kuma:policy:skip_registration=false
 // +kuma:policy:is_policy=true
 type MeshPassthrough struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.

@@ -31,7 +31,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMesh(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
@@ -168,7 +168,7 @@ var _ = Describe("RBAC", func() {
 
 			// mesh with enabled mTLS and egress
 			ctx := xds_builders.Context().
-				WithMesh(builders.Mesh().
+				WithMeshBuilder(builders.Mesh().
 					WithName("mesh-1").
 					WithBuiltinMTLSBackend("builtin-1").
 					WithEnabledMTLSBackend("builtin-1").
