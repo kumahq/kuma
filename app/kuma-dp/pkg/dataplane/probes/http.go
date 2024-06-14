@@ -19,15 +19,13 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	upstreamScheme := getScheme(req)
 	timeout := getTimeout(req)
 
-	// todo: local address!!!
-	ipv4Addr := &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
-	transport := createHttpTransport(upstreamScheme, ipv4Addr)
+	transport := createHttpTransport(upstreamScheme, p.isPodIPAddrV6)
 	client := &http.Client{
 		Timeout:   timeout,
 		Transport: transport,
 	}
 
-	upstreamReq, err := buildUpstreamReq(req, upstreamScheme, p.IPAddress)
+	upstreamReq, err := buildUpstreamReq(req, upstreamScheme, p.podIPAddress)
 	if err != nil {
 		logger.V(1).Info("unable to create upstream request", "error", err)
 		writeProbeResult(writer, Unkown)
@@ -109,7 +107,7 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podIPA
 	return upstreamReq, nil
 }
 
-func createHttpTransport(scheme string, localAddr *net.TCPAddr) *http.Transport {
+func createHttpTransport(scheme string, useIPv6 bool) *http.Transport {
 	httpTransport := &http.Transport{
 		DisableKeepAlives: true,
 	}
@@ -117,8 +115,7 @@ func createHttpTransport(scheme string, localAddr *net.TCPAddr) *http.Transport 
 		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	d := createProbeDialer()
-	d.LocalAddr = localAddr
+	d := createProbeDialer(useIPv6)
 	httpTransport.DialContext = d.DialContext
 	return httpTransport
 }

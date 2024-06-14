@@ -23,6 +23,9 @@ var (
 	tcpGRPCPathPattern = regexp.MustCompile(`^/(tcp|grpc)/(?P<port>[0-9]+)(/.*)?$`)
 	httpPathPattern    = regexp.MustCompile(`^/(?P<port>[0-9]+)(?P<path>/.*)?$`)
 	errLimitReached    = errors.New("the read limit is reached")
+
+	localAddrIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+	localAddrIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
 )
 
 const (
@@ -36,17 +39,28 @@ const (
 )
 
 type Prober struct {
-	Port      uint32
-	IPAddress string
+	listenPort    uint32
+	podIPAddress  string
+	isPodIPAddrV6 bool
+}
+
+func NewProber(podIPAddr string, listenPort uint32) *Prober {
+	useIPv6 := strings.Contains(podIPAddr, ":")
+
+	return &Prober{
+		listenPort:    listenPort,
+		podIPAddress:  podIPAddr,
+		isPodIPAddrV6: useIPv6,
+	}
 }
 
 func (p *Prober) Start(stop <-chan struct{}) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", p.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", p.listenPort))
 	if err != nil {
 		return err_pkg.Wrap(err, "unable to listen for the virtual probes server")
 	}
 
-	logger.Info("starting Virtual Probes Server", "port", p.Port)
+	logger.Info("starting Virtual Probes Server", "port", p.listenPort)
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           p,
@@ -174,13 +188,17 @@ func getGRPCService(req *http.Request) string {
 // discarded and the connection to be aborted with an RST rather than for the pending data to be
 // transmitted and the connection closed cleanly with a FIN.
 // Ref: https://issues.k8s.io/89898
-func createProbeDialer() *net.Dialer {
+func createProbeDialer(isIPv6 bool) *net.Dialer {
 	dialer := &net.Dialer{
 		Control: func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
 				_ = syscall.SetsockoptLinger(int(fd), syscall.SOL_SOCKET, syscall.SO_LINGER, &syscall.Linger{Onoff: 1, Linger: 1})
 			})
 		},
+	}
+	dialer.LocalAddr = localAddrIPv4
+	if isIPv6 {
+		dialer.LocalAddr = localAddrIPv6
 	}
 	return dialer
 }
