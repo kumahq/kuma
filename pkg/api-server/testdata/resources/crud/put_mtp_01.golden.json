@@ -7,10 +7,6 @@
   {
    "field": "",
    "reason": "type in body should be one of [MeshTrafficPermission]"
-  },
-  {
-   "field": "",
-   "reason": ".mesh in body is required"
   }
  ],
  "details": "Resource is not valid",
@@ -18,10 +14,6 @@
   {
    "field": "",
    "message": "type in body should be one of [MeshTrafficPermission]"
-  },
-  {
-   "field": "",
-   "message": ".mesh in body is required"
   }
  ]
 }

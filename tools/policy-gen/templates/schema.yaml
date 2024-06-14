@@ -1,5 +1,5 @@
 type: object
-required: [type, name, spec{{- if eq .Scope "Mesh"}}, mesh{{- end}}]
+required: [type, name, spec]
 properties:
   type:
     description: 'the type of the resource'
