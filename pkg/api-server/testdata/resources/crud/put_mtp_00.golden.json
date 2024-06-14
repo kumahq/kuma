@@ -7,6 +7,10 @@
   {
    "field": "spec.targetRef.name",
    "reason": "in body must be of type string: \"number\""
+  },
+  {
+   "field": "",
+   "reason": ".mesh in body is required"
   }
  ],
  "details": "Resource is not valid",
@@ -14,6 +18,10 @@
   {
    "field": "spec.targetRef.name",
    "message": "in body must be of type string: \"number\""
+  },
+  {
+   "field": "",
+   "message": ".mesh in body is required"
   }
  ]
 }
