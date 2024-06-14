@@ -141,14 +141,16 @@ var _ = Describe("Global Sync", func() {
 		// global should have two MS from different zones
 		Eventually(func() int {
 			msOnGlobal := meshservice_api.MeshServiceResourceList{}
-			globalStore.List(context.Background(), &msOnGlobal)
+			err := globalStore.List(context.Background(), &msOnGlobal)
+			Expect(err).ToNot(HaveOccurred())
 			return len(msOnGlobal.Items)
 		}, "5s", "100ms").Should(Equal(2))
 
 		// third zone should receive two MS which hashed names does not have conflict
 		Eventually(func() int {
 			msOnZone := meshservice_api.MeshServiceResourceList{}
-			globalStore.List(context.Background(), &msOnZone)
+			err := zoneStores[2].List(context.Background(), &msOnZone)
+			Expect(err).ToNot(HaveOccurred())
 			return len(msOnZone.Items)
 		}, "5s", "100ms").Should(Equal(2))
 	}
