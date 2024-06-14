@@ -303,7 +303,7 @@ var _ = Describe("Zone Sync", func() {
 			VerifySyncResourcesFromGlobalToLocal()
 		})
 
-		FIt("should sync policies from global store to the local after resource is valid", func() {
+		It("should sync policies from global store to the local after resource is valid", func() {
 			// incorrct mesh
 			invalidMesh := &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
@@ -318,26 +318,25 @@ var _ = Describe("Zone Sync", func() {
 				actual := mesh.MeshResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(actual.Items).To(HaveLen(0))
+				g.Expect(actual.Items).To(BeEmpty())
 			}, "5s", "100ms").Should(Succeed())
-
 
 			mesh1 := mesh.NewMeshResource()
 			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			// when mesh is fixed
+			// when mesh is a valid resource
 			mesh1.Spec = samples.Mesh1
 			err = globalStore.Update(context.Background(), mesh1)
 			Expect(err).ToNot(HaveOccurred())
-			
+
 			// should be synchronized
 			Eventually(func(g Gomega) {
 				actual := mesh.MeshResourceList{}
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(HaveLen(1))
-			}, "20s", "100ms").Should(Succeed())
+			}, "5s", "100ms").Should(Succeed())
 
 			actual := mesh.MeshResourceList{}
 			err = zoneStore.List(context.Background(), &actual)

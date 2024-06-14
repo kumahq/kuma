@@ -82,8 +82,10 @@ func (s *kdsSyncClient) Receive() error {
 					}
 					return errors.Wrap(err, "failed to NACK a discovery response")
 				}
+				continue
+			} else {
+				return errors.Wrap(err, "failed to receive a discovery response")
 			}
-			return errors.Wrap(err, "failed to receive a discovery response")
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 

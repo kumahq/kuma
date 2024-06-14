@@ -6,6 +6,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -94,7 +95,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		return UpstreamResponse{}, err
 	}
 	rs, nameToVersion, err := util.ToDeltaCoreResourceList(resp)
-	if err != nil {
+	if err != nil && !errors.Is(err, &util.InvalidModelError{}) {
 		return UpstreamResponse{}, err
 	}
 	// when there isn't nonce it means it's the first request
@@ -112,7 +113,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
 		IsInitialRequest:    isInitialRequest,
-	}, nil
+	}, err
 }
 
 func (s *stream) ACK(resourceType core_model.ResourceType) error {
