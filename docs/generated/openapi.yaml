@@ -2364,7 +2364,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -2997,7 +2996,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -4206,7 +4204,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -4709,7 +4706,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -5187,7 +5183,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -5977,7 +5972,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -6729,7 +6723,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7053,7 +7046,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7228,7 +7220,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -7946,7 +7937,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -8523,7 +8513,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9160,7 +9149,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9490,7 +9478,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -9959,7 +9946,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10301,7 +10287,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10591,7 +10576,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
@@ -10951,7 +10935,6 @@ components:
         - type
         - name
         - spec
-        - mesh
       properties:
         type:
           description: the type of the resource
