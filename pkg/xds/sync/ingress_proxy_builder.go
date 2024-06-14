@@ -3,7 +3,12 @@ package sync
 import (
 	"context"
 
+<<<<<<< HEAD
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+=======
+	"github.com/pkg/errors"
+
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -28,7 +33,15 @@ type IngressProxyBuilder struct {
 	zone       string
 }
 
+<<<<<<< HEAD
 func (p *IngressProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey) (*core_xds.Proxy, error) {
+=======
+func (p *IngressProxyBuilder) Build(
+	ctx context.Context,
+	key core_model.ResourceKey,
+	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
+) (*core_xds.Proxy, error) {
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 	zoneIngress, err := p.getZoneIngress(ctx, key)
 	if err != nil {
 		return nil, err
@@ -127,11 +140,19 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	}, nil
 }
 
+<<<<<<< HEAD
 func (p *IngressProxyBuilder) getZoneIngress(ctx context.Context, key core_model.ResourceKey) (*core_mesh.ZoneIngressResource, error) {
+=======
+func (p *IngressProxyBuilder) getZoneIngress(
+	ctx context.Context,
+	key core_model.ResourceKey,
+) (*core_mesh.ZoneIngressResource, error) {
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 	zoneIngress := core_mesh.NewZoneIngressResource()
 	if err := p.ReadOnlyResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
@@ -195,3 +216,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 	allMeshExternalServices.Items = externalServices
 	return allMeshExternalServices, nil
 }
+=======
+	return zoneIngress, nil
+}
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))

@@ -1,32 +1,20 @@
 package ingress_test
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 )
-
-type fakeResourceManager struct {
-	manager.ResourceManager
-	updCounter int
-}
-
-func (f *fakeResourceManager) Update(context.Context, model.Resource, ...store.UpdateOptionsFunc) error {
-	f.updCounter++
-	return nil
-}
 
 var _ = Describe("Ingress Dataplane", func() {
 	type testCase struct {
@@ -42,7 +30,7 @@ var _ = Describe("Ingress Dataplane", func() {
 					dpRes := core_mesh.NewDataplaneResource()
 					err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
 					Expect(err).ToNot(HaveOccurred())
-					dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh})
+					dpRes.SetMeta(&test_model.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh})
 					dataplanes = append(dataplanes, dpRes)
 				}
 			}
@@ -157,49 +145,39 @@ var _ = Describe("Ingress Dataplane", func() {
 	)
 
 	It("should not update store if ingress haven't changed", func() {
-		ctx := context.Background()
-		mgr := &fakeResourceManager{}
-
-		ing := &core_mesh.ZoneIngressResource{
-			Spec: &mesh_proto.ZoneIngress{
-				Networking: &mesh_proto.ZoneIngress_Networking{
-					Port: 10001,
+		services := []*mesh_proto.ZoneIngress_AvailableService{
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service": "backend",
+					"version": "v1",
+					"region":  "eu",
 				},
-				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-					{
-						Instances: 1,
-						Tags: map[string]string{
-							"service": "backend",
-							"version": "v1",
-							"region":  "eu",
-						},
-						Mesh: "mesh1",
-					},
-					{
-						Instances: 2,
-						Tags: map[string]string{
-							"service": "web",
-							"version": "v2",
-							"region":  "us",
-						},
-						Mesh: "mesh1",
-					},
-					{
-						Instances: 1,
-						Tags: map[string]string{
-							"service":          "httpbin",
-							"version":          "v1",
-							mesh_proto.ZoneTag: "zone-1",
-						},
-						Mesh:            "mesh1",
-						ExternalService: true,
-					},
+				Mesh: "mesh1",
+			},
+			{
+				Instances: 2,
+				Tags: map[string]string{
+					"service": "web",
+					"version": "v2",
+					"region":  "us",
 				},
+				Mesh: "mesh1",
+			},
+			{
+				Instances: 1,
+				Tags: map[string]string{
+					"service":          "httpbin",
+					"version":          "v1",
+					mesh_proto.ZoneTag: "zone-1",
+				},
+				Mesh:            "mesh1",
+				ExternalService: true,
 			},
 		}
 		externalServices := []*core_mesh.ExternalServiceResource{
 			{
-				Meta: &model2.ResourceMeta{
+				Meta: &test_model.ResourceMeta{
 					Mesh: "mesh1",
 					Name: "es-1",
 				},
@@ -217,7 +195,7 @@ var _ = Describe("Ingress Dataplane", func() {
 		}
 		others := []*core_mesh.DataplaneResource{
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -233,7 +211,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -249,7 +227,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -265,15 +243,21 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
+<<<<<<< HEAD
 		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others, nil, externalServices)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mgr.updCounter).To(Equal(0))
+=======
+		Expect(
+			ingress.GetAvailableServices(others, nil, externalServices, nil),
+		).To(BeComparableTo(services, cmp.Comparer(proto.Equal)))
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 	})
 
 	It("should generate available services for multiple meshes", func() {
 		dataplanes := []*core_mesh.DataplaneResource{
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -289,7 +273,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -305,7 +289,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -358,7 +342,7 @@ var _ = Describe("Ingress Dataplane", func() {
 	It("should generate available services for multiple meshes with the same tags", func() {
 		dataplanes := []*core_mesh.DataplaneResource{
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh1"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -374,7 +358,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 			{
-				Meta: &model2.ResourceMeta{Mesh: "mesh2"},
+				Meta: &test_model.ResourceMeta{Mesh: "mesh2"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -232,50 +235,15 @@ var _ = Describe("Proxy Builder", func() {
 				},
 				Weight: 1,
 			}}))
-			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
-				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "backend",
-							"version":             "v1",
-						},
-						Instances: 1,
-						Mesh:      "default",
-					},
-					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "frontend",
-							"version":             "v1",
-						},
-						Instances: 1,
-						Mesh:      "default",
-					},
-					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "external-service-zone-1",
-							mesh_proto.ZoneTag:    "zone-1",
-						},
-						Instances:       1,
-						Mesh:            "default",
-						ExternalService: true,
-					},
-					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag: "cross-mesh-gateway",
-							mesh_proto.MeshTag:    "default",
-						},
-						Instances: 1,
-						Mesh:      "default",
-					},
-				},
-				Zone: "zone-1",
-				Networking: &mesh_proto.ZoneIngress_Networking{
+			Expect(proxy.ZoneIngressProxy.ZoneIngressResource.Spec).To(PointTo(MatchFields(IgnoreExtras, Fields{
+				"Zone": Equal("zone-1"),
+				"Networking": BeComparableTo(&mesh_proto.ZoneIngress_Networking{
 					Address:           "3.3.3.3",
 					AdvertisedAddress: "4.4.4.4",
 					AdvertisedPort:    30004,
 					Port:              30003,
-				},
-			}))
+				}, cmp.Comparer(proto.Equal)),
+			})))
 		})
 	})
 })

@@ -544,6 +544,11 @@ multizone:
       msgSendTimeout: 20s
       nackBackoff: 21s
       tlsSkipVerify: true
+<<<<<<< HEAD
+=======
+    disableOriginLabelValidation: true
+    ingressUpdateInterval: 2s
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -813,6 +818,11 @@ proxy:
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
+<<<<<<< HEAD
+=======
+				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
+				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
