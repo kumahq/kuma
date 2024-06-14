@@ -61,6 +61,7 @@ func AvailableServices() {
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(statefulCluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(statefulCluster.DismissCluster()).To(Succeed())
 	})
 
 	getIngress := func(g Gomega, kumactl *kumactl.KumactlOptions, port int) *mesh_proto.ZoneIngress {
