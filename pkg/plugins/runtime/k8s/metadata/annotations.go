@@ -118,6 +118,9 @@ const (
 
 	// KumaServiceName points to the Service that a MeshService is derived from
 	KumaServiceName = "k8s.kuma.io/service-name"
+
+	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
+	HeadlessService = "k8s.kuma.io/headless-service"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
