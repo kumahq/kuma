@@ -468,7 +468,7 @@ var _ = Describe("MeshRateLimit", func() {
 
 		// mesh with enabled mTLS and egress
 		ctx := xds_builders.Context().
-			WithMesh(builders.Mesh().
+			WithMeshBuilder(builders.Mesh().
 				WithName("mesh-1").
 				WithBuiltinMTLSBackend("builtin-1").
 				WithEnabledMTLSBackend("builtin-1").
@@ -683,7 +683,7 @@ var _ = Describe("MeshRateLimit", func() {
 			}
 
 			xdsCtx := *xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				Build()

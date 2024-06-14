@@ -40,7 +40,6 @@ func ExcludeOutboundPort() {
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-				WithHelmOpt("cni.delayStartupSeconds", "40"),
 				WithHelmOpt("cni.logLevel", "debug"),
 				WithCNI(),
 			)).

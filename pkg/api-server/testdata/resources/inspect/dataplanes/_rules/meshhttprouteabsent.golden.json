@@ -1,6 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"

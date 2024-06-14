@@ -13,6 +13,7 @@ var protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
 	core_mesh.ProtocolHTTP2: {core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
 	core_mesh.ProtocolHTTP:  {core_mesh.ProtocolHTTP, core_mesh.ProtocolTCP},
 	core_mesh.ProtocolKafka: {core_mesh.ProtocolKafka, core_mesh.ProtocolTCP},
+	core_mesh.ProtocolTLS:   {core_mesh.ProtocolTCP},
 	core_mesh.ProtocolTCP:   {core_mesh.ProtocolTCP},
 }
 

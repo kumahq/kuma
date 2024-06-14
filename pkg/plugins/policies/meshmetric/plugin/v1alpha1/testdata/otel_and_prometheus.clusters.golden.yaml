@@ -11,7 +11,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-metrics-backend-default.sock
+                path: /tmp/kuma-mh-backend-default.sock
     name: _kuma:metrics:hijacker
     type: STATIC
 - name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317

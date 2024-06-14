@@ -1,16 +1,28 @@
 {
  "items": [
   {
+   "labels": {
+    "k8s.kuma.io/namespace": "kuma-demo",
+    "kuma.io/display-name": "dp-1"
+   },
    "mesh": "default",
    "name": "dp-1",
    "type": "Dataplane"
   },
   {
+   "labels": {
+    "k8s.kuma.io/namespace": "kuma-demo",
+    "kuma.io/display-name": "dp-2"
+   },
    "mesh": "default",
    "name": "dp-2",
    "type": "Dataplane"
   },
   {
+   "labels": {
+    "k8s.kuma.io/namespace": "kuma-demo",
+    "kuma.io/display-name": "dp-3"
+   },
    "mesh": "default",
    "name": "dp-3",
    "type": "Dataplane"

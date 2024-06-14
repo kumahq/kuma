@@ -5,6 +5,9 @@ name: default
 type: MeshGateway
 name: the-gateway
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-gateway
 selectors:
   - match:
       kuma.io/service: gw-1
@@ -16,6 +19,9 @@ conf:
 type: MeshTrace
 name: default
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: default
 spec:
   targetRef:
     kind: Mesh

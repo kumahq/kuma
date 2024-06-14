@@ -20,3 +20,5 @@ violations:
     the following protocols: [grpc http http2]'
 - field: spec.default.appendMatch[7].value
   message: provided DNS has incorrect value, partial wildcard is currently not supported
+- field: spec.default.appendMatch[9].value
+  message: value google.com is already defiend for this port and protocol
