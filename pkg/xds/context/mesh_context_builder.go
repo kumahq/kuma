@@ -341,9 +341,11 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			if !ok {
 				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
 			}
+
+			zoneIngressName := zi.GetMeta().GetName()
 			zi, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
 			if err != nil {
-				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
+				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zoneIngressName)
 				return nil, nil
 			}
 			return zi, nil
