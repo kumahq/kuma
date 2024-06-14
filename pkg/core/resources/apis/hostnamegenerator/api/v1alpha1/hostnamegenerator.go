@@ -10,7 +10,6 @@ type LabelSelector struct {
 }
 
 type NameLabelsSelector struct {
-	MatchName   string            `json:"matchName,omitempty"`
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
@@ -19,10 +18,7 @@ type Selector struct {
 	MeshExternalService NameLabelsSelector `json:"meshExternalService,omitempty"`
 }
 
-func (s NameLabelsSelector) Matches(name string, labels map[string]string) bool {
-	if s.MatchName != "" && s.MatchName != name {
-		return false
-	}
+func (s NameLabelsSelector) Matches(labels map[string]string) bool {
 	for tag, matchValue := range s.MatchLabels {
 		labelValue, exist := labels[tag]
 		if !exist {

@@ -49,13 +49,15 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 		generator := hostnamegenerator_api.NewHostnameGeneratorResource()
 		generator.Meta = &test_model.ResourceMeta{
 			Mesh: core_model.DefaultMesh,
-			Name: "byname",
+			Name: "display-name",
 		}
 		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
-			Template: "{{ .Name }}.byname.mesh",
+			Template: "{{ .DisplayName }}.dn.mesh",
 			Selector: hostnamegenerator_api.Selector{
 				MeshExternalService: hostnamegenerator_api.NameLabelsSelector{
-					MatchName: "test-external-svc",
+					MatchLabels: map[string]string{
+						"dn": "true",
+					},
 				},
 			},
 		}
@@ -134,16 +136,38 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	It("should generate hostname if a generator selects a given MeshExternalService by name", func() {
+	It("should generate hostname if for MeshExternalService using .DisplayName taken from label", func() {
 		// when
-		err := samples.MeshExternalServiceExampleBuilder().WithoutVIP().WithName("test-external-svc").Create(resManager)
+		err := samples.MeshExternalServiceExampleBuilder().
+			WithoutVIP().
+			WithName("test-external-svc").
+			WithLabels(map[string]string{"kuma.io/display-name": "other-name", "dn": "true"}).
+			Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Eventually(func(g Gomega) {
 			status := vipOfMeshExternalService("test-external-svc")
 			g.Expect(status.Addresses).Should(Not(BeEmpty()))
-			g.Expect(status.Addresses[0].Hostname).Should(Equal("test-external-svc.byname.mesh"))
+			g.Expect(status.Addresses[0].Hostname).Should(Equal("other-name.dn.mesh"))
+			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
+		}, "2000s", "100ms").Should(Succeed())
+	})
+
+	It("should generate hostname if for MeshExternalService using .DisplayName taken from name", func() {
+		// when
+		err := samples.MeshExternalServiceExampleBuilder().
+			WithoutVIP().
+			WithName("test-external-svc").
+			WithLabels(map[string]string{"dn": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			status := vipOfMeshExternalService("test-external-svc")
+			g.Expect(status.Addresses).Should(Not(BeEmpty()))
+			g.Expect(status.Addresses[0].Hostname).Should(Equal("test-external-svc.dn.mesh"))
 			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
 		}, "2000s", "100ms").Should(Succeed())
 	})

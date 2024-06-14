@@ -3,6 +3,7 @@ package hostname
 import (
 	"context"
 	"fmt"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"reflect"
 	"strings"
 	"text/template"
@@ -64,7 +65,7 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)
 	}
-	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetName(), es.Meta.GetLabels()) {
+	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetLabels()) {
 		return "", nil
 	}
 	sb := strings.Builder{}
@@ -84,16 +85,22 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
 	}
 	type meshedName struct {
-		Name      string
-		Namespace string
-		Mesh      string
+		Name        string
+		DisplayName string
+		Namespace   string
+		Mesh        string
 	}
 	name := es.GetMeta().GetNameExtensions()[model.K8sNameComponent]
 	if name == "" {
 		name = es.GetMeta().GetName()
 	}
+	displayName, ok := es.GetMeta().GetLabels()[mesh_proto.DisplayName]
+	if !ok {
+		displayName = name
+	}
 	err = tmpl.Execute(&sb, meshedName{
 		Name:      name,
+		DisplayName: displayName,
 		Namespace: es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
 		Mesh:      es.GetMeta().GetMesh(),
 	})
