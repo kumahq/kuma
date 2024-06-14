@@ -1,7 +1,10 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": null,
+  "labels": {
+   "k8s.kuma.io/namespace": "kuma-demo",
+   "kuma.io/display-name": "the-gateway"
+  },
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -21,7 +24,10 @@
      "matchers": [],
      "origin": [
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "mt-on-gateway"
+       },
        "mesh": "default",
        "name": "mt-on-gateway",
        "type": "MeshTimeout"
@@ -47,7 +53,10 @@
     },
     "origin": [
      {
-      "labels": null,
+      "labels": {
+       "k8s.kuma.io/namespace": "kuma-demo",
+       "kuma.io/display-name": "mpp-on-gateway"
+      },
       "mesh": "default",
       "name": "mpp-on-gateway",
       "type": "MeshProxyPatch"

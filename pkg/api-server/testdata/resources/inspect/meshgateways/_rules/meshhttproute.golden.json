@@ -24,7 +24,10 @@
   }
  ],
  "resource": {
-  "labels": null,
+  "labels": {
+   "k8s.kuma.io/namespace": "kuma-demo",
+   "kuma.io/display-name": "the-gateway"
+  },
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -90,13 +93,19 @@
      "matchers": [],
      "origin": [
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "the-http-route"
+       },
        "mesh": "default",
        "name": "the-http-route",
        "type": "MeshHTTPRoute"
       },
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "the-other-http-route"
+       },
        "mesh": "default",
        "name": "the-other-http-route",
        "type": "MeshHTTPRoute"
@@ -130,13 +139,19 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-route"
+       },
        "mesh": "default",
        "name": "on-route",
        "type": "MeshTimeout"
       },
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-service"
+       },
        "mesh": "default",
        "name": "on-service",
        "type": "MeshTimeout"
@@ -163,7 +178,10 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-service"
+       },
        "mesh": "default",
        "name": "on-service",
        "type": "MeshTimeout"
@@ -190,7 +208,10 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-route"
+       },
        "mesh": "default",
        "name": "on-route",
        "type": "MeshTimeout"

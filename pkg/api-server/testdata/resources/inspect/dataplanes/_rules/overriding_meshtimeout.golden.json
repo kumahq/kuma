@@ -1,7 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": null,
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -28,13 +28,13 @@
        "matchers": [],
        "origin": [
         {
-         "labels": null,
+         "labels": {},
          "mesh": "default",
          "name": "default",
          "type": "MeshTimeout"
         },
         {
-         "labels": null,
+         "labels": {},
          "mesh": "default",
          "name": "override",
          "type": "MeshTimeout"
@@ -62,13 +62,13 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": null,
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -92,13 +92,13 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": null,
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -127,7 +127,7 @@
      ],
      "origin": [
       {
-       "labels": null,
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"

@@ -1,7 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": null,
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -41,13 +41,13 @@
     },
     "origin": [
      {
-      "labels": null,
+      "labels": {},
       "mesh": "default",
       "name": "default",
       "type": "MeshTrace"
      },
      {
-      "labels": null,
+      "labels": {},
       "mesh": "default",
       "name": "override",
       "type": "MeshTrace"
