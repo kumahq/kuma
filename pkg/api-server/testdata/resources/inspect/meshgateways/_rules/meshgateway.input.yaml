@@ -5,6 +5,9 @@ name: default
 type: MeshGateway
 name: the-gateway
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: the-gateway
 selectors:
   - match:
       kuma.io/service: gw-1
@@ -16,6 +19,9 @@ conf:
 type: MeshTimeout
 name: mt-on-gateway
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: mt-on-gateway
 spec:
   targetRef:
     kind: MeshGateway
@@ -32,6 +38,9 @@ spec:
 type: MeshProxyPatch
 mesh: default
 name: mpp-on-gateway
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: mpp-on-gateway
 spec:
   targetRef:
     kind: MeshGateway

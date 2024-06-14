@@ -8,6 +8,9 @@ name: default
 type: MeshGateway
 name: gw-1
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: gw-1
 selectors:
   - match:
       kuma.io/service: gw-1
@@ -26,6 +29,9 @@ conf:
 type: MeshHTTPRoute
 name: http-route-1
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: http-route-1
 spec:
   targetRef:
     kind: MeshGateway
@@ -49,6 +55,9 @@ spec:
 type: MeshHTTPRoute
 name: http-route-2
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: http-route-2
 spec:
   targetRef:
     kind: MeshGateway
@@ -75,6 +84,9 @@ spec:
 type: MeshHTTPRoute
 name: http-route-3
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: http-route-3
 spec:
   targetRef:
     kind: MeshGateway

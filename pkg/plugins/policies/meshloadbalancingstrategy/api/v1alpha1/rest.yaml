@@ -84,7 +84,6 @@ paths:
         '200':
           description: Successful response
 
-
   /meshes/{mesh}/meshloadbalancingstrategies:
     get:
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.

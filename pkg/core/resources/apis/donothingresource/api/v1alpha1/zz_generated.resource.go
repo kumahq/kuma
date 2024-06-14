@@ -15,13 +15,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-//go:embed schema.yaml
 var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	DoNothingResourceResourceTypeDescriptor.Schema = &schema

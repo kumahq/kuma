@@ -74,13 +74,13 @@ func CollectServices(
 			if outbound.GetAddress() == proxy.Dataplane.Spec.GetNetworking().GetAddress() {
 				continue
 			}
-			ms, ok := meshCtx.MeshServiceIdentity[outbound.BackendRef.Name]
+			ms, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
 			if !ok {
 				// we want to ignore service which is not found. Logging might be excessive here.
 				// We don't have other mechanism to bubble up warnings yet.
 				continue
 			}
-			port, ok := ms.Resource.FindPort(outbound.BackendRef.Port)
+			port, ok := ms.FindPort(outbound.BackendRef.Port)
 			if !ok {
 				continue
 			}
@@ -91,11 +91,11 @@ func CollectServices(
 			dests = append(dests, DestinationService{
 				Outbound:    oface,
 				Protocol:    protocol,
-				ServiceName: ms.Resource.DestinationName(outbound.BackendRef.Port),
+				ServiceName: ms.DestinationName(outbound.BackendRef.Port),
 				BackendRef: common_api.BackendRef{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.MeshService,
-						Name: ms.Resource.GetMeta().GetName(),
+						Name: ms.GetMeta().GetName(),
 					},
 					Port: &port.Port,
 				},
@@ -142,16 +142,16 @@ func makeSplit(
 		}
 		var meshServiceName string
 		if ref.Port != nil { // in this case, reference real MeshService instead of kuma.io/service tag
-			ms, ok := meshCtx.MeshServiceIdentity[ref.Name]
+			ms, ok := meshCtx.MeshServiceByName[ref.Name]
 			if !ok {
 				continue
 			}
-			meshServiceName = ms.Resource.GetMeta().GetName()
-			port, ok := ms.Resource.FindPort(*ref.Port)
+			meshServiceName = ms.GetMeta().GetName()
+			port, ok := ms.FindPort(*ref.Port)
 			if !ok {
 				continue
 			}
-			service = ms.Resource.DestinationName(*ref.Port)
+			service = ms.DestinationName(*ref.Port)
 			protocol = port.Protocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		} else {
 			service = ref.Name

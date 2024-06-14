@@ -6,17 +6,11 @@ info:
   x-ref-schema-name: "HostnameGenerator"
 
 paths:
-  /meshes/{mesh}/hostnamegenerators/{name}:
+  /hostnamegenerators/{name}:
     get:
       summary: Returns HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
         - in: path
           name: name
           schema:
@@ -31,12 +25,6 @@ paths:
       summary: Creates or Updates HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
         - in: path
           name: name
           schema:
@@ -69,12 +57,6 @@ paths:
       tags: [ "HostnameGenerator" ]
       parameters:
         - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-        - in: path
           name: name
           schema:
             type: string
@@ -84,18 +66,10 @@ paths:
         '200':
           description: Successful response
 
-
-  /meshes/{mesh}/hostnamegenerators:
+  /hostnamegenerators:
     get:
       summary: Returns a list of HostnameGenerator in the mesh.
       tags: [ "HostnameGenerator" ]
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
       responses:
         '200':
           $ref: "#/components/responses/HostnameGeneratorList"
