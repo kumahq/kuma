@@ -1,8 +1,6 @@
 package meshservice
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -16,11 +14,6 @@ import (
 )
 
 func MeshService() {
-	if Config.IPV6 {
-		fmt.Println("Test not supported on IPv6 yet")
-		return
-	}
-	
 	meshName := "meshservice"
 	namespace := "meshservice"
 
