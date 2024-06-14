@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	v1 "k8s.io/api/admission/v1"
@@ -129,12 +128,6 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 		if err := origin.IsValid(); err != nil {
 			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
 		}
-	}
-	if _, ok := rm.GetLabels()[mesh_proto.PolicyRoleLabel]; ok {
-		verr.AddViolationAt(labelsPath.Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should not be set manually", mesh_proto.PolicyRoleLabel))
-	}
-	if _, ok := rm.GetLabels()[mesh_proto.ZoneTag]; ok {
-		verr.AddViolationAt(labelsPath.Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should not be set manually", mesh_proto.ZoneTag))
 	}
 	return verr
 }
