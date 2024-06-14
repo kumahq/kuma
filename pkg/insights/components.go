@@ -1,12 +1,38 @@
 package insights
 
 import (
+	"time"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/status"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 func Setup(rt runtime.Runtime) error {
+	if rt.GetMode() == config_core.Zone {
+		logger := core.Log.WithName("meshservice").WithName("status-updater")
+		updater, err := status.NewStatusUpdater(
+			logger,
+			rt.ReadOnlyResourceManager(),
+			rt.ResourceManager(),
+			10*time.Second, // todo config
+			rt.Metrics(),
+		)
+		if err != nil {
+			return err
+		}
+		if err := rt.Add(component.NewResilientComponent(
+			logger,
+			updater,
+			rt.Config().General.ResilientComponentBaseBackoff.Duration,
+			rt.Config().General.ResilientComponentMaxBackoff.Duration),
+		); err != nil {
+			return err
+		}
+	}
 	if rt.Config().IsFederatedZoneCP() {
 		return nil
 	}
