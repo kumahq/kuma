@@ -3,8 +3,6 @@ package global_test
 import (
 	"context"
 	"fmt"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +12,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -25,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -120,7 +120,8 @@ var _ = Describe("Global Sync", func() {
 			Spec: &meshservice_api.MeshService{
 				Selector: meshservice_api.Selector{},
 				Ports:    nil,
-			}}, store.CreateByKey("test-service", "mesh1"))
+			},
+		}, store.CreateByKey("test-service", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// create MS with the same name but different namespace in different zone
@@ -135,7 +136,8 @@ var _ = Describe("Global Sync", func() {
 			Spec: &meshservice_api.MeshService{
 				Selector: meshservice_api.Selector{},
 				Ports:    nil,
-			}}, store.CreateByKey("test-service", "mesh1"))
+			},
+		}, store.CreateByKey("test-service", "mesh1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// global should have two MS from different zones
@@ -337,7 +339,7 @@ var _ = Describe("Global Sync", func() {
 			VerifyUpToDateListOfProvidedType()
 		})
 
-		FIt("test", func() {
+		It("test", func() {
 			VerifyMeshServiceWasSynchronizedWithoutConflicts()
 		})
 	})
