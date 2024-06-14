@@ -72,4 +72,10 @@ var (
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
+<<<<<<< HEAD
+=======
+	_ = Describe("Defaults", defaults.Defaults, Ordered)
+	_ = Describe("MeshService", Label("ipv6-not-supported"), meshservice.MeshService, Ordered)
+	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
+>>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 )
