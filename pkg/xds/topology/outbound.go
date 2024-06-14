@@ -616,13 +616,11 @@ func createMeshExternalServiceEndpoint(
 			if pointer.Deref(tls.Verification.ServerName) != "" {
 				es.ServerName = pointer.Deref(tls.Verification.ServerName)
 			}
-			if tls.Verification.SubjectAltNames != nil {
-				for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
-					es.SANs = append(es.SANs, core_xds.SAN{
-						MatchType: core_xds.MatchType(san.Type),
-						Value:     san.Value,
-					})
-				}
+			for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+				es.SANs = append(es.SANs, core_xds.SAN{
+					MatchType: core_xds.MatchType(san.Type),
+					Value:     san.Value,
+				})
 			}
 			if tls.Version != nil {
 				if tls.Version.Min != nil {
