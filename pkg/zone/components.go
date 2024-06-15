@@ -27,7 +27,5 @@ func Setup(rt runtime.Runtime) error {
 	return rt.Add(component.NewResilientComponent(
 		logger,
 		tracker,
-		rt.Config().General.ResilientComponentBaseBackoff.Duration,
-		rt.Config().General.ResilientComponentMaxBackoff.Duration,
 	))
 }

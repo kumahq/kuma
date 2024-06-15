@@ -48,7 +48,6 @@ var _ = Describe("AvailableServices", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 		var err error
 		metrics, err = core_metrics.NewMetrics("Zone")
