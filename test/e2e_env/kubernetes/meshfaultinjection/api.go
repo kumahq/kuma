@@ -68,7 +68,7 @@ spec:
                 value: 5s
                 percentage: 3
               responseBandwidth:
-                limit: 10mbps
+                limit: 10Mbps
                 percentage: 1
             - delay:
                 value: 11s
@@ -85,7 +85,7 @@ spec:
                 value: 5s
                 percentage: "3.2"
             - responseBandwidth:
-                limit: 10mbps
+                limit: 10Mbps
                 percentage: 1
 `, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
 
