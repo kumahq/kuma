@@ -146,21 +146,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Control Plane Intercommunication")
 				return err
 			}
-<<<<<<< HEAD
-=======
-			if err := ipam.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up IPAM")
-				return err
-			}
 			if err := zone.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up ZoneIngress available services")
 				return err
 			}
-			if err := dns.SetupHostnameGenerator(rt); err != nil {
-				runLog.Error(err, "unable to set up hostname generator")
-				return err
-			}
->>>>>>> 08bb1373c (fix(kuma-cp): consistently update ZoneIngress available services (#10426))
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
 			if err := rt.Start(gracefulCtx.Done()); err != nil {
