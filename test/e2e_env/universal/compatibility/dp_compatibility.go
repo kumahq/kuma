@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 func UniversalCompatibility() {
@@ -15,13 +16,14 @@ func UniversalCompatibility() {
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), "kuma-compat", Silent)
 
+		oldestUpgradble := versions.OldestUpgradableToBuildVersion(Config.SupportedVersions())
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone)).
 			Install(TestServerUniversal("test-server", "default",
 				WithArgs([]string{"echo", "--instance", "universal1"}),
-				WithDPVersion("1.5.0"))).
+				WithDPVersion(oldestUpgradble))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default",
-				WithDPVersion("1.5.0"),
+				WithDPVersion(oldestUpgradble),
 				WithTransparentProxy(true)),
 			).
 			SetupWithRetries(cluster, 3)
