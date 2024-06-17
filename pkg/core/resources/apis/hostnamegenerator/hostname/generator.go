@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -235,4 +236,49 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 
 func (g *Generator) NeedLeaderElection() bool {
 	return true
+}
+
+func EvaluateTemplate(generatorTemplate string, meta model.ResourceMeta) (string, error) {
+	sb := strings.Builder{}
+	tmpl := template.New("").Funcs(
+		map[string]any{
+			"label": func(key string) (string, error) {
+				val, ok := meta.GetLabels()[key]
+				if !ok {
+					return "", errors.Errorf("label %s not found", key)
+				}
+				return val, nil
+			},
+		},
+	)
+	tmpl, err := tmpl.Parse(generatorTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
+	}
+	type meshedName struct {
+		Name        string
+		DisplayName string
+		Namespace   string
+		Mesh        string
+		Zone        string
+	}
+	name := meta.GetNameExtensions()[model.K8sNameComponent]
+	if name == "" {
+		name = meta.GetName()
+	}
+	displayName, ok := meta.GetLabels()[mesh_proto.DisplayName]
+	if !ok {
+		displayName = name
+	}
+	err = tmpl.Execute(&sb, meshedName{
+		Name:        name,
+		DisplayName: displayName,
+		Namespace:   meta.GetLabels()[mesh_proto.KubeNamespaceTag],
+		Mesh:        meta.GetMesh(),
+		Zone:        meta.GetLabels()[mesh_proto.ZoneTag],
+	})
+	if err != nil {
+		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
+	}
+	return sb.String(), nil
 }
