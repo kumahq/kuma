@@ -26,7 +26,6 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
 		tenants:        tenants,
-		forceVersions:  map[string][]core_model.ResourceType{},
 	}
 }
 
@@ -39,16 +38,6 @@ type reconciler struct {
 	tenants        multitenant.Tenants
 
 	lock sync.Mutex
-
-	forceVersions     map[string][]core_model.ResourceType
-	forceVersionsLock sync.RWMutex
-}
-
-func (r *reconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
-	nodeID := r.hasher.ID(node)
-	r.forceVersionsLock.Lock()
-	r.forceVersions[nodeID] = append(r.forceVersions[nodeID], resourceType)
-	r.forceVersionsLock.Unlock()
 }
 
 func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
@@ -106,7 +95,6 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	if err := new.ConstructVersionMap(); err != nil {
 		return errors.Wrap(err, "could not construct version map"), false
 	}
-	r.forceNewVersion(new, id)
 
 	if changed := r.changedTypes(old, new); len(changed) > 0 {
 		r.logChanges(logger, changed, node)
@@ -125,23 +113,6 @@ func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_
 		}
 	}
 	return changed
-}
-
-// see kdsRetryForcer for more information
-func (r *reconciler) forceNewVersion(snapshot envoy_cache.ResourceSnapshot, id string) {
-	r.forceVersionsLock.Lock()
-	forceVersionsForTypes := r.forceVersions[id]
-	delete(r.forceVersions, id)
-	r.forceVersionsLock.Unlock()
-	for _, typ := range forceVersionsForTypes {
-		cacheSnapshot, ok := snapshot.(*cache_v2.Snapshot)
-		if !ok {
-			panic("invalid type of Snapshot")
-		}
-		for resourceName := range cacheSnapshot.VersionMap[typ] {
-			cacheSnapshot.VersionMap[typ][resourceName] = ""
-		}
-	}
 }
 
 func (r *reconciler) logChanges(logger logr.Logger, changedTypes []core_model.ResourceType, node *envoy_core.Node) {
