@@ -71,38 +71,6 @@ var _ = Describe("Global Sync", func() {
 		closeFunc()
 	}
 
-	VerifyResourcesWereNotSynchronizedToGlobal := func() {
-		dp := &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "192.168.0.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-					Port: 1212,
-					Tags: map[string]string{
-						mesh_proto.ZoneTag:    "kuma-cluster-1",
-						mesh_proto.ServiceTag: "service-1",
-					},
-				}},
-				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-					{
-						Tags: map[string]string{
-							mesh_proto.ServiceTag:  "web",
-							mesh_proto.ProtocolTag: "http",
-						},
-					},
-				},
-			},
-		}
-		err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-		Eventually(func() int {
-			actual := mesh.DataplaneResourceList{}
-			err := globalStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(0))
-		closeFunc()
-	}
-
 	VerifyResourcesWereSynchronizedIndependentlyForEachZone := func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
@@ -311,7 +279,34 @@ var _ = Describe("Global Sync", func() {
 		})
 
 		It("should not add resource to global store when resource is invalid", func() {
-			VerifyResourcesWereNotSynchronizedToGlobal()
+			dp := &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port: 1212,
+						Tags: map[string]string{
+							mesh_proto.ZoneTag:    "kuma-cluster-1",
+							mesh_proto.ServiceTag: "service-1",
+						},
+					}},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag:  "web",
+								mesh_proto.ProtocolTag: "http",
+							},
+						},
+					},
+				},
+			}
+			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+			Consistently(func(g Gomega) {
+				actual := mesh.DataplaneResourceList{}
+				err := globalStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
 		})
 
 		It("should sync resources independently for each Zone", func() {

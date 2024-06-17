@@ -87,6 +87,7 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
+		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 
 		if err := received.Validate(); err != nil {
 			s.log.Info("received resource is invalid, sending NACK", "err", err)
@@ -98,7 +99,6 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			continue
 		}
-		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
@@ -112,7 +112,7 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		err = s.callbacks.OnResourcesReceived(received)
 		if err != nil {
-			return errors.Wrapf(err, "failed to add resource %s to the store", received.Type)
+			return errors.Wrapf(err, "failed to store %s resources", received.Type)
 		}
 		if !received.IsInitialRequest {
 			// Execute backoff only on subsequent request.
