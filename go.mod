@@ -46,7 +46,7 @@ require (
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.11.0
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/spiffe/go-spiffe/v2 v2.2.0
 	github.com/testcontainers/testcontainers-go v0.31.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2
@@ -107,7 +107,7 @@ require (
 	github.com/containerd/containerd v1.7.15 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect
