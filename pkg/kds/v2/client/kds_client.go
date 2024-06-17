@@ -89,6 +89,7 @@ func (s *kdsSyncClient) Receive() error {
 		}
 
 		if err := received.Validate(); err != nil {
+			s.log.Info("received resource is invalid, sending NACK", "err", err)
 			if err := s.kdsStream.NACK(received.Type, err); err != nil {
 				if err == io.EOF {
 					return nil
