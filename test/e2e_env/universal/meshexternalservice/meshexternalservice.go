@@ -88,9 +88,9 @@ spec:
 	var esHttp2ContainerName string
 
 	BeforeAll(func() {
-		esHttpName := "es-http"
-		esHttpsName := "es-https"
-		esHttp2Name := "es-http-2"
+		esHttpName := "mes-http"
+		esHttpsName := "mes-https"
+		esHttp2Name := "mes-http-2"
 
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
 		esHttpsContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpsName)
@@ -102,7 +102,7 @@ spec:
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
-			Install(DemoClientUniversal("demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -150,10 +150,10 @@ spec:
 
 				// when access the first external service with .mesh
 				checkSuccessfulRequest("ext-srv-1.mesh", clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http")))
+					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http")))
 
 				checkSuccessfulRequest("ext-srv-2.mesh", clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("es-http-2")))
+					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http-2")))
 			})
 
 			It("should route to mesh-external-service over tls", func() {
@@ -171,7 +171,7 @@ spec:
 				}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 				// when set proper certificate
-				cert, _, err := universal.Cluster.Exec("", "", "es-https", "cat /certs/cert.pem")
+				cert, _, err := universal.Cluster.Exec("", "", "mes-https", "cat /certs/cert.pem")
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cert).ToNot(BeEmpty())
 
@@ -184,5 +184,5 @@ spec:
 		})
 	}
 
-	contextFor("without default policies", meshNameNoDefaults, "demo-client-no-defaults")
+	contextFor("without default policies", meshNameNoDefaults, "mes-demo-client-no-defaults")
 }
