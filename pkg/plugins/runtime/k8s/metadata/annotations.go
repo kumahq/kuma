@@ -120,7 +120,7 @@ const (
 	KumaServiceName = "k8s.kuma.io/service-name"
 
 	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
-	HeadlessService = "k8s.kuma.io/headless-service"
+	HeadlessService = "k8s.kuma.io/is-headless-service"
 )
 
 var PodAnnotationDeprecations = []Deprecation{
