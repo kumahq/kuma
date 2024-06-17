@@ -85,7 +85,8 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admission.Response {
 	if c.Mode != core.Global {
-		if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != c.ZoneName {
+		zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != c.ZoneName {
 			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName)
 		}
 	}
