@@ -534,6 +534,9 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
+    # IngressUpdateInterval is the interval between the CP updating the list of
+    # available services on ZoneIngress.
+    ingressUpdateInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL
 
 # Diagnostics configuration
 diagnostics:
