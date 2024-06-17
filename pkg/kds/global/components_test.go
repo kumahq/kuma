@@ -44,6 +44,7 @@ var _ = Describe("Global Sync", func() {
 				}},
 				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 					{
+						Port: 10000,
 						Tags: map[string]string{
 							mesh_proto.ServiceTag:  "web",
 							mesh_proto.ProtocolTag: "http",
@@ -89,10 +90,10 @@ var _ = Describe("Global Sync", func() {
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := zoneStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = zoneStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -272,6 +273,37 @@ var _ = Describe("Global Sync", func() {
 			VerifyResourcesWereSynchronizedToGlobal()
 		})
 
+		It("should not add resource to global store when resource is invalid", func() {
+			dp := &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port: 1212,
+						Tags: map[string]string{
+							mesh_proto.ZoneTag:    "kuma-cluster-1",
+							mesh_proto.ServiceTag: "service-1",
+						},
+					}},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag:  "web",
+								mesh_proto.ProtocolTag: "http",
+							},
+						},
+					},
+				},
+			}
+			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+			Consistently(func(g Gomega) {
+				actual := mesh.DataplaneResourceList{}
+				err := globalStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
+		})
+
 		It("should sync resources independently for each Zone", func() {
 			VerifyResourcesWereSynchronizedIndependentlyForEachZone()
 		})
@@ -282,6 +314,53 @@ var _ = Describe("Global Sync", func() {
 
 		It("should have up to date list of provided types", func() {
 			VerifyUpToDateListOfProvidedType()
+		})
+
+		It("should sync policies from global store to the local after resource is valid", func() {
+			// incorrct dp
+			dp := &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port: 1234,
+						Tags: map[string]string{
+							mesh_proto.ZoneTag:    "kuma-cluster-1",
+							mesh_proto.ServiceTag: "service-1",
+						},
+					}},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Port: 1234,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag:  "web",
+								mesh_proto.ProtocolTag: "http",
+							},
+						},
+					},
+				},
+			}
+			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+			Consistently(func() int {
+				actual := mesh.DataplaneResourceList{}
+				err := globalStore.List(context.Background(), &actual)
+				Expect(err).ToNot(HaveOccurred())
+				return len(actual.Items)
+			}, "5s", "100ms").Should(Equal(0))
+
+			dp1 := mesh.NewDataplaneResource()
+			err = zoneStores[0].Get(context.Background(), dp1, store.GetByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+			// when resource is fixed
+			dp1.Spec.Networking.Address = "192.168.1.1"
+			err = zoneStores[0].Update(context.Background(), dp1)
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func() int {
+				actual := mesh.DataplaneResourceList{}
+				err := globalStore.List(context.Background(), &actual)
+				Expect(err).ToNot(HaveOccurred())
+				return len(actual.Items)
+			}, "5s", "100ms").Should(Equal(1))
 		})
 	})
 })
