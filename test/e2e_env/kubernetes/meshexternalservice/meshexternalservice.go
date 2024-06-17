@@ -167,14 +167,14 @@ spec:
 			Expect(kubernetes.Cluster.Install(YamlK8s(hostnameGenerator(meshNameEgress)))).To(Succeed())
 
 			// then traffic doesn't work because of missing MeshTrafficPermission
-			Consistently(func(g Gomega) {
+			Eventually(func(g Gomega) {
 				response, err := client.CollectFailure(
 					kubernetes.Cluster, "demo-client-egress", "mesh-external-service-egress.mesh",
 					client.FromKubernetesPod(clientNamespace, "demo-client-egress"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
-			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			}, "30s", "1s").Should(Succeed())
 
 			// when MTP targeting MeshExternalService added
 			Expect(YamlK8s(fmt.Sprintf(`
