@@ -93,7 +93,8 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admiss
 
 	policy, ok := r.GetSpec().(core_model.Policy)
 	if ok {
-		if core_model.PolicyRole(r) != core_model.ComputePolicyRole(policy) {
+		policyRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
+		if ok && policyRole != string(core_model.ComputePolicyRole(policy)) {
 			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)))
 		}
 	}
