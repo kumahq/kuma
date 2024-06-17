@@ -524,14 +524,13 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	}
 }
 
-func universalZoneRelatedResource(
+func universalZoneProxyRelatedResource(
 	tokenProvider func(zone string) (string, error),
+	dpName string,
 	appType AppMode,
-	resourceManifestFunc func(address string, port, advertisedPort int) string,
+	resourceManifestFunc func(address string, port int) string,
 	concurrency int,
 ) func(cluster Cluster) error {
-	dpName := string(appType)
-
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
 
@@ -561,7 +560,7 @@ func universalZoneRelatedResource(
 
 		uniCluster.apps[dpName] = app
 		publicAddress := app.ip
-		dpYAML := resourceManifestFunc(publicAddress, universalKDSPort, universalKDSPort)
+		dpYAML := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
 
 		token, err := tokenProvider(uniCluster.name)
 		if err != nil {
@@ -580,25 +579,37 @@ func universalZoneRelatedResource(
 }
 
 func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(address string, port, advertisedPort int) string {
-		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
+	manifestFunc := func(address string, port int) string {
+		return fmt.Sprintf(ZoneIngress, AppIngress, address, UniversalZoneIngressPort, port)
 	}
 
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneRelatedResource(tokenProvider, AppIngress, manifestFunc, opts.concurrency)
+	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
+}
+
+func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
+	name := fmt.Sprintf("%s-%d", AppIngress, advertisedPort)
+	manifestFunc := func(address string, port int) string {
+		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
+	}
+
+	var opts appDeploymentOptions
+	opts.apply(opt...)
+
+	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
 }
 
 func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...AppDeploymentOption) InstallFunc {
-	manifestFunc := func(_ string, port, _ int) string {
+	manifestFunc := func(_ string, port int) string {
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
 	var opts appDeploymentOptions
 	opts.apply(opt...)
 
-	return universalZoneRelatedResource(tokenProvider, AppEgress, manifestFunc, opts.concurrency)
+	return universalZoneProxyRelatedResource(tokenProvider, AppEgress, AppEgress, manifestFunc, opts.concurrency)
 }
 
 func NamespaceWithSidecarInjection(namespace string) InstallFunc {
