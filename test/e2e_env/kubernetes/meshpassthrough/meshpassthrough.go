@@ -93,6 +93,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
@@ -127,6 +128,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
@@ -158,6 +160,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
