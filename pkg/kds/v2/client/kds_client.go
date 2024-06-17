@@ -19,6 +19,18 @@ type UpstreamResponse struct {
 	IsInitialRequest    bool
 }
 
+func (u *UpstreamResponse) Validate() error {
+	if u.AddedResources == nil {
+		return nil
+	}
+	for _, res := range u.AddedResources.GetItems() {
+		if err := model.Validate(res); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type Callbacks struct {
 	OnResourcesReceived func(upstream UpstreamResponse) error
 }
@@ -77,6 +89,17 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 
+		if err := received.Validate(); err != nil {
+			s.log.Info("received resource is invalid, sending NACK", "err", err)
+			if err := s.kdsStream.NACK(received.Type, err); err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return errors.Wrap(err, "failed to NACK a discovery response")
+			}
+			continue
+		}
+
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
 			if err := s.kdsStream.ACK(received.Type); err != nil {
@@ -88,27 +111,20 @@ func (s *kdsSyncClient) Receive() error {
 			continue
 		}
 		err = s.callbacks.OnResourcesReceived(received)
+		if err != nil {
+			return errors.Wrapf(err, "failed to store %s resources", received.Type)
+		}
 		if !received.IsInitialRequest {
 			// Execute backoff only on subsequent request.
 			// When client first connects, the server sends empty DeltaDiscoveryResponse for every resource type.
 			time.Sleep(s.responseBackoff)
 		}
-		if err != nil {
-			s.log.Info("error during callback received, sending NACK", "err", err)
-			if err := s.kdsStream.NACK(received.Type, err); err != nil {
-				if err == io.EOF {
-					return nil
-				}
-				return errors.Wrap(err, "failed to NACK a discovery response")
+		s.log.V(1).Info("sending ACK", "type", received.Type)
+		if err := s.kdsStream.ACK(received.Type); err != nil {
+			if err == io.EOF {
+				return nil
 			}
-		} else {
-			s.log.V(1).Info("sending ACK", "type", received.Type)
-			if err := s.kdsStream.ACK(received.Type); err != nil {
-				if err == io.EOF {
-					return nil
-				}
-				return errors.Wrap(err, "failed to ACK a discovery response")
-			}
+			return errors.Wrap(err, "failed to ACK a discovery response")
 		}
 	}
 }
