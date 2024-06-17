@@ -69,12 +69,32 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	if new == nil {
 		return errors.New("nil snapshot")
 	}
+<<<<<<< HEAD
 	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.Version(new, old)
 	r.logChanges(new, old, node)
 	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(ctx, id, new)
+=======
+	// call ConstructVersionMap, so we can override versions if needed and compute what changed
+	if old != nil {
+		// this should already be computed by SetSnapshot, but we call it just to make sure we have versions.
+		if err := old.ConstructVersionMap(); err != nil {
+			return errors.Wrap(err, "could not construct version map"), false
+		}
+	}
+	if err := new.ConstructVersionMap(); err != nil {
+		return errors.Wrap(err, "could not construct version map"), false
+	}
+
+	if changed := r.changedTypes(old, new); len(changed) > 0 {
+		r.logChanges(logger, changed, node)
+		r.meterConfigReadyForDelivery(changed, node.Id)
+		return r.cache.SetSnapshot(ctx, id, new), true
+	}
+	return nil, false
+>>>>>>> bc8adb233 (fix(kds): send NACK only when resource is invalid and do not retry (#10480))
 }
 
 func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.ResourceSnapshot {
@@ -113,6 +133,7 @@ func (r *reconciler) Version(new, old envoy_cache.ResourceSnapshot) envoy_cache.
 	}
 }
 
+<<<<<<< HEAD
 func (_ *reconciler) equal(new, old map[string]envoy_types.Resource) bool {
 	if len(new) != len(old) {
 		return false
@@ -142,6 +163,14 @@ func (r *reconciler) meterConfigReadyForDelivery(new envoy_cache.ResourceSnapsho
 	for _, typ := range util_kds_v2.GetSupportedTypes() {
 		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
 			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
+=======
+func (r *reconciler) logChanges(logger logr.Logger, changedTypes []core_model.ResourceType, node *envoy_core.Node) {
+	for _, typ := range changedTypes {
+		client := node.Id
+		if r.mode == config_core.Zone {
+			// we need to override client name because Zone is always a client to Global (on gRPC level)
+			client = "global"
+>>>>>>> bc8adb233 (fix(kds): send NACK only when resource is invalid and do not retry (#10480))
 		}
 	}
 }

@@ -52,7 +52,10 @@ func New(
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
 		// util_xds_v3.AdaptDeltaCallbacks(NewNackBackoff(nackBackoff)),
+<<<<<<< HEAD
 		newKdsRetryForcer(log, cache, hasher),
+=======
+>>>>>>> bc8adb233 (fix(kds): send NACK only when resource is invalid and do not retry (#10480))
 		syncTracker,
 	}
 	if insight {
