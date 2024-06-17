@@ -7851,8 +7851,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                      matchName:
-                        type: string
                     type: object
                   meshService:
                     properties:

@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -64,7 +65,7 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)
 	}
-	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetName(), es.Meta.GetLabels()) {
+	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetLabels()) {
 		return "", nil
 	}
 	sb := strings.Builder{}
@@ -84,18 +85,24 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
 	}
 	type meshedName struct {
-		Name      string
-		Namespace string
-		Mesh      string
+		Name        string
+		DisplayName string
+		Namespace   string
+		Mesh        string
 	}
 	name := es.GetMeta().GetNameExtensions()[model.K8sNameComponent]
 	if name == "" {
 		name = es.GetMeta().GetName()
 	}
+	displayName, ok := es.GetMeta().GetLabels()[mesh_proto.DisplayName]
+	if !ok {
+		displayName = name
+	}
 	err = tmpl.Execute(&sb, meshedName{
-		Name:      name,
-		Namespace: es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
-		Mesh:      es.GetMeta().GetMesh(),
+		Name:        name,
+		DisplayName: displayName,
+		Namespace:   es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
+		Mesh:        es.GetMeta().GetMesh(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
