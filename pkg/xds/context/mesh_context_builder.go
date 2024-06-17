@@ -232,6 +232,7 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			if err := m.rm.List(ctx, zoneIngresses, core_store.ListOrdered()); err != nil {
 				return Resources{}, errors.Wrap(err, "could not list zone ingresses")
 			}
+<<<<<<< HEAD
 			resources.MeshLocalResources[typ] = zoneIngresses
 		case core_mesh.ZoneEgressType:
 			zoneEgresses := &core_mesh.ZoneEgressResourceList{}
@@ -248,6 +249,20 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 			for _, config := range configs.Items {
 				if configInHash(config.Meta.GetName(), mesh.Meta.GetName()) {
 					items = append(items, config)
+=======
+
+			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
+			if err != nil {
+				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
+				return nil, nil
+			}
+			return resolvedZoneIngress, nil
+		case core_mesh.DataplaneType:
+			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
+				dp, ok := resource.(*core_mesh.DataplaneResource)
+				if !ok {
+					return nil, errors.New("entry is not a dataplane this shouldn't happen")
+>>>>>>> a3f26d3ff (fix(ZoneIngress): fix no pointer panic for advertised address resolving (#10475))
 				}
 			}
 			configs.Items = items
