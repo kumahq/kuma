@@ -21,21 +21,12 @@ import (
 )
 
 type OwnerReferenceMutator struct {
-<<<<<<< HEAD
 	Client       kube_client.Client
 	CoreRegistry core_registry.TypeRegistry
 	K8sRegistry  k8s_registry.TypeRegistry
 	Decoder      *admission.Decoder
 	Scheme       *kube_runtime.Scheme
-=======
-	Client                 kube_client.Client
-	CoreRegistry           core_registry.TypeRegistry
-	K8sRegistry            k8s_registry.TypeRegistry
-	Decoder                *admission.Decoder
-	Scheme                 *kube_runtime.Scheme
-	SkipMeshOwnerReference bool
-	CpMode                 config_core.CpMode
->>>>>>> 39495fb14 (feat(kuma-cp): do not set mesh owner reference on synced resources (#9882))
+	CpMode       config_core.CpMode
 }
 
 func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
