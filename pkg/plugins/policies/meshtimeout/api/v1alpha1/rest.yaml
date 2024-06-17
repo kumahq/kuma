@@ -84,7 +84,6 @@ paths:
         '200':
           description: Successful response
 
-
   /meshes/{mesh}/meshtimeouts:
     get:
       summary: Returns a list of MeshTimeout in the mesh.
