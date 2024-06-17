@@ -84,7 +84,6 @@ paths:
         '200':
           description: Successful response
 
-
   /meshes/{mesh}/meshpassthroughs:
     get:
       summary: Returns a list of MeshPassthrough in the mesh.

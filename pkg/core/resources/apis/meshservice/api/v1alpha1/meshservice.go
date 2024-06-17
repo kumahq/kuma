@@ -38,7 +38,8 @@ type MeshService struct {
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=protocol
-	Ports []Port `json:"ports,omitempty"`
+	Ports      []Port                `json:"ports,omitempty"`
+	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }
 
 type VIP struct {
@@ -62,4 +63,16 @@ type MeshServiceStatus struct {
 	VIPs               []VIP                                           `json:"vips,omitempty"`
 	TLS                TLS                                             `json:"tls,omitempty"`
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=ServiceTag
+type MeshServiceIdentityType string
+
+const (
+	MeshServiceIdentityServiceTagType = "ServiceTag"
+)
+
+type MeshServiceIdentity struct {
+	Type  MeshServiceIdentityType `json:"type"`
+	Value string                  `json:"value"`
 }

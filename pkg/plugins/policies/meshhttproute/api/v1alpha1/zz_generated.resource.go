@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshHTTPRouteResourceTypeDescriptor.Schema = &schema

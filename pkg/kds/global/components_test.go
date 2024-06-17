@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -187,12 +188,13 @@ var _ = Describe("Global Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 4 global-scope types
+		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
+			hostnamegenerator_api.HostnameGeneratorType,
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)

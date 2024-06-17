@@ -21,5 +21,6 @@ var (
 	_ = PDescribe("Global and Zone universal mode with Helm chart", Label("job-0"), helm.GlobalAndZoneInUniversalModeWithHelmChart, Ordered)
 	_ = Describe("App deployment with Helm", Label("job-2"), helm.AppDeploymentWithHelmChart)
 	_ = Describe("Upgrade Standalone with Helm", Label("job-2"), helm.UpgradingWithHelmChartStandalone, Ordered)
-	_ = Describe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Ordered)
+	// Fails because of the bug in 2.6.7 (and potentially 2.7.3) https://github.com/kumahq/kuma/issues/10463
+	_ = PDescribe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Ordered)
 )

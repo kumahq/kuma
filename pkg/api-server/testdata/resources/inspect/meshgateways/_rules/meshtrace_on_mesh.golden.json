@@ -1,6 +1,10 @@
 {
  "httpMatches": [],
  "resource": {
+  "labels": {
+   "k8s.kuma.io/namespace": "kuma-demo",
+   "kuma.io/display-name": "the-gateway"
+  },
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -21,6 +25,10 @@
     },
     "origin": [
      {
+      "labels": {
+       "k8s.kuma.io/namespace": "kuma-demo",
+       "kuma.io/display-name": "default"
+      },
       "mesh": "default",
       "name": "default",
       "type": "MeshTrace"

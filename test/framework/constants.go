@@ -20,7 +20,7 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	universalKDSPort = 30686
+	UniversalZoneIngressPort = 30686
 )
 
 const (

@@ -32,10 +32,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			sourceService := "backend"
 			destinationService := "db"
 			proxy := &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("example", "backend"),
+				Id: *core_xds.BuildProxyId(meshName, "dataplane0"),
 				Metadata: &core_xds.DataplaneMetadata{
-					Features:            core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
-					AccessLogSocketPath: "/tmp/kuma-al-dataplane0-demo.sock",
+					Features: core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					WorkDir:  "/tmp",
 				},
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &model.ResourceMeta{
