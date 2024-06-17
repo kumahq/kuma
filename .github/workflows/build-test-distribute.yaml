@@ -168,7 +168,7 @@ jobs:
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@e84016ef48713f4dfdb00210c4720a286662e4f4 # v0.6.8
+        uses: cloudsmith-io/action@fb7f7806ffbb6f2f928b693d5da524811a0d003a # v0.6.9
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           command: "push"
