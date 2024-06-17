@@ -319,7 +319,7 @@ var _ = Describe("Zone Sync", func() {
 				err := zoneStore.List(context.Background(), &actual)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(actual.Items).To(BeEmpty())
-			}, "5s", "100ms").Should(Succeed())
+			}, "3s", "100ms").Should(Succeed())
 
 			mesh1 := mesh.NewMeshResource()
 			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))

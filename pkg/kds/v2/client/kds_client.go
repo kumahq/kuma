@@ -9,7 +9,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds/util"
 )
 
 type UpstreamResponse struct {
@@ -18,6 +17,18 @@ type UpstreamResponse struct {
 	AddedResources      model.ResourceList
 	RemovedResourcesKey []model.ResourceKey
 	IsInitialRequest    bool
+}
+
+func (u *UpstreamResponse) Validate() error {
+	if u.AddedResources == nil {
+		return nil
+	}
+	for _, res := range u.AddedResources.GetItems() {
+		if err := model.Validate(res); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Callbacks struct {
@@ -74,18 +85,17 @@ func (s *kdsSyncClient) Receive() error {
 			if err == io.EOF {
 				return nil
 			}
-			if errors.Is(err, &util.InvalidModelError{}) {
-				s.log.Info("error during callback received, sending NACK", "err", err)
-				if err := s.kdsStream.NACK(received.Type, err); err != nil {
-					if err == io.EOF {
-						return nil
-					}
-					return errors.Wrap(err, "failed to NACK a discovery response")
+			return errors.Wrap(err, "failed to receive a discovery response")
+		}
+
+		if err := received.Validate(); err != nil {
+			if err := s.kdsStream.NACK(received.Type, err); err != nil {
+				if err == io.EOF {
+					return nil
 				}
-				continue
-			} else {
-				return errors.Wrap(err, "failed to receive a discovery response")
+				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
+			continue
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 

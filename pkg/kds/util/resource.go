@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -44,11 +43,6 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.R
 	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
 	if err != nil {
 		return list, resourceVersions, err
-	}
-	for _, res := range list.GetItems() {
-		if err = model.Validate(res); err != nil {
-			return list, resourceVersions, &InvalidModelError{msg: err.Error()}
-		}
 	}
 	return list, resourceVersions, err
 }
@@ -211,16 +205,4 @@ func CloneResource(res core_model.Resource, fs ...CloneResourceOpt) core_model.R
 		_ = newObj.SetStatus(res.GetStatus())
 	}
 	return newObj
-}
-
-type InvalidModelError struct {
-	msg string
-}
-
-func (e *InvalidModelError) Error() string {
-	return fmt.Sprintf("resource has invalid format: %s", e.msg)
-}
-
-func (e *InvalidModelError) Is(err error) bool {
-	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }
