@@ -3,6 +3,7 @@ items:
     creationTimestamp: null
     labels:
       k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: example-1-87ff74c98
     namespace: demo
@@ -31,6 +32,7 @@ items:
     creationTimestamp: null
     labels:
       k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: example-2-87ff74c98
     namespace: demo
@@ -59,6 +61,7 @@ items:
     creationTimestamp: null
     labels:
       k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98
     namespace: demo
