@@ -51,12 +51,6 @@ func AvailableServices() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEachFailure(func() {
-		DebugUniversal(multizone.Global, meshName)
-		DebugUniversal(statefulCluster, meshName)
-		DebugUniversal(multizone.UniZone1, meshName)
-	})
-
 	E2EAfterAll(func() {
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(statefulCluster.DeleteMeshApps(meshName)).To(Succeed())
