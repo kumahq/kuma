@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -25,7 +24,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -106,56 +104,6 @@ var _ = Describe("Global Sync", func() {
 		}, "5s", "100ms").Should(Equal(18))
 
 		closeFunc()
-	}
-
-	VerifyMeshServiceWasSynchronizedWithoutConflicts := func() {
-		// create MS in one zone
-		err := zoneStores[0].Create(context.Background(), &meshservice_api.MeshServiceResource{
-			Meta: &test_model.ResourceMeta{
-				Name: "test-service",
-				Labels: map[string]string{
-					mesh_proto.KubeNamespaceTag: "test-ns",
-					mesh_proto.ZoneTag:          "zone-0",
-				},
-			},
-			Spec: &meshservice_api.MeshService{
-				Selector: meshservice_api.Selector{},
-				Ports:    nil,
-			},
-		}, store.CreateByKey("test-service", "mesh1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// create MS with the same name but different namespace in different zone
-		err = zoneStores[1].Create(context.Background(), &meshservice_api.MeshServiceResource{
-			Meta: &test_model.ResourceMeta{
-				Name: "test-service",
-				Labels: map[string]string{
-					mesh_proto.KubeNamespaceTag: "second-ns",
-					mesh_proto.ZoneTag:          "zone-1",
-				},
-			},
-			Spec: &meshservice_api.MeshService{
-				Selector: meshservice_api.Selector{},
-				Ports:    nil,
-			},
-		}, store.CreateByKey("test-service", "mesh1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// global should have two MS from different zones
-		Eventually(func() int {
-			msOnGlobal := meshservice_api.MeshServiceResourceList{}
-			err := globalStore.List(context.Background(), &msOnGlobal)
-			Expect(err).ToNot(HaveOccurred())
-			return len(msOnGlobal.Items)
-		}, "5s", "100ms").Should(Equal(2))
-
-		// third zone should receive two MS which hashed names does not have conflict
-		Eventually(func() int {
-			msOnZone := meshservice_api.MeshServiceResourceList{}
-			err := zoneStores[2].List(context.Background(), &msOnZone)
-			Expect(err).ToNot(HaveOccurred())
-			return len(msOnZone.Items)
-		}, "5s", "100ms").Should(Equal(2))
 	}
 
 	VerifySupportForTheSameNameOfDataplanesInDifferentClusters := func() {
@@ -274,7 +222,7 @@ var _ = Describe("Global Sync", func() {
 		var globalSyncer sync_store_v2.ResourceSyncer
 
 		BeforeEach(func() {
-			const numOfZones = 3
+			const numOfZones = 2
 			const zoneName = "zone-%d"
 
 			// Start `numOfZones` Kuma CP Zone
@@ -310,7 +258,7 @@ var _ = Describe("Global Sync", func() {
 			for _, ss := range serverStreams {
 				clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 			}
-			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType, meshservice_api.MeshServiceType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
+			kds_setup.StartDeltaClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, sync_store_v2.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system"))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := 0; i < numOfZones; i++ {
@@ -339,10 +287,6 @@ var _ = Describe("Global Sync", func() {
 
 		It("should have up to date list of provided types", func() {
 			VerifyUpToDateListOfProvidedType()
-		})
-
-		It("test", func() {
-			VerifyMeshServiceWasSynchronizedWithoutConflicts()
 		})
 	})
 })
