@@ -159,13 +159,42 @@ spec:
 				testserver.WithName("external-service-egress"),
 			))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kubernetes.Cluster.Install(MeshTrafficPermissionAllowAllKubernetes(meshNameEgress))).ToNot(HaveOccurred())
 		})
 
 		It("should route to external-service", func() {
 			// when apply external service and hostname generator
 			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService))).To(Succeed())
 			Expect(kubernetes.Cluster.Install(YamlK8s(hostnameGenerator(meshNameEgress)))).To(Succeed())
+
+			// then traffic doesn't work because of missing MeshTrafficPermission
+			Consistently(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client-egress", "mesh-external-service-egress.mesh",
+					client.FromKubernetesPod(clientNamespace, "demo-client-egress"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+			// when MTP targeting MeshExternalService added
+			Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTrafficPermission
+metadata:
+  name: mtp1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshExternalService
+    name: mesh-external-service-egress
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+`, Config.KumaNamespace, meshNameEgress))(kubernetes.Cluster)).To(Succeed())
 
 			// then traffic works
 			Eventually(func(g Gomega) {
