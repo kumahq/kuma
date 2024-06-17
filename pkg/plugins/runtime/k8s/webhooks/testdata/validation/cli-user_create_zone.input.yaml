@@ -5,6 +5,8 @@ mesh: default
 metadata:
   name: zone-1
   creationTimestamp: null
+  labels:
+    kuma.io/zone: zone-1
 spec:
   ingress:
     address: 192.168.0.1:10001

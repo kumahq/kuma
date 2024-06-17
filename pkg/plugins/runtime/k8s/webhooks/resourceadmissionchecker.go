@@ -42,7 +42,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return c.resourceIsNotAllowedResponse()
 	}
 
-	if errResponse := validateLabels(r); errResponse != nil {
+	if errResponse := c.validateLabels(r); errResponse != nil {
 		return *errResponse
 	}
 
@@ -83,12 +83,18 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func validateLabels(r core_model.Resource) *admission.Response {
-	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.PolicyRoleLabel] != "" {
-		return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel)
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admission.Response {
+	if c.Mode != core.Global {
+		if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != c.ZoneName {
+			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName)
+		}
 	}
-	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
-		return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag)
+
+	policy, ok := r.GetSpec().(core_model.Policy)
+	if ok {
+		if core_model.PolicyRole(r) != core_model.ComputePolicyRole(policy) {
+			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)))
+		}
 	}
 	return nil
 }
@@ -146,13 +152,13 @@ func (c *ResourceAdmissionChecker) resourceTypeIsNotAllowedResponse(resType core
 	}
 }
 
-func resourceLabelsNotAllowedResponse(label string) *admission.Response {
+func resourceLabelsNotAllowedResponse(label string, correctValue string) *admission.Response {
 	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. %s label should not be set manually.", label),
+				Message: fmt.Sprintf("Operation not allowed. %s label should have %s value", label, correctValue),
 				Reason:  "Forbidden",
 				Code:    403,
 				Details: &metav1.StatusDetails{

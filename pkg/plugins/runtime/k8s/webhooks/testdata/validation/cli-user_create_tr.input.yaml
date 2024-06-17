@@ -5,6 +5,8 @@ mesh: demo
 metadata:
   name: empty
   creationTimestamp: null
+  labels:
+    kuma.io/zone: zone-1
 spec:
   sources:
     - match:
