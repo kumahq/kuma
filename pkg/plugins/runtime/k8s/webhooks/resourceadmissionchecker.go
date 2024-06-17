@@ -42,6 +42,10 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return c.resourceIsNotAllowedResponse()
 	}
 
+	if errResponse := validateLabels(r); errResponse != nil {
+		return *errResponse
+	}
+
 	return admission.Allowed("")
 }
 
@@ -77,6 +81,16 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	// - storageversionmigratior
 	// Not security; protecting user from self.
 	return slices.Contains(allowedUsers, userInfo.Username)
+}
+
+func validateLabels(r core_model.Resource) *admission.Response {
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.PolicyRoleLabel] != "" {
+		return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel)
+	}
+	if labels := r.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" {
+		return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag)
+	}
+	return nil
 }
 
 func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() admission.Response {
@@ -123,6 +137,29 @@ func (c *ResourceAdmissionChecker) resourceTypeIsNotAllowedResponse(resType core
 						{
 							Type:    "FieldValueInvalid",
 							Message: "cannot be empty",
+							Field:   "metadata.annotations[kuma.io/synced]",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceLabelsNotAllowedResponse(label string) *admission.Response {
+	return &admission.Response{
+		AdmissionResponse: v1.AdmissionResponse{
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  "Failure",
+				Message: fmt.Sprintf("Operation not allowed. %s label should not be set manually.", label),
+				Reason:  "Forbidden",
+				Code:    403,
+				Details: &metav1.StatusDetails{
+					Causes: []metav1.StatusCause{
+						{
+							Type:    "FieldValueInvalid",
+							Message: "cannot be set",
 							Field:   "metadata.annotations[kuma.io/synced]",
 						},
 					},
