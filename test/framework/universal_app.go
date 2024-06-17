@@ -45,7 +45,7 @@ networking:
 `
 	ZoneIngress = `
 type: ZoneIngress
-name: ingress
+name: %s
 networking:
   address: {{ address }}
   advertisedAddress: %s
@@ -355,15 +355,20 @@ func (s *UniversalApp) Stop() error {
 }
 
 func (s *UniversalApp) ReStart() error {
-	if err := s.mainApp.Signal(syscall.SIGKILL, true); err != nil {
+	if err := s.KillMainApp(); err != nil {
 		return err
 	}
+	return s.StartMainApp()
+}
+
+func (s *UniversalApp) KillMainApp() error {
+	return s.mainApp.Signal(syscall.SIGKILL, true)
+}
+
+func (s *UniversalApp) StartMainApp() error {
 	s.CreateMainApp(s.mainAppEnv, s.mainAppArgs)
 
-	if err := s.mainApp.Start(); err != nil {
-		return err
-	}
-	return nil
+	return s.mainApp.Start()
 }
 
 func (s *UniversalApp) CreateMainApp(env map[string]string, args []string) {
