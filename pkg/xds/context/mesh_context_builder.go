@@ -167,7 +167,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
 	meshExternalServices := resources.MeshExternalServices().Items
-	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource)
+	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
 	for _, mes := range meshExternalServices {
 		meshExternalServicesByName[mes.Meta.GetName()] = mes
 	}
