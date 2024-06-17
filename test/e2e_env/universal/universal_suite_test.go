@@ -100,7 +100,11 @@ var (
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Label("arm-not-supported"), Ordered)
+<<<<<<< HEAD
 	_ = Describe("Resilience", resilience.ResilienceStandaloneUniversal, Ordered)
+=======
+	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
+>>>>>>> 2acb0c2ed (test(e2e): fix previous version installs (#10499))
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)
 	_ = Describe("MeshLoadBalancingStrategy", meshloadbalancingstrategy.Policy, Ordered)
