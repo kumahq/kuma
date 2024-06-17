@@ -288,6 +288,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		Client:       client,
 		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 		UnsafeDelete: rt.Config().Store.UnsafeDelete,
+		CpMode:       rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 
@@ -322,6 +323,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		K8sRegistry:  k8s_registry.Global(),
 		Scheme:       mgr.GetScheme(),
 		Decoder:      kube_admission.NewDecoder(mgr.GetScheme()),
+		CpMode:       rt.Config().Mode,
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
 
