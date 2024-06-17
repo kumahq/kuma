@@ -2,6 +2,7 @@ items:
 - metadata:
     creationTimestamp: null
     labels:
+      k8s.kuma.io/is-headless-service: "false"
       k8s.kuma.io/service-name: example
       kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
