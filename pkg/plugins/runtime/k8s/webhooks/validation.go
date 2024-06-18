@@ -123,9 +123,10 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 
 func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
 	var verr validators.ValidationError
+	labelsPath := validators.Root().Field("labels")
 	if origin, ok := core_model.ResourceOrigin(rm); ok {
 		if err := origin.IsValid(); err != nil {
-			verr.AddViolationAt(validators.Root().Field("labels").Key(mesh_proto.ResourceOriginLabel), err.Error())
+			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
 		}
 	}
 	return verr
