@@ -6,7 +6,7 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: default
-    k8s.kuma.io/namespace: custom-ns
+    k8s.kuma.io/namespace: kuma-system
     kuma.io/zone: zone-1
     kuma.io/policy-role: invalid
 spec:

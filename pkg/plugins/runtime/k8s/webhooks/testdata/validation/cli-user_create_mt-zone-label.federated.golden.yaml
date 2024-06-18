@@ -7,7 +7,8 @@ status:
     - field: metadata.annotations[kuma.io/synced]
       message: cannot be set
       reason: FieldValueInvalid
-  message: Operation not allowed. kuma.io/zone label should have zone-1 value
+  message: Operation not allowed. kuma.io/zone label should have zone-1 value, got
+    wrong-zone
   metadata: {}
   reason: Forbidden
   status: Failure

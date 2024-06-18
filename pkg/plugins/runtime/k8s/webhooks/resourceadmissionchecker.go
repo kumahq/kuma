@@ -87,16 +87,34 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admiss
 	if c.Mode != core.Global {
 		zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		if ok && zoneTag != c.ZoneName {
-			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName)
+			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName, zoneTag)
 		}
 	}
 
+	return c.validatePolicyRole(r)
+}
+
+func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource) *admission.Response {
+	ns, ok := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	if !ok {
+		return nil
+	}
 	policy, ok := r.GetSpec().(core_model.Policy)
-	if ok {
-		policyRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
-		if ok && policyRole != string(core_model.ComputePolicyRole(policy)) {
-			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)))
+	if !ok {
+		return nil
+	}
+	policyRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
+	if !ok {
+		return nil
+	}
+	if ns == c.SystemNamespace {
+		if policyRole != string(mesh_proto.SystemPolicyRole) {
+			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole), policyRole)
 		}
+		return nil
+	}
+	if policyRole != string(core_model.ComputePolicyRole(policy)) {
+		return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)), policyRole)
 	}
 	return nil
 }
@@ -154,13 +172,13 @@ func (c *ResourceAdmissionChecker) resourceTypeIsNotAllowedResponse(resType core
 	}
 }
 
-func resourceLabelsNotAllowedResponse(label string, correctValue string) *admission.Response {
+func resourceLabelsNotAllowedResponse(label string, correctValue string, actual string) *admission.Response {
 	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. %s label should have %s value", label, correctValue),
+				Message: fmt.Sprintf("Operation not allowed. %s label should have %s value, got %s", label, correctValue, actual),
 				Reason:  "Forbidden",
 				Code:    403,
 				Details: &metav1.StatusDetails{

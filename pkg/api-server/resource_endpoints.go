@@ -539,13 +539,7 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 		}
 	}
 
-	policyObject, ok := resource.GetSpec().(core_model.Policy)
-	if ok {
-		policyRole, ok := resource.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
-		if ok && policyRole != string(core_model.ComputePolicyRole(policyObject)) {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value", mesh_proto.PolicyRoleLabel, core_model.ComputePolicyRole(policyObject)))
-		}
-	}
+	r.validatePolicyRole(resource)
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
@@ -554,6 +548,34 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
+	}
+	return err
+}
+
+func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
+	var err validators.ValidationError
+	ns, ok := resource.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	if !ok {
+		return err
+	}
+	policyObject, ok := resource.GetSpec().(core_model.Policy)
+	if !ok {
+		return err
+	}
+	policyRole, ok := resource.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
+	if !ok {
+		return err
+	}
+	if ns == r.systemNamespace {
+		if policyRole != string(mesh_proto.SystemPolicyRole) {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s ", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
+			return err
+		}
+		return err
+	}
+	if policyRole != string(core_model.ComputePolicyRole(policyObject)) {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, core_model.ComputePolicyRole(policyObject), policyRole))
+		return err
 	}
 	return err
 }
