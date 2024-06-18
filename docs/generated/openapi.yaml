@@ -10973,15 +10973,15 @@ components:
             ports:
               items:
                 properties:
+                  appProtocol:
+                    default: tcp
+                    description: Protocol identifies a protocol supported by a service.
+                    type: string
                   name:
                     type: string
                   port:
                     format: int32
                     type: integer
-                  protocol:
-                    default: tcp
-                    description: Protocol identifies a protocol supported by a service.
-                    type: string
                   targetPort:
                     anyOf:
                       - type: integer
