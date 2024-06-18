@@ -539,7 +539,9 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 		}
 	}
 
-	r.validatePolicyRole(resource)
+	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
+		r.validatePolicyRole(resource)
+	}
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
@@ -554,23 +556,12 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 
 func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-	ns, ok := resource.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	if !ok {
-		return err
-	}
 	policyObject, ok := resource.GetSpec().(core_model.Policy)
 	if !ok {
 		return err
 	}
 	policyRole, ok := resource.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
 	if !ok {
-		return err
-	}
-	if ns == r.systemNamespace {
-		if policyRole != string(mesh_proto.SystemPolicyRole) {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s ", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
-			return err
-		}
 		return err
 	}
 	if policyRole != string(core_model.ComputePolicyRole(policyObject)) {

@@ -38,11 +38,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return c.resourceTypeIsNotAllowedResponse(r.Descriptor().Name)
 	}
 
-	if !c.isResourceAllowed(r, ns) {
-		return c.resourceIsNotAllowedResponse()
-	}
-
-	if errResponse := c.validateLabels(r); errResponse != nil {
+	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
 		return *errResponse
 	}
 
@@ -62,16 +58,17 @@ func (c *ResourceAdmissionChecker) isResourceTypeAllowed(d core_model.ResourceTy
 	return true
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) bool {
+func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
 	if !c.FederatedZone || !r.Descriptor().IsPluginOriginated {
-		return true
+		return nil
 	}
 	if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 		if origin, ok := core_model.ResourceOrigin(r.GetMeta()); !ok || origin != mesh_proto.ZoneResourceOrigin {
-			return false
+			return c.resourceIsNotAllowedResponse()
 		}
 	}
-	return true
+
+	return c.validateLabels(r, ns)
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -83,7 +80,7 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admission.Response {
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
 	if c.Mode != core.Global {
 		zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		if ok && zoneTag != c.ZoneName {
@@ -91,14 +88,14 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admiss
 		}
 	}
 
-	return c.validatePolicyRole(r)
+	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+		return c.validatePolicyRole(r, ns)
+	}
+
+	return nil
 }
 
-func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource) *admission.Response {
-	ns, ok := r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	if !ok {
-		return nil
-	}
+func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource, ns string) *admission.Response {
 	policy, ok := r.GetSpec().(core_model.Policy)
 	if !ok {
 		return nil
@@ -119,8 +116,8 @@ func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource) *ad
 	return nil
 }
 
-func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() admission.Response {
-	return admission.Response{
+func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
+	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{

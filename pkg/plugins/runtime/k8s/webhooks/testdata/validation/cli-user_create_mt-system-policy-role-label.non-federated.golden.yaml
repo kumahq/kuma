@@ -1,15 +1,6 @@
 Patches: null
-allowed: false
+allowed: true
 status:
-  code: 403
-  details:
-    causes:
-    - field: metadata.annotations[kuma.io/synced]
-      message: cannot be set
-      reason: FieldValueInvalid
-  message: Operation not allowed. kuma.io/policy-role label should have system value,
-    got invalid
+  code: 200
   metadata: {}
-  reason: Forbidden
-  status: Failure
 uid: "12345"
