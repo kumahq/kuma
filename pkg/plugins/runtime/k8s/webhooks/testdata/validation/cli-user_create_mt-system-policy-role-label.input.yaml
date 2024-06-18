@@ -1,4 +1,4 @@
-# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+# user=cli-user,operation=CREATE,namespace=kuma-system
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -6,7 +6,6 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: default
-    k8s.kuma.io/namespace: kuma-system
     kuma.io/zone: zone-1
     kuma.io/policy-role: invalid
 spec:
