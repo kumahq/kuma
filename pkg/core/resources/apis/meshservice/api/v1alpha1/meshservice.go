@@ -37,7 +37,7 @@ type MeshService struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=port
-	// +listMapKey=protocol
+	// +listMapKey=appProtocol
 	Ports      []Port                `json:"ports,omitempty"`
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }

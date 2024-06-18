@@ -77,7 +77,7 @@ spec:
                 type: array
                 x-kubernetes-list-map-keys:
                 - port
-                - protocol
+                - appProtocol
                 x-kubernetes-list-type: map
               selector:
                 properties:
