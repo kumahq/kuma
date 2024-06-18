@@ -8,8 +8,6 @@ metadata:
   creationTimestamp: null
   annotations:
     k8s.kuma.io/synced: "true"
-  labels:
-    kuma.io/zone: zone-1
 spec:
   networking:
     address: 127.0.0.1
