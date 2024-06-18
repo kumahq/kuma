@@ -53,6 +53,18 @@ spec:
       matchLabels:
         app: backend
 `
+		otherTLDGenerator := `
+type: HostnameGenerator
+name: basic-other-tld
+labels:
+  kuma.io/origin: zone
+spec:
+  template: "{{ .Name }}.meshservice.othertld"
+  selector:
+    meshService:
+      matchLabels:
+        app: backend
+`
 		service := fmt.Sprintf(`
 type: MeshService
 name: backend
@@ -70,14 +82,17 @@ spec:
       app: test-server
 `, meshName)
 		Expect(universal.Cluster.Install(YamlUniversal(generator))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(otherTLDGenerator))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(service))).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			// when
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "backend.meshservice.mesh",
 			)
-			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			_, err = client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "backend.meshservice.othertld",
+			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
 	})
