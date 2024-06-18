@@ -252,3 +252,13 @@ func ValidatePort(path PathBuilder, value uint32) ValidationError {
 	}
 	return err
 }
+
+// ValidateLength should only be used when kubebuilder annotations can't be used
+func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
+	var err ValidationError
+	if len(v) > maxLength {
+		err.AddViolationAt(path, fmt.Sprintf("must not be longer than %d characters", maxLength))
+	}
+
+	return err
+}

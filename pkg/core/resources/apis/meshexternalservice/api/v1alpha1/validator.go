@@ -21,6 +21,9 @@ var (
 
 func (r *MeshExternalServiceResource) validate() error {
 	var verr validators.ValidationError
+
+	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, r.Meta.GetName()))
+
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("match"), validateMatch(r.Spec.Match))
