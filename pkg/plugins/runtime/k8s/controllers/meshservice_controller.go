@@ -247,8 +247,13 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.ObjectMeta.Labels[metadata.HeadlessService] = "false"
+	dpTags := maps.Clone(svc.Spec.Selector)
+	if dpTags == nil {
+		dpTags = map[string]string{}
+	}
+	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: svc.Spec.Selector,
+		DataplaneTags: dpTags,
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
@@ -292,7 +297,7 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 		}
 		ms.Spec.Selector = meshservice_api.Selector{
 			DataplaneRef: &meshservice_api.DataplaneRef{
-				Name: endpoint.TargetRef.Name,
+				Name: fmt.Sprintf("%s.%s", endpoint.TargetRef.Name, endpoint.TargetRef.Namespace),
 			},
 		}
 		for _, address := range endpoint.Addresses {

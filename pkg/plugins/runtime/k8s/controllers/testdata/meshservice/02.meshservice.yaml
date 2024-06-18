@@ -22,7 +22,9 @@ items:
     - port: 443
       protocol: tcp
       targetPort: 8443
-    selector: {}
+    selector:
+      dataplaneTags:
+        k8s.kuma.io/namespace: demo
   status:
     tls: {}
     vips:

@@ -26,7 +26,7 @@ items:
       targetPort: 8443
     selector:
       dataplaneRef:
-        name: example-1
+        name: example-1.demo
   status:
     tls: {}
     vips:
@@ -58,7 +58,7 @@ items:
       targetPort: 8443
     selector:
       dataplaneRef:
-        name: example-2
+        name: example-2.demo
   status:
     tls: {}
     vips:
@@ -88,7 +88,7 @@ items:
       targetPort: 8443
     selector:
       dataplaneRef:
-        name: very-long-very-long-very-long-very-long-very-long-v
+        name: very-long-very-long-very-long-very-long-very-long-v.demo
   status:
     tls: {}
     vips:
