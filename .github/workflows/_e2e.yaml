@@ -91,6 +91,8 @@ jobs:
         if: steps.eval-params.outputs.run-type == 'github'
         run: |
           make dev/set-kuma-helm-repo
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: "GitHub Actions: enable ipv6 for docker"
         if: ${{ steps.eval-params.outputs.run-type == 'github' && env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
         run: |

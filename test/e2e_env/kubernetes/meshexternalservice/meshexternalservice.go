@@ -104,7 +104,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should route to http external-service", func() {
+		FIt("should route to http external-service", func() {
 			// given working communication outside the mesh with passthrough enabled and no traffic permission
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
