@@ -7,6 +7,8 @@ import (
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	kube_core "k8s.io/api/core/v1"
 	"net"
 	"net/http"
 	"regexp"
@@ -155,7 +157,7 @@ func getPort(req *http.Request, re *regexp.Regexp) (int, error) {
 }
 
 func getTimeout(req *http.Request) time.Duration {
-	timeoutParam := req.Header.Get("x-kuma-probes-timeout")
+	timeoutParam := req.Header.Get(probes.HeaderNameTimeout)
 	if timeoutParam == "" {
 		timeoutParam = "1"
 	}
@@ -173,16 +175,16 @@ func getUpstreamHTTPPath(downstreamPath string) string {
 	return pathParams["path"]
 }
 
-func getScheme(req *http.Request) string {
-	schemeParam := req.Header.Get("x-kuma-probes-scheme")
+func getScheme(req *http.Request) kube_core.URIScheme {
+	schemeParam := req.Header.Get(probes.HeaderNameScheme)
 	if schemeParam == "" {
-		schemeParam = "http"
+		return kube_core.URISchemeHTTP
 	}
-	return schemeParam
+	return kube_core.URIScheme(schemeParam)
 }
 
 func getGRPCService(req *http.Request) string {
-	return req.Header.Get("x-kuma-probes-grpc-service")
+	return req.Header.Get(probes.HeaderNameGRPCService)
 }
 
 // copied from https://github.com/kubernetes/kubernetes/blob/v1.27.0-alpha.1/pkg/probe/dialer_others.go#L27

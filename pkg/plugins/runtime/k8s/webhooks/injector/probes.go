@@ -1,6 +1,7 @@
 package injector
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -13,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
+func (i *KumaInjector) overrideProbes(pod *kube_core.Pod) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
@@ -24,7 +25,7 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 		return err
 	}
 
-	port, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
+	virtualProbesPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err
 	}
@@ -34,50 +35,80 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
 			continue
 		}
-		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
-			log.V(1).Info("overriding liveness probe", "container", c.Name)
-			resolveNamedPort(c, c.LivenessProbe)
-			if err := overrideHTTPProbe(c.LivenessProbe, port); err != nil {
-				return err
-			}
+
+		portResolver := namedPortResolver(&c)
+		if err := tryOverrideProbe(c.LivenessProbe, virtualProbesPort,
+			portResolver, c.Name, "liveness"); err != nil {
+			return err
 		}
-		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
-			log.V(1).Info("overriding readiness probe", "container", c.Name)
-			resolveNamedPort(c, c.ReadinessProbe)
-			if err := overrideHTTPProbe(c.ReadinessProbe, port); err != nil {
-				return err
-			}
+		if err := tryOverrideProbe(c.ReadinessProbe, virtualProbesPort,
+			portResolver, c.Name, "readiness"); err != nil {
+			return err
 		}
-		if c.StartupProbe != nil && c.StartupProbe.HTTPGet != nil {
-			log.V(1).Info("overriding startup probe", "container", c.Name)
-			resolveNamedPort(c, c.StartupProbe)
-			if err := overrideHTTPProbe(c.StartupProbe, port); err != nil {
-				return err
-			}
+		if err := tryOverrideProbe(c.StartupProbe, virtualProbesPort,
+			portResolver, c.Name, "startup"); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func resolveNamedPort(container kube_core.Container, probe *kube_core.Probe) {
-	port := probe.HTTPGet.Port
-	if port.IntValue() != 0 {
-		return
-	}
-	for _, containerPort := range container.Ports {
-		if containerPort.Name != "" && containerPort.Name == port.String() {
-			probe.HTTPGet.Port = intstr.FromInt(int(containerPort.ContainerPort))
+func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandler) {
+	return func(probe kube_core.ProbeHandler) {
+		var portStr intstr.IntOrString
+		if probe.HTTPGet != nil {
+			portStr = probe.HTTPGet.Port
+		} else if probe.TCPSocket != nil {
+			portStr = probe.TCPSocket.Port
+		} else {
+			return
+		}
+
+		if portStr.IntValue() != 0 {
+			return
+		}
+
+		for _, containerPort := range container.Ports {
+			if containerPort.Name != "" && containerPort.Name == portStr.String() {
+				if probe.HTTPGet != nil {
+					probe.HTTPGet.Port = intstr.FromInt32(containerPort.ContainerPort)
+				} else if probe.TCPSocket != nil {
+					probe.TCPSocket.Port = intstr.FromInt32(containerPort.ContainerPort)
+				}
+
+				break
+			}
 		}
 	}
 }
 
-func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
-	virtual, err := probes.KumaProbe(*probe).ToVirtual(virtualPort)
+func tryOverrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string) error {
+	if probe == nil {
+		return nil
+	}
+
+	kumaProbe := probes.KumaProbe(*probe)
+	if !kumaProbe.OverridingSupported() {
+		return nil
+	}
+
+	log.V(1).Info(fmt.Sprintf("overriding %s probe", probeName), "container", containerName)
+
+	namedPortResolver(probe.ProbeHandler)
+
+	virtual, err := kumaProbe.ToVirtual(virtualPort)
 	if err != nil {
 		return err
 	}
-	probe.HTTPGet.Port = intstr.FromInt(int(virtual.Port()))
-	probe.HTTPGet.Path = virtual.Path()
+
+	probe.GRPC = nil
+	probe.TCPSocket = nil
+	probe.HTTPGet = &kube_core.HTTPGetAction{
+		Scheme:      kube_core.URISchemeHTTP,
+		Port:        intstr.FromInt32(int32(virtual.Port())),
+		Path:        virtual.Path(),
+		HTTPHeaders: virtual.Headers(),
+	}
 	return nil
 }
 

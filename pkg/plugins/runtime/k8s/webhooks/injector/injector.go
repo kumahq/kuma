@@ -216,7 +216,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	if err := i.overrideHTTPProbes(pod); err != nil {
+	if err := i.overrideProbes(pod); err != nil {
 		return err
 	}
 

@@ -4,8 +4,10 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/pkg/version"
 	"io"
+	kube_core "k8s.io/api/core/v1"
 	"net"
 	"net/http"
 	"net/url"
@@ -71,7 +73,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podAddr string) (*http.Request, error) {
+func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme kube_core.URIScheme, podAddr string) (*http.Request, error) {
 	port, err := getPort(downstreamReq, httpPathPattern)
 	if err != nil {
 		return nil, err
@@ -80,7 +82,7 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podAdd
 	// todo: handle query params in original path
 	upstreamPath := getUpstreamHTTPPath(downstreamReq.URL.Path)
 	upstreamURL := &url.URL{
-		Scheme: upstreamScheme,
+		Scheme: strings.ToLower(string(upstreamScheme)),
 		Path:   upstreamPath,
 		Host:   net.JoinHostPort(podAddr, strconv.Itoa(port)),
 	}
@@ -91,14 +93,14 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podAdd
 	}
 
 	for key, values := range downstreamReq.Header {
-		if !strings.HasPrefix(key, "x-kuma-probes-") {
+		if !strings.HasPrefix(key, probes.KumaProbeHeaderPrefix) {
 			upstreamReq.Header[key] = values
 		}
 	}
 
-	if _, ok := downstreamReq.Header["x-kuma-probes-host"]; ok {
+	if _, ok := downstreamReq.Header[probes.HeaderNameHost]; ok {
 		// User may specify a different Host header, copy it to upstream
-		upstreamReq.Header.Set("Host", downstreamReq.Header.Get("x-kuma-probes-host"))
+		upstreamReq.Header.Set("Host", downstreamReq.Header.Get(probes.HeaderNameHost))
 	}
 	if _, ok := downstreamReq.Header["User-Agent"]; !ok {
 		// explicitly set User-Agent so it's not set to default Go value. K8s use kube-probe.
@@ -107,11 +109,11 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme string, podAdd
 	return upstreamReq, nil
 }
 
-func createHttpTransport(scheme string, useIPv6 bool) *http.Transport {
+func createHttpTransport(scheme kube_core.URIScheme, useIPv6 bool) *http.Transport {
 	httpTransport := &http.Transport{
 		DisableKeepAlives: true,
 	}
-	if scheme == "https" {
+	if scheme == kube_core.URISchemeHTTPS {
 		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
