@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -65,6 +66,7 @@ type MeshContext struct {
 	Resources                   Resources
 	DataplanesByName            map[string]*core_mesh.DataplaneResource
 	MeshServiceByName           map[string]*meshservice_api.MeshServiceResource
+	MeshExternalServiceByName   map[string]*meshexternalservice_api.MeshExternalServiceResource
 	EndpointMap                 xds.EndpointMap
 	ExternalServicesEndpointMap xds.EndpointMap
 	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap

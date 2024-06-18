@@ -36,17 +36,15 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
-			Configure(clusters.ProvidedEndpointCluster(false,
-				core_xds.Endpoint{
-					Target: address,
-					Port:   port,
-					Tags:   nil,
-					Weight: 100,
-					ExternalService: &core_xds.ExternalService{
-						TLSEnabled: true,
-					},
+			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{
+				Target: address,
+				Port:   port,
+				Tags:   nil,
+				Weight: 100,
+				ExternalService: &core_xds.ExternalService{
+					TLSEnabled: true,
 				},
-			)).
+			})).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 
@@ -81,17 +79,15 @@ var _ = Describe("ProvidedEndpointClusterConfigurer", func() {
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, clusterName).
-			Configure(clusters.ProvidedEndpointCluster(true,
-				core_xds.Endpoint{
-					Target: address,
-					Port:   port,
-					Tags:   nil,
-					Weight: 100,
-					ExternalService: &core_xds.ExternalService{
-						TLSEnabled: true,
-					},
+			Configure(clusters.ProvidedEndpointCluster(true, core_xds.Endpoint{
+				Target: address,
+				Port:   port,
+				Tags:   nil,
+				Weight: 100,
+				ExternalService: &core_xds.ExternalService{
+					TLSEnabled: true,
 				},
-			)).
+			})).
 			Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 			Build()
 

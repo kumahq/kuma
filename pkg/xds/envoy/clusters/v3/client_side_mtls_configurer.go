@@ -26,7 +26,7 @@ type ClientSideMTLSConfigurer struct {
 	VerifyIdentities []string
 }
 
-var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
+var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	if !c.UpstreamMesh.MTLSEnabled() || !c.LocalMesh.MTLSEnabled() {

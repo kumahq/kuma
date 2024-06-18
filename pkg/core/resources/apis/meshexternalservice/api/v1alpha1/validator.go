@@ -9,6 +9,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var (
@@ -58,11 +59,9 @@ func validateTls(tls *Tls) validators.ValidationError {
 				verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))
 			}
 		}
-		if tls.Verification.SubjectAltNames != nil {
-			for i, san := range *tls.Verification.SubjectAltNames {
-				if !slices.Contains(allSANMatchTypes, string(san.Type)) {
-					verr.AddErrorAt(path.Field("subjectAltNames").Index(i).Field("type"), validators.MakeFieldMustBeOneOfErr("type", allSANMatchTypes...))
-				}
+		for i, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+			if !slices.Contains(allSANMatchTypes, string(san.Type)) {
+				verr.AddErrorAt(path.Field("subjectAltNames").Index(i).Field("type"), validators.MakeFieldMustBeOneOfErr("type", allSANMatchTypes...))
 			}
 		}
 
