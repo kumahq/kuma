@@ -112,7 +112,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
 		IsInitialRequest:    isInitialRequest,
-	}, nil
+	}, err
 }
 
 func (s *stream) ACK(resourceType core_model.ResourceType) error {
