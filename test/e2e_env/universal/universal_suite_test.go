@@ -75,7 +75,7 @@ var (
 	_ = Describe("External Services", externalservices.Policy, Ordered)
 	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
-	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
+	_ = Describe("Mesh External Services", Label("ipv6-not-supported"), meshexternalservice.MeshExternalService, Ordered)
 	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
