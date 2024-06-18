@@ -160,11 +160,11 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 
 func GetEnabled(value string) (bool, error) {
 	switch strings.ToLower(value) {
-	case "enabled", "true":
+	case "enabled", "true", "yes":
 		return true, nil
-	case "disabled", "false":
+	case "disabled", "false", "no":
 		return false, nil
 	default:
-		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
+		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false", "yes", "no"`, value)
 	}
 }

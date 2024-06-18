@@ -17,6 +17,8 @@ const (
 	defaultIPFamilyMode        = "unspecified"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
+	defaultVirtualProbeEnabled = "true"
+	defaultVirtualProbePorts   = "9000"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
@@ -34,6 +36,8 @@ var annotationRegistry = map[string]*annotationParam{
 	"builtinDNSPort":              {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
 	"excludeOutboundPortsForUIDs": {"traffic.kuma.io/exclude-outbound-ports-for-uids", "", alwaysValidFunc},
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
+	"virtualProbesEnabled":        {"kuma.io/virtual-probes", defaultVirtualProbeEnabled, alwaysValidFunc},
+	"virtualProbesPort":           {"kuma.io/virtual-probes-port", defaultVirtualProbePorts, validateSinglePort},
 }
 
 type IntermediateConfig struct {
@@ -99,6 +103,13 @@ func validatePortList(ports string) error {
 	return nil
 }
 
+func validateSinglePort(portString string) error {
+	if port, err := parsePort(portStr) {
+		return err
+	}
+	return nil
+}
+
 func validateIpFamilyMode(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
@@ -145,6 +156,8 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"virtualProbesEnabled":        "true",
+		"virtualProbesPort":           defaultVirtualProbePorts,
 	}
 
 	for fieldName, fieldPointer := range allFields {
@@ -155,6 +168,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 
 	// defaults to the ipv4 port if ipv6 port is not set
 	assignIPv6InboundRedirectPort(allFields)
+	intermediateConfig.excludeInboundPorts = excludeVirtualProbePort(intermediateConfig.excludeInboundPorts, annotations)
 	return intermediateConfig, nil
 }
 
@@ -185,4 +199,23 @@ func assignIPv6InboundRedirectPort(allFields map[string]*string) {
 	} else if *v6PortFieldPointer == defaultInboundPortV6 {
 		*v6PortFieldPointer = *allFields["inboundPort"]
 	}
+}
+
+func excludeVirtualProbePort(inboundPortsToExclude string, allFields map[string]*string) string {
+	enabledPtr := allFields["virtualProbesEnabled"]
+	enabled, err := GetEnabled(*enabledPtr)
+	if err != nil {
+		enabled = true
+	}
+
+	if !enabled {
+		return inboundPortsToExclude
+	}
+
+	virtualProbesPort := allFields["virtualProbesPort"]
+	if inboundPortsToExclude == "" {
+		return *virtualProbesPort
+	}
+
+	return fmt.Sprintf("%s,%s", inboundPortsToExclude, *virtualProbesPort)
 }

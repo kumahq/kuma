@@ -37,15 +37,15 @@ func (i *KumaInjector) overrideProbes(pod *kube_core.Pod) error {
 		}
 
 		portResolver := namedPortResolver(&c)
-		if err := tryOverrideProbe(c.LivenessProbe, virtualProbesPort,
+		if err := overrideProbe(c.LivenessProbe, virtualProbesPort,
 			portResolver, c.Name, "liveness"); err != nil {
 			return err
 		}
-		if err := tryOverrideProbe(c.ReadinessProbe, virtualProbesPort,
+		if err := overrideProbe(c.ReadinessProbe, virtualProbesPort,
 			portResolver, c.Name, "readiness"); err != nil {
 			return err
 		}
-		if err := tryOverrideProbe(c.StartupProbe, virtualProbesPort,
+		if err := overrideProbe(c.StartupProbe, virtualProbesPort,
 			portResolver, c.Name, "startup"); err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandl
 	}
 }
 
-func tryOverrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string) error {
+func overrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string) error {
 	if probe == nil {
 		return nil
 	}
