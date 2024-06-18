@@ -556,10 +556,7 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 
 func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-	policyObject, ok := resource.GetSpec().(core_model.Policy)
-	if !ok {
-		return err
-	}
+	policyObject := resource.GetSpec().(core_model.Policy)
 	policyRole, ok := resource.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
 	if !ok {
 		return err
