@@ -6,7 +6,6 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: default
-    kuma.io/zone: zone-1
     kuma.io/policy-role: consumer
 spec:
   targetRef:

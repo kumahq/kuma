@@ -6,7 +6,6 @@ metadata:
   labels:
     kuma.io/mesh: default
     kuma.io/policy-role: workload-owner
-    kuma.io/zone: zone-1
 spec:
   targetRef:
     kind: MeshService
