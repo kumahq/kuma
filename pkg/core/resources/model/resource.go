@@ -490,11 +490,11 @@ func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
 	}
 }
 
-func PolicyRole(r Resource) mesh_proto.PolicyRole {
-	if r.GetMeta() == nil || r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
+func PolicyRole(rm ResourceMeta) mesh_proto.PolicyRole {
+	if rm == nil || rm.GetLabels() == nil || rm.GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
 		return mesh_proto.SystemPolicyRole
 	}
-	return mesh_proto.PolicyRole(r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel])
+	return mesh_proto.PolicyRole(rm.GetLabels()[mesh_proto.PolicyRoleLabel])
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

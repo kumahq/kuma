@@ -556,14 +556,10 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 
 func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
-	policyObject := resource.GetSpec().(core_model.Policy)
-	policyRole, ok := resource.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
-	if !ok {
-		return err
-	}
-	if policyRole != string(core_model.ComputePolicyRole(policyObject)) {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, core_model.ComputePolicyRole(policyObject), policyRole))
-		return err
+	policyRole := core_model.PolicyRole(resource.GetMeta())
+	// at the moment on universal all policies have system policy role
+	if policyRole != mesh_proto.SystemPolicyRole {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
 	}
 	return err
 }
