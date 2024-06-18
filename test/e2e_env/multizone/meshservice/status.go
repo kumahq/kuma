@@ -102,12 +102,19 @@ spec:
 	}
 
 	It("should sync MeshService to global with VIP status", func() {
+		vipPrefix := "241.0.0."
+		vipOverridePrefix := "251.0.0."
+		if Config.IPV6 {
+			vipPrefix = "fd00:fd01:"
+			vipOverridePrefix = "fd00:fd11:"
+		}
+
 		// VIP and identities are assigned
 		Eventually(func(g Gomega) {
 			spec, status, err := msStatus(multizone.UniZone1, "backend")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("241.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
@@ -121,7 +128,7 @@ spec:
 			spec, status, err := msStatus(multizone.Global, hash.HashedName(meshName, "backend", "kuma-4"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("241.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
@@ -135,7 +142,7 @@ spec:
 			spec, status, err := msStatus(multizone.UniZone2, hash.HashedName(meshName, "backend", "kuma-4"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("251.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipOverridePrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
