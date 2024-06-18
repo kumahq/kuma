@@ -27,7 +27,18 @@ var (
 	testEnv     *envtest.Environment
 	k8sClient   client.Client
 	scheme      *kube_runtime.Scheme
-	defaultMesh *mesh_k8s.Mesh
+	defaultMesh = &mesh_k8s.Mesh{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Name: "default",
+		},
+	}
+	dp1 = &mesh_k8s.Dataplane{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Name:      "dp-1",
+			Namespace: "default",
+		},
+		Mesh: "default",
+	}
 )
 
 var _ = BeforeSuite(func() {
@@ -59,6 +70,7 @@ var _ = BeforeSuite(func() {
 	}
 	err = k8sClient.Create(context.Background(), defaultMesh)
 	Expect(err).ToNot(HaveOccurred())
+	Expect(k8sClient.Create(context.Background(), dp1)).To(Succeed())
 })
 
 var _ = AfterSuite(func() {

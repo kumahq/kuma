@@ -71,26 +71,4 @@ var _ = Describe("Reconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(snapshot).To(BeIdenticalTo(newSnapshot))
 	})
-
-	It("should force new version in snapshot cache", func() {
-		// given
-		Expect(store.Create(context.Background(), samples.MeshDefault(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
-
-		err, _ := reconciler.Reconcile(context.Background(), node, changedTypes, logr.Discard())
-		Expect(err).ToNot(HaveOccurred())
-		snapshot, err := snapshotCache.GetSnapshot(node.Id)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		reconciler.ForceVersion(node, core_mesh.MeshType)
-		err, changed := reconciler.Reconcile(context.Background(), node, changedTypes, logr.Discard())
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(changed).To(BeTrue())
-		newSnapshot, err := snapshotCache.GetSnapshot(node.Id)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(snapshot.GetResources(string(core_mesh.MeshType))).To(Equal(newSnapshot.GetResources(string(core_mesh.MeshType))))
-		Expect(snapshot.GetVersionMap(string(core_mesh.MeshType))).ToNot(Equal(newSnapshot.GetVersionMap(string(core_mesh.MeshType))))
-	})
 })

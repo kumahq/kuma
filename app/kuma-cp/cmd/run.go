@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds"
+	"github.com/kumahq/kuma/pkg/zone"
 )
 
 var runLog = controlPlaneLog.WithName("run")
@@ -143,6 +144,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := intercp.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Control Plane Intercommunication")
+				return err
+			}
+			if err := zone.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up ZoneIngress available services")
 				return err
 			}
 
