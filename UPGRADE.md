@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+### MeshFaultInjection responseBandwidth.limit
+
+With [#10371](https://github.com/kumahq/kuma/pull/10371) we strict the validation of `responseBandwidth.limit` field in policies `MeshFaultInjection`. Policies with bad value like `-10kbps` will be rejected.
+
 ### MeshRetry tcp.MaxConnectAttempt
 
 With [#10250](https://github.com/kumahq/kuma/pull/10250) `MeshRetry` policies with `spec.tcp.MaxConnectAttempt=0` will be rejected.
