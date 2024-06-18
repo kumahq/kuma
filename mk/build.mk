@@ -90,7 +90,7 @@ Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) go build -v $$(GOFLAGS) $
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
 define BUILD_TARGET
-ENVOY_VERSION_$(1)_$(2)=$(ENVOY_VERSION)
+ENVOY_VERSION_$(1)_$(2)=$(if $(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION_$(1)_$(2)),$(ENVOY_VERSION))
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cp
 build/artifacts-$(1)-$(2)/kuma-cp:
 	$(Build_Go_Application) ./app/kuma-cp
