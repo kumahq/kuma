@@ -18,11 +18,11 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - port: 80
-      protocol: http
+    - appProtocol: http
+      port: 80
       targetPort: 8080
-    - port: 443
-      protocol: tcp
+    - appProtocol: tcp
+      port: 443
       targetPort: 8443
     selector:
       dataplaneRef:
@@ -50,11 +50,11 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - port: 80
-      protocol: http
+    - appProtocol: http
+      port: 80
       targetPort: 8080
-    - port: 443
-      protocol: tcp
+    - appProtocol: tcp
+      port: 443
       targetPort: 8443
     selector:
       dataplaneRef:
@@ -80,11 +80,11 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - port: 80
-      protocol: http
+    - appProtocol: http
+      port: 80
       targetPort: 8080
-    - port: 443
-      protocol: tcp
+    - appProtocol: tcp
+      port: 443
       targetPort: 8443
     selector:
       dataplaneRef:

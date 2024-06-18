@@ -40,7 +40,7 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-    protocol: http
+    appProtocol: http
 `)).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
@@ -62,7 +62,7 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-    protocol: http
+    appProtocol: http
 `)).
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			Setup(multizone.UniZone2)).To(Succeed())
