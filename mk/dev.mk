@@ -68,7 +68,7 @@ TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
-LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | select(.latest == true) | .branch' versions.yml)
+LATEST_RELEASE_BRANCH := $(shell git branch -r | grep -E '^ *origin/release-[0-9]+\.[0-9]+$$' | sed 's|.*/||' | sort -V | tail -n 1)
 
 # Install all dependencies on tools and protobuf files
 # We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
