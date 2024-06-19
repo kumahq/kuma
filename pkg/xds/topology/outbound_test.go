@@ -1196,14 +1196,14 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Ports: []v1alpha1.Port{
 								{
-									Port:       80,
-									TargetPort: intstr.FromInt(8080),
-									Protocol:   "http",
+									Port:        80,
+									TargetPort:  intstr.FromInt(8080),
+									AppProtocol: "http",
 								},
 								{
-									Port:       8081,
-									TargetPort: intstr.FromInt(8081),
-									Protocol:   "http",
+									Port:        8081,
+									TargetPort:  intstr.FromInt(8081),
+									AppProtocol: "http",
 								},
 							},
 						},

@@ -24,7 +24,7 @@ type Port struct {
 	Port       uint32             `json:"port"`
 	TargetPort intstr.IntOrString `json:"targetPort,omitempty"`
 	// +kubebuilder:default=tcp
-	Protocol core_mesh.Protocol `json:"protocol,omitempty"`
+	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
 }
 
 // MeshService
@@ -37,7 +37,7 @@ type MeshService struct {
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=port
-	// +listMapKey=protocol
+	// +listMapKey=appProtocol
 	Ports      []Port                `json:"ports,omitempty"`
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }

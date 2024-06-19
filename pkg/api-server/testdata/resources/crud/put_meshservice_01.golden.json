@@ -17,8 +17,7 @@
   "ports": [
    {
     "port": 6379,
-    "targetPort": 6379,
-    "protocol": "tcp"
+    "targetPort": 6379
    }
   ]
  },

@@ -87,8 +87,8 @@ func CollectServices(
 					continue
 				}
 				protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
-				if port.Protocol != "" {
-					protocol = port.Protocol
+				if port.AppProtocol != "" {
+					protocol = port.AppProtocol
 				}
 				dests = append(dests, DestinationService{
 					Outbound:    oface,
@@ -180,7 +180,7 @@ func makeSplit(
 				continue
 			}
 			service = ms.DestinationName(*ref.Port)
-			protocol = port.Protocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+			protocol = port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		default:
 			service = ref.Name
 			protocol = meshCtx.GetServiceProtocol(service)

@@ -76,7 +76,7 @@ spec:
   ports:
   - port: 80 
     targetPort: 80
-    protocol: http
+    appProtocol: http
   selector:
     dataplaneTags:
       app: test-server
