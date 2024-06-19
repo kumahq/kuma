@@ -91,6 +91,10 @@
   branch: release-2.7
   lts: true
 - edition: kuma
+  version: 2.8.0
+  release: 2.8.x
+  branch: release-2.8
+- edition: kuma
   version: preview
   release: dev
   branch: master
