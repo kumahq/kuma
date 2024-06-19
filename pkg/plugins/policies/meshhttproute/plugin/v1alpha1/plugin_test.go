@@ -300,6 +300,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Address: "example.com",
 							Port:    pointer.To(meshexternalservice_api.Port(10000)),
 						},
+						{
+							Address: "example2.com",
+							Port:    pointer.To(meshexternalservice_api.Port(11111)),
+						},
 					},
 					Tls: &meshexternalservice_api.Tls{
 						Enabled: true,
