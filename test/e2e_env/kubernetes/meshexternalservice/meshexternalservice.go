@@ -173,7 +173,7 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client-egress"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(503))
+				g.Expect(response.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 
 			// when MTP targeting MeshExternalService added
