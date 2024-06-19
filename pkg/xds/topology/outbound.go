@@ -52,7 +52,7 @@ func BuildEgressEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false)
+	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
 
 	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, meshExternalServices, mesh, loader, localZone)
 
@@ -82,15 +82,21 @@ func BuildEdsEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled())
+	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
+	// we want to prefer endpoints build by MeshService
+	// this way we can for example stop cross-zone traffic by default using kuma.io/service
+	meshServiceDestinations := map[core_xds.ServiceName]struct{}{}
+	for name := range outbound {
+		meshServiceDestinations[name] = struct{}{}
+	}
+
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
 
-	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone)
-
-	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, endpointWeight, localZone)
+	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, localZone, meshServiceDestinations)
 
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone)
 
@@ -217,6 +223,7 @@ func fillDataplaneOutbounds(
 	mesh *core_mesh.MeshResource,
 	endpointWeight uint32,
 	localZone string,
+	meshServiceDestinations map[core_xds.ServiceName]struct{},
 ) {
 	for _, dataplane := range dataplanes {
 		dpSpec := dataplane.Spec
@@ -228,6 +235,10 @@ func fillDataplaneOutbounds(
 			inboundInterface := dpNetworking.ToInboundInterface(inbound)
 			inboundAddress := inboundInterface.DataplaneAdvertisedIP
 			inboundPort := inboundInterface.DataplanePort
+
+			if _, ok := meshServiceDestinations[serviceName]; ok {
+				continue
+			}
 
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
@@ -247,7 +258,6 @@ func fillLocalMeshServices(
 	meshServices []*meshservice_api.MeshServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
-	endpointWeight uint32,
 	localZone string,
 ) {
 	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
@@ -282,16 +292,13 @@ func fillLocalMeshServices(
 
 					inboundTags := maps.Clone(inbound.GetTags())
 					serviceName := meshSvc.DestinationName(port.Port)
-					if serviceName == inboundTags[mesh_proto.ServiceTag] {
-						continue // it was already added by fillDataplaneOutbounds
-					}
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
 						Target:   inboundInterface.DataplaneAdvertisedIP,
 						Port:     inboundInterface.DataplanePort,
 						Tags:     inboundTags,
-						Weight:   endpointWeight,
+						Weight:   1,
 						Locality: GetLocality(localZone, getZone(inboundTags), mesh.LocalityAwareLbEnabled()),
 					})
 				}
@@ -352,6 +359,7 @@ func BuildCrossMeshEndpointMap(
 		mesh,
 		otherMesh,
 		mesh.ZoneEgressEnabled(),
+		map[core_xds.ServiceName]struct{}{},
 	)
 
 	endpointWeight := uint32(1)
@@ -409,6 +417,7 @@ func fillIngressOutbounds(
 	mesh *core_mesh.MeshResource,
 	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
 	routeThroughZoneEgress bool,
+	meshServiceDestinations map[core_xds.ServiceName]struct{},
 ) uint32 {
 	ziInstances := map[string]struct{}{}
 
@@ -476,6 +485,10 @@ func fillIngressOutbounds(
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+
+			if _, ok := meshServiceDestinations[serviceName]; ok {
+				continue
+			}
 
 			// TODO (bartsmykla): We have to check if it will be ok in a situation
 			//  where we have few zone ingresses with the same services, as
