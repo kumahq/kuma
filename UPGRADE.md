@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### MeshFaultInjection responseBandwidth.limit
 
-With [#10371](https://github.com/kumahq/kuma/pull/10371) we strict the validation of `responseBandwidth.limit` field in policies `MeshFaultInjection`. Policies with bad value like `-10kbps` will be rejected.
+With [#10371](https://github.com/kumahq/kuma/pull/10371) we have tightened the validation of the `responseBandwidth.limit` field in `MeshFaultInjection` policy. Policies with invalid values, such as `-10kbps`, will be rejected.
 
 ### MeshRetry tcp.MaxConnectAttempt
 
