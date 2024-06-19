@@ -78,6 +78,6 @@ var (
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
-	_ = Describe("MeshService", Label("ipv6-not-supported"), meshservice.MeshService, Ordered)
+	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 )
