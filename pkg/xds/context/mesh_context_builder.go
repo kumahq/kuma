@@ -336,12 +336,13 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			if !ok {
 				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
 			}
-			zi, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
+
+			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
 			if err != nil {
 				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
 				return nil, nil
 			}
-			return zi, nil
+			return resolvedZoneIngress, nil
 		case core_mesh.DataplaneType:
 			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
 				dp, ok := resource.(*core_mesh.DataplaneResource)
