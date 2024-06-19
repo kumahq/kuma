@@ -45,7 +45,9 @@ func Sync() {
 		Eventually(func(g Gomega) {
 			out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(strings.Count(out, "Online")).To(Equal(4))
+			// Some tests create their own Zones that may or may not
+			// be run simultaneously
+			g.Expect(strings.Count(out, "Online")).To(BeNumerically(">=", 4))
 		}, "30s", "1s").Should(Succeed())
 	})
 
