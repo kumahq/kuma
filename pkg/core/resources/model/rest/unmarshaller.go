@@ -83,9 +83,13 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 	}
 
+	if resource.GetMeta() == nil {
+		resource.SetMeta(From.Meta(resource))
+	}
 	if err := core_model.Validate(resource); err != nil {
 		return nil, err
 	}
+
 	return restResource, nil
 }
 
