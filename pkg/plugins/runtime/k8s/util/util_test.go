@@ -265,6 +265,7 @@ var _ = Describe("Util", func() {
 		type testCase struct {
 			podLabels      map[string]string
 			podAnnotations map[string]string
+			nsLabels       map[string]string
 			nsAnnotations  map[string]string
 			expected       string
 		}
@@ -281,6 +282,7 @@ var _ = Describe("Util", func() {
 				ns := &kube_core.Namespace{
 					ObjectMeta: kube_meta.ObjectMeta{
 						Annotations: given.nsAnnotations,
+						Labels:      given.nsLabels,
 					},
 				}
 
@@ -305,6 +307,15 @@ var _ = Describe("Util", func() {
 			}),
 			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with label", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				nsLabels: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
 				expected: "demo",
