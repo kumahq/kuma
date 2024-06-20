@@ -152,9 +152,10 @@ spec:
 `, Config.KumaNamespace, meshNameEgress)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s.upstream_rq_total",
+			"cluster.%s_%s_%s.upstream_rq_total",
 			meshNameEgress,
-			"mesh-external-service-egress_default",
+			"mesh-external-service-egress",
+			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
