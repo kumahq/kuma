@@ -161,6 +161,10 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			apiServer, store, stop := createServer(federatedZone, false)
 			defer stop()
 			createMesh(store, "mesh-1")
+			zone := "default"
+			if federatedZone {
+				zone = "zone-1"
+			}
 
 			// when
 			res := &rest_v1alpha1.Resource{
@@ -184,6 +188,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			Expect(store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", "mesh-1"))).To(Succeed())
 			Expect(actualMtp.Meta.GetLabels()).To(Equal(map[string]string{
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             zone,
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -221,6 +226,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(store.Get(context.Background(), actualDpp, core_store.GetByKey("dpp-1", "mesh-1"))).To(Succeed())
 		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			mesh_proto.ZoneTag:             "default",
 		}))
 	})
 })

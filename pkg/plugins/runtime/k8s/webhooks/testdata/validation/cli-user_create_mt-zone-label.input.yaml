@@ -1,0 +1,19 @@
+# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: backend-v3
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: default
+    kuma.io/zone: wrong-zone
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 19s
+          streamIdleTimeout: 1h

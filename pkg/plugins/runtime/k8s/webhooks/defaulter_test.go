@@ -53,6 +53,7 @@ var _ = Describe("Defaulter", func() {
 			FederatedZone:                federatedZone,
 			DisableOriginLabelValidation: !originValidation,
 			SystemNamespace:              "kuma-system",
+			ZoneName:                     "zone-1",
 		}
 	}
 
@@ -270,6 +271,7 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
                   "kuma.io/mesh": "default",
                   "kuma.io/policy-role": "workload-owner",
                   "k8s.kuma.io/namespace": "example"
@@ -313,6 +315,7 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
@@ -354,6 +357,7 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
@@ -405,7 +409,8 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "zone"
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"

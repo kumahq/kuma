@@ -25,11 +25,13 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	if c.UseCommonTlsContext && len(c.Endpoints) > 0 {
 		ep := c.Endpoints[0]
-		tsm, err := c.createTransportSocketMatch(&ep, false)
-		if err != nil {
-			return err
+		if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
+			tsm, err := c.createTransportSocketMatch(&ep, false)
+			if err != nil {
+				return err
+			}
+			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 		}
-		cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 	} else {
 		for i, ep := range c.Endpoints {
 			if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
