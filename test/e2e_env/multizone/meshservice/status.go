@@ -177,11 +177,12 @@ spec:
 	})
 
 	It("should connect cross-zone using MeshService from kubernetes cluster", func() {
-		err := multizone.KubeZone2.Install(YamlK8s(`
+		err := multizone.KubeZone2.Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator
 metadata:
   name: basic-kube
+  namespace: %s
   labels:
     kuma.io/mesh: meshservice
     kuma.io/origin: zone
@@ -192,7 +193,7 @@ spec:
       matchLabels:
         kuma.io/display-name: backend
         kuma.io/origin: global
-`))
+`, Config.KumaNamespace)))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
