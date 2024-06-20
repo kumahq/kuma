@@ -144,5 +144,5 @@ func GetMeshExternalServiceName(resourceName string) string {
 }
 
 func GetEgressMeshExternalServiceName(meshName, resourceName string) string {
-	return fmt.Sprintf("meshexternalservice_%s_%s", meshName, resourceName)
+	return GetMeshClusterName(meshName, GetMeshExternalServiceName(resourceName))
 }
