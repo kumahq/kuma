@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"reflect"
 
 	"golang.org/x/exp/slices"
@@ -35,6 +36,10 @@ func generateFromService(
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
+
+	if svc.BackendRef.Kind == common_api.MeshExternalService {
+		listenerBuilder.WithName(names.GetMeshExternalServiceName(svc.BackendRef.Name))
+	}
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{

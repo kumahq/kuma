@@ -19,7 +19,7 @@ resources:
                 address: example2.com
                 portValue: 11111
           loadBalancingWeight: 1
-    name: example
+    name: meshexternalservice_example
     transportSocketMatches:
     - name: example.com
       transportSocket:

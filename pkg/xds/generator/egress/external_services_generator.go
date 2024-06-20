@@ -92,6 +92,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
 
 		if isMeshExternalService(endpoints) {
+			clusterBuilder.WithName(envoy_names.GetMeshExternalServiceName(serviceName))
 			clusterBuilder.
 				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
 				Configure(

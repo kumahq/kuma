@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.20.20.1:9090
+- name: meshexternalservice_example
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -39,5 +39,5 @@ resources:
     metadata:
       filterMetadata:
         io.kuma.tags: {}
-    name: outbound:10.20.20.1:9090
+    name: meshexternalservice_example
     trafficDirection: OUTBOUND

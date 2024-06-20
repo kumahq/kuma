@@ -1,6 +1,7 @@
 package meshroute
 
 import (
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -52,6 +53,7 @@ func GenerateClusters(
 					edsClusterBuilder.
 						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
 					if isMeshExternalService(endpoints) {
+						edsClusterBuilder.WithName(envoy_names.GetMeshExternalServiceName(serviceName))
 						edsClusterBuilder.Configure(
 							envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, proxy.Metadata.SystemCaPath, true),
 						)
