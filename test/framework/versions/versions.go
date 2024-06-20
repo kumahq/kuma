@@ -17,6 +17,7 @@ type Version struct {
 	Version       string `json:"version"`
 	Lts           bool   `json:"lts,omitempty"`
 	EndOfLifeDate string `json:"endOfLifeDate"`
+	ReleaseDate   string `json:"releaseDate"`
 	SemVer        *semver.Version
 }
 
@@ -55,6 +56,9 @@ func UpgradableVersions(versions []Version, currentVersion semver.Version) []str
 	}
 	var res []string
 	for _, version := range versions {
+		if version.ReleaseDate == "" {
+			continue
+		}
 		if version.EndOfLifeDate != "" {
 			eol, err := time.Parse(time.DateOnly, version.EndOfLifeDate)
 			if err != nil {

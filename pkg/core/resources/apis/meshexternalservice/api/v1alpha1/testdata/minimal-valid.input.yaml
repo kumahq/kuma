@@ -1,5 +1,4 @@
 match:
-  type: HostnameGenerator
   port: 80
   protocol: http
 endpoints:
