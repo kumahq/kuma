@@ -2,7 +2,6 @@ package meshroute
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -12,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -192,9 +191,9 @@ func makeSplit(
 
 		var clusterName string
 		if ref.Kind == common_api.MeshExternalService {
-			clusterName = names.GetMeshExternalServiceName(ref.Name)
+			clusterName = envoy_names.GetMeshExternalServiceName(ref.Name)
 		} else {
-			clusterName, _ = tags.Tags(ref.Tags).
+			clusterName, _ = envoy_tags.Tags(ref.Tags).
 				WithTags(mesh_proto.ServiceTag, service).
 				DestinationClusterName(nil)
 		}

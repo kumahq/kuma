@@ -1,7 +1,6 @@
 package meshroute
 
 import (
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -11,6 +10,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
