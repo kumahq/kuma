@@ -23,7 +23,7 @@ func Connectivity() {
 type: HostnameGenerator
 name: kube-msconnectivity
 spec:
-  template: '{{ .DisplayName }}.{{ .Namespace }}.{{ .Zone }}.msconnectivity'
+  template: '{{ .DisplayName }}.{{ .Namespace }}.{{ .Zone }}.k8s.msconnectivity'
   selector:
     meshService:
       matchLabels:
@@ -34,7 +34,7 @@ spec:
 type: HostnameGenerator
 name: uni-msconnectivity
 spec:
-  template: '{{ .DisplayName }}.{{ .Zone }}.msconnectivity'
+  template: '{{ .DisplayName }}.{{ .Zone }}.universal.msconnectivity'
   selector:
     meshService:
       matchLabels:
@@ -148,16 +148,16 @@ spec:
 				g.Expect(response.Instance).To(Equal(given.expectedInstance))
 			}, "30s", "1s").Should(Succeed())
 		},
-		Entry("should access service in another Kubernetes cluster", testCase{
+		Entry("should access service in the same Kubernetes cluster", testCase{
 			address:          "http://test-server.msconnectivity.svc.cluster.local:80",
 			expectedInstance: "kube-test-server-1",
 		}),
 		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server.msconnectivity.kuma-2.msconnectivity:80",
+			address:          "http://test-server.msconnectivity.kuma-2.k8s.msconnectivity:80",
 			expectedInstance: "kube-test-server-2",
 		}),
-		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server.kuma-5.msconnectivity:80",
+		Entry("should access service in another Universal cluster", testCase{
+			address:          "http://test-server.kuma-5.universal.msconnectivity:80",
 			expectedInstance: "uni-test-server",
 		}),
 	)
@@ -171,15 +171,15 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		},
 		Entry("should access service in another Kubernetes cluster 1", testCase{
-			address:          "http://test-server.msconnectivity.kuma-1.msconnectivity:80",
+			address:          "http://test-server.msconnectivity.kuma-1.k8s.msconnectivity:80",
 			expectedInstance: "kube-test-server-1",
 		}),
 		Entry("should access service in another Kubernetes cluster 2", testCase{
-			address:          "http://test-server.msconnectivity.kuma-2.msconnectivity:80",
+			address:          "http://test-server.msconnectivity.kuma-2.k8s.msconnectivity:80",
 			expectedInstance: "kube-test-server-2",
 		}),
-		Entry("should access service in another Kubernetes cluster", testCase{
-			address:          "http://test-server.kuma-5.msconnectivity:80",
+		Entry("should access service in another Universal cluster", testCase{
+			address:          "http://test-server.kuma-5.universal.msconnectivity:80",
 			expectedInstance: "uni-test-server",
 		}),
 	)
