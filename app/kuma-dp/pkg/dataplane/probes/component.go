@@ -26,8 +26,9 @@ var (
 	httpPathPattern    = regexp.MustCompile(`^/(?P<port>[0-9]+)(?P<path>/.*)?$`)
 	errLimitReached    = errors.New("the read limit is reached")
 
-	localAddrIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
-	localAddrIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
+	// LocalAddrIPv4 and LocalAddrIPv6 are the special IP addresses to prevent the probe traffic from being captured by the transparent proxy
+	LocalAddrIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.6")}
+	LocalAddrIPv6 = &net.TCPAddr{IP: net.ParseIP("::6")}
 )
 
 const (
@@ -50,7 +51,7 @@ func NewProber(podIPAddr string, listenPort uint32) *Prober {
 	ipAddr := net.ParseIP(podIPAddr)
 	useIPv6 := false
 	if ipAddr != nil {
-		useIPv6 = len(ipAddr) == net.IPv6len
+		useIPv6 = len(ipAddr) == net.IPv6len && ipAddr.To4() == nil
 	}
 
 	return &Prober{
@@ -131,10 +132,6 @@ func matchGroups(re *regexp.Regexp, s string) map[string]string {
 }
 
 func getValidatedPort(portParam string) (int, string) {
-	if portParam == "" {
-		return 0, "port is required"
-	}
-
 	port, err := strconv.Atoi(portParam)
 	if err != nil {
 		return 0, "invalid port" + err.Error()
@@ -148,12 +145,15 @@ func getValidatedPort(portParam string) (int, string) {
 
 func getPort(req *http.Request, re *regexp.Regexp) (int, error) {
 	pathParams := matchGroups(re, req.URL.Path)
-	portParam := pathParams["port"]
-	port, errMsg := getValidatedPort(portParam)
-	if errMsg != "" {
-		return 0, errors.New(errMsg)
+	if portParam, ok := pathParams["port"]; ok {
+		port, errMsg := getValidatedPort(portParam)
+		if errMsg != "" {
+			return 0, errors.New(errMsg)
+		}
+		return port, nil
 	}
-	return port, nil
+
+	return 0, errors.New("port is required")
 }
 
 func getTimeout(req *http.Request) time.Duration {
@@ -172,7 +172,10 @@ func getTimeout(req *http.Request) time.Duration {
 
 func getUpstreamHTTPPath(downstreamPath string) string {
 	pathParams := matchGroups(httpPathPattern, downstreamPath)
-	return pathParams["path"]
+	if pathParam, ok := pathParams["path"]; ok {
+		return pathParam
+	}
+	return "/"
 }
 
 func getScheme(req *http.Request) kube_core.URIScheme {
@@ -202,21 +205,24 @@ func createProbeDialer(isIPv6 bool) *net.Dialer {
 			})
 		},
 	}
-	dialer.LocalAddr = localAddrIPv4
+	dialer.LocalAddr = LocalAddrIPv4
 	if isIPv6 {
-		dialer.LocalAddr = localAddrIPv6
+		dialer.LocalAddr = LocalAddrIPv6
 	}
 	return dialer
 }
 
 func writeProbeResult(writer http.ResponseWriter, result string) {
-	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	writer.Header().Set("X-Content-Type-Options", "nosniff")
-
 	statusCode := http.StatusServiceUnavailable
 	if result == Healthy {
 		statusCode = http.StatusOK
 	}
+	writeHTTPProbeResult(writer, result, statusCode)
+}
+
+func writeHTTPProbeResult(writer http.ResponseWriter, result string, statusCode int) {
+	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
 	writer.WriteHeader(statusCode)
 	_, _ = fmt.Fprintln(writer, result)
 }

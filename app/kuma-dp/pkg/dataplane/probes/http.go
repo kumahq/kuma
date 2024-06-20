@@ -34,7 +34,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res, err := client.Do(req)
+	res, err := client.Do(upstreamReq)
 	if err != nil {
 		logger.V(1).Info("unable to request upstream server", "error", err)
 		writeProbeResult(writer, Unhealthy)
@@ -69,7 +69,10 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 
 	logger.V(1).Info(fmt.Sprintf("probe failed for %s", upstreamReq.URL.Path),
 		"headers", upstreamReq.Header, "statusCode", res.StatusCode, "body", body)
-	writeProbeResult(writer, Unhealthy)
+
+	// for HTTP failures, we try to re-use original status code
+	// so that it's easier to debug from an application developers' perspective
+	writeHTTPProbeResult(writer, Unhealthy, res.StatusCode)
 	return
 }
 
