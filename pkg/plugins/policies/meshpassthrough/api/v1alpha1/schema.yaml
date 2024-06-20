@@ -55,12 +55,15 @@ properties:
                 - port
               type: object
             type: array
-          enabled:
+          passthroughMode:
             description: |-
-              Enabled defines whether the passthrough behavior, which allows all traffic going
-              outside of the cluster, is active. If true, AppendMatch
-              has no effect.
-            type: boolean
+              Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+              When `All` or `None` `appendMatch` has no effect.
+            enum:
+              - All
+              - Matched
+              - None
+            type: string
         type: object
       targetRef:
         description: |-

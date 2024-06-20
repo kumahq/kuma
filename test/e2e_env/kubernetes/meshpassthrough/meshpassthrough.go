@@ -97,7 +97,7 @@ spec:
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
@@ -132,7 +132,7 @@ spec:
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
