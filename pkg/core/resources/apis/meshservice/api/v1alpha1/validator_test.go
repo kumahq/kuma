@@ -12,7 +12,7 @@ var _ = Describe("MeshService", func() {
 	DescribeErrorCases(
 		api.NewMeshServiceResource,
 		Entry(
-			"accepts valid resource",
+			"name too long",
 			ResourceValidationCase{
 				Violations: []validators.Violation{{
 					Field:   `name`,
