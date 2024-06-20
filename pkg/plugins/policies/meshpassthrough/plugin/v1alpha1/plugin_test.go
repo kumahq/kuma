@@ -118,6 +118,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
 							AppendMatch: []api.Match{
 								{
 									Type:     api.MatchType("Domain"),

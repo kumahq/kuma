@@ -7110,6 +7110,7 @@ components:
                     type: object
                   type: array
                 passthroughMode:
+                  default: None
                   description: >-
                     Defines the passthrough behavior. Possible values: `All`,
                     `None`, `Matched`
