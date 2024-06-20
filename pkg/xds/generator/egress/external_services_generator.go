@@ -2,6 +2,7 @@ package egress
 
 import (
 	"context"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -242,11 +243,23 @@ func (g *ExternalServicesGenerator) addFilterChains(
 				// Add the default fall-back route
 				routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
+				var routeConfigName string
+				if isMeshExternalService(endpoints) {
+					routeConfigName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
+				} else {
+					routeConfigName = envoy_names.GetOutboundRouteName(esName)
+				}
+
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(esName, false)).
 					Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 					Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
-					Configure(envoy_listeners.HttpOutboundRoute(esName, routes, nil))
+					Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
+						Name:    routeConfigName,
+						Service: esName,
+						Routes:  routes,
+						DpTags:  nil,
+					}))
 			default:
 				filterChainBuilder.Configure(
 					envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),

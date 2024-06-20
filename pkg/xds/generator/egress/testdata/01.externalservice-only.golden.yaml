@@ -158,7 +158,7 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
-            name: outbound:meshexternalservice-1
+            name: mesh-1:meshexternalservice_meshexternalservice-1
             validateClusters: false
             virtualHosts:
             - domains:

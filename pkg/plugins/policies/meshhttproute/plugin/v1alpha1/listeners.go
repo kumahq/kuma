@@ -37,13 +37,17 @@ func generateFromService(
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
 
+	var resourceName string
 	if svc.BackendRef.Kind == common_api.MeshExternalService {
-		listenerBuilder.WithName(envoy_names.GetMeshExternalServiceName(svc.BackendRef.Name))
+		resourceName = envoy_names.GetMeshExternalServiceName(svc.BackendRef.Name)
+		listenerBuilder.WithName(resourceName)
+	} else {
+		resourceName = svc.ServiceName
 	}
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{
-			StatsName:                svc.ServiceName,
+			StatsName:                resourceName,
 			ForwardClientCertDetails: false,
 			NormalizePath:            true,
 		}))
@@ -77,7 +81,12 @@ func generateFromService(
 		return nil, nil
 	}
 
+	var outboundRouteName string
+	if svc.BackendRef.Kind == common_api.MeshExternalService {
+		outboundRouteName = resourceName
+	}
 	outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
+		Name:    outboundRouteName,
 		Service: svc.ServiceName,
 		Routes:  routes,
 		DpTags:  proxy.Dataplane.Spec.TagSet(),
