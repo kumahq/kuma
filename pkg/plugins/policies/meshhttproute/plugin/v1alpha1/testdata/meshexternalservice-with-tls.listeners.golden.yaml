@@ -33,7 +33,7 @@ resources:
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
-                  cluster: example
+                  cluster: meshexternalservice_example
                   timeout: 0s
           statPrefix: example
     metadata:

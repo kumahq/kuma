@@ -92,7 +92,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
 
 		if isMeshExternalService(endpoints) {
-			clusterBuilder.WithName(envoy_names.GetMeshExternalServiceName(serviceName))
+			clusterBuilder.WithName(envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName))
 			clusterBuilder.
 				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
 				Configure(
@@ -195,7 +195,12 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			// There is a case where multiple meshes contain services with
 			// the same names, so we cannot use just "serviceName" as a cluster
 			// name as we would overwrite some clusters with the latest one
-			clusterName := envoy_names.GetMeshClusterName(meshName, esName)
+			var clusterName string
+			if isMeshExternalService(endpoints) {
+				clusterName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
+			} else {
+				clusterName = envoy_names.GetMeshClusterName(meshName, esName)
+			}
 
 			cluster := envoy_common.NewCluster(
 				envoy_common.WithName(clusterName),

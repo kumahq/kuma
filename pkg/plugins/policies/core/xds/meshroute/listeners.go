@@ -2,6 +2,7 @@ package meshroute
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -189,9 +190,14 @@ func makeSplit(
 			return nil
 		}
 
-		clusterName, _ := tags.Tags(ref.Tags).
-			WithTags(mesh_proto.ServiceTag, service).
-			DestinationClusterName(nil)
+		var clusterName string
+		if ref.Kind == common_api.MeshExternalService {
+			clusterName = names.GetMeshExternalServiceName(ref.Name)
+		} else {
+			clusterName, _ = tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, service).
+				DestinationClusterName(nil)
+		}
 
 		// The mesh tag is present here if this destination is generated
 		// from a cross-mesh MeshGateway listener virtual outbound.

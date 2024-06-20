@@ -142,3 +142,7 @@ func GetEgressFilterChainName(serviceName string, meshName string) string {
 func GetMeshExternalServiceName(resourceName string) string {
 	return fmt.Sprintf("meshexternalservice_%s", resourceName)
 }
+
+func GetEgressMeshExternalServiceName(meshName, resourceName string) string {
+	return fmt.Sprintf("meshexternalservice_%s_%s", meshName, resourceName)
+}
