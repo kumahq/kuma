@@ -327,10 +327,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}
 
-	if Config.CIDR != "" {
-		argsMap["--env-var"] = fmt.Sprintf("KUMA_DNS_SERVER_CIDR=%s", Config.CIDR)
-	}
-
 	for opt, value := range c.opts.ctlOpts {
 		argsMap[opt] = value
 	}
@@ -338,6 +334,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 	var args []string
 	for k, v := range argsMap {
 		args = append(args, k, v)
+	}
+
+	if Config.IPV6 {
+		args = append(args, "--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64")
+		args = append(args, "--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64")
+		args = append(args, "--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64")
 	}
 
 	for k, v := range c.opts.env {
@@ -387,8 +389,10 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["cni.confName"] = Config.CNIConf.ConfName
 	}
 
-	if Config.CIDR != "" {
-		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = Config.CIDR
+	if Config.IPV6 {
+		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
+		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
+		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 	}
 
 	switch mode {

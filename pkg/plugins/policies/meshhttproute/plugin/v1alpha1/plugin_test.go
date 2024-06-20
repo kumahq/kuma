@@ -143,9 +143,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Spec: &meshservice_api.MeshService{
 					Selector: meshservice_api.Selector{},
 					Ports: []meshservice_api.Port{{
-						Port:       80,
-						TargetPort: intstr.FromInt(8084),
-						Protocol:   core_mesh.ProtocolHTTP,
+						Port:        80,
+						TargetPort:  intstr.FromInt(8084),
+						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
 					Identities: []meshservice_api.MeshServiceIdentity{
 						{
@@ -189,7 +189,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
 						Protocol: meshexternalservice_api.HttpProtocol,
 					},
@@ -220,7 +220,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
 						Protocol: meshexternalservice_api.HttpProtocol,
 					},
@@ -254,7 +254,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
 						Protocol: meshexternalservice_api.HttpProtocol,
 					},
@@ -291,7 +291,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
 						Protocol: meshexternalservice_api.HttpProtocol,
 					},
@@ -299,6 +299,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 						{
 							Address: "example.com",
 							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+						{
+							Address: "example2.com",
+							Port:    pointer.To(meshexternalservice_api.Port(11111)),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{

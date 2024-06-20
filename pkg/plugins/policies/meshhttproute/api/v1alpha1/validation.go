@@ -25,7 +25,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 }
 
 func (r *MeshHTTPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	switch core_model.PolicyRole(r) {
+	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
 		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{

@@ -59,7 +59,7 @@ spec:
 			},
 			Spec: &v1alpha1.MeshExternalService{
 				Match: v1alpha1.Match{
-					Type:     v1alpha1.HostnameGeneratorType,
+					Type:     pointer.To(v1alpha1.HostnameGeneratorType),
 					Port:     80,
 					Protocol: v1alpha1.HttpProtocol,
 				},

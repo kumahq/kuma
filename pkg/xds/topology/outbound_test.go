@@ -1145,6 +1145,27 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("uses MeshService", testCase{
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.2",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{ // should ignore this because we prefer MeshService routing
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
+									Instances: 1,
+								},
+							},
+						},
+					},
+				},
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
@@ -1153,7 +1174,7 @@ var _ = Describe("TrafficRoute", func() {
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
 										Port:        6379,
 										ServicePort: 16379,
 									},
@@ -1196,14 +1217,14 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Ports: []v1alpha1.Port{
 								{
-									Port:       80,
-									TargetPort: intstr.FromInt(8080),
-									Protocol:   "http",
+									Port:        80,
+									TargetPort:  intstr.FromInt(8080),
+									AppProtocol: "http",
 								},
 								{
-									Port:       8081,
-									TargetPort: intstr.FromInt(8081),
-									Protocol:   "http",
+									Port:        8081,
+									TargetPort:  intstr.FromInt(8081),
+									AppProtocol: "http",
 								},
 							},
 						},
@@ -1216,7 +1237,7 @@ var _ = Describe("TrafficRoute", func() {
 						Spec: &v1alpha1.MeshService{
 							Selector: v1alpha1.Selector{
 								DataplaneTags: map[string]string{
-									mesh_proto.ServiceTag: "redis",
+									mesh_proto.ServiceTag: "redis_svc_6379",
 								},
 							},
 							Ports: []v1alpha1.Port{
@@ -1230,20 +1251,11 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"redis": []core_xds.Endpoint{
-						{
-							Target:   "192.168.0.1",
-							Port:     6379,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Locality: nil,
-							Weight:   1,
-						},
-					},
 					"redis_svc_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Tags:     map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
 							Locality: nil,
 							Weight:   1,
 						},
@@ -1277,7 +1289,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.HttpProtocol,
 							},
@@ -1330,7 +1342,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.TcpProtocol,
 							},
@@ -1366,7 +1378,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.GrpcProtocol,
 							},
@@ -1507,7 +1519,7 @@ var _ = Describe("TrafficRoute", func() {
 							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
 							Spec: &meshexternalservice_api.MeshExternalService{
 								Match: meshexternalservice_api.Match{
-									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 									Port:     443,
 									Protocol: meshexternalservice_api.TcpProtocol,
 								},

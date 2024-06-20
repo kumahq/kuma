@@ -34,7 +34,7 @@ from:
             value: 5s
             percentage: 5
         - responseBandwidth:
-            limit: 100mbps
+            limit: 100Mbps
             percentage: 5
         - abort:
             httpStatus: 500

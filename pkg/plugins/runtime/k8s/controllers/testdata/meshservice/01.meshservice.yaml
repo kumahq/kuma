@@ -16,13 +16,13 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - name: http-port
+    - appProtocol: http
+      name: http-port
       port: 80
-      protocol: http
       targetPort: 8080
-    - name: tcp-port
+    - appProtocol: tcp
+      name: tcp-port
       port: 443
-      protocol: tcp
       targetPort: 8443
     selector:
       dataplaneTags:

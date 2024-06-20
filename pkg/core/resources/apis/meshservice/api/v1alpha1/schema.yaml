@@ -38,15 +38,15 @@ properties:
       ports:
         items:
           properties:
+            appProtocol:
+              default: tcp
+              description: Protocol identifies a protocol supported by a service.
+              type: string
             name:
               type: string
             port:
               format: int32
               type: integer
-            protocol:
-              default: tcp
-              description: Protocol identifies a protocol supported by a service.
-              type: string
             targetPort:
               anyOf:
                 - type: integer
@@ -58,7 +58,7 @@ properties:
         type: array
         x-kubernetes-list-map-keys:
           - port
-          - protocol
+          - appProtocol
         x-kubernetes-list-type: map
       selector:
         properties:

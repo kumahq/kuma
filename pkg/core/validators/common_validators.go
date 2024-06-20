@@ -223,7 +223,7 @@ func ValidateIntegerGreaterThan(path PathBuilder, value uint32, minValue uint32)
 	return err
 }
 
-var BandwidthRegex = regexp.MustCompile(`(\d*)\s?([GMk]?bps)`)
+var BandwidthRegex = regexp.MustCompile(`^(\d*)\s?([GMk]+bps)$`)
 
 func ValidateBandwidth(path PathBuilder, value string) ValidationError {
 	var err ValidationError

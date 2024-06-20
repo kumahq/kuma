@@ -111,6 +111,14 @@ func (e Endpoint) Address() string {
 	return fmt.Sprintf("%s:%d", e.Target, e.Port)
 }
 
+func (e Endpoint) Protocol() string {
+	protocol := e.Tags[mesh_proto.ProtocolTag]
+	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
+		protocol = string(e.ExternalService.Protocol)
+	}
+	return protocol
+}
+
 // EndpointList is a list of Endpoints with convenience methods.
 type EndpointList []Endpoint
 

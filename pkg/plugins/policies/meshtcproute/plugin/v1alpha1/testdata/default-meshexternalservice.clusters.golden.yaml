@@ -35,26 +35,7 @@ resources:
           loadBalancingWeight: 1
     name: example
     transportSocketMatches:
-    - match: {}
-      name: example.com
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            validationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: example.com
-                sanType: DNS
-              - matcher:
-                  exact: example.com
-                sanType: IP_ADDRESS
-              trustedCa:
-                filename: /tmp/ca-certs.crt
-          sni: example.com
-    - match: {}
-      name: 192.168.1.1
+    - name: example.com
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

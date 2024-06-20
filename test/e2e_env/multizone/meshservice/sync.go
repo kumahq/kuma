@@ -10,12 +10,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
-func MeshService() {
+func Sync() {
 	meshName := "meshservice"
 	namespace := "meshservice"
 
@@ -40,7 +39,7 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-    protocol: http
+    appProtocol: http
 `)).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
@@ -62,7 +61,7 @@ spec:
   ports:
   - port: 80
     targetPort: 80
-    protocol: http
+    appProtocol: http
 `)).
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			Setup(multizone.UniZone2)).To(Succeed())
@@ -102,12 +101,19 @@ spec:
 	}
 
 	It("should sync MeshService to global with VIP status", func() {
+		vipPrefix := "241.0.0."
+		vipOverridePrefix := "251.0.0."
+		if Config.IPV6 {
+			vipPrefix = "fd00:fd01:"
+			vipOverridePrefix = "fd00:fd11:"
+		}
+
 		// VIP and identities are assigned
 		Eventually(func(g Gomega) {
 			spec, status, err := msStatus(multizone.UniZone1, "backend")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("241.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
@@ -121,7 +127,7 @@ spec:
 			spec, status, err := msStatus(multizone.Global, hash.HashedName(meshName, "backend", "kuma-4"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("241.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipPrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
@@ -135,65 +141,13 @@ spec:
 			spec, status, err := msStatus(multizone.UniZone2, hash.HashedName(meshName, "backend", "kuma-4"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.VIPs).To(HaveLen(1))
-			g.Expect(status.VIPs[0].IP).To(ContainSubstring("251.0.0."))
+			g.Expect(status.VIPs[0].IP).To(ContainSubstring(vipOverridePrefix))
 			g.Expect(spec.Identities).To(Equal([]v1alpha1.MeshServiceIdentity{
 				{
 					Type:  v1alpha1.MeshServiceIdentityServiceTagType,
 					Value: "test-server",
 				},
 			}))
-		}, "30s", "1s").Should(Succeed())
-	})
-
-	It("should connect cross-zone using MeshService from universal cluster", func() {
-		err := multizone.UniZone2.Install(YamlUniversal(`
-type: HostnameGenerator
-mesh: meshservice
-name: basic-uni
-labels:
-  kuma.io/origin: zone
-spec:
-  template: '{{ label "kuma.io/display-name" }}.{{ label "kuma.io/zone" }}.ms.mesh'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: backend
-        kuma.io/origin: global
-`))
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.UniZone2, "uni-demo-client", "backend.kuma-4.ms.mesh:80")
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(Equal("echo-v1"))
-		}, "30s", "1s").Should(Succeed())
-	})
-
-	It("should connect cross-zone using MeshService from kubernetes cluster", func() {
-		err := multizone.KubeZone2.Install(YamlK8s(`
-apiVersion: kuma.io/v1alpha1
-kind: HostnameGenerator
-metadata:
-  name: basic-kube
-  labels:
-    kuma.io/mesh: meshservice
-    kuma.io/origin: zone
-spec:
-  template: '{{ label "kuma.io/display-name" }}.{{ label "kuma.io/zone" }}.ms.mesh'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/display-name: backend
-        kuma.io/origin: global
-`))
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(multizone.KubeZone2, "demo-client", "backend.kuma-4.ms.mesh:80",
-				client.FromKubernetesPod(meshName, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(Equal("echo-v1"))
 		}, "30s", "1s").Should(Succeed())
 	})
 

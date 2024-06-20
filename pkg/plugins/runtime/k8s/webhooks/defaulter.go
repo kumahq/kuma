@@ -71,7 +71,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 	labels, annotations := k8s.SplitLabelsAndAnnotations(
-		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName),
 		obj.GetAnnotations(),
 	)
 	obj.SetLabels(labels)

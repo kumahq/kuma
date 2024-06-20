@@ -553,6 +553,9 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
 	}
 	for _, endpoint := range endpoints[1:] {
 		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		if endpoint.ExternalService != nil && endpoint.ExternalService.Protocol != "" {
+			endpointProtocol = endpoint.ExternalService.Protocol
+		}
 		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol

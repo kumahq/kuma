@@ -55,6 +55,7 @@ func (g *ExternalServicesGenerator) Generate(
 		services,
 		endpointMap,
 		proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6(),
+		proxy.Metadata.GetDynamicMetadata(core_xds.FieldSystemCaPath),
 	)
 	if err != nil {
 		return nil, err
@@ -70,6 +71,7 @@ func (*ExternalServicesGenerator) generateCDS(
 	services map[string]bool,
 	endpointMap core_xds.EndpointMap,
 	isIPV6 bool,
+	systemCaPath string,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
@@ -87,15 +89,26 @@ func (*ExternalServicesGenerator) generateCDS(
 		// name as we would overwrite some clusters with the latest one
 		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
-		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
-			Configure(envoy_clusters.ProvidedEndpointCluster(
-				isIPV6,
-				endpoints...,
-			)).
-			Configure(envoy_clusters.ClientSideTLS(endpoints)).
+		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
+
+		if isMeshExternalService(endpoints) {
+			clusterBuilder.
+				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
+				Configure(
+					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
+				)
+		} else {
+			clusterBuilder.
+				Configure(envoy_clusters.ProvidedEndpointCluster(
+					isIPV6,
+					endpoints...,
+				)).
+				Configure(envoy_clusters.ClientSideTLS(endpoints))
+		}
+		clusterBuilder.
 			Configure(envoy_clusters.DefaultTimeout())
 
-		switch endpoints[0].Tags[mesh_proto.ProtocolTag] {
+		switch endpoints[0].Protocol() {
 		case core_mesh.ProtocolHTTP:
 			clusterBuilder.Configure(envoy_clusters.Http())
 		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
@@ -202,8 +215,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 					meshResources.ExternalServicePermissionMap[esName],
 				),
 			)
-
-			protocol := endpoints[0].Tags[mesh_proto.ProtocolTag]
+			protocol := endpoints[0].Protocol()
 
 			switch protocol {
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
@@ -238,4 +250,11 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
+}
+
+func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
+	if len(endpoints) > 0 {
+		return endpoints[0].IsMeshExternalService()
+	}
+	return false
 }

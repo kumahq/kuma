@@ -46,3 +46,17 @@ tags:
   kuma.io/protocol: http
 networking:
   address: kuma.io:80
+---
+type: MeshExternalService
+name: meshexternalservice-1
+mesh: mesh-1
+spec:
+  match:
+    type: HostnameGenerator
+    port: 9090
+    protocol: http
+  endpoints:
+  - address: 127.0.0.1
+    port: 8080
+  - address: example.com
+    port: 1234
