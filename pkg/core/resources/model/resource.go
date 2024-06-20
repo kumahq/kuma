@@ -193,6 +193,8 @@ type ResourceTypeDescriptor struct {
 	Overview Resource
 	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
 	DumpForGlobal bool
+	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
+	AllowedOnSystemNamespaceOnly bool
 }
 
 func newObject(baseResource Resource) Resource {

@@ -10,6 +10,7 @@ import (
 
 // MeshExternalService
 // +kuma:policy:is_policy=false
+// +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:has_status=true
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
