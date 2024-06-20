@@ -76,6 +76,10 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service",
 				file: "min-higher-than-max-invalid",
 			}),
+			Entry("name too long", testCase{
+				name: "external-service-very-long-very-long-very-long-very-long-very-long-very-long-very-long",
+				file: "name-too-long",
+			}),
 		)
 	})
 })
