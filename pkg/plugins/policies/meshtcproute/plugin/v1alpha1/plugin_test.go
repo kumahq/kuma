@@ -316,7 +316,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
 						Protocol: meshexternalservice_api.TcpProtocol,
 					},

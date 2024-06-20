@@ -1289,7 +1289,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.HttpProtocol,
 							},
@@ -1342,7 +1342,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.TcpProtocol,
 							},
@@ -1378,7 +1378,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: meshexternalservice_api.GrpcProtocol,
 							},
@@ -1519,7 +1519,7 @@ var _ = Describe("TrafficRoute", func() {
 							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
 							Spec: &meshexternalservice_api.MeshExternalService{
 								Match: meshexternalservice_api.Match{
-									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 									Port:     443,
 									Protocol: meshexternalservice_api.TcpProtocol,
 								},
