@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"net/http"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
@@ -12,6 +13,8 @@ import (
 	xds_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	xds_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
+
+const NoMatchMsg = "This is a Kuma Sidecar. No routes match this Domain!\n"
 
 type FilterChainConfigurer struct {
 	APIVersion core_xds.APIVersion
@@ -74,6 +77,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 				clustersAccumulator[clusterName] = c.Protocol
 			}
 		}
+
+		routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, "no_match").
+			Configure(
+				xds_virtual_hosts.DirectResponseRoute(http.StatusServiceUnavailable, NoMatchMsg),
+			)))
+
 		filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
 			Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
 			Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).

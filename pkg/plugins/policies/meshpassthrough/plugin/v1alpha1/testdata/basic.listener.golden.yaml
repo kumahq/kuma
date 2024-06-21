@@ -143,6 +143,17 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_other.com_8080
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This is a Kuma Sidecar. No routes match this Domain!
+                  status: 503
+                match:
+                  path: /
           statPrefix: meshpassthrough_http_8080
       name: meshpassthrough_http_8080
     - filterChainMatch:
@@ -173,6 +184,17 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_grpcdomain.com_19000
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This is a Kuma Sidecar. No routes match this Domain!
+                  status: 503
+                match:
+                  path: /
           statPrefix: meshpassthrough_http_19000
       name: meshpassthrough_http_19000
     listenerFilters:
@@ -328,6 +350,17 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_other.com_8080
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This is a Kuma Sidecar. No routes match this Domain!
+                  status: 503
+                match:
+                  path: /
           statPrefix: meshpassthrough_http_8080
       name: meshpassthrough_http_8080
     - filterChainMatch:
@@ -358,6 +391,17 @@ resources:
                   path: /
                 route:
                   cluster: meshpassthrough_grpcdomain.com_19000
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This is a Kuma Sidecar. No routes match this Domain!
+                  status: 503
+                match:
+                  path: /
           statPrefix: meshpassthrough_http_19000
       name: meshpassthrough_http_19000
     listenerFilters:
