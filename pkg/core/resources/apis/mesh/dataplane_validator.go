@@ -16,7 +16,7 @@ import (
 const meshExternalServiceKind = "MeshExternalService"
 
 var allowedKinds = map[string]struct{}{
-	"MeshService":         {},
+	"MeshService":           {},
 	meshExternalServiceKind: {},
 }
 
