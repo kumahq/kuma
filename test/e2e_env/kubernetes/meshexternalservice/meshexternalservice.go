@@ -46,13 +46,14 @@ metadata:
   labels:
     kuma.io/mesh: %s
   name: mes-hg
+  namespace: %s
 spec:
   selector:
     meshExternalService:
       matchLabels:
         hostname: "true"
   template: "{{ .Name }}.mesh"
-`, mesh)
+`, mesh, Config.KumaNamespace)
 	}
 
 	BeforeAll(func() {
@@ -78,11 +79,12 @@ spec:
 	})
 
 	Context("http non-TLS", func() {
-		meshExternalService := `
+		meshExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: http-external-service
+  namespace: %s
   labels:
     kuma.io/mesh: mesh-external-services
     hostname: "true"
@@ -94,7 +96,7 @@ spec:
   endpoints:
     - address: external-service.mesh-external-services.svc.cluster.local
       port: 80
-`
+`, Config.KumaNamespace)
 
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -135,6 +137,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: mesh-external-service-egress
+  namespace: %s
   labels:
     kuma.io/mesh: %s
     hostname: "true"
@@ -146,12 +149,13 @@ spec:
   endpoints:
     - address: external-service-egress.mesh-external-services.svc.cluster.local
       port: 80
-`, meshNameEgress)
+`, Config.KumaNamespace, meshNameEgress)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s.upstream_rq_total",
+			"cluster.%s_%s_%s.upstream_rq_total",
 			meshNameEgress,
-			"meshexternalservice_mesh-external-service-egress_default",
+			"meshexternalservice_mesh-external-service-egress",
+			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -215,11 +219,12 @@ spec:
 	})
 
 	Context("tcp non-TLS", func() {
-		meshExternalService := `
+		meshExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: tcp-external-service
+  namespace: %s
   labels:
     kuma.io/mesh: mesh-external-services
     hostname: "true"
@@ -231,7 +236,7 @@ spec:
   endpoints:
     - address: tcp-external-service.mesh-external-services.svc.cluster.local
       port: 80
-`
+`, Config.KumaNamespace)
 
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -269,11 +274,12 @@ spec:
 	})
 
 	Context("HTTPS", func() {
-		tlsExternalService := `
+		tlsExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
   name: tls-external-service
+  namespace: %s
   labels:
     kuma.io/mesh: mesh-external-services
     hostname: "true"
@@ -289,7 +295,7 @@ spec:
     enabled: true
     verification:
       mode: SkipCA # test-server certificate is not signed by a CA that is in the system trust store
-`
+`, Config.KumaNamespace)
 
 		BeforeAll(func() {
 			err := NewClusterSetup().

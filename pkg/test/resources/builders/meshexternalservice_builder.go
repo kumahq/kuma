@@ -23,7 +23,7 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 			},
 			Spec: &v1alpha1.MeshExternalService{
 				Match: v1alpha1.Match{
-					Type:     v1alpha1.HostnameGeneratorType,
+					Type:     pointer.To(v1alpha1.HostnameGeneratorType),
 					Port:     9000,
 					Protocol: v1alpha1.HttpProtocol,
 				},

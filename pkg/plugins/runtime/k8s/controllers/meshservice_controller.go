@@ -204,12 +204,18 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 	for current, endpoint := range servicePodEndpoints {
 		// Our name is unique depending on the service identity and pod name
-		// Note that a Pod name can be max 63 characters so we won't hit the 253
-		// limit with our MeshService name
+		// Note that a Pod name can be the same length as a Service name
+		// so we might need to truncate the MeshService name
+		namePrefix := current.Name
 		canonicalNameHasher := k8s.NewHasher()
 		canonicalNameHasher.Write([]byte(svc.Name))
 		canonicalNameHasher.Write([]byte(svc.Namespace))
-		canonicalName := fmt.Sprintf("%s-%s", current.Name, k8s.HashToString(canonicalNameHasher))
+		// name + `-` + 10 characters
+		if len(current.Name)+k8s.MaxHashStringLength+1 > 63 {
+			canonicalNameHasher.Write([]byte(current.Name))
+			namePrefix = k8s.EnsureMaxLength(namePrefix, 63-k8s.MaxHashStringLength-1)
+		}
+		canonicalName := fmt.Sprintf("%s-%s", namePrefix, k8s.HashToString(canonicalNameHasher))
 		op, err := r.manageMeshService(
 			ctx,
 			svc,

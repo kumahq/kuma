@@ -21,6 +21,9 @@ var (
 
 func (r *MeshExternalServiceResource) validate() error {
 	var verr validators.ValidationError
+
+	verr.Add(validators.ValidateLength(validators.RootedAt("name"), 63, r.Meta.GetName()))
+
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("match"), validateMatch(r.Spec.Match))
@@ -105,8 +108,8 @@ func validateVersion(version *Version) validators.ValidationError {
 
 func validateMatch(match Match) validators.ValidationError {
 	var verr validators.ValidationError
-	if match.Type != HostnameGeneratorType {
-		verr.AddViolation(validators.RootedAt("type").String(), fmt.Sprintf("unrecognized type '%s' - only '%s' is supported", match.Type, HostnameGeneratorType))
+	if match.Type != nil && *match.Type != HostnameGeneratorType {
+		verr.AddViolation(validators.RootedAt("type").String(), fmt.Sprintf("unrecognized type '%s' - only '%s' is supported", *match.Type, HostnameGeneratorType))
 	}
 	if match.Port == 0 || match.Port > math.MaxUint16 {
 		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
