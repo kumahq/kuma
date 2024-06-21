@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -189,9 +189,14 @@ func makeSplit(
 			return nil
 		}
 
-		clusterName, _ := tags.Tags(ref.Tags).
-			WithTags(mesh_proto.ServiceTag, service).
-			DestinationClusterName(nil)
+		var clusterName string
+		if ref.Kind == common_api.MeshExternalService {
+			clusterName = envoy_names.GetMeshExternalServiceName(ref.Name)
+		} else {
+			clusterName, _ = envoy_tags.Tags(ref.Tags).
+				WithTags(mesh_proto.ServiceTag, service).
+				DestinationClusterName(nil)
+		}
 
 		// The mesh tag is present here if this destination is generated
 		// from a cross-mesh MeshGateway listener virtual outbound.

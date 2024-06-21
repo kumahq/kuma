@@ -56,6 +56,9 @@ jobs:
     with:
       image: ${{ inputs.REGISTRY }}/${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}
+      provenance-repository: ${{ inputs.REGISTRY }}/${{ inputs.NOTARY_REPOSITORY }}
       registry-username: ${{ vars.DOCKER_USERNAME }}
+      provenance-registry-username: ${{ vars.DOCKER_USERNAME }}
     secrets:
       registry-password: ${{ secrets.DOCKER_API_KEY }}
+      provenance-registry-password: ${{ secrets.DOCKER_API_KEY }}
