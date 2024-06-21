@@ -33,11 +33,11 @@ resources:
 - name: meshexternalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_meshexternalservice-1
+    altStatName: mesh-1_meshexternalservice_meshexternalservice-1
     connectTimeout: 5s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: mesh-1:meshexternalservice-1
+      clusterName: mesh-1:meshexternalservice_meshexternalservice-1
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -64,7 +64,7 @@ resources:
                 mesh: mesh-1
               envoy.transport_socket_match:
                 mesh: mesh-1
-    name: mesh-1:meshexternalservice-1
+    name: mesh-1:meshexternalservice_meshexternalservice-1
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -158,7 +158,7 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
-            name: outbound:meshexternalservice-1
+            name: mesh-1:meshexternalservice_meshexternalservice-1
             validateClusters: false
             virtualHosts:
             - domains:
@@ -169,7 +169,7 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: mesh-1:meshexternalservice-1
+                  cluster: mesh-1:meshexternalservice_meshexternalservice-1
                   timeout: 0s
           statPrefix: meshexternalservice-1
       name: meshexternalservice-1_mesh-1

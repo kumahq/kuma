@@ -154,7 +154,7 @@ spec:
 		filter := fmt.Sprintf(
 			"cluster.%s_%s_%s.upstream_rq_total",
 			meshNameEgress,
-			"mesh-external-service-egress",
+			"meshexternalservice_mesh-external-service-egress",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
