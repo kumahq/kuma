@@ -109,11 +109,6 @@ func (b *ListenerBuilder) GetName() string {
 	return b.name
 }
 
-// WithName sets the listener name.
-func (b *ListenerBuilder) WithName(name string) {
-	b.name = name
-}
-
 // AddConfigurer appends a given ListenerConfigurer to the end of the chain.
 func (b *ListenerBuilder) AddConfigurer(configurer v3.ListenerConfigurer) {
 	b.configurers = append(b.configurers, configurer)

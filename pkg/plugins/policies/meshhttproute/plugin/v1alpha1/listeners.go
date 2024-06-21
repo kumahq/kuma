@@ -40,7 +40,7 @@ func generateFromService(
 	var resourceName string
 	if svc.BackendRef.Kind == common_api.MeshExternalService {
 		resourceName = envoy_names.GetMeshExternalServiceName(svc.BackendRef.Name)
-		listenerBuilder.WithName(resourceName)
+		listenerBuilder.WithOverwriteName(resourceName)
 	} else {
 		resourceName = svc.ServiceName
 	}
