@@ -62,21 +62,30 @@ func applyToOutboundPassthrough(
 	conf := rawConf.(api.Conf)
 
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
+		// remove clusters because they were added in TransparentProxyGenerator
 		removeDefaultPassthroughCluster(rs)
+		return nil
 	}
 	if enableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
+		// add clusters because they were not added in TransparentProxyGenerator
 		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
 	}
+	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("All") {
+		// clusters were added in TransparentProxyGenerator, do nothing
+		return nil
+	}
 
-	if len(conf.AppendMatch) > 0 {
+	if conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
 		removeDefaultPassthroughCluster(rs)
-		configurer := xds.Configurer{
-			APIVersion: proxy.APIVersion,
-			Conf:       conf,
-		}
-		err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
-		if err != nil {
-			return err
+		if len(conf.AppendMatch) > 0 {
+			configurer := xds.Configurer{
+				APIVersion: proxy.APIVersion,
+				Conf:       conf,
+			}
+			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -110,9 +119,9 @@ func addDefaultPassthroughClusters(rs *core_xds.ResourceSet, apiVersion core_xds
 }
 
 func disableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
-	return meshPassthroughEnabled && conf.Enabled != nil && !pointer.Deref[bool](conf.Enabled)
+	return meshPassthroughEnabled && conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("None")
 }
 
 func enableDefaultPassthrough(conf api.Conf, meshPassthroughEnabled bool) bool {
-	return !meshPassthroughEnabled && conf.Enabled != nil && pointer.Deref[bool](conf.Enabled)
+	return !meshPassthroughEnabled && conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("All")
 }

@@ -118,6 +118,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
 							AppendMatch: []api.Match{
 								{
 									Type:     api.MatchType("Domain"),
@@ -297,7 +298,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
-							Enabled: pointer.To[bool](false),
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
 						},
 					},
 				},
@@ -324,7 +325,15 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []core_rules.Tag{},
 						Conf: api.Conf{
-							Enabled: pointer.To[bool](true),
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
+							AppendMatch: []api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[int](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+							},
 						},
 					},
 				},
@@ -332,6 +341,47 @@ var _ = Describe("MeshPassthrough", func() {
 			meshPassthroughDisabled: true,
 			listenersGolden:         "enabled_on_policy.listeners.golden.yaml",
 			clustersGolden:          "enabled_on_policy.clusters.golden.yaml",
+		}),
+		Entry("enabled on policy and on mesh", testCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:     "outbound:passthrough:ipv4",
+					Origin:   generator.OriginTransparent,
+					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
+							AppendMatch: []api.Match{
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "api.example.com",
+									Port:     pointer.To[int](443),
+									Protocol: api.ProtocolType("tls"),
+								},
+							},
+						},
+					},
+				},
+			},
+			meshPassthroughDisabled: false,
+			listenersGolden:         "enabled_on_policy_and_mesh.listeners.golden.yaml",
+			clustersGolden:          "enabled_on_policy_and_mesh.clusters.golden.yaml",
 		}),
 	)
 })
