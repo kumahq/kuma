@@ -2,13 +2,13 @@ package xds
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )

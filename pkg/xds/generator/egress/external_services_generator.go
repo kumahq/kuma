@@ -2,7 +2,6 @@ package egress
 
 import (
 	"context"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -12,6 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
