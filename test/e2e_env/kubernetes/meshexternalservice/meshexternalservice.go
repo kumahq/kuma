@@ -151,7 +151,7 @@ spec:
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
 			meshNameEgress,
-			"mesh-external-service-egress_default",
+			"meshexternalservice_mesh-external-service-egress_default",
 		)
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
