@@ -206,10 +206,10 @@ properties:
               type: string
             hostnameGeneratorRef:
               properties:
-                name:
+                coreName:
                   type: string
               required:
-                - name
+                - coreName
               type: object
             origin:
               type: string
@@ -268,10 +268,10 @@ properties:
               x-kubernetes-list-type: map
             hostnameGeneratorRef:
               properties:
-                name:
+                coreName:
                   type: string
               required:
-                - name
+                - coreName
               type: object
           required:
             - hostnameGeneratorRef
