@@ -193,6 +193,8 @@ type ResourceTypeDescriptor struct {
 	Overview Resource
 	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
 	DumpForGlobal bool
+	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
+	AllowedOnSystemNamespaceOnly bool
 }
 
 func newObject(baseResource Resource) Resource {
@@ -454,7 +456,9 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 
 	if mode == config_core.Zone {
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-		setIfNotExist(mesh_proto.ZoneTag, localZone)
+		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
+			setIfNotExist(mesh_proto.ZoneTag, localZone)
+		}
 	}
 
 	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {

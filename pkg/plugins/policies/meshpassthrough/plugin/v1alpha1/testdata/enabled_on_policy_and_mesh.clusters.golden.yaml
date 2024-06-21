@@ -1,0 +1,5 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: outbound:passthrough:ipv4

@@ -22,6 +22,14 @@ Now this is rejected sooner to avoid service disruption.
 
 Tokens issued from versions before 2.1.x needs to renewed before upgrading.
 
+If you observe following log in control-plane logs, please rotate your tokens before upgrade.
+```yaml
+[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma
+```
+* [User token](https://kuma.io/docs/2.7.x/production/secure-deployment/api-server-auth/)
+* [Dataplane token](https://kuma.io/docs/2.7.x/production/secure-deployment/dp-auth/)
+* [Zone token](https://kuma.io/docs/2.7.x/production/cp-deployment/zoneproxy-auth/#zone-token)
+
 ## Upgrade to `2.7.x`
 
 ### MeshMetric and cluster stats merging

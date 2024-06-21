@@ -97,7 +97,7 @@ spec:
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
@@ -132,7 +132,7 @@ spec:
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
@@ -164,6 +164,7 @@ spec:
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
+    passthroughMode: Matched
     appendMatch:
     - type: Domain
       value: external-service.mesh-passthrough-mes.svc.cluster.local

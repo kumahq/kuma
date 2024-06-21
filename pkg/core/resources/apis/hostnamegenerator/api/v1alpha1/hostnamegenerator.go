@@ -46,6 +46,7 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 
 // HostnameGenerator
 // +kuma:policy:is_policy=false
+// +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:scope=Global
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
