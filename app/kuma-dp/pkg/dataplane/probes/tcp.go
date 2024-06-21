@@ -7,6 +7,7 @@ import (
 )
 
 func (p *Prober) probeTCP(writer http.ResponseWriter, req *http.Request) {
+	// /grpc/<port>
 	port, err := getPort(req, tcpGRPCPathPattern)
 	if err != nil {
 		logger.V(1).Info("invalid port number", "error", err)

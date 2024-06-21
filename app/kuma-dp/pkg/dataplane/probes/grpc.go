@@ -15,7 +15,7 @@ import (
 )
 
 func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
-	// /grpc/<port>/<service>
+	// /grpc/<port>
 
 	opts := []grpc.DialOption{
 		grpc.WithUserAgent(fmt.Sprintf("kube-probe/%s", version.Build.Version)),

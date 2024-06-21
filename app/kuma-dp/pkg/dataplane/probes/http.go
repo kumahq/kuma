@@ -16,7 +16,7 @@ import (
 )
 
 func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
-	// /<port>/<original-path>?timeout=20&host=
+	// /<port>/<original-path>
 
 	upstreamScheme := getScheme(req)
 	timeout := getTimeout(req)
