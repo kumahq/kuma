@@ -263,7 +263,7 @@ env:
 {{- end }}
 - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
   value: "false"
-- name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
+- name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
 {{- if .Values.experimental.sidecarContainers }}
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
