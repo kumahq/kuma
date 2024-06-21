@@ -328,6 +328,50 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
+		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
 		Entry("should set mesh and origin label when origin validation is disabled, non-federated zone", testCase{
 			checker: zoneChecker(false, false),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),

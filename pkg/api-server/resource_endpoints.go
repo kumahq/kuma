@@ -533,9 +533,11 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	}
 
 	if r.mode != config_core.Global {
-		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		if ok && zoneTag != r.zoneName {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+		if origin != mesh_proto.GlobalResourceOrigin {
+			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+			if ok && zoneTag != r.zoneName {
+				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+			}
 		}
 	}
 
