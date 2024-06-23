@@ -87,8 +87,8 @@ type VirtualHostDirectResponseRouteConfigurer struct {
 func (c VirtualHostDirectResponseRouteConfigurer) Configure(virtualHost *envoy_config_route_v3.VirtualHost) error {
 	virtualHost.Routes = append(virtualHost.Routes, &envoy_config_route_v3.Route{
 		Match: &envoy_config_route_v3.RouteMatch{
-			PathSpecifier: &envoy_config_route_v3.RouteMatch_Path{
-				Path: "/",
+			PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
+				Prefix: "/",
 			},
 		},
 		Action: &envoy_config_route_v3.Route_DirectResponse{
