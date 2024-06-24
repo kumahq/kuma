@@ -71,7 +71,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 		"headers", upstreamReq.Header, "statusCode", res.StatusCode, "body", body)
 
 	// for HTTP failures, we try to re-use original status code
-	// so that it's easier to debug from an application developers' perspective
+	// so that it's easier to debug from an application developer's perspective
 	writeHTTPProbeResult(writer, Unhealthy, res.StatusCode)
 	return
 }

@@ -1,6 +1,7 @@
 package probes
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -24,6 +25,7 @@ func (p *Prober) probeTCP(writer http.ResponseWriter, req *http.Request) {
 	}
 	conn, err := d.Dial(protocol, hostPort)
 	if err != nil {
+		logger.V(1).Info(fmt.Sprintf("unable to establish TCP connection to %s", hostPort), "error", err)
 		writeProbeResult(writer, Unhealthy)
 		return
 	}
