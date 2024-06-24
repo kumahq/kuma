@@ -80,6 +80,5 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
-	// TODO this is flaky atm
-	_ = XDescribe("Available services", connectivity.AvailableServices, Ordered)
+	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 )
