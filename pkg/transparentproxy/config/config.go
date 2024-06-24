@@ -269,21 +269,6 @@ func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) b
 	return true
 }
 
-func getLoopbackInterfaceName() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to list network interfaces")
-	}
-
-	for _, iface := range interfaces {
-		if iface.Flags&net.FlagLoopback != 0 {
-			return iface.Name, nil
-		}
-	}
-
-	return "", errors.New("loopback interface not found")
-}
-
 func (c Config) Initialize() (InitializedConfig, error) {
 	var err error
 
@@ -358,4 +343,19 @@ func DefaultConfig() Config {
 			SleepBetweenReties: 2 * time.Second,
 		},
 	}
+}
+
+func getLoopbackInterfaceName() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to retrieve network interfaces")
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			return iface.Name, nil
+		}
+	}
+
+	return "", errors.New("no loopback interface found on the system")
 }
