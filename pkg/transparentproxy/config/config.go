@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -194,6 +195,10 @@ type Config struct {
 	// StoreFirewalld when set, configures firewalld to store the generated
 	// iptables rules.
 	StoreFirewalld bool
+	// Executables field holds configuration for the executables used to
+	// interact with iptables (or ip6tables). It can handle both nft (nftables)
+	// and legacy iptables modes, and supports IPv4 and IPv6 versions
+	Executables ExecutablesNftLegacy
 }
 
 // InitializedConfig extends the Config struct by adding fields that require
@@ -206,6 +211,10 @@ type InitializedConfig struct {
 	// the DNS servers retrieved from the specified resolv.conf file
 	// (/etc/resolv.conf by default)
 	Redirect InitializedRedirect
+	// Executables field holds the initialized version of Config.Executables.
+	// It attempts to locate the actual executable paths on the system based on
+	// the provided configuration and verifies their functionality.
+	Executables InitializedExecutablesIPvX
 	// LoopbackInterfaceName represents the name of the loopback interface which
 	// will be used to construct outbound iptable rules for outbound (i.e.
 	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
@@ -269,10 +278,15 @@ func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) b
 	return true
 }
 
-func (c Config) Initialize() (InitializedConfig, error) {
+func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	var err error
 
 	initialized := InitializedConfig{Config: c}
+
+	initialized.Executables, err = c.Executables.Initialize(ctx, c)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize Executables configuration")
+	}
 
 	initialized.Redirect, err = c.Redirect.Initialize()
 	if err != nil {
@@ -342,6 +356,7 @@ func DefaultConfig() Config {
 			MaxRetries:         pointer.To(4),
 			SleepBetweenReties: 2 * time.Second,
 		},
+		Executables: NewExecutablesNftLegacy(),
 	}
 }
 

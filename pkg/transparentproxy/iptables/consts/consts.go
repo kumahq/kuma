@@ -1,5 +1,9 @@
 package consts
 
+import (
+	"regexp"
+)
+
 const (
 	Long  = true
 	Short = false
@@ -42,6 +46,10 @@ const (
 	ChainPostrouting = "POSTROUTING"
 )
 
+// DockerOutputChainRegex is aregular expression used to identify the presence
+// of a custom chain named "DOCKER_OUTPUT" in iptables rules.
+var DockerOutputChainRegex = regexp. MustCompile(`(?m)^:DOCKER_OUTPUT`)
+
 const (
 	FlagTable   = "-t"
 	FlagMatch   = "-m"
@@ -67,6 +75,42 @@ var FlagsShortLongMap = map[string]map[bool]string{
 		Long:  "--new-chain",
 		Short: FlagNewChain,
 	},
+}
+
+const (
+	ModuleOwner     = "owner"
+	ModuleTcp       = "tcp"
+	ModuleUdp       = "udp"
+	ModuleComment   = "comment"
+	ModuleConntrack = "conntrack"
+)
+
+type IptablesMode string
+
+const (
+	IptablesModeNft    IptablesMode = "nft"
+	IptablesModeLegacy IptablesMode = "legacy"
+)
+
+// Regexp used to parse the result of `iptables --version` then used to map to
+// with IptablesMode
+var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables.*?\((.*?)\)`)
+
+// Map IptablesMode to the mode taken from the result of `iptables --version`
+var IptablesModeMap = map[IptablesMode]string{
+	IptablesModeLegacy: "legacy",    // i.e. iptables v1.8.5 (legacy)
+	IptablesModeNft:    "nf_tables", // i.e. iptables v1.8.9 (nf_tables)
+}
+
+// FallbackExecutablesSearchLocations is a list of directories to search for
+// the iptables executables if it cannot be found in the user's PATH environment
+// variable. This allows for some flexibility in environments where iptables
+// may be installed in non-standard locations.
+var FallbackExecutablesSearchLocations = []string{
+	"/usr/sbin",
+	"/sbin",
+	"/usr/bin",
+	"/bin",
 }
 
 // Debug log level for iptables LOG jump target
