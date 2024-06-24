@@ -51,7 +51,7 @@ resources:
               - directResponse:
                   body:
                     inlineString: |
-                      This is a Kuma Sidecar. No routes match this Domain!
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
                   status: 503
                 match:
                   prefix: /
@@ -105,7 +105,7 @@ resources:
               - directResponse:
                   body:
                     inlineString: |
-                      This is a Kuma Sidecar. No routes match this Domain!
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
                   status: 503
                 match:
                   prefix: /

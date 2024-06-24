@@ -14,7 +14,7 @@ import (
 	xds_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
 
-const NoMatchMsg = "This is a Kuma Sidecar. No routes match this Domain!\n"
+const NoMatchMsg = "This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.\n"
 
 type FilterChainConfigurer struct {
 	APIVersion core_xds.APIVersion
