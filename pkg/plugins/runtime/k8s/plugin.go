@@ -257,6 +257,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:                     rt.Config().Multizone.Zone.Name,
 	}
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), resourceAdmissionChecker)
 	composite.AddValidator(handler)
@@ -362,6 +363,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:                     rt.Config().Multizone.Zone.Name,
 	}
 	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter, resourceAdmissionChecker)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)

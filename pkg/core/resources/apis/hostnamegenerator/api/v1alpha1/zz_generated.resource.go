@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	HostnameGeneratorResourceTypeDescriptor.Schema = &schema
@@ -134,7 +136,7 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Name:                HostnameGeneratorType,
 	Resource:            NewHostnameGeneratorResource(),
 	ResourceList:        &HostnameGeneratorResourceList{},
-	Scope:               model.ScopeMesh,
+	Scope:               model.ScopeGlobal,
 	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:              "hostnamegenerators",
 	KumactlArg:          "hostnamegenerator",

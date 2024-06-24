@@ -5,6 +5,7 @@ metadata:
   name: mtp-es
   labels:
     kuma.io/mesh: default
+    kuma.io/policy-role: workload-owner
 spec:
   targetRef:
     kind: MeshService

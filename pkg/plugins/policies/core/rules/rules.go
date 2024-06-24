@@ -241,6 +241,12 @@ func MeshService(meshService *meshservice_api.MeshServiceResource, port meshserv
 	return subset
 }
 
+func MeshExternalService(name string) Subset {
+	return Subset{{
+		Key: mesh_proto.ServiceTag, Value: name,
+	}}
+}
+
 func SubsetFromTags(tags map[string]string) Subset {
 	subset := Subset{}
 	for k, v := range tags {

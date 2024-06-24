@@ -88,7 +88,7 @@ func DefaultContext(
 				// particular format to be able to reference them
 				reconcile.Not(reconcile.TypeIs(system.SecretType)),
 			),
-			HashSuffixMapper(true)),
+			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
 	zoneMappers := []reconcile.ResourceMapper{
@@ -216,7 +216,10 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 		name := core_model.GetDisplayName(r.GetMeta())
 		values := make([]string, 0, len(labelsToUse))
 		for _, lbl := range labelsToUse {
-			values = append(values, r.GetMeta().GetLabels()[lbl])
+			labelValue, ok := r.GetMeta().GetLabels()[lbl]
+			if ok {
+				values = append(values, labelValue)
+			}
 		}
 
 		return util.CloneResource(r, util.WithResourceName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
@@ -225,8 +228,9 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 
 func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		r.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
-		return r, nil
+		newRes := util.CloneResource(r)
+		newRes.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
+		return newRes, nil
 	}
 }
 

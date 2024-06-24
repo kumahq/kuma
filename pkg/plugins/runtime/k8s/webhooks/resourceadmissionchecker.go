@@ -22,6 +22,7 @@ type ResourceAdmissionChecker struct {
 	FederatedZone                bool
 	DisableOriginLabelValidation bool
 	SystemNamespace              string
+	ZoneName                     string
 }
 
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
@@ -37,8 +38,8 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return c.resourceTypeIsNotAllowedResponse(r.Descriptor().Name)
 	}
 
-	if !c.isResourceAllowed(r, ns) {
-		return c.resourceIsNotAllowedResponse()
+	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
+		return *errResponse
 	}
 
 	return admission.Allowed("")
@@ -57,16 +58,17 @@ func (c *ResourceAdmissionChecker) isResourceTypeAllowed(d core_model.ResourceTy
 	return true
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) bool {
+func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
 	if !c.FederatedZone || !r.Descriptor().IsPluginOriginated {
-		return true
+		return nil
 	}
 	if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
 		if origin, ok := core_model.ResourceOrigin(r.GetMeta()); !ok || origin != mesh_proto.ZoneResourceOrigin {
-			return false
+			return c.resourceIsNotAllowedResponse()
 		}
 	}
-	return true
+
+	return c.validateLabels(r, ns)
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -78,8 +80,44 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() admission.Response {
-	return admission.Response{
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
+	if c.Mode != core.Global {
+		zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != c.ZoneName {
+			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName, zoneTag)
+		}
+	}
+
+	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+		return c.validatePolicyRole(r, ns)
+	}
+
+	return nil
+}
+
+func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource, ns string) *admission.Response {
+	policy, ok := r.GetSpec().(core_model.Policy)
+	if !ok {
+		return nil
+	}
+	policyRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
+	if !ok {
+		return nil
+	}
+	if ns == c.SystemNamespace {
+		if policyRole != string(mesh_proto.SystemPolicyRole) {
+			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole), policyRole)
+		}
+		return nil
+	}
+	if policyRole != string(core_model.ComputePolicyRole(policy)) {
+		return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)), policyRole)
+	}
+	return nil
+}
+
+func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
+	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
@@ -122,6 +160,29 @@ func (c *ResourceAdmissionChecker) resourceTypeIsNotAllowedResponse(resType core
 						{
 							Type:    "FieldValueInvalid",
 							Message: "cannot be empty",
+							Field:   "metadata.annotations[kuma.io/synced]",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func resourceLabelsNotAllowedResponse(label string, correctValue string, actual string) *admission.Response {
+	return &admission.Response{
+		AdmissionResponse: v1.AdmissionResponse{
+			Allowed: false,
+			Result: &metav1.Status{
+				Status:  "Failure",
+				Message: fmt.Sprintf("Operation not allowed. %s label should have %s value, got %s", label, correctValue, actual),
+				Reason:  "Forbidden",
+				Code:    403,
+				Details: &metav1.StatusDetails{
+					Causes: []metav1.StatusCause{
+						{
+							Type:    "FieldValueInvalid",
+							Message: "cannot be set",
 							Field:   "metadata.annotations[kuma.io/synced]",
 						},
 					},

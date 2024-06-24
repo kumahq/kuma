@@ -65,7 +65,7 @@ func (m *MeshServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.
 			Type:   intstr.Int,
 			IntVal: int32(target),
 		},
-		Protocol: protocol,
+		AppProtocol: protocol,
 	})
 	return m
 }

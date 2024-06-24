@@ -1,4 +1,5 @@
 type: object
+required: [type, name, spec]
 properties:
   type:
     description: 'the type of the resource'
@@ -12,6 +13,11 @@ properties:
   name:
     description: 'Name of the Kuma resource'
     type: string
+  labels:
+    additionalProperties:
+      type: string
+    description: 'The labels to help identity resources'
+    type: object
   spec:
     description: Spec is the specification of the Kuma MeshCircuitBreaker resource.
     properties:

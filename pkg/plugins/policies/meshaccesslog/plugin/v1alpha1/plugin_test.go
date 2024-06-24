@@ -14,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -54,8 +53,9 @@ var _ = Describe("MeshAccessLog", func() {
 
 			xdsCtx := xds_samples.SampleContext()
 			proxy := xds_builders.Proxy().
-				WithMetadata(&xds.DataplaneMetadata{
-					AccessLogSocketPath: "/tmp/kuma-al-backend-default.sock",
+				WithID(*core_xds.BuildProxyId("default", "backend")).
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir: "/tmp",
 				}).
 				WithDataplane(
 					builders.Dataplane().
@@ -941,15 +941,12 @@ var _ = Describe("MeshAccessLog", func() {
 			}
 
 			xdsCtx := *xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
 				AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
-				WithMetadata(&core_xds.DataplaneMetadata{
-					AccessLogSocketPath: "/tmp/foo",
-				}).
 				WithDataplane(
 					builders.Dataplane().
 						WithName("gateway").

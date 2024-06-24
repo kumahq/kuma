@@ -451,6 +451,7 @@ var _ = Describe("Context", func() {
 			isResourcePluginOriginated bool
 			scope                      model.ResourceScope
 			features                   kds.Features
+			extraLabels                map[string]string
 		}
 
 		genConfig := func(caseCfg config) kuma_cp.Config {
@@ -483,6 +484,11 @@ var _ = Describe("Context", func() {
 					mesh_proto.DisplayName: given.displayName,
 				},
 			}
+
+			for k, v := range given.extraLabels {
+				meta.GetLabels()[k] = v
+			}
+
 			r.SetMeta(meta)
 			return r
 		}
@@ -516,6 +522,7 @@ var _ = Describe("Context", func() {
 				features: map[string]bool{
 					kds.FeatureHashSuffix: true,
 				},
+				extraLabels: map[string]string{},
 			}),
 			Entry("should be removed when store type is kubernetes "+
 				"resource is plugin originated and no KDS hash-suffix feature", testCase{
@@ -541,6 +548,24 @@ var _ = Describe("Context", func() {
 				scope:        model.ScopeGlobal,
 				features: map[string]bool{
 					kds.FeatureHashSuffix: true,
+				},
+			}),
+			Entry("should include zone and namespace in tags when they are present in labels", testCase{
+				isResourcePluginOriginated: true,
+				config: config{
+					storeType:          config_store.KubernetesStore,
+					k8sSystemNamespace: "custom-namespace",
+				},
+				name:         "foo.custom-namespace",
+				displayName:  "foo",
+				expectedName: "foo-696vzv497z4cv4f4",
+				scope:        model.ScopeMesh,
+				features: map[string]bool{
+					kds.FeatureHashSuffix: true,
+				},
+				extraLabels: map[string]string{
+					mesh_proto.ZoneTag:          "zone-1",
+					mesh_proto.KubeNamespaceTag: "custom-ns",
 				},
 			}),
 		)

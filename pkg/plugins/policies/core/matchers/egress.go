@@ -6,6 +6,8 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -47,16 +49,17 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	var err error
 
 	// in case the policy support
+	mes := resources.MeshExternalServices().Items
 	switch {
 	case isFrom && isTo:
 		// we needed a strategy to choose what rules to apply on zone egress when a policy supports both "to" and "from".
 		// Picking "from" rules works for us today, because there is only MeshFaultInjection policy that has both "to"
 		// and "from" and is applied on zone egress. In the future, we might want to move the strategy down to the policy plugins.
-		fr, err = processFromRules(tags, policies)
+		fr, err = processFromRules(tags, policies, mes)
 	case isFrom:
-		fr, err = processFromRules(tags, policies)
+		fr, err = processFromRules(tags, policies, mes)
 	case isTo:
-		fr, err = processToRules(tags, policies)
+		fr, err = processToRules(tags, policies, mes)
 	}
 
 	if err != nil {
@@ -72,12 +75,13 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 func processFromRules(
 	tags map[string]string,
 	policies []core_model.Resource,
+	mes []*meshexternalservice_api.MeshExternalServiceResource,
 ) (core_rules.FromRules, error) {
 	matchedPolicies := []core_model.Resource{}
 
 	for _, policy := range policies {
 		spec := policy.GetSpec().(core_model.Policy)
-		if !serviceSelectedByTargetRef(spec.GetTargetRef(), tags) {
+		if !serviceSelectedByTargetRef(policy.GetMeta(), spec.GetTargetRef(), tags, mes) {
 			continue
 		}
 		matchedPolicies = append(matchedPolicies, policy)
@@ -127,7 +131,7 @@ func processFromRules(
 //	        disabled: true
 //
 // that's why processToRules() method produces FromRules for the Egress.
-func processToRules(tags map[string]string, policies []core_model.Resource) (core_rules.FromRules, error) {
+func processToRules(tags map[string]string, policies []core_model.Resource, mes []*meshexternalservice_api.MeshExternalServiceResource) (core_rules.FromRules, error) {
 	var matchedPolicies []core_model.Resource
 
 	for _, policy := range policies {
@@ -139,7 +143,7 @@ func processToRules(tags map[string]string, policies []core_model.Resource) (cor
 		}
 
 		for _, item := range to.GetToList() {
-			if serviceSelectedByTargetRef(item.GetTargetRef(), tags) {
+			if serviceSelectedByTargetRef(policy.GetMeta(), item.GetTargetRef(), tags, mes) {
 				matchedPolicies = append(matchedPolicies, policy)
 			}
 		}
@@ -150,7 +154,7 @@ func processToRules(tags map[string]string, policies []core_model.Resource) (cor
 	var toList []core_rules.PolicyItemWithMeta
 	for _, policy := range matchedPolicies {
 		for _, item := range policy.GetSpec().(core_model.PolicyWithToList).GetToList() {
-			if !serviceSelectedByTargetRef(item.GetTargetRef(), tags) {
+			if !serviceSelectedByTargetRef(policy.GetMeta(), item.GetTargetRef(), tags, mes) {
 				continue
 			}
 			// convert 'to' policyItem to 'from' policyItem
@@ -186,7 +190,7 @@ func (a *artificialPolicyItem) GetDefault() interface{} {
 	return a.conf
 }
 
-func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string) bool {
+func serviceSelectedByTargetRef(refMeta core_model.ResourceMeta, tr common_api.TargetRef, tags map[string]string, mes []*meshexternalservice_api.MeshExternalServiceResource) bool {
 	switch tr.Kind {
 	case common_api.Mesh:
 		return true
@@ -196,6 +200,13 @@ func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string)
 		return tr.Name == tags[mesh_proto.ServiceTag]
 	case common_api.MeshServiceSubset:
 		return tr.Name == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(tr.Tags).Matches(tags)
+	case common_api.MeshExternalService:
+		for _, meshExternalService := range mes {
+			if model.IsReferenced(refMeta, tr.Name, meshExternalService.GetMeta()) {
+				return true
+			}
+		}
+		return false
 	}
 	return false
 }

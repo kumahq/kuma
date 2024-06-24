@@ -49,7 +49,6 @@ type E2eConfig struct {
 	IPV6                              bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
 	UseHostnameInsteadOfIP            bool              `json:"useHostnameInsteadOfIP,omitempty" envconfig:"KUMA_USE_HOSTNAME_INSTEAD_OF_ID"`
 	UseLoadBalancer                   bool              `json:"useLoadBalancer,omitempty" envconfig:"KUMA_USE_LOAD_BALANCER"`
-	CIDR                              string            `json:"kumaCidr,omitempty"`
 	DefaultClusterStartupRetries      int               `json:"defaultClusterStartupRetries,omitempty" envconfig:"KUMA_DEFAULT_RETRIES"`
 	DefaultClusterStartupTimeout      time.Duration     `json:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
 	KumactlBin                        string            `json:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
@@ -148,10 +147,6 @@ func (c E2eConfig) AutoConfigure() error {
 		default:
 			return fmt.Errorf("you must set a supported KUMA_K8S_TYPE got:%s", Config.K8sType)
 		}
-	}
-
-	if Config.IPV6 && Config.CIDR == "" {
-		Config.CIDR = "fd00:fd00::/64"
 	}
 
 	Config.Arch = runtime.GOARCH

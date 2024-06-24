@@ -24,6 +24,10 @@
   }
  ],
  "resource": {
+  "labels": {
+   "k8s.kuma.io/namespace": "kuma-demo",
+   "kuma.io/display-name": "the-gateway"
+  },
   "mesh": "default",
   "name": "the-gateway",
   "type": "MeshGateway"
@@ -89,11 +93,19 @@
      "matchers": [],
      "origin": [
       {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "the-http-route"
+       },
        "mesh": "default",
        "name": "the-http-route",
        "type": "MeshHTTPRoute"
       },
       {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "the-other-http-route"
+       },
        "mesh": "default",
        "name": "the-other-http-route",
        "type": "MeshHTTPRoute"
@@ -115,23 +127,61 @@
      },
      "matchers": [
       {
-       "key": "__resource-name__",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
-      },
-      {
        "key": "__rule-matches-hash__",
        "not": false,
        "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [
       {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-route"
+       },
        "mesh": "default",
        "name": "on-route",
        "type": "MeshTimeout"
       },
       {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-service"
+       },
+       "mesh": "default",
+       "name": "on-service",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "20s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": true,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-service"
+       },
        "mesh": "default",
        "name": "on-service",
        "type": "MeshTimeout"
@@ -146,46 +196,24 @@
      },
      "matchers": [
       {
-       "key": "__resource-name__",
-       "not": true,
-       "value": "backend_kuma-demo_svc_3001"
-      },
-      {
        "key": "__rule-matches-hash__",
        "not": false,
        "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      },
+      {
+       "key": "kuma.io/service",
+       "not": true,
+       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [
       {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-route"
+       },
        "mesh": "default",
        "name": "on-route",
-       "type": "MeshTimeout"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "http": {
-       "requestTimeout": "20s"
-      }
-     },
-     "matchers": [
-      {
-       "key": "__resource-name__",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
-      },
-      {
-       "key": "__rule-matches-hash__",
-       "not": true,
-       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
-      }
-     ],
-     "origin": [
-      {
-       "mesh": "default",
-       "name": "on-service",
        "type": "MeshTimeout"
       }
      ]

@@ -483,8 +483,6 @@ spec:
                         additionalProperties:
                           type: string
                         type: object
-                      matchName:
-                        type: string
                     type: object
                   meshService:
                     properties:
@@ -2025,6 +2023,10 @@ spec:
                         - SkipCA
                         - Secured
                         - SkipAll
+                        type: string
+                      serverName:
+                        description: ServerName overrides the default Server Name
+                          Indicator set by Kuma.
                         type: string
                       subjectAltNames:
                         description: SubjectAltNames list of names to verify in the
@@ -7010,18 +7012,32 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshService resource.
             properties:
+              identities:
+                items:
+                  properties:
+                    type:
+                      enum:
+                      - ServiceTag
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - type
+                  - value
+                  type: object
+                type: array
               ports:
                 items:
                   properties:
+                    appProtocol:
+                      default: tcp
+                      description: Protocol identifies a protocol supported by a service.
+                      type: string
                     name:
                       type: string
                     port:
                       format: int32
                       type: integer
-                    protocol:
-                      default: tcp
-                      description: Protocol identifies a protocol supported by a service.
-                      type: string
                     targetPort:
                       anyOf:
                       - type: integer
@@ -7033,7 +7049,7 @@ spec:
                 type: array
                 x-kubernetes-list-map-keys:
                 - port
-                - protocol
+                - appProtocol
                 x-kubernetes-list-type: map
               selector:
                 properties:

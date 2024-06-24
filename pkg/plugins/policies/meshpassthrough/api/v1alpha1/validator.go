@@ -36,12 +36,20 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 		},
 	})
+	if len(targetRef.ProxyTypes) != 1 && !slices.Contains(targetRef.ProxyTypes, common_api.Sidecar) {
+		targetRefErr.AddViolationAt(validators.RootedAt("proxyTypes"), "proxyTypes needs to be set, currently only Sidecar is supported")
+	}
 	return targetRefErr
 }
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	portAndProtocol := map[int]ProtocolType{}
+	type portProtocol struct {
+		port     int
+		protocol ProtocolType
+	}
+	uniqueDomains := map[portProtocol]map[string]bool{}
 	for i, match := range conf.AppendMatch {
 		if match.Port != nil && pointer.Deref[int](match.Port) == 0 || pointer.Deref[int](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
@@ -51,6 +59,19 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			} else {
 				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
+			}
+			key := portProtocol{
+				port:     *match.Port,
+				protocol: match.Protocol,
+			}
+			if _, found := uniqueDomains[key]; found {
+				if _, found := uniqueDomains[key][match.Value]; found {
+					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), fmt.Sprintf("value %s is already defiend for this port and protocol", match.Value))
+				} else {
+					uniqueDomains[key][match.Value] = true
+				}
+			} else {
+				uniqueDomains[key] = map[string]bool{match.Value: true}
 			}
 		}
 		if !slices.Contains(allMatchProtocols, string(match.Protocol)) {

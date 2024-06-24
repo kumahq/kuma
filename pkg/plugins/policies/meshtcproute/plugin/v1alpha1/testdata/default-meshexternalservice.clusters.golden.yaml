@@ -1,0 +1,55 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: example
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: example
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.1
+                portValue: 10000
+          loadBalancingWeight: 1
+        - endpoint:
+            address:
+              socketAddress:
+                address: example.com
+                portValue: 10000
+          loadBalancingWeight: 1
+    name: example
+    transportSocketMatches:
+    - name: example.com
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            validationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: example.com
+                sanType: DNS
+              - matcher:
+                  exact: example.com
+                sanType: IP_ADDRESS
+              trustedCa:
+                filename: /tmp/ca-certs.crt
+          sni: example.com
+    type: STRICT_DNS

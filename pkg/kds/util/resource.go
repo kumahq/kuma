@@ -41,6 +41,9 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.R
 		resourceVersions[kr.GetMeta().GetName()] = r.Version
 	}
 	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
+	if err != nil {
+		return list, resourceVersions, err
+	}
 	return list, resourceVersions, err
 }
 

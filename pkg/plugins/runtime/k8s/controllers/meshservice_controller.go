@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -85,7 +86,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 	}
 
-	if svc.Spec.ClusterIP == "" { // todo(jakubdyszkiewicz) headless service support will come later
+	if svc.Spec.ClusterIP == "" {
 		log.V(1).Info("service has no cluster IP. Ignoring.")
 		return kube_ctrl.Result{}, nil
 	}
@@ -236,7 +237,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *MeshServiceReconciler) setFromClusterIPSvc(ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
+func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
 	if ms.ObjectMeta.GetGeneration() != 0 {
 		if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != svc.GetUID() {
 			r.EventRecorder.Eventf(
@@ -245,8 +246,14 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(ms *meshservice_k8s.MeshServ
 			return errors.Errorf("MeshService already exists and isn't owned by Service")
 		}
 	}
+	ms.ObjectMeta.Labels[metadata.HeadlessService] = "false"
+	dpTags := maps.Clone(svc.Spec.Selector)
+	if dpTags == nil {
+		dpTags = map[string]string{}
+	}
+	dpTags[mesh_proto.KubeNamespaceTag] = svc.GetNamespace()
 	ms.Spec.Selector = meshservice_api.Selector{
-		DataplaneTags: svc.Spec.Selector,
+		DataplaneTags: dpTags,
 	}
 
 	ms.Status.VIPs = []meshservice_api.VIP{
@@ -261,8 +268,8 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(ms *meshservice_k8s.MeshServ
 	return nil
 }
 
-func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery.Endpoint) func(*meshservice_k8s.MeshService, *kube_core.Service) error {
-	return func(ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
+func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery.Endpoint) func(context.Context, *meshservice_k8s.MeshService, *kube_core.Service) error {
+	return func(ctx context.Context, ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
 		if ms.ObjectMeta.GetGeneration() != 0 {
 			if owners := ms.GetOwnerReferences(); len(owners) == 0 || owners[0].UID != endpoint.TargetRef.UID {
 				r.EventRecorder.Eventf(
@@ -271,9 +278,26 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 				return errors.Errorf("MeshService already exists and isn't owned by Pod")
 			}
 		}
+		if ms.ObjectMeta.Labels == nil {
+			ms.ObjectMeta.Labels = map[string]string{}
+		}
+		ms.ObjectMeta.Labels[metadata.HeadlessService] = "true"
+		pod := kube_core.Pod{}
+		if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: endpoint.TargetRef.Name, Namespace: endpoint.TargetRef.Namespace}, &pod); err != nil {
+			if !kube_apierrs.IsNotFound(err) {
+				return errors.Wrap(err, "couldn't lookup Pod for endpoint")
+			}
+		} else {
+			if v, ok := pod.Labels[kube_apps.StatefulSetPodNameLabel]; ok {
+				ms.ObjectMeta.Labels[kube_apps.StatefulSetPodNameLabel] = v
+			}
+			if v, ok := pod.Labels[kube_apps.PodIndexLabel]; ok {
+				ms.ObjectMeta.Labels[kube_apps.PodIndexLabel] = v
+			}
+		}
 		ms.Spec.Selector = meshservice_api.Selector{
 			DataplaneRef: &meshservice_api.DataplaneRef{
-				Name: endpoint.TargetRef.Name,
+				Name: fmt.Sprintf("%s.%s", endpoint.TargetRef.Name, endpoint.TargetRef.Namespace),
 			},
 		}
 		for _, address := range endpoint.Addresses {
@@ -300,7 +324,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 	ctx context.Context,
 	svc *kube_core.Service,
 	mesh string,
-	setSpec func(*meshservice_k8s.MeshService, *kube_core.Service) error,
+	setSpec func(context.Context, *meshservice_k8s.MeshService, *kube_core.Service) error,
 	meshServiceName kube_types.NamespacedName,
 ) (kube_controllerutil.OperationResult, error) {
 	ms := &meshservice_k8s.MeshService{
@@ -317,6 +341,8 @@ func (r *MeshServiceReconciler) manageMeshService(
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
+		ms.ObjectMeta.Labels[metadata.ManagedBy] = "k8s-controller"
+
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
 		}
@@ -327,17 +353,17 @@ func (r *MeshServiceReconciler) manageMeshService(
 				continue
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:       port.Name,
-				Port:       uint32(port.Port),
-				TargetPort: port.TargetPort,
-				Protocol:   core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
+				Name:        port.Name,
+				Port:        uint32(port.Port),
+				TargetPort:  port.TargetPort,
+				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
 			})
 		}
 
 		if ms.Status == nil {
 			ms.Status = &meshservice_api.MeshServiceStatus{}
 		}
-		return setSpec(ms, svc)
+		return setSpec(ctx, ms, svc)
 	})
 }
 

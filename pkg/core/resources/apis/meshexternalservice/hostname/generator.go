@@ -2,10 +2,7 @@ package hostname
 
 import (
 	"context"
-	"fmt"
 	"reflect"
-	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
 
@@ -64,41 +61,8 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)
 	}
-	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetName(), es.Meta.GetLabels()) {
+	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetLabels()) {
 		return "", nil
 	}
-	sb := strings.Builder{}
-	tmpl := template.New("").Funcs(
-		map[string]any{
-			"label": func(key string) (string, error) {
-				val, ok := es.GetMeta().GetLabels()[key]
-				if !ok {
-					return "", errors.Errorf("label %s not found", key)
-				}
-				return val, nil
-			},
-		},
-	)
-	tmpl, err := tmpl.Parse(generator.Spec.Template)
-	if err != nil {
-		return "", fmt.Errorf("failed compiling gotemplate error=%q", err.Error())
-	}
-	type meshedName struct {
-		Name      string
-		Namespace string
-		Mesh      string
-	}
-	name := es.GetMeta().GetNameExtensions()[model.K8sNameComponent]
-	if name == "" {
-		name = es.GetMeta().GetName()
-	}
-	err = tmpl.Execute(&sb, meshedName{
-		Name:      name,
-		Namespace: es.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
-		Mesh:      es.GetMeta().GetMesh(),
-	})
-	if err != nil {
-		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())
-	}
-	return sb.String(), nil
+	return hostname.EvaluateTemplate(generator.Spec.Template, es.GetMeta())
 }

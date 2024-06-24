@@ -42,7 +42,7 @@ const (
 type Match struct {
 	// Type of the match, only `HostnameGenerator` is available at the moment.
 	// +kubebuilder:default=HostnameGenerator
-	Type MatchType `json:"type,omitempty"`
+	Type *MatchType `json:"type,omitempty"`
 	// Port defines a port to which a user does request.
 	Port Port `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
@@ -127,6 +127,8 @@ type Verification struct {
 	// Mode defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipAll`. Default `Secured`.
 	// +kubebuilder:default=Secured
 	Mode *VerificationMode `json:"mode,omitempty"`
+	// ServerName overrides the default Server Name Indicator set by Kuma.
+	ServerName *string `json:"serverName,omitempty"`
 	// SubjectAltNames list of names to verify in the certificate.
 	SubjectAltNames *[]SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.

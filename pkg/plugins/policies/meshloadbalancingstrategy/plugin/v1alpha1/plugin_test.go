@@ -1502,6 +1502,6 @@ func backendListener() envoy_common.NamedResource {
 
 func contextWithEgressEnabled() xds_context.Context {
 	return *xds_builders.Context().
-		WithMesh(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
+		WithMeshBuilder(samples.MeshMTLSBuilder().WithEgressRoutingEnabled()).
 		Build()
 }

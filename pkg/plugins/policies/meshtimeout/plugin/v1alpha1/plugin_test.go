@@ -53,7 +53,7 @@ var _ = Describe("MeshTimeout", func() {
 		}
 
 		context := *xds_builders.Context().
-			WithMesh(samples.MeshDefaultBuilder()).
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
 			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
 			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
@@ -412,7 +412,7 @@ var _ = Describe("MeshTimeout", func() {
 		}
 
 		xdsCtx := *xds_builders.Context().
-			WithMesh(samples.MeshDefaultBuilder()).
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(resources).
 			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
 			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).

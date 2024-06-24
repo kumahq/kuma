@@ -271,7 +271,7 @@ func SortByTargetRef(rs []core_model.Resource) {
 }
 
 func roleToNumber(r core_model.Resource) int {
-	switch core_model.PolicyRole(r) {
+	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
 		return -1
 	case mesh_proto.ProducerPolicyRole:

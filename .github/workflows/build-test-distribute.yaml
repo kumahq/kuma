@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
@@ -168,7 +168,7 @@ jobs:
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@e84016ef48713f4dfdb00210c4720a286662e4f4 # v0.6.8
+        uses: cloudsmith-io/action@8c47c26142749129401332a44d0aeac87243c40d # v0.6.10
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           command: "push"

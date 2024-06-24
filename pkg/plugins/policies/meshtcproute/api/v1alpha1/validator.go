@@ -20,7 +20,7 @@ func (r *MeshTCPRouteResource) validate() error {
 }
 
 func (r *MeshTCPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	switch core_model.PolicyRole(r) {
+	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
 		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
@@ -56,6 +56,7 @@ func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.Vali
 		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.MeshService,
+				common_api.MeshExternalService,
 			},
 		})
 	}
@@ -104,6 +105,7 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshServiceSubset,
+						common_api.MeshExternalService,
 					},
 				},
 			),

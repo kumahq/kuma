@@ -13,7 +13,7 @@ GENERATE_OAS_PREREQUISITES ?=
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
-clean/generated: clean/protos clean/builtin-crds clean/resources clean/policies clean/tools
+clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
 generate/protos:
@@ -42,22 +42,29 @@ resources/type: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
 	$(RESOURCE_GEN) -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
-.PHONY: clean/resources
-clean/resources:
+.PHONY: clean/legacy-resources
+clean/legacy-resources:
 	find pkg -name 'zz_generated.*.go' -delete
 
 POLICIES_DIR ?= pkg/plugins/policies
+RESOURCES_DIR ?= pkg/core/resources/apis
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
 kuma_policies = $(foreach dir,$(shell find $(KUMA_DIR)/pkg/plugins/policies -maxdepth 1 -mindepth 1 -type d | grep -v -e core | sort),$(notdir $(dir)))
 
-generate/resources: POLICIES_DIR=pkg/core/resources/apis
+
+.PHONY: clean/resources
+clean/resources: POLICIES_DIR=$(RESOURCES_DIR)
+clean/resources:
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) clean/policies
+
+generate/resources: POLICIES_DIR=$(RESOURCES_DIR)
 generate/resources:
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-import
-	POLICIES_DIR=$(POLICIES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
-	POLICIES_DIR=$(POLICIES_DIR) $(MAKE) generate/policy-config
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-import
+	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
+	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
 
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
@@ -74,13 +81,13 @@ generate/deep-copy/common:
 		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
 	done
 
-generate/policy/%: generate/schema/%
+generate/policy/%: $(POLICY_GEN)
+	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --controller-gen-bin $(CONTROLLER_GEN) --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
+	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/policy-gen/templates/schema.yaml --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
-
-generate/schema/%: generate/controller-gen/%
-	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/crd-extract-openapi.sh $* $$version $(TOOLS_DIR) $(POLICIES_DIR); \
-	done
 
 generate/policy-import:
 	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
@@ -94,36 +101,12 @@ generate/policy-defaults:
 generate/policy-helm:
 	PATH=$(CI_TOOLS_BIN_DIR):$$PATH $(TOOLS_DIR)/policy-gen/generate-policy-helm.sh $(HELM_VALUES_FILE) $(HELM_CRD_DIR) $(HELM_VALUES_FILE_POLICY_PATH) $(POLICIES_DIR) $(policies)
 
-generate/controller-gen/%: generate/kumapolicy-gen/%
-	# touch is a fix for controller-gen complaining that there is no schema.yaml file
-	# controller-gen imports it a policy package and then the //go:embed match is triggered and causes an error
-	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		touch $(POLICIES_DIR)/$*/api/$$version/schema.yaml && \
-		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
-		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go && \
-		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/api/$$version/$*.go; \
-	done
-
-generate/kumapolicy-gen/%: $(POLICY_GEN) generate/dirs/%
-	$(POLICY_GEN) core-resource --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
-	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml --gomodule $(GO_MODULE) && \
-	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
-	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
-
 endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
 
 generate/oas: $(GENERATE_OAS_PREREQUISITES)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
-	done
-
-generate/dirs/%:
-	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
-		mkdir -p $(POLICIES_DIR)/$*/api/$$version ; \
-		mkdir -p $(POLICIES_DIR)/$*/k8s/$$version ; \
-		mkdir -p $(POLICIES_DIR)/$*/k8s/crd ; \
 	done
 
 .PHONY: generate/builtin-crds

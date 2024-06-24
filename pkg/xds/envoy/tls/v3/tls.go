@@ -97,7 +97,7 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	}
 }
 
-func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, skipHostnameVerification bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(systemCaPath string, ca, cert, key []byte, allowRenegotiation, skipHostnameVerification, fallbackToSystemCa bool, hostname, sni string, sans []core_xds.SAN, minTlsVersion, maxTlsVersion *core_xds.TlsVersion) (*envoy_tls.UpstreamTlsContext, error) {
 	tlsContext := &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
 		Sni:                sni,
@@ -113,7 +113,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 		}
 	}
 
-	if ca != nil {
+	if ca != nil || (fallbackToSystemCa && systemCaPath != "") {
 		if tlsContext.CommonTlsContext == nil {
 			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
 		}
@@ -136,12 +136,64 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 					},
 				})
 			}
+			for _, typ := range []envoy_tls.SubjectAltNameMatcher_SanType{
+				envoy_tls.SubjectAltNameMatcher_DNS,
+				envoy_tls.SubjectAltNameMatcher_IP_ADDRESS,
+			} {
+				for _, san := range sans {
+					matcher := &envoy_tls.SubjectAltNameMatcher{
+						SanType: typ,
+					}
+					switch san.MatchType {
+					case core_xds.SANMatchExact:
+						matcher.Matcher = &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+								Exact: san.Value,
+							},
+						}
+					case core_xds.SANMatchPrefix:
+						matcher.Matcher = &envoy_type_matcher.StringMatcher{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+								Prefix: san.Value,
+							},
+						}
+					}
+					matchNames = append(matchNames, matcher)
+				}
+			}
 		}
+
+		var trustedCa *envoy_core.DataSource
+		if ca == nil {
+			trustedCa = &envoy_core.DataSource{
+				Specifier: &envoy_core.DataSource_Filename{
+					Filename: systemCaPath,
+				},
+			}
+		} else {
+			trustedCa = dataSourceFromBytes(ca)
+		}
+
 		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
-				TrustedCa:                 dataSourceFromBytes(ca),
+				TrustedCa:                 trustedCa,
 				MatchTypedSubjectAltNames: matchNames,
 			},
+		}
+
+		if minTlsVersion != nil {
+			tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
+				TlsMinimumProtocolVersion: envoy_tls.TlsParameters_TlsProtocol(*minTlsVersion),
+			}
+		}
+		if maxTlsVersion != nil {
+			if tlsContext.CommonTlsContext.TlsParams == nil {
+				tlsContext.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{
+					TlsMaximumProtocolVersion: envoy_tls.TlsParameters_TlsProtocol(*maxTlsVersion),
+				}
+			} else {
+				tlsContext.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = envoy_tls.TlsParameters_TlsProtocol(*maxTlsVersion)
+			}
 		}
 	}
 	return tlsContext, nil

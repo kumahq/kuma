@@ -204,14 +204,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 
 	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
-		for _, r := range onDelete {
-			rk := core_model.MetaToResourceKey(r.GetMeta())
-			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
-				return err
-			}
-		}
-
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
@@ -229,6 +221,14 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
+				return err
+			}
+		}
+
+		for _, r := range onDelete {
+			rk := core_model.MetaToResourceKey(r.GetMeta())
+			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
 				return err
 			}
 		}
