@@ -48,7 +48,7 @@ func BuildRulesForRestore(table Table, verbose bool) string {
 	}
 
 	for _, c := range table.CustomChains() {
-		customChainLines = append(customChainLines, fmt.Sprintf("%s %s", Flags[FlagNewChain][verbose], c.Name()))
+		customChainLines = append(customChainLines, fmt.Sprintf("%s %s", FlagsShortLongMap[FlagNewChain][verbose], c.Name()))
 		ruleLines = append(ruleLines, c.BuildForRestore(verbose)...)
 	}
 

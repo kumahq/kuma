@@ -43,46 +43,29 @@ const (
 )
 
 const (
-	FlagTable = "table"
+	FlagTable   = "-t"
+	FlagMatch   = "-m"
+	FlagHelp    = "-h"
+	FlagVersion = "--version" // there is no short version of this flag
 
 	// commands
-	FlagAppend   = "append"
-	FlagInsert   = "insert"
-	FlagCheck    = "check"
-	FlagNewChain = "new-chain"
-
-	// parameters
-	FlagJump = "jump"
+	FlagAppend   = "-A"
+	FlagInsert   = "-I"
+	FlagNewChain = "-N"
 )
 
-var Flags = map[string]map[bool]string{
-	FlagTable: {
-		Long:  "--table",
-		Short: "-t",
-	},
-
-	// commands
+var FlagsShortLongMap = map[string]map[bool]string{
 	FlagAppend: {
 		Long:  "--append",
-		Short: "-A",
+		Short: FlagAppend,
 	},
 	FlagInsert: {
 		Long:  "--insert",
-		Short: "-I",
-	},
-	FlagCheck: {
-		Long:  "--check",
-		Short: "-C",
+		Short: FlagInsert,
 	},
 	FlagNewChain: {
 		Long:  "--new-chain",
-		Short: "-N",
-	},
-
-	// parameters
-	FlagJump: {
-		Long:  "--jump",
-		Short: "-j",
+		Short: FlagNewChain,
 	},
 }
 
