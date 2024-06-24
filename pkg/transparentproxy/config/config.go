@@ -11,10 +11,9 @@ import (
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 
+	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
-
-const DebugLogLevel uint16 = 7
 
 type Owner struct {
 	UID string
