@@ -170,7 +170,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 
 	// defaults to the ipv4 port if ipv6 port is not set
 	assignIPv6InboundRedirectPort(allFields)
-	intermediateConfig.excludeInboundPorts = excludeVirtualProbePort(intermediateConfig.excludeInboundPorts, annotations)
+	excludeVirtualProbePort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -203,21 +203,23 @@ func assignIPv6InboundRedirectPort(allFields map[string]*string) {
 	}
 }
 
-func excludeVirtualProbePort(inboundPortsToExclude string, allFields map[string]string) string {
+func excludeVirtualProbePort(allFields map[string]*string) {
+	inboundPortsToExclude := allFields["excludeInboundPorts"]
 	enabledPtr := allFields["virtualProbesEnabled"]
-	enabled, err := GetEnabled(enabledPtr)
+	enabled, err := GetEnabled(*enabledPtr)
 	if err != nil {
 		enabled = true
 	}
 
 	if !enabled {
-		return inboundPortsToExclude
+		return
 	}
 
-	virtualProbesPort := allFields["virtualProbesPort"]
-	if inboundPortsToExclude == "" {
-		return virtualProbesPort
+	virtualProbesPort := *allFields["virtualProbesPort"]
+	existingExcludes := *inboundPortsToExclude
+	if existingExcludes == "" {
+		existingExcludes = virtualProbesPort
+	} else {
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, virtualProbesPort)
 	}
-
-	return fmt.Sprintf("%s,%s", inboundPortsToExclude, virtualProbesPort)
 }
