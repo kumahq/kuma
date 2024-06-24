@@ -79,6 +79,14 @@ func BasicRoute(cluster string) VirtualHostBuilderOpt {
 		})
 }
 
+func DirectResponseRoute(status uint32, responseMsg string) VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		&VirtualHostDirectResponseRouteConfigurer{
+			status:      status,
+			responseMsg: responseMsg,
+		})
+}
+
 func Route(matchPath string, newPath string, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&VirtualHostRouteConfigurer{

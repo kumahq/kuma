@@ -205,7 +205,7 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.ResponseCode).To(Equal(404))
+			g.Expect(resp.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -214,7 +214,7 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.ResponseCode).To(Equal(404))
+			g.Expect(resp.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

@@ -77,7 +77,7 @@ const (
 )
 
 type HostnameGeneratorRef struct {
-	CoreName string `json:"name"`
+	CoreName string `json:"coreName"`
 }
 
 type HostnameGeneratorStatus struct {
