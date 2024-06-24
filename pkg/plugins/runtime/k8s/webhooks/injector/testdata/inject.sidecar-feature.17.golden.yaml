@@ -41,7 +41,7 @@ spec:
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
-    - 1234,5678
+    - 1234,5678,9000
     - --exclude-outbound-ports
     - 4321,7654
     - --verbose

@@ -104,7 +104,6 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver
 	probe.GRPC = nil
 	probe.TCPSocket = nil
 	probe.HTTPGet = &kube_core.HTTPGetAction{
-		Scheme:      kube_core.URISchemeHTTP,
 		Port:        intstr.FromInt32(int32(virtual.Port())),
 		Path:        virtual.Path(),
 		HTTPHeaders: virtual.Headers(),

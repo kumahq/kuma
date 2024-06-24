@@ -136,7 +136,7 @@ spec:
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
-    - ""
+    - "9000"
     - --exclude-outbound-ports
     - ""
     - --verbose
