@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -93,13 +95,9 @@ func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration,
 }
 
 func (c *virtualHostModificator) remove(routeCfg *envoy_route.RouteConfiguration) {
-	var vHosts []*envoy_route.VirtualHost
-	for _, vHost := range routeCfg.VirtualHosts {
-		if !c.virtualHostMatches(vHost) {
-			vHosts = append(vHosts, vHost)
-		}
-	}
-	routeCfg.VirtualHosts = vHosts
+	routeCfg.VirtualHosts = slices.DeleteFunc(routeCfg.VirtualHosts, func(vHost *envoy_route.VirtualHost) bool {
+		return c.virtualHostMatches(vHost)
+	})
 }
 
 func (c *virtualHostModificator) add(routeCfg *envoy_route.RouteConfiguration, vHost *envoy_route.VirtualHost) {
