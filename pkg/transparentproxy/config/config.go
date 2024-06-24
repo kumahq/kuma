@@ -349,7 +349,7 @@ func DefaultConfig() Config {
 		DryRun:             false,
 		Log: LogConfig{
 			Enabled: false,
-			Level:   DebugLogLevel,
+			Level:   LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,

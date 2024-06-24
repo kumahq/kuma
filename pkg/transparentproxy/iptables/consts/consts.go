@@ -88,4 +88,4 @@ var Flags = map[string]map[bool]string{
 
 // Debug log level for iptables LOG jump target
 // ref. https://git.netfilter.org/iptables/tree/extensions/libebt_log.c#n27
-const DebugLogLevel uint16 = 7
+const LogLevelDebug uint16 = 7
