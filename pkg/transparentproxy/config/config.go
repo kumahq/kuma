@@ -345,6 +345,11 @@ func DefaultConfig() Config {
 	}
 }
 
+// getLoopbackInterfaceName retrieves the name of the loopback interface on the
+// system. This function iterates over all network interfaces and checks if the
+// 'net.FlagLoopback' flag is set. If a loopback interface is found, its name is
+// returned. Otherwise, an error message indicating that no loopback interface
+// was found is returned.
 func getLoopbackInterfaceName() (string, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
