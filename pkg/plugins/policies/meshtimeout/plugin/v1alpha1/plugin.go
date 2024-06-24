@@ -125,7 +125,7 @@ func applyToOutbounds(
 	meshCtx xds_context.MeshContext,
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.WithMeshServiceBackendRefFilter) {
-		meshService, ok := meshCtx.MeshServiceIdentity[outbound.BackendRef.Name]
+		meshService, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
 		if !ok {
 			continue
 		}
@@ -136,11 +136,11 @@ func applyToOutbounds(
 			continue
 		}
 
-		port, _ := meshService.Resource.FindPort(outbound.BackendRef.Port)
+		port, _ := meshService.FindPort(outbound.BackendRef.Port)
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
-			Protocol: port.Protocol,
-			Subset:   core_rules.MeshService(meshService.Resource, port, localZone),
+			Protocol: port.AppProtocol,
+			Subset:   core_rules.MeshService(meshService, port, localZone),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -178,19 +178,19 @@ func applyToMeshServiceClusters(
 	destinations map[string][]*envoy_cluster.Cluster,
 ) error {
 	for msName, clusters := range destinations {
-		meshService, ok := meshCtx.MeshServiceIdentity[msName]
+		meshService, ok := meshCtx.MeshServiceByName[msName]
 		if !ok {
 			continue
 		}
 
 		for _, cluster := range clusters {
 			destinationPort := meshservice_api.PortFromDestinationName(tags.ServiceFromClusterName(cluster.Name))
-			port, ok := meshService.Resource.FindPort(destinationPort)
+			port, ok := meshService.FindPort(destinationPort)
 			if !ok {
 				continue
 			}
-			conf := getConf(rules, core_rules.MeshService(meshService.Resource, port, localZone))
-			configurer := plugin_xds.ClusterConfigurerFromConf(*conf, port.Protocol)
+			conf := getConf(rules, core_rules.MeshService(meshService, port, localZone))
+			configurer := plugin_xds.ClusterConfigurerFromConf(*conf, port.AppProtocol)
 			if err := configurer.Configure(cluster); err != nil {
 				return err
 			}

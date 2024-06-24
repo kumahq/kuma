@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -611,17 +612,26 @@ var _ = Describe("MeshTimeout", func() {
 			resourceSet.Add(&r)
 		}
 
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[meshsvc.MeshServiceType] = &meshsvc.MeshServiceResourceList{
+			Items: []*meshsvc.MeshServiceResource{
+				builders.MeshService().
+					WithName("other-service").
+					WithNamespace("main-ns").
+					AddIntPort(10001, 10001, "http").
+					AddIntPort(10002, 10002, "tcp").
+					Build(),
+				builders.MeshService().
+					WithName("second-service").
+					WithNamespace("main-ns").
+					AddIntPort(10003, 10003, "http").
+					Build(),
+			},
+		}
+
 		context := *xds_builders.Context().
-			WithMesh(samples.MeshDefaultBuilder()).
-			AddMeshService(builders.MeshService().
-				WithName("other-service").
-				WithNamespace("main-ns").
-				AddIntPort(10001, 10001, "http").
-				AddIntPort(10002, 10002, "tcp")).
-			AddMeshService(builders.MeshService().
-				WithName("second-service").
-				WithNamespace("main-ns").
-				AddIntPort(10003, 10003, "http")).
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(resources).
 			AddServiceProtocol("other-service", core_mesh.ProtocolHTTP).
 			AddServiceProtocol("second-service", core_mesh.ProtocolTCP).
 			Build()
