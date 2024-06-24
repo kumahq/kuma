@@ -3,7 +3,6 @@ package probes
 import (
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -21,30 +20,6 @@ import (
 // If probe's port equal to 'virtualPort' and the first segment of probe's path is an integer
 // then probe is a virtual probe.
 type KumaProbe kube_core.Probe
-
-// ToReal creates Real probe assuming that 'p' is a Virtual probe. If 'p' is a Real probe,
-// then method returns an error
-func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
-	if p.Port() != virtualPort {
-		return KumaProbe{}, errors.Errorf("probe's port %d should be equal to virtual port %d", p.Port(), virtualPort)
-	}
-	segments := strings.Split(p.Path(), "/")
-	if len(segments) < 2 || segments[0] != "" {
-		return KumaProbe{}, errors.New("not enough segments in probe's path")
-	}
-	vport, err := strconv.ParseInt(segments[1], 10, 32)
-	if err != nil {
-		return KumaProbe{}, errors.Errorf("invalid port value %s", segments[1])
-	}
-	return KumaProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port: intstr.FromInt(int(vport)),
-				Path: fmt.Sprintf("/%s", strings.Join(segments[2:], "/")),
-			},
-		},
-	}, nil
-}
 
 func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
 	switch {
@@ -83,12 +58,12 @@ func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		headers = append(headers, headers[headerIdx+1:]...)
 	}
 
-	if p.HTTPGet.Scheme != kube_core.URISchemeHTTP {
-		headers = append(headers[:headerIdx], SchemeHeader(p.HTTPGet.Scheme))
+	if p.HTTPGet.Scheme != "" && p.HTTPGet.Scheme != kube_core.URISchemeHTTP {
+		headers = append(headers, SchemeHeader(p.HTTPGet.Scheme))
 	}
 
 	if p.TimeoutSeconds > 1 {
-		headers = append(headers[:headerIdx], TimeoutHeader(p.TimeoutSeconds))
+		headers = append(headers, TimeoutHeader(p.TimeoutSeconds))
 	}
 
 	return KumaProbe{
@@ -113,9 +88,6 @@ func (p KumaProbe) tcpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 
 	if p.TimeoutSeconds > 1 {
 		headers = append(headers, TimeoutHeader(p.TimeoutSeconds))
-	}
-	if p.TCPSocket.Host != "" {
-		headers = append(headers, HostHeader(p.TCPSocket.Host))
 	}
 
 	return KumaProbe{

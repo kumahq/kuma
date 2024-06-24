@@ -10,26 +10,54 @@ import (
 )
 
 var _ = Describe("KumaProbe", func() {
-	Context("ToInbound", func() {
-		It("should convert virtual probe to inbound probe", func() {
-			podProbeYaml := `
-                httpGet:
-                  path: /8080/c1/health/liveness
-                  port: 9000
-`
-			probe := kube_core.Probe{}
-			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
-			Expect(err).ToNot(HaveOccurred())
+	Describe("OverridingSupported", func() {
+		type testCase struct {
+			input             kube_core.Probe
+			expectedSupported bool
+		}
 
-			inbound, err := probes.KumaProbe(probe).ToReal(9000)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(inbound.Path()).To(Equal("/c1/health/liveness"))
-			Expect(inbound.Port()).To(Equal(uint32(8080)))
-		})
+		DescribeTable("should check if probe is supported to be overridden",
+			func(given testCase) {
+				virtual := probes.KumaProbe(given.input)
+
+				Expect(virtual.OverridingSupported()).To(Equal(given.expectedSupported))
+			},
+			Entry("HTTP", testCase{
+				input: kube_core.Probe{
+					ProbeHandler: kube_core.ProbeHandler{
+						HTTPGet: &kube_core.HTTPGetAction{},
+					},
+				},
+				expectedSupported: true,
+			}),
+			Entry("TCPSocket", testCase{
+				input: kube_core.Probe{
+					ProbeHandler: kube_core.ProbeHandler{
+						TCPSocket: &kube_core.TCPSocketAction{},
+					},
+				},
+				expectedSupported: true,
+			}),
+			Entry("gRPC", testCase{
+				input: kube_core.Probe{
+					ProbeHandler: kube_core.ProbeHandler{
+						GRPC: &kube_core.GRPCAction{},
+					},
+				},
+				expectedSupported: true,
+			}),
+			Entry("exec", testCase{
+				input: kube_core.Probe{
+					ProbeHandler: kube_core.ProbeHandler{
+						Exec: &kube_core.ExecAction{},
+					},
+				},
+				expectedSupported: false,
+			}))
 	})
 
-	Context("ToVirtual", func() {
-		It("should convert inbound probe to virtual probe", func() {
+	Context("ToVirtual - HTTP", func() {
+		It("should convert pod probe to virtual probe", func() {
 			podProbeYaml := `
                 httpGet:
                   path: /c1/health/liveness
@@ -43,6 +71,34 @@ var _ = Describe("KumaProbe", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(virtual.Path()).To(Equal("/8080/c1/health/liveness"))
 			Expect(virtual.Port()).To(Equal(uint32(9000)))
+		})
+
+		It("should convert probe with custom headers and timeout", func() {
+			podProbeYaml := `
+                timeoutSeconds: 15
+                httpGet:
+                  scheme: HTTPS
+                  path: /c1/healthz
+                  port: 8080
+                  httpHeaders:
+                  - name: Host
+                    value: example.com
+                  - name: X-Custom-Header
+                    value: custom-value
+`
+			probe := kube_core.Probe{}
+			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
+			Expect(err).ToNot(HaveOccurred())
+
+			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(virtual.Path()).To(Equal("/8080/c1/healthz"))
+			Expect(virtual.Port()).To(Equal(uint32(9000)))
+
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameHost)).To(Equal("example.com"))
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameScheme)).To(Equal("HTTPS"))
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameTimeout)).To(Equal("15"))
 		})
 
 		It("should return an error if virtual port is equal to real", func() {
@@ -59,6 +115,50 @@ var _ = Describe("KumaProbe", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("cannot override Pod's probes. Port for probe cannot be set " +
 				"to 9000. It is reserved for the dataplane that will serve pods without mTLS."))
+		})
+	})
+
+	Context("ToVirtual - TCP Socket & gRPC", func() {
+		It("should convert TCP socket probe", func() {
+			podProbeYaml := `
+                timeoutSeconds: 10
+                tcpSocket:
+                  port: 6379
+`
+			probe := kube_core.Probe{}
+			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
+			Expect(err).ToNot(HaveOccurred())
+
+			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(virtual.TCPSocket).To(BeNil())
+			Expect(virtual.Path()).To(Equal("/tcp/6379"))
+			Expect(virtual.Port()).To(Equal(uint32(9000)))
+
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameTimeout)).To(Equal("10"))
+		})
+
+		It("should convert gRPC probe", func() {
+			podProbeYaml := `
+                timeoutSeconds: 10
+                grpc:
+                  port: 6379
+                  service: liveness
+`
+			probe := kube_core.Probe{}
+			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
+			Expect(err).ToNot(HaveOccurred())
+
+			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(virtual.GRPC).To(BeNil())
+			Expect(virtual.Path()).To(Equal("/grpc/6379"))
+			Expect(virtual.Port()).To(Equal(uint32(9000)))
+
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameTimeout)).To(Equal("10"))
+			Expect(getHeader(virtual.Headers(), probes.HeaderNameGRPCService)).To(Equal("liveness"))
 		})
 	})
 
@@ -80,3 +180,12 @@ var _ = Describe("KumaProbe", func() {
 		})
 	})
 })
+
+func getHeader(headers []kube_core.HTTPHeader, name string) string {
+	for _, header := range headers {
+		if header.Name == name {
+			return header.Value
+		}
+	}
+	return ""
+}
