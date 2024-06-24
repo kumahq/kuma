@@ -10,7 +10,6 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -52,8 +51,9 @@ var _ = Describe("MeshMetric", func() {
 	},
 		Entry("default", testCase{
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -85,8 +85,9 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("basic", testCase{
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -120,8 +121,9 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("multiple_prometheus", testCase{
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -164,8 +166,9 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("openTelemetry", testCase{
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp"}).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -194,13 +197,14 @@ var _ = Describe("MeshMetric", func() {
 				Build(),
 		}),
 		Entry("provided_tls", testCase{
-			context: *xds_builders.Context().WithMesh(samples.MeshMTLSBuilder()).Build(),
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshMTLSBuilder()).Build(),
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{
-					MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock",
-					MetricsCertPath:   "/path/cert",
-					MetricsKeyPath:    "/path/key",
+				WithMetadata(&core_xds.DataplaneMetadata{
+					WorkDir:         "/tmp",
+					MetricsCertPath: "/path/cert",
+					MetricsKeyPath:  "/path/key",
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
@@ -229,8 +233,9 @@ var _ = Describe("MeshMetric", func() {
 		}),
 		Entry("otel_and_prometheus", testCase{
 			proxy: xds_builders.Proxy().
+				WithID(*core_xds.BuildProxyId("default", "backend")).
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
@@ -271,7 +276,7 @@ var _ = Describe("MeshMetric", func() {
 		Entry("multiple_otel", testCase{
 			proxy: xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithMetadata(&xds.DataplaneMetadata{WorkDir: "/tmp", MetricsSocketPath: "/tmp/kuma-metrics-backend-default.sock"}).
+				WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{

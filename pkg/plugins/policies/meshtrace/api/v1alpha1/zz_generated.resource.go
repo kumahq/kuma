@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshTraceResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshTraceResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshTraceType,
-	Resource:            NewMeshTraceResource(),
-	ResourceList:        &MeshTraceResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshtraces",
-	KumactlArg:          "meshtrace",
-	KumactlListArg:      "meshtraces",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Trace",
-	PluralDisplayName:   "Mesh Traces",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshTraceType,
+	Resource:                     NewMeshTraceResource(),
+	ResourceList:                 &MeshTraceResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshtraces",
+	KumactlArg:                   "meshtrace",
+	KumactlListArg:               "meshtraces",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Trace",
+	PluralDisplayName:            "Mesh Traces",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

@@ -31,7 +31,7 @@ var _ = Describe("RBAC", func() {
 			// given
 			rs := core_xds.NewResourceSet()
 			ctx := xds_builders.Context().
-				WithMesh(samples.MeshMTLSBuilder().WithName("mesh-1")).
+				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
 				Build()
 
 			// listener that matches
@@ -170,7 +170,7 @@ var _ = Describe("RBAC", func() {
 
 			// mesh with enabled mTLS and egress
 			ctx := xds_builders.Context().
-				WithMesh(builders.Mesh().
+				WithMeshBuilder(builders.Mesh().
 					WithName("mesh-1").
 					WithBuiltinMTLSBackend("builtin-1").
 					WithEnabledMTLSBackend("builtin-1").
@@ -219,6 +219,22 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: core_rules.MeshService("frontend"),
+														Conf:   policies_api.Conf{Action: policies_api.Allow},
+													},
+												},
+											},
+										},
+									},
+								},
+								"example-mes": {
+									policies_api.MeshTrafficPermissionType: core_xds.TypedMatchingPolicies{
+										FromRules: core_rules.FromRules{
+											Rules: map[core_rules.InboundListener]core_rules.Rules{
+												{
+													Address: "192.168.0.1", Port: 10002,
+												}: {
+													{
+														Subset: core_rules.MeshSubset(),
 														Conf:   policies_api.Conf{Action: policies_api.Allow},
 													},
 												},

@@ -7,6 +7,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
+const TlsInspectorName = "envoy.filters.listener.tls_inspector"
+
 type TLSInspectorConfigurer struct{}
 
 var _ ListenerConfigurer = &TLSInspectorConfigurer{}
@@ -17,7 +19,7 @@ func (c *TLSInspectorConfigurer) Configure(l *envoy_listener.Listener) error {
 		return err
 	}
 	l.ListenerFilters = append(l.ListenerFilters, &envoy_listener.ListenerFilter{
-		Name: "envoy.filters.listener.tls_inspector",
+		Name: TlsInspectorName,
 		ConfigType: &envoy_listener.ListenerFilter_TypedConfig{
 			TypedConfig: any,
 		},

@@ -6,24 +6,36 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 )
 
 var _ = Describe("ClientSideTLSConfigurer", func() {
 	type testCase struct {
-		clusterName string
-		endpoints   []xds.Endpoint
-		expected    string
+		clusterName         string
+		endpoints           []xds.Endpoint
+		systemCaPath        string
+		useCommonTlsContext bool
+		expected            string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+			clusterBuilderOpt := clusters.ClusterBuilderOptFunc(func(builder *clusters.ClusterBuilder) {
+				builder.AddConfigurer(&v3.ClientSideTLSConfigurer{
+					Endpoints:           given.endpoints,
+					SystemCaPath:        given.systemCaPath,
+					UseCommonTlsContext: given.useCommonTlsContext,
+				})
+			})
+
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3, given.clusterName).
 				Configure(clusters.EdsCluster()).
-				Configure(clusters.ClientSideTLS(given.endpoints)).
+				Configure(clusterBuilderOpt).
 				Configure(clusters.Timeout(DefaultTimeout(), core_mesh.ProtocolTCP)).
 				Build()
 
@@ -97,7 +109,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         type: EDS
 `,
 		}),
-		Entry("cluster with mTLS and certs", testCase{
+		Entry("cluster with mTLS and certs and version", testCase{
 			clusterName: "testCluster",
 			endpoints: []xds.Endpoint{
 				{
@@ -112,6 +124,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
 						ServerName:         "custom",
+						MinTlsVersion:      pointer.To(xds.TLSVersion10),
+						MaxTlsVersion:      pointer.To(xds.TLSVersion13),
 					},
 				},
 			},
@@ -137,6 +151,9 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                         inlineBytes: Y2xpZW50Y2VydA==
                       privateKey:
                         inlineBytes: Y2xpZW50a2V5
+                    tlsParams:
+                      tlsMaximumProtocolVersion: TLSv1_3
+                      tlsMinimumProtocolVersion: TLSv1_0
                     validationContext:
                       matchTypedSubjectAltNames:
                       - matcher:
@@ -197,6 +214,74 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                         inlineBytes: Y2FjZXJ0
                   sni: httpbin.org
             type: EDS
+`,
+		}),
+		Entry("cluster with multiple endpoints from MeshExternalService", testCase{
+			clusterName:         "testCluster",
+			useCommonTlsContext: true,
+			endpoints: []xds.Endpoint{
+				{
+					Target: "httpbin.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:         true,
+						CaCert:             []byte("cacert"),
+						ClientCert:         []byte("clientcert"),
+						ClientKey:          []byte("clientkey"),
+						AllowRenegotiation: true,
+						ServerName:         "httpbin.org",
+					},
+				},
+				{
+					Target: "example.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:         true,
+						CaCert:             []byte("cacert"),
+						ClientCert:         []byte("clientcert"),
+						ClientKey:          []byte("clientkey"),
+						AllowRenegotiation: true,
+						ServerName:         "example.org",
+					},
+				},
+			},
+
+			expected: `
+              connectTimeout: 5s
+              edsClusterConfig:
+                  edsConfig:
+                      ads: {}
+                      resourceApiVersion: V3
+              name: testCluster
+              transportSocketMatches:
+                  - name: httpbin.org
+                    transportSocket:
+                      name: envoy.transport_sockets.tls
+                      typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                          allowRenegotiation: true
+                          commonTlsContext:
+                              tlsCertificates:
+                                  - certificateChain:
+                                      inlineBytes: Y2xpZW50Y2VydA==
+                                    privateKey:
+                                      inlineBytes: Y2xpZW50a2V5
+                              validationContext:
+                                  matchTypedSubjectAltNames:
+                                      - matcher:
+                                          exact: httpbin.org
+                                        sanType: DNS
+                                      - matcher:
+                                          exact: httpbin.org
+                                        sanType: IP_ADDRESS
+                                  trustedCa:
+                                      inlineBytes: Y2FjZXJ0
+                          sni: httpbin.org
+              type: EDS
 `,
 		}),
 	)

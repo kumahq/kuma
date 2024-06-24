@@ -23,7 +23,7 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 			},
 			Spec: &v1alpha1.MeshExternalService{
 				Match: v1alpha1.Match{
-					Type:     v1alpha1.HostnameGeneratorType,
+					Type:     pointer.To(v1alpha1.HostnameGeneratorType),
 					Port:     9000,
 					Protocol: v1alpha1.HttpProtocol,
 				},
@@ -37,6 +37,11 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 			Status: &v1alpha1.MeshExternalServiceStatus{},
 		},
 	}
+}
+
+func (m *MeshExternalServiceBuilder) WithLabels(labels map[string]string) *MeshExternalServiceBuilder {
+	m.res.Meta.(*test_model.ResourceMeta).Labels = labels
+	return m
 }
 
 func (m *MeshExternalServiceBuilder) WithName(name string) *MeshExternalServiceBuilder {
@@ -67,7 +72,13 @@ func (m *MeshExternalServiceBuilder) Build() *v1alpha1.MeshExternalServiceResour
 }
 
 func (m *MeshExternalServiceBuilder) Create(s store.ResourceStore) error {
-	return s.Create(context.Background(), m.Build(), store.CreateBy(m.Key()))
+	opts := []store.CreateOptionsFunc{
+		store.CreateBy(m.Key()),
+	}
+	if ls := m.res.GetMeta().GetLabels(); len(ls) > 0 {
+		opts = append(opts, store.CreateWithLabels(ls))
+	}
+	return s.Create(context.Background(), m.Build(), opts...)
 }
 
 func (m *MeshExternalServiceBuilder) Key() core_model.ResourceKey {

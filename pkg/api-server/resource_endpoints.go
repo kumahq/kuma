@@ -27,8 +27,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -67,6 +67,7 @@ type resourceEndpoints struct {
 	filter             func(request *restful.Request) (store.ListFilterFunc, error)
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
+	systemNamespace    string
 
 	disableOriginLabelValidation bool
 }
@@ -352,7 +353,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest.GetMeta(), create); err != nil {
+	if err := r.validateResourceRequest(name, meshName, resourceRest, create); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
@@ -382,19 +383,14 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	labels := resRest.GetMeta().GetLabels()
-	if r.mode == config_core.Zone {
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		labels[mesh_proto.ResourceOriginLabel] = string(mesh_proto.ZoneResourceOrigin)
-	}
-
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
+	res.SetMeta(resRest.GetMeta())
 	if r.descriptor.HasStatus {
 		_ = res.SetStatus(resRest.GetStatus())
 	}
+
+	labels := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
@@ -491,39 +487,39 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resourceMeta rest_v1alpha1.ResourceMeta, create bool) error {
+func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource, create bool) error {
 	var err validators.ValidationError
-	if name != resourceMeta.Name {
+	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
 	if r.federatedZone && !r.doesNameLengthFitsGlobal(name) {
 		err.AddViolation("name", "the length of the name must be shorter")
 	}
-	if string(r.descriptor.Name) != resourceMeta.Type {
+	if string(r.descriptor.Name) != resource.GetMeta().Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if r.descriptor.Scope == model.ScopeMesh && meshName != resourceMeta.Mesh {
+	if r.descriptor.Scope == model.ScopeMesh && meshName != resource.GetMeta().Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
-	err.AddError("labels", r.validateLabels(resourceMeta))
+	err.AddError("labels", r.validateLabels(resource))
 
 	if create {
-		err.AddError("", core_mesh.ValidateMeta(resourceMeta, r.descriptor.Scope))
+		err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 	} else {
-		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resourceMeta, r.descriptor.Scope); verr.HasViolations() {
+		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resource.GetMeta(), r.descriptor.Scope); verr.HasViolations() {
 			err.AddError("", verr)
 		} else if msg != "" {
-			log.Info(msg, "type", r.descriptor.Name, "mesh", resourceMeta.Mesh, "name", resourceMeta.Name)
+			log.Info(msg, "type", r.descriptor.Name, "mesh", resource.GetMeta().Mesh, "name", resource.GetMeta().Name)
 		}
 	}
 	return err.OrNil()
 }
 
-func (r *resourceEndpoints) validateLabels(rm model.ResourceMeta) validators.ValidationError {
+func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 
-	origin, ok := model.ResourceOrigin(rm)
+	origin, ok := model.ResourceOrigin(resource.GetMeta())
 	if ok {
 		if oerr := origin.IsValid(); oerr != nil {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
@@ -536,13 +532,36 @@ func (r *resourceEndpoints) validateLabels(rm model.ResourceMeta) validators.Val
 		}
 	}
 
-	for _, k := range maps.SortedKeys(rm.GetLabels()) {
+	if r.mode != config_core.Global {
+		if origin != mesh_proto.GlobalResourceOrigin {
+			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+			if ok && zoneTag != r.zoneName {
+				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+			}
+		}
+	}
+
+	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
+		r.validatePolicyRole(resource)
+	}
+
+	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(rm.GetLabels()[k]) {
+		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
+	}
+	return err
+}
+
+func (r *resourceEndpoints) validatePolicyRole(resource rest.Resource) validators.ValidationError {
+	var err validators.ValidationError
+	policyRole := core_model.PolicyRole(resource.GetMeta())
+	// at the moment on universal all policies have system policy role
+	if policyRole != mesh_proto.SystemPolicyRole {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
 	}
 	return err
 }

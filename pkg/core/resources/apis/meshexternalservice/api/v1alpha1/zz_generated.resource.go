@@ -19,8 +19,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshExternalServiceResourceTypeDescriptor.Schema = &schema
@@ -142,22 +144,23 @@ func (l *MeshExternalServiceResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshExternalServiceType,
-	Resource:            NewMeshExternalServiceResource(),
-	ResourceList:        &MeshExternalServiceResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshexternalservices",
-	KumactlArg:          "meshexternalservice",
-	KumactlListArg:      "meshexternalservices",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh External Service",
-	PluralDisplayName:   "Mesh External Services",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    false,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           true,
+	Name:                         MeshExternalServiceType,
+	Resource:                     NewMeshExternalServiceResource(),
+	ResourceList:                 &MeshExternalServiceResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshexternalservices",
+	KumactlArg:                   "meshexternalservice",
+	KumactlListArg:               "meshexternalservices",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh External Service",
+	PluralDisplayName:            "Mesh External Services",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    true,
+	AllowedOnSystemNamespaceOnly: true,
 }

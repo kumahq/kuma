@@ -15,13 +15,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-//go:embed schema.yaml
 var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	DoNothingResourceResourceTypeDescriptor.Schema = &schema
@@ -131,22 +132,23 @@ func (l *DoNothingResourceResourceList) SetPagination(p model.Pagination) {
 }
 
 var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                DoNothingResourceType,
-	Resource:            NewDoNothingResourceResource(),
-	ResourceList:        &DoNothingResourceResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "donothingresources",
-	KumactlArg:          "donothingresource",
-	KumactlListArg:      "donothingresources",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	IsExperimental:      false,
-	SingularDisplayName: "Do Nothing Resource",
-	PluralDisplayName:   "Do Nothing Resources",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    false,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         DoNothingResourceType,
+	Resource:                     NewDoNothingResourceResource(),
+	ResourceList:                 &DoNothingResourceResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "donothingresources",
+	KumactlArg:                   "donothingresource",
+	KumactlListArg:               "donothingresources",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Do Nothing Resource",
+	PluralDisplayName:            "Do Nothing Resources",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

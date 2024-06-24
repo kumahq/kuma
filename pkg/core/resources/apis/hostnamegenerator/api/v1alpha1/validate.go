@@ -17,7 +17,12 @@ func (r *HostnameGeneratorResource) validate() error {
 
 func validateTemplate(tmpl string) validators.ValidationError {
 	var verr validators.ValidationError
-	_, err := template.New("").Parse(tmpl)
+	if tmpl == "" {
+		verr.AddViolationAt(validators.Root(), validators.MustNotBeEmpty)
+	}
+	_, err := template.New("").
+		Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
+		Parse(tmpl)
 	if err != nil {
 		verr.AddViolationAt(validators.Root(), errors.Wrap(err, "couldn't parse template").Error())
 	}

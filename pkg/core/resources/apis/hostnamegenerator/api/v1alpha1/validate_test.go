@@ -20,6 +20,15 @@ type: HostnameGenerator
 name: route-1
 template: "{{ .Name[4 }}.mesh"
 `),
+		ErrorCase("spec.template empty",
+			validators.Violation{
+				Field:   `spec.template`,
+				Message: `must not be empty`,
+			}, `
+type: HostnameGenerator
+name: route-1
+template: ""
+`),
 	)
 	DescribeValidCases(
 		api.NewHostnameGeneratorResource,

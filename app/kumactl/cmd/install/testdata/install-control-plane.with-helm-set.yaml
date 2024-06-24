@@ -350,6 +350,8 @@ spec:
                 properties:
                   port:
                     description: Port defines a port to which a user does request.
+                    maximum: 65535
+                    minimum: 1
                     type: integer
                   protocol:
                     default: tcp
@@ -445,6 +447,10 @@ spec:
                         - Secured
                         - SkipAll
                         type: string
+                      serverName:
+                        description: ServerName overrides the default Server Name
+                          Indicator set by Kuma.
+                        type: string
                       subjectAltNames:
                         description: SubjectAltNames list of names to verify in the
                           certificate.
@@ -505,11 +511,8 @@ spec:
                 items:
                   properties:
                     hostname:
-                      description: Hostname of the generated domain
                       type: string
                     hostnameGeneratorRef:
-                      description: HostnameGeneratorRef informes which generator was
-                        used
                       properties:
                         name:
                           type: string
@@ -517,11 +520,70 @@ spec:
                       - name
                       type: object
                     origin:
-                      description: Origin provides information what generated the
-                        vip
                       type: string
+                  type: object
+                type: array
+              hostnameGenerators:
+                items:
+                  properties:
+                    conditions:
+                      description: Conditions is an array of hostname generator conditions.
+                      items:
+                        properties:
+                          message:
+                            description: |-
+                              message is a human readable message indicating details about the transition.
+                              This may be an empty string.
+                            maxLength: 32768
+                            type: string
+                          reason:
+                            description: |-
+                              reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                              Producers of specific condition types may define expected values and meanings for this field,
+                              and whether the values are considered a guaranteed API.
+                              The value should be a CamelCase string.
+                              This field may not be empty.
+                            maxLength: 1024
+                            minLength: 1
+                            pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                            type: string
+                          status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            description: |-
+                              type of condition in CamelCase or in foo.example.com/CamelCase.
+                              ---
+                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                              useful (see .node.status.conditions), the ability to deconflict is important.
+                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            maxLength: 316
+                            pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                            type: string
+                        required:
+                        - message
+                        - reason
+                        - status
+                        - type
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - type
+                      x-kubernetes-list-type: map
+                    hostnameGeneratorRef:
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
                   required:
-                  - origin
+                  - hostnameGeneratorRef
                   type: object
                 type: array
               vip:
@@ -683,9 +745,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -694,6 +764,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -706,6 +781,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -731,9 +811,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -742,6 +830,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -754,6 +847,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -859,9 +957,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -870,6 +976,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -882,6 +993,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -1650,9 +1766,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -1661,6 +1785,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -1673,6 +1802,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -1892,9 +2026,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -1903,6 +2045,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -1915,6 +2062,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -1996,9 +2148,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -2007,6 +2167,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -2019,6 +2184,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -2064,9 +2234,17 @@ spec:
                                       - MeshSubset
                                       - MeshGateway
                                       - MeshService
+                                      - MeshExternalService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: |-
+                                        Labels are used to select group of MeshServices that match labels. Either Labels or
+                                        Name and Namespace can be used.
+                                      type: object
                                     mesh:
                                       description: Mesh is reserved for future use
                                         to identify cross mesh resources.
@@ -2075,6 +2253,11 @@ spec:
                                       description: |-
                                         Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                         `MeshServiceSubset` and `MeshGatewayRoute`
+                                      type: string
+                                    namespace:
+                                      description: |-
+                                        Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                        will be targeted.
                                       type: string
                                     port:
                                       description: Port is only supported when this
@@ -2092,6 +2275,11 @@ spec:
                                         type: string
                                       minItems: 1
                                       type: array
+                                    sectionName:
+                                      description: |-
+                                        SectionName is used to target specific section of resource.
+                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                      type: string
                                     tags:
                                       additionalProperties:
                                         type: string
@@ -2171,9 +2359,17 @@ spec:
                                               - MeshSubset
                                               - MeshGateway
                                               - MeshService
+                                              - MeshExternalService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                               type: string
+                                            labels:
+                                              additionalProperties:
+                                                type: string
+                                              description: |-
+                                                Labels are used to select group of MeshServices that match labels. Either Labels or
+                                                Name and Namespace can be used.
+                                              type: object
                                             mesh:
                                               description: Mesh is reserved for future
                                                 use to identify cross mesh resources.
@@ -2182,6 +2378,11 @@ spec:
                                               description: |-
                                                 Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                                 `MeshServiceSubset` and `MeshGatewayRoute`
+                                              type: string
+                                            namespace:
+                                              description: |-
+                                                Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                                will be targeted.
                                               type: string
                                             port:
                                               description: Port is only supported
@@ -2200,6 +2401,11 @@ spec:
                                                 type: string
                                               minItems: 1
                                               type: array
+                                            sectionName:
+                                              description: |-
+                                                SectionName is used to target specific section of resource.
+                                                For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                              type: string
                                             tags:
                                               additionalProperties:
                                                 type: string
@@ -2488,9 +2694,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -2499,6 +2713,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -2511,6 +2730,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -2689,9 +2913,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -2700,6 +2932,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -2712,6 +2949,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -3120,9 +3362,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -3131,6 +3381,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -3143,6 +3398,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -3399,9 +3659,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -3410,6 +3678,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -3422,6 +3695,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -3524,12 +3802,16 @@ spec:
                       - port
                       type: object
                     type: array
-                  enabled:
+                  passthroughMode:
+                    default: None
                     description: |-
-                      Enabled defines whether the passthrough behavior, which allows all traffic going
-                      outside of the cluster, is active. If true, AppendMatch
-                      has no effect.
-                    type: boolean
+                      Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+                      When `All` or `None` `appendMatch` has no effect.
+                    enum:
+                    - All
+                    - Matched
+                    - None
+                    type: string
                 type: object
               targetRef:
                 description: |-
@@ -3544,9 +3826,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -3555,6 +3845,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -3567,6 +3862,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -4085,9 +4385,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -4096,6 +4404,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -4108,6 +4421,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -4310,9 +4628,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -4321,6 +4647,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -4333,6 +4664,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -4358,9 +4694,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -4369,6 +4713,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -4381,6 +4730,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -4526,9 +4880,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -4537,6 +4899,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -4549,6 +4916,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -4630,9 +5002,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -4641,6 +5021,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -4653,6 +5038,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -4997,9 +5387,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -5008,6 +5406,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -5020,6 +5423,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -5081,16 +5489,32 @@ spec:
           spec:
             description: Spec is the specification of the Kuma MeshService resource.
             properties:
+              identities:
+                items:
+                  properties:
+                    type:
+                      enum:
+                      - ServiceTag
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - type
+                  - value
+                  type: object
+                type: array
               ports:
                 items:
                   properties:
-                    port:
-                      format: int32
-                      type: integer
-                    protocol:
+                    appProtocol:
                       default: tcp
                       description: Protocol identifies a protocol supported by a service.
                       type: string
+                    name:
+                      type: string
+                    port:
+                      format: int32
+                      type: integer
                     targetPort:
                       anyOf:
                       - type: integer
@@ -5102,7 +5526,7 @@ spec:
                 type: array
                 x-kubernetes-list-map-keys:
                 - port
-                - protocol
+                - appProtocol
                 x-kubernetes-list-type: map
               selector:
                 properties:
@@ -5140,7 +5564,7 @@ spec:
                 items:
                   properties:
                     conditions:
-                      description: Conditions is an array of gateway instance conditions.
+                      description: Conditions is an array of hostname generator conditions.
                       items:
                         properties:
                           message:
@@ -5280,9 +5704,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -5291,6 +5723,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -5303,6 +5740,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -5340,9 +5782,17 @@ spec:
                                       - MeshSubset
                                       - MeshGateway
                                       - MeshService
+                                      - MeshExternalService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: |-
+                                        Labels are used to select group of MeshServices that match labels. Either Labels or
+                                        Name and Namespace can be used.
+                                      type: object
                                     mesh:
                                       description: Mesh is reserved for future use
                                         to identify cross mesh resources.
@@ -5351,6 +5801,11 @@ spec:
                                       description: |-
                                         Name of the referenced resource. Can only be used with kinds: `MeshService`,
                                         `MeshServiceSubset` and `MeshGatewayRoute`
+                                      type: string
+                                    namespace:
+                                      description: |-
+                                        Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                                        will be targeted.
                                       type: string
                                     port:
                                       description: Port is only supported when this
@@ -5368,6 +5823,11 @@ spec:
                                         type: string
                                       minItems: 1
                                       type: array
+                                    sectionName:
+                                      description: |-
+                                        SectionName is used to target specific section of resource.
+                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                      type: string
                                     tags:
                                       additionalProperties:
                                         type: string
@@ -5402,9 +5862,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -5413,6 +5881,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -5425,6 +5898,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -5563,9 +6041,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -5574,6 +6060,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -5586,6 +6077,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -5611,9 +6107,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -5622,6 +6126,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -5634,6 +6143,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -5711,9 +6225,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -5722,6 +6244,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -5734,6 +6261,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -5981,9 +6513,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -5992,6 +6532,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -6004,6 +6549,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -6170,9 +6720,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -6181,6 +6739,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -6193,6 +6756,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -6218,9 +6786,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -6229,6 +6805,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -6241,6 +6822,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -7263,6 +7849,13 @@ spec:
             properties:
               selector:
                 properties:
+                  meshExternalService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   meshService:
                     properties:
                       matchLabels:
@@ -7492,9 +8085,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -7503,6 +8104,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -7515,6 +8121,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -7540,9 +8151,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -7551,6 +8170,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -7563,6 +8187,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -7737,9 +8366,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -7748,6 +8385,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -7760,6 +8402,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -8085,9 +8732,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -8096,6 +8751,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -8108,6 +8768,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string
@@ -8133,9 +8798,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -8144,6 +8817,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -8156,6 +8834,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string
@@ -8421,9 +9104,17 @@ spec:
                           - MeshSubset
                           - MeshGateway
                           - MeshService
+                          - MeshExternalService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
                         mesh:
                           description: Mesh is reserved for future use to identify
                             cross mesh resources.
@@ -8432,6 +9123,11 @@ spec:
                           description: |-
                             Name of the referenced resource. Can only be used with kinds: `MeshService`,
                             `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
                           type: string
                         proxyTypes:
                           description: |-
@@ -8444,6 +9140,11 @@ spec:
                             type: string
                           minItems: 1
                           type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
                         tags:
                           additionalProperties:
                             type: string

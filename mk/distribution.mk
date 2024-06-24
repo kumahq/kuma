@@ -16,7 +16,6 @@ ifneq (,$(findstring preview,$(BUILD_INFO_VERSION)))
 endif
 DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_NAME)
 
-
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for

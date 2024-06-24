@@ -1,31 +1,5 @@
 #!/usr/bin/env bash
 
-function envoy_version() {
-  set -o errexit
-  set -o pipefail
-  set -o nounset
-  # Returns Envoy version by ENVOY_TAG:
-  # - if ENVOY_TAG is a real git tag like 'v1.20.0' then the version is equal to '1.20.0' (without the first letter 'v').
-  # - if ENVOY_TAG is a commit hash then the version will look like '1.20.1-dev-b16d390f'
-
-  ENVOY_TAG=${ENVOY_TAG:-"v1.29.4"}
-  ENVOY_VERSION=$(curl --silent --location "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION.txt")
-
-  # for envoy versions older than v1.22.0 file 'VERSION.txt' used to be called 'VERSION'
-  if [[ "${ENVOY_VERSION}" == "404: Not Found" ]]; then
-    ENVOY_VERSION=$(curl --silent --location --fail "https://raw.githubusercontent.com/envoyproxy/envoy/${ENVOY_TAG}/VERSION")
-  fi
-
-  if [[ "${ENVOY_TAG}" =~ ^v[0-9]*\.[0-9]*\.[0-9]*$ ]]; then
-    echo "${ENVOY_VERSION}"
-  else
-    echo "${ENVOY_VERSION}-${ENVOY_TAG:0:8}"
-  fi
-  set +o errexit
-  set +o pipefail
-  set +o nounset
-}
-
 function base_branch_name() {
   set -o errexit
   set -o pipefail
@@ -67,8 +41,6 @@ function version_info() {
   # build-date - local date if built on CI
 
   # Note: this format must be changed carefully, other scripts depend on it
-
-  envoyVersion=$(envoy_version)
 
   if [[ -z "${CI}" ]]; then
     ciDeclared="false"
@@ -120,7 +92,7 @@ function version_info() {
       version="0.0.0-preview.v${shortHash}"
     fi
   fi
-  echo "${version} ${describedTag} ${longHash} ${versionDate} ${envoyVersion} ${ciDir}"
+  echo "${version} ${describedTag} ${longHash} ${versionDate} ${ciDir}"
 }
 
 version_info

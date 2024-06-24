@@ -243,7 +243,7 @@ var _ = Describe("MeshFaultInjection", func() {
 
 		// mesh with enabled mTLS and egress
 		ctxMesh1 := xds_builders.Context().
-			WithMesh(builders.Mesh().
+			WithMeshBuilder(builders.Mesh().
 				WithName("mesh-1").
 				WithBuiltinMTLSBackend("builtin-1").
 				WithEnabledMTLSBackend("builtin-1").

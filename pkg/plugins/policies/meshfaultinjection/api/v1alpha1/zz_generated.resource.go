@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshFaultInjectionResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshFaultInjectionResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshFaultInjectionType,
-	Resource:            NewMeshFaultInjectionResource(),
-	ResourceList:        &MeshFaultInjectionResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshfaultinjections",
-	KumactlArg:          "meshfaultinjection",
-	KumactlListArg:      "meshfaultinjections",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Fault Injection",
-	PluralDisplayName:   "Mesh Fault Injections",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshFaultInjectionType,
+	Resource:                     NewMeshFaultInjectionResource(),
+	ResourceList:                 &MeshFaultInjectionResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshfaultinjections",
+	KumactlArg:                   "meshfaultinjection",
+	KumactlListArg:               "meshfaultinjections",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Fault Injection",
+	PluralDisplayName:            "Mesh Fault Injections",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

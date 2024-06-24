@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -78,13 +79,16 @@ func DefaultContext(
 			reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile.If(
+			reconcile.TypeIs(meshservice_api.MeshServiceType),
+			RemoveStatus()),
+		reconcile.If(
 			reconcile.And(
 				reconcile.ScopeIs(core_model.ScopeMesh),
 				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
 				// particular format to be able to reference them
 				reconcile.Not(reconcile.TypeIs(system.SecretType)),
 			),
-			HashSuffixMapper(true)),
+			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
 	zoneMappers := []reconcile.ResourceMapper{
@@ -192,7 +196,13 @@ func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.R
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
 		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
-		return util.CloneResource(r, util.WithName(newName)), nil
+		return util.CloneResource(r, util.WithResourceName(newName)), nil
+	}
+}
+
+func RemoveStatus() reconcile.ResourceMapper {
+	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+		return util.CloneResource(r, util.WithoutStatus()), nil
 	}
 }
 
@@ -206,17 +216,21 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 		name := core_model.GetDisplayName(r.GetMeta())
 		values := make([]string, 0, len(labelsToUse))
 		for _, lbl := range labelsToUse {
-			values = append(values, r.GetMeta().GetLabels()[lbl])
+			labelValue, ok := r.GetMeta().GetLabels()[lbl]
+			if ok {
+				values = append(values, labelValue)
+			}
 		}
 
-		return util.CloneResource(r, util.WithName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
+		return util.CloneResource(r, util.WithResourceName(hash.HashedName(r.GetMeta().GetMesh(), name, values...))), nil
 	}
 }
 
 func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		r.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
-		return r, nil
+		newRes := util.CloneResource(r)
+		newRes.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
+		return newRes, nil
 	}
 }
 

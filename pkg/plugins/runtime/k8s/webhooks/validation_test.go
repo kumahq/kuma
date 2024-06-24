@@ -77,6 +77,8 @@ func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.
 		Mode:                         mode,
 		FederatedZone:                federatedZone,
 		DisableOriginLabelValidation: false,
+		SystemNamespace:              "kuma-system",
+		ZoneName:                     "zone-1",
 	}
 	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter(), core_registry.Global(), k8s_registry.Global(), checker)
 	handler.InjectDecoder(kube_admission.NewDecoder(scheme))
@@ -93,6 +95,7 @@ func webhookRequest(inputFile string) kube_admission.Request {
 
 	var user string
 	var op string
+	var ns string
 	for _, l := range lines {
 		if strings.HasPrefix(l, "#") {
 			l = strings.Trim(l, "# ")
@@ -104,6 +107,8 @@ func webhookRequest(inputFile string) kube_admission.Request {
 					user = pair[1]
 				case "operation":
 					op = pair[1]
+				case "namespace":
+					ns = pair[1]
 				}
 			}
 		} else {
@@ -151,6 +156,7 @@ func webhookRequest(inputFile string) kube_admission.Request {
 				Username: user,
 			},
 			Operation: admissionv1.Operation(op),
+			Namespace: ns,
 		},
 	}
 

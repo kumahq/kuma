@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"text/template"
 
@@ -12,6 +13,9 @@ import (
 )
 
 func newK8sResource(rootArgs *args) *cobra.Command {
+	localArgs := struct {
+		controllerGenBin string
+	}{}
 	cmd := &cobra.Command{
 		Use:   "k8s-resource",
 		Short: "Generate a k8s model resource for the policy",
@@ -45,10 +49,40 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 			if err := save.GoTemplate(groupVersionInfoTemplate, pconfig, gvInfoPath); err != nil {
 				return err
 			}
+			controllerGenExec := exec.CommandContext(cmd.Context(), // nolint: gosec
+				localArgs.controllerGenBin,
+				"crd:crdVersions=v1,ignoreUnexportedFields=true",
+				"paths=./"+filepath.Join("./", rootArgs.pluginDir, "k8s/..."),
+				"output:crd:artifacts:config="+filepath.Join(rootArgs.pluginDir, "k8s/crd"),
+			)
+			controllerGenExec.Stderr = cmd.ErrOrStderr()
+			if err := controllerGenExec.Run(); err != nil {
+				return err
+			}
 
+			controllerGenGeneratedTypeExec := exec.CommandContext(cmd.Context(), // nolint: gosec
+				localArgs.controllerGenBin,
+				"object",
+				"paths="+k8sTypesPath,
+			)
+			controllerGenGeneratedTypeExec.Stderr = cmd.ErrOrStderr()
+			if err := controllerGenGeneratedTypeExec.Run(); err != nil {
+				return err
+			}
+
+			controllerGenPolicyExec := exec.CommandContext(cmd.Context(), // nolint: gosec
+				localArgs.controllerGenBin,
+				"object",
+				"paths="+policyPath,
+			)
+			controllerGenPolicyExec.Stderr = cmd.ErrOrStderr()
+			if err := controllerGenPolicyExec.Run(); err != nil {
+				return err
+			}
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&localArgs.controllerGenBin, "controller-gen-bin", "", "path to a binary of controller-gen")
 
 	return cmd
 }

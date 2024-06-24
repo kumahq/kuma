@@ -1,0 +1,11 @@
+# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+apiVersion: kuma.io/v1alpha1
+kind: HostnameGenerator
+metadata:
+  name: all
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        k8s.kuma.io/namespace: kuma-demo
+  template: "{{ .Name }}.{{ .Namespace }}.mesh"

@@ -15,54 +15,85 @@ import (
 )
 
 type ClientSideTLSConfigurer struct {
-	Endpoints []xds.Endpoint
+	Endpoints           []xds.Endpoint
+	SystemCaPath        string
+	UseCommonTlsContext bool // used to handle MeshExternalService
 }
 
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	for _, ep := range c.Endpoints {
+	if c.UseCommonTlsContext && len(c.Endpoints) > 0 {
+		ep := c.Endpoints[0]
 		if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
-			sni := ep.ExternalService.ServerName
-			if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
-				// SNI can only be a hostname, not IP
-				sni = ep.Target
-			}
-
-			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
-				ep.ExternalService.CaCert,
-				ep.ExternalService.ClientCert,
-				ep.ExternalService.ClientKey,
-				ep.ExternalService.AllowRenegotiation,
-				ep.ExternalService.SkipHostnameVerification,
-				ep.Target,
-				sni,
-			)
+			tsm, err := c.createTransportSocketMatch(&ep, false)
 			if err != nil {
 				return err
 			}
-
-			pbst, err := proto.MarshalAnyDeterministic(tlsContext)
-			if err != nil {
-				return err
+			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
+		}
+	} else {
+		for i, ep := range c.Endpoints {
+			if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
+				tsm, err := c.createTransportSocketMatch(&c.Endpoints[i], true)
+				if err != nil {
+					return err
+				}
+				cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, tsm)
 			}
-
-			transportSocket := &envoy_core.TransportSocket{
-				Name: "envoy.transport_sockets.tls",
-				ConfigType: &envoy_core.TransportSocket_TypedConfig{
-					TypedConfig: pbst,
-				},
-			}
-
-			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
-				Name: ep.Target,
-				Match: &structpb.Struct{
-					Fields: envoy_metadata.MetadataFields(tags.Tags(ep.Tags).WithoutTags(mesh_proto.ServiceTag)),
-				},
-				TransportSocket: transportSocket,
-			})
 		}
 	}
 
 	return nil
+}
+
+func (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, withMatch bool) (*envoy_cluster.Cluster_TransportSocketMatch, error) {
+	sni := ep.ExternalService.ServerName
+	if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
+		// SNI can only be a hostname, not IP
+		sni = ep.Target
+	}
+
+	tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
+		c.SystemCaPath,
+		ep.ExternalService.CaCert,
+		ep.ExternalService.ClientCert,
+		ep.ExternalService.ClientKey,
+		ep.ExternalService.AllowRenegotiation,
+		ep.ExternalService.SkipHostnameVerification,
+		ep.ExternalService.FallbackToSystemCa,
+		ep.Target,
+		sni,
+		ep.ExternalService.SANs,
+		ep.ExternalService.MinTlsVersion,
+		ep.ExternalService.MaxTlsVersion,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pbst, err := proto.MarshalAnyDeterministic(tlsContext)
+	if err != nil {
+		return nil, err
+	}
+
+	transportSocket := &envoy_core.TransportSocket{
+		Name: "envoy.transport_sockets.tls",
+		ConfigType: &envoy_core.TransportSocket_TypedConfig{
+			TypedConfig: pbst,
+		},
+	}
+
+	tsm := envoy_cluster.Cluster_TransportSocketMatch{
+		Name:            ep.Target,
+		TransportSocket: transportSocket,
+	}
+
+	if withMatch {
+		tsm.Match = &structpb.Struct{
+			Fields: envoy_metadata.MetadataFields(tags.Tags(ep.Tags).WithoutTags(mesh_proto.ServiceTag)),
+		}
+	}
+
+	return &tsm, nil
 }

@@ -14,6 +14,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -110,12 +111,13 @@ var _ = Describe("Zone Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 4 global-scope types
+		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
+			hostnamegenerator_api.HostnameGeneratorType,
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
@@ -299,6 +301,48 @@ var _ = Describe("Zone Sync", func() {
 
 		It("should sync policies from global store to the local", func() {
 			VerifySyncResourcesFromGlobalToLocal()
+		})
+
+		It("should sync policies from global store to the local after resource is valid", func() {
+			// incorrct mesh
+			invalidMesh := &mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-1",
+				},
+			}
+			err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: invalidMesh}, store.CreateByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// should not be synchronized
+			Consistently(func(g Gomega) {
+				actual := mesh.MeshResourceList{}
+				err := zoneStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
+
+			mesh1 := mesh.NewMeshResource()
+			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when mesh is a valid resource
+			mesh1.Spec = samples.Mesh1
+			err = globalStore.Update(context.Background(), mesh1)
+			Expect(err).ToNot(HaveOccurred())
+
+			// should be synchronized
+			Eventually(func(g Gomega) {
+				actual := mesh.MeshResourceList{}
+				err := zoneStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(HaveLen(1))
+			}, "1s", "100ms").Should(Succeed())
+
+			actual := mesh.MeshResourceList{}
+			err = zoneStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		})
 
 		It("should sync ingresses", func() {

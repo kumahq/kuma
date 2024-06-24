@@ -36,6 +36,21 @@ func ClientSideMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResourc
 	})
 }
 
+func ClientSideMultiIdentitiesMTLS(tracker core_xds.SecretsTracker, mesh *core_mesh.MeshResource, upstreamTLSReady bool, sni string, identities []string) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
+			SecretsTracker:   tracker,
+			UpstreamMesh:     mesh,
+			UpstreamService:  "*",
+			LocalMesh:        mesh,
+			SNI:              sni,
+			Tags:             nil,
+			UpstreamTLSReady: upstreamTLSReady,
+			VerifyIdentities: identities,
+		})
+	})
+}
+
 func CrossMeshClientSideMTLS(tracker core_xds.SecretsTracker, localMesh *core_mesh.MeshResource, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy_tags.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.ClientSideMTLSConfigurer{
@@ -71,6 +86,16 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
+func MeshExternalServiceClientSideTLS(endpoints []core_xds.Endpoint, systemCaPath string, useCommonTlsContext bool) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ClientSideTLSConfigurer{
+			Endpoints:           endpoints,
+			SystemCaPath:        systemCaPath,
+			UseCommonTlsContext: useCommonTlsContext,
+		})
+	})
+}
+
 func EdsCluster() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
 		builder.AddConfigurer(&v3.EdsClusterConfigurer{})
@@ -85,6 +110,18 @@ func ProvidedEndpointCluster(hasIPv6 bool, endpoints ...core_xds.Endpoint) Clust
 			Name:      builder.name,
 			Endpoints: endpoints,
 			HasIPv6:   hasIPv6,
+		})
+		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
+	})
+}
+
+func ProvidedCustomEndpointCluster(hasIPv6 bool, allowsMixingEndpoints bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(builder *ClusterBuilder) {
+		builder.AddConfigurer(&v3.ProvidedEndpointClusterConfigurer{
+			Name:                           builder.name,
+			Endpoints:                      endpoints,
+			HasIPv6:                        hasIPv6,
+			AllowMixingIpAndNonIpEndpoints: allowsMixingEndpoints,
 		})
 		builder.AddConfigurer(&v3.AltStatNameConfigurer{})
 	})

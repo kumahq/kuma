@@ -29,13 +29,26 @@ func (i *KumaInjector) overrideProbes(pod *kube_core.Pod) error {
 	if err != nil {
 		return err
 	}
+	var containersNeedingProbes []kube_core.Container
 
-	for _, c := range pod.Spec.Containers {
+	var initContainerComesAfterKumaSidecar bool
+	for _, c := range pod.Spec.InitContainers {
 		if c.Name == util.KumaSidecarContainerName {
-			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			initContainerComesAfterKumaSidecar = true
 			continue
 		}
 
+		if initContainerComesAfterKumaSidecar && c.RestartPolicy != nil && *c.RestartPolicy == kube_core.ContainerRestartPolicyAlways {
+			containersNeedingProbes = append(containersNeedingProbes, c)
+		}
+	}
+	for _, c := range pod.Spec.Containers {
+		if c.Name != util.KumaSidecarContainerName {
+			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			containersNeedingProbes = append(containersNeedingProbes, c)
+		}
+	}
+	for _, c := range containersNeedingProbes {
 		portResolver := namedPortResolver(&c)
 		if err := overrideProbe(c.LivenessProbe, virtualProbesPort,
 			portResolver, c.Name, "liveness"); err != nil {

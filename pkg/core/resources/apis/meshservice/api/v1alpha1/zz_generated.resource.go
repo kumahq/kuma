@@ -19,8 +19,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshServiceResourceTypeDescriptor.Schema = &schema
@@ -142,22 +144,23 @@ func (l *MeshServiceResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshServiceType,
-	Resource:            NewMeshServiceResource(),
-	ResourceList:        &MeshServiceResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshservices",
-	KumactlArg:          "meshservice",
-	KumactlListArg:      "meshservices",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Service",
-	PluralDisplayName:   "Mesh Services",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    false,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           true,
+	Name:                         MeshServiceType,
+	Resource:                     NewMeshServiceResource(),
+	ResourceList:                 &MeshServiceResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
+	WsPath:                       "meshservices",
+	KumactlArg:                   "meshservice",
+	KumactlListArg:               "meshservices",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Service",
+	PluralDisplayName:            "Mesh Services",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    true,
+	AllowedOnSystemNamespaceOnly: false,
 }

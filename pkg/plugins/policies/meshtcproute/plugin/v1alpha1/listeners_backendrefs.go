@@ -6,16 +6,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func getBackendRefs(
-	toRulesTCP core_xds.Rules,
-	toRulesHTTP core_xds.Rules,
-	serviceName string,
-	protocol core_mesh.Protocol,
-	tags map[string]string,
-) []common_api.BackendRef {
+func getBackendRefs(toRulesTCP core_xds.Rules, toRulesHTTP core_xds.Rules, serviceName string, protocol core_mesh.Protocol, backendRef common_api.BackendRef) []common_api.BackendRef {
 	service := core_xds.MeshService(serviceName)
 
 	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
@@ -42,13 +35,6 @@ func getBackendRefs(
 		return tcpConf.Default.BackendRefs
 	}
 	return []common_api.BackendRef{
-		{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-				Tags: tags,
-			},
-			Weight: pointer.To(uint(100)),
-		},
+		backendRef,
 	}
 }

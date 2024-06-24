@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshRetryResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshRetryResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshRetryType,
-	Resource:            NewMeshRetryResource(),
-	ResourceList:        &MeshRetryResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshretries",
-	KumactlArg:          "meshretry",
-	KumactlListArg:      "meshretries",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Retry",
-	PluralDisplayName:   "Mesh Retries",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshRetryType,
+	Resource:                     NewMeshRetryResource(),
+	ResourceList:                 &MeshRetryResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshretries",
+	KumactlArg:                   "meshretry",
+	KumactlListArg:               "meshretries",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Retry",
+	PluralDisplayName:            "Mesh Retries",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

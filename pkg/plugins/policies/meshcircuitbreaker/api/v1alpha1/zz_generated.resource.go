@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshCircuitBreakerResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshCircuitBreakerResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshCircuitBreakerType,
-	Resource:            NewMeshCircuitBreakerResource(),
-	ResourceList:        &MeshCircuitBreakerResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshcircuitbreakers",
-	KumactlArg:          "meshcircuitbreaker",
-	KumactlListArg:      "meshcircuitbreakers",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Circuit Breaker",
-	PluralDisplayName:   "Mesh Circuit Breakers",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshCircuitBreakerType,
+	Resource:                     NewMeshCircuitBreakerResource(),
+	ResourceList:                 &MeshCircuitBreakerResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshcircuitbreakers",
+	KumactlArg:                   "meshcircuitbreaker",
+	KumactlListArg:               "meshcircuitbreakers",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Circuit Breaker",
+	PluralDisplayName:            "Mesh Circuit Breakers",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

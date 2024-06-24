@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	HostnameGeneratorResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *HostnameGeneratorResourceList) SetPagination(p model.Pagination) {
 }
 
 var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                HostnameGeneratorType,
-	Resource:            NewHostnameGeneratorResource(),
-	ResourceList:        &HostnameGeneratorResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "hostnamegenerators",
-	KumactlArg:          "hostnamegenerator",
-	KumactlListArg:      "hostnamegenerators",
-	AllowToInspect:      false,
-	IsPolicy:            false,
-	IsExperimental:      false,
-	SingularDisplayName: "Hostname Generator",
-	PluralDisplayName:   "Hostname Generators",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    false,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         HostnameGeneratorType,
+	Resource:                     NewHostnameGeneratorResource(),
+	ResourceList:                 &HostnameGeneratorResourceList{},
+	Scope:                        model.ScopeGlobal,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "hostnamegenerators",
+	KumactlArg:                   "hostnamegenerator",
+	KumactlListArg:               "hostnamegenerators",
+	AllowToInspect:               false,
+	IsPolicy:                     false,
+	IsExperimental:               false,
+	SingularDisplayName:          "Hostname Generator",
+	PluralDisplayName:            "Hostname Generators",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             false,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: true,
 }

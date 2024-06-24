@@ -15,13 +15,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-//go:embed schema.yaml
 var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	DoNothingPolicyResourceTypeDescriptor.Schema = &schema
@@ -131,22 +132,23 @@ func (l *DoNothingPolicyResourceList) SetPagination(p model.Pagination) {
 }
 
 var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                DoNothingPolicyType,
-	Resource:            NewDoNothingPolicyResource(),
-	ResourceList:        &DoNothingPolicyResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "donothingpolicies",
-	KumactlArg:          "donothingpolicy",
-	KumactlListArg:      "donothingpolicies",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Do Nothing Policy",
-	PluralDisplayName:   "Do Nothing Policies",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         DoNothingPolicyType,
+	Resource:                     NewDoNothingPolicyResource(),
+	ResourceList:                 &DoNothingPolicyResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "donothingpolicies",
+	KumactlArg:                   "donothingpolicy",
+	KumactlListArg:               "donothingpolicies",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Do Nothing Policy",
+	PluralDisplayName:            "Do Nothing Policies",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

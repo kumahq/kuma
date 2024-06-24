@@ -1196,7 +1196,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.outbound[0].backendRef.kind
-                  message: 'invalid value. Available values are: MeshService'
+                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
                 - field: networking.outbound[0].backendRef.name
                   message: cannot be empty
                 - field: networking.outbound[0].backendRef.port

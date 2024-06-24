@@ -42,6 +42,13 @@ spec:
             properties:
               selector:
                 properties:
+                  meshExternalService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   meshService:
                     properties:
                       matchLabels:

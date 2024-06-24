@@ -116,8 +116,15 @@ const (
 	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 
+	// ManagedBy points to the Service that a MeshService is derived from. If
+	// it's converted from a Kubernetes Service, it has the value
+	// "k8s-controller"
+	ManagedBy = "kuma.io/managed-by"
 	// KumaServiceName points to the Service that a MeshService is derived from
 	KumaServiceName = "k8s.kuma.io/service-name"
+
+	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
+	HeadlessService = "k8s.kuma.io/is-headless-service"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

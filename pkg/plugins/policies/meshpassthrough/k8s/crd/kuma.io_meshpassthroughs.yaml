@@ -85,12 +85,16 @@ spec:
                       - port
                       type: object
                     type: array
-                  enabled:
+                  passthroughMode:
+                    default: None
                     description: |-
-                      Enabled defines whether the passthrough behavior, which allows all traffic going
-                      outside of the cluster, is active. If true, AppendMatch
-                      has no effect.
-                    type: boolean
+                      Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+                      When `All` or `None` `appendMatch` has no effect.
+                    enum:
+                    - All
+                    - Matched
+                    - None
+                    type: string
                 type: object
               targetRef:
                 description: |-
@@ -105,9 +109,17 @@ spec:
                     - MeshSubset
                     - MeshGateway
                     - MeshService
+                    - MeshExternalService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
                   mesh:
                     description: Mesh is reserved for future use to identify cross
                       mesh resources.
@@ -116,6 +128,11 @@ spec:
                     description: |-
                       Name of the referenced resource. Can only be used with kinds: `MeshService`,
                       `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
                     type: string
                   proxyTypes:
                     description: |-
@@ -128,6 +145,11 @@ spec:
                       type: string
                     minItems: 1
                     type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
                   tags:
                     additionalProperties:
                       type: string

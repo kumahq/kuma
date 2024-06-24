@@ -76,6 +76,11 @@ func (b *ClusterBuilder) AddConfigurer(configurer v3.ClusterConfigurer) {
 	b.configurers = append(b.configurers, configurer)
 }
 
+// WithName sets the name for the cluster
+func (b *ClusterBuilder) WithName(name string) {
+	b.name = name
+}
+
 // ClusterBuilderOptFunc is a convenience type adapter.
 type ClusterBuilderOptFunc func(config *ClusterBuilder)
 

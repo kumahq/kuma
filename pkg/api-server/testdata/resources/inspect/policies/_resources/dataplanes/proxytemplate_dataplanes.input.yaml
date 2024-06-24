@@ -15,6 +15,9 @@ conf:
 type: Dataplane
 name: dp-1
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-1
 networking:
   address: 127.0.0.1
   inbound:
@@ -25,6 +28,9 @@ networking:
 type: Dataplane
 name: dp-2
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-2
 networking:
   address: 127.0.0.1
   inbound:
@@ -35,6 +41,9 @@ networking:
 type: Dataplane
 name: dp-3
 mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-3
 networking:
   address: 127.0.0.1
   inbound:

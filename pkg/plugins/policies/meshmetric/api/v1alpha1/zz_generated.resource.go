@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshMetricResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshMetricResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshMetricType,
-	Resource:            NewMeshMetricResource(),
-	ResourceList:        &MeshMetricResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshmetrics",
-	KumactlArg:          "meshmetric",
-	KumactlListArg:      "meshmetrics",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Metric",
-	PluralDisplayName:   "Mesh Metrics",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshMetricType,
+	Resource:                     NewMeshMetricResource(),
+	ResourceList:                 &MeshMetricResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshmetrics",
+	KumactlArg:                   "meshmetric",
+	KumactlListArg:               "meshmetrics",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Metric",
+	PluralDisplayName:            "Mesh Metrics",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -78,8 +79,9 @@ func VIPOutbounds(
 	return vipDomains, outbounds
 }
 
-func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) []*mesh_proto.Dataplane_Networking_Outbound {
+func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var vipDomains []xds.VIPDomains
 	for _, svc := range meshServices {
 		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
@@ -94,6 +96,44 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) [
 				})
 			}
 		}
+		if len(svc.Status.VIPs) > 0 {
+			var domains []string
+			for _, addr := range svc.Status.Addresses {
+				domains = append(domains, addr.Hostname)
+			}
+			vipDomains = append(vipDomains, xds.VIPDomains{
+				Address: svc.Status.VIPs[0].IP,
+				Domains: domains,
+			})
+		}
 	}
-	return outbounds
+	return vipDomains, outbounds
+}
+
+func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+	var vipDomains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
+	for _, meshExternalService := range meshExternalServices {
+		if meshExternalService.Status.VIP.IP != "" {
+			outbound := &mesh_proto.Dataplane_Networking_Outbound{
+				Address: meshExternalService.Status.VIP.IP,
+				Port:    uint32(meshExternalService.Spec.Match.Port),
+				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+					Kind: string(meshexternalservice_api.MeshExternalServiceType),
+					Name: meshExternalService.Meta.GetName(),
+					Port: uint32(meshExternalService.Spec.Match.Port),
+				},
+			}
+			outbounds = append(outbounds, outbound)
+
+			var domains []string
+			for _, address := range meshExternalService.Status.Addresses {
+				domains = append(domains, address.Hostname)
+			}
+			vipDomains = append(vipDomains, xds.VIPDomains{Address: meshExternalService.Status.VIP.IP, Domains: domains})
+		}
+	}
+
+	return vipDomains, outbounds
 }

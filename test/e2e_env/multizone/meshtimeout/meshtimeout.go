@@ -156,7 +156,7 @@ spec:
       default:
         http:
           requestTimeout: 2s
-`, Config.KumaNamespace, mesh))(multizone.KubeZone1)).To(Succeed())
+`, k8sZoneNamespace, mesh))(multizone.KubeZone1)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(

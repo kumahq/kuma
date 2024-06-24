@@ -125,9 +125,9 @@ func ExecuteStoreTests(
 						},
 						Ports: []meshservice_api.Port{
 							{
-								Port:       80,
-								TargetPort: intstr.FromInt(80),
-								Protocol:   "http",
+								Port:        80,
+								TargetPort:  intstr.FromInt(80),
+								AppProtocol: "http",
 							},
 						},
 					},
@@ -271,9 +271,9 @@ func ExecuteStoreTests(
 						},
 						Ports: []meshservice_api.Port{
 							{
-								Port:       80,
-								TargetPort: intstr.FromInt(80),
-								Protocol:   "http",
+								Port:        80,
+								TargetPort:  intstr.FromInt(80),
+								AppProtocol: "http",
 							},
 						},
 					},

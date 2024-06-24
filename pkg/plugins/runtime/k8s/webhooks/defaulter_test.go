@@ -42,6 +42,7 @@ var _ = Describe("Defaulter", func() {
 			Mode:                         core.Global,
 			FederatedZone:                false,
 			DisableOriginLabelValidation: false,
+			SystemNamespace:              "kuma-system",
 		}
 	}
 
@@ -51,6 +52,8 @@ var _ = Describe("Defaulter", func() {
 			Mode:                         core.Zone,
 			FederatedZone:                federatedZone,
 			DisableOriginLabelValidation: !originValidation,
+			SystemNamespace:              "kuma-system",
+			ZoneName:                     "zone-1",
 		}
 	}
 
@@ -61,7 +64,8 @@ var _ = Describe("Defaulter", func() {
 
 			req := kube_admission.Request{
 				AdmissionRequest: admissionv1.AdmissionRequest{
-					UID: kube_types.UID("12345"),
+					Namespace: "kuma-system",
+					UID:       kube_types.UID("12345"),
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.inputObject),
 					},
@@ -118,7 +122,10 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null
+				"creationTimestamp": null,
+				"annotations": {
+				  "kuma.io/display-name": "empty"
+				}
               },
               "spec": {
 				"metrics": {
@@ -171,7 +178,10 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
-				"creationTimestamp": null
+				"creationTimestamp": null,
+				"annotations": {
+				  "kuma.io/display-name": "empty"
+				}
               },
               "spec": {
 				"metrics": {
@@ -220,7 +230,11 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "kuma.io/mesh": "my-mesh-1"
+                  "kuma.io/mesh": "my-mesh-1",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {}
@@ -257,7 +271,13 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -292,8 +312,58 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
+		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -328,8 +398,14 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {
@@ -375,8 +451,13 @@ var _ = Describe("Defaulter", func() {
                 "name":"empty",
                 "creationTimestamp":null,
                 "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
-                  "kuma.io/mesh": "default"
+                  "kuma.io/zone": "zone-1"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec":{
@@ -420,7 +501,12 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "kuma.io/mesh": "default"
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
                 }
               },
               "spec": {

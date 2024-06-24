@@ -134,6 +134,10 @@ func SetupAndGetState() []byte {
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
+	vipCIDROverride := "251.0.0.0/8"
+	if Config.IPV6 {
+		vipCIDROverride = "fd00:fd11::/64"
+	}
 	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 	uniZone2Options := append(
 		[]framework.KumaDeploymentOption{
@@ -142,6 +146,7 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)
