@@ -3,11 +3,11 @@ package probes
 import (
 	"context"
 	"fmt"
-	grpchealth "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes/api"
 	"github.com/kumahq/kuma/pkg/version"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"net"

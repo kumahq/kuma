@@ -49,7 +49,7 @@ var DefaultConfig = func() Config {
 		},
 		VirtualProbesServer: VirtualProbesServer{
 			Enabled: true,
-			Port:    9090,
+			Port:    9000,
 		},
 	}
 }
@@ -393,8 +393,8 @@ func (d *DNS) Validate() error {
 type VirtualProbesServer struct {
 	config.BaseConfig
 
-	Enabled bool   `json:"enabled,omitempty" envconfig:"virtual_probe_server_enabled"`
-	Port    uint32 `json:"port,omitempty" envconfig:"virtual_probe_server_port"`
+	Enabled bool   `json:"enabled,omitempty" envconfig:"virtual_probes_server_enabled"`
+	Port    uint32 `json:"port,omitempty" envconfig:"virtual_probes_server_port"`
 }
 
 func (p *VirtualProbesServer) Validate() error {

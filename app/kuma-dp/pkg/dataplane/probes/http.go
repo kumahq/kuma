@@ -132,7 +132,7 @@ func readAtMost(r io.Reader, limit int64) ([]byte, error) {
 		return data, err
 	}
 	if limitedReader.N <= 0 {
-		return data, errors.New("the read limit is reached")
+		return data, errLimitReached
 	}
 	return data, nil
 }

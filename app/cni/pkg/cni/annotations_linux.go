@@ -104,7 +104,7 @@ func validatePortList(ports string) error {
 }
 
 func validateSinglePort(portString string) error {
-	if port, err := parsePort(portStr) {
+	if _, err := parsePort(portString); err != nil {
 		return err
 	}
 	return nil
@@ -143,6 +143,8 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
+	valTrue := "true"
+	valDefaultVirtualPort := defaultVirtualProbePorts
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -156,8 +158,8 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
-		"virtualProbesEnabled":        "true",
-		"virtualProbesPort":           defaultVirtualProbePorts,
+		"virtualProbesEnabled":        &valTrue,
+		"virtualProbesPort":           &valDefaultVirtualPort,
 	}
 
 	for fieldName, fieldPointer := range allFields {
@@ -201,9 +203,9 @@ func assignIPv6InboundRedirectPort(allFields map[string]*string) {
 	}
 }
 
-func excludeVirtualProbePort(inboundPortsToExclude string, allFields map[string]*string) string {
+func excludeVirtualProbePort(inboundPortsToExclude string, allFields map[string]string) string {
 	enabledPtr := allFields["virtualProbesEnabled"]
-	enabled, err := GetEnabled(*enabledPtr)
+	enabled, err := GetEnabled(enabledPtr)
 	if err != nil {
 		enabled = true
 	}
@@ -214,8 +216,8 @@ func excludeVirtualProbePort(inboundPortsToExclude string, allFields map[string]
 
 	virtualProbesPort := allFields["virtualProbesPort"]
 	if inboundPortsToExclude == "" {
-		return *virtualProbesPort
+		return virtualProbesPort
 	}
 
-	return fmt.Sprintf("%s,%s", inboundPortsToExclude, *virtualProbesPort)
+	return fmt.Sprintf("%s,%s", inboundPortsToExclude, virtualProbesPort)
 }
