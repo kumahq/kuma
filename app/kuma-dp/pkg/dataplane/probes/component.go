@@ -4,11 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bakito/go-log-logr-adapter/adapter"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	kube_core "k8s.io/api/core/v1"
 	"net"
 	"net/http"
 	"regexp"
@@ -17,7 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	err_pkg "github.com/pkg/errors"
+	kube_core "k8s.io/api/core/v1"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 )
 
 var (
@@ -38,7 +39,7 @@ const (
 
 	Healthy   = "HEALTHY"
 	Unhealthy = "UNHEALTHY"
-	Unkown    = "UNKNOWN"
+	Unknown   = "UNKNOWN"
 )
 
 type Prober struct {

@@ -2,9 +2,9 @@ package probes
 
 import (
 	"fmt"
-	"github.com/go-logr/logr"
 	"strconv"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -48,7 +48,7 @@ func OverridePodProbes(pod *kube_core.Pod, log logr.Logger) error {
 		}
 	}
 	for _, c := range containersNeedingProbes {
-		portResolver := namedPortResolver(&c)
+		portResolver := namedPortResolver(c.Ports)
 		if err := overrideProbe(c.LivenessProbe, virtualProbesPort,
 			portResolver, c.Name, "liveness", log); err != nil {
 			return err
@@ -65,14 +65,15 @@ func OverridePodProbes(pod *kube_core.Pod, log logr.Logger) error {
 	return nil
 }
 
-func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandler) {
+func namedPortResolver(containerPorts []kube_core.ContainerPort) func(kube_core.ProbeHandler) {
 	return func(probe kube_core.ProbeHandler) {
 		var portStr intstr.IntOrString
-		if probe.HTTPGet != nil {
+		switch {
+		case probe.HTTPGet != nil:
 			portStr = probe.HTTPGet.Port
-		} else if probe.TCPSocket != nil {
+		case probe.TCPSocket != nil:
 			portStr = probe.TCPSocket.Port
-		} else {
+		default:
 			return
 		}
 
@@ -80,7 +81,7 @@ func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandl
 			return
 		}
 
-		for _, containerPort := range container.Ports {
+		for _, containerPort := range containerPorts {
 			if containerPort.Name != "" && containerPort.Name == portStr.String() {
 				if probe.HTTPGet != nil {
 					probe.HTTPGet.Port = intstr.FromInt32(containerPort.ContainerPort)
@@ -95,7 +96,8 @@ func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandl
 }
 
 func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
-	namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string, log logr.Logger) error {
+	namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string, log logr.Logger,
+) error {
 	if probe == nil {
 		return nil
 	}

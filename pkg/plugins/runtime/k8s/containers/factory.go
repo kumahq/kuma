@@ -2,12 +2,11 @@ package containers
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	"github.com/pkg/errors"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -15,6 +14,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 

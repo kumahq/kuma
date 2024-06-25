@@ -4,20 +4,23 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
+	"net/http"
+	"strconv"
+	"sync/atomic"
+	"time"
+
 	"github.com/bakito/go-log-logr-adapter/adapter"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
-	kuma_probes "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	kuma_tls "github.com/kumahq/kuma/pkg/tls"
-	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	err_pkg "github.com/pkg/errors"
 	"google.golang.org/grpc"
 	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
-	"net"
-	"net/http"
-	"sync/atomic"
-	"time"
+
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
+	kuma_probes "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	kuma_tls "github.com/kumahq/kuma/pkg/tls"
+	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 )
 
 var _ = Describe("Virtual Probes", func() {
@@ -27,15 +30,8 @@ var _ = Describe("Virtual Probes", func() {
 	listenPort := uint32(9000)
 
 	virtualProbesURL := func(path string) string {
-		return fmt.Sprintf("http://%s:%d%s", podIP, listenPort, path)
+		return fmt.Sprintf("http://%s%s", net.JoinHostPort(podIP, strconv.Itoa(int(listenPort))), path)
 	}
-
-	// case 1: listen HTTP
-	// case 3: IPv6
-
-	// case 1: path - HTTP, probe - HTTP
-	// case 2: path - TCP, probe - TCP
-	// case 3: path - TCP, probe - gRPC
 
 	Describe("Virtual Probe Listener", func() {
 		It("should start and stop the listener", func() {
@@ -101,6 +97,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTP upstream when it's healthy", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -111,6 +108,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTP upstream when the port is not listening", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8081/healthz"), nil)
+			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
 
@@ -121,6 +119,7 @@ var _ = Describe("Virtual Probes", func() {
 		It("should probe HTTP upstream when the application reports a failure and return application status code", func() {
 			// given a header set to trigger a failure
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set("x-custom-header-triggers-failure", "present")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
 
@@ -133,6 +132,7 @@ var _ = Describe("Virtual Probes", func() {
 		It("should probe HTTP upstream when path does not match", func() {
 			// given a header set to trigger a failure
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/bad-path"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -144,6 +144,7 @@ var _ = Describe("Virtual Probes", func() {
 		It("should fail with short timeout when probing", func() {
 			// given a timeout shorter than the execution duration
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2") // 2s is shorter than the execution duration (3s)
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -192,6 +193,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTPS upstream without verifying server certificates", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8443/"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -234,12 +236,12 @@ var _ = Describe("Virtual Probes", func() {
 			default:
 			}
 
-			close(errCh)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should probe TCP server when it's healthy", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6379"), nil)
+			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
 
@@ -249,6 +251,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe TCP server when the port is not listening", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6000"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "3")
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -294,13 +297,14 @@ var _ = Describe("Virtual Probes", func() {
 			default:
 			}
 
-			close(errCh)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should probe gRPC server when it's healthy", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
+			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
 
 			response, err := http.DefaultClient.Do(probeReq)
 
@@ -310,6 +314,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should fail with a short timeout when probing", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2")
 
@@ -321,7 +326,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe gRPC server when the port is not listening", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5656"), nil)
-
+			Expect(err).ToNot(HaveOccurred())
 			response, err := http.DefaultClient.Do(probeReq)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -330,6 +335,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe gRPC server when the application reports a failure", func() {
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "readiness")
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -369,7 +375,7 @@ type mockApplication struct {
 }
 
 func (m *mockApplication) Start(stop <-chan struct{}) error {
-	var errChs = make([]chan error, 3)
+	errChs := make([]chan error, 3)
 	errChs[0] = make(chan error)
 	errChs[1] = make(chan error)
 	errChs[2] = make(chan error)
@@ -402,9 +408,10 @@ func (m *mockApplication) startHTTPServer(stop <-chan struct{}) error {
 
 	var httpReady atomic.Bool
 	server := &http.Server{
-		Addr:     fmt.Sprintf(":%d", m.HTTP.ListenPort),
-		Handler:  m,
-		ErrorLog: adapter.ToStd(GinkgoLogr),
+		ReadHeaderTimeout: time.Second,
+		Addr:              fmt.Sprintf(":%d", m.HTTP.ListenPort),
+		Handler:           m,
+		ErrorLog:          adapter.ToStd(GinkgoLogr),
 	}
 	if m.HTTP.HTTPS {
 		tlsConfig, err := configureSelfSignedServerTLS("mock-application")
@@ -522,7 +529,7 @@ func (m *mockApplication) startGRPCServer(stop <-chan struct{}) error {
 		}
 
 		GinkgoLogr.Info("starting the mock gRPC server")
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", m.HTTP.ListenPort))
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", m.GRPC.ListenPort))
 		if err != nil {
 			return err_pkg.Wrap(err, "unable to listen the mock gRPC server")
 		}
@@ -534,7 +541,6 @@ func (m *mockApplication) startGRPCServer(stop <-chan struct{}) error {
 }
 
 func (m *mockApplication) Check(ctx context.Context, req *grpchealth.HealthCheckRequest) (*grpchealth.HealthCheckResponse, error) {
-
 	status := grpchealth.HealthCheckResponse_NOT_SERVING
 	if m.GRPC.IsHealthy {
 		status = grpchealth.HealthCheckResponse_SERVING

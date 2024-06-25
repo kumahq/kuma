@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/test/server/grpc/api"
-	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 var grpcServerLog = grpcLog.WithName("server")

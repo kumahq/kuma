@@ -4,15 +4,17 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-	"github.com/kumahq/kuma/pkg/version"
 	"io"
-	kube_core "k8s.io/api/core/v1"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	kube_core "k8s.io/api/core/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
@@ -30,7 +32,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	upstreamReq, err := buildUpstreamReq(req, upstreamScheme, p.podAddress)
 	if err != nil {
 		logger.V(1).Info("unable to create upstream request", "error", err)
-		writeProbeResult(writer, Unkown)
+		writeProbeResult(writer, Unknown)
 		return
 	}
 
@@ -73,7 +75,6 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	// for HTTP failures, we try to re-use original status code
 	// so that it's easier to debug from an application developer's perspective
 	writeHTTPProbeResult(writer, Unhealthy, res.StatusCode)
-	return
 }
 
 func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme kube_core.URIScheme, podAddr string) (*http.Request, error) {
@@ -117,7 +118,9 @@ func createHttpTransport(scheme kube_core.URIScheme, useIPv6 bool) *http.Transpo
 		DisableKeepAlives: true,
 	}
 	if scheme == kube_core.URISchemeHTTPS {
-		httpTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		httpTransport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true, // #nosec G402 -- Intentionally ignoring tls verification in probes
+		}
 	}
 
 	d := createProbeDialer(useIPv6)

@@ -3,15 +3,17 @@ package probes
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/version"
+	"net"
+	"net/http"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"net"
-	"net/http"
+
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
@@ -19,27 +21,21 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 
 	opts := []grpc.DialOption{
 		grpc.WithUserAgent(fmt.Sprintf("kube-probe/%s", version.Build.Version)),
-		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return createProbeDialer(p.isPodAddrIPV6).DialContext(ctx, "tcp", addr)
 		}),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), getTimeout(req))
-
-	defer cancel()
-
 	port, err := getPort(req, tcpGRPCPathPattern)
 	if err != nil {
 		logger.V(1).Info("invalid port number", "error", err)
-		writeProbeResult(writer, Unkown)
+		writeProbeResult(writer, Unknown)
 		return
 	}
 
 	addr := net.JoinHostPort(p.podAddress, fmt.Sprintf("%d", port))
-	conn, err := grpc.DialContext(ctx, addr, opts...)
-
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		logger.V(1).Info("unable to connect to upstream server", "error", err)
 		writeProbeResult(writer, Unhealthy)
@@ -51,10 +47,12 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 	}()
 
 	client := grpchealth.NewHealthClient(conn)
-	resp, err := client.Check(metadata.NewOutgoingContext(ctx, make(metadata.MD)), &grpchealth.HealthCheckRequest{
-		Service: getGRPCService(req),
-	})
-
+	ctx, cancel := context.WithTimeout(context.Background(), getTimeout(req))
+	defer cancel()
+	resp, err := client.Check(metadata.NewOutgoingContext(ctx, make(metadata.MD)), // nolint: contextcheck
+		&grpchealth.HealthCheckRequest{
+			Service: getGRPCService(req),
+		})
 	if err != nil {
 		stat, ok := status.FromError(err)
 		if ok {
@@ -86,5 +84,4 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	writeProbeResult(writer, Healthy)
-	return
 }

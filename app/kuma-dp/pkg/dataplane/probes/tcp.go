@@ -12,7 +12,7 @@ func (p *Prober) probeTCP(writer http.ResponseWriter, req *http.Request) {
 	port, err := getPort(req, tcpGRPCPathPattern)
 	if err != nil {
 		logger.V(1).Info("invalid port number", "error", err)
-		writeProbeResult(writer, Unkown)
+		writeProbeResult(writer, Unknown)
 		return
 	}
 

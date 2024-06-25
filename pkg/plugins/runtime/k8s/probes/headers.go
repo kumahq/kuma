@@ -2,15 +2,16 @@ package probes
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
-	KumaProbeHeaderPrefix = "x-kuma-probes-"
-	HeaderNameTimeout     = KumaProbeHeaderPrefix + "timeout"
-	HeaderNameHost        = KumaProbeHeaderPrefix + "host"
-	HeaderNameScheme      = KumaProbeHeaderPrefix + "scheme"
-	HeaderNameGRPCService = KumaProbeHeaderPrefix + "grpc-service"
+	KumaProbeHeaderPrefix = "X-Kuma-Probes-"
+	HeaderNameTimeout     = KumaProbeHeaderPrefix + "Timeout"
+	HeaderNameHost        = KumaProbeHeaderPrefix + "Host"
+	HeaderNameScheme      = KumaProbeHeaderPrefix + "Scheme"
+	HeaderNameGRPCService = KumaProbeHeaderPrefix + "GRPC-Service"
 )
 
 func TimeoutHeader(timeoutSeconds int32) corev1.HTTPHeader {
