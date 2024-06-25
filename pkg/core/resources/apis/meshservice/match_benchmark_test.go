@@ -13,22 +13,44 @@ import (
 
 // To run, remove X from the prefix
 // $ cd pkg/core/resources/apis/meshservice
-// $ go test -bench=BenchmarkMatchDataplanesWithMeshServices -run=^# -count 10 | tee bench.txt
+// $ go test -bench=BenchmarkMatchDataplanesWithMeshServices -benchmem -run=^# -count 10 | tee bench.txt
 // $ go install golang.org/x/perf/cmd/benchstat@latest
 // $ benchstat bench.txt
 // goos: darwin
 // goarch: arm64
 // pkg: github.com/kumahq/kuma/pkg/core/resources/apis/meshservice
 //
-//	│     bench.txt     │
-//	│     sec/op        │
+//	│  bench.txt  │
+//	│   sec/op    │
 //
-// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10     0.02471n ± 1%
-// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10        5.633 ± 1%
-// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10      0.001591n ± 3%
-// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10       0.02013n ± 1%
-// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     0.0001143n ± 9%
-// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10     0.0001701n ± 4%
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   23.96m ± 4%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10     5.243 ± 4%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     1.447m ± 4%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      18.51m ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     89.15µ ± 1%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      149.5µ ± 2%
+// geomean                                                                  5.961m
+//
+//	│  bench.txt   │
+//	│     B/op     │
+//
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   15.61Mi ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    1.055Mi ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     971.0Ki ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      67.88Ki ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     84.60Ki ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      9.911Ki ± 0%
+// geomean                                                                  313.8Ki
+//
+//	│  bench.txt  │
+//	│  allocs/op  │
+//
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   370.5k ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    16.04k ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     23.34k ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      1.014k ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     1.497k ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10       58.00 ± 0%
 func XBenchmarkMatchDataplanesWithMeshServices(b *testing.B) {
 	table := []struct {
 		dppsPerService       int
@@ -65,11 +87,15 @@ func XBenchmarkMatchDataplanesWithMeshServices(b *testing.B) {
 
 		suffix := fmt.Sprintf("-ns_%d-svc_%d-dpp_%d", testCase.namespaces, testCase.servicesPerNamespace, testCase.dppsPerService)
 		b.Run("faster-matching"+suffix, func(b *testing.B) {
-			_ = meshservice.MatchDataplanesWithMeshServices(dpps, meshServices, false)
+			for i := 0; i < b.N; i++ {
+				_ = meshservice.MatchDataplanesWithMeshServices(dpps, meshServices, false)
+			}
 		})
 
 		b.Run("naive-matching"+suffix, func(b *testing.B) {
-			_ = naiveMatching(dpps, meshServices)
+			for i := 0; i < b.N; i++ {
+				_ = naiveMatching(dpps, meshServices)
+			}
 		})
 	}
 }
