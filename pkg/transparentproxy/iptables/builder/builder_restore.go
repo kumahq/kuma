@@ -96,10 +96,7 @@ type Executables struct {
 }
 
 func newExecutables(ipv6 bool, mode string) *Executables {
-	prefix := consts.Iptables
-	if ipv6 {
-		prefix = consts.Ip6tables
-	}
+	prefix := consts.IptablesCommandByFamily[ipv6]
 
 	iptables := fmt.Sprintf("%s-%s", prefix, mode)
 	iptablesSave := fmt.Sprintf("%s-%s-%s", prefix, mode, "save")

@@ -59,16 +59,13 @@ func (r *restorer) saveIPTablesRestoreFile(logPrefix string, f *os.File, content
 }
 
 func createRulesFile(ipv6 bool) (*os.File, error) {
-	prefix := consts.Iptables
-	if ipv6 {
-		prefix = consts.Ip6tables
-	}
+	prefix := consts.IptablesCommandByFamily[ipv6]
 
 	filename := fmt.Sprintf("%s-rules-%d.txt", prefix, time.Now().UnixNano())
 
 	f, err := os.CreateTemp("", filename)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create %s rules file: %s", consts.Iptables, err)
+		return nil, fmt.Errorf("unable to create %s rules file: %s", prefix, err)
 	}
 
 	return f, nil

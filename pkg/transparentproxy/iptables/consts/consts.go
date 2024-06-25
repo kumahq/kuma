@@ -14,6 +14,14 @@ const (
 	Ip6tables = "ip6tables"
 )
 
+// IptablesCommandByFamily maps a boolean value indicating IPv4 (false) or IPv6
+// (true) usage to the corresponding iptables command name. This allows for code
+// to be written generically without duplicating logic for both IPv4 and IPv6.
+var IptablesCommandByFamily = map[bool]string{
+	false: Iptables,
+	true:  Ip6tables,
+}
+
 const (
 	DNSPort           uint16 = 53
 	LocalhostIPv4            = "127.0.0.1"

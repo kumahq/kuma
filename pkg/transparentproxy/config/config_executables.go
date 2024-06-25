@@ -25,7 +25,7 @@ type Executable struct {
 func (c Executable) Initialize(
 	ctx context.Context,
 ) (InitializedExecutable, error) {
-	prefix := map[bool]string{true: Ip6tables, false: Iptables}[c.ipv6]
+	prefix := IptablesCommandByFamily[c.ipv6]
 
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
 	// ip{6}tables-{nft|legacy}-restore
