@@ -46,9 +46,9 @@ func NewRule(
 // chain name, optional position (if not zero), and the parameters built using
 // the `parameters.Build(verbose)` method.
 func (r *Rule) BuildForRestore(verbose bool) string {
-	flag := consts.FlagsShortLongMap[consts.FlagAppend][verbose]
+	flag := consts.FlagVariationsMap[consts.FlagAppend][verbose]
 	if r.position != 0 {
-		flag = consts.FlagsShortLongMap[consts.FlagInsert][verbose]
+		flag = consts.FlagVariationsMap[consts.FlagInsert][verbose]
 	}
 
 	cmd := []string{flag, r.chain}

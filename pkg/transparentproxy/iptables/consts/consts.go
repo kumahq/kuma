@@ -5,11 +5,6 @@ import (
 )
 
 const (
-	Long  = true
-	Short = false
-)
-
-const (
 	Iptables  = "iptables"
 	Ip6tables = "ip6tables"
 )
@@ -70,18 +65,21 @@ const (
 	FlagNewChain = "-N"
 )
 
-var FlagsShortLongMap = map[string]map[bool]string{
+// FlagVariationsMap maps a flag name (e.g., "-t") to a map containing its long
+// (true) and short (false) flag representations. This allows for code to easily
+// look up the appropriate flag based on desired usage (short or long).
+var FlagVariationsMap = map[string]map[bool]string{
 	FlagAppend: {
-		Long:  "--append",
-		Short: FlagAppend,
+		true:  "--append",
+		false: FlagAppend,
 	},
 	FlagInsert: {
-		Long:  "--insert",
-		Short: FlagInsert,
+		true:  "--insert",
+		false: FlagInsert,
 	},
 	FlagNewChain: {
-		Long:  "--new-chain",
-		Short: FlagNewChain,
+		true:  "--new-chain",
+		false: FlagNewChain,
 	},
 }
 
