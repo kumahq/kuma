@@ -55,14 +55,16 @@ func Drop() *JumpParameter {
 // then DROP (or REJECT).
 // ref. iptables(8) > LOG
 // levels:
-//  0 - EMERGENCY	- system is unusable
-//  1 - ALERT		- action must be taken immediately
-//  2 - CRITICAL	- critical conditions
-//  3 - ERR			- error conditions
-//  4 - WARNING		- warning conditions
-//  5 - NOTICE		- normal but significant condition
-//  6 - INFO		- informational
-//  7 - DEBUG		- debug-level messages
+//
+//	0 - EMERGENCY	- system is unusable
+//	1 - ALERT		- action must be taken immediately
+//	2 - CRITICAL	- critical conditions
+//	3 - ERR			- error conditions
+//	4 - WARNING		- warning conditions
+//	5 - NOTICE		- normal but significant condition
+//	6 - INFO		- informational
+//	7 - DEBUG		- debug-level messages
+//
 // ref. https://git.netfilter.org/iptables/tree/extensions/libebt_log.c#n27
 func Log(prefix string, level uint16) *JumpParameter {
 	return &JumpParameter{
