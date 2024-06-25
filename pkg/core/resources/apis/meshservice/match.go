@@ -51,7 +51,7 @@ func indexDpsForMatching(
 
 		for _, inbound := range inbounds {
 			for tagName, tagValue := range inbound.GetTags() {
-				tag := fmt.Sprintf("%s;%s;%s", dpp.Meta.GetMesh(), tagName, tagValue)
+				tag := dppsByNameByTagKey(dpp.Meta.GetMesh(), tagName, tagValue)
 				dataplanes, ok := dppsByNameByTag[tag]
 				if !ok {
 					dataplanes = map[string]*core_mesh.DataplaneResource{}
@@ -61,17 +61,25 @@ func indexDpsForMatching(
 			}
 		}
 		if len(inbounds) > 0 {
-			dppsByName[fmt.Sprintf("%s;%s", dpp.Meta.GetMesh(), dpp.Meta.GetName())] = dpp
+			dppsByName[dppsByNameKey(dpp.Meta.GetMesh(), dpp.Meta.GetName())] = dpp
 		}
 	}
 	return dppsByNameByTag, dppsByName
+}
+
+func dppsByNameByTagKey(mesh, tagName, tagValue string) string {
+	return fmt.Sprintf("%s;%s;%s", mesh, tagName, tagValue)
+}
+
+func dppsByNameKey(mesh, name string) string {
+	return fmt.Sprintf("%s;%s", mesh, name)
 }
 
 func matchByRef(
 	ms *meshservice_api.MeshServiceResource,
 	dppsByName map[string]*core_mesh.DataplaneResource,
 ) []*core_mesh.DataplaneResource {
-	key := fmt.Sprintf("%s;%s", ms.Meta.GetMesh(), ms.Spec.Selector.DataplaneRef.Name)
+	key := dppsByNameKey(ms.Meta.GetMesh(), ms.Spec.Selector.DataplaneRef.Name)
 	if dpp, ok := dppsByName[key]; ok {
 		return []*core_mesh.DataplaneResource{dpp}
 	}
@@ -90,7 +98,7 @@ func matchByTags(
 	// It's better to grab the shortest list of DPPs (app:redis) to reduce number of operations (.Matches) for the next step.
 	var shortestDppMap map[string]*core_mesh.DataplaneResource
 	for tagName, tagValue := range ms.Spec.Selector.DataplaneTags {
-		tagsKey := fmt.Sprintf("%s;%s;%s", ms.GetMeta().GetMesh(), tagName, tagValue)
+		tagsKey := dppsByNameByTagKey(ms.GetMeta().GetMesh(), tagName, tagValue)
 		if dppsByName, ok := dppsByNameByTag[tagsKey]; ok {
 			if shortestDppMap == nil || len(dppsByName) < len(shortestDppMap) {
 				shortestDppMap = dppsByName
