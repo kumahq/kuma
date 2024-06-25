@@ -218,7 +218,7 @@ func excludeVirtualProbePort(allFields map[string]*string) {
 	virtualProbesPort := *allFields["virtualProbesPort"]
 	existingExcludes := *inboundPortsToExclude
 	if existingExcludes == "" {
-		existingExcludes = virtualProbesPort
+		*inboundPortsToExclude = virtualProbesPort
 	} else {
 		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, virtualProbesPort)
 	}
