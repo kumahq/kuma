@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -260,24 +261,19 @@ func fillLocalMeshServices(
 	mesh *core_mesh.MeshResource,
 	localZone string,
 ) {
-	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
-	for _, dataplane := range dataplanes {
-		dpNetworking := dataplane.Spec.GetNetworking()
+	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
+	for meshSvc, dpps := range dppsForMs {
+		if !meshSvc.IsLocalMeshService(localZone) {
+			continue
+		}
 
-		for _, meshSvc := range meshServices {
-			if !meshSvc.IsLocalMeshService(localZone) {
-				continue
-			}
+		if meshSvc.Spec.Selector.DataplaneRef != nil {
+			continue
+		}
 
-			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
-			if meshSvc.Spec.Selector.DataplaneRef != nil {
-				continue
-			}
-
+		for _, dpp := range dpps {
+			dpNetworking := dpp.Spec.GetNetworking()
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
-				if !tagSelector.Matches(inbound.GetTags()) {
-					continue
-				}
 				for _, port := range meshSvc.Spec.Ports {
 					switch port.TargetPort.Type {
 					case intstr.Int:
@@ -304,6 +300,7 @@ func fillLocalMeshServices(
 				}
 			}
 		}
+
 	}
 }
 
