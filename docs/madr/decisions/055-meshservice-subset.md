@@ -135,7 +135,8 @@ spec:
 
 ### Negative Consequences
 
-* Universal UX but we can and should improve tooling here generally
+* Universal UX. It's tedious to create and apply MeshServices with kumactl in deployment pipelines
+  and effort to manage RBAC and permissions for service owners. But we can and should improve tooling here generally
 
 ## Pros and Cons of the Options
 
