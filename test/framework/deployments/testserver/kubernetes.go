@@ -38,6 +38,9 @@ func (k *k8SDeployment) service() *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      k.Name(),
 			Namespace: k.opts.Namespace,
+			Labels: map[string]string{
+				"kuma.io/mesh": k.opts.Mesh,
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
