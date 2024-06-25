@@ -30,7 +30,7 @@ import (
 // MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     0.0001143n ± 9%
 // MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10     0.0001701n ± 4%
 func XBenchmarkMatchDataplanesWithMeshServices(b *testing.B) {
-	var table = []struct {
+	table := []struct {
 		dppsPerService       int
 		servicesPerNamespace int
 		namespaces           int
@@ -71,9 +71,7 @@ func XBenchmarkMatchDataplanesWithMeshServices(b *testing.B) {
 		b.Run("naive-matching"+suffix, func(b *testing.B) {
 			_ = naiveMatching(dpps, meshServices)
 		})
-
 	}
-
 }
 
 func naiveMatching(dpps []*mesh.DataplaneResource, meshServices []*v1alpha1.MeshServiceResource) map[*v1alpha1.MeshServiceResource][]*mesh.DataplaneResource {

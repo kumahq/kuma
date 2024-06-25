@@ -57,7 +57,7 @@ func indexDpsForMatching(
 					dataplanes = map[string]*core_mesh.DataplaneResource{}
 					dppsByNameByTag[tag] = dataplanes
 				}
-				dppsByNameByTag[tag][dpp.Meta.GetName()] = dpp
+				dataplanes[dpp.Meta.GetName()] = dpp
 			}
 		}
 		if len(inbounds) > 0 {

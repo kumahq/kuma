@@ -300,7 +300,6 @@ func fillLocalMeshServices(
 				}
 			}
 		}
-
 	}
 }
 
