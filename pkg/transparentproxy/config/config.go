@@ -76,7 +76,11 @@ func (c DNS) Initialize() (InitializedDNS, error) {
 
 	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
 	if err != nil {
-		return initialized, errors.Errorf("unable to read file %s: %s", c.ResolvConfigPath, err)
+		return initialized, errors.Wrapf(
+			err,
+			"unable to read file %s",
+			c.ResolvConfigPath,
+		)
 	}
 
 	for _, address := range dnsConfig.Servers {
