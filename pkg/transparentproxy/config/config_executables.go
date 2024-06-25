@@ -235,7 +235,8 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		fmt.Fprintln(cfg.RuntimeStderr,
+		fmt.Fprintln(
+			cfg.RuntimeStderr,
 			"[WARNING] conflicting iptables modes detected. Two iptables"+
 				" versions (iptables-nft and iptables-legacy) were found."+
 				" Both contain a nat table with a chain named 'DOCKER_OUTPUT'."+
