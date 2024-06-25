@@ -207,6 +207,8 @@ func MeshSubset() Subset {
 	return Subset{}
 }
 
+// this method is needed for old MeshService matching, where were not matching actual resource, but we were matching on kuma.io/service tag
+// this can be removed after we start using MeshService by default, with policies on namespace
 func DeprecatedMeshService(name string) Subset {
 	return Subset{{
 		Key: ResourceNameTag, Value: name,

@@ -63,7 +63,8 @@ const (
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
 
-	// TODO description and probably better name
+	// SectionName is a standard label that reflects the name of the specific section of resource. It is used for targeting
+	// specific section of resource in policies
 	SectionName = "kuma.io/sectionName"
 )
 
