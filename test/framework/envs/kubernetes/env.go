@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/onsi/ginkgo/v2"
@@ -104,4 +105,13 @@ func PrintKubeState(report ginkgo.Report) {
 func ExpectCpToNotCrash() {
 	restartCount := framework.RestartCount(Cluster.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
 	Expect(restartCount).To(Equal(0), "CP restarted in this suite, this should not happen.")
+}
+
+func ExceptCpToNotPanic() {
+	logs, err := Cluster.GetKumaCPLogs()
+	if err != nil {
+		framework.Logf("could not retrieve cp logs")
+	} else {
+		Expect(strings.Contains(logs, "runtime.gopanic")).To(BeFalse())
+	}
 }

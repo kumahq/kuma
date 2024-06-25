@@ -2,6 +2,7 @@ package universal
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,5 +66,14 @@ func PrintCPLogsOnFailure(report ginkgo.Report) {
 		} else {
 			framework.Logf(logs)
 		}
+	}
+}
+
+func ExceptCpToNotPanic() {
+	logs, err := Cluster.GetKumaCPLogs()
+	if err != nil {
+		framework.Logf("could not retrieve cp logs")
+	} else {
+		Expect(strings.Contains(logs, "runtime.gopanic")).To(BeFalse())
 	}
 }

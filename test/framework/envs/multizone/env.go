@@ -2,6 +2,7 @@ package multizone
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -315,4 +316,15 @@ func ExpectCpsToNotCrash() {
 	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
 	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
 	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
+}
+
+func ExpectCpsToNotPanic() {
+	for _, cluster := range append(Zones(), Global) {
+		logs, err := cluster.GetKumaCPLogs()
+		if err != nil {
+			Logf("could not retrieve cp logs")
+		} else {
+			Expect(strings.Contains(logs, "runtime.gopanic")).To(BeFalse())
+		}
+	}
 }
