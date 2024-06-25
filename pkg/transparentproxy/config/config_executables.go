@@ -201,12 +201,12 @@ func NewExecutablesNftLegacy() ExecutablesNftLegacy {
 
 func (c ExecutablesNftLegacy) Initialize(
 	ctx context.Context,
-	config Config,
+	cfg Config,
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
 	// When dry run there is no need continue initialization
-	if config.DryRun {
+	if cfg.DryRun {
 		return InitializedExecutablesIPvX{}, nil
 	}
 
@@ -235,7 +235,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		fmt.Fprintln(config.RuntimeStderr,
+		fmt.Fprintln(cfg.RuntimeStderr,
 			"[WARNING] conflicting iptables modes detected. Two iptables"+
 				" versions (iptables-nft and iptables-legacy) were found."+
 				" Both contain a nat table with a chain named 'DOCKER_OUTPUT'."+
