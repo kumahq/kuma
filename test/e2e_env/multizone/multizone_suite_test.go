@@ -72,4 +72,11 @@ var (
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy", localityawarelb.LocalityAwareLB, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy with Gateway", localityawarelb.LocalityAwareLBGateway, Ordered)
 	_ = Describe("Advanced LocalityAwareness with MeshLoadBalancingStrategy and Enabled Egress", localityawarelb.LocalityAwareLBEgress, Ordered)
+<<<<<<< HEAD
+=======
+	_ = Describe("Defaults", defaults.Defaults, Ordered)
+	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
+	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
+	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
+>>>>>>> 92df0221b (test(e2e): tweak and reenable available services test (#10617))
 )
