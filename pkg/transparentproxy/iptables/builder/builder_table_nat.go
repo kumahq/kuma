@@ -343,13 +343,14 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 	return nil
 }
 
-func buildNatTable(
-	cfg config.InitializedConfig,
-	dnsServers []string,
-	ipv6 bool,
-) (*tables.NatTable, error) {
+func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
+
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
+	}
 
 	nat := tables.Nat()
 

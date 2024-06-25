@@ -21,17 +21,15 @@ import (
 
 func BuildIPTablesForRestore(
 	cfg config.InitializedConfig,
-	dnsServers []string,
 	ipv6 bool,
-	iptablesExecutablePath string,
 ) (string, error) {
-	natTable, err := buildNatTable(cfg, dnsServers, ipv6)
+	natTable, err := buildNatTable(cfg, ipv6)
 	if err != nil {
 		return "", fmt.Errorf("build nat table: %s", err)
 	}
 
 	result := slices.DeleteFunc([]string{
-		tables.BuildRulesForRestore(buildRawTable(cfg, dnsServers, iptablesExecutablePath), cfg.Verbose),
+		tables.BuildRulesForRestore(buildRawTable(cfg, ipv6), cfg.Verbose),
 		tables.BuildRulesForRestore(natTable, cfg.Verbose),
 		tables.BuildRulesForRestore(buildMangleTable(cfg), cfg.Verbose),
 	}, func(s string) bool { return s == "" })
@@ -162,7 +160,7 @@ func (r *restorer) tryRestoreIPTables(
 		r.cfg.Redirect.DNS.UpstreamTargetChain = "DOCKER_OUTPUT"
 	}
 
-	rules, err := BuildIPTablesForRestore(r.cfg, r.dnsServers, r.ipv6, executables.Iptables.Path)
+	rules, err := BuildIPTablesForRestore(r.cfg, r.ipv6)
 	if err != nil {
 		return "", fmt.Errorf("unable to build iptable rules: %s", err)
 	}

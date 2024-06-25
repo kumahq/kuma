@@ -73,10 +73,10 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return strings.HasPrefix(
 					stderr.String(),
-					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+					"# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module",
 				)
 			},
-			errorMatcher: HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"),
+			errorMatcher: HavePrefix("# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module"),
 			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
@@ -88,7 +88,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr *bytes.Buffer) bool {
 				return !strings.HasPrefix(
 					stderr.String(),
-					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+					"# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module",
 				)
 			},
 			goldenFile: "install-transparent-proxy.dns.golden.txt",

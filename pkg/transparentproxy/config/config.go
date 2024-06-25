@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/miekg/dns"
@@ -58,19 +57,49 @@ type DNS struct {
 
 type InitializedDNS struct {
 	DNS
-	ServersIPv4 []string
-	ServersIPv6 []string
+	ServersIPv4            []string
+	ServersIPv6            []string
+	ConntrackZoneSplitIPv4 bool
+	ConntrackZoneSplitIPv6 bool
 }
 
 // Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
 // the nameservers from the file specified in the ResolvConfigPath field of
 // the input DNS struct.
-func (c DNS) Initialize() (InitializedDNS, error) {
+func (c DNS) Initialize(
+	cfg Config,
+	executables InitializedExecutablesIPvX,
+) (InitializedDNS, error) {
 	initialized := InitializedDNS{DNS: c}
 
-	// We don't have to get DNS servers if DNS traffic shouldn't be redirected,
-	// or if we want to capture all DNS traffic
-	if !c.Enabled || c.CaptureAll {
+	// We don't have to continue initialization if the DNS traffic shouldn't be
+	// redirected
+	if !c.Enabled {
+		return initialized, nil
+	}
+
+	if c.ConntrackZoneSplit {
+		initialized.ConntrackZoneSplitIPv4 = executables.IPv4.Functionality.ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplitIPv4 {
+			fmt.Fprintln(
+				cfg.RuntimeStderr,
+				"# [WARNING]: conntrack zone splitting for IPv4 is disabled."+
+					" Functionality requires the 'conntrack' iptables module",
+			)
+		}
+
+		initialized.ConntrackZoneSplitIPv6 = executables.IPv6.Functionality.ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplitIPv4 {
+			fmt.Fprintln(
+				cfg.RuntimeStderr,
+				"# [WARNING]: conntrack zone splitting for IPv6 is disabled."+
+					" Functionality requires the 'conntrack' iptables module",
+			)
+		}
+	}
+
+	// We don't have to get DNS servers if if we want to capture all DNS traffic
+	if c.CaptureAll {
 		return initialized, nil
 	}
 
@@ -113,13 +142,16 @@ type InitializedRedirect struct {
 	DNS InitializedDNS
 }
 
-func (c Redirect) Initialize() (InitializedRedirect, error) {
+func (c Redirect) Initialize(
+	cfg Config,
+	executables InitializedExecutablesIPvX,
+) (InitializedRedirect, error) {
 	var err error
 
 	initialized := InitializedRedirect{Redirect: c}
 
 	// .DNS
-	initialized.DNS, err = c.DNS.Initialize()
+	initialized.DNS, err = c.DNS.Initialize(cfg, executables)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .DNS")
 	}
@@ -253,35 +285,6 @@ func (c InitializedConfig) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
 
-// ShouldConntrackZoneSplit is a function which will check if DNS redirection and
-// conntrack zone splitting settings are enabled (return false if not), and then
-// will verify if there is conntrack iptables extension available to apply
-// the DNS conntrack zone splitting iptables rules
-func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
-	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
-		return false
-	}
-
-	if iptablesExecutable == "" {
-		iptablesExecutable = "iptables"
-	}
-
-	// There are situations where conntrack extension is not present (WSL2)
-	// instead of failing the whole iptables application, we can log the warning,
-	// skip conntrack related rules and move forward
-	if err := exec.Command(iptablesExecutable, "-m", "conntrack", "--help").Run(); err != nil {
-		_, _ = fmt.Fprintf(c.RuntimeStderr,
-			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
-				"module is present. Rules for DNS conntrack zone "+
-				"splitting won't be applied: %s\n", err,
-		)
-
-		return false
-	}
-
-	return true
-}
-
 func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	var err error
 
@@ -292,7 +295,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		return initialized, errors.Wrap(err, "unable to initialize Executables configuration")
 	}
 
-	initialized.Redirect, err = c.Redirect.Initialize()
+	initialized.Redirect, err = c.Redirect.Initialize(c, initialized.Executables)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
 	}

@@ -43,6 +43,20 @@ type Functionality struct {
 	Chains  FunctionalityChains
 }
 
+// ConntrackZoneSplit checks if all required components are loaded to generate
+// connection tracking zone split rules for DNS traffic.
+//
+// Requirements:
+//   - 'nat' table: Used for generating DNS redirect rules (if necessary).
+//   - 'raw' table: Needed to perform the actual traffic split.
+//   - 'conntrack' module: Manages connection tracking for split traffic.
+//   - 'udp' module: Processes UDP traffic (specifically DNS in this case).
+//   - 'owner' module: Enables splitting traffic based on process ownership.
+func (c Functionality) ConntrackZoneSplit() bool {
+	return c.Tables.Nat && c.Tables.Raw && c.Modules.Conntrack &&
+		c.Modules.Udp && c.Modules.Owner
+}
+
 // This function checks if the system meets the minimum requirements to install
 // our transparent proxy. These requirements are:
 // - Presence of a NAT table for manipulating network traffic.

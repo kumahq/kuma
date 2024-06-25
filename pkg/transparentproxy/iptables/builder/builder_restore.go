@@ -92,6 +92,7 @@ type Executables struct {
 	fallback               *Executables
 	mode                   string
 	foundDockerOutputChain bool
+	ipv6                   bool
 }
 
 func newExecutables(ipv6 bool, mode string) *Executables {
@@ -109,6 +110,7 @@ func newExecutables(ipv6 bool, mode string) *Executables {
 		Save:     findExecutable(iptablesSave),
 		Restore:  findExecutable(iptablesRestore),
 		mode:     mode,
+		ipv6:     ipv6,
 	}
 }
 
@@ -146,7 +148,12 @@ func (e *Executables) verify(ctx context.Context, cfg config.InitializedConfig) 
 		}
 	}
 
-	if cfg.ShouldConntrackZoneSplit(e.Iptables.Path) {
+	shouldConntrackZoneSplit := cfg.Redirect.DNS.ConntrackZoneSplitIPv4
+	if e.ipv6 {
+		shouldConntrackZoneSplit = cfg.Redirect.DNS.ConntrackZoneSplitIPv6
+	}
+
+	if shouldConntrackZoneSplit {
 		if _, err := e.Save.exec(ctx, "-t", "raw"); err != nil {
 			return nil, errors.Wrap(err, "couldn't verify if table: 'raw' is available")
 		}
