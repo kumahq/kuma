@@ -3,7 +3,6 @@ package universal
 import (
 	"encoding/json"
 
-
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
