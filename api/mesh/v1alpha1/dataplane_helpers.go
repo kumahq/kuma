@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding"
 	"fmt"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"net"
 	"reflect"
 	"sort"
@@ -153,7 +154,7 @@ func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 }
 
 func WithMeshServiceBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
-	return outbound.BackendRef != nil && outbound.BackendRef.Kind == "MeshService"
+	return outbound.BackendRef != nil && outbound.BackendRef.Kind == string(common_api.MeshService)
 }
 
 func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {

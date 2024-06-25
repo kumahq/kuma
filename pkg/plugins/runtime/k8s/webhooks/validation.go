@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"net/http"
 
 	v1 "k8s.io/api/admission/v1"
@@ -41,6 +42,10 @@ type validatingHandler struct {
 	k8sRegistry  k8s_registry.TypeRegistry
 	converter    k8s_common.Converter
 	decoder      *admission.Decoder
+}
+
+var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
+	meshtimeout.MeshTimeoutType: true,
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) {
@@ -134,6 +139,9 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 
 func (h *validatingHandler) validateNoTargetRefMeshService(r core_model.Resource) validators.ValidationError {
 	var verr validators.ValidationError
+	if meshServiceSupportImplemented[r.Descriptor().Name] {
+		return verr
+	}
 	if pt, ok := r.GetSpec().(core_model.PolicyWithToList); ok {
 		specField := validators.Root().Field("spec")
 		for i, toItem := range pt.GetToList() {

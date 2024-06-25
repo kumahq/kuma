@@ -213,25 +213,21 @@ func DeprecatedMeshService(name string) Subset {
 	}}
 }
 
-func MeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port, localZone string) Subset {
+func MeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port) Subset {
+	// on universal meshService.GetMeta().GetName() will be just name, on k8s it will be name.namespace. We need
+	// to trim namespace for matching as namespace is added as separate tag. On universal namespace label will be empty
+	// so name will be unchanged
+	resourceName := meshService.GetMeta().GetName()
+	ns, ok := meshService.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	if ok {
+		resourceName = strings.TrimSuffix(resourceName, fmt.Sprintf(".%s", ns))
+	}
 	subset := Subset{
-		{Key: ResourceNameTag, Value: meshService.GetMeta().GetName()},
-	}
-
-	namespace, ok := meshService.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
-	if ok && namespace != "" {
-		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: namespace})
-	}
-
-	zone, ok := meshService.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-	if ok && zone != "" {
-		subset = append(subset, Tag{Key: mesh_proto.ZoneTag, Value: zone})
-	} else {
-		subset = append(subset, Tag{Key: mesh_proto.ZoneTag, Value: localZone})
+		{Key: ResourceNameTag, Value: strings.TrimSuffix(meshService.GetMeta().GetName(), fmt.Sprintf(".%s", meshService.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]))},
 	}
 
 	if port.Name != "" {
-		subset = append(subset, Tag{Key: mesh_proto.ServiceTag, Value: port.Name})
+		subset = append(subset, Tag{Key: mesh_proto.SectionName, Value: port.Name})
 	}
 
 	for label, value := range meshService.Meta.GetLabels() {
@@ -613,8 +609,8 @@ func toStringList(nodes []graph.Node) []string {
 	return rv
 }
 
-func asSubset(policy PolicyItemWithMeta) (Subset, error) {
-	tr := policy.GetTargetRef()
+func asSubset(policyItem PolicyItemWithMeta) (Subset, error) {
+	tr := policyItem.GetTargetRef()
 	switch tr.Kind {
 	case common_api.Mesh:
 		return Subset{}, nil
@@ -625,7 +621,7 @@ func asSubset(policy PolicyItemWithMeta) (Subset, error) {
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return meshServiceSubset(policy), nil
+		return meshServiceSubset(policyItem), nil
 	case common_api.MeshServiceSubset:
 		ss := Subset{{Key: ResourceNameTag, Value: tr.Name}}
 		for k, v := range tr.Tags {
@@ -637,9 +633,9 @@ func asSubset(policy PolicyItemWithMeta) (Subset, error) {
 	}
 }
 
-func meshServiceSubset(policy PolicyItemWithMeta) Subset {
+func meshServiceSubset(policyItem PolicyItemWithMeta) Subset {
 	subset := Subset{}
-	tr := policy.GetTargetRef()
+	tr := policyItem.GetTargetRef()
 
 	if tr.Name != "" {
 		subset = append(subset, Tag{Key: ResourceNameTag, Value: tr.Name})
@@ -648,10 +644,10 @@ func meshServiceSubset(policy PolicyItemWithMeta) Subset {
 	if tr.Namespace != "" {
 		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: tr.Namespace})
 	}
-	// todo should we use something like PolicyRole method? It operates on Resource which policy item is not
-	policyRole, ok := policy.GetLabels()[mesh_proto.PolicyRoleLabel]
-	if ok && tr.Namespace == "" && policyRole != string(mesh_proto.SystemPolicyRole) {
-		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: policy.GetNameExtensions()[mesh_proto.KubeNamespaceTag]})
+
+	policyRole := core_model.PolicyRole(policyItem.ResourceMeta)
+	if tr.Namespace == "" && policyRole != mesh_proto.SystemPolicyRole {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: policyItem.GetLabels()[mesh_proto.KubeNamespaceTag]})
 	}
 
 	if len(tr.Labels) != 0 {

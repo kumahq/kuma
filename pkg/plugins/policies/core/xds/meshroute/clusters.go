@@ -133,7 +133,7 @@ func GenerateClusters(
 					Origin:   generator.OriginOutbound,
 					Resource: edsCluster,
 					Metadata: map[string]string{
-						core_xds.MeshServiceDestination: service.MeshServiceName(),
+						core_xds.MeshServiceDestination: msName,
 					},
 				})
 			} else {

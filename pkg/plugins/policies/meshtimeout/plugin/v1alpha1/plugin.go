@@ -4,7 +4,6 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -50,14 +49,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, proxy.Zone, ctx.Mesh); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
 	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
 		return err
 	}
 
-	if err := applyToMeshServiceClusters(policies.ToRules.Rules, proxy.Zone, ctx.Mesh, clusters.MeshServiceDestinations); err != nil {
+	if err := applyToMeshServiceClusters(policies.ToRules.Rules, ctx.Mesh, clusters.MeshServiceDestinations); err != nil {
 		return err
 	}
 	for serviceName, cluster := range clusters.Outbound {
@@ -121,7 +120,6 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
 	dataplane *core_mesh.DataplaneResource,
-	localZone string,
 	meshCtx xds_context.MeshContext,
 ) error {
 	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.WithMeshServiceBackendRefFilter) {
@@ -140,7 +138,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: port.AppProtocol,
-			Subset:   core_rules.MeshService(meshService, port, localZone),
+			Subset:   core_rules.MeshService(meshService, port),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -173,7 +171,6 @@ func applyToOutbounds(
 
 func applyToMeshServiceClusters(
 	rules core_rules.Rules,
-	localZone string,
 	meshCtx xds_context.MeshContext,
 	destinations map[string][]*envoy_cluster.Cluster,
 ) error {
@@ -189,7 +186,10 @@ func applyToMeshServiceClusters(
 			if !ok {
 				continue
 			}
-			conf := getConf(rules, core_rules.MeshService(meshService, port, localZone))
+			conf := getConf(rules, core_rules.MeshService(meshService, port))
+			if conf == nil {
+				continue
+			}
 			configurer := plugin_xds.ClusterConfigurerFromConf(*conf, port.AppProtocol)
 			if err := configurer.Configure(cluster); err != nil {
 				return err
