@@ -40,6 +40,9 @@ func indexDpsForMatching(
 	map[string]*core_mesh.DataplaneResource,
 ) {
 	// Map of tag pair in a context of a mesh (ex. app:redis from default mesh) to dpp name to dpp.
+	// While this could be a map[string][]*core_mesh.DataplaneResource, we also want to get rid of duplicates.
+	// For example, if a DPP has 2 inbounds with app:xyz and MeshService matches app:xyz, we only want to
+	// have one occurrence of a dpp as a result.
 	dppsByNameByTag := map[string]map[string]*core_mesh.DataplaneResource{}
 	dppsByName := map[string]*core_mesh.DataplaneResource{}
 
