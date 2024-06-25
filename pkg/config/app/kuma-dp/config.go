@@ -48,7 +48,7 @@ var DefaultConfig = func() Config {
 			CoreDNSLogging:            false,
 		},
 		VirtualProbesServer: VirtualProbesServer{
-			Enabled: true,
+			Enabled: false,
 			Port:    9000,
 		},
 	}

@@ -133,6 +133,10 @@ spec:
           fieldPath: metadata.namespace
     - name: TEST_ENV_VAR
       value: test123
+    - name: VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     lifecycle:

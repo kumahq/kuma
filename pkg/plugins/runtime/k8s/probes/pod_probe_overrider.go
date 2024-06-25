@@ -1,27 +1,26 @@
-package injector
+package probes
 
 import (
 	"fmt"
+	"github.com/go-logr/logr"
 	"strconv"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func (i *KumaInjector) overrideProbes(pod *kube_core.Pod) error {
+func OverridePodProbes(pod *kube_core.Pod, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
 		return err
 	}
 	if !enabled {
-		log.V(1).Info("skip adding virtual probes")
+		log.V(1).Info("skipping adding virtual probes, because it's disabled")
 		return err
 	}
 
@@ -51,15 +50,15 @@ func (i *KumaInjector) overrideProbes(pod *kube_core.Pod) error {
 	for _, c := range containersNeedingProbes {
 		portResolver := namedPortResolver(&c)
 		if err := overrideProbe(c.LivenessProbe, virtualProbesPort,
-			portResolver, c.Name, "liveness"); err != nil {
+			portResolver, c.Name, "liveness", log); err != nil {
 			return err
 		}
 		if err := overrideProbe(c.ReadinessProbe, virtualProbesPort,
-			portResolver, c.Name, "readiness"); err != nil {
+			portResolver, c.Name, "readiness", log); err != nil {
 			return err
 		}
 		if err := overrideProbe(c.StartupProbe, virtualProbesPort,
-			portResolver, c.Name, "startup"); err != nil {
+			portResolver, c.Name, "startup", log); err != nil {
 			return err
 		}
 	}
@@ -95,12 +94,13 @@ func namedPortResolver(container *kube_core.Container) func(kube_core.ProbeHandl
 	}
 }
 
-func overrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string) error {
+func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
+	namedPortResolver func(kube_core.ProbeHandler), containerName, probeName string, log logr.Logger) error {
 	if probe == nil {
 		return nil
 	}
 
-	kumaProbe := probes.KumaProbe(*probe)
+	kumaProbe := KumaProbe(*probe)
 	if !kumaProbe.OverridingSupported() {
 		return nil
 	}
@@ -124,7 +124,7 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32, namedPortResolver
 	return nil
 }
 
-func setVirtualProbesEnabledAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
+func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, virtualProbesEnabled bool) error {
 	str := func(b bool) string {
 		if b {
 			return metadata.AnnotationEnabled
@@ -132,16 +132,12 @@ func setVirtualProbesEnabledAnnotation(annotations metadata.Annotations, pod *ku
 		return metadata.AnnotationDisabled
 	}
 
-	vpEnabled, vpExist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	vpEnabled, vpExist, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
 		return err
 	}
-	gwEnabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
-	if err != nil {
-		return err
-	}
-
-	if gwEnabled {
+	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
+	if gwExists {
 		if vpEnabled {
 			return errors.New("virtual probes can't be enabled in gateway mode")
 		}
@@ -153,12 +149,12 @@ func setVirtualProbesEnabledAnnotation(annotations metadata.Annotations, pod *ku
 		annotations[metadata.KumaVirtualProbesAnnotation] = str(vpEnabled)
 		return nil
 	}
-	annotations[metadata.KumaVirtualProbesAnnotation] = str(cfg.VirtualProbesEnabled)
+	annotations[metadata.KumaVirtualProbesAnnotation] = str(virtualProbesEnabled)
 	return nil
 }
 
-func setVirtualProbesPortAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
-	port, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(cfg.VirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
+func SetVirtualProbesPortAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, defaultVirtualProbesPort uint32) error {
+	port, _, err := metadata.Annotations(podAnnotations).GetUint32WithDefault(defaultVirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err
 	}
