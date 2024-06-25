@@ -83,9 +83,9 @@ func WithReplicas(n int32) DeploymentOptsFn {
 	}
 }
 
-func WithStatefulSet(apply bool) DeploymentOptsFn {
+func WithStatefulSet() DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.WithStatefulSet = apply
+		opts.WithStatefulSet = true
 	}
 }
 
