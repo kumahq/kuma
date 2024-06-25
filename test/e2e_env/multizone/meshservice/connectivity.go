@@ -28,7 +28,7 @@ spec:
     meshService:
       matchLabels:
         kuma.io/origin: global
-        kuma.io/env: kubernetes
+        kuma.io/managed-by: k8s-controller
 `)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
@@ -53,7 +53,7 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: msconnectivity
-    kuma.io/env: kubernetes
+    kuma.io/managed-by: k8s-controller
 spec:
   selector:
     dataplaneTags:
