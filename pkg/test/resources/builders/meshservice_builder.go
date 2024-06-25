@@ -21,9 +21,9 @@ func MeshService() *MeshServiceBuilder {
 	return &MeshServiceBuilder{
 		res: &v1alpha1.MeshServiceResource{
 			Meta: &test_model.ResourceMeta{
-				Mesh:           core_model.DefaultMesh,
-				Name:           "backend",
-				NameExtensions: map[string]string{},
+				Mesh:   core_model.DefaultMesh,
+				Name:   "backend",
+				Labels: map[string]string{},
 			},
 			Spec:   &v1alpha1.MeshService{},
 			Status: &v1alpha1.MeshServiceStatus{},
@@ -42,7 +42,12 @@ func (m *MeshServiceBuilder) WithName(name string) *MeshServiceBuilder {
 }
 
 func (m *MeshServiceBuilder) WithNamespace(namespace string) *MeshServiceBuilder {
-	m.res.Meta.GetNameExtensions()[mesh_proto.KubeNamespaceTag] = namespace
+	m.res.Meta.GetLabels()[mesh_proto.KubeNamespaceTag] = namespace
+	return m
+}
+
+func (m *MeshServiceBuilder) WithZone(zone string) *MeshServiceBuilder {
+	m.res.Meta.GetLabels()[mesh_proto.ZoneTag] = zone
 	return m
 }
 

@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"encoding"
 	"fmt"
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"net"
 	"reflect"
 	"sort"
@@ -11,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 const (

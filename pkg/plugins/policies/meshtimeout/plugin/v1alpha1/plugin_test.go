@@ -618,12 +618,14 @@ var _ = Describe("MeshTimeout", func() {
 				builders.MeshService().
 					WithName("other-service").
 					WithNamespace("main-ns").
+					WithZone("local-zone").
 					AddIntPort(10001, 10001, "http").
 					AddIntPort(10002, 10002, "tcp").
 					Build(),
 				builders.MeshService().
 					WithName("second-service").
 					WithNamespace("main-ns").
+					WithZone("local-zone").
 					AddIntPort(10003, 10003, "http").
 					Build(),
 			},

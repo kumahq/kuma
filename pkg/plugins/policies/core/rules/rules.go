@@ -223,7 +223,7 @@ func MeshService(meshService *meshservice_api.MeshServiceResource, port meshserv
 		resourceName = strings.TrimSuffix(resourceName, fmt.Sprintf(".%s", ns))
 	}
 	subset := Subset{
-		{Key: ResourceNameTag, Value: strings.TrimSuffix(meshService.GetMeta().GetName(), fmt.Sprintf(".%s", meshService.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]))},
+		{Key: ResourceNameTag, Value: resourceName},
 	}
 
 	if port.Name != "" {
