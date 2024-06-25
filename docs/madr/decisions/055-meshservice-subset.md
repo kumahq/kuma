@@ -47,6 +47,7 @@ The question this MADR answers is how do users handle the same concept with
 
 * Support `MeshServiceSubset` with `MeshService` objects
 * Users create additional `MeshServices`
+  * On Kubernetes the user creates `Services`
 
 ## Decision Outcome
 
