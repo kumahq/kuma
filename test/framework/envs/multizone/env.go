@@ -2,7 +2,7 @@ package multizone
 
 import (
 	"encoding/json"
-	"strings"
+	"github.com/kumahq/kuma/test/framework/utils"
 	"sync"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -324,7 +324,7 @@ func ExpectCpsToNotPanic() {
 		if err != nil {
 			Logf("could not retrieve cp logs")
 		} else {
-			Expect(strings.Contains(logs, "runtime.gopanic")).To(BeFalse())
+			Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
 		}
 	}
 }

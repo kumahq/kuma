@@ -42,3 +42,7 @@ func TestCaseName(ginkgo ginko.FullGinkgoTInterface) string {
 	nameSplit := strings.Split(ginkgo.Name(), " ")
 	return nameSplit[len(nameSplit)-1]
 }
+
+func HasPanicInCpLogs(logs string) bool {
+	return strings.Contains(logs, "runtime.gopanic") || strings.Contains(logs, "panic:")
+}

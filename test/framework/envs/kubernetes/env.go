@@ -2,9 +2,8 @@ package kubernetes
 
 import (
 	"encoding/json"
-	"strings"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/kumahq/kuma/test/framework/utils"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -112,6 +111,6 @@ func ExceptCpToNotPanic() {
 	if err != nil {
 		framework.Logf("could not retrieve cp logs")
 	} else {
-		Expect(strings.Contains(logs, "runtime.gopanic")).To(BeFalse())
+		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
 	}
 }
