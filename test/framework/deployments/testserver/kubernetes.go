@@ -55,6 +55,12 @@ func (k *k8SDeployment) service() *corev1.Service {
 	}
 }
 
+func (k *k8SDeployment) headlessService() *corev1.Service {
+	svc := k.service()
+	svc.Spec.ClusterIP = corev1.ClusterIPNone
+	return svc
+}
+
 func (k *k8SDeployment) serviceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
@@ -305,7 +311,11 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
 	}
 	if k.opts.EnableService {
-		funcs = append(funcs, framework.YamlK8sObject(k.service()))
+		if k.opts.HeadlessService {
+			funcs = append(funcs, framework.YamlK8sObject(k.headlessService()))
+		} else {
+			funcs = append(funcs, framework.YamlK8sObject(k.service()))
+		}
 	}
 	if k.opts.WaitingToBeReady {
 		funcs = append(funcs,
