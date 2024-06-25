@@ -2,12 +2,14 @@ package universal
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/test/framework/utils"
+
+
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var Cluster *framework.UniversalCluster
@@ -68,7 +70,7 @@ func PrintCPLogsOnFailure(report ginkgo.Report) {
 	}
 }
 
-func ExceptCpToNotPanic() {
+func ExpectCpToNotPanic() {
 	logs, err := Cluster.GetKumaCPLogs()
 	if err != nil {
 		framework.Logf("could not retrieve cp logs")

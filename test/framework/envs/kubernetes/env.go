@@ -2,13 +2,14 @@ package kubernetes
 
 import (
 	"encoding/json"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/kumahq/kuma/test/framework/utils"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var Cluster *framework.K8sCluster
@@ -106,7 +107,7 @@ func ExpectCpToNotCrash() {
 	Expect(restartCount).To(Equal(0), "CP restarted in this suite, this should not happen.")
 }
 
-func ExceptCpToNotPanic() {
+func ExpectCpToNotPanic() {
 	logs, err := Cluster.GetKumaCPLogs()
 	if err != nil {
 		framework.Logf("could not retrieve cp logs")

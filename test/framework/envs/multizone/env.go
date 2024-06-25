@@ -2,8 +2,8 @@ package multizone
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/test/framework/utils"
 	"sync"
+
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var (
