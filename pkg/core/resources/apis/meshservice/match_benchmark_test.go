@@ -12,7 +12,7 @@ import (
 )
 
 // To run, remove X from the prefix
-// $ cd /Users/jakub/kong/kuma/pkg/core/resources/apis/meshservice
+// $ cd pkg/core/resources/apis/meshservice
 // $ go test -bench=BenchmarkMatchDataplanesWithMeshServices -run=^# -count 10 | tee bench.txt
 // $ go install golang.org/x/perf/cmd/benchstat@latest
 // $ benchstat bench.txt
