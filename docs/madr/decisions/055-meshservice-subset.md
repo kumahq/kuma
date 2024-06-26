@@ -15,17 +15,17 @@ For example if we have a `backend` service that we want to upgrade from `v1` to
 user would create a `MeshHTTPRoute`:
 
 ```yaml
-        backendRefs:
-        - kind: MeshServiceSubset
-          tags:
-            version: v2
-          name: backend
-          weight: 10
-        - kind: MeshServiceSubset
-          tags:
-            version: v1
-          name: backend
-          weight: 90
+backendRefs:
+- kind: MeshServiceSubset
+  tags:
+    version: v2
+  name: backend
+  weight: 10
+- kind: MeshServiceSubset
+  tags:
+    version: v1
+  name: backend
+  weight: 90
 ```
 
 Now that we have `MeshService` objects, the user has something like the following:
