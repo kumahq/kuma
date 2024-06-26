@@ -50,8 +50,10 @@ var _ = E2ESynchronizedBeforeSuite(kubernetes.SetupAndGetState, kubernetes.Resto
 // SynchronizedAfterSuite keeps the main process alive until all other processes finish.
 // Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
 var (
-	_ = SynchronizedAfterSuite(func() {}, kubernetes.ExpectCpToNotCrash)
-	_ = SynchronizedAfterSuite(func() {}, kubernetes.ExpectCpToNotPanic)
+	_ = SynchronizedAfterSuite(func() {}, func() {
+		kubernetes.ExpectCpToNotCrash()
+		kubernetes.ExpectCpToNotPanic()
+	})
 )
 
 var (
