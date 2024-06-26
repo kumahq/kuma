@@ -5,7 +5,10 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -22,7 +25,7 @@ type Clusters struct {
 	MeshServiceDestinations map[string][]*envoy_cluster.Cluster
 }
 
-func GatherClusters(rs *core_xds.ResourceSet) Clusters {
+func GatherClusters(rs *core_xds.ResourceSet) *Clusters {
 	clusters := Clusters{
 		Inbound:                 map[string]*envoy_cluster.Cluster{},
 		Outbound:                map[string]*envoy_cluster.Cluster{},
@@ -59,7 +62,7 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 			continue
 		}
 	}
-	return clusters
+	return &clusters
 }
 
 func GatherTargetedClusters(
@@ -81,4 +84,30 @@ func GatherTargetedClusters(
 	}
 
 	return targetedClusters
+}
+
+func (c *Clusters) ApplyToMeshServiceClusters(
+	meshServices map[string]*meshservice_api.MeshServiceResource,
+	configure func(*envoy_cluster.Cluster, core_mesh.Protocol, core_rules.Subset) error,
+) error {
+	for msName, clusters := range c.MeshServiceDestinations {
+		meshService, ok := meshServices[msName]
+		if !ok {
+			continue
+		}
+
+		for _, cluster := range clusters {
+			destinationPort := meshservice_api.PortFromDestinationName(tags.ServiceFromClusterName(cluster.Name))
+			port, ok := meshService.FindPort(destinationPort)
+			if !ok {
+				continue
+			}
+
+			err := configure(cluster, port.AppProtocol, core_rules.MeshService(meshService, port))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

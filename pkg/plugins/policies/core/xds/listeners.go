@@ -5,9 +5,11 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	egress_generator "github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -23,7 +25,7 @@ type Listeners struct {
 	Prometheus      *envoy_listener.Listener
 }
 
-func GatherListeners(rs *xds.ResourceSet) Listeners {
+func GatherListeners(rs *xds.ResourceSet) *Listeners {
 	listeners := Listeners{
 		Inbound:      map[core_rules.InboundListener]*envoy_listener.Listener{},
 		Outbound:     map[mesh_proto.OutboundInterface]*envoy_listener.Listener{},
@@ -71,5 +73,36 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			continue
 		}
 	}
-	return listeners
+	return &listeners
+}
+
+func (l *Listeners) ApplyToMeshServiceOutboundListeners(
+	dataplane *core_mesh.DataplaneResource,
+	meshCtx xds_context.MeshContext,
+	configure func(*envoy_listener.Listener, core_mesh.Protocol, core_rules.Subset) error,
+) error {
+	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.WithMeshServiceBackendRefFilter) {
+		meshService, ok := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
+		if !ok {
+			continue
+		}
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+
+		listener, ok := l.Outbound[oface]
+		if !ok {
+			continue
+		}
+
+		port, ok := meshService.FindPort(outbound.BackendRef.Port)
+		if !ok {
+			continue
+		}
+		subset := core_rules.MeshService(meshService, port)
+
+		err := configure(listener, port.AppProtocol, subset)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

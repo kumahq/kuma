@@ -69,8 +69,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func (p plugin) configureDPP(
 	proxy *core_xds.Proxy,
 	toRules core_rules.ToRules,
-	listeners policies_xds.Listeners,
-	clusters policies_xds.Clusters,
+	listeners *policies_xds.Listeners,
+	clusters *policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
 	egressEnabled bool,
