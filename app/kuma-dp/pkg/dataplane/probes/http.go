@@ -83,12 +83,12 @@ func buildUpstreamReq(downstreamReq *http.Request, upstreamScheme kube_core.URIS
 		return nil, err
 	}
 
-	// todo: handle query params in original path
 	upstreamPath := getUpstreamHTTPPath(downstreamReq.URL.Path)
 	upstreamURL := &url.URL{
-		Scheme: strings.ToLower(string(upstreamScheme)),
-		Path:   upstreamPath,
-		Host:   net.JoinHostPort(podAddr, strconv.Itoa(port)),
+		Scheme:   strings.ToLower(string(upstreamScheme)),
+		Path:     upstreamPath,
+		RawQuery: downstreamReq.URL.RawQuery,
+		Host:     net.JoinHostPort(podAddr, strconv.Itoa(port)),
 	}
 
 	upstreamReq, err := http.NewRequest(http.MethodGet, upstreamURL.String(), nil)

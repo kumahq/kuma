@@ -164,6 +164,7 @@ var _ = Describe("Virtual Probes", func() {
 			prober := probes.NewProber(podIP, listenPort)
 			mockApp := &mockApplication{
 				HTTP: &mockHTTPServerConfig{
+					Path:             "/healthz?scheme=https",
 					HTTPS:            true,
 					ListenPort:       8443,
 					ReturnStatusCode: 200,
@@ -191,8 +192,8 @@ var _ = Describe("Virtual Probes", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should probe HTTPS upstream without verifying server certificates", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8443/"), nil)
+		It("should probe HTTPS upstream without verifying server certificates and keep query", func() {
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8443/healthz?scheme=https"), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
 
@@ -442,7 +443,7 @@ func (m *mockApplication) ServeHTTP(writer http.ResponseWriter, req *http.Reques
 		<-time.After(m.HTTP.ExecutionDuration)
 	}
 
-	if m.HTTP.Path != "" && req.URL.Path != m.HTTP.Path {
+	if m.HTTP.Path != "" && m.HTTP.Path != req.RequestURI {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}

@@ -138,9 +138,9 @@ spec:
         httpHeaders:
         - name: x-custom-header
           value: custom-value
-        - name: x-kuma-probes-scheme
+        - name: X-Kuma-Probes-Scheme
           value: HTTPS
-        - name: x-kuma-probes-timeout
+        - name: X-Kuma-Probes-Timeout
           value: "5"
         path: /9999/health
         port: 9000
@@ -186,9 +186,9 @@ spec:
       failureThreshold: 5
       httpGet:
         httpHeaders:
-        - name: x-kuma-probes-timeout
+        - name: X-Kuma-Probes-Timeout
           value: "5"
-        - name: x-kuma-probes-grpc-service
+        - name: X-Kuma-Probes-GRPC-Service
           value: /startup
         path: /grpc/5678
         port: 9000
