@@ -33,7 +33,7 @@ type MeshMultiZoneServiceStatus struct {
 	// VIPs is a list of assigned Kuma VIPs.
 	VIPs []meshservice_api.VIP `json:"vips,omitempty"`
 	// MeshServices is a list of matched MeshServices
-	MeshServices []MatchedMeshService `json:"meshServices"`
+	MeshServices []MatchedMeshService `json:"meshServices,omitempty"`
 }
 
 type MatchedMeshService struct {

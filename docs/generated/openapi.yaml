@@ -11139,8 +11139,6 @@ components:
                     type: string
                 type: object
               type: array
-          required:
-            - meshServices
           type: object
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       type: object

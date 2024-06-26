@@ -3822,8 +3822,6 @@ spec:
                       type: string
                   type: object
                 type: array
-            required:
-            - meshServices
             type: object
         type: object
     served: true
