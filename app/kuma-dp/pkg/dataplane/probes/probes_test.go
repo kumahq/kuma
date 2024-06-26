@@ -81,7 +81,7 @@ var _ = Describe("Virtual Probes", func() {
 				errCh <- mockApp.Start(stopCh)
 			}()
 			// wait a short period of time for the servers to be ready
-			<-time.After(200 * time.Millisecond)
+			<-time.After(500 * time.Millisecond)
 		})
 		AfterAll(func() {
 			close(stopCh)
@@ -178,7 +178,7 @@ var _ = Describe("Virtual Probes", func() {
 				errCh <- mockApp.Start(stopCh)
 			}()
 			// wait a short period of time for the servers to be ready
-			<-time.After(200 * time.Millisecond)
+			<-time.After(500 * time.Millisecond)
 		})
 		AfterAll(func() {
 			close(stopCh)
@@ -226,7 +226,7 @@ var _ = Describe("Virtual Probes", func() {
 				errCh <- mockApp.Start(stopCh)
 			}()
 			// wait a short period of time for the server to be ready
-			<-time.After(200 * time.Millisecond)
+			<-time.After(500 * time.Millisecond)
 		})
 		AfterAll(func() {
 			close(stopCh)
@@ -287,7 +287,7 @@ var _ = Describe("Virtual Probes", func() {
 				errCh <- mockApp.Start(stopCh)
 			}()
 			// wait a short period of time for the server to be ready
-			<-time.After(200 * time.Millisecond)
+			<-time.After(500 * time.Millisecond)
 		})
 		AfterAll(func() {
 			close(stopCh)
