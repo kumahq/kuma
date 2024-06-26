@@ -1,13 +1,24 @@
 package meshservice
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
+
+type dppsByNameByTagKey struct {
+	mesh     string
+	tagName  string
+	tagValue string
+}
+
+// DppsByNameByTag is a map of tag pair in a context of a mesh (ex. app:redis from default mesh) to dpp name to dpp.
+// While this could be a map[dppsByNameByTagKey][]*core_mesh.DataplaneResource, we also want to get rid of duplicates.
+// For example, if a DPP has 2 inbounds with app:xyz and MeshService matches app:xyz, we only want to
+// have one occurrence of a dpp as a result.
+type DppsByNameByTag = map[dppsByNameByTagKey]map[string]*core_mesh.DataplaneResource
 
 func MatchDataplanesWithMeshServices(
 	dpps []*core_mesh.DataplaneResource,
@@ -36,15 +47,11 @@ func indexDpsForMatching(
 	dpps []*core_mesh.DataplaneResource,
 	matchOnlyHealthy bool,
 ) (
-	map[string]map[string]*core_mesh.DataplaneResource,
-	map[string]*core_mesh.DataplaneResource,
+	DppsByNameByTag,
+	map[model.ResourceKey]*core_mesh.DataplaneResource,
 ) {
-	// Map of tag pair in a context of a mesh (ex. app:redis from default mesh) to dpp name to dpp.
-	// While this could be a map[string][]*core_mesh.DataplaneResource, we also want to get rid of duplicates.
-	// For example, if a DPP has 2 inbounds with app:xyz and MeshService matches app:xyz, we only want to
-	// have one occurrence of a dpp as a result.
-	dppsByNameByTag := map[string]map[string]*core_mesh.DataplaneResource{}
-	dppsByName := map[string]*core_mesh.DataplaneResource{}
+	dppsByNameByTag := DppsByNameByTag{}
+	dppsByName := map[model.ResourceKey]*core_mesh.DataplaneResource{}
 
 	for _, dpp := range dpps {
 		inbounds := dpp.Spec.GetNetworking().GetInbound()
@@ -54,35 +61,34 @@ func indexDpsForMatching(
 
 		for _, inbound := range inbounds {
 			for tagName, tagValue := range inbound.GetTags() {
-				tag := dppsByNameByTagKey(dpp.Meta.GetMesh(), tagName, tagValue)
-				dataplanes, ok := dppsByNameByTag[tag]
+				key := dppsByNameByTagKey{
+					mesh:     dpp.Meta.GetMesh(),
+					tagName:  tagName,
+					tagValue: tagValue,
+				}
+				dataplanes, ok := dppsByNameByTag[key]
 				if !ok {
 					dataplanes = map[string]*core_mesh.DataplaneResource{}
-					dppsByNameByTag[tag] = dataplanes
+					dppsByNameByTag[key] = dataplanes
 				}
 				dataplanes[dpp.Meta.GetName()] = dpp
 			}
 		}
 		if len(inbounds) > 0 {
-			dppsByName[dppsByNameKey(dpp.Meta.GetMesh(), dpp.Meta.GetName())] = dpp
+			dppsByName[model.MetaToResourceKey(dpp.Meta)] = dpp
 		}
 	}
 	return dppsByNameByTag, dppsByName
 }
 
-func dppsByNameByTagKey(mesh, tagName, tagValue string) string {
-	return fmt.Sprintf("%s;%s;%s", mesh, tagName, tagValue)
-}
-
-func dppsByNameKey(mesh, name string) string {
-	return fmt.Sprintf("%s;%s", mesh, name)
-}
-
 func matchByRef(
 	ms *meshservice_api.MeshServiceResource,
-	dppsByName map[string]*core_mesh.DataplaneResource,
+	dppsByName map[model.ResourceKey]*core_mesh.DataplaneResource,
 ) []*core_mesh.DataplaneResource {
-	key := dppsByNameKey(ms.Meta.GetMesh(), ms.Spec.Selector.DataplaneRef.Name)
+	key := model.ResourceKey{
+		Mesh: ms.Meta.GetMesh(),
+		Name: ms.Spec.Selector.DataplaneRef.Name,
+	}
 	if dpp, ok := dppsByName[key]; ok {
 		return []*core_mesh.DataplaneResource{dpp}
 	}
@@ -91,17 +97,17 @@ func matchByRef(
 
 func matchByTags(
 	ms *meshservice_api.MeshServiceResource,
-	dppsByNameByTag map[string]map[string]*core_mesh.DataplaneResource,
+	dppsByNameByTag DppsByNameByTag,
 ) []*core_mesh.DataplaneResource {
-	// Find the shortest map of dpps by name that matches the tags
-	// For example, if we have MeshService with selector of `app: redis` and `k8s.kuma.io/namespace: kuma-demo`
-	// and DPPs:
-	// * `app: redis`, `k8s.kuma.io/namespace: kuma-demo`
-	// * `app: demo-app`, `k8s.kuma.io/namespace: kuma-demo`
-	// It's better to grab the shortest list of DPPs (app:redis) to reduce number of operations (.Matches) for the next step.
+	// For every tag key/value pair of MeshService's selector, find the set of DPPs matched by that pair.
+	// Then take the smallest set of all sets.
 	var shortestDppMap map[string]*core_mesh.DataplaneResource
 	for tagName, tagValue := range ms.Spec.Selector.DataplaneTags {
-		tagsKey := dppsByNameByTagKey(ms.GetMeta().GetMesh(), tagName, tagValue)
+		tagsKey := dppsByNameByTagKey{
+			mesh:     ms.GetMeta().GetMesh(),
+			tagName:  tagName,
+			tagValue: tagValue,
+		}
 		if dppsByName, ok := dppsByNameByTag[tagsKey]; ok {
 			if shortestDppMap == nil || len(dppsByName) < len(shortestDppMap) {
 				shortestDppMap = dppsByName

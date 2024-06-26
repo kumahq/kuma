@@ -19,38 +19,35 @@ import (
 // goos: darwin
 // goarch: arm64
 // pkg: github.com/kumahq/kuma/pkg/core/resources/apis/meshservice
+//                                                                        │  bench.txt  │
+//                                                                        │   sec/op    │
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   14.59m ± 1%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10     5.891 ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     878.2µ ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      20.52m ± 1%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     63.44µ ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      162.6µ ± 0%
+// geomean                                                                  5.019m
 //
-//	│  bench.txt  │
-//	│   sec/op    │
+//                                                                        │  bench.txt   │
+//                                                                        │     B/op     │
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   9.931Mi ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    1.070Mi ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     631.7Ki ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      68.91Ki ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     73.62Ki ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      5.301Ki ± 0%
+// geomean                                                                  239.6Ki
 //
-// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   23.96m ± 4%
-// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10     5.243 ± 4%
-// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     1.447m ± 4%
-// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      18.51m ± 0%
-// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     89.15µ ± 1%
-// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      149.5µ ± 2%
-// geomean                                                                  5.961m
-//
-//	│  bench.txt   │
-//	│     B/op     │
-//
-// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   15.61Mi ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    1.055Mi ± 0%
-// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     971.0Ki ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      67.88Ki ± 0%
-// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     84.60Ki ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10      9.911Ki ± 0%
-// geomean                                                                  313.8Ki
-//
-//	│  bench.txt  │
-//	│  allocs/op  │
-//
-// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   370.5k ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    16.04k ± 0%
-// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     23.34k ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      1.014k ± 0%
-// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10     1.497k ± 0%
-// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10       58.00 ± 0%
+//                                                                        │  bench.txt  │
+//                                                                        │  allocs/op  │
+// MatchDataplanesWithMeshServices/faster-matching-ns_200-svc_20-dpp_5-10   38.88k ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_200-svc_20-dpp_5-10    16.09k ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_50-svc_5-dpp_5-10     2.567k ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_50-svc_5-dpp_5-10      1.018k ± 0%
+// MatchDataplanesWithMeshServices/faster-matching-ns_10-svc_5-dpp_1-10      347.0 ± 0%
+// MatchDataplanesWithMeshServices/naive-matching-ns_10-svc_5-dpp_1-10       57.00 ± 0%
+// geomean                                                                  1.785k
 func XBenchmarkMatchDataplanesWithMeshServices(b *testing.B) {
 	table := []struct {
 		dppsPerService       int
