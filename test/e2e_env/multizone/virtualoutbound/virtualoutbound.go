@@ -47,7 +47,7 @@ func virtualOutbound(meshName string, meshBuilder *builders.MeshBuilder) {
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
-				testserver.WithStatefulSet(true),
+				testserver.WithStatefulSet(),
 				testserver.WithReplicas(2),
 			)).
 			Setup(multizone.KubeZone2)

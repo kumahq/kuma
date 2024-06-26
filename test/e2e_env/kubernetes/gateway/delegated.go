@@ -40,7 +40,7 @@ func Delegated() {
 				testserver.WithMesh(config.Mesh),
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
-				testserver.WithStatefulSet(true),
+				testserver.WithStatefulSet(),
 				testserver.WithReplicas(3),
 			)).
 			Install(testserver.Install(
