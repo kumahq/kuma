@@ -237,6 +237,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshMultiZoneService",
+   "path": "meshmultizoneservices",
+   "pluralDisplayName": "Mesh Multi Zone Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Multi Zone Service"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshPassthrough",
    "path": "meshpassthroughs",
    "pluralDisplayName": "Mesh Passthroughs",

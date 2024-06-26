@@ -797,6 +797,7 @@ coreResources:
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices
+    - meshmultizoneservices
     - meshservices
 # IP address management configuration
 ipam:
