@@ -729,6 +729,7 @@ plugins:
   resources:
     hostnamegenerators: true
     meshexternalservices: true
+    meshmultizoneservices: true
     meshservices: true
   policies:
     meshaccesslogs: true
