@@ -61,7 +61,8 @@ spec:
       k8s.kuma.io/namespace: msconnectivity
   ports:
   - port: 80
-    targetPort: 80
+    name: main
+    targetPort: main
     appProtocol: http
 `
 
