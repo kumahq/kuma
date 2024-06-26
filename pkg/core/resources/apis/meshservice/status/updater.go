@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -86,16 +87,13 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	if err := s.roResManager.List(ctx, &dpList); err != nil {
 		return errors.Wrap(err, "could not list of Dataplanes")
 	}
-	dpInsights := mesh.DataplaneInsightResourceList{}
-	if err := s.roResManager.List(ctx, &dpInsights); err != nil {
-		return errors.Wrap(err, "could not list of Dataplanes")
-	}
-	dpOverviews := mesh.NewDataplaneOverviews(dpList, dpInsights)
 
-	for ms, dpOverviews := range dataplaneOverviewsForMeshService(dpOverviews.Items, msList.Items) {
+	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dpList.Items, msList.Items, false)
+
+	for ms, dpps := range dppsForMs {
 		serviceTagIdentities := map[string]struct{}{}
-		for _, dpOverview := range dpOverviews {
-			for service := range dpOverview.Spec.Dataplane.TagSet()[mesh_proto.ServiceTag] {
+		for _, dpp := range dpps {
+			for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
 				serviceTagIdentities[service] = struct{}{}
 			}
 		}
@@ -116,21 +114,6 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-func dataplaneOverviewsForMeshService(
-	dpOverviews []*mesh.DataplaneOverviewResource,
-	meshServices []*meshservice_api.MeshServiceResource,
-) map[*meshservice_api.MeshServiceResource][]*mesh.DataplaneOverviewResource {
-	result := map[*meshservice_api.MeshServiceResource][]*mesh.DataplaneOverviewResource{}
-	for _, ms := range meshServices {
-		for _, dpOverview := range dpOverviews {
-			if dpOverview.Spec.Dataplane.Matches(mesh_proto.TagSelector(ms.Spec.Selector.DataplaneTags)) {
-				result[ms] = append(result[ms], dpOverview)
-			}
-		}
-	}
-	return result
 }
 
 func (s *StatusUpdater) NeedLeaderElection() bool {
