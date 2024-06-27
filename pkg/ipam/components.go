@@ -6,8 +6,8 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	mes_vip "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/vip"
-	ms_vip "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/vip"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -21,33 +21,15 @@ func Setup(rt runtime.Runtime) error {
 		logger.Info("MeshService is not enabled. Skip starting VIP allocator for MeshService.")
 		return nil
 	}
-	meshServiceAllocator, err := ms_vip.NewMeshServiceAllocator(
-		core.Log.WithName("vips").WithName("allocator").WithName("mesh-service"),
-		rt.Config().IPAM.MeshService.CIDR,
-		rt.ResourceManager(),
-		rt.Config().IPAM.AllocationInterval.Duration,
-		rt.Metrics(),
-	)
-	if err != nil {
-		return err
-	}
-	meshExternalServiceAllocator, err := mes_vip.NewMeshExternalServiceAllocator(
-		core.Log.WithName("vips").WithName("allocator").WithName("mesh-external-service"),
-		rt.Config().IPAM.MeshExternalService.CIDR,
-		rt.ResourceManager(),
-		rt.Config().IPAM.AllocationInterval.Duration,
-		rt.Metrics(),
-	)
-	if err != nil {
-		return err
-	}
 	allocator, err := vip.NewAllocator(
 		logger,
 		rt.Config().IPAM.AllocationInterval.Duration,
-		[]vip.VIPAllocator{
-			meshExternalServiceAllocator,
-			meshServiceAllocator,
+		map[string]core_model.ResourceTypeDescriptor{
+			rt.Config().IPAM.MeshService.CIDR:         v1alpha1.MeshServiceResourceTypeDescriptor,
+			rt.Config().IPAM.MeshExternalService.CIDR: v1alpha1.MeshServiceResourceTypeDescriptor,
 		},
+		rt.Metrics(),
+		rt.ResourceManager(),
 	)
 	if err != nil {
 		return err
