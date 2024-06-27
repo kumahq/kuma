@@ -19,6 +19,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.ResourceManager(),
 			rt.Config().CoreResources.Status.MeshServiceInterval.Duration,
 			rt.Metrics(),
+			rt.Config().Multizone.Zone.Name,
 		)
 		if err != nil {
 			return err
