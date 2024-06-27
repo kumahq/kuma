@@ -43,7 +43,9 @@ func InTx(ctx context.Context, transactions Transactions, fn func(ctx context.Co
 	if err != nil {
 		return err
 	}
-	if err := fn(CtxWithTx(ctx, tx)); err != nil {
+	// if context was canceled during transaction, pgx will close connection. So we should not run Rollback,
+	// as it will end up with "conn closed" error
+	if err := fn(CtxWithTx(ctx, tx)); err != nil && !errors.Is(err, context.Canceled) {
 		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
 			return multierr.Append(errors.Wrap(rollbackErr, "could not rollback transaction"), err)
 		}
