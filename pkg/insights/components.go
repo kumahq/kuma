@@ -1,8 +1,6 @@
 package insights
 
 import (
-	"time"
-
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice"
@@ -19,7 +17,7 @@ func Setup(rt runtime.Runtime) error {
 			logger,
 			rt.ReadOnlyResourceManager(),
 			rt.ResourceManager(),
-			10*time.Second, // todo config
+			rt.Config().CoreResources.Status.MeshServiceInterval.Duration,
 			rt.Metrics(),
 		)
 		if err != nil {
@@ -39,7 +37,7 @@ func Setup(rt runtime.Runtime) error {
 			logger,
 			rt.ReadOnlyResourceManager(),
 			rt.ResourceManager(),
-			10*time.Second, // todo config
+			rt.Config().CoreResources.Status.MeshMultiZoneServiceInterval.Duration,
 			rt.Metrics(),
 		)
 		if err != nil {
