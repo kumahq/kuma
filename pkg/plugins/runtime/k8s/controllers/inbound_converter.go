@@ -77,6 +77,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
+			Name:   svcPort.Name,
 			Tags:   tags,
 			State:  state,
 			Health: &health, // write health for backwards compatibility with Kuma 2.5 and older

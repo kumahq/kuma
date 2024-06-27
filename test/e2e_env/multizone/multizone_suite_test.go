@@ -38,7 +38,10 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = E2ESynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
-	_ = SynchronizedAfterSuite(func() {}, multizone.ExpectCpsToNotCrash)
+	_ = SynchronizedAfterSuite(func() {}, func() {
+		multizone.ExpectCpsToNotCrash()
+		multizone.ExpectCpsToNotPanic()
+	})
 	_ = ReportAfterSuite("cleanup", func(report Report) {
 		if Config.CleanupLogsOnSuccess {
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
@@ -80,6 +83,5 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
-	// TODO this is flaky atm
-	_ = XDescribe("Available services", connectivity.AvailableServices, Ordered)
+	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 )

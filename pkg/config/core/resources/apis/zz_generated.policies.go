@@ -6,6 +6,7 @@ package apis
 var DefaultEnabled = []string{
 	"hostnamegenerators",
 	"meshexternalservices",
+	"meshmultizoneservices",
 	"meshservices",
 }
 
