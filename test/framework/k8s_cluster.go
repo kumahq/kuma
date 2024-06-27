@@ -531,9 +531,40 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 
 	if c.opts.cni {
+<<<<<<< HEAD
 		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
 		if err != nil {
 			return err
+=======
+		namespace := ""
+		if c.opts.cniNamespace != "" {
+			namespace = c.opts.cniNamespace
+		} else {
+			namespace = Config.CNINamespace
+		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, namespace, 1, nil})
+	}
+	if c.opts.zoneIngress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
+	}
+	if c.opts.zoneEgress {
+		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneEgressApp, Config.KumaNamespace, 1, nil})
+	}
+
+	for i := range appsToInstall {
+		idx := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			appsToInstall[idx].Outcome = c.WaitApp(appsToInstall[idx].Name, appsToInstall[idx].Namespace, appsToInstall[idx].Replicas)
+		}()
+	}
+
+	wg.Wait() // Because of the wait group we have a memory barrier which allows us to read Outcome in a thread safe manner.
+	for _, appInstall := range appsToInstall {
+		if appInstall.Outcome != nil {
+			err = multierr.Append(err, errors.Wrapf(appInstall.Outcome, "%s failed to start", appInstall.Name))
+>>>>>>> 86da5abf1 (fix(cni): set proper namespace for the taint controller (#10651))
 		}
 	}
 

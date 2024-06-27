@@ -41,7 +41,11 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
+<<<<<<< HEAD
 	cniV1                       bool
+=======
+	cniNamespace                string
+>>>>>>> 86da5abf1 (fix(cni): set proper namespace for the taint controller (#10651))
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
@@ -325,6 +329,12 @@ func WithCNI(version ...CNIVersion) KumaDeploymentOption {
 		if len(version) == 1 && version[0] == CNIVersion1 {
 			o.cniV1 = true
 		}
+	})
+}
+
+func WithCNINamespace(namespace string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.cniNamespace = namespace
 	})
 }
 
