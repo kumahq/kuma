@@ -76,6 +76,14 @@ func (m *MeshServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.
 	return m
 }
 
+func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
+	m.res.Spec.Identities = append(m.res.Spec.Identities, v1alpha1.MeshServiceIdentity{
+		Type:  v1alpha1.MeshServiceIdentityServiceTagType,
+		Value: identity,
+	})
+	return m
+}
+
 func (m *MeshServiceBuilder) WithKumaVIP(vip string) *MeshServiceBuilder {
 	m.res.Status.VIPs = []v1alpha1.VIP{
 		{
