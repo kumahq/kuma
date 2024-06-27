@@ -20,6 +20,7 @@ func Setup(rt runtime.Runtime) error {
 			rt.ResourceManager(),
 			10*time.Second, // todo config
 			rt.Metrics(),
+			rt.Config().Multizone.Zone.Name,
 		)
 		if err != nil {
 			return err
