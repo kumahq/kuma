@@ -41,11 +41,8 @@ type kumaDeploymentOptions struct {
 	zoneEgress                  bool
 	zoneEgressEnvoyAdminTunnel  bool
 	cni                         bool
-<<<<<<< HEAD
 	cniV1                       bool
-=======
 	cniNamespace                string
->>>>>>> 86da5abf1 (fix(cni): set proper namespace for the taint controller (#10651))
 	cpReplicas                  int
 	hdsDisabled                 bool
 	runPostgresMigration        bool
