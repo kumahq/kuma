@@ -18,3 +18,17 @@ func MeshServiceBackendBuilder() *builders.MeshServiceBuilder {
 func MeshServiceBackend() *v1alpha1.MeshServiceResource {
 	return MeshServiceBackendBuilder().Build()
 }
+
+func MeshServiceWebBuilder() *builders.MeshServiceBuilder {
+	return builders.MeshService().
+		WithName("web").
+		WithDataplaneTagsSelector(map[string]string{
+			mesh_proto.ServiceTag: "web",
+		}).
+		WithKumaVIP("240.0.0.2").
+		AddIntPort(builders.FirstInboundPort, builders.FirstInboundPort, "http")
+}
+
+func MeshServiceWeb() *v1alpha1.MeshServiceResource {
+	return MeshServiceBackendBuilder().Build()
+}
