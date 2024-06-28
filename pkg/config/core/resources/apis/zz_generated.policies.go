@@ -9,9 +9,3 @@ var DefaultEnabled = []string{
 	"meshmultizoneservices",
 	"meshservices",
 }
-
-func Default() *Config {
-	return &Config{
-		Enabled: DefaultEnabled,
-	}
-}
