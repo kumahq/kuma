@@ -58,6 +58,7 @@ type E2eConfig struct {
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 	KumaDeltaKDS                  bool              `json:"kumaDeltaKDS,omitempty" envconfig:"KUMA_DELTA_KDS"`
+	VersionsYamlPath              string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -199,6 +200,7 @@ func (c E2eConfig) GetUniversalImage() string {
 var defaultConf = E2eConfig{
 	HelmChartName:                 "kuma/kuma",
 	HelmChartPath:                 "../../../deployments/charts/kuma",
+	VersionsYamlPath:              "../../../versions.yml",
 	HelmRepoUrl:                   "https://kumahq.github.io/charts",
 	HelmSubChartPrefix:            "",
 	KumaNamespace:                 "kuma-system",
