@@ -2,6 +2,7 @@ package delegated
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,6 +46,9 @@ spec:
 
 			// when
 			err = kubernetes.Cluster.Install(framework.YamlK8s(meshPassthrough))
+
+			// we need to wait for a config to arrive because once request is done, connection is estabilished and it won't return 502 
+			time.Sleep(5 * time.Second)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
