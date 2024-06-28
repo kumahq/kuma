@@ -47,7 +47,7 @@ spec:
 			// when
 			err = kubernetes.Cluster.Install(framework.YamlK8s(meshPassthrough))
 
-			// we need to wait for a config to arrive because once request is done, connection is estabilished and it won't return 502 
+			// we need to wait for a config to arrive because once request is done, connection is estabilished and it won't return 502
 			time.Sleep(5 * time.Second)
 
 			// then
