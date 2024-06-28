@@ -516,7 +516,13 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	var wg sync.WaitGroup
 	var appsToInstall []appInstallation
 	if c.opts.cni {
-		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1, nil})
+		namespace := ""
+		if c.opts.cniNamespace != "" {
+			namespace = c.opts.cniNamespace
+		} else {
+			namespace = Config.CNINamespace
+		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, namespace, 1, nil})
 	}
 	if c.opts.zoneIngress {
 		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})
