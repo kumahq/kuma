@@ -189,14 +189,17 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			res, err := rest.JSON.Unmarshal([]byte(out), meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus).MeshServices).To(HaveLen(2))
-			g.Expect(res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus).Ports).To(Equal([]v1alpha1.Port{
+			status := res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus)
+			g.Expect(status.MeshServices).To(HaveLen(2))
+			g.Expect(status.Ports).To(Equal([]v1alpha1.Port{
 				{
 					Port:        80,
 					TargetPort:  intstr.FromInt32(80),
 					AppProtocol: "http",
 				},
 			}))
+
+			g.Expect(status.VIPs).To(HaveLen(1))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

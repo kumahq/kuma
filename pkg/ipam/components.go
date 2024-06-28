@@ -6,7 +6,9 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -25,8 +27,9 @@ func Setup(rt runtime.Runtime) error {
 		logger,
 		rt.Config().IPAM.AllocationInterval.Duration,
 		map[string]core_model.ResourceTypeDescriptor{
-			rt.Config().IPAM.MeshService.CIDR:         v1alpha1.MeshServiceResourceTypeDescriptor,
-			rt.Config().IPAM.MeshExternalService.CIDR: v1alpha1.MeshServiceResourceTypeDescriptor,
+			rt.Config().IPAM.MeshService.CIDR:          meshservice_api.MeshServiceResourceTypeDescriptor,
+			rt.Config().IPAM.MeshExternalService.CIDR:  meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			rt.Config().IPAM.MeshMultiZoneService.CIDR: meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor,
 		},
 		rt.Metrics(),
 		rt.ResourceManager(),
