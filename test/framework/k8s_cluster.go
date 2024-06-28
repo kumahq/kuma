@@ -520,7 +520,13 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 
 	if c.opts.cni {
-		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
+		namespace := ""
+		if c.opts.cniNamespace != "" {
+			namespace = c.opts.cniNamespace
+		} else {
+			namespace = Config.CNINamespace
+		}
+		err = c.WaitApp(Config.CNIApp, namespace, 1)
 		if err != nil {
 			return err
 		}
