@@ -7,10 +7,12 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/test/framework/versions"
 )
 
 var _ core_config.Config = E2eConfig{}
@@ -60,8 +62,13 @@ type E2eConfig struct {
 	UniversalE2ELogsPath          string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
 	CleanupLogsOnSuccess          bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 	KumaLegacyKDS                 bool              `json:"kumaLegacyKDS,omitempty" envconfig:"KUMA_LEGACY_KDS"`
+	VersionsYamlPath              string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
+}
+
+func (c E2eConfig) SupportedVersions() []*semver.Version {
+	return versions.ParseFromFile(c.VersionsYamlPath)
 }
 
 type SuiteConfig struct {
@@ -196,6 +203,7 @@ func (c E2eConfig) GetUniversalImage() string {
 var defaultConf = E2eConfig{
 	HelmChartName:                 "kuma/kuma",
 	HelmChartPath:                 "../../../deployments/charts/kuma",
+	VersionsYamlPath:              "../../../versions.yml",
 	HelmRepoUrl:                   "https://kumahq.github.io/charts",
 	HelmSubChartPrefix:            "",
 	KumaNamespace:                 "kuma-system",
