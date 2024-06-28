@@ -9,12 +9,12 @@ Rules:
     name: mtp-1
     type: MeshTimeout
   Subset:
+  - Key: __resource-name__
+    Not: false
+    Value: another-test-server
   - Key: __rule-matches-hash__
     Not: false
     Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
-  - Key: kuma.io/service
-    Not: false
-    Value: another-test-server
 - Conf:
     http:
       requestTimeout: 1s
@@ -30,9 +30,9 @@ Rules:
     name: mtp-2
     type: MeshTimeout
   Subset:
+  - Key: __resource-name__
+    Not: false
+    Value: test-server
   - Key: __rule-matches-hash__
     Not: false
     Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
-  - Key: kuma.io/service
-    Not: false
-    Value: test-server

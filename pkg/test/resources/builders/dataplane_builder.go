@@ -154,6 +154,18 @@ func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilde
 	return d
 }
 
+func (d *DataplaneBuilder) AddOutboundToMeshService(name string, port uint32) *DataplaneBuilder {
+	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
+		Port: port,
+		BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+			Kind: "MeshService",
+			Name: name,
+			Port: port,
+		},
+	})
+	return d
+}
+
 func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *DataplaneBuilder {
 	for _, service := range services {
 		d.AddOutboundToService(service)

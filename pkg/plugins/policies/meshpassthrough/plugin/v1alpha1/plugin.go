@@ -52,7 +52,7 @@ func applyToOutboundPassthrough(
 	ctx xds_context.Context,
 	rs *core_xds.ResourceSet,
 	rules core_rules.SingleItemRules,
-	listeners policies_xds.Listeners,
+	listeners *policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {
 	if len(rules.Rules) == 0 {

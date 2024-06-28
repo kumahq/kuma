@@ -48,13 +48,16 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Dataplane, ctx.Mesh); err != nil {
+	if err := applyToOutbounds(policies.ToRules, listeners, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
 	}
 	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, proxy, ctx.Mesh); err != nil {
 		return err
 	}
 
+	if err := applyToMeshServiceClusters(policies.ToRules.Rules, ctx.Mesh, clusters); err != nil {
+		return err
+	}
 	for serviceName, cluster := range clusters.Outbound {
 		if err := applyToClusters(policies.ToRules.Rules, serviceName, ctx.Mesh.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
@@ -112,16 +115,24 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 	return nil
 }
 
-func applyToOutbounds(
-	rules core_rules.ToRules,
-	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	dataplane *core_mesh.DataplaneResource,
-	meshCtx xds_context.MeshContext,
-) error {
+func applyToOutbounds(rules core_rules.ToRules, listeners *xds.Listeners, dataplane *core_mesh.DataplaneResource, meshCtx xds_context.MeshContext) error {
+	err := listeners.ApplyToMeshServiceOutboundListeners(dataplane, meshCtx, func(listener *envoy_listener.Listener, protocol core_mesh.Protocol, subset core_rules.Subset) error {
+		configurer := plugin_xds.ListenerConfigurer{
+			Rules:    rules.Rules,
+			Protocol: protocol,
+			Subset:   subset,
+		}
+
+		return configurer.ConfigureListener(listener)
+	})
+	if err != nil {
+		return err
+	}
+
 	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
-		listener, ok := outboundListeners[oface]
+		listener, ok := listeners.Outbound[oface]
 		if !ok {
 			continue
 		}
@@ -130,7 +141,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Subset:   core_rules.MeshService(serviceName),
+			Subset:   core_rules.DeprecatedMeshService(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -141,17 +152,27 @@ func applyToOutbounds(
 	return nil
 }
 
+func applyToMeshServiceClusters(rules core_rules.Rules, meshCtx xds_context.MeshContext, clusters *xds.Clusters) error {
+	return clusters.ApplyToMeshServiceClusters(meshCtx.MeshServiceByName, func(cluster *envoy_cluster.Cluster, protocol core_mesh.Protocol, subset core_rules.Subset) error {
+		conf := getConf(rules, subset)
+		if conf == nil {
+			return nil
+		}
+		configurer := plugin_xds.ClusterConfigurerFromConf(*conf, protocol)
+		return configurer.Configure(cluster)
+	})
+}
+
 func applyToClusters(
 	rules core_rules.Rules,
 	serviceName string,
 	protocol core_mesh.Protocol,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf := getConf(rules, core_rules.MeshService(serviceName))
+	conf := getConf(rules, core_rules.DeprecatedMeshService(serviceName))
 	if conf == nil {
 		return nil
 	}
-
 	configurer := plugin_xds.ClusterConfigurerFromConf(*conf, protocol)
 	for _, cluster := range clusters {
 		if err := configurer.Configure(cluster); err != nil {
@@ -229,7 +250,7 @@ func applyToGateway(
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-					conf := getConf(toRules, core_rules.MeshService(serviceName))
+					conf := getConf(toRules, core_rules.DeprecatedMeshService(serviceName))
 					if conf == nil {
 						continue
 					}

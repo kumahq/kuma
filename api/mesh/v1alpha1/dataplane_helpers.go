@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 )
 
 const (
@@ -60,6 +62,10 @@ const (
 	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
+
+	// SectionName is a standard label that reflects the name of the specific section of resource. It is used for targeting
+	// specific section of resource in policies
+	SectionName = "kuma.io/sectionName"
 )
 
 type ResourceOrigin string
@@ -147,6 +153,10 @@ func (i OutboundInterface) String() string {
 
 func NonBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
 	return outbound.BackendRef == nil
+}
+
+func WithMeshServiceBackendRefFilter(outbound *Dataplane_Networking_Outbound) bool {
+	return outbound.BackendRef != nil && outbound.BackendRef.Kind == string(common_api.MeshService)
 }
 
 func (n *Dataplane_Networking) GetOutbounds(filters ...func(*Dataplane_Networking_Outbound) bool) []*Dataplane_Networking_Outbound {

@@ -553,7 +553,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -611,7 +611,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -666,7 +666,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -710,7 +710,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: core_rules.DeprecatedMeshService("backend"),
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
@@ -758,7 +758,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -810,7 +810,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -859,7 +859,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: core_rules.DeprecatedMeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{

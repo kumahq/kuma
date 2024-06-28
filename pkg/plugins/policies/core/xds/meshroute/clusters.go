@@ -129,11 +129,22 @@ func GenerateClusters(
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
 
-			resources = resources.Add(&core_xds.Resource{
-				Name:     clusterName,
-				Origin:   generator.OriginOutbound,
-				Resource: edsCluster,
-			})
+			if msName := service.MeshServiceName(); len(msName) > 0 {
+				resources = resources.Add(&core_xds.Resource{
+					Name:     clusterName,
+					Origin:   generator.OriginOutbound,
+					Resource: edsCluster,
+					Metadata: map[string]string{
+						core_xds.MeshServiceDestination: msName,
+					},
+				})
+			} else {
+				resources = resources.Add(&core_xds.Resource{
+					Name:     clusterName,
+					Origin:   generator.OriginOutbound,
+					Resource: edsCluster,
+				})
+			}
 		}
 	}
 

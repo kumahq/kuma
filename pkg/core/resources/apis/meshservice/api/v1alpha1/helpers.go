@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -29,4 +30,16 @@ func (m *MeshServiceResource) IsLocalMeshService(localZone string) bool {
 		return true // no zone label mean that it's a local resource
 	}
 	return resZone == localZone
+}
+
+func PortFromDestinationName(destination string) uint32 {
+	np := strings.Split(destination, "_svc_")
+	if len(np) != 2 {
+		return 0
+	}
+	port, err := strconv.Atoi(np[1])
+	if err != nil {
+		return 0
+	}
+	return uint32(port)
 }

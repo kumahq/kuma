@@ -17,10 +17,15 @@ type Resource struct {
 	Name     string
 	Origin   string
 	Resource ResourcePayload
+	Metadata map[string]string
 }
 
 // ResourceList represents a list of generic xDS resources.
 type ResourceList []*Resource
+
+// todo i am not sure if this belong here, or where to put it
+// known metadata fields
+const MeshServiceDestination = "MeshServiceDestination"
 
 func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy_sd.DeltaDiscoveryResponse, error) {
 	resp := &envoy_sd.DeltaDiscoveryResponse{}

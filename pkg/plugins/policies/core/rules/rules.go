@@ -14,12 +14,16 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-const RuleMatchesHashTag = "__rule-matches-hash__"
+const (
+	RuleMatchesHashTag = "__rule-matches-hash__"
+	ResourceNameTag    = "__resource-name__"
+)
 
 type InboundListener struct {
 	Address string
@@ -203,10 +207,36 @@ func MeshSubset() Subset {
 	return Subset{}
 }
 
-func MeshService(name string) Subset {
+// this method is needed for old MeshService matching, where were not matching actual resource, but we were matching on kuma.io/service tag
+// this can be removed after we start using MeshService by default, with policies on namespace
+func DeprecatedMeshService(name string) Subset {
 	return Subset{{
-		Key: mesh_proto.ServiceTag, Value: name,
+		Key: ResourceNameTag, Value: name,
 	}}
+}
+
+func MeshService(meshService *meshservice_api.MeshServiceResource, port meshservice_api.Port) Subset {
+	// on universal meshService.GetMeta().GetName() will be just name, on k8s it will be name.namespace. We need
+	// to trim namespace for matching as namespace is added as separate tag. On universal namespace label will be empty
+	// so name will be unchanged
+	resourceName := meshService.GetMeta().GetName()
+	ns, ok := meshService.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	if ok {
+		resourceName = strings.TrimSuffix(resourceName, fmt.Sprintf(".%s", ns))
+	}
+	subset := Subset{
+		{Key: ResourceNameTag, Value: resourceName},
+	}
+
+	if port.Name != "" {
+		subset = append(subset, Tag{Key: mesh_proto.SectionName, Value: port.Name})
+	}
+
+	for label, value := range meshService.Meta.GetLabels() {
+		subset = append(subset, Tag{Key: label, Value: value})
+	}
+
+	return subset
 }
 
 func MeshExternalService(name string) Subset {
@@ -464,7 +494,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
 	for _, item := range list {
-		ss, err := asSubset(item.GetTargetRef())
+		ss, err := asSubset(item)
 		if err != nil {
 			return nil, err
 		}
@@ -526,7 +556,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
 			for i := 0; i < len(list); i++ {
 				item := list[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
+				itemSubset, err := asSubset(item)
 				if err != nil {
 					return nil, err
 				}
@@ -581,7 +611,8 @@ func toStringList(nodes []graph.Node) []string {
 	return rv
 }
 
-func asSubset(tr common_api.TargetRef) (Subset, error) {
+func asSubset(policyItem PolicyItemWithMeta) (Subset, error) {
+	tr := policyItem.GetTargetRef()
 	switch tr.Kind {
 	case common_api.Mesh:
 		return Subset{}, nil
@@ -592,9 +623,9 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+		return meshServiceSubset(policyItem), nil
 	case common_api.MeshServiceSubset:
-		ss := Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
+		ss := Subset{{Key: ResourceNameTag, Value: tr.Name}}
 		for k, v := range tr.Tags {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
@@ -602,6 +633,36 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 	default:
 		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
+}
+
+func meshServiceSubset(policyItem PolicyItemWithMeta) Subset {
+	subset := Subset{}
+	tr := policyItem.GetTargetRef()
+
+	if tr.Name != "" {
+		subset = append(subset, Tag{Key: ResourceNameTag, Value: tr.Name})
+	}
+
+	if tr.Namespace != "" {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: tr.Namespace})
+	}
+
+	policyRole := core_model.PolicyRole(policyItem.ResourceMeta)
+	if tr.Namespace == "" && policyRole != mesh_proto.SystemPolicyRole {
+		subset = append(subset, Tag{Key: mesh_proto.KubeNamespaceTag, Value: policyItem.GetLabels()[mesh_proto.KubeNamespaceTag]})
+	}
+
+	if len(tr.Labels) != 0 {
+		for k, v := range tr.Labels {
+			subset = append(subset, Tag{Key: k, Value: v})
+		}
+	}
+
+	if tr.SectionName != "" {
+		subset = append(subset, Tag{Key: mesh_proto.SectionName, Value: tr.SectionName})
+	}
+
+	return subset
 }
 
 type SubsetIter struct {

@@ -147,7 +147,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: core_rules.MeshService("backend"),
+								Subset: core_rules.DeprecatedMeshService("backend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
@@ -155,7 +155,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("frontend"),
+								Subset: core_rules.DeprecatedMeshService("frontend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.LeastRequestType,
@@ -166,7 +166,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("payment"),
+								Subset: core_rules.DeprecatedMeshService("payment"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
@@ -449,7 +449,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: core_rules.DeprecatedMeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -501,7 +501,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: core_rules.DeprecatedMeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -632,7 +632,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: core_rules.DeprecatedMeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -683,7 +683,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: core_rules.DeprecatedMeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -817,7 +817,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: core_rules.DeprecatedMeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -843,7 +843,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: core_rules.DeprecatedMeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -948,7 +948,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: core_rules.DeprecatedMeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -983,7 +983,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: core_rules.DeprecatedMeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -1130,7 +1130,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: core_rules.MeshService("backend"),
+								Subset: core_rules.DeprecatedMeshService("backend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
@@ -1178,7 +1178,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("payment"),
+								Subset: core_rules.DeprecatedMeshService("payment"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,

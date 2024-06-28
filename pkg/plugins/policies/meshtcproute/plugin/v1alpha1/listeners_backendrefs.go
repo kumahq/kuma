@@ -8,8 +8,14 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 )
 
-func getBackendRefs(toRulesTCP core_xds.Rules, toRulesHTTP core_xds.Rules, serviceName string, protocol core_mesh.Protocol, backendRef common_api.BackendRef) []common_api.BackendRef {
-	service := core_xds.MeshService(serviceName)
+func getBackendRefs(
+	toRulesTCP core_xds.Rules,
+	toRulesHTTP core_xds.Rules,
+	serviceName string,
+	protocol core_mesh.Protocol,
+	backendRef common_api.BackendRef,
+) []common_api.BackendRef {
+	service := core_xds.DeprecatedMeshService(serviceName)
 
 	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
 
@@ -34,7 +40,5 @@ func getBackendRefs(toRulesTCP core_xds.Rules, toRulesHTTP core_xds.Rules, servi
 	if tcpConf != nil {
 		return tcpConf.Default.BackendRefs
 	}
-	return []common_api.BackendRef{
-		backendRef,
-	}
+	return []common_api.BackendRef{backendRef}
 }

@@ -104,7 +104,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, core_rules.MeshService(serviceName), cluster); err != nil {
+		if err := configure(rules.Rules, core_rules.DeprecatedMeshService(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -142,7 +142,7 @@ func applyToGateways(
 
 					if err := configure(
 						rules,
-						core_rules.MeshService(serviceName),
+						core_rules.DeprecatedMeshService(serviceName),
 						cluster,
 					); err != nil {
 						return err

@@ -100,7 +100,7 @@ func applyToOutbounds(rules core_rules.ToRules, outboundListeners map[mesh_proto
 
 		serviceName := outbound.GetService()
 
-		if err := configureOutbound(rules.Rules, dataplane, core_rules.MeshService(serviceName), serviceName, listener, backends, path); err != nil {
+		if err := configureOutbound(rules.Rules, dataplane, core_rules.DeprecatedMeshService(serviceName), serviceName, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -116,7 +116,7 @@ func applyToTransparentProxyListeners(
 		if err := configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.DeprecatedMeshService(core_mesh.PassThroughService),
 			"external",
 			ipv4,
 			backends,
@@ -130,7 +130,7 @@ func applyToTransparentProxyListeners(
 		return configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.DeprecatedMeshService(core_mesh.PassThroughService),
 			"external",
 			ipv6,
 			backends,
@@ -150,7 +150,7 @@ func applyToDirectAccess(
 		return configureOutbound(
 			rules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.DeprecatedMeshService(core_mesh.PassThroughService),
 			name,
 			listener,
 			backends,

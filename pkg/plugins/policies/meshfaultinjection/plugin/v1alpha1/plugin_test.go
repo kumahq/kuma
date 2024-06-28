@@ -119,12 +119,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
-							Subset: core_rules.Subset{
-								{
-									Key:   "kuma.io/service",
-									Value: "demo-client",
-								},
-							},
+							Subset: core_rules.DeprecatedMeshService("demo-client"),
 							Conf: api.Conf{
 								Http: &[]api.FaultInjectionConf{
 									{
@@ -147,7 +142,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						{
 							Subset: core_rules.Subset{
 								{
-									Key:   "kuma.io/service",
+									Key:   core_rules.ResourceNameTag,
 									Value: "demo-client",
 									Not:   true,
 								},
@@ -292,7 +287,7 @@ var _ = Describe("MeshFaultInjection", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshService("frontend"),
+													Subset: core_rules.DeprecatedMeshService("frontend"),
 													Conf: api.Conf{
 														Http: &[]api.FaultInjectionConf{
 															{

@@ -62,7 +62,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, core_rules.DeprecatedMeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -103,7 +103,7 @@ func applyToGateways(
 					if err := configure(
 						proxy.Dataplane,
 						rules,
-						core_rules.MeshService(serviceName),
+						core_rules.DeprecatedMeshService(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
 					); err != nil {
