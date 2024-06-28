@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -29,7 +30,7 @@ var _ = Describe("Updater", func() {
 		metrics = m
 		resManager = manager.NewResourceManager(memory.NewStore())
 
-		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m)
+		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m, "east")
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
 		go func() {
@@ -62,6 +63,30 @@ var _ = Describe("Updater", func() {
 				},
 			}))
 		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should not override identity to status of service from another zone", func() {
+		// when
+		Expect(samples.MeshServiceBackendBuilder().
+			WithLabels(map[string]string{
+				v1alpha1.ZoneTag: "west",
+			}).
+			AddServiceTagIdentity("backend").
+			Create(resManager)).To(Succeed())
+		// and there are no DPPs. If it was a local service it would have no identities
+
+		// then
+		Consistently(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ms.Spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "backend",
+				},
+			}))
+		}, "1s", "100ms").Should(Succeed())
 	})
 
 	It("should emit metric", func() {

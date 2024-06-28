@@ -26,6 +26,7 @@ type StatusUpdater struct {
 	logger       logr.Logger
 	metric       prometheus.Summary
 	interval     time.Duration
+	localZone    string
 }
 
 var _ component.Component = &StatusUpdater{}
@@ -36,6 +37,7 @@ func NewStatusUpdater(
 	resManager manager.ResourceManager,
 	interval time.Duration,
 	metrics core_metrics.Metrics,
+	localZone string,
 ) (component.Component, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_ms_status_updater",
@@ -51,6 +53,7 @@ func NewStatusUpdater(
 		logger:       logger,
 		metric:       metric,
 		interval:     interval,
+		localZone:    localZone,
 	}, nil
 }
 
@@ -91,6 +94,10 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dpList.Items, msList.Items, false)
 
 	for ms, dpps := range dppsForMs {
+		if !ms.IsLocalMeshService(s.localZone) {
+			// identities are already computed by the other zone
+			continue
+		}
 		serviceTagIdentities := map[string]struct{}{}
 		for _, dpp := range dpps {
 			for service := range dpp.Spec.TagSet()[mesh_proto.ServiceTag] {
