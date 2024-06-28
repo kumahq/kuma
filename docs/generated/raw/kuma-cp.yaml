@@ -796,9 +796,9 @@ policies:
 coreResources:
   status:
     # How often we compute status of MeshMultiZoneService
-    meshMultiZoneServiceInterval: 5s # ENV: CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL
+    meshMultiZoneServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL
     # How often we compute status of MeshService
-    meshServiceInterval: 5s # ENV: CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL
+    meshServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices

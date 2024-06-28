@@ -15,9 +15,9 @@ type Config struct {
 
 type ConfigStatus struct {
 	// How often we compute status of MeshMultiZoneService
-	MeshMultiZoneServiceInterval config_types.Duration `json:"meshMultiZoneServiceInterval" envconfig:"CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL"`
+	MeshMultiZoneServiceInterval config_types.Duration `json:"meshMultiZoneServiceInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL"`
 	// How often we compute status of MeshService
-	MeshServiceInterval config_types.Duration `json:"meshServiceInterval" envconfig:"CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL"`
+	MeshServiceInterval config_types.Duration `json:"meshServiceInterval" envconfig:"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL"`
 }
 
 func Default() *Config {
