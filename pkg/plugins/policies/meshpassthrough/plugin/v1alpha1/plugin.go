@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -29,7 +30,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.Dataplane == nil {
+	if proxy.Dataplane == nil || (proxy.Dataplane.Spec.Networking.Gateway != nil && proxy.Dataplane.Spec.Networking.Gateway.Type == v1alpha1.Dataplane_Networking_Gateway_BUILTIN) {
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]

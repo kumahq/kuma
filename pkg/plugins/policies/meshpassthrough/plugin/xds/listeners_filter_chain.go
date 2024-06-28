@@ -65,6 +65,9 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 			switch route.MatchType {
 			case Domain, WildcardDomain, IP, IPV6:
 				domains := []string{route.Value}
+				if route.MatchType == IP {
+					domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
+				}
 				if route.MatchType == IPV6 {
 					domains = append(domains, fmt.Sprintf("[%s]", route.Value))
 				}
