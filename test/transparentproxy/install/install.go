@@ -1,42 +1,38 @@
 package install
 
 import (
-	"bytes"
 	"context"
-	std_errors "errors"
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/transparentproxy/utils"
+	test_container "github.com/kumahq/kuma/test/framework/container"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var (
 	// Generic
-	cmdUserAdd = []string{"useradd", "-u", "5678", "kuma-dp"}
+	userAdd = []string{"useradd", "-u", "5678", "kuma-dp"}
 	// Debian, Ubuntu
-	cmdAptUpdate          = []string{"apt-get", "update", "-y"}
-	cmdAptInstallIptables = []string{"apt-get", "install", "-y", "iptables"}
-	// RHEL, Amazon Linux
-	cmdYumUpdate          = []string{"yum", "update", "-y"}
-	cmdYumInstallIptables = []string{"yum", "install", "-y", "iptables"}
+	aptUpdate          = []string{"apt-get", "update", "-y"}
+	aptInstallIptables = []string{"apt-get", "install", "-y", "iptables"}
+	// RHEL, Amazon Linux, Centos
+	yumUpdate          = []string{"yum", "update", "-y"}
+	yumInstallIptables = []string{"yum", "install", "-y", "iptables"}
 	// On Amazon Linux, the `useradd` command is not available by default.
 	// The `shadow-utils` package, which provides user management tools,
 	// includes `useradd`.
-	cmdYumInstallShadowUtils = []string{"yum", "install", "-y", "shadow-utils"}
+	yumInstallShadowUtils = []string{"yum", "install", "-y", "shadow-utils"}
 	// Alpine
-	cmdAddUser        = []string{"adduser", "-u", "5678", "kuma-dp", "-D"}
-	cmdApkAddIptables = []string{"apk", "add", "iptables"}
+	addUser        = []string{"adduser", "-u", "5678", "kuma-dp", "-D"}
+	apkAddIptables = []string{"apk", "add", "iptables"}
 )
 
 type testCase struct {
@@ -52,34 +48,13 @@ func Install() {
 		func(tc testCase) {
 			Expect(TProxyConfig.KumactlLinuxBin).NotTo(BeEmpty())
 
-			container, err := testcontainers.GenericContainer(
-				context.Background(),
-				testcontainers.GenericContainerRequest{
-					ContainerRequest: testcontainers.ContainerRequest{
-						Image:      tc.image,
-						Privileged: true,
-						Files: []testcontainers.ContainerFile{{
-							HostFilePath:      TProxyConfig.KumactlLinuxBin,
-							ContainerFilePath: "/usr/local/bin/kumactl",
-							FileMode:          0o700,
-						}},
-						Cmd: []string{"sleep", "infinity"},
-						LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-							{PostStarts: utils.BuildContainerHooks(tc.postStart)},
-						},
-						WaitingFor: wait.ForExec([]string{"kumactl", "version"}).
-							WithStartupTimeout(time.Second * 10).
-							WithExitCodeMatcher(func(exitCode int) bool {
-								return exitCode == 0
-							}).
-							WithResponseMatcher(func(body io.Reader) bool {
-								data, _ := io.ReadAll(body)
-								return bytes.Contains(data, []byte("Client: "))
-							}),
-					},
-					Started: true,
-				},
-			)
+			container, err := test_container.NewContainerSetup().
+				WithImage(tc.image).
+				WithKumactlBinary(TProxyConfig.KumactlLinuxBin).
+				WithPostStart(tc.postStart).
+				WithPrivileged(true).
+				Start(context.Background())
+
 			Expect(err).ToNot(HaveOccurred())
 
 			DeferCleanup(func() {
@@ -90,7 +65,6 @@ func Install() {
 			EnsureGoldenFiles(container, tc)
 		},
 		EntriesForImages(TProxyConfig.DockerImagesToTest),
-		XEntriesForImages(TProxyConfig.DockerImagesToTestPaused),
 	)
 }
 
@@ -124,97 +98,56 @@ func EnsureInstallSuccessful(container testcontainers.Container, flags []string)
 func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 	GinkgoHelper()
 
-	var errs []error
-	outputMap := map[string][]string{}
-
-	saveCmds := map[string][]string{
-		"ipv4": {
-			"iptables-save",
-			"iptables-legacy-save",
-			"iptables-nft-save",
-		},
+	saveCmds := []string{
+		"iptables-save",
+		"iptables-legacy-save",
+		"iptables-nft-save",
 	}
 
 	if TProxyConfig.IPV6 {
-		saveCmds["ipv6"] = []string{
+		saveCmds = append(
+			saveCmds,
 			"ip6tables-save",
 			"ip6tables-legacy-save",
 			"ip6tables-nft-save",
-		}
+		)
 	}
 
-	for suffix, cmds := range saveCmds {
-		for _, cmd := range cmds {
-			exitCode, reader, err := container.Exec(
-				context.Background(),
-				[]string{cmd},
-				exec.Multiplexed(),
-			)
-			if err != nil {
-				errs = append(errs, errors.Wrapf(err, "%s failed", cmd))
-				continue
-			}
+	for _, cmd := range saveCmds {
+		golden := utils.BuildIptablesGoldenFileName(
+			"install",
+			tc.name,
+			cmd,
+			tc.additionalFlags,
+		)
 
-			buf := new(strings.Builder)
-			if _, err := io.Copy(buf, reader); err != nil {
-				errs = append(errs, errors.Wrapf(
-					err,
-					"%s: copying output reader to buffer failed",
-					cmd,
+		exitCode, reader, err := container.Exec(
+			context.Background(),
+			[]string{cmd},
+			exec.Multiplexed(),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		buf := new(strings.Builder)
+		Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
+
+		if exitCode != 0 {
+			if !strings.Contains(buf.String(), "executable file not found") {
+				Fail(fmt.Sprintf(
+					"installation ended with code %d: %s",
+					exitCode,
+					buf.String(),
 				))
-				continue
 			}
 
-			outputMap[suffix] = append(
-				outputMap[suffix],
-				fmt.Sprintf("# %s", cmd),
-			)
+			Expect("executable not found\n").
+				To(matchers.MatchGoldenEqual(golden...))
 
-			if exitCode != 0 {
-				if strings.Contains(buf.String(), "executable file not found") {
-					outputMap[suffix] = append(
-						outputMap[suffix],
-						"# executable not found",
-					)
-				} else {
-					errs = append(errs, errors.Errorf(
-						"%s ended with code: %d: %s",
-						cmd,
-						exitCode,
-						buf,
-					))
-					continue
-				}
-			} else {
-				outputMap[suffix] = append(
-					outputMap[suffix],
-					utils.CleanIptablesSaveOutput(buf.String()),
-				)
-			}
-
-			outputMap[suffix] = append(
-				outputMap[suffix],
-				fmt.Sprintf("# %s end\n", cmd),
-			)
+			continue
 		}
 
-		if len(errs) > 0 {
-			Fail(fmt.Sprintf(
-				"errors encountered during golden files verification: \n%s",
-				std_errors.Join(errs...),
-			))
-		}
-	}
-
-	for suffix, output := range outputMap {
-		Expect(strings.Join(output, "\n")).To(matchers.MatchGoldenEqual(
-			utils.BuildGoldenFileName(
-				"install",
-				tc.name,
-				tc.additionalFlags,
-				suffix,
-			)...,
-		))
+		Expect(utils.CleanIptablesSaveOutput(buf.String())).
+			To(matchers.MatchGoldenEqual(golden...))
 	}
 }
 
@@ -315,35 +248,34 @@ func genEntriesForImage(
 ) []TableEntry {
 	var postStart [][]string
 
+	image = strings.ToLower(image)
+
 	switch {
 	case strings.Contains(image, "debian"), strings.Contains(image, "ubuntu"):
-		postStart = [][]string{cmdAptUpdate, cmdAptInstallIptables, cmdUserAdd}
+		postStart = [][]string{aptUpdate, aptInstallIptables, userAdd}
 	case strings.Contains(image, "alpine"):
-		postStart = [][]string{cmdApkAddIptables, cmdAddUser}
-	case strings.Contains(image, "redhat/ubi"):
-		postStart = [][]string{cmdYumUpdate, cmdYumInstallIptables, cmdUserAdd}
+		postStart = [][]string{apkAddIptables, addUser}
+	case strings.Contains(image, "redhat/ubi"), strings.Contains(image, "centos"):
+		postStart = [][]string{yumUpdate, yumInstallIptables, userAdd}
 	case strings.Contains(image, "amazonlinux"):
 		postStart = [][]string{
-			cmdYumUpdate,
-			cmdYumInstallIptables,
-			cmdYumInstallShadowUtils,
-			cmdUserAdd,
+			yumUpdate,
+			yumInstallIptables,
+			yumInstallShadowUtils,
+			userAdd,
 		}
 	}
 
 	// buildArgs is a helper function that combines test case parameters with
 	// any additional decorators.
-	buildArgs := func(
-		additionalFlags []string,
-		decorators []interface{},
-	) []interface{} {
+	buildArgs := func(flags []string, decorators []interface{}) []interface{} {
 		var args []interface{}
 
 		args = append(args, testCase{
 			name:            name,
 			image:           image,
 			postStart:       postStart,
-			additionalFlags: additionalFlags,
+			additionalFlags: flags,
 		})
 		args = append(args, decorators...)
 
@@ -387,10 +319,4 @@ func genEntriesForImage(
 //     flaky, so this method should provide a reliable solution.
 func EntriesForImages(images map[string]string) []TableEntry {
 	return genEntriesForImages(images, Entry, FlakeAttempts(3))
-}
-
-// XEntriesForImages generates paused ginkgo test entries (XEntry|PEntry) for
-// various Transparent Proxy installation scenarios on a given Docker image.
-func XEntriesForImages(images map[string]string) []TableEntry {
-	return genEntriesForImages(images, XEntry)
 }

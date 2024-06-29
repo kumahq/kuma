@@ -16,11 +16,10 @@ var _ config.Config = TransparentProxyConfig{}
 type TransparentProxyConfig struct {
 	config.BaseConfig
 
-	KumactlLinuxBin          string            `json:"kumactlLinuxBin,omitempty" envconfig:"KUMACTL_LINUX_BIN"`
-	DockerImagesToTest       map[string]string `json:"dockerImagesToTest,omitempty" envconfig:"DOCKER_IMAGES_TO_TEST"`
-	DockerImagesToTestPaused map[string]string `json:"dockerImagesToTestPaused,omitempty" envconfig:"DOCKER_IMAGES_TO_TEST_PAUSED"`
-	InstallFlagsToTest       []string          `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
-	IPV6                     bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
+	KumactlLinuxBin    string            `json:"kumactlLinuxBin,omitempty" envconfig:"KUMACTL_LINUX_BIN"`
+	DockerImagesToTest map[string]string `json:"dockerImagesToTest,omitempty" envconfig:"DOCKER_IMAGES_TO_TEST"`
+	InstallFlagsToTest []string          `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
+	IPV6               bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
 }
 
 func (c TransparentProxyConfig) Validate() error {
@@ -69,13 +68,11 @@ var defaultTProxyConf = TransparentProxyConfig{
 		"Alpine 3":          "alpine:3.20.1",
 		"Amazon Linux 2023": "amazonlinux:2023.4.20240611.0",
 		"Amazon Linux 2":    "amazonlinux:2.0.20240610.1",
-	},
-	DockerImagesToTestPaused: map[string]string{
 		// Skipping RHEL 8 as our transparent proxy currently relies on
 		// iptables-nft or iptables-legacy binaries. RHEL 8 only provides the
 		// base iptables binary. Unpause these entries to include RHEL 8 once
 		// out transparent proxy is fixed to support base iptables binaries.
-		"RHEL 8": "redhat/ubi8:8.10-901.1717584420",
+		// "RHEL 8":            "redhat/ubi8:8.10-901.1717584420",
 	},
 	InstallFlagsToTest: []string{
 		"--redirect-all-dns-traffic",
