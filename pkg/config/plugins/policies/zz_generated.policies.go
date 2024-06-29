@@ -20,9 +20,3 @@ var DefaultEnabled = []string{
 	"meshtraces",
 	"meshtrafficpermissions",
 }
-
-func Default() *Config {
-	return &Config{
-		Enabled: DefaultEnabled,
-	}
-}
