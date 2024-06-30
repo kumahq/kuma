@@ -100,12 +100,15 @@ const (
 
 // Regexp used to parse the result of `iptables --version` then used to map to
 // with IptablesMode
-var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables.*?\((.*?)\)`)
+var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables(?:.*?\((.*?)\))?`)
 
 // Map IptablesMode to the mode taken from the result of `iptables --version`
-var IptablesModeMap = map[IptablesMode]string{
-	IptablesModeLegacy: "legacy",    // i.e. iptables v1.8.5 (legacy)
-	IptablesModeNft:    "nf_tables", // i.e. iptables v1.8.9 (nf_tables)
+var IptablesModeMap = map[IptablesMode][]string{
+	IptablesModeLegacy: {
+		"legacy", // i.e. iptables v1.8.5 (legacy)
+		"",       // i.e. iptables v1.6.1
+	},
+	IptablesModeNft: {"nf_tables"}, // i.e. iptables v1.8.9 (nf_tables)
 }
 
 // FallbackExecutablesSearchLocations is a list of directories to search for

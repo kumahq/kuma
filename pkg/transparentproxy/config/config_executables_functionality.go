@@ -90,7 +90,7 @@ func verifyTable(
 	iptablesSave InitializedExecutable,
 	table TableName,
 ) (bool, string) {
-	stdout, err := iptablesSave.exec(ctx, FlagTable, string(table))
+	stdout, _, err := iptablesSave.Exec(ctx, FlagTable, string(table))
 	if err != nil {
 		return false, ""
 	}
@@ -103,7 +103,7 @@ func verifyModule(
 	iptables InitializedExecutable,
 	matchExtension string,
 ) bool {
-	_, err := iptables.exec(ctx, FlagMatch, matchExtension, FlagHelp)
+	_, _, err := iptables.Exec(ctx, FlagMatch, matchExtension, FlagHelp)
 	return err == nil
 }
 

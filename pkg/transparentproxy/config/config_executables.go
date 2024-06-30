@@ -54,10 +54,10 @@ type InitializedExecutable struct {
 	Path string
 }
 
-func (c InitializedExecutable) exec(
+func (c InitializedExecutable) Exec(
 	ctx context.Context,
 	args ...string,
-) (*bytes.Buffer, error) {
+) (*bytes.Buffer, *bytes.Buffer, error) {
 	return execCmd(ctx, c.Path, args...)
 }
 
@@ -252,30 +252,54 @@ func (c ExecutablesNftLegacy) Initialize(
 }
 
 // verifyIptablesMode checks if the provided 'path' corresponds to an iptables
-// executable with the expected mode ('mode').
+// executable operating in the expected mode.
 //
-// This function achieves verification by:
-//  1. Executing the command specified by 'path' with the `--version` argument.
-//  2. If successful, it parses the standard output using the
-//     `IptablesModeRegex`.
-//     - The regex aims to extract the mode string from the output (e.g.,
+// This function verifies the mode by:
+//  1. Executing the iptables command specified by 'path' with the `--version`
+//     argument to obtain the version output.
+//  2. Parsing the standard output using the `consts.IptablesModeRegex`.
+//     - The regex is designed to extract the mode string from the output (e.g.,
 //     "legacy" or "nf_tables").
-//     - If a match is found, it compares the extracted mode with the expected
-//     mode (`mode`) using the `IptablesModeMap`.
-//  3. The function returns:
+//     - If a match is found, the extracted mode is compared with the expected
+//     mode (`mode`) using the `consts.IptablesModeMap`.
+//  3. Returning:
 //     - `true` if the extracted mode matches the expected mode.
-//     - `false` otherwise (including cases where the command execution fails,
-//     parsing fails, or the extracted mode doesn't match).
+//     - `false` if the command execution fails, parsing fails, or the extracted
+//     mode doesn't match the expected mode.
+//
+// Special Considerations:
+// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
+// flag and exhibit the following behaviors:
+//   - The command exits with a non-zero code and a warning is written to
+//     stderr.
+//   - A warning is written to stderr but the command exits with code 0.
+//
+// In these cases, the function assumes the iptables mode is legacy
+// (`consts.IptablesModeLegacy`) due to the age of these versions.
 func verifyIptablesMode(
 	ctx context.Context,
 	path string,
 	mode IptablesMode,
 ) bool {
-	if output, err := execCmd(ctx, path, FlagVersion); err == nil {
-		matched := IptablesModeRegex.FindStringSubmatch(output.String())
-		if len(matched) == 2 {
-			return matched[1] == IptablesModeMap[mode]
-		}
+	isVersionMissing := func(output string) bool {
+		return strings.Contains(
+			output,
+			fmt.Sprintf("unrecognized option '%s'", FlagVersion),
+		)
+	}
+
+	stdout, stderr, err := execCmd(ctx, path, FlagVersion)
+	if err != nil {
+		return isVersionMissing(err.Error()) && mode == IptablesModeLegacy
+	}
+
+	if stderr != nil && stderr.Len() > 0 && isVersionMissing(stderr.String()) {
+		return mode == IptablesModeLegacy
+	}
+
+	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) == 2 {
+		return slices.Contains(IptablesModeMap[mode], matched[1])
 	}
 
 	return false
@@ -391,7 +415,7 @@ func execCmd(
 	ctx context.Context,
 	path string,
 	args ...string,
-) (*bytes.Buffer, error) {
+) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	// #nosec G204
@@ -401,11 +425,11 @@ func execCmd(
 
 	if err := cmd.Run(); err != nil {
 		if stderr.Len() > 0 {
-			return nil, errors.Wrap(err, stderr.String())
+			return nil, nil, errors.Wrap(err, stderr.String())
 		}
 
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &stdout, nil
+	return &stdout, &stderr, nil
 }
