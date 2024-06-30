@@ -10,8 +10,9 @@ import (
 )
 
 type FunctionalityTables struct {
-	Nat bool
-	Raw bool
+	Nat    bool
+	Raw    bool
+	Mangle bool
 }
 
 type FunctionalityModules struct {
@@ -128,6 +129,7 @@ func verifyFunctionality(
 	}
 
 	functionality.Tables.Raw, _ = verifyTable(ctx, iptablesSave, TableRaw)
+	functionality.Tables.Mangle, _ = verifyTable(ctx, iptablesSave, TableMangle)
 
 	return functionality, verifyMinimalRequirements(functionality)
 }

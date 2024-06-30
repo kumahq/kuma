@@ -257,11 +257,33 @@ type InitializedConfig struct {
 	LoopbackInterfaceName string
 }
 
-// ShouldDropInvalidPackets is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldDropInvalidPackets() bool {
-	return c.DropInvalidPackets
+// ShouldDropInvalidPackets determines whether the configuration indicates
+// dropping invalid packets based on the configured behavior and the presence of
+// the mangle table for the specified IP version.
+//
+// Args:
+//
+//	ipv6 (bool): Flag indicating if the check is for IPv6 or IPv4 packets.
+//
+// Returns:
+//
+//	bool: True if the configuration indicates dropping invalid packets for the
+//	      specified IP version, and the corresponding mangle table is present.
+//	      False otherwise.
+//
+// This method considers the following factors:
+//   - `DropInvalidPackets` configuration setting: This setting should be enabled
+//     for dropping invalid packets.
+//   - Presence of Mangle Table: The mangle table is required for implementing
+//     packet filtering rules. The method checks for the appropriate mangle table
+//     based on the provided `ipv6` flag.
+func (c InitializedConfig) ShouldDropInvalidPackets(ipv6 bool) bool {
+	mangleTablePresent := c.Executables.IPv4.Functionality.Tables.Mangle
+	if ipv6 {
+		mangleTablePresent = c.Executables.IPv6.Functionality.Tables.Mangle
+	}
+
+	return c.DropInvalidPackets && mangleTablePresent
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in

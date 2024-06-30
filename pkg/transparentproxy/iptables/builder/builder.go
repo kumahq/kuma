@@ -31,7 +31,7 @@ func BuildIPTablesForRestore(
 	result := slices.DeleteFunc([]string{
 		tables.BuildRulesForRestore(buildRawTable(cfg, ipv6), cfg.Verbose),
 		tables.BuildRulesForRestore(natTable, cfg.Verbose),
-		tables.BuildRulesForRestore(buildMangleTable(cfg), cfg.Verbose),
+		tables.BuildRulesForRestore(buildMangleTable(cfg, ipv6), cfg.Verbose),
 	}, func(s string) bool { return s == "" })
 
 	separator := "\n"
