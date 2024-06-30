@@ -98,7 +98,7 @@ func (c DNS) Initialize(
 		}
 	}
 
-	// We don't have to get DNS servers if if we want to capture all DNS traffic
+	// We don't have to get DNS servers if we want to capture all DNS traffic
 	if c.CaptureAll {
 		return initialized, nil
 	}
