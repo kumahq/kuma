@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type Owner struct {
@@ -184,7 +183,12 @@ type LogConfig struct {
 }
 
 type RetryConfig struct {
-	MaxRetries         *int
+	// MaxRetries specifies the number of retries after the initial attempt.
+	// A value of 0 means no retries, and only the initial attempt will be made.
+	MaxRetries int
+	// SleepBetweenRetries defines the duration to wait between retry attempts.
+	// This delay helps in situations where immediate retries may not be
+	// beneficial, allowing time for transient issues to resolve.
 	SleepBetweenReties time.Duration
 }
 
@@ -382,7 +386,9 @@ func DefaultConfig() Config {
 		Wait:         5,
 		WaitInterval: 0,
 		Retry: RetryConfig{
-			MaxRetries:         pointer.To(4),
+			// Specifies the number of retries after the initial attempt,
+			// totaling 5 tries
+			MaxRetries:         4,
 			SleepBetweenReties: 2 * time.Second,
 		},
 		Executables: NewExecutablesNftLegacy(),
