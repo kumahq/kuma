@@ -46,12 +46,12 @@ spec:
 
 			// when
 			err = kubernetes.Cluster.Install(framework.YamlK8s(meshPassthrough))
+			Expect(err).ToNot(HaveOccurred())
 
 			// we need to wait for a config to arrive because once request is done, connection is estabilished and it won't return 502
 			time.Sleep(5 * time.Second)
 
 			// then
-			Expect(err).ToNot(HaveOccurred())
 			Eventually(func(g Gomega) {
 				resp, err := client.CollectFailure(
 					kubernetes.Cluster, "demo-client",
