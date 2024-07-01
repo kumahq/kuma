@@ -1,0 +1,32 @@
+*nat
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:POSTROUTING ACCEPT
+:OUTPUT ACCEPT
+:KUMA_MESH_INBOUND -
+:KUMA_MESH_OUTBOUND -
+:KUMA_MESH_INBOUND_REDIRECT -
+:KUMA_MESH_OUTBOUND_REDIRECT -
+-A PREROUTING -p 6 -j KUMA_MESH_INBOUND
+-A OUTPUT -p 17 -m udp --dport 53 -m owner --uid-owner 5678 -j RETURN
+-A OUTPUT -p 17 -m udp --dport 53 -j REDIRECT --to-ports 15053
+-A OUTPUT -p 6 -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -p 6 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -s ::6/128 -o ifPlaceholder -j RETURN
+-A KUMA_MESH_OUTBOUND ! -d ::1/128 -o ifPlaceholder -p 6 -m tcp ! --dport 53 -m owner --uid-owner 5678 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -o ifPlaceholder -p 6 -m tcp ! --dport 53 -m owner ! --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -m owner --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -p 6 -m tcp --dport 53 -j REDIRECT --to-ports 15053
+-A KUMA_MESH_OUTBOUND -d ::1/128 -j RETURN
+-A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
+-A KUMA_MESH_INBOUND_REDIRECT -p 6 -j REDIRECT --to-ports 15006
+-A KUMA_MESH_OUTBOUND_REDIRECT -p 6 -j REDIRECT --to-ports 15001
+COMMIT
+*raw
+:PREROUTING ACCEPT
+:OUTPUT ACCEPT
+-A PREROUTING -p 17 -m udp --sport 53 -j CT --zone 1
+-A OUTPUT -p 17 -m udp --dport 53 -m owner --uid-owner 5678 -j CT --zone 1
+-A OUTPUT -p 17 -m udp --sport 15053 -m owner --uid-owner 5678 -j CT --zone 2
+-A OUTPUT -p 17 -m udp --dport 53 -j CT --zone 2
+COMMIT
