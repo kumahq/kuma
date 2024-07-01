@@ -21,19 +21,24 @@ import (
 type Executable struct {
 	name string
 	mode IptablesMode
-	ipv6 bool
+	// prefix represents the prefix used for iptables executables, which varies
+	// based on whether it's for IPv4 or IPv6 operations. For IPv4, it can be
+	// `iptables` (for binaries such as `iptables`, `iptables-restore`, or
+	// `iptables-save`). For IPv6, it can be `ip6tables` (for binaries such as
+	// `ip6tables`, `ip6tables-restore`, or `ip6tables-save`). This property
+	// facilitates constructing the full executable names, generating temporary
+	// file names for iptables rules, and other related operations.
+	prefix string
 }
 
 func (c Executable) Initialize(
 	ctx context.Context,
 ) (InitializedExecutable, error) {
-	prefix := IptablesCommandByFamily[c.ipv6]
-
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
 	// ip{6}tables-{nft|legacy}-restore
-	nameWithMode := joinNonEmptyWithHyphen(prefix, string(c.mode), c.name)
+	nameWithMode := joinNonEmptyWithHyphen(c.prefix, string(c.mode), c.name)
 	// ip{6}tables, ip{6}tables-save, ip{6}tables-restore
-	nameWithoutMode := joinNonEmptyWithHyphen(prefix, c.name)
+	nameWithoutMode := joinNonEmptyWithHyphen(c.prefix, c.name)
 
 	paths := getPathsToSearchForExecutable(nameWithMode, nameWithoutMode)
 
@@ -72,9 +77,9 @@ type Executables struct {
 func NewExecutables(ipv6 bool, mode IptablesMode) Executables {
 	newExecutable := func(name string) Executable {
 		return Executable{
-			name: name,
-			mode: mode,
-			ipv6: ipv6,
+			name:   name,
+			mode:   mode,
+			prefix: IptablesCommandByFamily[ipv6],
 		}
 	}
 
