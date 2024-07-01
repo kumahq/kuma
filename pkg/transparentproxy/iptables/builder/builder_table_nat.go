@@ -259,8 +259,11 @@ func addOutputRules(
 	if cfg.ShouldRedirectDNS() {
 		// Default jump target for DNS rules.
 		jumpTarget := Return()
-		if !ipv6 && cfg.ShouldFallbackDNSToUpstreamChain() {
-			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
+		// Determine if DockerOutput chain should be targeted based on IPv4/IPv6
+		// and functionality.
+		if (ipv6 && cfg.Executables.IPv6.Functionality.Chains.DockerOutput) ||
+			(!ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput) {
+			jumpTarget = ToUserDefinedChain(ChainDockerOutput)
 		}
 
 		// Add DNS rule for redirecting DNS traffic based on UID.

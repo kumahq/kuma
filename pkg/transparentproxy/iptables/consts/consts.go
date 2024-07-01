@@ -42,11 +42,12 @@ const (
 )
 
 const (
-	ChainPrerouting  = "PREROUTING"
-	ChainInput       = "INPUT"
-	ChainForward     = "FORWARD"
-	ChainOutput      = "OUTPUT"
-	ChainPostrouting = "POSTROUTING"
+	ChainPrerouting   = "PREROUTING"
+	ChainInput        = "INPUT"
+	ChainForward      = "FORWARD"
+	ChainOutput       = "OUTPUT"
+	ChainPostrouting  = "POSTROUTING"
+	ChainDockerOutput = "DOCKER_OUTPUT"
 )
 
 // DockerOutputChainRegex is aregular expression used to identify the presence

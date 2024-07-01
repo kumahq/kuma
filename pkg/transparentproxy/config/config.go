@@ -308,13 +308,6 @@ func (c InitializedConfig) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
-// ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldFallbackDNSToUpstreamChain() bool {
-	return c.Redirect.DNS.UpstreamTargetChain != ""
-}
-
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
