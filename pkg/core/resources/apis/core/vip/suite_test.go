@@ -7,5 +7,5 @@ import (
 )
 
 func TestVIP(t *testing.T) {
-	test.RunSpecs(t, "MeshExternalService VIP Suite")
+	test.RunSpecs(t, "VIP Suite")
 }
