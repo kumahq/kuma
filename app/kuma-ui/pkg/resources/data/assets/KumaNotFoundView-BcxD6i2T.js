@@ -1,0 +1,3 @@
+import{A as u,h as o,o as p,a as m,w as e,j as t,g as a,k as n}from"./index-9gITI0JG.js";const d={},f={class:"overview"},w=a("p",null,"The page or entity you were looking for does not exist.",-1);function h(V,x){const c=o("XIcon"),s=o("RouteTitle"),_=o("KButton"),i=o("KEmptyState"),l=o("AppView"),r=o("RouteView");return p(),m(r,{name:"kuma-not-found-view"},{default:e(()=>[t(l,null,{default:e(()=>[a("div",f,[t(i,null,{icon:e(()=>[t(c,{name:"warning",class:"mb-3"})]),title:e(()=>[a("h1",null,[t(s,{title:"Page Not Found"})])]),action:e(()=>[t(_,{appearance:"primary",to:{name:"home"}},{default:e(()=>[n(`
+              Go Home
+            `)]),_:1})]),default:e(()=>[n(),n(),w,n()]),_:1})])]),_:1})]),_:1})}const k=u(d,[["render",h]]);export{k as default};
