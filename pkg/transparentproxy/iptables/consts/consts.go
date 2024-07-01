@@ -63,6 +63,11 @@ const (
 	FlagAppend   = "-A"
 	FlagInsert   = "-I"
 	FlagNewChain = "-N"
+
+	// iptables-restore
+	FlagWait         = "--wait"
+	FlagWaitInterval = "--wait-interval"
+	FlagNoFlush      = "--noflush"
 )
 
 // FlagVariationsMap maps a flag name (e.g., "-t") to a map containing its long

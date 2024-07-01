@@ -104,6 +104,7 @@ func NewExecutables(ipv6 bool, mode IptablesMode) Executables {
 
 func (c Executables) Initialize(
 	ctx context.Context,
+	cfg Config,
 ) (InitializedExecutables, error) {
 	var errs []error
 
@@ -117,7 +118,8 @@ func (c Executables) Initialize(
 		errs = append(errs, err)
 	}
 
-	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, nil)
+	restoreArgs := buildRestoreArgs(cfg, c.IptablesRestore.mode)
+	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, restoreArgs)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -166,20 +168,45 @@ func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
 	}
 }
 
+// Initialize attempts to initialize both IPv4 and IPv6 executables within the
+// given context. It ensures proper configuration for IPv6 if necessary.
+//
+// This method performs the following steps:
+//  1. Attempts to initialize the IPv4 executable with the provided context,
+//     Config, and Logger. If an error occurs, it is recorded.
+//  2. Attempts to initialize the IPv6 executable with the provided context,
+//     Config, and Logger. If an error occurs, it is recorded.
+//  3. If both IPv4 and IPv6 initialization fail, it returns an error indicating
+//     the failure to find valid executables for both IP versions.
+//  4. If IPv6 initialization is successful, it attempts to configure the IPv6
+//     outbound address. If this configuration fails, a warning is logged, and
+//     IPv6 rules will be skipped.
+//
+// Args:
+// - ctx (context.Context): The context for managing request lifetime.
+// - cfg (Config): Configuration settings for initializing the executables.
+// - l (Logger): Logger for logging initialization steps and errors.
+//
+// Returns:
+//   - InitializedExecutablesIPvX: Struct containing the initialized executables
+//     for both IPv4 and IPv6.
+//   - error: Error indicating the failure of both IPv4 and IPv6 initialization
+//     or nil if at least one initialization is successful.
 func (c ExecutablesIPvX) Initialize(
 	ctx context.Context,
+	cfg Config,
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
 	initialized := InitializedExecutablesIPvX{ExecutablesIPvX: c}
 
-	ipv4, ipv4Err := c.IPv4.Initialize(ctx)
+	ipv4, ipv4Err := c.IPv4.Initialize(ctx, cfg)
 	if ipv4Err != nil {
 		errs = append(errs, ipv4Err)
 	}
 	initialized.IPv4 = ipv4
 
-	ipv6, ipv6Err := c.IPv6.Initialize(ctx)
+	ipv6, ipv6Err := c.IPv6.Initialize(ctx, cfg)
 	if ipv6Err != nil {
 		errs = append(errs, ipv6Err)
 	}
@@ -235,12 +262,12 @@ func (c ExecutablesNftLegacy) Initialize(
 		return InitializedExecutablesIPvX{}, nil
 	}
 
-	nft, nftErr := c.Nft.Initialize(ctx)
+	nft, nftErr := c.Nft.Initialize(ctx, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
 	}
 
-	legacy, legacyErr := c.Legacy.Initialize(ctx)
+	legacy, legacyErr := c.Legacy.Initialize(ctx, cfg)
 	if legacyErr != nil {
 		errs = append(errs, legacyErr)
 	}
@@ -274,6 +301,58 @@ func (c ExecutablesNftLegacy) Initialize(
 	default:
 		return nft, nil
 	}
+}
+
+// buildRestoreArgs constructs a slice of flags for restoring iptables rules
+// based on the provided wait time, wait interval, and iptables mode.
+//
+// This function generates a list of command-line flags to be used with
+// iptables-restore, tailored to the given parameters:
+//   - By default, it includes the `--noflush` flag to prevent flushing of
+//     existing rules.
+//   - If the iptables mode is not legacy, it returns only the `--noflush` flag.
+//   - For legacy mode, it conditionally adds the `--wait` and `--wait-interval`
+//     flags based on the provided wait time and waitInterval.
+//
+// Args:
+//
+//	wait (uint): The wait time in seconds for iptables-restore to wait for the
+//	 xtables lock before aborting.
+//	interval (uint): The wait interval in seconds between attempts to acquire
+//	 the xtables lock.
+//	mode (IptablesMode): The mode of iptables in use, determining the
+//	 applicability of the wait flags.
+//
+// Returns:
+//
+//	[]string: A slice of strings representing the constructed flags for
+//	 iptables-restore.
+//
+// Example:
+//
+//	buildRestoreArgs(5, 2, IptablesModeNft) # Returns: []string{"--noflush"}
+//	buildRestoreArgs(5, 2, IptablesModeLegacy)
+//	 # Returns: []string{"--noflush", "--wait=5", "--wait-interval=2"}
+func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
+	flags := []string{FlagNoFlush}
+
+	if mode != IptablesModeLegacy {
+		return flags
+	}
+
+	if cfg.Wait > 0 {
+		flags = append(flags, fmt.Sprintf("%s=%d", FlagWait, cfg.Wait))
+	}
+
+	if cfg.WaitInterval > 0 {
+		flags = append(flags, fmt.Sprintf(
+			"%s=%d",
+			FlagWaitInterval,
+			cfg.WaitInterval,
+		))
+	}
+
+	return flags
 }
 
 // verifyIptablesMode checks if the provided 'path' corresponds to an iptables
