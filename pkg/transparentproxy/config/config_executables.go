@@ -33,6 +33,7 @@ type Executable struct {
 
 func (c Executable) Initialize(
 	ctx context.Context,
+	args []string,
 ) (InitializedExecutable, error) {
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
 	// ip{6}tables-{nft|legacy}-restore
@@ -45,7 +46,11 @@ func (c Executable) Initialize(
 	for _, path := range paths {
 		if found := findPath(path); found != "" {
 			if verifyIptablesMode(ctx, path, c.mode) {
-				return InitializedExecutable{Executable: c, Path: path}, nil
+				return InitializedExecutable{
+					Executable: c,
+					Path:       path,
+					args:       args,
+				}, nil
 			}
 		}
 	}
@@ -59,13 +64,20 @@ func (c Executable) Initialize(
 type InitializedExecutable struct {
 	Executable
 	Path string
+
+	// args holds a set of default parameters or flags that are automatically
+	// added to every execution of this executable. These parameters are
+	// prepended to any additional arguments provided in the Exec method. This
+	// ensures that certain flags or options are always applied whenever the
+	// executable is run.
+	args []string
 }
 
 func (c InitializedExecutable) Exec(
 	ctx context.Context,
 	args ...string,
 ) (*bytes.Buffer, *bytes.Buffer, error) {
-	return execCmd(ctx, c.Path, args...)
+	return execCmd(ctx, c.Path, append(c.args, args...)...)
 }
 
 type Executables struct {
@@ -95,17 +107,17 @@ func (c Executables) Initialize(
 ) (InitializedExecutables, error) {
 	var errs []error
 
-	iptables, err := c.Iptables.Initialize(ctx)
+	iptables, err := c.Iptables.Initialize(ctx, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	iptablesSave, err := c.IptablesSave.Initialize(ctx)
+	iptablesSave, err := c.IptablesSave.Initialize(ctx, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	iptablesRestore, err := c.IptablesRestore.Initialize(ctx)
+	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
