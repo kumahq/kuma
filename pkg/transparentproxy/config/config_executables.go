@@ -5,6 +5,7 @@ import (
 	"context"
 	std_errors "errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/vishvananda/netlink"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
@@ -152,28 +154,34 @@ func (c ExecutablesIPvX) Initialize(
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
+	initialized := InitializedExecutablesIPvX{ExecutablesIPvX: c}
+
 	ipv4, ipv4Err := c.IPv4.Initialize(ctx)
 	if ipv4Err != nil {
 		errs = append(errs, ipv4Err)
 	}
+	initialized.IPv4 = ipv4
 
 	ipv6, ipv6Err := c.IPv6.Initialize(ctx)
 	if ipv6Err != nil {
 		errs = append(errs, ipv6Err)
 	}
+	initialized.IPv6 = ipv6
 
 	if len(errs) == 2 {
 		return InitializedExecutablesIPvX{}, errors.Wrap(
 			std_errors.Join(errs...),
-			"failed to find valid IPv4 or IPv6 executables",
+			"failed to initialize both IPv4 and IPv6 executables",
 		)
 	}
 
-	return InitializedExecutablesIPvX{
-		ExecutablesIPvX: c,
-		IPv4:            ipv4,
-		IPv6:            ipv6,
-	}, nil
+	if ipv6Err == nil {
+		if err := configureIPv6OutboundAddress(); err != nil {
+			initialized.IPv6 = InitializedExecutables{}
+		}
+	}
+
+	return initialized, nil
 }
 
 type InitializedExecutablesIPvX struct {
@@ -437,4 +445,47 @@ func execCmd(
 	}
 
 	return &stdout, &stderr, nil
+}
+
+// configureIPv6OutboundAddress sets up a dedicated IPv6 address (::6) on the
+// loopback interface ("lo") for our transparent proxy functionality.
+//
+// Background:
+//   - The default IPv6 configuration (prefix length 128) only allows binding to
+//     the loopback address (::1).
+//   - Our transparent proxy requires a distinct IPv6 address (::6 in this case)
+//     to identify traffic processed by the kuma-dp sidecar.
+//   - This identification allows for further processing and avoids redirection
+//     loops.
+//
+// This function is equivalent to running the command:
+// `ip -6 addr add "::6/128" dev lo`
+func configureIPv6OutboundAddress() error {
+	link, err := netlink.LinkByName("lo")
+	if err != nil {
+		return errors.Wrap(err, "failed to find loopback interface ('lo')")
+	}
+
+	// Equivalent to "::6/128"
+	addr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   net.ParseIP("::6"),
+			Mask: net.CIDRMask(128, 128),
+		},
+	}
+
+	if err := netlink.AddrAdd(link, addr); err != nil {
+		// Address already exists, ignore error and continue
+		if strings.Contains(strings.ToLower(err.Error()), "file exists") {
+			return nil
+		}
+
+		return errors.Wrapf(
+			err,
+			"failed to add IPv6 address %s to loopback interface",
+			addr.IPNet,
+		)
+	}
+
+	return nil
 }
