@@ -70,6 +70,7 @@ func SetupAndGetState() []byte {
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
 			WithEgress(),
