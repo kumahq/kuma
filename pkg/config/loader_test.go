@@ -375,7 +375,12 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
 			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
+			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
 			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
+
+			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
+			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
+			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -745,6 +750,9 @@ eventBus:
 coreResources:
   enabled:
   - meshservice
+  status:
+    meshServiceInterval: 6s
+    meshMultiZoneServiceInterval: 7s
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -758,6 +766,8 @@ ipam:
     cidr: 251.0.0.0/8
   meshExternalService:
     cidr: 252.0.0.0/8
+  meshMultiZoneService:
+    cidr: 253.0.0.0/8
   allocationInterval: 7s
 `,
 		}),
@@ -1038,8 +1048,11 @@ ipam:
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
+				"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL":                                         "6s",
+				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
+				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
 				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 			},
 			yamlFileConfig: "",

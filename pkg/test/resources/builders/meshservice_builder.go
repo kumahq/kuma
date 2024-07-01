@@ -44,11 +44,24 @@ func (m *MeshServiceBuilder) WithMesh(mesh string) *MeshServiceBuilder {
 	return m
 }
 
+func (m *MeshServiceBuilder) WithDataplaneRefNameSelector(name string) *MeshServiceBuilder {
+	m.res.Spec.Selector = v1alpha1.Selector{
+		DataplaneRef: &v1alpha1.DataplaneRef{
+			Name: name,
+		},
+	}
+	return m
+}
+
 func (m *MeshServiceBuilder) WithDataplaneTagsSelector(selector map[string]string) *MeshServiceBuilder {
 	m.res.Spec.Selector = v1alpha1.Selector{
 		DataplaneTags: selector,
 	}
 	return m
+}
+
+func (m *MeshServiceBuilder) WithDataplaneTagsSelectorKV(selectorKV ...string) *MeshServiceBuilder {
+	return m.WithDataplaneTagsSelector(TagsKVToMap(selectorKV))
 }
 
 func (m *MeshServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.Protocol) *MeshServiceBuilder {
@@ -59,6 +72,14 @@ func (m *MeshServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.
 			IntVal: int32(target),
 		},
 		AppProtocol: protocol,
+	})
+	return m
+}
+
+func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
+	m.res.Spec.Identities = append(m.res.Spec.Identities, v1alpha1.MeshServiceIdentity{
+		Type:  v1alpha1.MeshServiceIdentityServiceTagType,
+		Value: identity,
 	})
 	return m
 }

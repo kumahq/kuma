@@ -2,7 +2,7 @@ package framework
 
 import "fmt"
 
-func GatewayProxyUniversal(mesh, name string) InstallFunc {
+func GatewayProxyUniversal(mesh, name string, appDeploymentOptions ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		token, err := cluster.GetKuma().GenerateDpToken(mesh, name)
 		if err != nil {
@@ -20,12 +20,9 @@ networking:
     tags:
       kuma.io/service: %s
 `, mesh, name)
-		return cluster.DeployApp(
-			WithName(name),
-			WithMesh(mesh),
-			WithToken(token),
-			WithVerbose(),
-			WithYaml(dataplaneYaml),
-		)
+
+		deploymentOpts := []AppDeploymentOption{WithName(name), WithMesh(mesh), WithToken(token), WithVerbose(), WithYaml(dataplaneYaml)}
+		deploymentOpts = append(deploymentOpts, appDeploymentOptions...)
+		return cluster.DeployApp(deploymentOpts...)
 	}
 }

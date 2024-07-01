@@ -5,7 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -22,6 +24,16 @@ func Sync() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(YamlUniversal(`
+type: MeshMultiZoneService
+name: backend
+mesh: meshservice
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        test-name: backend
+`)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -32,6 +44,7 @@ name: backend
 mesh: meshservice
 labels:
   kuma.io/origin: zone
+  test-name: backend
 spec:
   selector:
     dataplaneTags:
@@ -54,6 +67,7 @@ name: backend
 mesh: meshservice
 labels:
   kuma.io/origin: zone
+  test-name: backend
 spec:
   selector:
     dataplaneTags:
@@ -166,6 +180,26 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			_, _, err = msStatus(multizone.KubeZone2, fmt.Sprintf("%s.%s", hash.HashedName(meshName, "backend", "kuma-5"), Config.KumaNamespace))
 			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should update MeshMultiZoneService status", func() {
+		Eventually(func(g Gomega) {
+			out, err := multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshmultizoneservice", "-m", meshName, hash.HashedName(meshName, "backend"), "-ojson")
+			g.Expect(err).ToNot(HaveOccurred())
+			res, err := rest.JSON.Unmarshal([]byte(out), meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor)
+			g.Expect(err).ToNot(HaveOccurred())
+			status := res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus)
+			g.Expect(status.MeshServices).To(HaveLen(2))
+			g.Expect(status.Ports).To(Equal([]v1alpha1.Port{
+				{
+					Port:        80,
+					TargetPort:  intstr.FromInt32(80),
+					AppProtocol: "http",
+				},
+			}))
+
+			g.Expect(status.VIPs).To(HaveLen(1))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
