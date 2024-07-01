@@ -406,8 +406,9 @@ func joinNonEmptyWithHyphen(elems ...string) string {
 //   - Success: If the command executes successfully, the captured standard
 //     output is returned as a bytes.Buffer and nil error.
 //   - Error with stderr output: If the command execution encounters an error
-//     there's content captured in the standard error buffer, the error is
-//     with the stderr content. The wrapped error and nil buffer are returned.
+//     and there's content captured in the standard error buffer, the error
+//     includes the stderr content. The original error is wrapped with a
+//     formatted stderr message and a nil buffer is returned.
 //   - Error without stderr output: If the command execution encounters an error
 //     but there's no captured standard error, the original error is simply
 //     returned with a nil buffer.
@@ -425,7 +426,11 @@ func execCmd(
 
 	if err := cmd.Run(); err != nil {
 		if stderr.Len() > 0 {
-			return nil, nil, errors.Wrap(err, stderr.String())
+			stderrTrimmed := strings.TrimSpace(stderr.String())
+			stderrLines := strings.Split(stderrTrimmed, "\n")
+			stderrFormated := strings.Join(stderrLines, ", ")
+
+			return nil, nil, errors.Errorf("%s: %s", err, stderrFormated)
 		}
 
 		return nil, nil, err
