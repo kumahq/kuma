@@ -3,11 +3,11 @@ package proto
 import (
 	"strings"
 
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -22,7 +22,7 @@ func MarshalAnyDeterministic(pb proto.Message) (*anypb.Any, error) {
 	if err != nil {
 		return nil, err
 	}
-	name := string(protov1.MessageV2(pb).ProtoReflect().Descriptor().FullName())
+	name := string(protoimpl.X.ProtoMessageV2Of(pb).ProtoReflect().Descriptor().FullName())
 	return &anypb.Any{TypeUrl: googleApis + name, Value: bytes}, nil
 }
 

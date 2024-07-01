@@ -11,10 +11,10 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	protov1 "github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/runtime/protoimpl"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -51,7 +51,7 @@ type ProtoMessage struct {
 }
 
 func (p ProtoMessage) MarshalJSON() ([]byte, error) {
-	return util_proto.ToJSON(protov1.MessageV2(p.Message))
+	return util_proto.ToJSON(protoimpl.X.ProtoMessageV2Of(p.Message))
 }
 
 type ProtoResource struct {

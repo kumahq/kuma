@@ -99,6 +99,12 @@ linters-settings:
         deny:
           - pkg: "github.com/kumahq/kuma/app"
             desc: "pkg can't import app"
+      AllGoFiles:
+        files:
+          - $all
+        deny:
+          - pkg: google.golang.org/protobuf/encoding/protojson
+            desc: "don't use the protojson package; use 'github.com/golang/protobuf/jsonpb' instead"
 
   misspell:
     locale: US
@@ -120,12 +126,6 @@ issues:
     - linters:
         - staticcheck
       text: 'SA1019: "github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
-    - linters:
-        - staticcheck
-      text: "SA1019: proto.MessageName is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
-    - linters:
-        - staticcheck
-      text: "SA1019: proto.MessageType is deprecated" # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
     - linters:
         - staticcheck
       text: "SA1019: l.UseOriginalDst is deprecated: Do not use." # TODO What is the up-to-date alternative ?

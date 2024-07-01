@@ -7,7 +7,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	protov1 "github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -115,7 +115,7 @@ func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable 
 		}
 		resources := make([]*anypb.Any, 0, len(envoyRes))
 		for i := 0; i < len(envoyRes); i++ {
-			pbaby, err := proto.MarshalAnyDeterministic(protov1.MessageV2(envoyRes[i]))
+			pbaby, err := proto.MarshalAnyDeterministic(protoimpl.X.ProtoMessageV2Of(envoyRes[i]))
 			if err != nil {
 				return err
 			}
