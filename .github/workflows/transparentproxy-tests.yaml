@@ -1,0 +1,46 @@
+name: "Transparent Proxy Tests"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 4 * * *
+env:
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  IPV6: "true"
+
+permissions:
+  contents: read
+jobs:
+  test_transparentproxy:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
+        run: |
+          cat <<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
+          sudo modprobe ip6table_nat
+          sudo modprobe ip6table_raw
+      - run: |
+          make test/transparentproxy
