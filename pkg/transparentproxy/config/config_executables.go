@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	std_errors "errors"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
@@ -146,6 +148,7 @@ func (c Executables) Initialize(
 		IptablesRestore: iptablesRestore,
 		Functionality:   functionality,
 
+		retry:  cfg.Retry,
 		logger: l,
 	}, nil
 }
@@ -156,7 +159,110 @@ type InitializedExecutables struct {
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
 
+	retry  RetryConfig
 	logger Logger
+}
+
+// writeRulesToFile writes the provided iptables rules to a temporary file and
+// returns the file path.
+//
+// This method performs the following steps:
+//  1. Creates a temporary file with a name based on the
+//     `IptablesRestore.prefix` field of the `InitializedExecutables` struct.
+//  2. Logs the contents that will be written to the file.
+//  3. Writes the rules to the file using a buffered writer for efficiency.
+//  4. Flushes the buffer to ensure all data is written to the file.
+//  5. Returns the file path if successful, or an error if any step fails.
+//
+// Args:
+//
+//	rules (string): The iptables rules to be written to the temporary file.
+//
+// Returns:
+//
+//	string: The path to the temporary file containing the iptables rules.
+//	error: An error if the file creation, writing, or flushing fails.
+func (c InitializedExecutables) writeRulesToFile(rules string) (string, error) {
+	// Create a temporary file with a name template based on the IptablesRestore
+	// prefix.
+	nameTemplate := fmt.Sprintf("%s-rules.*.txt", c.IptablesRestore.prefix)
+	f, err := os.CreateTemp("", nameTemplate)
+	if err != nil {
+		return "", errors.Wrapf(
+			err,
+			"failed to create temporary file: %s",
+			nameTemplate,
+		)
+	}
+	defer f.Close()
+
+	// Remove the temporary file if an error occurs after creation.
+	defer func() {
+		if err != nil {
+			os.Remove(f.Name())
+		}
+	}()
+
+	// Log the file name and the rules to be written.
+	c.logger.Info("writing the following rules to file:", f.Name())
+	c.logger.InfoWithoutPrefix(strings.TrimSpace(rules))
+
+	// Write the rules to the file using a buffered writer.
+	writer := bufio.NewWriter(f)
+	if _, err = writer.WriteString(rules); err != nil {
+		return "", errors.Wrapf(
+			err,
+			"failed to write rules to the temporary file: %s",
+			f.Name(),
+		)
+	}
+
+	// Flush the buffer to ensure all data is written.
+	if err = writer.Flush(); err != nil {
+		return "", errors.Wrapf(
+			err,
+			"failed to flush the buffered writer for file: %s",
+			f.Name(),
+		)
+	}
+
+	// Return the file path.
+	return f.Name(), nil
+}
+
+func (c InitializedExecutables) Restore(
+	ctx context.Context,
+	rules string,
+) (string, error) {
+	fileName, err := c.writeRulesToFile(rules)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(fileName)
+
+	for i := 0; i <= c.retry.MaxRetries; i++ {
+		c.logger.try = i + 1
+
+		c.logger.InfoTry(
+			c.IptablesRestore.Path,
+			strings.Join(c.IptablesRestore.args, " "),
+			fileName,
+		)
+
+		stdout, _, err := c.IptablesRestore.Exec(ctx, fileName)
+		if err == nil {
+			return stdout.String(), nil
+		}
+
+		c.logger.ErrorTry(err, "restoring failed:")
+
+		if i < c.retry.MaxRetries {
+			c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+			time.Sleep(c.retry.SleepBetweenReties)
+		}
+	}
+
+	return "", errors.Errorf("%s failed", c.IptablesRestore.Path)
 }
 
 type ExecutablesIPvX struct {
