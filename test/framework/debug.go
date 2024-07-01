@@ -51,7 +51,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, uuid.New().String()))
 			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
 			if e != nil {
-				out = fmt.Sprintf("kubectl describe node %s failed with error: %s", node.Name, err)
+				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
 				errorSeen = true
 			} else {
 				Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
