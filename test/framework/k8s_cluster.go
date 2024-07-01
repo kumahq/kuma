@@ -346,7 +346,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	args = append(args, "--set", "controlPlane.resources.requests.cpu=100m")
 	if c.opts.yamlConfig != "" {
 		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, "controlPlane.config", c.opts.yamlConfig))
 	}
@@ -361,7 +360,6 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
-		"controlPlane.resources.requests.cpu":    "100m",
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
