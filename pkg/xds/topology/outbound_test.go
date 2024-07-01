@@ -1168,7 +1168,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "redis-0"},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
@@ -1248,10 +1248,38 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "redis-0",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneRef: &v1alpha1.DataplaneRef{
+									Name: "redis-0",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:       6379,
+									TargetPort: intstr.FromInt(6379),
+								},
+							},
+						},
+					},
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
 					"redis_svc_6379": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.1",
+							Port:     6379,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"redis-0_svc_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
