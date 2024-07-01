@@ -28,6 +28,7 @@ func MeshPassthrough(config *Config) func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
+			// we want the connection to close quickly, so after configuration change requests will start to fail.
 			meshProxyPatch := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshProxyPatch
