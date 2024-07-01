@@ -14,8 +14,9 @@ type NameLabelsSelector struct {
 }
 
 type Selector struct {
-	MeshService         LabelSelector      `json:"meshService,omitempty"`
-	MeshExternalService NameLabelsSelector `json:"meshExternalService,omitempty"`
+	MeshService          LabelSelector      `json:"meshService,omitempty"`
+	MeshExternalService  NameLabelsSelector `json:"meshExternalService,omitempty"`
+	MeshMultiZoneService LabelSelector      `json:"meshMultiZoneService,omitempty"`
 }
 
 func (s NameLabelsSelector) Matches(labels map[string]string) bool {
