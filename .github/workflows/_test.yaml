@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      runners: ${{ steps.assign-e2e-runners.outputs.runners }}
     steps:
       - id: generate-matrix
         name: Generate matrix
@@ -95,6 +96,52 @@ jobs:
           echo "matrix<<EOF" >> $GITHUB_OUTPUT
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+      - id: assign-e2e-runners
+        name: Assign runners for E2E tests
+        env:
+          IS_TRUSTED_BUILD: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+          ALL_RUNNERS: |-
+            {
+              "trusted_builds": {
+                "amd64": [
+                  "ubuntu-latest",
+                  "ubuntu-latest-kong"
+                ],
+                "arm64": [
+                  "ubuntu-latest-arm64-kong"
+                ]
+              },
+              "untrusted_builds": {
+                "amd64": [
+                  "ubuntu-latest"
+                ],
+                "arm64": []
+              }
+          }
+        run: |-
+          ALL_RUNNERS='${{ env.ALL_RUNNERS }}'
+          if [[ "${{ inputs.IS_TRUSTED_BUILD }}" == "true" ]]; then
+            ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.trusted_builds')
+          else
+            ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.untrusted_builds')
+          fi
+          
+          for ARCH in amd64 arm64; do
+            COUNT=$(echo $ALL_RUNNERS | jq -r ".$ARCH | length")
+            if [[ $COUNT -eq 0 ]]; then
+              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=\"\"")
+            elif [[ $COUNT -eq 1 ]]; then
+              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[0]")
+            else
+              RANDOM_INDEX=$(( $RANDOM % $COUNT ))
+              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[$RANDOM_INDEX]")
+            fi
+          done
+
+          echo "final runners: $ALL_RUNNERS"
+          echo "runners<<EOF" >> $GITHUB_OUTPUT
+          echo "$ALL_RUNNERS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
@@ -105,6 +152,7 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -116,4 +164,5 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
     secrets: inherit
