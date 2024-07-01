@@ -184,7 +184,9 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			fmt.Fprintln(cfg.RuntimeStdout, "# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+			if !initializedConfig.DryRun {
+				initializedConfig.Logger.Info("Tansparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+			}
 
 			return nil
 		},

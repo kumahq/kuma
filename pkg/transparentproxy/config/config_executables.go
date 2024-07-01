@@ -104,6 +104,7 @@ func NewExecutables(ipv6 bool, mode IptablesMode) Executables {
 
 func (c Executables) Initialize(
 	ctx context.Context,
+	l Logger,
 	cfg Config,
 ) (InitializedExecutables, error) {
 	var errs []error
@@ -144,6 +145,8 @@ func (c Executables) Initialize(
 		IptablesSave:    iptablesSave,
 		IptablesRestore: iptablesRestore,
 		Functionality:   functionality,
+
+		logger: l,
 	}, nil
 }
 
@@ -152,6 +155,8 @@ type InitializedExecutables struct {
 	IptablesSave    InitializedExecutable
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
+
+	logger Logger
 }
 
 type ExecutablesIPvX struct {
@@ -194,19 +199,20 @@ func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
 //     or nil if at least one initialization is successful.
 func (c ExecutablesIPvX) Initialize(
 	ctx context.Context,
+	l Logger,
 	cfg Config,
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
 	initialized := InitializedExecutablesIPvX{ExecutablesIPvX: c}
 
-	ipv4, ipv4Err := c.IPv4.Initialize(ctx, cfg)
+	ipv4, ipv4Err := c.IPv4.Initialize(ctx, l, cfg)
 	if ipv4Err != nil {
 		errs = append(errs, ipv4Err)
 	}
 	initialized.IPv4 = ipv4
 
-	ipv6, ipv6Err := c.IPv6.Initialize(ctx, cfg)
+	ipv6, ipv6Err := c.IPv6.Initialize(ctx, l, cfg)
 	if ipv6Err != nil {
 		errs = append(errs, ipv6Err)
 	}
@@ -222,6 +228,11 @@ func (c ExecutablesIPvX) Initialize(
 	if ipv6Err == nil {
 		if err := configureIPv6OutboundAddress(); err != nil {
 			initialized.IPv6 = InitializedExecutables{}
+			l.Warn(
+				"failed to configure IPv6 outbound address. IPv6 rules will "+
+					"be skipped:",
+				err,
+			)
 		}
 	}
 
@@ -253,6 +264,7 @@ func NewExecutablesNftLegacy() ExecutablesNftLegacy {
 
 func (c ExecutablesNftLegacy) Initialize(
 	ctx context.Context,
+	l Logger,
 	cfg Config,
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
@@ -262,12 +274,12 @@ func (c ExecutablesNftLegacy) Initialize(
 		return InitializedExecutablesIPvX{}, nil
 	}
 
-	nft, nftErr := c.Nft.Initialize(ctx, cfg)
+	nft, nftErr := c.Nft.Initialize(ctx, l, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
 	}
 
-	legacy, legacyErr := c.Legacy.Initialize(ctx, cfg)
+	legacy, legacyErr := c.Legacy.Initialize(ctx, l, cfg)
 	if legacyErr != nil {
 		errs = append(errs, legacyErr)
 	}
@@ -287,13 +299,11 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		fmt.Fprintln(
-			cfg.RuntimeStderr,
-			"[WARNING] conflicting iptables modes detected. Two iptables"+
-				" versions (iptables-nft and iptables-legacy) were found."+
-				" Both contain a nat table with a chain named 'DOCKER_OUTPUT'."+
-				" To avoid potential conflicts, iptables-legacy will be"+
-				" ignored and iptables-nft will be used.",
+		l.Warn("conflicting iptables modes detected. Two iptables versions " +
+			"(iptables-nft and iptables-legacy) were found. Both contain a nat " +
+			"table with a chain named 'DOCKER_OUTPUT'. To avoid potential " +
+			"conflicts, iptables-legacy will be ignored and iptables-nft will " +
+			"be used.",
 		)
 		return nft, nil
 	case legacy.hasDockerOutputChain():

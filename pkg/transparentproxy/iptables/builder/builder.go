@@ -220,9 +220,9 @@ func (r *restorer) tryRestoreIPTables(
 }
 
 func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
-	_, _ = cfg.RuntimeStdout.Write([]byte("# kumactl is about to apply the " +
-		"iptables rules that will enable transparent proxying on the machine. " +
-		"The SSH connection may drop. If that happens, just reconnect again.\n"))
+	cfg.Logger.Info("kumactl is about to apply the iptables rules that " +
+		"will enable transparent proxying on the machine. The SSH connection " +
+		"may drop. If that happens, just reconnect again.")
 
 	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false)
 	if err != nil {
@@ -248,7 +248,7 @@ func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string,
 		output += ipv6Output
 	}
 
-	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to divert the traffic to Envoy")
+	cfg.Logger.Info("iptables set to divert the traffic to Envoy")
 
 	return output, nil
 }

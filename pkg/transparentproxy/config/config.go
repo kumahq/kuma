@@ -66,6 +66,7 @@ type InitializedDNS struct {
 // the nameservers from the file specified in the ResolvConfigPath field of
 // the input DNS struct.
 func (c DNS) Initialize(
+	l Logger,
 	cfg Config,
 	executables InitializedExecutablesIPvX,
 ) (InitializedDNS, error) {
@@ -78,22 +79,24 @@ func (c DNS) Initialize(
 	}
 
 	if c.ConntrackZoneSplit {
-		initialized.ConntrackZoneSplitIPv4 = executables.IPv4.Functionality.ConntrackZoneSplit()
-		if !initialized.ConntrackZoneSplitIPv4 {
-			fmt.Fprintln(
-				cfg.RuntimeStderr,
-				"# [WARNING]: conntrack zone splitting for IPv4 is disabled."+
-					" Functionality requires the 'conntrack' iptables module",
+		warning := func(ipvx string) string {
+			return fmt.Sprintf(
+				"conntrack zone splitting for %s is disabled. "+
+					"Functionality requires the 'conntrack' iptables module",
+				ipvx,
 			)
 		}
 
-		initialized.ConntrackZoneSplitIPv6 = executables.IPv6.Functionality.ConntrackZoneSplit()
+		initialized.ConntrackZoneSplitIPv4 = cfg.DryRun ||
+			executables.IPv4.Functionality.ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplitIPv4 {
-			fmt.Fprintln(
-				cfg.RuntimeStderr,
-				"# [WARNING]: conntrack zone splitting for IPv6 is disabled."+
-					" Functionality requires the 'conntrack' iptables module",
-			)
+			l.Warn(warning("IPv4"))
+		}
+
+		initialized.ConntrackZoneSplitIPv6 = cfg.DryRun ||
+			executables.IPv6.Functionality.ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplitIPv4 {
+			l.Warn(warning("IPv6"))
 		}
 	}
 
@@ -142,6 +145,7 @@ type InitializedRedirect struct {
 }
 
 func (c Redirect) Initialize(
+	l Logger,
 	cfg Config,
 	executables InitializedExecutablesIPvX,
 ) (InitializedRedirect, error) {
@@ -150,7 +154,7 @@ func (c Redirect) Initialize(
 	initialized := InitializedRedirect{Redirect: c}
 
 	// .DNS
-	initialized.DNS, err = c.DNS.Initialize(cfg, executables)
+	initialized.DNS, err = c.DNS.Initialize(l, cfg, executables)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .DNS")
 	}
@@ -259,6 +263,13 @@ type InitializedConfig struct {
 	// will be used to construct outbound iptable rules for outbound (i.e.
 	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
 	LoopbackInterfaceName string
+	// Logger is utilized for recording logs across the entire lifecycle of the
+	// InitializedConfig, from the initialization and configuration phases to
+	// ongoing operations involving iptables, such as rule setup, modification,
+	// and restoration. It ensures that logging capabilities are available not
+	// only during the setup of system resources and configurations but also
+	// throughout the execution of iptables-related activities.
+	Logger Logger
 }
 
 // ShouldDropInvalidPackets determines whether the configuration indicates
@@ -314,14 +325,20 @@ func (c InitializedConfig) ShouldCaptureAllDNS() bool {
 func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	var err error
 
-	initialized := InitializedConfig{Config: c}
+	l := Logger{
+		stdout: c.RuntimeStdout,
+		stderr: c.RuntimeStderr,
+		maxTry: c.Retry.MaxRetries + 1,
+	}
 
-	initialized.Executables, err = c.Executables.Initialize(ctx, c)
+	initialized := InitializedConfig{Config: c, Logger: l}
+
+	initialized.Executables, err = c.Executables.Initialize(ctx, l, c)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize Executables configuration")
 	}
 
-	initialized.Redirect, err = c.Redirect.Initialize(c, initialized.Executables)
+	initialized.Redirect, err = c.Redirect.Initialize(l, c, initialized.Executables)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
 	}
