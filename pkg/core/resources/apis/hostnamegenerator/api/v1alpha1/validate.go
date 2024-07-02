@@ -25,6 +25,9 @@ func validateSelectors(path validators.PathBuilder, selector Selector) validator
 	if selector.MeshExternalService != nil {
 		selectorsDefined++
 	}
+	if selector.MeshMultiZoneService != nil {
+		selectorsDefined++
+	}
 	if selectorsDefined != 1 {
 		verr.AddViolationAt(path, "exact one selector (meshService, meshExternalService) must be defined")
 	}

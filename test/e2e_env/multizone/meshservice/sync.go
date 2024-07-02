@@ -28,6 +28,8 @@ func Sync() {
 type: MeshMultiZoneService
 name: backend
 mesh: meshservice
+labels:
+  test-name: mssync
 spec:
   selector:
     meshService:
@@ -183,13 +185,22 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
+	mzStatus := func(cluster Cluster, name string) (*meshmzservice_api.MeshMultiZoneServiceStatus, error) {
+		out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshmultizoneservice", "-m", meshName, hash.HashedName(meshName, name), "-ojson")
+		if err != nil {
+			return nil, err
+		}
+		res, err := rest.JSON.Unmarshal([]byte(out), meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor)
+		if err != nil {
+			return nil, err
+		}
+		return res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus), nil
+	}
+
 	It("should update MeshMultiZoneService status", func() {
 		Eventually(func(g Gomega) {
-			out, err := multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshmultizoneservice", "-m", meshName, hash.HashedName(meshName, "backend"), "-ojson")
+			status, err := mzStatus(multizone.UniZone1, "backend")
 			g.Expect(err).ToNot(HaveOccurred())
-			res, err := rest.JSON.Unmarshal([]byte(out), meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor)
-			g.Expect(err).ToNot(HaveOccurred())
-			status := res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus)
 			g.Expect(status.MeshServices).To(HaveLen(2))
 			g.Expect(status.Ports).To(Equal([]v1alpha1.Port{
 				{
@@ -200,6 +211,27 @@ spec:
 			}))
 
 			g.Expect(status.VIPs).To(HaveLen(1))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should assign hostname to MeshMultiZoneService", func() {
+		Expect(multizone.Global.Install(YamlUniversal(`
+type: HostnameGenerator
+name: mz-msstatus
+spec:
+  template: '{{ .DisplayName }}.mssync'
+  selector:
+    meshMultiZoneService:
+      matchLabels:
+        test-name: mssync
+`))).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			status, err := mzStatus(multizone.UniZone1, "backend")
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(status.Addresses).To(HaveLen(1))
+			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mssync"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
