@@ -297,6 +297,12 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				metadata.KumaMeshAnnotation:    mesh,
 			}
 
+			if obj != nil {
+				for k, v := range obj.(*kube_apps.Deployment).Spec.Template.GetAnnotations() {
+					podAnnotations[k] = v
+				}
+			}
+
 			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Annotations {
 				podAnnotations[k] = v
 			}
