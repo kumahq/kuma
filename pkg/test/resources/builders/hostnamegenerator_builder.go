@@ -51,7 +51,7 @@ func (m *HostnameGeneratorBuilder) WithMeshServiceMatchLabels(labels map[string]
 
 func (m *HostnameGeneratorBuilder) WithMeshExternalServiceMatchLabels(labels map[string]string) *HostnameGeneratorBuilder {
 	m.res.Spec.Selector = hostnamegenerator_api.Selector{
-		MeshExternalService: &hostnamegenerator_api.NameLabelsSelector{
+		MeshExternalService: &hostnamegenerator_api.LabelSelector{
 			MatchLabels: labels,
 		},
 	}

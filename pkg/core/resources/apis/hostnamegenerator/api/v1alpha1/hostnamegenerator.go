@@ -9,26 +9,9 @@ type LabelSelector struct {
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
-type NameLabelsSelector struct {
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
 type Selector struct {
-	MeshService         *LabelSelector      `json:"meshService,omitempty"`
-	MeshExternalService *NameLabelsSelector `json:"meshExternalService,omitempty"`
-}
-
-func (s NameLabelsSelector) Matches(labels map[string]string) bool {
-	for tag, matchValue := range s.MatchLabels {
-		labelValue, exist := labels[tag]
-		if !exist {
-			return false
-		}
-		if matchValue != labelValue {
-			return false
-		}
-	}
-	return true
+	MeshService         *LabelSelector `json:"meshService,omitempty"`
+	MeshExternalService *LabelSelector `json:"meshExternalService,omitempty"`
 }
 
 func (s LabelSelector) Matches(labels map[string]string) bool {
