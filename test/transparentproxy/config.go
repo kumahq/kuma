@@ -1,4 +1,4 @@
-package framework
+package transparentproxy
 
 import (
 	"fmt"
@@ -23,13 +23,13 @@ type TransparentProxyConfig struct {
 }
 
 func (c TransparentProxyConfig) Validate() error {
-	if TProxyConfig.KumactlLinuxBin != "" {
-		_, err := os.Stat(TProxyConfig.KumactlLinuxBin)
+	if Config.KumactlLinuxBin != "" {
+		_, err := os.Stat(Config.KumactlLinuxBin)
 		if os.IsNotExist(err) {
 			return errors.Wrapf(
 				err,
 				"unable to find kumactl for linux at: %s",
-				TProxyConfig.KumactlLinuxBin,
+				Config.KumactlLinuxBin,
 			)
 		}
 
@@ -40,19 +40,19 @@ func (c TransparentProxyConfig) Validate() error {
 }
 
 func (c TransparentProxyConfig) AutoConfigure() error {
-	absoluteKumactlPath, err := filepath.Abs(TProxyConfig.KumactlLinuxBin)
+	absoluteKumactlPath, err := filepath.Abs(Config.KumactlLinuxBin)
 	if err != nil {
 		return err
 	}
 
-	TProxyConfig.KumactlLinuxBin = absoluteKumactlPath
+	Config.KumactlLinuxBin = absoluteKumactlPath
 
 	return nil
 }
 
-var TProxyConfig TransparentProxyConfig
+var Config TransparentProxyConfig
 
-var defaultTProxyConf = TransparentProxyConfig{
+var defaultConfig = TransparentProxyConfig{
 	KumactlLinuxBin: fmt.Sprintf(
 		"../../../build/artifacts-linux-%s/kumactl/kumactl",
 		runtime.GOARCH,
@@ -80,14 +80,14 @@ var defaultTProxyConf = TransparentProxyConfig{
 	IPV6: false,
 }
 
-func InitTproxyConfig() {
-	TProxyConfig = defaultTProxyConf
+func InitConfig() {
+	Config = defaultConfig
 
-	if err := config.Load(os.Getenv("TPROXY_TESTS_CONFIG_FILE"), &TProxyConfig); err != nil {
+	if err := config.Load(os.Getenv("TPROXY_TESTS_CONFIG_FILE"), &Config); err != nil {
 		panic(err)
 	}
 
-	if err := TProxyConfig.AutoConfigure(); err != nil {
+	if err := Config.AutoConfigure(); err != nil {
 		panic(err)
 	}
 }
