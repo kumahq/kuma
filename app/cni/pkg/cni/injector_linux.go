@@ -46,11 +46,6 @@ func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateC
 		return err
 	}
 
-	initializedConfig, err := cfg.Initialize(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize config")
-	}
-
 	namespace, err := ns.GetNS(netns)
 	if err != nil {
 		return errors.Wrap(err, "failed to open namespace")
@@ -58,6 +53,11 @@ func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateC
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
+		initializedConfig, err := cfg.Initialize(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize config")
+		}
+
 		if _, err := transparentproxy.Setup(ctx, initializedConfig); err != nil {
 			return err
 		}
