@@ -209,13 +209,11 @@ type Injector struct {
 	ContainerPatches []string `json:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `json:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
-	// VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
-	// serves on sub-path of insecure port 'virtualProbesPort',
-	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
+	// VirtualProbesEnabled enables automatic converting pod probes to virtual probes that is proxied by the sidecar.
 	VirtualProbesEnabled bool `json:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
-	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
+	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS.
 	VirtualProbesPort uint32 `json:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
-	// SidecarTraffic is a configuration for a traffic that is intercepted by sidecar
+	// SidecarTraffic is a configuration for traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `json:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection
 	Exceptions Exceptions `json:"exceptions"`

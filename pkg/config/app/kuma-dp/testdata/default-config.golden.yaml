@@ -20,3 +20,5 @@ dns:
   enabled: true
   envoyDnsPort: 15054
   prometheusPort: 19153
+virtualProbesServer:
+  port: 9000

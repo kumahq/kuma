@@ -17,6 +17,8 @@ const (
 	defaultIPFamilyMode        = "unspecified"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
+	defaultVirtualProbeEnabled = "true"
+	defaultVirtualProbePorts   = "9000"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
@@ -34,6 +36,8 @@ var annotationRegistry = map[string]*annotationParam{
 	"builtinDNSPort":              {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
 	"excludeOutboundPortsForUIDs": {"traffic.kuma.io/exclude-outbound-ports-for-uids", "", alwaysValidFunc},
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
+	"virtualProbesEnabled":        {"kuma.io/virtual-probes", defaultVirtualProbeEnabled, alwaysValidFunc},
+	"virtualProbesPort":           {"kuma.io/virtual-probes-port", defaultVirtualProbePorts, validateSinglePort},
 }
 
 type IntermediateConfig struct {
@@ -99,6 +103,13 @@ func validatePortList(ports string) error {
 	return nil
 }
 
+func validateSinglePort(portString string) error {
+	if _, err := parsePort(portString); err != nil {
+		return err
+	}
+	return nil
+}
+
 func validateIpFamilyMode(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
@@ -132,6 +143,8 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
+	valTrue := "true"
+	valDefaultVirtualPort := defaultVirtualProbePorts
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -145,6 +158,8 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"virtualProbesEnabled":        &valTrue,
+		"virtualProbesPort":           &valDefaultVirtualPort,
 	}
 
 	for fieldName, fieldPointer := range allFields {
@@ -155,6 +170,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 
 	// defaults to the ipv4 port if ipv6 port is not set
 	assignIPv6InboundRedirectPort(allFields)
+	excludeVirtualProbePort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -184,5 +200,26 @@ func assignIPv6InboundRedirectPort(allFields map[string]*string) {
 		*v6PortFieldPointer = "0"
 	} else if *v6PortFieldPointer == defaultInboundPortV6 {
 		*v6PortFieldPointer = *allFields["inboundPort"]
+	}
+}
+
+func excludeVirtualProbePort(allFields map[string]*string) {
+	inboundPortsToExclude := allFields["excludeInboundPorts"]
+	enabledPtr := allFields["virtualProbesEnabled"]
+	enabled, err := GetEnabled(*enabledPtr)
+	if err != nil {
+		enabled = true
+	}
+
+	if !enabled {
+		return
+	}
+
+	virtualProbesPort := *allFields["virtualProbesPort"]
+	existingExcludes := *inboundPortsToExclude
+	if existingExcludes == "" {
+		*inboundPortsToExclude = virtualProbesPort
+	} else {
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, virtualProbesPort)
 	}
 }

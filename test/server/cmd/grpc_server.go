@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	grpchealth "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/test/server/grpc/api"
@@ -16,16 +17,16 @@ var grpcServerLog = grpcLog.WithName("server")
 
 type grpcServer struct {
 	api.UnimplementedGreeterServer
-	api.UnimplementedHealthServer
+	grpchealth.UnimplementedHealthServer
 	id string
 }
 
-func (g *grpcServer) Check(ctx context.Context, request *api.HealthCheckRequest) (*api.HealthCheckResponse, error) {
-	return &api.HealthCheckResponse{Status: api.HealthCheckResponse_SERVING}, nil
+func (g *grpcServer) Check(ctx context.Context, request *grpchealth.HealthCheckRequest) (*grpchealth.HealthCheckResponse, error) {
+	return &grpchealth.HealthCheckResponse{Status: grpchealth.HealthCheckResponse_SERVING}, nil
 }
 
-func (g *grpcServer) Watch(request *api.HealthCheckRequest, server api.Health_WatchServer) error {
-	return server.Send(&api.HealthCheckResponse{Status: api.HealthCheckResponse_SERVING})
+func (g *grpcServer) Watch(request *grpchealth.HealthCheckRequest, server grpchealth.Health_WatchServer) error {
+	return server.Send(&grpchealth.HealthCheckResponse{Status: grpchealth.HealthCheckResponse_SERVING})
 }
 
 func (g *grpcServer) SayHello(ctx context.Context, request *api.HelloRequest) (*api.HelloReply, error) {
@@ -74,7 +75,7 @@ test-server grpc server --port 8080
 			api.RegisterGreeterServer(s, &grpcServer{
 				id: core.NewUUID(),
 			})
-			api.RegisterHealthServer(s, &grpcServer{
+			grpchealth.RegisterHealthServer(s, &grpcServer{
 				id: core.NewUUID(),
 			})
 

@@ -48,4 +48,15 @@ var _ = Describe("NewIntermediateConfig", func() {
 		Expect(cfg.ipFamilyMode).To(Equal("ipv4"))
 		Expect(cfg.inboundPortV6).To(Equal("0"))
 	})
+
+	It("should exclude virtual probe ports", func() {
+		a := map[string]string{
+			"kuma.io/virtual-probes":                "true",
+			"kuma.io/virtual-probes-port":           "19988",
+			"traffic.kuma.io/exclude-inbound-ports": "3355",
+		}
+		cfg, err := NewIntermediateConfig(a)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.excludeInboundPorts).To(Equal("3355,19988"))
+	})
 })

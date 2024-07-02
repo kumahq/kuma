@@ -74,6 +74,10 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: metadata.namespace
+    - name: VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -143,7 +147,7 @@ spec:
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
-    - 1234,1235
+    - 1234,1235,9000
     - --exclude-outbound-ports
     - "1236"
     - --verbose
