@@ -65,11 +65,12 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 			switch route.MatchType {
 			case Domain, WildcardDomain, IP, IPV6:
 				domains := []string{route.Value}
+				// based on the RFC, the host header might include a port, so we add another entry with the port defined
 				if route.MatchType == IP {
 					domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
 				}
 				if route.MatchType == IPV6 {
-					domains = append(domains, fmt.Sprintf("[%s]", route.Value))
+					domains = append(domains, fmt.Sprintf("[%s]", route.Value), fmt.Sprintf("[%s]:%d", route.Value, c.Port))
 				}
 				clusterName := ClusterName(route, c.Protocol, c.Port)
 				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, route.Value).

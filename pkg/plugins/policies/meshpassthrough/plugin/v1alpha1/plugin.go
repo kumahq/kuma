@@ -30,18 +30,21 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.Dataplane == nil || (proxy.Dataplane.Spec.Networking.Gateway != nil && proxy.Dataplane.Spec.Networking.Gateway.Type == v1alpha1.Dataplane_Networking_Gateway_BUILTIN) {
+	if proxy.Dataplane == nil {
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]
 	if !ok {
 		return nil
 	}
+	if proxy.Dataplane.Spec.Networking.Gateway != nil && proxy.Dataplane.Spec.Networking.Gateway.Type == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
+		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
+		return nil
+	}
 	if proxy.Dataplane != nil && proxy.Dataplane.Spec.Networking.TransparentProxying == nil {
 		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
-
 	listeners := policies_xds.GatherListeners(rs)
 	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
 		return err
