@@ -27,6 +27,8 @@ type Port struct {
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
 }
 
+const maxNameLength = 63
+
 // MeshService
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true

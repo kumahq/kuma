@@ -83,7 +83,30 @@ spec:
 			Setup(multizone.UniZone2)).To(Succeed())
 
 		err := NewClusterSetup().
+			Setup(multizone.KubeZone1)
+		Expect(err).ToNot(HaveOccurred())
+
+		veryLongNamedService := `
+kind: MeshService
+apiVersion: kuma.io/v1alpha1
+metadata:
+  name: this-service-has-a-name-thats-the-exact-length-allowed-for-svcs
+  namespace: meshservice
+  labels:
+    kuma.io/mesh: meshservice
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: some-service
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+`
+
+		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(YamlK8s(veryLongNamedService)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
@@ -181,6 +204,25 @@ spec:
 			_, _, err := msStatus(multizone.KubeZone2, fmt.Sprintf("%s.%s", hash.HashedName(meshName, "backend", "kuma-4"), Config.KumaNamespace))
 			g.Expect(err).ToNot(HaveOccurred())
 			_, _, err = msStatus(multizone.KubeZone2, fmt.Sprintf("%s.%s", hash.HashedName(meshName, "backend", "kuma-5"), Config.KumaNamespace))
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should sync MeshServices with a long name", func() {
+		hashedName := hash.HashedName(meshName, "this-service-has-a-name-thats-the-exact-length-allowed-for-svcs", "kuma-2", "meshservice")
+		// MeshServices are synced to global zone without conflict
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.Global, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// MeshServices are synced to other zone without conflict
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.KubeZone1, fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace))
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.UniZone2, hashedName)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 	})
