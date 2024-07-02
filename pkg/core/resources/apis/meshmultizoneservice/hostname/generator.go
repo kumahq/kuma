@@ -62,6 +62,9 @@ func (g *MeshMultiZoneServiceHostnameGenerator) GenerateHostname(generator *host
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
 	}
+	if generator.Spec.Selector.MeshMultiZoneService == nil {
+		return "", nil
+	}
 	if !generator.Spec.Selector.MeshMultiZoneService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}

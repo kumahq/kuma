@@ -8,17 +8,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/hostname"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	mzms_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/hostname"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
@@ -45,22 +43,11 @@ var _ = Describe("MeshMultiZoneService Hostname Generator", func() {
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 
-		generator := hostnamegenerator_api.NewHostnameGeneratorResource()
-		generator.Meta = &test_model.ResourceMeta{
-			Mesh: core_model.DefaultMesh,
-			Name: "example",
-		}
-		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
-			Template: "{{ .Name }}.mesh",
-			Selector: hostnamegenerator_api.Selector{
-				MeshMultiZoneService: hostnamegenerator_api.LabelSelector{
-					MatchLabels: map[string]string{
-						"label": "value",
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
+		err = builders.HostnameGenerator().
+			WithTemplate("{{ .Name }}.mesh").
+			WithMeshMultiZoneServiceMatchLabels(map[string]string{"label": "value"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -100,6 +87,28 @@ var _ = Describe("MeshMultiZoneService Hostname Generator", func() {
 			status := multiZoneServiceStatus("example")
 			g.Expect(status.Addresses).Should(Not(BeEmpty()))
 			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should not generate hostname when selector is not MeshMultiZoneService", func() {
+		// when
+		err := builders.HostnameGenerator().
+			WithName("ms-generator").
+			WithTemplate("{{ .DisplayName }}.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"test": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = samples.MeshMultiZoneServiceBackendBuilder().
+			WithLabels(map[string]string{"test": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			status := multiZoneServiceStatus("backend")
+			g.Expect(status.Addresses).Should(BeEmpty())
+			g.Expect(status.HostnameGenerators).Should(BeEmpty())
 		}, "2s", "100ms").Should(Succeed())
 	})
 })
