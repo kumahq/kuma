@@ -267,10 +267,6 @@ func fillLocalMeshServices(
 			continue
 		}
 
-		if meshSvc.Spec.Selector.DataplaneRef != nil {
-			continue
-		}
-
 		for _, dpp := range dpps {
 			dpNetworking := dpp.Spec.GetNetworking()
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {

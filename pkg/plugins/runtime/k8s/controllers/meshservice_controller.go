@@ -306,12 +306,14 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 				Name: fmt.Sprintf("%s.%s", endpoint.TargetRef.Name, endpoint.TargetRef.Namespace),
 			},
 		}
+		var vips []meshservice_api.VIP
 		for _, address := range endpoint.Addresses {
-			ms.Status.VIPs = append(ms.Status.VIPs,
+			vips = append(vips,
 				meshservice_api.VIP{
 					IP: address,
 				})
 		}
+		ms.Status.VIPs = vips
 		owner := kube_core.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      endpoint.TargetRef.Name,
