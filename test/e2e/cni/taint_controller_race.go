@@ -23,7 +23,6 @@ kind: Mesh
 metadata:
   name: default
 `
-	customNamespace := "cni-namespace"
 
 	var cluster Cluster
 	var k8sCluster *K8sCluster
@@ -42,7 +41,6 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		Expect(NewClusterSetup().Install(Namespace(customNamespace)).Setup(cluster)).To(Succeed())
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone,
@@ -50,9 +48,7 @@ metadata:
 				WithHelmReleaseName(releaseName),
 				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 				WithHelmOpt("cni.delayStartupSeconds", "40"),
-				WithHelmOpt("cni.namespace", customNamespace),
 				WithCNI(),
-				WithCNINamespace(customNamespace),
 			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
