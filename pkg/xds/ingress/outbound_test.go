@@ -327,6 +327,14 @@ var _ = Describe("IngressTrafficRoute", func() {
 					},
 				},
 				expected: core_xds.EndpointMap{
+					"redis-0_svc_6379": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"},
+							Weight: 1,
+						},
+					},
 				},
 			}),
 		)
