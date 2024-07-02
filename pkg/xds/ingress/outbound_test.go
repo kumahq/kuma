@@ -3,9 +3,12 @@ package ingress_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	. "github.com/kumahq/kuma/pkg/xds/ingress"
@@ -17,13 +20,14 @@ var _ = Describe("IngressTrafficRoute", func() {
 			destinations     core_xds.DestinationMap
 			dataplanes       []*core_mesh.DataplaneResource
 			externalServices []*core_mesh.ExternalServiceResource
+			meshServices     []*v1alpha1.MeshServiceResource
 			zoneEgress       []*core_mesh.ZoneEgressResource
 			expected         core_xds.EndpointMap
 		}
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, given.zoneEgress, nil, nil)
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, given.zoneEgress, nil, given.meshServices)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -217,6 +221,112 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Weight: 1,
 						},
 					},
+				},
+			}),
+			Entry("mesh services", testCase{
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: model.DefaultMesh, Name: "redis-0"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{Mesh: model.DefaultMesh, Name: "kong-gateway-0"},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.2",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+										Port:        8080,
+										ServicePort: 18080,
+									},
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+										Port:        8001,
+										ServicePort: 18001,
+									},
+								},
+							},
+						},
+					},
+				},
+				meshServices: []*v1alpha1.MeshServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "kong.kong-system",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneTags: map[string]string{
+									"app": "kong",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:        80,
+									TargetPort:  intstr.FromInt(8080),
+									AppProtocol: "http",
+								},
+								{
+									Port:        8081,
+									TargetPort:  intstr.FromInt(8081),
+									AppProtocol: "http",
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "redis",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneTags: map[string]string{
+									mesh_proto.ServiceTag: "redis_svc_6379",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:       6379,
+									TargetPort: intstr.FromInt(6379),
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "redis-0",
+						},
+						Spec: &v1alpha1.MeshService{
+							Selector: v1alpha1.Selector{
+								DataplaneRef: &v1alpha1.DataplaneRef{
+									Name: "redis-0",
+								},
+							},
+							Ports: []v1alpha1.Port{
+								{
+									Port:       6379,
+									TargetPort: intstr.FromInt(6379),
+								},
+							},
+						},
+					},
+				},
+				expected: core_xds.EndpointMap{
 				},
 			}),
 		)
