@@ -36,9 +36,6 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 		},
 	})
-	if len(targetRef.ProxyTypes) != 1 && !slices.Contains(targetRef.ProxyTypes, common_api.Sidecar) {
-		targetRefErr.AddViolationAt(validators.RootedAt("proxyTypes"), "proxyTypes needs to be set, currently only Sidecar is supported")
-	}
 	return targetRefErr
 }
 

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -36,11 +37,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
+	if proxy.Dataplane.Spec.Networking.Gateway != nil && proxy.Dataplane.Spec.Networking.Gateway.Type == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
+		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
+		return nil
+	}
 	if proxy.Dataplane != nil && proxy.Dataplane.Spec.Networking.TransparentProxying == nil {
 		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
-
 	listeners := policies_xds.GatherListeners(rs)
 	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
 		return err

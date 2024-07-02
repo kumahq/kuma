@@ -7,4 +7,5 @@ type Config struct {
 	KicIP                       string
 	CpNamespace                 string
 	ObservabilityDeploymentName string
+	IPV6                        bool
 }

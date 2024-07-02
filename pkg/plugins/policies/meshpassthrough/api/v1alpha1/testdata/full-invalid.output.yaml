@@ -1,6 +1,4 @@
 violations:
-- field: spec.targetRef.proxyTypes
-  message: proxyTypes needs to be set, currently only Sidecar is supported
 - field: spec.default.appendMatch[0].port
   message: port must be a valid (1-65535)
 - field: spec.default.appendMatch[0].protocol

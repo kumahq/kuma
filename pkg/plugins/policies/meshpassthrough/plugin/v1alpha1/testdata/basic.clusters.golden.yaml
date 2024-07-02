@@ -47,6 +47,14 @@ resources:
     lbPolicy: CLUSTER_PROVIDED
     name: meshpassthrough_192.168.19.1_*
     type: ORIGINAL_DST
+- name: meshpassthrough_192.168.19.1_10000
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_192_168_19_1_10000
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_192.168.19.1_10000
+    type: ORIGINAL_DST
 - name: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
