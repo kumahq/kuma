@@ -72,6 +72,33 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 	return zone
 }
 
+func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framework.KumaDeploymentOption) *UniversalCluster {
+	wg.Add(1)
+	options := append(
+		[]framework.KumaDeploymentOption{
+			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
+			WithEgressEnvoyAdminTunnel(),
+			WithIngressEnvoyAdminTunnel(),
+			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+		},
+		extraOptions...,
+	)
+	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
+	E2EDeferCleanup(zone.DismissCluster) // clean up any containers if needed
+	go func() {
+		defer GinkgoRecover()
+		defer wg.Done()
+		err := NewClusterSetup().
+			Install(Kuma(core.Zone, options...)).
+			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
+			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
+			Setup(zone)
+		Expect(err).ToNot(HaveOccurred())
+	}()
+	return zone
+}
+
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
@@ -84,7 +111,6 @@ func SetupAndGetState() []byte {
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
 
 	kubeZone1Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1),
@@ -103,56 +129,18 @@ func SetupAndGetState() []byte {
 	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-	uniZone1Options := append(
-		[]framework.KumaDeploymentOption{
-			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEgressEnvoyAdminTunnel(),
-			WithIngressEnvoyAdminTunnel(),
-			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
-			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-		},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...,
-	)
-	E2EDeferCleanup(UniZone1.DismissCluster) // clean up any containers if needed
-	go func() {
-		defer GinkgoRecover()
-		defer wg.Done()
-		err := NewClusterSetup().
-			Install(Kuma(core.Zone, uniZone1Options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
-			Setup(UniZone1)
-		Expect(err).ToNot(HaveOccurred())
-	}()
+	UniZone1 = setupUniZone(&wg, Kuma4, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...)
 
 	vipCIDROverride := "251.0.0.0/8"
 	if Config.IPV6 {
 		vipCIDROverride = "fd00:fd11::/64"
 	}
-	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 	uniZone2Options := append(
-		[]framework.KumaDeploymentOption{
-			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEgressEnvoyAdminTunnel(),
-			WithIngressEnvoyAdminTunnel(),
-			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
-			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-			WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
-		},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2),
+		WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 	)
-	E2EDeferCleanup(UniZone2.DismissCluster) // clean up any containers if needed
-	go func() {
-		defer GinkgoRecover()
-		defer wg.Done()
-		err := NewClusterSetup().
-			Install(Kuma(core.Zone, uniZone2Options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
-			Setup(UniZone2)
-		Expect(err).ToNot(HaveOccurred())
-	}()
+	UniZone2 = setupUniZone(&wg, Kuma5, uniZone2Options...)
+
 	wg.Wait()
 
 	state := State{
@@ -208,6 +196,25 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 	return zone
 }
 
+func restoreUniZone(clusterName string, networkingState *UniversalNetworkingState) *UniversalCluster {
+	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
+	E2EDeferCleanup(zone.DismissCluster) // clean up any containers if needed
+	cp, err := NewUniversalControlPlane(
+		zone.GetTesting(),
+		core.Zone,
+		zone.Name(),
+		zone.Verbose(),
+		networkingState.KumaCp,
+		nil, // headers were not configured in setup
+		true,
+	)
+	Expect(err).ToNot(HaveOccurred())
+	zone.SetCp(cp)
+	Expect(zone.AddNetworking(networkingState.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
+	Expect(zone.AddNetworking(networkingState.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+	return zone
+}
+
 // RestoreState to be used with Ginkgo SynchronizedBeforeSuite
 func RestoreState(bytes []byte) {
 	if Global != nil {
@@ -233,37 +240,8 @@ func RestoreState(bytes []byte) {
 	KubeZone1 = restoreKubeZone(Kuma1, &state.KubeZone1)
 	KubeZone2 = restoreKubeZone(Kuma2, &state.KubeZone2)
 
-	UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-	E2EDeferCleanup(UniZone1.DismissCluster) // clean up any containers if needed
-	cp, err = NewUniversalControlPlane(
-		UniZone1.GetTesting(),
-		core.Zone,
-		UniZone1.Name(),
-		UniZone1.Verbose(),
-		state.UniZone1.KumaCp,
-		nil, // headers were not configured in setup
-		true,
-	)
-	Expect(err).ToNot(HaveOccurred())
-	UniZone1.SetCp(cp)
-	Expect(UniZone1.AddNetworking(state.UniZone1.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
-	Expect(UniZone1.AddNetworking(state.UniZone1.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
-
-	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
-	E2EDeferCleanup(UniZone2.DismissCluster) // clean up any containers if needed
-	cp, err = NewUniversalControlPlane(
-		UniZone2.GetTesting(),
-		core.Zone,
-		UniZone2.Name(),
-		UniZone2.Verbose(),
-		state.UniZone2.KumaCp,
-		nil, // headers were not configured in setup
-		true,
-	)
-	Expect(err).ToNot(HaveOccurred())
-	UniZone2.SetCp(cp)
-	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
-	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+	UniZone1 = restoreUniZone(Kuma4, &state.UniZone1)
+	UniZone2 = restoreUniZone(Kuma5, &state.UniZone2)
 }
 
 func PrintCPLogsOnFailure(report Report) {
