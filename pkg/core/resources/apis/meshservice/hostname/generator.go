@@ -62,6 +62,9 @@ func (g *MeshServiceHostnameGenerator) GenerateHostname(generator *hostnamegener
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
 	}
+	if generator.Spec.Selector.MeshService == nil {
+		return "", nil
+	}
 	if !generator.Spec.Selector.MeshService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}

@@ -19,6 +19,8 @@ var _ = Describe("validation", func() {
 type: HostnameGenerator
 name: route-1
 template: "{{ .Name[4 }}.mesh"
+selector:
+  meshService: {}
 `),
 		ErrorCase("spec.template empty",
 			validators.Violation{
@@ -28,6 +30,29 @@ template: "{{ .Name[4 }}.mesh"
 type: HostnameGenerator
 name: route-1
 template: ""
+selector:
+  meshService: {}
+`),
+		ErrorCase("spec.selector empty",
+			validators.Violation{
+				Field:   `spec.selector`,
+				Message: `exact one selector (meshService, meshExternalService) must be defined`,
+			}, `
+type: HostnameGenerator
+name: route-1
+template: "{{ .Name }}.mesh"
+`),
+		ErrorCase("spec.selector has too many selectors",
+			validators.Violation{
+				Field:   `spec.selector`,
+				Message: `exact one selector (meshService, meshExternalService) must be defined`,
+			}, `
+type: HostnameGenerator
+name: route-1
+template: "{{ .Name }}.mesh"
+selector:
+  meshService: {}
+  meshExternalService: {}
 `),
 	)
 	DescribeValidCases(
@@ -36,6 +61,8 @@ template: ""
 type: HostnameGenerator
 name: route-1
 template: "{{ .Name }}.mesh"
+selector:
+  meshService: {}
 `),
 	)
 })
