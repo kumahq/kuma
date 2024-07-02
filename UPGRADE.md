@@ -8,6 +8,72 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+### Changed iptables Executables Handling
+
+As part of our ongoing efforts to improve the stability and maintainability of our transparent proxy solution, we have introduced significant changes to the way iptables executables are managed. These changes are part of the release and affect how iptables executables are located, verified, and utilized across the system.
+
+#### Changes Overview
+
+- **Centralized Management**: We've centralized the handling of iptables executables through the introduction of the Executables structures. This update simplifies the process of locating and verifying the correct executables for different iptables versions (nft, legacy) and IP versions (IPv4, IPv6).
+- **Dynamic Executable Paths**: Hardcoded iptables executable names are replaced with dynamically retrieved paths, ensuring that the system always uses the correct executables regardless of the hosting environment or custom configurations. See more information in the [Process of Locating Appropriate iptables Executables](#process-of-locating-appropriate-iptables-executables) section
+- **Improved Verification**: During the initialization phase, the system now verifies if the discovered iptables binary supports the required features (like "nat" and "raw" tables, necessary modules, etc.), enhancing reliability.
+
+#### Impact on Existing Deployments
+
+- **Configuration Files**: No changes are required in the transparent-proxy related configuration. The system dynamically handles executable paths based on the runtime environment.
+- **Verification and Testing**: We recommend testing your configurations in a staging environment to ensure that the new executable handling processes align with your operational expectations.
+
+#### Process of Locating Appropriate iptables Executables
+
+The process of locating and verifying the appropriate iptables executables in our system ensures only compatible versions are used for managing iptables rules.
+
+#### Steps in Locating the Executables:
+
+1. **Prefix and Mode Derivation:**
+  - Each executable related to iptables is associated with a prefix that indicates whether it is intended for IPv4 (`iptables`) or IPv6 (`ip6tables`).
+  - The mode (`nft` or `legacy`) of the iptables is also considered, forming part of the executable's naming convention.
+
+2. **Executable Name Construction:**
+  - The executable names are dynamically constructed using combinations of the prefix, mode, and specific function. This results in a comprehensive set of potential names such as:
+    - `iptables-nft`, `ip6tables-nft` (nft mode without specific function)
+    - `iptables-nft-save`, `ip6tables-nft-save` (nft mode for saving)
+    - `iptables-nft-restore`, `ip6tables-nft-restore` (nft mode for restoring)
+    - `iptables-legacy`, `ip6tables-legacy` (legacy mode without specific function)
+    - `iptables-legacy-save`, `ip6tables-legacy-save` (legacy mode for saving)
+    - `iptables-legacy-restore`, `ip6tables-legacy-restore` (legacy mode for restoring)
+
+3. **Path Searching:**
+  - A search is first conducted for executables that include the mode in their names, such as `iptables-nft` or `ip6tables-legacy`, to ensure that the specific functionality required is supported.
+  - The search includes:
+    - Direct paths, checking the executable name within the system's PATH.
+    - Common system directories where executables might be located. The specific directories checked include:
+      - `/usr/sbin`
+      - `/sbin`
+      - `/usr/bin`
+      - `/bin`
+    - For example, for `iptables-nft-save` executable, paths included in the search are
+      - `iptables-nft-save`
+      - `/usr/sbin/iptables-nft-save`
+      - `/sbin/iptables-nft-save`
+      - `/usr/bin/iptables-nft-save`
+      - `/bin/iptables-nft-save`
+
+4. **Executable Verification:**
+  - Once a potential executable is found, its compatibility and mode are verified by executing the `--version` command. This helps ascertain that the executable adheres to the expected iptables version and mode, ensuring that functionalities like nat and raw table manipulations can be supported.
+
+5. **Fallback Mechanism:**
+  - If the first choice of executable (with mode in the name) is not found or verified, the same path searching and verification steps are repeated for the base name without the mode (e.g., just `iptables` instead of `iptables-nft`). This ensures robustness in the initialization process by providing an alternative if the preferred executable is unavailable.
+  - During the fallback search, if an executable is found, the `--version` command is again used to verify that the executable matches the expected mode, ensuring proper functionality.
+
+#### Importance of This Process:
+
+This rigorous process is crucial for:
+- **Reliability:** Ensures that the system uses the correct version of iptables executables that are compatible with the current configurations and functionalities required by the system.
+- **Security:** Verifies that the iptables executables can handle necessary security configurations, crucial for maintaining the integrity and security of the network.
+- **Compatibility:** Ensures compatibility across different system setups and environments, accommodating variations in installation paths and system configurations.
+
+By integrating this process, the system maintains high standards of network configuration management, essential for the effective operation of iptables functionalities within diverse environments.
+
 ### MeshFaultInjection responseBandwidth.limit
 
 With [#10371](https://github.com/kumahq/kuma/pull/10371) we have tightened the validation of the `responseBandwidth.limit` field in `MeshFaultInjection` policy. Policies with invalid values, such as `-10kbps`, will be rejected.

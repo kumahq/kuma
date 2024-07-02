@@ -210,10 +210,17 @@ func addOutputRules(
 	nat *tables.NatTable,
 	ipv6 bool,
 ) error {
+	// Retrieve the fully qualified name of the outbound chain based on
+	// configuration.
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
+	// DNS redirection port from configuration.
 	dnsRedirectPort := cfg.Redirect.DNS.Port
+	// Owner user ID for configuring UID-based rules.
 	uid := cfg.Owner.UID
+	// Initial position for the first rule in the NAT table.
 	rulePosition := uint(1)
+
+	// Add logging rule if logging is enabled in the configuration.
 	if cfg.Log.Enabled {
 		nat.Output().AddRuleAtPosition(
 			rulePosition,
@@ -222,19 +229,22 @@ func addOutputRules(
 		rulePosition++
 	}
 
-	// Excluded outbound ports for UIDs
+	// Loop through UID-specific excluded ports and add corresponding NAT rules.
 	for _, uIDsToPorts := range cfg.Redirect.Outbound.ExcludePortsForUIDs {
 		var protocol *Parameter
 
+		// Determine the protocol type and set up the correct parameter.
 		switch uIDsToPorts.Protocol {
 		case TCP:
 			protocol = Protocol(Tcp(DestinationPortRangeOrValue(uIDsToPorts)))
 		case UDP:
 			protocol = Protocol(Udp(DestinationPortRangeOrValue(uIDsToPorts)))
 		default:
+			// Return an error if the protocol is neither TCP nor UDP.
 			return fmt.Errorf("unknown protocol %s, only 'tcp' or 'udp' allowed", uIDsToPorts.Protocol)
 		}
 
+		// Add rule to return early for specified ports and UID.
 		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Match(Multiport()),
@@ -245,12 +255,18 @@ func addOutputRules(
 		rulePosition++
 	}
 
+	// Conditionally add DNS redirection rules if DNS redirection is enabled.
 	if cfg.ShouldRedirectDNS() {
+		// Default jump target for DNS rules.
 		jumpTarget := Return()
-		if !ipv6 && cfg.ShouldFallbackDNSToUpstreamChain() {
-			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
+		// Determine if DockerOutput chain should be targeted based on IPv4/IPv6
+		// and functionality.
+		if (ipv6 && cfg.Executables.IPv6.Functionality.Chains.DockerOutput) ||
+			(!ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput) {
+			jumpTarget = ToUserDefinedChain(ChainDockerOutput)
 		}
 
+		// Add DNS rule for redirecting DNS traffic based on UID.
 		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Protocol(Udp(DestinationPort(DNSPort))),
@@ -259,6 +275,8 @@ func addOutputRules(
 		)
 		rulePosition++
 
+		// Add rules to redirect all DNS requests or only those to specific
+		// servers.
 		if cfg.ShouldCaptureAllDNS() {
 			nat.Output().AddRuleAtPosition(
 				rulePosition,
@@ -277,11 +295,14 @@ func addOutputRules(
 			}
 		}
 	}
-	nat.Output().
-		AddRule(
-			Protocol(Tcp()),
-			Jump(ToUserDefinedChain(outboundChainName)),
-		)
+
+	// Add a default rule to direct all TCP traffic to the user-defined outbound
+	// chain.
+	nat.Output().AddRule(
+		Protocol(Tcp()),
+		Jump(ToUserDefinedChain(outboundChainName)),
+	)
+
 	return nil
 }
 
@@ -343,13 +364,14 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 	return nil
 }
 
-func buildNatTable(
-	cfg config.InitializedConfig,
-	dnsServers []string,
-	ipv6 bool,
-) (*tables.NatTable, error) {
+func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
+
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
+	}
 
 	nat := tables.Nat()
 

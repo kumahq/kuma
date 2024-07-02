@@ -38,17 +38,12 @@ func convertCommaSeparatedString(list string) ([]uint16, error) {
 	return mapped, nil
 }
 
-func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateConfig) error {
+func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateConfig, logger logr.Logger) error {
 	var logBuffer bytes.Buffer
 	logWriter := bufio.NewWriter(&logBuffer)
 	cfg, err := mapToConfig(intermediateConfig, logWriter)
 	if err != nil {
 		return err
-	}
-
-	initializedConfig, err := cfg.Initialize()
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize config")
 	}
 
 	namespace, err := ns.GetNS(netns)
@@ -58,7 +53,12 @@ func Inject(netns string, logger logr.Logger, intermediateConfig *IntermediateCo
 	defer namespace.Close()
 
 	return namespace.Do(func(_ ns.NetNS) error {
-		if _, err := transparentproxy.Setup(context.Background(), initializedConfig); err != nil {
+		initializedConfig, err := cfg.Initialize(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize config")
+		}
+
+		if _, err := transparentproxy.Setup(ctx, initializedConfig); err != nil {
 			return err
 		}
 

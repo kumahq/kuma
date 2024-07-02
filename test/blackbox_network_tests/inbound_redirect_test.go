@@ -49,7 +49,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -129,7 +129,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -204,7 +204,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			peerAddress := ns.Veth().PeerAddress()
@@ -296,7 +296,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			peerAddress := ns.Veth().PeerAddress()
@@ -388,7 +388,7 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			peerAddress := ns.Veth().PeerAddress()
@@ -482,7 +482,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			peerAddress := ns.Veth().PeerAddress()
@@ -575,7 +575,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -652,7 +652,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(

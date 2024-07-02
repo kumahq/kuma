@@ -7,14 +7,19 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-func buildMangleTable(cfg config.InitializedConfig) *tables.MangleTable {
+func buildMangleTable(
+	cfg config.InitializedConfig,
+	ipv6 bool,
+) *tables.MangleTable {
 	mangle := tables.Mangle()
 
-	mangle.Prerouting().
-		AddRuleIf(cfg.ShouldDropInvalidPackets,
-			Match(Conntrack(Ctstate(INVALID))),
-			Jump(Drop()),
-		)
+	if cfg.ShouldDropInvalidPackets(ipv6) {
+		mangle.Prerouting().
+			AddRule(
+				Match(Conntrack(Ctstate(INVALID))),
+				Jump(Drop()),
+			)
+	}
 
 	return mangle
 }
