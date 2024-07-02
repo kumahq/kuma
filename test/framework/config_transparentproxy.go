@@ -77,7 +77,7 @@ var defaultTProxyConf = TransparentProxyConfig{
 	IPV6: false,
 }
 
-func init() {
+func InitTproxyConfig() {
 	TProxyConfig = defaultTProxyConf
 
 	if err := config.Load(os.Getenv("TPROXY_TESTS_CONFIG_FILE"), &TProxyConfig); err != nil {
