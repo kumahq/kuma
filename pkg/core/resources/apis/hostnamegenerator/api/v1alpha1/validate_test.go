@@ -16,26 +16,48 @@ var _ = Describe("validation", func() {
 				Field:   `spec.template`,
 				Message: `couldn't parse template: template: :1: bad character U+005B '['`,
 			}, `
-type: HostnameGenerator
-name: route-1
 template: "{{ .Name[4 }}.mesh"
+selector:
+  meshService: {}
 `),
 		ErrorCase("spec.template empty",
 			validators.Violation{
 				Field:   `spec.template`,
 				Message: `must not be empty`,
 			}, `
-type: HostnameGenerator
-name: route-1
 template: ""
+selector:
+  meshService: {}
+`),
+		ErrorCase("spec.selector empty",
+			validators.Violation{
+				Field:   `spec.selector`,
+				Message: `exact one selector (meshService, meshExternalService) must be defined`,
+			}, `
+template: "{{ .Name }}.mesh"
+`),
+		ErrorCase("spec.selector has too many selectors",
+			validators.Violation{
+				Field:   `spec.selector`,
+				Message: `exact one selector (meshService, meshExternalService) must be defined`,
+			}, `
+template: "{{ .Name }}.mesh"
+selector:
+  meshService: {}
+  meshExternalService: {}
 `),
 	)
 	DescribeValidCases(
 		api.NewHostnameGeneratorResource,
 		Entry("accepts valid resource", `
-type: HostnameGenerator
-name: route-1
 template: "{{ .Name }}.mesh"
+selector:
+  meshService: {}
+`),
+		Entry("accepts valid resource", `
+template: "{{ .Name }}.mesh"
+selector:
+  meshMultiZoneService: {}
 `),
 	)
 })

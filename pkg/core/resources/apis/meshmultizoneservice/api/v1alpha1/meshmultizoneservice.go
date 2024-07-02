@@ -34,6 +34,8 @@ type MeshMultiZoneServiceStatus struct {
 	VIPs []meshservice_api.VIP `json:"vips,omitempty"`
 	// MeshServices is a list of matched MeshServices
 	MeshServices []MatchedMeshService `json:"meshServices,omitempty"`
+	// Status of hostnames generator applied on this resource
+	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }
 
 type MatchedMeshService struct {
