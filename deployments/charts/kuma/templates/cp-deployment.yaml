@@ -167,11 +167,8 @@ spec:
           securityContext:
           {{- toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           env:
-          {{- range $element := .Values.controlPlane.envVarsFromField }}
-            - name: {{ $element.env }}
-              valueFrom:
-                fieldRef:
-                  fieldPath: {{ $element.fieldPath }}
+          {{- if .Values.controlPlane.envVarEntries }}
+            {{- .Values.controlPlane.envVarEntries | toYaml | nindent 12 }}
           {{- end }}
           {{- range $key, $value := $mergedEnv }}
             - name: {{ $key }}

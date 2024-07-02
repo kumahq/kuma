@@ -280,13 +280,12 @@ controlPlane:
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
 
-  # -- (object with { env: string, fieldPath: string }) Env vars with value from other field
-  # where `env` is the name of the env variable,
-  # `fieldPath` is a reference to pod field
-  envVarsFromField:
-  # nodeName:
-  #   env: MY_NODE_NAME
-  #   fieldPath: spec.nodeName
+  # -- Additional environment variables that will be passed to the control plane. Can be used with Kubernetes downward API
+  envVarEntries:
+  # - name: MY_NODE_NAME
+  #   valueFrom:
+  #     fieldRef:
+  #      fieldPath: spec.nodeName
 
   # -- Additional config maps to mount into the control plane, with optional inline values
   extraConfigMaps: [ ]
