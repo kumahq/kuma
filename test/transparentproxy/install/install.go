@@ -12,9 +12,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/exec"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	. "github.com/kumahq/kuma/test/framework"
 	test_container "github.com/kumahq/kuma/test/framework/container"
 	"github.com/kumahq/kuma/test/framework/utils"
+	. "github.com/kumahq/kuma/test/transparentproxy"
 )
 
 var (
@@ -46,11 +46,11 @@ func Install() {
 	DescribeTable(
 		"kumactl install transparent-proxy inside Docker container",
 		func(tc testCase) {
-			Expect(TProxyConfig.KumactlLinuxBin).NotTo(BeEmpty())
+			Expect(Config.KumactlLinuxBin).NotTo(BeEmpty())
 
 			container, err := test_container.NewContainerSetup().
 				WithImage(tc.image).
-				WithKumactlBinary(TProxyConfig.KumactlLinuxBin).
+				WithKumactlBinary(Config.KumactlLinuxBin).
 				WithPostStart(tc.postStart).
 				WithPrivileged(true).
 				Start(context.Background())
@@ -64,7 +64,7 @@ func Install() {
 			EnsureInstallSuccessful(container, tc.additionalFlags)
 			EnsureGoldenFiles(container, tc)
 		},
-		EntriesForImages(TProxyConfig.DockerImagesToTest),
+		EntriesForImages(Config.DockerImagesToTest),
 	)
 }
 
@@ -104,7 +104,7 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 		"iptables-nft-save",
 	}
 
-	if TProxyConfig.IPV6 {
+	if Config.IPV6 {
 		saveCmds = append(
 			saveCmds,
 			"ip6tables-save",
@@ -185,7 +185,7 @@ func genEntriesForImages(
 	var entries []TableEntry
 	var flags [][]string
 
-	for _, flag := range TProxyConfig.InstallFlagsToTest {
+	for _, flag := range Config.InstallFlagsToTest {
 		flags = append(flags, strings.Split(flag, " "))
 	}
 
