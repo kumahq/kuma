@@ -613,6 +613,14 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTrafficDropInvalidPackets] = "true"
 	}
 
+	iptablesLogs, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
+	if err != nil {
+		return nil, err
+	}
+	if iptablesLogs {
+		annotations[metadata.KumaTrafficIptablesLogs] = "true"
+	}
+
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err

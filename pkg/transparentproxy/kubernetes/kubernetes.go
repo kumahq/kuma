@@ -48,6 +48,7 @@ type PodRedirect struct {
 	TransparentProxyEbpfProgramsSourcePath   string
 	ExcludeOutboundPortsForUIDs              []string
 	DropInvalidPackets                       bool
+	IptablesLogs                             bool
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -113,6 +114,8 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	podRedirect.IpFamilyMode, _ = metadata.Annotations(pod.Annotations).GetStringWithDefault(metadata.IpFamilyModeDualStack, metadata.KumaTransparentProxyingIPFamilyMode)
 
 	podRedirect.DropInvalidPackets, _, _ = metadata.Annotations(pod.Annotations).GetBoolean(metadata.KumaTrafficDropInvalidPackets)
+
+	podRedirect.IptablesLogs, _, _ = metadata.Annotations(pod.Annotations).GetBoolean(metadata.KumaTrafficIptablesLogs)
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
@@ -213,6 +216,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 	if pr.DropInvalidPackets {
 		result = append(result, "--drop-invalid-packets")
+	}
+
+	if pr.IptablesLogs {
+		result = append(result, "--iptables-logs")
 	}
 
 	return result
