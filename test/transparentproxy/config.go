@@ -70,6 +70,10 @@ var defaultConfig = TransparentProxyConfig{
 		"Alpine 3":          "alpine:3.20.1",
 		"Amazon Linux 2023": "amazonlinux:2023.4.20240611.0",
 		"Amazon Linux 2":    "amazonlinux:2.0.20240610.1",
+		"Fedora 41":         "fedora:41",
+		"Fedora 40":         "fedora:40",
+		"Fedora 39":         "fedora:39",
+		"Fedora 38":         "fedora:38",
 	},
 	InstallFlagsToTest: []string{
 		"--redirect-all-dns-traffic",
