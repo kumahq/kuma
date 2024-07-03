@@ -72,7 +72,7 @@ hadolint:
 lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
 
 .PHONY: check
-check: format/common lint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format lint ## Dev: Run code checks (go fmt, go vet, ...)
 	@untracked() { git ls-files --other --directory --exclude-standard --no-empty-directory; }; \
 	check-changes() { git --no-pager diff "$$@"; }; \
 	if [ $$(untracked | wc -l) -gt 0 ]; then \
