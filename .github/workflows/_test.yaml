@@ -104,7 +104,6 @@ jobs:
             {
               "trusted_builds": {
                 "amd64": [
-                  "ubuntu-latest",
                   "ubuntu-latest-kong"
                 ],
                 "arm64": [
@@ -130,11 +129,8 @@ jobs:
             COUNT=$(echo $ALL_RUNNERS | jq -r ".$ARCH | length")
             if [[ $COUNT -eq 0 ]]; then
               ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=\"\"")
-            elif [[ $COUNT -eq 1 ]]; then
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[0]")
             else
-              RANDOM_INDEX=$(( $RANDOM % $COUNT ))
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[$RANDOM_INDEX]")
+              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[0]")
             fi
           done
 
