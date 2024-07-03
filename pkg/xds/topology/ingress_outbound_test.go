@@ -44,7 +44,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 			},
 
 			Entry("external service for specific zone through local egress", testCase{
-				mesh: samples.MeshDefaultBuilder().WithEgressRoutingEnabled().Build(),
+				mesh: samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Build(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: "default"},
