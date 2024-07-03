@@ -11,6 +11,7 @@ import (
 )
 
 type HttpOutboundRouteConfigurer struct {
+	Name    string
 	Service string
 	Routes  envoy_common.Routes
 	DpTags  mesh_proto.MultiValueTagSet
@@ -19,8 +20,14 @@ type HttpOutboundRouteConfigurer struct {
 var _ FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+	var name string
+	if c.Name == "" {
+		name = envoy_names.GetOutboundRouteName(c.Service)
+	} else {
+		name = c.Name
+	}
 	static := HttpStaticRouteConfigurer{
-		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, envoy_names.GetOutboundRouteName(c.Service)).
+		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3, name).
 			Configure(envoy_routes.CommonRouteConfiguration()).
 			Configure(envoy_routes.TagsHeader(c.DpTags)).
 			Configure(envoy_routes.VirtualHost(envoy_virtual_hosts.NewVirtualHostBuilder(envoy_common.APIV3, c.Service).

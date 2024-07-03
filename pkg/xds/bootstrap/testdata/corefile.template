@@ -11,9 +11,3 @@
     prometheus localhost:{{ .PrometheusPort }}
     errors
 }
-
-.:{{ .CoreDNSEmptyPort }} {
-    template ANY ANY . {
-      rcode NXDOMAIN
-    }
-}

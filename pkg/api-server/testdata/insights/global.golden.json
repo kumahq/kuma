@@ -5,6 +5,9 @@
   "GlobalSecret": {
    "total": 0
   },
+  "HostnameGenerator": {
+   "total": 0
+  },
   "Mesh": {
    "total": 3
   },

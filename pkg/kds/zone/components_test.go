@@ -14,12 +14,14 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -31,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("Zone Sync", func() {
@@ -110,12 +111,13 @@ var _ = Describe("Zone Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 4 global-scope types
+		// plus the global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
+			hostnamegenerator_api.HostnameGeneratorType,
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
@@ -237,12 +239,12 @@ var _ = Describe("Zone Sync", func() {
 
 	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer
-		runtimeInfo := runtime.TestRuntimeInfo{InstanceId: "global-inst", Mode: config_core.Global}
+		runtimeInfo := core_runtime.NewRuntimeInfo("global-inst", config_core.Global)
 		newPolicySyncClient := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) kds_client_v2.KDSSyncClient {
 			return kds_client_v2.NewKDSSyncClient(
 				core.Log.WithName("kds-sink"),
 				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-				kds_client_v2.NewDeltaKDSStream(cs, zoneName, &runtimeInfo, ""),
+				kds_client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
 				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
 				0,
 			)
@@ -299,6 +301,48 @@ var _ = Describe("Zone Sync", func() {
 
 		It("should sync policies from global store to the local", func() {
 			VerifySyncResourcesFromGlobalToLocal()
+		})
+
+		It("should sync policies from global store to the local after resource is valid", func() {
+			// incorrct mesh
+			invalidMesh := &mesh_proto.Mesh{
+				Mtls: &mesh_proto.Mesh_Mtls{
+					EnabledBackend: "ca-1",
+				},
+			}
+			err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: invalidMesh}, store.CreateByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// should not be synchronized
+			Consistently(func(g Gomega) {
+				actual := mesh.MeshResourceList{}
+				err := zoneStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(BeEmpty())
+			}, "1s", "100ms").Should(Succeed())
+
+			mesh1 := mesh.NewMeshResource()
+			err = globalStore.Get(context.Background(), mesh1, store.GetByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when mesh is a valid resource
+			mesh1.Spec = samples.Mesh1
+			err = globalStore.Update(context.Background(), mesh1)
+			Expect(err).ToNot(HaveOccurred())
+
+			// should be synchronized
+			Eventually(func(g Gomega) {
+				actual := mesh.MeshResourceList{}
+				err := zoneStore.List(context.Background(), &actual)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(HaveLen(1))
+			}, "1s", "100ms").Should(Succeed())
+
+			actual := mesh.MeshResourceList{}
+			err = zoneStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		})
 
 		It("should sync ingresses", func() {

@@ -11,9 +11,10 @@ import (
 )
 
 type ProvidedEndpointClusterConfigurer struct {
-	Name      string
-	Endpoints []xds.Endpoint
-	HasIPv6   bool
+	Name                           string
+	Endpoints                      []xds.Endpoint
+	HasIPv6                        bool
+	AllowMixingIpAndNonIpEndpoints bool
 }
 
 var _ ClusterConfigurer = &ProvidedEndpointClusterConfigurer{}
@@ -34,7 +35,7 @@ func (e *ProvidedEndpointClusterConfigurer) Configure(c *envoy_cluster.Cluster) 
 			nonIpEndpoints = append(nonIpEndpoints, endpoint)
 		}
 	}
-	if len(nonIpEndpoints) > 0 && len(ipEndpoints) > 0 {
+	if !e.AllowMixingIpAndNonIpEndpoints && len(nonIpEndpoints) > 0 && len(ipEndpoints) > 0 {
 		return errors.New("cluster is a mix of ips and hostnames, can't generate envoy config.")
 	}
 	if len(nonIpEndpoints) > 0 {

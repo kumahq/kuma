@@ -1,25 +1,32 @@
-metadata:
-  creationTimestamp: null
-  labels:
-    kuma.io/mesh: default
-  name: example
-  namespace: demo
-  ownerReferences:
-  - apiVersion: v1
-    kind: Service
+items:
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/is-headless-service: "false"
+      k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
     name: example
-    uid: ""
-  resourceVersion: "1"
-spec:
-  ports:
-  - port: 80
-    protocol: http
-    targetPort: 8080
-  - port: 443
-    protocol: tcp
-    targetPort: 8443
-  selector: {}
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Service
+      name: example
+      uid: ""
+    resourceVersion: "1"
+  spec:
+    ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneTags:
+        k8s.kuma.io/namespace: demo
   status:
     tls: {}
     vips:
     - ip: 192.168.0.1
+metadata: {}

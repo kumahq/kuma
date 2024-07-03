@@ -18,12 +18,14 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/matching"
 	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshaccesslog"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshexternalservice"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshfaultinjection"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshhealthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshloadbalancingstrategy"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshproxypatch"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshratelimit"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshretry"
+	"github.com/kumahq/kuma/test/e2e_env/universal/meshservice"
 	"github.com/kumahq/kuma/test/e2e_env/universal/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/universal/mtls"
 	"github.com/kumahq/kuma/test/e2e_env/universal/observability"
@@ -51,6 +53,7 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = E2ESynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
+	_ = SynchronizedAfterSuite(func() {}, universal.ExpectCpToNotPanic)
 	_ = ReportAfterSuite("cleanup", func(report Report) {
 		if Config.CleanupLogsOnSuccess {
 			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
@@ -73,6 +76,8 @@ var (
 	_ = Describe("External Services", externalservices.Policy, Ordered)
 	_ = Describe("External Services through Zone Egress", externalservices.ThroughZoneEgress, Ordered)
 	_ = Describe("Inspect", inspect.Inspect, Ordered)
+	_ = Describe("Mesh External Services", meshexternalservice.MeshExternalService, Ordered)
+	_ = Describe("MeshService", meshservice.MeshService, Ordered)
 	_ = Describe("Applications Metrics", observability.ApplicationsMetrics, Ordered)
 	_ = Describe("Tracing", observability.Tracing, Ordered)
 	_ = Describe("MeshTrace", observability.PluginTest, Ordered)
@@ -100,7 +105,7 @@ var (
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
-	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Label("arm-not-supported"), Ordered)
+	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
 	_ = Describe("Leader Election", resilience.LeaderElectionPostgres, Ordered)
 	_ = Describe("MeshFaultInjection", meshfaultinjection.Policy, Ordered)

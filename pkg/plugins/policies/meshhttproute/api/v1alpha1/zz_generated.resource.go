@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshHTTPRouteResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshHTTPRouteResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshHTTPRouteType,
-	Resource:            NewMeshHTTPRouteResource(),
-	ResourceList:        &MeshHTTPRouteResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshhttproutes",
-	KumactlArg:          "meshhttproute",
-	KumactlListArg:      "meshhttproutes",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh HTTP Route",
-	PluralDisplayName:   "Mesh HTTP Routes",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshHTTPRouteType,
+	Resource:                     NewMeshHTTPRouteResource(),
+	ResourceList:                 &MeshHTTPRouteResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshhttproutes",
+	KumactlArg:                   "meshhttproute",
+	KumactlListArg:               "meshhttproutes",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh HTTP Route",
+	PluralDisplayName:            "Mesh HTTP Routes",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

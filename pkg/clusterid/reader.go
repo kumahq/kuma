@@ -31,13 +31,13 @@ func (c *clusterIDReader) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			clusterID, err := c.read(ctx)
+			clusterID, clusterCreationTime, err := c.read(ctx)
 			if err != nil {
 				log.Error(err, "could not read cluster ID") // just log, do not exit to retry operation
 			}
 			if clusterID != "" {
 				log.Info("setting cluster ID", "clusterID", clusterID)
-				c.rt.SetClusterId(clusterID)
+				c.rt.SetClusterInfo(clusterID, clusterCreationTime)
 				return nil
 			}
 		case <-stop:
@@ -50,14 +50,14 @@ func (c *clusterIDReader) NeedLeaderElection() bool {
 	return false
 }
 
-func (c *clusterIDReader) read(ctx context.Context) (string, error) {
+func (c *clusterIDReader) read(ctx context.Context) (string, time.Time, error) {
 	resource := config_model.NewConfigResource()
 	err := c.rt.ConfigManager().Get(ctx, resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			return "", nil
+			return "", time.Time{}, nil
 		}
-		return "", err
+		return "", time.Time{}, err
 	}
-	return resource.Spec.Config, nil
+	return resource.Spec.Config, resource.Meta.GetCreationTime(), nil
 }

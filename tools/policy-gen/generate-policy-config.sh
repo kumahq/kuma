@@ -28,11 +28,6 @@ var DefaultEnabled = []string{
   $policies
 }
 
-func Default() *Config {
-	return &Config{
-		Enabled: DefaultEnabled,
-	}
-}
 " > "${CONFIG_POLICIES_FILE}"
 
 gofmt -w "${CONFIG_POLICIES_FILE}"

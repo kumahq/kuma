@@ -1,0 +1,11 @@
+match:
+  type: HostnameGenerator
+  port: 80
+  protocol: http
+endpoints:
+  - address: 1.1.1.1
+    port: 12345
+tls:
+  version:
+    min: TLS13
+    max: TLS12

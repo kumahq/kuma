@@ -41,11 +41,14 @@ func (f *from) Resource(r core_model.Resource) Resource {
 
 	meta := f.Meta(r)
 	if r.Descriptor().IsPluginOriginated {
-		return &v1alpha1.Resource{
+		res := &v1alpha1.Resource{
 			ResourceMeta: meta,
 			Spec:         r.GetSpec(),
-			Status:       r.GetStatus(),
 		}
+		if r.Descriptor().HasStatus {
+			res.Status = r.GetStatus()
+		}
+		return res
 	} else {
 		return &unversioned.Resource{
 			Meta: meta,

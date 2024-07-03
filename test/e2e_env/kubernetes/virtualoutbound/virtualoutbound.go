@@ -24,7 +24,7 @@ func VirtualOutbound() {
 			Install(testserver.Install(
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
-				testserver.WithStatefulSet(true),
+				testserver.WithStatefulSet(),
 				testserver.WithReplicas(2),
 			)).
 			Setup(kubernetes.Cluster)

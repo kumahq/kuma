@@ -126,8 +126,6 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_CORE_DNS_BINARY_PATH
       value: coredns
-    - name: KUMA_DNS_CORE_DNS_EMPTY_PORT
-      value: "25054"
     - name: KUMA_DNS_CORE_DNS_PORT
       value: "25053"
     - name: KUMA_DNS_ENABLED

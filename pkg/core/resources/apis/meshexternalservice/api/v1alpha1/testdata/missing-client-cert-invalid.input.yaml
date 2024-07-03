@@ -1,0 +1,11 @@
+match:
+  type: HostnameGenerator
+  port: 8080
+  protocol: http
+endpoints:
+  - address: 1.1.1.1
+    port: 12345
+tls:
+  verification:
+    clientKey:
+      secret: "123"

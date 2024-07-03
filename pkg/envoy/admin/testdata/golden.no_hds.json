@@ -25,7 +25,6 @@
             "dynamicMetadata": {
               "version.dependencies.coredns": "1.8.3"
             },
-            "dataplane.dns.empty.port": "15055",
             "dataplane.admin.port": "6606",
             "dataplane.resource": "{\"type\":\"Dataplane\",\"mesh\":\"default\",\"name\":\"backend-1\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\",\"networking\":{\"address\":\"127.0.0.1\",\"inbound\":[{\"port\":10010,\"servicePort\":10011,\"tags\":{\"kuma.io/protocol\":\"tcp\",\"kuma.io/region\":\"reg1\",\"kuma.io/service\":\"backend\",\"kuma.io/sub-zone\":\"subzone1\",\"version\":\"1\"}}],\"outbound\":[{\"port\":10006,\"tags\":{\"kuma.io/service\":\"gateway\"}}],\"admin\":{\"port\":6606}}}"
           },

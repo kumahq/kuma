@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
-	"time"
 
+	"github.com/emicklei/go-restful/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -33,8 +33,10 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	envoyadmin_access "github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
+	"github.com/kumahq/kuma/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/pkg/intercp"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -52,35 +54,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
-
-var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
-
-type TestRuntimeInfo struct {
-	InstanceId string
-	ClusterId  string
-	StartTime  time.Time
-	Mode       config_core.CpMode
-}
-
-func (i *TestRuntimeInfo) GetMode() config_core.CpMode {
-	return i.Mode
-}
-
-func (i *TestRuntimeInfo) GetInstanceId() string {
-	return i.InstanceId
-}
-
-func (i *TestRuntimeInfo) SetClusterId(clusterId string) {
-	i.ClusterId = clusterId
-}
-
-func (i *TestRuntimeInfo) GetClusterId() string {
-	return i.ClusterId
-}
-
-func (i *TestRuntimeInfo) GetStartTime() time.Time {
-	return i.StartTime
-}
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	if cfg.DpServer.Authn.DpProxy.Type == "" {
@@ -262,4 +235,91 @@ func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model
 		out["eds"] = "eds"
 	}
 	return json.Marshal(out)
+}
+
+type TestRuntime struct {
+	core_runtime.Runtime
+	rm                   core_manager.ResourceManager
+	config               kuma_cp.Config
+	metrics              metrics.Metrics
+	apiInstaller         customization.APIInstaller
+	access               core_runtime.Access
+	tokenIssuers         tokens_builtin.TokenIssuers
+	globalInsightService globalinsight.GlobalInsightService
+}
+
+func NewTestRuntime(
+	rm core_manager.ResourceManager,
+	config kuma_cp.Config,
+	metrics metrics.Metrics,
+	apiInstaller customization.APIInstaller,
+	access core_runtime.Access,
+	tokenIssuers tokens_builtin.TokenIssuers,
+	globalInsightService globalinsight.GlobalInsightService,
+) *TestRuntime {
+	return &TestRuntime{
+		rm:                   rm,
+		config:               config,
+		metrics:              metrics,
+		apiInstaller:         apiInstaller,
+		access:               access,
+		tokenIssuers:         tokenIssuers,
+		globalInsightService: globalInsightService,
+	}
+}
+
+func (r *TestRuntime) GetInstanceId() string {
+	return "instance-id"
+}
+
+func (r *TestRuntime) GetClusterId() string {
+	return "cluster-id"
+}
+
+func (r *TestRuntime) Config() kuma_cp.Config {
+	return r.config
+}
+
+func (r *TestRuntime) ResourceManager() core_manager.ResourceManager {
+	return r.rm
+}
+
+func (r *TestRuntime) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
+	return r.rm
+}
+
+func (r *TestRuntime) GlobalInsightService() globalinsight.GlobalInsightService {
+	return r.globalInsightService
+}
+
+func (r *TestRuntime) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return &DummyEnvoyAdminClient{}
+}
+
+func (r *TestRuntime) Metrics() metrics.Metrics {
+	return r.metrics
+}
+
+func (r *TestRuntime) APIInstaller() customization.APIInstaller {
+	return r.apiInstaller
+}
+
+func (r *TestRuntime) APIServerAuthenticator() authn.Authenticator {
+	return certs.ClientCertAuthenticator
+}
+
+func (r *TestRuntime) Access() core_runtime.Access {
+	return r.access
+}
+
+func (r *TestRuntime) TokenIssuers() tokens_builtin.TokenIssuers {
+	return r.tokenIssuers
+}
+
+func (r *TestRuntime) APIWebServiceCustomize() func(ws *restful.WebService) error {
+	return func(*restful.WebService) error { return nil }
+}
+
+func (r *TestRuntime) Extensions() context.Context {
+	return context.Background()
 }

@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshTCPRouteResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshTCPRouteResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshTCPRouteType,
-	Resource:            NewMeshTCPRouteResource(),
-	ResourceList:        &MeshTCPRouteResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshtcproutes",
-	KumactlArg:          "meshtcproute",
-	KumactlListArg:      "meshtcproutes",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh TCP Route",
-	PluralDisplayName:   "Mesh TCP Routes",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshTCPRouteType,
+	Resource:                     NewMeshTCPRouteResource(),
+	ResourceList:                 &MeshTCPRouteResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshtcproutes",
+	KumactlArg:                   "meshtcproute",
+	KumactlListArg:               "meshtcproutes",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh TCP Route",
+	PluralDisplayName:            "Mesh TCP Routes",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

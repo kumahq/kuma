@@ -17,7 +17,7 @@
      {
       "port": 6379,
       "targetPort": 6379,
-      "protocol": "tcp"
+      "appProtocol": "tcp"
      }
     ]
    },
@@ -46,7 +46,7 @@
      {
       "port": 6379,
       "targetPort": 6379,
-      "protocol": "tcp"
+      "appProtocol": "tcp"
      }
     ]
    },

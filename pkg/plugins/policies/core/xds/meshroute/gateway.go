@@ -29,11 +29,12 @@ type listenersHostnames struct {
 }
 
 type MapGatewayRulesToHosts func(
-	xds_context.ResourceMap,
-	rules.GatewayRules,
-	string,
-	*mesh_proto.MeshGateway_Listener,
-	[]Sublistener,
+	resources xds_context.ResourceMap,
+	rules rules.GatewayRules,
+	address string,
+	port uint32,
+	protocol mesh_proto.MeshGateway_Listener_Protocol,
+	sublisteners []Sublistener,
 ) []plugin_gateway.GatewayListenerHostname
 
 func CollectListenerInfos(
@@ -88,6 +89,7 @@ func CollectListenerInfos(
 			ctx,
 			meshCtx.Resource,
 			matchedExternalServices,
+			meshCtx.Resources.MeshExternalServices().Items,
 			meshCtx.DataSourceLoader,
 			proxy.Zone,
 		)
@@ -99,7 +101,8 @@ func CollectListenerInfos(
 			meshCtx.Resources.MeshLocalResources,
 			rawRules,
 			networking.Address,
-			listener.listener,
+			listener.listener.GetPort(),
+			listener.listener.GetProtocol(),
 			listener.sublisteners,
 		)
 		infos[port] = plugin_gateway.GatewayListenerInfo{

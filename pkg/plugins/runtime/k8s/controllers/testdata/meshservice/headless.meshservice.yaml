@@ -1,0 +1,96 @@
+items:
+- metadata:
+    creationTimestamp: null
+    labels:
+      apps.kubernetes.io/pod-index: "1"
+      k8s.kuma.io/is-headless-service: "true"
+      k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+      statefulset.kubernetes.io/pod-name: example-1
+    name: example-1-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-1
+      uid: example-1-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-1.demo
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.5
+- metadata:
+    creationTimestamp: null
+    labels:
+      apps.kubernetes.io/pod-index: "2"
+      k8s.kuma.io/is-headless-service: "true"
+      k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+      statefulset.kubernetes.io/pod-name: example-2
+    name: example-2-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: example-2
+      uid: example-2-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: example-2.demo
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.6
+- metadata:
+    creationTimestamp: null
+    labels:
+      k8s.kuma.io/is-headless-service: "true"
+      k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+    name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Pod
+      name: very-long-very-long-very-long-very-long-very-long-v
+      uid: very-long-1
+    resourceVersion: "1"
+  spec:
+    ports:
+    - appProtocol: http
+      port: 80
+      targetPort: 8080
+    - appProtocol: tcp
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneRef:
+        name: very-long-very-long-very-long-very-long-very-long-v.demo
+  status:
+    tls: {}
+    vips:
+    - ip: 192.168.0.7
+metadata: {}

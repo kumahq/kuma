@@ -3,7 +3,6 @@ package meshfaultinjection
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -68,7 +67,7 @@ spec:
                 value: 5s
                 percentage: 3
               responseBandwidth:
-                limit: 10mbps
+                limit: 10Mbps
                 percentage: 1
             - delay:
                 value: 11s
@@ -85,7 +84,7 @@ spec:
                 value: 5s
                 percentage: "3.2"
             - responseBandwidth:
-                limit: 10mbps
+                limit: 10Mbps
                 percentage: 1
 `, Config.KumaNamespace, meshName))(kubernetes.Cluster)).To(Succeed())
 
@@ -94,66 +93,5 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mrls).To(HaveLen(1))
 		Expect(mrls[0]).To(Equal(fmt.Sprintf("mesh-fault-injection.%s", Config.KumaNamespace)))
-	})
-
-	It("should deny creating policy in the non-system namespace", func() {
-		// given no MeshRateLimit
-		mrls, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshfaultinjections", meshName)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(mrls).To(BeEmpty())
-
-		// when
-		err = k8s.KubectlApplyFromStringE(
-			kubernetes.Cluster.GetTesting(),
-			kubernetes.Cluster.GetKubectlOptions(), fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshFaultInjection
-metadata:
-  name: mesh-fault-injection
-  namespace: default
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshService
-    name: backend
-  from:
-    - targetRef:
-        kind: MeshServiceSubset
-        name: frontend
-        tags:
-          kuma.io/zone: us-east
-      default:
-          http:
-            - abort:
-                httpStatus: 500
-                percentage: 3
-              delay:
-                value: 5s
-                percentage: 3
-              responseBandwidth:
-                limit: 10mbps
-                percentage: 1
-            - delay:
-                value: 11s
-                percentage: 2
-    - targetRef:
-        kind: MeshService
-        name: test-server
-      default:
-          http:
-            - abort:
-                httpStatus: 500
-                percentage: 3
-            - delay:
-                value: 5s
-                percentage: 3
-            - responseBandwidth:
-                limit: 10mbps
-                percentage: 1
-`, meshName))
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("policy can only be created in the system namespace:%s", Config.KumaNamespace)))
 	})
 }

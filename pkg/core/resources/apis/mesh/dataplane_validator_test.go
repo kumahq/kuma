@@ -279,7 +279,7 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: redis
                 metrics:
                   type: prometheus`),
-		Entry("dataplane with backend ref", `
+		Entry("dataplane with backend ref for MeshService", `
             type: Dataplane
             name: dp-1
             mesh: default
@@ -296,6 +296,23 @@ var _ = Describe("Dataplane", func() {
                     kind: MeshService
                     name: xyz
                     port: 80`,
+		),
+		Entry("dataplane with backend ref for MeshExternalService", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  backendRef:
+                    kind: MeshExternalService
+                    name: xyz`,
 		),
 	)
 
@@ -1196,13 +1213,13 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.outbound[0].backendRef.kind
-                  message: 'invalid value. Available values are: MeshService'
+                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
                 - field: networking.outbound[0].backendRef.name
                   message: cannot be empty
                 - field: networking.outbound[0].backendRef.port
                   message: port must be in the range [1, 65535]`,
 		}),
-		Entry("backend ref clashes with tags or service", testCase{
+		Entry("backend ref clashes with tags or service and missing port", testCase{
 			dataplane: `
             type: Dataplane
             name: dp-1
@@ -1229,12 +1246,13 @@ var _ = Describe("Dataplane", func() {
                     service: xyz
                   backendRef:
                     kind: MeshService
-                    name: xyz
-                    port: 8080`,
+                    name: xyz`,
 			expected: `
                 violations:
                 - field: networking.outbound[0].backendRef
                   message: both backendRef and tags/service cannot be defined
+                - field: networking.outbound[1].backendRef.port
+                  message: port must be in the range [1, 65535]
                 - field: networking.outbound[1].backendRef
                   message: both backendRef and tags/service cannot be defined`,
 		}),

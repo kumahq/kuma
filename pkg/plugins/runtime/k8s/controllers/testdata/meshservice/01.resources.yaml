@@ -6,11 +6,13 @@ metadata:
 spec:
   clusterIP: 192.168.0.1
   ports:
-    - appProtocol: http
+    - name: http-port
+      appProtocol: http
       port: 80
       targetPort: 8080
       protocol: TCP
-    - port: 443
+    - name: tcp-port
+      port: 443
       targetPort: 8443
       protocol: TCP
     - port: 1234 # ignored because it's UDP

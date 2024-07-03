@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "MeshPassthrough"
+
+paths:
+  /meshes/{mesh}/meshpassthroughs/{name}:
+    get:
+      summary: Returns MeshPassthrough entity
+      tags: [ "MeshPassthrough" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshPassthrough
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshPassthroughItem"
+
+    put:
+      summary: Creates or Updates MeshPassthrough entity
+      tags: [ "MeshPassthrough" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshPassthrough
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshPassthroughItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse'
+
+    delete:
+      summary: Deletes MeshPassthrough entity
+      tags: [ "MeshPassthrough" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshPassthrough
+      responses:
+        '200':
+          description: Successful response
+
+  /meshes/{mesh}/meshpassthroughs:
+    get:
+      summary: Returns a list of MeshPassthrough in the mesh.
+      tags: [ "MeshPassthrough" ]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshPassthroughList"
+
+components:
+  schemas:
+    MeshPassthroughItem:
+      $ref: 'schema.yaml'
+    MeshPassthroughCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: |
+            warnings is a list of warning messages to return to the requesting Kuma API clients.
+            Warning messages describe a problem the client making the API request should correct or be aware of.
+          items:
+            type: string
+
+  responses:
+    MeshPassthroughItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshPassthroughItem'
+    MeshPassthroughList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshPassthroughItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

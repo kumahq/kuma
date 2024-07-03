@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshTrafficPermissionResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshTrafficPermissionResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshTrafficPermissionType,
-	Resource:            NewMeshTrafficPermissionResource(),
-	ResourceList:        &MeshTrafficPermissionResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshtrafficpermissions",
-	KumactlArg:          "meshtrafficpermission",
-	KumactlListArg:      "meshtrafficpermissions",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Traffic Permission",
-	PluralDisplayName:   "Mesh Traffic Permissions",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshTrafficPermissionType,
+	Resource:                     NewMeshTrafficPermissionResource(),
+	ResourceList:                 &MeshTrafficPermissionResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshtrafficpermissions",
+	KumactlArg:                   "meshtrafficpermission",
+	KumactlListArg:               "meshtrafficpermissions",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Traffic Permission",
+	PluralDisplayName:            "Mesh Traffic Permissions",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

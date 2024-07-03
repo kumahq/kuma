@@ -53,7 +53,7 @@ var programs = []*Program{
 	{
 		Name: "mb_connect",
 		Flags: func(
-			cfg config.Config,
+			cfg config.InitializedConfig,
 			cgroup string,
 			bpffs string,
 		) ([]string, error) {
@@ -76,7 +76,7 @@ var programs = []*Program{
 	{
 		Name: "mb_sockops",
 		Flags: func(
-			cfg config.Config,
+			cfg config.InitializedConfig,
 			cgroup string,
 			bpffs string,
 		) ([]string, error) {
@@ -105,7 +105,7 @@ var programs = []*Program{
 	{
 		Name: "mb_sendmsg",
 		Flags: func(
-			cfg config.Config,
+			cfg config.InitializedConfig,
 			cgroup string,
 			bpffs string,
 		) ([]string, error) {
@@ -124,7 +124,7 @@ var programs = []*Program{
 	{
 		Name: "mb_recvmsg",
 		Flags: func(
-			cfg config.Config,
+			cfg config.InitializedConfig,
 			cgroup string,
 			bpffs string,
 		) ([]string, error) {
@@ -150,7 +150,7 @@ var programs = []*Program{
 	{
 		Name: "mb_tc",
 		Flags: func(
-			cfg config.Config,
+			cfg config.InitializedConfig,
 			cgroup string,
 			bpffs string,
 		) ([]string, error) {
@@ -207,7 +207,7 @@ func ipStrToPtr(ipstr string) (unsafe.Pointer, error) {
 	return unsafe.Pointer(&ip[0]), nil
 }
 
-func LoadAndAttachEbpfPrograms(programs []*Program, cfg config.Config) error {
+func LoadAndAttachEbpfPrograms(programs []*Program, cfg config.InitializedConfig) error {
 	var errs []string
 
 	cgroup, err := getCgroupPath(cfg)

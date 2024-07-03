@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/vishvananda/netlink"
@@ -42,7 +43,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 		func(randomPort uint16) {
 			// given
 			address := udp.GenRandomAddressIPv4(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -57,7 +58,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -114,7 +117,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 		func(randomPort uint16) {
 			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 			// given
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -134,7 +137,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			originalAddress := &net.UDPAddr{IP: net.ParseIP(consts.LocalhostIPv4), Port: int(consts.DNSPort)}
 			redirectedToAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
@@ -204,7 +209,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 			// given
 			dnsUserUid := uintptr(4201) // see /.github/workflows/blackbox-tests.yaml:76
 			address := udp.GenRandomAddressIPv6(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -225,7 +230,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			redirectedAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 			originalAddress := &net.UDPAddr{IP: net.ParseIP(consts.LocalhostIPv6), Port: int(consts.DNSPort)}
 
@@ -294,7 +301,7 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 		func(dnsPort, outboundPort uint16) {
 			// given
 			address := tcp.GenRandomAddressIPv4(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -310,7 +317,9 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, dnsPort)
 
 			readyC, errC := tcp.UnsafeStartTCPServer(
@@ -381,7 +390,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 		func(randomPort uint16) {
 			// given
 			address := udp.GenRandomAddressIPv6(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -397,7 +406,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -454,7 +465,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 		func(dnsPort, outboundPort uint16) {
 			// given
 			address := tcp.GenRandomAddressIPv6(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -471,7 +482,9 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, dnsPort)
 
 			readyC, errC := tcp.UnsafeStartTCPServer(
@@ -546,7 +559,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 			uid := uintptr(5678)
 			s1Address := fmt.Sprintf("%s:%d", ns.Veth().PeerAddress(), consts.DNSPort)
 			s2Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, port)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:            true,
@@ -563,7 +576,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -661,7 +676,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			uid := uintptr(5678)
 			s1Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, consts.DNSPort)
 			s2Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, port)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:            true,
@@ -679,7 +694,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 				IPv6:          true,
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -773,7 +790,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 			// given
 			dnsServers := getDnsServers("testdata/resolv4.conf", 2, false)
 			randomAddressDnsRequest := udp.GenRandomAddressIPv4(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:          true,
@@ -783,7 +800,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).NotTo(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -848,7 +867,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 			// given
 			dnsServers := getDnsServers("testdata/resolv6.conf", 2, true)
 			randomAddressDnsRequest := udp.GenRandomAddressIPv6(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:          true,
@@ -859,7 +878,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 				},
 				RuntimeStdout: io.Discard,
 				IPv6:          true,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -929,7 +950,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			s1Address := fmt.Sprintf("%s:%d", dnsServers[0].IP.String(), consts.DNSPort)
 			s2Address := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, port)
 			notRedirected := udp.GenRandomAddressIPv4(consts.DNSPort).AddrPort().String()
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:            true,
@@ -941,7 +962,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -1057,7 +1080,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 		func(randomPort uint16) {
 			// given
 			address := udp.GenRandomAddressIPv4(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -1074,7 +1097,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 					VNet: config.VNet{Networks: []string{"s-peer+:192.168.0.2/16"}},
 				},
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf(":%d", randomPort)
 			readyC, errC := udp.UnsafeStartUDPServer(ns2, serverAddress, udp.ReplyWithReceivedMsg)
 			Consistently(errC).ShouldNot(Receive())
@@ -1145,7 +1170,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 		func(randomPort uint16) {
 			// given
 			address := udp.GenRandomAddressIPv6(consts.DNSPort)
-			tproxyConfig := config.Config{
+			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
@@ -1163,7 +1188,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}
+			}.Initialize()
+			Expect(err).ToNot(HaveOccurred())
+
 			serverAddress := fmt.Sprintf(":%d", randomPort)
 			readyC, errC := udp.UnsafeStartUDPServer(ns2, serverAddress, udp.ReplyWithReceivedMsg)
 			Consistently(errC).ShouldNot(Receive())
@@ -1210,8 +1237,20 @@ func getDnsServers(configPath string, expectedServers int, isIpv6 bool) []*net.U
 	configPath, err := filepath.Abs(configPath)
 	Expect(err).ToNot(HaveOccurred())
 
-	ipv4, ipv6, err := builder.GetDnsServers(configPath)
+	dnsConfig, err := dns.ClientConfigFromFile(configPath)
 	Expect(err).ToNot(HaveOccurred())
+
+	var ipv4 []string
+	var ipv6 []string
+
+	for _, address := range dnsConfig.Servers {
+		parsed := net.ParseIP(address)
+		if parsed.To4() != nil {
+			ipv4 = append(ipv4, address)
+		} else {
+			ipv6 = append(ipv6, address)
+		}
+	}
 
 	dnsAddresses := ipv4
 	if isIpv6 {

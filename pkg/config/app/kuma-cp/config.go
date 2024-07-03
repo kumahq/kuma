@@ -1,6 +1,7 @@
 package kuma_cp
 
 import (
+	"net"
 	"time"
 
 	"github.com/pkg/errors"
@@ -176,6 +177,8 @@ type Config struct {
 	Policies *policies.Config `json:"policies"`
 	// CoreResources holds configuration for generated core resources like MeshService
 	CoreResources *apis.Config `json:"coreResources"`
+	// IP administration and management config
+	IPAM IPAMConfig `json:"ipam"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -277,6 +280,18 @@ var DefaultConfig = func() Config {
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
 		CoreResources: apis.Default(),
+		IPAM: IPAMConfig{
+			MeshService: MeshServiceIPAM{
+				CIDR: "241.0.0.0/8",
+			},
+			MeshExternalService: MeshExternalServiceIPAM{
+				CIDR: "242.0.0.0/8",
+			},
+			MeshMultiZoneService: MeshMultiZoneServiceIPAM{
+				CIDR: "243.0.0.0/8",
+			},
+			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+		},
 	}
 }
 
@@ -338,6 +353,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Policies.Validate(); err != nil {
 		return errors.Wrap(err, "Policies validation failed")
+	}
+	if err := c.IPAM.Validate(); err != nil {
+		return errors.Wrap(err, "IPAM validation failed")
 	}
 	return nil
 }
@@ -453,9 +471,63 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
+type IPAMConfig struct {
+	MeshService          MeshServiceIPAM          `json:"meshService"`
+	MeshExternalService  MeshExternalServiceIPAM  `json:"meshExternalService"`
+	MeshMultiZoneService MeshMultiZoneServiceIPAM `json:"meshMultiZoneService"`
+	// Interval on which Kuma will allocate new IPs and generate hostnames.
+	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
+}
+
+func (i IPAMConfig) Validate() error {
+	if err := i.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshServie validation failed")
+	}
+	if err := i.MeshExternalService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshExternalServie validation failed")
+	}
+	return nil
+}
+
+type MeshServiceIPAM struct {
+	// CIDR for MeshService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_SERVICE_CIDR"`
+}
+
+func (i MeshServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshServiceCIDR is invalid")
+	}
+	return nil
+}
+
+type MeshExternalServiceIPAM struct {
+	// CIDR for MeshExternalService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"`
+}
+
+func (i MeshExternalServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshExternalServiceCIDR is invalid")
+	}
+	return nil
+}
+
 func (c Config) GetEnvoyAdminPort() uint32 {
 	if c.BootstrapServer == nil || c.BootstrapServer.Params == nil {
 		return 0
 	}
 	return c.BootstrapServer.Params.AdminPort
+}
+
+type MeshMultiZoneServiceIPAM struct {
+	// CIDR for MeshMultiZone IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"`
+}
+
+func (i MeshMultiZoneServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshMultiZoneServiceCIDR is invalid")
+	}
+	return nil
 }

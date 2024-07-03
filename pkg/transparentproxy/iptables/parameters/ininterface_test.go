@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("InInterfaceParameter", func() {
 	DescribeTable("should return ",
-		func(iface string, verbose bool, want string) {
+		func(iface string, verbose bool, want []string) {
 			// when
 			got := InInterface(iface).Build(verbose)
 
@@ -18,15 +18,15 @@ var _ = Describe("InInterfaceParameter", func() {
 		},
 		Entry("interface localhost",
 			"localhost", false,
-			"-i localhost",
+			[]string{"-i", "localhost"},
 		),
 		Entry("interface localhost - verbose",
 			"localhost", true,
-			"--in-interface localhost",
+			[]string{"--in-interface", "localhost"},
 		),
 	)
 	DescribeTable("should return negation ",
-		func(iface string, verbose bool, want string) {
+		func(iface string, verbose bool, want []string) {
 			// when
 			got := InInterface(iface).Negate().Build(verbose)
 
@@ -35,11 +35,11 @@ var _ = Describe("InInterfaceParameter", func() {
 		},
 		Entry("interface localhost",
 			"localhost", false,
-			"! -i localhost",
+			[]string{"!", "-i", "localhost"},
 		),
 		Entry("interface localhost - verbose",
 			"localhost", true,
-			"! --in-interface localhost",
+			[]string{"!", "--in-interface", "localhost"},
 		),
 	)
 })

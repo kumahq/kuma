@@ -7,11 +7,11 @@ on:
       runnersByArch:
         type: string
         required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "circleci"}'
+        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
@@ -43,12 +43,12 @@ jobs:
           echo "run-type=$RUN_TYPE">> $GITHUB_OUTPUT
       - name: "GitHub Actions: check out code"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
       - name: "GitHub Actions: setup go"
         if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version-file: go.mod
       - name: "GitHub Actions: set up cache"
@@ -139,7 +139,7 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-      - uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         if: always()
         with:
           name: e2e-debug-${{ env.E2E_PARAM_TARGET }}

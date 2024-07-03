@@ -116,12 +116,11 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 							StructValue: util_proto.MustToStruct(parameters.Version),
 						},
 					},
-					core_xds.FieldFeatures:            util_proto.MustNewValueForStruct(features),
-					core_xds.FieldWorkdir:             util_proto.MustNewValueForStruct(parameters.Workdir),
-					core_xds.FieldAccessLogSocketPath: util_proto.MustNewValueForStruct(parameters.AccessLogSocketPath),
-					core_xds.FieldMetricsSocketPath:   util_proto.MustNewValueForStruct(parameters.MetricsSocketPath),
-					core_xds.FieldMetricsCertPath:     util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
-					core_xds.FieldMetricsKeyPath:      util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldFeatures:        util_proto.MustNewValueForStruct(features),
+					core_xds.FieldWorkdir:         util_proto.MustNewValueForStruct(parameters.Workdir),
+					core_xds.FieldMetricsCertPath: util_proto.MustNewValueForStruct(parameters.MetricsCertPath),
+					core_xds.FieldMetricsKeyPath:  util_proto.MustNewValueForStruct(parameters.MetricsKeyPath),
+					core_xds.FieldSystemCaPath:    util_proto.MustNewValueForStruct(parameters.SystemCaPath),
 				},
 			},
 		},
@@ -335,9 +334,6 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.DNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
-	if parameters.EmptyDNSPort != 0 {
-		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSEmptyPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
-	}
 	if parameters.ProxyType != "" {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
 	}
@@ -435,6 +431,11 @@ func buildGrpcService(params configParameters, useTokenPath bool) *envoy_core_v3
 }
 
 func buildStaticClusters(parameters configParameters, enableReloadableTokens bool) ([]*envoy_cluster_v3.Cluster, error) {
+	proxyId, err := core_xds.ParseProxyIdFromString(parameters.Id)
+	if err != nil {
+		return nil, err
+	}
+
 	accessLogSink := &envoy_cluster_v3.Cluster{
 		// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
 		Name:           accessLogSinkClusterName,
@@ -457,7 +458,7 @@ func buildStaticClusters(parameters configParameters, enableReloadableTokens boo
 							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Address: &envoy_core_v3.Address{
-										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: parameters.AccessLogSocketPath}},
+										Address: &envoy_core_v3.Address_Pipe{Pipe: &envoy_core_v3.Pipe{Path: core_xds.AccessLogSocketName(parameters.Workdir, proxyId.ToResourceKey().Name, proxyId.ToResourceKey().Mesh)}},
 									},
 								},
 							},

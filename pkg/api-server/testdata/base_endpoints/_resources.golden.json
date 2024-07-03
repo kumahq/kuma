@@ -80,6 +80,15 @@
   },
   {
    "includeInFederation": true,
+   "name": "HostnameGenerator",
+   "path": "hostnamegenerators",
+   "pluralDisplayName": "Hostname Generators",
+   "readOnly": false,
+   "scope": "Global",
+   "singularDisplayName": "Hostname Generator"
+  },
+  {
+   "includeInFederation": true,
    "name": "Mesh",
    "path": "meshes",
    "pluralDisplayName": "Meshes",
@@ -114,6 +123,15 @@
    "readOnly": false,
    "scope": "Mesh",
    "singularDisplayName": "Mesh Circuit Breaker"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshExternalService",
+   "path": "meshexternalservices",
+   "pluralDisplayName": "Mesh External Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh External Service"
   },
   {
    "includeInFederation": true,
@@ -219,6 +237,29 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshMultiZoneService",
+   "path": "meshmultizoneservices",
+   "pluralDisplayName": "Mesh Multi Zone Services",
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Multi Zone Service"
+  },
+  {
+   "includeInFederation": true,
+   "name": "MeshPassthrough",
+   "path": "meshpassthroughs",
+   "pluralDisplayName": "Mesh Passthroughs",
+   "policy": {
+    "hasFromTargetRef": false,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh Passthrough"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshProxyPatch",
    "path": "meshproxypatches",
    "pluralDisplayName": "Mesh Proxy Patches",
@@ -260,7 +301,7 @@
    "singularDisplayName": "Mesh Retry"
   },
   {
-   "includeInFederation": true,
+   "includeInFederation": false,
    "name": "MeshService",
    "path": "meshservices",
    "pluralDisplayName": "Mesh Services",

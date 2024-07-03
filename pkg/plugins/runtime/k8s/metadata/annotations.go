@@ -85,9 +85,6 @@ const (
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
 
-	// KumaTransparentProxyingEngineV1 enables transparent proxy engine v1 (legacy)
-	KumaTransparentProxyingEngineV1 = "kuma.io/transparent-proxying-engine-v1"
-
 	// KumaSidecarDrainTime allows to specify drain time of Kuma DP sidecar.
 	KumaSidecarDrainTime = "kuma.io/sidecar-drain-time"
 
@@ -115,6 +112,16 @@ const (
 	KumaInitFirst = "kuma.io/init-first"
 	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
+
+	// ManagedBy points to the Service that a MeshService is derived from. If
+	// it's converted from a Kubernetes Service, it has the value
+	// "k8s-controller"
+	ManagedBy = "kuma.io/managed-by"
+	// KumaServiceName points to the Service that a MeshService is derived from
+	KumaServiceName = "k8s.kuma.io/service-name"
+
+	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
+	HeadlessService = "k8s.kuma.io/is-headless-service"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

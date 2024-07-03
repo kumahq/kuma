@@ -186,7 +186,9 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			continue
 		}
 		newLabels := r.GetMeta().GetLabels()
-		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) || !maps.Equal(existing.GetMeta().GetLabels(), newLabels) {
+		if !core_model.Equal(existing.GetSpec(), r.GetSpec()) ||
+			!maps.Equal(existing.GetMeta().GetLabels(), newLabels) ||
+			!core_model.Equal(existing.GetStatus(), r.GetStatus()) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
@@ -202,14 +204,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 
 	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
-		for _, r := range onDelete {
-			rk := core_model.MetaToResourceKey(r.GetMeta())
-			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
-			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
-				return err
-			}
-		}
-
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
@@ -227,6 +221,14 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
+				return err
+			}
+		}
+
+		for _, r := range onDelete {
+			rk := core_model.MetaToResourceKey(r.GetMeta())
+			log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
+			if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
 				return err
 			}
 		}
@@ -364,11 +366,15 @@ func GlobalSyncCallback(
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
-				if !supportsHashSuffixes {
-					// todo: remove in 2 releases after 2.6.x
-					return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
-				}
-				return r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
+				// Assuming the global CP was updated first, the prefix check is only necessary
+				// if the client doesn't have `supportsHashSuffixes`.
+				// But maybe some prefixed resources were previously synced, we
+				// can filter them and the zone won't sync them again.
+				// When we are further from this migration we can remove this
+				// check.
+				hasOldStylePrefix := strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", upstream.ControlPlaneId))
+				hasZoneLabel := r.GetMeta().GetLabels()[mesh_proto.ZoneTag] == upstream.ControlPlaneId
+				return hasOldStylePrefix || hasZoneLabel
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}

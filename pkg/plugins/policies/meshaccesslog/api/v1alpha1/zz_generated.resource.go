@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshAccessLogResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshAccessLogResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshAccessLogType,
-	Resource:            NewMeshAccessLogResource(),
-	ResourceList:        &MeshAccessLogResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshaccesslogs",
-	KumactlArg:          "meshaccesslog",
-	KumactlListArg:      "meshaccesslogs",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Access Log",
-	PluralDisplayName:   "Mesh Access Logs",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshAccessLogType,
+	Resource:                     NewMeshAccessLogResource(),
+	ResourceList:                 &MeshAccessLogResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshaccesslogs",
+	KumactlArg:                   "meshaccesslog",
+	KumactlListArg:               "meshaccesslogs",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Access Log",
+	PluralDisplayName:            "Mesh Access Logs",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

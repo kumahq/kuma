@@ -21,10 +21,12 @@ type ClientSideMTLSConfigurer struct {
 	UpstreamService  string
 	LocalMesh        *core_mesh.MeshResource
 	Tags             []tags.Tags
+	SNI              string
 	UpstreamTLSReady bool
+	VerifyIdentities []string
 }
 
-var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
+var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	if !c.UpstreamMesh.MTLSEnabled() || !c.LocalMesh.MTLSEnabled() {
@@ -40,7 +42,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 	distinctTags := tags.DistinctTags(c.Tags)
 	switch {
 	case len(distinctTags) == 0:
-		transportSocket, err := c.createTransportSocket("")
+		transportSocket, err := c.createTransportSocket(c.SNI)
 		if err != nil {
 			return err
 		}
@@ -79,7 +81,11 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	ca := c.SecretsTracker.RequestCa(c.UpstreamMesh.GetMeta().GetName())
 	identity := c.SecretsTracker.RequestIdentityCert()
 
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni)
+	var verifyIdentities []string
+	if c.VerifyIdentities != nil {
+		verifyIdentities = c.VerifyIdentities
+	}
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(identity, ca, c.UpstreamService, sni, verifyIdentities)
 	if err != nil {
 		return nil, err
 	}

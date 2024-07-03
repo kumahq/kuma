@@ -149,6 +149,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Mesh:    "mesh",
 				Name:    "name.namespace",
 				Version: defaultVersion,
+				Workdir: "/tmp",
 			},
 			expectedConfigFile: "generator.default-config-minimal-request.golden.yaml",
 			hdsEnabled:         true,
@@ -172,7 +173,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneToken: "token",
 				Version:        defaultVersion,
 				DNSPort:        53001,
-				EmptyDNSPort:   53002,
+				Workdir:        "/tmp",
 			},
 			expectedConfigFile: "generator.default-config.golden.yaml",
 			hdsEnabled:         true,
@@ -199,6 +200,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Mesh:    "mesh",
 				Name:    "name.namespace",
 				Version: defaultVersion,
+				Workdir: "/tmp",
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 			hdsEnabled:         true,
@@ -251,6 +253,7 @@ var _ = Describe("bootstrapGenerator", func() {
   }
 }`,
 				Version: defaultVersion,
+				Workdir: "/tmp",
 			},
 			expectedConfigFile: "generator.custom-config.golden.yaml",
 			hdsEnabled:         true,
@@ -273,6 +276,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:           "name.namespace",
 				DataplaneToken: "token",
 				Version:        defaultVersion,
+				Workdir:        "/tmp",
 			},
 			expectedConfigFile: "generator.default-config.kubernetes.golden.yaml",
 			hdsEnabled:         false,
@@ -295,6 +299,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:           "name.namespace",
 				DataplaneToken: "token",
 				Version:        defaultVersion,
+				Workdir:        "/tmp",
 			},
 			expectedConfigFile: "generator.default-config.kubernetes.ipv6.golden.yaml",
 			hdsEnabled:         false,
@@ -329,8 +334,45 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:           "name.namespace",
 				DataplaneToken: "token",
 				Version:        defaultVersion,
+				Workdir:        "/tmp",
 			},
 			expectedConfigFile: "generator.metrics-config.kubernetes.golden.yaml",
+			hdsEnabled:         false,
+		}),
+		Entry("default config, kubernetes with custom system ca path", testCase{
+			dpAuthForProxyType: authEnabled,
+			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				return cfg
+			}(),
+			dataplane: func() *core_mesh.DataplaneResource {
+				dp := defaultDataplane()
+				dp.Spec.Networking.Admin.Port = 1234
+				dp.Spec.Metrics = &mesh_proto.MetricsBackend{
+					Type: mesh_proto.MetricsPrometheusType,
+					Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+						Aggregate: []*mesh_proto.PrometheusAggregateMetricsConfig{
+							{
+								Name: "app1",
+								Port: 123,
+								Path: "/stats",
+							},
+						},
+					}),
+				}
+				return dp
+			},
+			request: types.BootstrapRequest{
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				DataplaneToken: "token",
+				Version:        defaultVersion,
+				SystemCaPath:   "/etc/certs/cert.pem",
+				Workdir:        "/tmp",
+			},
+			expectedConfigFile: "generator.system-cert-config.kubernetes.golden.yaml",
 			hdsEnabled:         false,
 		}),
 		Entry("backwards compatibility, adminPort both in bootstrapRequest and in DPP resource", testCase{ // https://github.com/kumahq/kuma/issues/4002
@@ -352,7 +394,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneToken: "token",
 				Version:        defaultVersion,
 				DNSPort:        53001,
-				EmptyDNSPort:   53002,
+				Workdir:        "/tmp",
 			},
 			expectedConfigFile: "generator.default-config.golden.yaml",
 			hdsEnabled:         true,
@@ -376,12 +418,12 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneToken:     "token",
 				Version:            defaultVersion,
 				DNSPort:            53001,
-				EmptyDNSPort:       53002,
 				DataplaneTokenPath: "/path/to/file",
 				MetricsResources: types.MetricsResources{
 					CertPath: "/path/cert/pem",
 					KeyPath:  "/path/key/pem",
 				},
+				Workdir: "/tmp",
 			},
 			expectedConfigFile: "generator.default-config-token-path.golden.yaml",
 			hdsEnabled:         true,
@@ -422,8 +464,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneToken:     "token",
 				Version:            defaultVersion,
 				DNSPort:            53001,
-				EmptyDNSPort:       53002,
 				DataplaneTokenPath: "/path/to/file",
+				Workdir:            "/tmp",
 			},
 			expectedConfigFile: "generator.gateway.golden.yaml",
 			hdsEnabled:         true,
@@ -452,6 +494,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Mesh:    "mesh",
 				Name:    "name.namespace",
 				Version: defaultVersion,
+				Workdir: "/tmp",
 			},
 			dpBootstrapVerifier: func(dpBootstrap KumaDpBootstrap) {
 				expected, err := os.ReadFile(filepath.Join("testdata", "corefile.template"))
@@ -717,6 +760,7 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 			Name:           "name.namespace",
 			DataplaneToken: "token",
 			Version:        defaultVersion,
+			Workdir:        "/tmp",
 		})
 
 		// then

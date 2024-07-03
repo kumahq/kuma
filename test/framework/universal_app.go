@@ -45,7 +45,7 @@ networking:
 `
 	ZoneIngress = `
 type: ZoneIngress
-name: ingress
+name: %s
 networking:
   address: {{ address }}
   advertisedAddress: %s
@@ -355,15 +355,20 @@ func (s *UniversalApp) Stop() error {
 }
 
 func (s *UniversalApp) ReStart() error {
-	if err := s.mainApp.Signal(syscall.SIGKILL, true); err != nil {
+	if err := s.KillMainApp(); err != nil {
 		return err
 	}
+	return s.StartMainApp()
+}
+
+func (s *UniversalApp) KillMainApp() error {
+	return s.mainApp.Signal(syscall.SIGKILL, true)
+}
+
+func (s *UniversalApp) StartMainApp() error {
 	s.CreateMainApp(s.mainAppEnv, s.mainAppArgs)
 
-	if err := s.mainApp.Start(); err != nil {
-		return err
-	}
-	return nil
+	return s.mainApp.Start()
 }
 
 func (s *UniversalApp) CreateMainApp(env map[string]string, args []string) {
@@ -376,7 +381,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
 		"wget",
-		fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-amd64/versions/%[1]s/kuma-%[1]s-linux-amd64.tar.gz", version),
+		fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", version, Config.Arch),
 		"-O",
 		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
 	}).Run()

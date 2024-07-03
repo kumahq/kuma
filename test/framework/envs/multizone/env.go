@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var (
@@ -134,6 +135,10 @@ func SetupAndGetState() []byte {
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
+	vipCIDROverride := "251.0.0.0/8"
+	if Config.IPV6 {
+		vipCIDROverride = "fd00:fd11::/64"
+	}
 	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 	uniZone2Options := append(
 		[]framework.KumaDeploymentOption{
@@ -142,6 +147,7 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)
@@ -310,4 +316,15 @@ func ExpectCpsToNotCrash() {
 	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
 	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
 	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
+}
+
+func ExpectCpsToNotPanic() {
+	for _, cluster := range append(Zones(), Global) {
+		logs, err := cluster.GetKumaCPLogs()
+		if err != nil {
+			Logf("could not retrieve cp logs")
+		} else {
+			Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
+		}
+	}
 }

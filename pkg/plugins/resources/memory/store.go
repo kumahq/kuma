@@ -184,7 +184,9 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
-	meta.Labels = opts.Labels
+	if opts.ModifyLabels {
+		meta.Labels = opts.Labels
+	}
 	r.SetMeta(meta)
 
 	record.Version = meta.Version

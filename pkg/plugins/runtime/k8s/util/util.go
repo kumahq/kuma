@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -59,26 +58,13 @@ func Ignored() ServicePredicate {
 	}
 }
 
-func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) []*kube_core.Service {
-	matching := make([]*kube_core.Service, 0)
-	for i := range svcs.Items {
-		svc := &svcs.Items[i]
-		allMatched := true
-		for _, predicate := range predicates {
-			if !predicate(svc) {
-				allMatched = false
-				break
-			}
-		}
-		if allMatched {
-			matching = append(matching, svc)
+func MatchService(svc *kube_core.Service, predicates ...ServicePredicate) bool {
+	for _, predicate := range predicates {
+		if !predicate(svc) {
+			return false
 		}
 	}
-	// Sort by name so that inbound order is similar across zones regardless of the order services got created.
-	sort.Slice(matching, func(i, j int) bool {
-		return matching[i].Name < matching[j].Name
-	})
-	return matching
+	return true
 }
 
 // FindPort locates the container port for the given pod and portName.  If the
@@ -172,12 +158,17 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 		return mesh
 	}
 	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		log.Info("WARNING: The kuma.io/mesh annotation is deprecated for this object kind", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
+		log.Info("WARNING: The kuma.io/mesh annotation is deprecated for this object kind. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 
 	// Label wasn't found on the object, let's look on the namespace instead
+	if mesh, exists := metadata.Annotations(namespace.GetLabels()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		return mesh
+	}
+
 	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		log.Info("WARNING: The kuma.io/mesh annotation is deprecated for this object kind. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 

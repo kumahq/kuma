@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshHealthCheckResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshHealthCheckResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshHealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshHealthCheckType,
-	Resource:            NewMeshHealthCheckResource(),
-	ResourceList:        &MeshHealthCheckResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshhealthchecks",
-	KumactlArg:          "meshhealthcheck",
-	KumactlListArg:      "meshhealthchecks",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Health Check",
-	PluralDisplayName:   "Mesh Health Checks",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshHealthCheckType,
+	Resource:                     NewMeshHealthCheckResource(),
+	ResourceList:                 &MeshHealthCheckResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshhealthchecks",
+	KumactlArg:                   "meshhealthcheck",
+	KumactlListArg:               "meshhealthchecks",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Health Check",
+	PluralDisplayName:            "Mesh Health Checks",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

@@ -142,9 +142,10 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 
 func addMeshServiceReconciler(mgr kube_ctrl.Manager) error {
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client: mgr.GetClient(),
-		Log:    core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Log:           core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:        mgr.GetScheme(),
+		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -255,6 +256,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:                     rt.Config().Multizone.Zone.Name,
 	}
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), resourceAdmissionChecker)
 	composite.AddValidator(handler)
@@ -284,11 +287,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	for _, validator := range gatewayValidators(rt, converter) {
 		composite.AddValidator(validator)
 	}
-
-	composite.AddValidator(&k8s_webhooks.PolicyNamespaceValidator{
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-	},
-	)
 
 	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
@@ -364,6 +362,8 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 		Mode:                         rt.Config().Mode,
 		FederatedZone:                rt.Config().IsFederatedZoneCP(),
 		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
+		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:                     rt.Config().Multizone.Zone.Name,
 	}
 	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter, resourceAdmissionChecker)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)

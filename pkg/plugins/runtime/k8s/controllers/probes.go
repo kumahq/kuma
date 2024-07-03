@@ -30,10 +30,25 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 	dpProbes := &mesh_proto.Dataplane_Probes{
 		Port: port,
 	}
-	for _, c := range pod.Spec.Containers {
+	var containersNeedingProbes []kube_core.Container
+
+	var initContainerComesAfterKumaSidecar bool
+	for _, c := range pod.Spec.InitContainers {
 		if c.Name == util.KumaSidecarContainerName {
+			initContainerComesAfterKumaSidecar = true
 			continue
 		}
+		if initContainerComesAfterKumaSidecar && c.RestartPolicy != nil && *c.RestartPolicy == kube_core.ContainerRestartPolicyAlways {
+			containersNeedingProbes = append(containersNeedingProbes, c)
+		}
+	}
+	for _, c := range pod.Spec.Containers {
+		if c.Name != util.KumaSidecarContainerName {
+			containersNeedingProbes = append(containersNeedingProbes, c)
+		}
+	}
+
+	for _, c := range containersNeedingProbes {
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
 			if endpoint, err := probeFor(c.LivenessProbe, port); err != nil {
 				return nil, err
@@ -56,6 +71,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 			}
 		}
 	}
+
 	return dpProbes, nil
 }
 

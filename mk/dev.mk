@@ -6,8 +6,8 @@ BUILD_INFO_VERSION = $(word 1, $(BUILD_INFO))
 GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
-ENVOY_VERSION = $(word 5, $(BUILD_INFO))
-CI_TOOLS_VERSION = $(word 6, $(BUILD_INFO))
+CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
+ENVOY_VERSION ?= 1.30.4
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -22,9 +22,9 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
 K8S_MIN_VERSION = v1.23.17-k3s1
-K8S_MAX_VERSION = v1.29.1-k3s2
+K8S_MAX_VERSION = v1.30.0-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.56.1
+export GOLANGCI_LINT_VERSION=v1.59.0
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
@@ -41,6 +41,7 @@ KUBECONFIG_DIR := $(HOME)/.kube
 PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 
 CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
+YQ=$(CI_TOOLS_BIN_DIR)/yq
 HELM=$(CI_TOOLS_BIN_DIR)/helm
 K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
 KIND=$(CI_TOOLS_BIN_DIR)/kind
@@ -67,6 +68,8 @@ TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
 TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
+LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
+
 # Install all dependencies on tools and protobuf files
 # We add one script per tool in the `mk/dependencies` folder. Add a VARIABLE for each binary and use this everywhere in Makefiles
 # ideally the tool should be idempotent to make things quick to rerun.
@@ -90,11 +93,17 @@ $(KUBECONFIG_DIR):
 $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 	@touch $@
 
+.PHONY: dev/print-latest-release-branch
+dev/print-latest-release-branch:
+	@echo $(LATEST_RELEASE_BRANCH)
+
+TAKE_FILES_FROM_MASTER = app/kuma-ui/pkg/resources go.mod go.sum deployments/charts/*/Chart.yaml
+
+.PHONY: dev/merge-release
 dev/merge-release:
-	@if [[ -z "$(BRANCH)" ]]; then echo 'Set $$BRANCH to the branch you want to merge into your current one'; exit 1; fi
-	git merge upstream/$(BRANCH) --no-commit || true
-	git rm -rf app/kuma-ui/pkg/resources
-	git checkout HEAD -- app/kuma-ui/pkg/resources
+	git merge origin/$(LATEST_RELEASE_BRANCH) --no-commit || true
+	git rm -rf $(TAKE_FILES_FROM_MASTER)
+	git checkout HEAD -- $(TAKE_FILES_FROM_MASTER)
 	@if git diff --name-status --diff-filter=U --exit-code; then\
 		echo "Run \`git commit\` to finish merge!";\
 	else\

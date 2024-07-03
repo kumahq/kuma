@@ -156,17 +156,18 @@ func generateCertificateSecret(
 	// Generate a name to deterministically identify this secret. We
 	// want the same datasource to end up with the same name so that when
 	// resources are de-duplicated, we ony have to send the secret once.
+	// Since a host can have multiple certificates with
+	// different key types, we need to use the key type
+	// to disambiguate.
 	switch d := secret.GetType().(type) {
 	case *system_proto.DataSource_File:
 		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "file", d.File)
 	case *system_proto.DataSource_Secret:
 		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "secret", d.Secret)
 	case *system_proto.DataSource_Inline:
-		// Since a host can have multiple certificates with
-		// different key types, we need to use the key type
-		// to disambiguate when the certificate is provided as
-		// inline data.
 		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", names.Join(hostnames...))
+	case *system_proto.DataSource_InlineString:
+		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inlineString", names.Join(hostnames...))
 	default:
 		return nil, errors.Errorf("unsupported datasource type %T", d)
 	}

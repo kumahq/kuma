@@ -2,14 +2,16 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -18,19 +20,30 @@ func (r *MeshTimeoutResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
-		SupportedKinds: []common_api.TargetRefKind{
-			common_api.Mesh,
-			common_api.MeshSubset,
-			common_api.MeshGateway,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
-			common_api.MeshHTTPRoute,
-		},
-		GatewayListenerTagsAllowed: true,
-	})
-	return targetRefErr
+func (r *MeshTimeoutResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+	switch core_model.PolicyRole(r.GetMeta()) {
+	case mesh_proto.SystemPolicyRole:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshGateway,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+				common_api.MeshHTTPRoute,
+			},
+			GatewayListenerTagsAllowed: true,
+		})
+	default:
+		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+				common_api.MeshSubset,
+				common_api.MeshService,
+				common_api.MeshServiceSubset,
+			},
+		})
+	}
 }
 
 func validateFrom(from []From, topLevelKind common_api.TargetRefKind) validators.ValidationError {

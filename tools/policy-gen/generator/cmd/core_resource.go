@@ -57,13 +57,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+{{- if not .SkipRegistration }}
 //go:embed schema.yaml
+{{- end }}
 var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	{{.Name}}ResourceTypeDescriptor.Schema = &schema
@@ -202,8 +206,8 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.Name}}Type,
 		Resource: New{{.Name}}Resource(),
 		ResourceList: &{{.Name}}ResourceList{},
-		Scope: model.ScopeMesh,
-		KDSFlags: model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+		Scope: model.Scope{{.Scope}},
+		KDSFlags: {{.KDSFlags}},
 		WsPath: "{{.Path}}",
 		KumactlArg: "{{index .AlternativeNames 0}}",
 		KumactlListArg: "{{.Path}}",
@@ -217,5 +221,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		HasToTargetRef: {{.HasTo}},
 		HasFromTargetRef: {{.HasFrom}},
 		HasStatus: {{.HasStatus}},
+		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
 	}
 `))

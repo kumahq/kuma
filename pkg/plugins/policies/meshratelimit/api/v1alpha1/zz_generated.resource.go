@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshRateLimitResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshRateLimitResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshRateLimitType,
-	Resource:            NewMeshRateLimitResource(),
-	ResourceList:        &MeshRateLimitResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshratelimits",
-	KumactlArg:          "meshratelimit",
-	KumactlListArg:      "meshratelimits",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Rate Limit",
-	PluralDisplayName:   "Mesh Rate Limits",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshRateLimitType,
+	Resource:                     NewMeshRateLimitResource(),
+	ResourceList:                 &MeshRateLimitResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshratelimits",
+	KumactlArg:                   "meshratelimit",
+	KumactlListArg:               "meshratelimits",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Rate Limit",
+	PluralDisplayName:            "Mesh Rate Limits",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

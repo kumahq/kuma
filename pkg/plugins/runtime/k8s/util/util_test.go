@@ -95,18 +95,18 @@ var _ = Describe("Util", func() {
 	})
 
 	exampleTime := time.Date(2020, 0o1, 0o1, 0o1, 12, 0o0, 0o0, time.UTC)
-	DescribeTable("FindServices",
+	DescribeTable("MatchService",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
-			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod, nil))
-			// then
-			Expect(matchingServices).To(WithTransform(func(svcs []*kube_core.Service) []string {
-				var res []string
-				for i := range svcs {
-					res = append(res, svcs[i].Name)
+			var svcNames []string
+			for _, svc := range svcs.Items {
+				s := svc
+				if util.MatchService(&s, util.AnySelector(), util.MatchServiceThatSelectsPod(pod, nil)) {
+					svcNames = append(svcNames, svc.Name)
 				}
-				return res
-			}, Equal(matchSvcNames)))
+			}
+			// then
+			Expect(svcNames).To(ConsistOf(matchSvcNames))
 		},
 		Entry("should match services by a predicate",
 			&kube_core.Pod{
@@ -265,6 +265,7 @@ var _ = Describe("Util", func() {
 		type testCase struct {
 			podLabels      map[string]string
 			podAnnotations map[string]string
+			nsLabels       map[string]string
 			nsAnnotations  map[string]string
 			expected       string
 		}
@@ -281,6 +282,7 @@ var _ = Describe("Util", func() {
 				ns := &kube_core.Namespace{
 					ObjectMeta: kube_meta.ObjectMeta{
 						Annotations: given.nsAnnotations,
+						Labels:      given.nsLabels,
 					},
 				}
 
@@ -305,6 +307,15 @@ var _ = Describe("Util", func() {
 			}),
 			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with label", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				nsLabels: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
 				expected: "demo",

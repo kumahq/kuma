@@ -3,8 +3,8 @@ package api_server
 import (
 	"net"
 
-	"github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -15,7 +15,7 @@ import (
 
 func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiServer, error) {
 	return api_server.NewApiServer(
-		runtime.ResourceManager(),
+		runtime,
 		context.NewMeshContextBuilder(
 			runtime.ResourceManager(),
 			server.MeshResourceTypes(),
@@ -31,18 +31,8 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			context.AnyToAnyReachableServicesGraphBuilder,
 			cfg.Experimental.SkipPersistedVIPs,
 		),
-		runtime.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
-		runtime.Metrics(),
-		runtime.GetInstanceId,
-		runtime.GetClusterId,
-		runtime.APIServerAuthenticator(),
-		runtime.Access(),
-		runtime.EnvoyAdminClient(),
-		runtime.TokenIssuers(),
-		runtime.APIWebServiceCustomize(),
-		runtime.GlobalInsightService(),
 		runtime.XDS().Hooks.ResourceSetHooks(),
 	)
 }

@@ -13,21 +13,23 @@ import (
 type TargetRefKind string
 
 var (
-	Mesh              TargetRefKind = "Mesh"
-	MeshSubset        TargetRefKind = "MeshSubset"
-	MeshGateway       TargetRefKind = "MeshGateway"
-	MeshService       TargetRefKind = "MeshService"
-	MeshServiceSubset TargetRefKind = "MeshServiceSubset"
-	MeshHTTPRoute     TargetRefKind = "MeshHTTPRoute"
+	Mesh                TargetRefKind = "Mesh"
+	MeshSubset          TargetRefKind = "MeshSubset"
+	MeshGateway         TargetRefKind = "MeshGateway"
+	MeshService         TargetRefKind = "MeshService"
+	MeshExternalService TargetRefKind = "MeshExternalService"
+	MeshServiceSubset   TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute       TargetRefKind = "MeshHTTPRoute"
 )
 
 var order = map[TargetRefKind]int{
-	Mesh:              1,
-	MeshSubset:        2,
-	MeshGateway:       3,
-	MeshService:       4,
-	MeshServiceSubset: 5,
-	MeshHTTPRoute:     6,
+	Mesh:                1,
+	MeshSubset:          2,
+	MeshGateway:         3,
+	MeshService:         4,
+	MeshExternalService: 5,
+	MeshServiceSubset:   6,
+	MeshHTTPRoute:       7,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
@@ -38,8 +40,8 @@ var (
 	Gateway TargetRefProxyType = "Gateway"
 )
 
-func (k TargetRefKind) Less(o TargetRefKind) bool {
-	return order[k] < order[o]
+func (k TargetRefKind) Compare(o TargetRefKind) int {
+	return order[k] - order[o]
 }
 
 func AllTargetRefKinds() []TargetRefKind {
@@ -57,7 +59,7 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
@@ -71,6 +73,15 @@ type TargetRef struct {
 	// all data plane types are targeted by the policy.
 	// +kubebuilder:validation:MinItems=1
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
+	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+	// will be targeted.
+	Namespace string `json:"namespace,omitempty"`
+	// Labels are used to select group of MeshServices that match labels. Either Labels or
+	// Name and Namespace can be used.
+	Labels map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target specific section of resource.
+	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+	SectionName string `json:"sectionName,omitempty"`
 }
 
 func IncludesGateways(ref TargetRef) bool {
@@ -99,7 +110,7 @@ type BackendRefHash string
 func (in BackendRef) Hash() BackendRefHash {
 	keys := maps.Keys(in.Tags)
 	sort.Strings(keys)
-	orderedTags := make([]string, len(keys))
+	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}

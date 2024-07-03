@@ -72,7 +72,6 @@ type GatewayHost struct {
 	Hostname string
 	Routes   []*core_mesh.MeshGatewayRouteResource
 	Policies map[model.ResourceType][]match.RankedPolicy
-	TLS      *mesh_proto.MeshGateway_TLS_Conf
 	// Contains MeshGateway, Listener and Dataplane object tags
 	Tags mesh_proto.TagSelector
 }
@@ -181,11 +180,11 @@ func gatewayListenerInfoFromProxy(
 	for k, v := range meshCtx.EndpointMap {
 		outboundEndpoints[k] = v
 	}
-
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
 		matchedExternalServices,
+		meshCtx.Resources.MeshExternalServices().Items,
 		meshCtx.DataSourceLoader,
 		proxy.Zone,
 	)
@@ -399,7 +398,6 @@ func MakeGatewayListener(
 		host := GatewayHost{
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
-			TLS:      l.GetTls(),
 			Tags:     l.Tags,
 			Routes:   routes,
 		}

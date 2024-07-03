@@ -1,0 +1,15 @@
+# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: mes-tcp
+  labels:
+    kuma.io/mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 4242
+    protocol: tcp
+  endpoints:
+    - address: example.com
+      port: 4242

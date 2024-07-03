@@ -22,7 +22,6 @@ const (
 	FieldDataplaneAdminPort         = "dataplane.admin.port"
 	FieldDataplaneAdminAddress      = "dataplane.admin.address"
 	FieldDataplaneDNSPort           = "dataplane.dns.port"
-	FieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	FieldDataplaneDataplaneResource = "dataplane.resource"
 	FieldDynamicMetadata            = "dynamicMetadata"
 	FieldDataplaneProxyType         = "dataplane.proxyType"
@@ -30,10 +29,9 @@ const (
 	FieldPrefixDependenciesVersion  = "version.dependencies"
 	FieldFeatures                   = "features"
 	FieldWorkdir                    = "workdir"
-	FieldAccessLogSocketPath        = "accessLogSocketPath"
-	FieldMetricsSocketPath          = "metricsSocketPath"
 	FieldMetricsCertPath            = "metricsCertPath"
 	FieldMetricsKeyPath             = "metricsKeyPath"
+	FieldSystemCaPath               = "systemCaPath"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -51,20 +49,18 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	Resource            model.Resource
-	AdminPort           uint32
-	AdminAddress        string
-	DNSPort             uint32
-	EmptyDNSPort        uint32
-	DynamicMetadata     map[string]string
-	ProxyType           mesh_proto.ProxyType
-	Version             *mesh_proto.Version
-	Features            Features
-	WorkDir             string
-	AccessLogSocketPath string
-	MetricsSocketPath   string
-	MetricsCertPath     string
-	MetricsKeyPath      string
+	Resource        model.Resource
+	AdminPort       uint32
+	AdminAddress    string
+	DNSPort         uint32
+	DynamicMetadata map[string]string
+	ProxyType       mesh_proto.ProxyType
+	Version         *mesh_proto.Version
+	Features        Features
+	WorkDir         string
+	MetricsCertPath string
+	MetricsKeyPath  string
+	SystemCaPath    string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -131,13 +127,6 @@ func (m *DataplaneMetadata) GetDNSPort() uint32 {
 	return m.DNSPort
 }
 
-func (m *DataplaneMetadata) GetEmptyDNSPort() uint32 {
-	if m == nil {
-		return 0
-	}
-	return m.EmptyDNSPort
-}
-
 func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 	if m == nil || m.DynamicMetadata == nil {
 		return ""
@@ -152,7 +141,7 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
-func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir string, dpKey model.ResourceKey) *DataplaneMetadata {
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
 	// the DiscoveryRequest can still be crafted manually to crash the CP.
@@ -166,7 +155,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
-	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSEmptyPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
 		if err != nil {
@@ -185,14 +173,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 			}
 		}
 	}
-	// TODO Backward compat for 2 versions after 2.4 prior to 2.4 these were not passed in the metadata https://github.com/kumahq/kuma/issues/7220 (remove the parameter tmpDir of the function too)
-	if xdsMetadata.Fields[FieldAccessLogSocketPath] != nil {
-		metadata.AccessLogSocketPath = xdsMetadata.Fields[FieldAccessLogSocketPath].GetStringValue()
-		metadata.MetricsSocketPath = xdsMetadata.Fields[FieldMetricsSocketPath].GetStringValue()
-	} else {
-		metadata.AccessLogSocketPath = AccessLogSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
-		metadata.MetricsSocketPath = MetricsHijackerSocketName(tmpDir, dpKey.Name, dpKey.Mesh)
-	}
 
 	metadata.WorkDir = xdsMetadata.Fields[FieldWorkdir].GetStringValue()
 
@@ -201,6 +181,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 	}
 	if xdsMetadata.Fields[FieldMetricsKeyPath] != nil {
 		metadata.MetricsKeyPath = xdsMetadata.Fields[FieldMetricsKeyPath].GetStringValue()
+	}
+	if xdsMetadata.Fields[FieldSystemCaPath] != nil {
+		metadata.SystemCaPath = xdsMetadata.Fields[FieldSystemCaPath].GetStringValue()
 	}
 
 	if listValue := xdsMetadata.Fields[FieldFeatures]; listValue != nil {

@@ -52,14 +52,41 @@ type TagSelectorSet []mesh_proto.TagSelector
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
+type TlsVersion int32
+
+const (
+	TLSVersionAuto TlsVersion = 0
+	TLSVersion10   TlsVersion = 1
+	TLSVersion11   TlsVersion = 2
+	TLSVersion12   TlsVersion = 3
+	TLSVersion13   TlsVersion = 4
+)
+
 type ExternalService struct {
+	Protocol                 core_mesh.Protocol
 	TLSEnabled               bool
+	FallbackToSystemCa       bool
 	CaCert                   []byte
 	ClientCert               []byte
 	ClientKey                []byte
 	AllowRenegotiation       bool
 	SkipHostnameVerification bool
 	ServerName               string
+	SANs                     []SAN
+	MinTlsVersion            *TlsVersion
+	MaxTlsVersion            *TlsVersion
+}
+
+type MatchType string
+
+const (
+	SANMatchExact  MatchType = "Exact"
+	SANMatchPrefix MatchType = "Prefix"
+)
+
+type SAN struct {
+	MatchType MatchType
+	Value     string
 }
 
 type Locality struct {
@@ -82,6 +109,14 @@ type Endpoint struct {
 
 func (e Endpoint) Address() string {
 	return fmt.Sprintf("%s:%d", e.Target, e.Port)
+}
+
+func (e Endpoint) Protocol() string {
+	protocol := e.Tags[mesh_proto.ProtocolTag]
+	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
+		protocol = string(e.ExternalService.Protocol)
+	}
+	return protocol
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -264,6 +299,10 @@ func (s TagSelectorSet) Matches(tags map[string]string) bool {
 
 func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
+}
+
+func (e Endpoint) IsMeshExternalService() bool {
+	return e.ExternalService != nil && e.ExternalService.Protocol != ""
 }
 
 func (e Endpoint) LocalityString() string {

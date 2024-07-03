@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshProxyPatchResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshProxyPatchResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshProxyPatchType,
-	Resource:            NewMeshProxyPatchResource(),
-	ResourceList:        &MeshProxyPatchResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshproxypatches",
-	KumactlArg:          "meshproxypatch",
-	KumactlListArg:      "meshproxypatches",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Proxy Patch",
-	PluralDisplayName:   "Mesh Proxy Patches",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      false,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshProxyPatchType,
+	Resource:                     NewMeshProxyPatchResource(),
+	ResourceList:                 &MeshProxyPatchResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshproxypatches",
+	KumactlArg:                   "meshproxypatch",
+	KumactlListArg:               "meshproxypatches",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Proxy Patch",
+	PluralDisplayName:            "Mesh Proxy Patches",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               false,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

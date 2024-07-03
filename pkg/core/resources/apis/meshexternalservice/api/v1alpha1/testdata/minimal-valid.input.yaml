@@ -1,0 +1,6 @@
+match:
+  port: 80
+  protocol: http
+endpoints:
+  - address: 1.1.1.1
+    port: 12345

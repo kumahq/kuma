@@ -119,6 +119,13 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
+	if Config.IPV6 {
+		env["KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
+		env["KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
+		env["KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
+		env["KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
+	}
+
 	for k, v := range c.opts.env {
 		env[k] = v
 	}
@@ -131,10 +138,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	if Config.XDSApiVersion != "" {
 		env["KUMA_BOOTSTRAP_SERVER_API_VERSION"] = Config.XDSApiVersion
-	}
-
-	if Config.CIDR != "" {
-		env["KUMA_DNS_SERVER_CIDR"] = Config.CIDR
 	}
 
 	var dockerVolumes []string
@@ -253,7 +256,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, t
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
 	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, app.dpEnv)
 
-	if err := c.addIngressEnvoyTunnel(); err != nil {
+	if err := c.addIngressEnvoyTunnel(name); err != nil {
 		return err
 	}
 
@@ -489,8 +492,8 @@ func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
-func (c *UniversalCluster) addIngressEnvoyTunnel() error {
-	app := c.apps[AppIngress]
+func (c *UniversalCluster) addIngressEnvoyTunnel(appName string) error {
+	app := c.apps[appName]
 	c.networking[Config.ZoneIngressApp] = UniversalNetworking{
 		IP:            "localhost",
 		ApiServerPort: app.GetPublicPort(sshPort),

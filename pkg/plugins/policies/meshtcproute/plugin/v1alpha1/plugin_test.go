@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"context"
+	"net"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,14 +15,20 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -38,6 +45,7 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 func getResource(
@@ -303,7 +311,44 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("default-meshexternalservice", func() outboundsTestCase {
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Port:     9090,
+						Protocol: meshexternalservice_api.TcpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+						{
+							Address: "192.168.1.1",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled: true,
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
 
+			dp, proxy := dppForMeshExternalService()
+			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
 		Entry("basic-no-policies", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoints("backend",
@@ -699,7 +744,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolTCP, "region", "us"),
 				)
 			xdsContext := xds_builders.Context().
-				WithMesh(samples.MeshDefaultBuilder()).
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 
@@ -812,3 +857,51 @@ rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
 7G3tiTJPwFKA
 -----END CERTIFICATE-----
 `
+
+func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
+	resourceStore := memory.NewStore()
+	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	lookupIPFunc := func(s string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP(s)}, nil
+	}
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
+		resourceStore,
+		xds_server.MeshResourceTypes(),
+		lookupIPFunc,
+		"zone-1",
+		vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+		"mesh",
+		80,
+		xds_context.AnyToAnyReachableServicesGraphBuilder,
+		false,
+	)
+	mc, err := meshContextBuilder.Build(context.Background(), "default")
+	Expect(err).ToNot(HaveOccurred())
+
+	return &mc
+}
+
+func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
+	dp := samples.DataplaneWebBuilder().
+		AddOutbound(builders.Outbound().
+			WithAddress("10.20.20.1").
+			WithPort(9090).
+			WithMeshExternalService("example", 9090),
+		)
+	proxy := xds_builders.Proxy().
+		WithDataplane(dp).
+		WithMetadata(&core_xds.DataplaneMetadata{
+			SystemCaPath: "/tmp/ca-certs.crt",
+		}).
+		Build()
+
+	return dp, proxy
+}

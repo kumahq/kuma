@@ -96,13 +96,9 @@ func (c *Configurer) getRouteRetryConfig(conf *api.Conf) (*envoy_route.RetryPoli
 	}
 	switch c.Protocol {
 	case "http":
-		policy, err := genHttpRetryPolicy(conf.HTTP)
-		if err != nil {
-			return nil, err
-		}
-		return policy, nil
+		return genHttpRetryPolicy(conf.HTTP)
 	case "grpc":
-		return genGrpcRetryPolicy(conf.GRPC), nil
+		return genGrpcRetryPolicy(conf.GRPC)
 	default:
 		return nil, nil
 	}
@@ -123,9 +119,9 @@ func GrpcRetryOn(conf *[]api.GRPCRetryOn) string {
 	return strings.Join(retryOn, ",")
 }
 
-func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
+func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
-		return nil
+		return nil, nil
 	}
 
 	policy := envoy_route.RetryPolicy{
@@ -137,6 +133,9 @@ func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 	}
 
 	if conf.NumRetries != nil {
+		if *conf.NumRetries == 0 { // If numRetries is 0 just don't configure retries
+			return nil, nil
+		}
 		policy.NumRetries = util_proto.UInt32(*conf.NumRetries)
 	}
 
@@ -160,7 +159,7 @@ func genGrpcRetryPolicy(conf *api.GRPC) *envoy_route.RetryPolicy {
 		policy.RateLimitedRetryBackOff = configureRateLimitedRetryBackOff(conf.RateLimitedBackOff)
 	}
 
-	return &policy
+	return &policy, nil
 }
 
 func genHttpRetryPolicy(conf *api.HTTP) (*envoy_route.RetryPolicy, error) {
@@ -177,6 +176,9 @@ func genHttpRetryPolicy(conf *api.HTTP) (*envoy_route.RetryPolicy, error) {
 	}
 
 	if conf.NumRetries != nil {
+		if *conf.NumRetries == 0 { // If numRetries is 0 just don't configure retries
+			return nil, nil
+		}
 		policy.NumRetries = util_proto.UInt32(*conf.NumRetries)
 	}
 

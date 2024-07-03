@@ -483,6 +483,7 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 					"ALL",
 				},
 			},
+			ReadOnlyRootFilesystem: pointer.To(true),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{
@@ -546,18 +547,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
 		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
 			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
-		}
-
-		// ebpf works only with transparent proxy engine v2
-		if enabled, _, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingEngineV1); err != nil {
-			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEngineV1)
-		} else if enabled {
-			return nil, errors.Wrapf(
-				err,
-				"%s is unsupported with %s",
-				metadata.KumaTransparentProxyingEngineV1,
-				metadata.KumaTransparentProxyingEbpf,
-			)
 		}
 	}
 

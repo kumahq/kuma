@@ -13,7 +13,7 @@ func SampleContext() xds_context.Context {
 
 func SampleContextWith(resources xds_context.Resources) xds_context.Context {
 	return *builders.Context().
-		WithMesh(samples.MeshDefaultBuilder()).
+		WithMeshBuilder(samples.MeshDefaultBuilder()).
 		WithResources(resources).
 		WithEndpointMap(
 			builders.EndpointMap().

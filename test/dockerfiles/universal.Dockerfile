@@ -1,7 +1,7 @@
 ARG ARCH
 FROM kumahq/envoy:no-push-$ARCH as envoy
 # Built in github.com/kumahq/ci-tools
-FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:9eba4ba2525aec83ca97e7f971d778abd2d8a87db8822581d29356ff18d593b0
+FROM ghcr.io/kumahq/ubuntu-netools:main@sha256:424300975c66db0be9b781ec7cdf9706d577b71dcbd772f5d6d052066a86564c
 
 ARG ARCH
 

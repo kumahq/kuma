@@ -725,6 +725,23 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-cni.yaml",
 		}),
+		Entry("native sidecar with probe", testCase{
+			num: "35",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

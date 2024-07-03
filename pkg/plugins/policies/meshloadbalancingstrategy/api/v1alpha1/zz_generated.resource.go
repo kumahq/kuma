@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshLoadBalancingStrategyResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshLoadBalancingStrategyResourceList) SetPagination(p model.Pagination
 }
 
 var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshLoadBalancingStrategyType,
-	Resource:            NewMeshLoadBalancingStrategyResource(),
-	ResourceList:        &MeshLoadBalancingStrategyResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshloadbalancingstrategies",
-	KumactlArg:          "meshloadbalancingstrategy",
-	KumactlListArg:      "meshloadbalancingstrategies",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Load Balancing Strategy",
-	PluralDisplayName:   "Mesh Load Balancing Strategies",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    false,
-	HasStatus:           false,
+	Name:                         MeshLoadBalancingStrategyType,
+	Resource:                     NewMeshLoadBalancingStrategyResource(),
+	ResourceList:                 &MeshLoadBalancingStrategyResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshloadbalancingstrategies",
+	KumactlArg:                   "meshloadbalancingstrategy",
+	KumactlListArg:               "meshloadbalancingstrategies",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Load Balancing Strategy",
+	PluralDisplayName:            "Mesh Load Balancing Strategies",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             false,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

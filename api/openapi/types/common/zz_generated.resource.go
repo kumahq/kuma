@@ -45,6 +45,9 @@ type InspectRule struct {
 
 // Meta defines model for Meta.
 type Meta struct {
+	// Labels the label of the resource
+	Labels map[string]string `json:"labels"`
+
 	// Mesh the mesh this resource is part of
 	Mesh string `json:"mesh"`
 

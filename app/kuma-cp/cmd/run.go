@@ -15,11 +15,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
+	"github.com/kumahq/kuma/pkg/dns"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	"github.com/kumahq/kuma/pkg/intercp"
+	"github.com/kumahq/kuma/pkg/ipam"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
@@ -27,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds"
+	"github.com/kumahq/kuma/pkg/zone"
 )
 
 var runLog = controlPlaneLog.WithName("run")
@@ -143,6 +146,18 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := intercp.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Control Plane Intercommunication")
+				return err
+			}
+			if err := ipam.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up IPAM")
+				return err
+			}
+			if err := zone.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up ZoneIngress available services")
+				return err
+			}
+			if err := dns.SetupHostnameGenerator(rt); err != nil {
+				runLog.Error(err, "unable to set up hostname generator")
 				return err
 			}
 

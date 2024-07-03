@@ -23,8 +23,8 @@ func buildOptionSet(rawOptions string) map[string]struct{} {
 	return options
 }
 
-func CleanPathsRelativeToBPFFS(paths ...string) func(cfg config.Config) error {
-	return func(cfg config.Config) error {
+func CleanPathsRelativeToBPFFS(paths ...string) func(cfg config.InitializedConfig) error {
+	return func(cfg config.InitializedConfig) error {
 		for _, p := range paths {
 			if err := os.RemoveAll(path.Join(cfg.Ebpf.BPFFSPath, p)); err != nil {
 				return fmt.Errorf(
@@ -38,7 +38,7 @@ func CleanPathsRelativeToBPFFS(paths ...string) func(cfg config.Config) error {
 	}
 }
 
-func UnloadEbpfPrograms(programs []*Program, cfg config.Config) (string, error) {
+func UnloadEbpfPrograms(programs []*Program, cfg config.InitializedConfig) (string, error) {
 	if os.Getuid() != 0 {
 		return "", fmt.Errorf("root user in required for this process or container")
 	}
@@ -78,6 +78,6 @@ func UnloadEbpfPrograms(programs []*Program, cfg config.Config) (string, error) 
 	return "", nil
 }
 
-func Cleanup(cfg config.Config) (string, error) {
+func Cleanup(cfg config.InitializedConfig) (string, error) {
 	return UnloadEbpfPrograms(programs, cfg)
 }

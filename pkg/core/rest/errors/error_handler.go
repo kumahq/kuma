@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/emicklei/go-restful/v3"
+	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel/trace"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -25,7 +25,8 @@ import (
 )
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
-	log := kuma_log.AddFieldsFromCtx(core.Log.WithName("rest"), ctx, context.Background())
+	log := kuma_log.AddFieldsFromCtx(logr.FromContextOrDiscard(ctx), ctx, context.Background())
+
 	var kumaErr *types.Error
 	switch {
 	case store.IsResourceNotFound(err) || errors.Is(err, &NotFound{}):

@@ -39,9 +39,7 @@ func defaultBootstrapParams() BootstrapParams {
 			Build:   "hash/1.15.0/RELEASE",
 			Version: "1.15.0",
 		},
-		AccessLogSocketPath: "/tmp/access",
-		MetricsSocketPath:   "/tmp/metric",
-		Workdir:             "/tmp",
+		Workdir: "/tmp",
 	}
 }
 

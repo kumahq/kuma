@@ -20,8 +20,10 @@ var rawSchema []byte
 
 func init() {
 	var schema spec.Schema
-	if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
-		panic(err)
+	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+			panic(err)
+		}
 	}
 	rawSchema = nil
 	MeshTimeoutResourceTypeDescriptor.Schema = &schema
@@ -131,22 +133,23 @@ func (l *MeshTimeoutResourceList) SetPagination(p model.Pagination) {
 }
 
 var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                MeshTimeoutType,
-	Resource:            NewMeshTimeoutResource(),
-	ResourceList:        &MeshTimeoutResourceList{},
-	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:              "meshtimeouts",
-	KumactlArg:          "meshtimeout",
-	KumactlListArg:      "meshtimeouts",
-	AllowToInspect:      true,
-	IsPolicy:            true,
-	IsExperimental:      false,
-	SingularDisplayName: "Mesh Timeout",
-	PluralDisplayName:   "Mesh Timeouts",
-	IsPluginOriginated:  true,
-	IsTargetRefBased:    true,
-	HasToTargetRef:      true,
-	HasFromTargetRef:    true,
-	HasStatus:           false,
+	Name:                         MeshTimeoutType,
+	Resource:                     NewMeshTimeoutResource(),
+	ResourceList:                 &MeshTimeoutResourceList{},
+	Scope:                        model.ScopeMesh,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	WsPath:                       "meshtimeouts",
+	KumactlArg:                   "meshtimeout",
+	KumactlListArg:               "meshtimeouts",
+	AllowToInspect:               true,
+	IsPolicy:                     true,
+	IsExperimental:               false,
+	SingularDisplayName:          "Mesh Timeout",
+	PluralDisplayName:            "Mesh Timeouts",
+	IsPluginOriginated:           true,
+	IsTargetRefBased:             true,
+	HasToTargetRef:               true,
+	HasFromTargetRef:             true,
+	HasStatus:                    false,
+	AllowedOnSystemNamespaceOnly: false,
 }

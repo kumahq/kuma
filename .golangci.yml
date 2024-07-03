@@ -24,6 +24,7 @@ linters:
     - whitespace
     - nosprintfhostport
     - loggercheck
+    - makezero
 
 run:
   skip-files:

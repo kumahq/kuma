@@ -278,11 +278,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
 		}
 
-		envVars["KUMA_DNS_CORE_DNS_EMPTY_PORT"] = kube_core.EnvVar{
-			Name:  "KUMA_DNS_CORE_DNS_EMPTY_PORT",
-			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port+1), 10),
-		}
-
 		envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENVOY_DNS_PORT",
 			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port+2), 10),

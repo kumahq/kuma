@@ -2,6 +2,7 @@ package builders
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -18,10 +19,11 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:            samples.MeshDefault(),
-				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation: map[string]*xds_context.ServiceInformation{},
-				MeshServiceByName:   map[string]*meshservice_api.MeshServiceResource{},
+				Resource:                  samples.MeshDefault(),
+				EndpointMap:               map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation:       map[string]*xds_context.ServiceInformation{},
+				MeshExternalServiceByName: map[string]*meshexternalservice_api.MeshExternalServiceResource{},
+				MeshServiceByName:         map[string]*meshservice_api.MeshServiceResource{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -35,6 +37,9 @@ func Context() *ContextBuilder {
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
 		mc.res.Mesh.MeshServiceByName[ms.GetMeta().GetName()] = ms
+	}
+	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
+		mc.res.Mesh.MeshExternalServiceByName[mes.GetMeta().GetName()] = mes
 	}
 	return mc.res
 }
@@ -66,8 +71,13 @@ func (mc *ContextBuilder) WithResources(resources xds_context.Resources) *Contex
 	return mc
 }
 
-func (mc *ContextBuilder) WithMesh(mesh *builders.MeshBuilder) *ContextBuilder {
+func (mc *ContextBuilder) WithMeshBuilder(mesh *builders.MeshBuilder) *ContextBuilder {
 	mc.res.Mesh.Resource = mesh.Build()
+	return mc
+}
+
+func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *ContextBuilder {
+	mc.res.Mesh = *mesh
 	return mc
 }
 

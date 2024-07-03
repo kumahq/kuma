@@ -372,6 +372,15 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
+
+			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
+			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
+			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
+			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
+
+			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
+			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
+			Expect(cfg.CoreResources.Status.MeshMultiZoneServiceInterval.Duration).To(Equal(7 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -610,6 +619,7 @@ multizone:
       responseBackoff: 2s
       tlsSkipVerify: true
     disableOriginLabelValidation: true
+    ingressUpdateInterval: 2s
 dnsServer:
   domain: test-domain
   CIDR: 127.1.0.0/16
@@ -740,6 +750,9 @@ eventBus:
 coreResources:
   enabled:
   - meshservice
+  status:
+    meshServiceInterval: 6s
+    meshMultiZoneServiceInterval: 7s
 policies:
   pluginPoliciesEnabled:
     - meshaccesslog
@@ -748,6 +761,14 @@ tracing:
   openTelemetry:
     enabled: true
     endpoint: collector:4317
+ipam:
+  meshService:
+    cidr: 251.0.0.0/8
+  meshExternalService:
+    cidr: 252.0.0.0/8
+  meshMultiZoneService:
+    cidr: 253.0.0.0/8
+  allocationInterval: 7s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -934,6 +955,7 @@ tracing:
 				"KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF":                                                 "2s",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
+				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
@@ -1026,6 +1048,12 @@ tracing:
 				"KUMA_EVENT_BUS_BUFFER_SIZE":                                                               "30",
 				"KUMA_PLUGIN_POLICIES_ENABLED":                                                             "meshaccesslog,meshcircuitbreaker",
 				"KUMA_CORE_RESOURCES_ENABLED":                                                              "meshservice",
+				"KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL":                                         "6s",
+				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
+				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
+				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
+				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
+				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 			},
 			yamlFileConfig: "",
 		}),
