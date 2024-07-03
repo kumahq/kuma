@@ -105,22 +105,16 @@ func TestConformance(t *testing.T) {
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
+		SkipTests: []string{
+			tests.HTTPRouteServiceTypes.ShortName,
+		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	conformanceSuite.Setup(t, tests.ConformanceTests)
-
-	var passingTests []suite.ConformanceTest
-	for _, test := range tests.ConformanceTests {
-		// This is an easy way to enable/disable single tests when upgrading/debugging
-		switch test.ShortName {
-		}
-		passingTests = append(passingTests, test)
-	}
-
-	g.Expect(conformanceSuite.Run(t, passingTests)).To(Succeed())
+	g.Expect(conformanceSuite.Run(t, tests.ConformanceTests)).To(Succeed())
 
 	rep, err := conformanceSuite.Report()
 	g.Expect(err).ToNot(HaveOccurred())
