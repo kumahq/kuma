@@ -98,10 +98,6 @@ func BuildEndpointMap(
 
 		for _, meshSvc := range meshServices {
 			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
-			if meshSvc.Spec.Selector.DataplaneRef != nil {
-				continue
-			}
-
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
 				if !tagSelector.Matches(inbound.GetTags()) {
 					continue
