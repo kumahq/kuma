@@ -5730,6 +5730,8 @@ _kumactl_install_transparent-proxy()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--drop-invalid-packets")
+    local_nonpersistent_flags+=("--drop-invalid-packets")
     flags+=("--dry-run")
     local_nonpersistent_flags+=("--dry-run")
     flags+=("--ebpf-bpffs-path=")
