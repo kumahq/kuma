@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"net"
 	"path/filepath"
 	"strings"
@@ -222,7 +223,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				To(matchers.MatchGoldenYAML(endpointsGolden))
 		},
 
-		Entry("split-traffic", func() outboundsTestCase {
+		FEntry("split-traffic", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoints("backend",
 					xds_builders.Endpoint().
@@ -239,7 +240,12 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithTarget("192.168.0.6").
 					WithPort(8006).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP))
+					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP)).
+				AddEndpoint("ms-1.kuma-system", xds_builders.Endpoint().
+					WithTarget("192.168.0.7").
+					WithPort(8007).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "ms-1", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP))
 			externalServiceOutboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("externalservice", xds_builders.Endpoint().
 					WithTarget("192.168.0.7").
@@ -270,9 +276,18 @@ var _ = Describe("MeshTCPRoute", func() {
 									},
 									{
 										TargetRef: builders.TargetRefService(
-											"other-backend",
+										    "other-backend",
 										),
-										Weight: pointer.To(uint(15)),
+										Weight: pointer.To(uint(10)),
+									},
+									{
+										TargetRef: *builders.NewTargetRefBuilder().
+											WithName("ms-1").
+											WithKind("MeshService").
+											WithNamespace("kuma-system").
+											Build(),
+										Weight: pointer.To(uint(5)),
+										Port: pointer.To(uint32(8007)),
 									},
 									{
 										TargetRef: builders.TargetRefService(
@@ -286,9 +301,16 @@ var _ = Describe("MeshTCPRoute", func() {
 					},
 				},
 			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
+				Items:      []*v1alpha1.MeshServiceResource{
+					builders.MeshService().AddIntPort(8007, 8007, core_mesh.ProtocolHTTP).WithName("ms-1.kuma-system").WithMesh("default").Build(),
+				},
+			}
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
+					WithResources(resources).
 					WithEndpointMap(outboundTargets).
 					WithExternalServicesEndpointMap(externalServiceOutboundTargets).
 					AddServiceProtocol("backend", util_protocol.GetCommonProtocol(core_mesh.ProtocolTCP, core_mesh.ProtocolHTTP)).

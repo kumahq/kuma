@@ -39,6 +39,10 @@ resources:
             envoy.transport_socket_match:
               kuma.io/protocol: http
               region: us
+- name: ms-1_kuma-system_svc_8007
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: ms-1_kuma-system_svc_8007
 - name: other-backend
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment

@@ -53,6 +53,20 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: ms-1_kuma-system_svc_8007
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: ms-1_kuma-system_svc_8007
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: other-backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

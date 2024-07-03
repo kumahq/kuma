@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -19,7 +18,7 @@ import (
 func generateFromService(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
-	clusterCache map[common_api.BackendRefHash]string,
+	clusterCache map[meshroute_xds.BackendRefHash]string,
 	servicesAccumulator envoy_common.ServicesAccumulator,
 	toRulesTCP rules.Rules,
 	svc meshroute_xds.DestinationService,
@@ -36,7 +35,6 @@ func generateFromService(
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
-
 	splits := meshroute_xds.MakeTCPSplit(clusterCache, servicesAccumulator, backendRefs, meshCtx)
 	filterChain := buildFilterChain(proxy, serviceName, splits, protocol)
 
@@ -63,7 +61,7 @@ func generateListeners(
 	// Cluster cache protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route, so LB and Timeout are
 	// the same.
-	clusterCache := map[common_api.BackendRefHash]string{}
+	clusterCache := map[meshroute_xds.BackendRefHash]string{}
 	for _, svc := range meshroute_xds.CollectServices(proxy, meshCtx) {
 		rs, err := generateFromService(
 			meshCtx,
