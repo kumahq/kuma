@@ -283,13 +283,14 @@ func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
 // given context. It ensures proper configuration for IPv6 if necessary.
 //
 // This method performs the following steps:
-//  1. Attempts to initialize the IPv4 executable with the provided context,
-//     Config, and Logger. If an error occurs, it is recorded.
-//  2. Attempts to initialize the IPv6 executable with the provided context,
-//     Config, and Logger. If an error occurs, it is recorded.
-//  3. If both IPv4 and IPv6 initialization fail, it returns an error indicating
-//     the failure to find valid executables for both IP versions.
-//  4. If IPv6 initialization is successful, it attempts to configure the IPv6
+//  1. Attempts to initialize the IPv4 executables with the provided context,
+//     Config, and Logger. If an error occurs, it returns an error indicating
+//     the failure to initialize IPv4 executables.
+//  2. If IPv6 is enabled in the configuration, it attempts to initialize the
+//     IPv6 executables with the provided context, Config, and Logger. If an
+//     error occurs, it returns an error indicating the failure to initialize
+//     IPv6 executables.
+//  3. If IPv6 initialization is successful, it attempts to configure the IPv6
 //     outbound address. If this configuration fails, a warning is logged, and
 //     IPv6 rules will be skipped.
 //
@@ -301,44 +302,38 @@ func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
 // Returns:
 //   - InitializedExecutablesIPvX: Struct containing the initialized executables
 //     for both IPv4 and IPv6.
-//   - error: Error indicating the failure of both IPv4 and IPv6 initialization
-//     or nil if at least one initialization is successful.
+//   - error: Error indicating the failure of either IPv4 or IPv6
+//     initialization.
 func (c ExecutablesIPvX) Initialize(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
 ) (InitializedExecutablesIPvX, error) {
-	var errs []error
+	var err error
 
 	initialized := InitializedExecutablesIPvX{ExecutablesIPvX: c}
 
-	ipv4, ipv4Err := c.IPv4.Initialize(ctx, l, cfg)
-	if ipv4Err != nil {
-		errs = append(errs, ipv4Err)
-	}
-	initialized.IPv4 = ipv4
-
-	ipv6, ipv6Err := c.IPv6.Initialize(ctx, l, cfg)
-	if ipv6Err != nil {
-		errs = append(errs, ipv6Err)
-	}
-	initialized.IPv6 = ipv6
-
-	if len(errs) == 2 {
+	initialized.IPv4, err = c.IPv4.Initialize(ctx, l, cfg)
+	if err != nil {
 		return InitializedExecutablesIPvX{}, errors.Wrap(
-			std_errors.Join(errs...),
-			"failed to initialize both IPv4 and IPv6 executables",
+			err,
+			"failed to initialize IPv4 executables",
 		)
 	}
 
-	if ipv6Err == nil {
+	if cfg.IPv6 {
+		initialized.IPv6, err = c.IPv6.Initialize(ctx, l, cfg)
+		if err != nil {
+			return InitializedExecutablesIPvX{}, errors.Wrap(
+				err,
+				"failed to initialize IPv6 executables",
+			)
+		}
+
 		if err := configureIPv6OutboundAddress(); err != nil {
 			initialized.IPv6 = InitializedExecutables{}
-			l.Warn(
-				"failed to configure IPv6 outbound address. IPv6 rules will "+
-					"be skipped:",
-				err,
-			)
+			l.Warn("failed to configure IPv6 outbound address. IPv6 rules "+
+				"will be skipped:", err)
 		}
 	}
 
