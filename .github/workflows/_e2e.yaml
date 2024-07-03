@@ -7,7 +7,7 @@ on:
       runnersByArch:
         type: string
         required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
+        default: ''
 permissions:
   contents: read
 env:
@@ -22,8 +22,7 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-    # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
-    runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
     strategy:
       fail-fast: false
       matrix:
