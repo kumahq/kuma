@@ -119,7 +119,7 @@ jobs:
             }
         run: |-
           ALL_RUNNERS='${{ env.ALL_RUNNERS }}'
-          if [[ "${{ inputs.IS_TRUSTED_BUILD }}" == "true" ]]; then
+          if [[ "${{ env.IS_TRUSTED_BUILD }}" == "true" ]]; then
             ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.trusted_builds')
           else
             ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.untrusted_builds')
