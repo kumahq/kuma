@@ -87,14 +87,14 @@ func (c DNS) Initialize(
 			)
 		}
 
-		initialized.ConntrackZoneSplitIPv4 = cfg.DryRun ||
-			executables.IPv4.Functionality.ConntrackZoneSplit()
+		initialized.ConntrackZoneSplitIPv4 = executables.IPv4.Functionality.
+			ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplitIPv4 {
 			l.Warn(warning("IPv4"))
 		}
 
-		initialized.ConntrackZoneSplitIPv6 = cfg.DryRun ||
-			executables.IPv6.Functionality.ConntrackZoneSplit()
+		initialized.ConntrackZoneSplitIPv6 = executables.IPv6.Functionality.
+			ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplitIPv4 {
 			l.Warn(warning("IPv6"))
 		}

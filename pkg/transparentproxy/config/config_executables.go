@@ -375,11 +375,6 @@ func (c ExecutablesNftLegacy) Initialize(
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
-	// When dry run there is no need continue initialization
-	if cfg.DryRun {
-		return InitializedExecutablesIPvX{}, nil
-	}
-
 	nft, nftErr := c.Nft.Initialize(ctx, l, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
@@ -391,6 +386,13 @@ func (c ExecutablesNftLegacy) Initialize(
 	}
 
 	switch {
+	// Dry-run mode when no valid iptables executables are found.
+	case len(errs) == 2 && cfg.DryRun:
+		l.Warn("dry-run mode: No valid iptables executables found. The " +
+			"generated iptables rules may differ from those generated in an " +
+			"environment with valid iptables executables")
+		return InitializedExecutablesIPvX{}, nil
+	// Regular mode when no vaild iptables executables are found
 	case len(errs) == 2:
 		return InitializedExecutablesIPvX{}, errors.Wrap(
 			std_errors.Join(errs...),
@@ -405,12 +407,11 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		l.Warn("conflicting iptables modes detected. Two iptables versions " +
-			"(iptables-nft and iptables-legacy) were found. Both contain a nat " +
-			"table with a chain named 'DOCKER_OUTPUT'. To avoid potential " +
-			"conflicts, iptables-legacy will be ignored and iptables-nft will " +
-			"be used.",
-		)
+		l.Warn("conflicting iptables modes detected. Two iptables " +
+			"versions (iptables-nft and iptables-legacy) were found. " +
+			"Both contain a nat table with a chain named 'DOCKER_OUTPUT'. " +
+			"To avoid potential conflicts, iptables-legacy will be ignored " +
+			"and iptables-nft will be used")
 		return nft, nil
 	case legacy.hasDockerOutputChain():
 		return legacy, nil
