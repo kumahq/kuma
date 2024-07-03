@@ -1,4 +1,4 @@
-package ingress_test
+package topology_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -11,13 +11,14 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/pkg/xds/ingress"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("IngressTrafficRoute", func() {
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			destinations     core_xds.DestinationMap
+			mesh             *core_mesh.MeshResource
 			dataplanes       []*core_mesh.DataplaneResource
 			externalServices []*core_mesh.ExternalServiceResource
 			meshServices     []*v1alpha1.MeshServiceResource
@@ -27,20 +28,23 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, given.zoneEgress, nil, given.meshServices)
+				endpoints := topology.BuildIngressEndpointMap(
+					given.mesh,
+					"east",
+					given.meshServices,
+					nil,
+					given.dataplanes,
+					given.externalServices,
+					nil,
+					given.zoneEgress,
+				)
+
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
 
 			Entry("external service for specific zone through local egress", testCase{
-				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{
-						{mesh_proto.ServiceTag: "redis"},
-					},
-					"httpbin": []mesh_proto.TagSelector{
-						{mesh_proto.ServiceTag: "httpbin"},
-					},
-				},
+				mesh: samples.MeshDefaultBuilder().WithEgressRoutingEnabled().Build(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: "default"},
@@ -105,6 +109,26 @@ var _ = Describe("IngressTrafficRoute", func() {
 					},
 				},
 				expected: core_xds.EndpointMap{
+					"example": []core_xds.Endpoint{
+						{
+							Target:          "192.168.0.1",
+							Port:            10002,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "example"},
+							Weight:          1,
+							ExternalService: &core_xds.ExternalService{},
+						},
+						{
+							Target: "192.168.0.2",
+							Port:   10002,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "example",
+								// mesh_proto.ZoneTag:    "zone-2",
+							},
+							Weight: 1,
+							// Locality:        &core_xds.Locality{Zone: "zone-2"},
+							ExternalService: &core_xds.ExternalService{},
+						},
+					},
 					"redis": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
@@ -120,6 +144,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
 							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+							Locality:        &core_xds.Locality{Zone: "zone-2"},
 						},
 						{
 							Target:          "192.168.0.2",
@@ -127,19 +152,13 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
 							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+							Locality:        &core_xds.Locality{Zone: "zone-2"},
 						},
 					},
 				},
 			}),
 			Entry("external service not filled when zone egress not available", testCase{
-				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{
-						{mesh_proto.ServiceTag: "redis"},
-					},
-					"httpbin": []mesh_proto.TagSelector{
-						{mesh_proto.ServiceTag: "httpbin"},
-					},
-				},
+				mesh: samples.MeshDefault(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: "default"},
@@ -189,11 +208,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 				},
 			}),
 			Entry("data plane proxy with advertised address", testCase{
-				destinations: core_xds.DestinationMap{
-					"redis": []mesh_proto.TagSelector{
-						{mesh_proto.ServiceTag: "redis"},
-					},
-				},
+				mesh: samples.MeshDefault(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: "default"},
@@ -224,6 +239,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 				},
 			}),
 			Entry("mesh services", testCase{
+				mesh: samples.MeshDefault(),
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: model.DefaultMesh, Name: "redis-0"},
@@ -280,12 +296,53 @@ var _ = Describe("IngressTrafficRoute", func() {
 						Build(),
 				},
 				expected: core_xds.EndpointMap{
+					"kong_kong-system_svc_80": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           8080,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_80",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"redis_svc_6379": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.1",
+							UnixDomainPath: "",
+							Port:           6379,
+							Tags: map[string]string{
+								"kuma.io/service": "redis_svc_6379",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
 					"redis-0_svc_6379": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"},
 							Weight: 1,
+						},
+					},
+					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           8001,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_8001",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
 						},
 					},
 				},
