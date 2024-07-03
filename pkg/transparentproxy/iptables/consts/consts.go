@@ -50,7 +50,7 @@ const (
 	ChainDockerOutput = "DOCKER_OUTPUT"
 )
 
-// DockerOutputChainRegex is aregular expression used to identify the presence
+// DockerOutputChainRegex is a regular expression used to identify the presence
 // of a custom chain named "DOCKER_OUTPUT" in iptables rules.
 var DockerOutputChainRegex = regexp.MustCompile(`(?m)^:DOCKER_OUTPUT`)
 
