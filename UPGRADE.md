@@ -6,6 +6,34 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.9.x`
+
+## Improvements in Transparent Proxy
+
+### New Feature: Dropping Invalid Packets
+
+In this release, we have introduced an enhancement to the transparent proxy capabilities that improves the stability of applications by allowing the proxy to drop packets that are in an invalid state. This is useful in scenarios involving high-throughput requests where out-of-order packets might bypass DNAT, potentially leading to destabilized connections.
+
+#### Configuration Changes:
+
+- **Command-Line Flag**: A new flag `--drop-invalid-packets` has been added. This flag can be used during the transparent proxy installation to enable the dropping of invalid packets.
+
+- **Kubernetes Annotation**: For Kubernetes environments, you can use the annotation `traffic.kuma.io/drop-invalid-packets` to enable this feature on a per-deployment basis, including init containers and CNI configurations.
+
+#### Considerations:
+
+- **Performance Impact**: While enabling this feature can enhance connection stability by filtering out problematic packets, it may introduce a slight performance overhead. It is recommended to evaluate the trade-off between improved stability and potential performance impact in your specific environment.
+
+- **Compatibility**: This feature is backward compatible. However, if you enable it, make sure to test your deployments to ensure that there are no unintended side effects in your specific use cases.
+
+For more detailed information on how packet states are determined and managed, and how this might affect your deployments, please refer to the [Kubernetes blog on kube-proxy subtleties](https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/).
+
+#### Action Required:
+
+If you wish to take advantage of this new feature, review your deployment configurations and consider applying the new flag or annotation where necessary. Testing in a staging environment before full deployment is highly recommended to ensure compatibility with your specific applications.
+
+This update is part of our ongoing efforts to enhance the security and reliability of our transparent proxy solution.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit
