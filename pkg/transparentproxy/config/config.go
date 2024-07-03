@@ -165,8 +165,21 @@ type Config struct {
 	Owner    Owner
 	Redirect Redirect
 	Ebpf     Ebpf
-	// DropInvalidPackets when set will enable configuration which should drop
-	// packets in invalid states
+	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
+	// packets that are considered invalid. This is useful in scenarios where
+	// out-of-order packets bypass DNAT by iptables and reach the application
+	// directly, causing connection resets.
+	//
+	// This behavior is typically observed during high-throughput requests (like
+	// uploading large files). Enabling this option can improve application
+	// stability by preventing these invalid packets from reaching the
+	// application.
+	//
+	// However, enabling `DropInvalidPackets` might introduce slight performance
+	// overhead. Consider the trade-off between connection stability and
+	// performance before enabling this option.
+	//
+	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
 	DropInvalidPackets bool
 	// IPv6 when set will be used to configure iptables as well as ip6tables
 	IPv6 bool

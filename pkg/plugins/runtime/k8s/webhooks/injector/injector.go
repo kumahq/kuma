@@ -593,6 +593,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
 	}
 	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
+	dropInvalidPackets, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets)
+	if err != nil {
+		return nil, err
+	}
+	if dropInvalidPackets {
+		annotations[metadata.KumaTrafficDropInvalidPackets] = "true"
+	}
 
 	iptablesLogs, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
 	if err != nil {

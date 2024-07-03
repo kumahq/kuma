@@ -34,6 +34,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"builtinDNSPort":              {"kuma.io/builtin-dns-port", defaultBuiltinDNSPort, validatePortList},
 	"excludeOutboundPortsForUIDs": {"traffic.kuma.io/exclude-outbound-ports-for-uids", "", alwaysValidFunc},
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
+	"dropInvalidPackets":          {"traffic.kuma.io/drop-invalid-packets", "false", alwaysValidFunc},
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
 }
 
@@ -52,6 +53,7 @@ type IntermediateConfig struct {
 	isGateway                   string
 	builtinDNS                  string
 	builtinDNSPort              string
+	dropInvalidPackets          string
 	iptablesLogs                string
 }
 
@@ -147,6 +149,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
 	}
 
