@@ -29,7 +29,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -59,9 +58,6 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		restClientConfig,
 		kube_ctrl.Options{
 			Scheme: scheme,
-			Cache: cache.Options{
-				DefaultUnsafeDisableDeepCopy: pointer.To(true),
-			},
 			// Admission WebHook Server
 			WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
 				Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
