@@ -143,8 +143,17 @@ type Ebpf struct {
 }
 
 type LogConfig struct {
+	// Enabled determines whether iptables rules logging is activated. When
+	// true, each packet matching an iptables rule will have its details logged,
+	// aiding in diagnostics and monitoring of packet flows.
 	Enabled bool
-	Level   uint16
+	// Level specifies the log level for iptables logging as defined by
+	// netfilter. This level controls the verbosity and detail of the log
+	// entries for matching packets. Higher values increase the verbosity.
+	// Commonly used levels are: 1 (alerts), 4 (warnings), 5 (notices),
+	// 7 (debugging). The exact behavior can depend on the system's syslog
+	// configuration.
+	Level uint16
 }
 
 type RetryConfig struct {
@@ -173,8 +182,11 @@ type Config struct {
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
 	DryRun bool
-	// Log is the place where configuration for logging iptables rules will
-	// be placed
+	// Log configures logging for iptables rules using the LOG chain. When
+	// enabled, this setting causes the kernel to log details about packets that
+	// match the iptables rules, including IP/IPv6 headers. The logs are useful
+	// for debugging and can be accessed via tools like dmesg or syslog. The
+	// logging behavior is defined by the nested LogConfig struct.
 	Log LogConfig
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not

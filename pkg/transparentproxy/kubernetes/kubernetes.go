@@ -47,6 +47,7 @@ type PodRedirect struct {
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
 	ExcludeOutboundPortsForUIDs              []string
+	IptablesLogs                             bool
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -112,6 +113,8 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	podRedirect.IpFamilyMode, _ = metadata.Annotations(pod.Annotations).GetStringWithDefault(metadata.IpFamilyModeDualStack, metadata.KumaTransparentProxyingIPFamilyMode)
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
+
+	podRedirect.IptablesLogs, _, _ = metadata.Annotations(pod.Annotations).GetBoolean(metadata.KumaTrafficIptablesLogs)
 
 	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
 		return nil, err
@@ -206,6 +209,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		if pr.TransparentProxyEbpfProgramsSourcePath != "" {
 			result = append(result, "--ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath)
 		}
+	}
+
+	if pr.IptablesLogs {
+		result = append(result, "--iptables-logs")
 	}
 
 	return result

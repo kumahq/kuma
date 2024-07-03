@@ -54,6 +54,7 @@ var _ = Describe("kubernetes", func() {
 						metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs:     "11003:3",
 						metadata.KumaTrafficExcludeOutboundPortsForUIDs:        "0;12",
 						metadata.KumaTransparentProxyingIPFamilyMode:           "ipv4",
+						metadata.KumaTrafficIptablesLogs:                       "true",
 					},
 				},
 			},
@@ -74,6 +75,7 @@ var _ = Describe("kubernetes", func() {
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "25053",
 				"--ip-family-mode", "ipv4",
+				"--iptables-logs",
 			},
 		}),
 		Entry("should generate with deprecated dns annotation", testCaseKumactl{

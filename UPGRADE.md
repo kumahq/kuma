@@ -6,6 +6,31 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.9.x`
+
+## Improvements in Transparent Proxy
+
+### Introduction of `--iptables-logs` Flag and `traffic.kuma.io/iptables-logs` Annotation
+
+We have introduced a new feature that enables logging for iptables rules, providing detailed insights into packets that match iptables rules. This feature is controlled through a new command-line flag and Kubernetes annotation.
+
+#### New Command-line Flag:
+
+- `--iptables-logs`: Enabling this flag will activate iptables logging. This logs details about matching packets, including IP/IPv6 headers, which can be accessed via `dmesg` or syslog. This feature is particularly useful for debugging and obtaining detailed information on the traffic being processed by iptables.
+
+#### New Kubernetes Annotation:
+
+- `traffic.kuma.io/iptables-logs`: This annotation can be applied to your Kubernetes deployments to enable iptables logging for specific pods or workloads. This allows for a granular control over logging, enabling it only where necessary.
+
+### Considerations:
+
+- **Performance Impact**: Enabling iptables logging may introduce a performance overhead, as every matching packet will be logged. It is recommended to enable this feature only in environments where detailed packet logging is necessary for debugging or monitoring.
+- **Log Volume**: Depending on the traffic volume and the rules defined, enabling this feature could generate a large volume of log data. Ensure your logging infrastructure can handle the increased volume.
+
+### Recommended Action:
+- **Testing**: Before enabling this feature in a production environment, it is recommended to test it in a staging or development environment to assess the impact on performance and log volume.
+- **Monitoring**: Once enabled, monitor the performance of the system as well as the size and growth rate of log files to avoid potential issues with disk space or system resources.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit
