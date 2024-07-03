@@ -7,7 +7,11 @@ on:
       runnersByArch:
         type: string
         required: false
+<<<<<<< HEAD
         default: '{"amd64": "ubuntu-latest", "arm64": "circleci"}'
+=======
+        default: ''
+>>>>>>> 9fbead7e2 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10745))
 permissions:
   contents: read
 env:
@@ -22,8 +26,7 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-    # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
-    runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
     strategy:
       fail-fast: false
       matrix:
