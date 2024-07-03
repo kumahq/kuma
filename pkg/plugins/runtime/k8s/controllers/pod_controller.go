@@ -221,6 +221,31 @@ func (r *PodReconciler) reconcileZoneEgress(ctx context.Context, pod *kube_core.
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+func (r *PodReconciler) findByEndpointSlices(ctx context.Context, svc *kube_core.Service, objUID kube_types.UID) (bool, error) {
+	endpointSlices := &kube_discovery.EndpointSliceList{}
+	if err := r.List(
+		ctx,
+		endpointSlices,
+		kube_client.InNamespace(svc.Namespace),
+		kube_client.MatchingLabels(map[string]string{
+			kube_discovery.LabelServiceName: svc.Name,
+		}),
+	); err != nil {
+		return false, errors.Wrap(err, "unable to list EndpointSlices for service")
+	}
+	for _, slice := range endpointSlices.Items {
+		for _, endpoint := range slice.Endpoints {
+			if endpoint.TargetRef != nil && endpoint.TargetRef.UID == objUID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+>>>>>>> c34ed6e54 (fix(k8s): avoid nil TargetRef pointer dereference (#10746))
 func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}

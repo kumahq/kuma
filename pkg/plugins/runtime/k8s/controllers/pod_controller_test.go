@@ -254,6 +254,39 @@ var _ = Describe("PodReconciler", func() {
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
+					Name:      "manual-example-no-target-ref",
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 90,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 9090,
+							},
+							AppProtocol: pointer.To("http"),
+						},
+					},
+				},
+			},
+			&kube_discovery.EndpointSlice{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "manual-example-no-target-ref",
+					Labels: map[string]string{
+						kube_discovery.LabelServiceName: "manual-example-no-target-ref",
+					},
+				},
+				AddressType: kube_discovery.AddressTypeIPv4,
+				Endpoints: []kube_discovery.Endpoint{{
+					Addresses: []string{"192.168.0.1"},
+					// TargetRef left empty on purpose - it's a valid scenario.
+				}},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
 					Name:      "ignored-service",
 					Annotations: map[string]string{
 						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
