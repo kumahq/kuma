@@ -240,7 +240,7 @@ func (r *PodReconciler) findByEndpointSlices(ctx context.Context, svc *kube_core
 	}
 	for _, slice := range endpointSlices.Items {
 		for _, endpoint := range slice.Endpoints {
-			if endpoint.TargetRef.UID == objUID {
+			if endpoint.TargetRef != nil && endpoint.TargetRef.UID == objUID {
 				return true, nil
 			}
 		}
