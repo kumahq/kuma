@@ -21,7 +21,7 @@ import (
 )
 
 type SecretValidator struct {
-	Decoder      *admission.Decoder
+	Decoder      admission.Decoder
 	Client       kube_client.Reader
 	Validator    secret_manager.SecretValidator
 	UnsafeDelete bool
