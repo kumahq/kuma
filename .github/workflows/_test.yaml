@@ -116,7 +116,7 @@ jobs:
                 ],
                 "arm64": []
               }
-          }
+            }
         run: |-
           ALL_RUNNERS='${{ env.ALL_RUNNERS }}'
           if [[ "${{ inputs.IS_TRUSTED_BUILD }}" == "true" ]]; then
@@ -124,7 +124,7 @@ jobs:
           else
             ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.untrusted_builds')
           fi
-          
+
           for ARCH in amd64 arm64; do
             COUNT=$(echo $ALL_RUNNERS | jq -r ".$ARCH | length")
             if [[ $COUNT -eq 0 ]]; then
