@@ -122,10 +122,8 @@ var _ = Describe("IngressTrafficRoute", func() {
 							Port:   10002,
 							Tags: map[string]string{
 								mesh_proto.ServiceTag: "example",
-								// mesh_proto.ZoneTag:    "zone-2",
 							},
-							Weight: 1,
-							// Locality:        &core_xds.Locality{Zone: "zone-2"},
+							Weight:          1,
 							ExternalService: &core_xds.ExternalService{},
 						},
 					},
