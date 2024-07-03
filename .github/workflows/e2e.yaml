@@ -7,10 +7,14 @@ on:
       runnersByArch:
         type: string
         required: false
+<<<<<<< HEAD:.github/workflows/e2e.yaml
         default: '{"amd64": "ubuntu-latest", "arm64": "circleci"}'
     secrets:
       circleCIToken:
         required: true
+=======
+        default: ''
+>>>>>>> 9fbead7e2 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10745)):.github/workflows/_e2e.yaml
 permissions:
   contents: read
 env:
@@ -23,8 +27,13 @@ env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   e2e:
+<<<<<<< HEAD:.github/workflows/e2e.yaml
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+=======
+    timeout-minutes: 60
+    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
+>>>>>>> 9fbead7e2 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10745)):.github/workflows/_e2e.yaml
     strategy:
       fail-fast: false
       matrix:
