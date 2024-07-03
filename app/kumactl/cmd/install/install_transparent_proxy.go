@@ -227,6 +227,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().IntVar(cfg.Retry.MaxRetries, "max-retries", pointer.Deref(cfg.Retry.MaxRetries), "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&cfg.Retry.SleepBetweenReties, "sleep-between-retries", cfg.Retry.SleepBetweenReties, "flag can be used to specify the amount of time to sleep between retries")
 
+	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
+
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 
 	return cmd
