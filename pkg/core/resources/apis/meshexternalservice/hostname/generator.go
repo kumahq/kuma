@@ -61,6 +61,9 @@ func (g *MeshExternalServiceHostnameGenerator) GenerateHostname(generator *hostn
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshexternalservice_api.MeshExternalServiceResource)(nil), resource)
 	}
+	if generator.Spec.Selector.MeshExternalService == nil {
+		return "", nil
+	}
 	if !generator.Spec.Selector.MeshExternalService.Matches(es.Meta.GetLabels()) {
 		return "", nil
 	}

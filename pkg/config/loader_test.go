@@ -375,6 +375,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.IPAM.MeshService.CIDR).To(Equal("251.0.0.0/8"))
 			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
+			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
 			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
@@ -765,6 +766,8 @@ ipam:
     cidr: 251.0.0.0/8
   meshExternalService:
     cidr: 252.0.0.0/8
+  meshMultiZoneService:
+    cidr: 253.0.0.0/8
   allocationInterval: 7s
 `,
 		}),
@@ -1049,6 +1052,7 @@ ipam:
 				"KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL":                              "7s",
 				"KUMA_IPAM_MESH_SERVICE_CIDR":                                                              "251.0.0.0/8",
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
+				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
 				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 			},
 			yamlFileConfig: "",

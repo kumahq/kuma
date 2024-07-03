@@ -280,6 +280,13 @@ controlPlane:
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
 
+  # -- Additional environment variables that will be passed to the control plane. Can be used with Kubernetes downward API
+  envVarEntries:
+  # - name: MY_NODE_NAME
+  #   valueFrom:
+  #     fieldRef:
+  #      fieldPath: spec.nodeName
+
   # -- Additional config maps to mount into the control plane, with optional inline values
   extraConfigMaps: [ ]
 #    - name: extra-config
