@@ -14,7 +14,7 @@ Example:
 ```yaml
 ...
   annotations:
-    kuma.io/transparent-proxying-reachable-services: ["demo-app_kuma-demo_svc_5000", "redis_kuma-demo_svc_6379"]
+    kuma.io/transparent-proxying-reachable-services: "demo-app_kuma-demo_svc_5000,redis_kuma-demo_svc_6379"
 ...
 ```
 
@@ -62,7 +62,7 @@ More details in (MADR #036)
 
 ## Considered Options
 
-* Support reachable and autoreachable services for `MeshService` and `MeshExternalService`
+* Support reachable and autoreachable services for `MeshService`, `MeshExternalService` and `MeshMultiZoneService`
 
 ## Decision Outcome
 
@@ -78,7 +78,7 @@ kuma.io/reachable-backend-refs: |
   - kind: MeshService
     name: demo-app
     namespace: kuma-demo # if missing, then my namespace
-    port: 5000
+    port: 5000 # if missing then all ports of a given service
   - kind: MeshService
     name: redis
     namespace: redis-system
@@ -156,7 +156,7 @@ This enhancement should make it easier to match the reachable services provided 
 
 ### Autoreachable services
 
-From a code perspective, we used to build a map of supported tags: `kuma.io/service`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-name`, and `k8s.kuma.io/service-port`, and later match `MeshTrafficPermission` to dataplanes with these tags. Since the introduction of `MeshService` and `MeshExternalService`, we might not need to iterate over all dataplanes. Instead, we can match all `MeshService` and `MeshExternalService` entries. Based on this information, we know which dataplanes need to be configured. The only limitation is that `MeshService` doesn't carry all tags that a dataplane might have, which means we can support a limited scope of tags, similar to how we do with `kuma.io/service`.
+From a code perspective, we used to build a map of supported tags: `kuma.io/service`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-name`, and `k8s.kuma.io/service-port`, and later match `MeshTrafficPermission` to dataplanes with these tags. Since the introduction of `MeshService` and `MeshExternalService`, we might not need to iterate over all dataplanes. Instead, we can match all `MeshService` and `MeshExternalService` entries. Based on this information, we know which dataplanes need to be configured. The only limitation is that `MeshService` doesn't carry all tags that a dataplane might have, which means that when using `MeshSubset`, users should be allowed to use the same tags as `dpTags` defined in `MeshService`.
 
 Targetting:
 
@@ -178,7 +178,9 @@ spec:
       app: backend
 ```
 
-In the case of `MeshExternalService`, we can introduce a top-level TargetRef for this type, which selects a specific `MeshExternalService`. The problem is that once the resource is synced between zones and a hash is added, the name needs to be the hashed one.
+In the case of `MeshExternalService`, we need to decide how we want to target them (this needs to be clarified in a separate MADR). For now, we can provide `MeshSubset` support.
+
+Option 1
 
 ```yaml
 kind: MeshExternalService
@@ -203,6 +205,7 @@ spec:
     namespace: kuma-system
 ```
 
+Option 2
 Other option is to use labels and `MeshSubset`
 
 ```yaml
