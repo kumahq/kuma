@@ -135,7 +135,9 @@ Most of the fields are optional and may not be used simultaneously. We need to s
 * When `name`, `namespace`, and `port` are defined(combination of them, all are not requried), you cannot use `labels`.
 * When `labels` are defined, you cannot use `name`, `namespace`, and `port`.
 
-Another thing that is required to do is add another fields to the `BackendRef` in Dataplane object: namespace and labels
+### Dataplane backendRef
+
+Another thing is adding another fields to the `BackendRef` in Dataplane object: namespace and labels
 ```proto
       message BackendRef {
         // Kind is a type of the object to target. Allowed: MeshService, MeshExternalService
@@ -152,11 +154,21 @@ Another thing that is required to do is add another fields to the `BackendRef` i
       }
 ```
 
-This enhancement should make it easier to match the reachable services provided by the user with the generated or provided outbounds.
+This enhancement should make it easier to match the reachable services provided by the user with the generated or provided outbounds. There is a disadventage that makes it maybe not the best option. If we expose it to the user, it might configure one `BackendRef` that reference many MeshServices. 
+
+Instead we can retrive `MeshService` and match based on its dpTags.
 
 ### Autoreachable services
 
 From a code perspective, we used to build a map of supported tags: `kuma.io/service`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-name`, and `k8s.kuma.io/service-port`, and later match `MeshTrafficPermission` to dataplanes with these tags. Since the introduction of `MeshService` and `MeshExternalService`, we might not need to iterate over all dataplanes. Instead, we can match all `MeshService` and `MeshExternalService` entries. Based on this information, we know which dataplanes need to be configured. The only limitation is that `MeshService` doesn't carry all tags that a dataplane might have, which means that when using `MeshSubset`, users should be allowed to use the same tags as `dpTags` defined in `MeshService`.
+
+Algorithm:
+
+1. Take each`MeshService`
+2. For each `MeshService`, take tags from dpTags (`+kuma.io/zone`, +`kuma.io/origin`) and build a fake "DPP" with one inbound
+3. Execute MatchedPolicies on this "DPP" with a list of `MeshTrafficPermission` to get rules, in this case we have to trim tags from `MeshTrafficPermission` to have only one from `DPP`.
+4. Store rules for each `MeshService`.
+5. When we build XDS config for client DPP and check if we should add a cluster/listener for given `MeshService`, execute rules for `MeshService` using client DPP.
 
 Targetting:
 
@@ -178,7 +190,7 @@ spec:
       app: backend
 ```
 
-In the case of `MeshExternalService`, we need to decide how we want to target them (this needs to be clarified in a separate MADR). For now, we can provide `MeshSubset` support.
+In the case of `MeshExternalService`, we need to decide how we want to target them (this needs to be clarified in a separate MADR). For now, we are going to provide all `MeshExternalService` entries until we figure out targeting.
 
 Option 1
 
