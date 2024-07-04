@@ -195,10 +195,21 @@ func addOutputRules(
 	nat *table.NatTable,
 	ipv6 bool,
 ) error {
+	// Retrieve the fully qualified name of the outbound chain based on
+	// configuration.
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
+	// DNS redirection port from configuration.
 	dnsRedirectPort := cfg.Redirect.DNS.Port
+	// Owner user ID for configuring UID-based rules.
 	uid := cfg.Owner.UID
+<<<<<<< HEAD
 	rulePosition := 1
+=======
+	// Initial position for the first rule in the NAT table.
+	rulePosition := uint(1)
+
+	// Add logging rule if logging is enabled in the configuration.
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	if cfg.Log.Enabled {
 		nat.Output().Insert(
 			rulePosition,
@@ -207,20 +218,27 @@ func addOutputRules(
 		rulePosition++
 	}
 
-	// Excluded outbound ports for UIDs
+	// Loop through UID-specific excluded ports and add corresponding NAT rules.
 	for _, uIDsToPorts := range cfg.Redirect.Outbound.ExcludePortsForUIDs {
 		var protocol *Parameter
 
+		// Determine the protocol type and set up the correct parameter.
 		switch uIDsToPorts.Protocol {
 		case TCP:
 			protocol = Protocol(Tcp(DestinationPortRangeOrValue(uIDsToPorts)))
 		case UDP:
 			protocol = Protocol(Udp(DestinationPortRangeOrValue(uIDsToPorts)))
 		default:
+			// Return an error if the protocol is neither TCP nor UDP.
 			return fmt.Errorf("unknown protocol %s, only 'tcp' or 'udp' allowed", uIDsToPorts.Protocol)
 		}
 
+<<<<<<< HEAD
 		nat.Output().Insert(
+=======
+		// Add rule to return early for specified ports and UID.
+		nat.Output().AddRuleAtPosition(
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			rulePosition,
 			Match(Multiport()),
 			protocol,
@@ -230,13 +248,23 @@ func addOutputRules(
 		rulePosition++
 	}
 
+	// Conditionally add DNS redirection rules if DNS redirection is enabled.
 	if cfg.ShouldRedirectDNS() {
+		// Default jump target for DNS rules.
 		jumpTarget := Return()
-		if !ipv6 && cfg.ShouldFallbackDNSToUpstreamChain() {
-			jumpTarget = ToUserDefinedChain(cfg.Redirect.DNS.UpstreamTargetChain)
+		// Determine if DockerOutput chain should be targeted based on IPv4/IPv6
+		// and functionality.
+		if (ipv6 && cfg.Executables.IPv6.Functionality.Chains.DockerOutput) ||
+			(!ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput) {
+			jumpTarget = ToUserDefinedChain(ChainDockerOutput)
 		}
 
+<<<<<<< HEAD
 		nat.Output().Insert(
+=======
+		// Add DNS rule for redirecting DNS traffic based on UID.
+		nat.Output().AddRuleAtPosition(
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			rulePosition,
 			Protocol(Udp(DestinationPort(DNSPort))),
 			Match(Owner(Uid(uid))),
@@ -244,6 +272,8 @@ func addOutputRules(
 		)
 		rulePosition++
 
+		// Add rules to redirect all DNS requests or only those to specific
+		// servers.
 		if cfg.ShouldCaptureAllDNS() {
 			nat.Output().Insert(
 				rulePosition,
@@ -262,11 +292,22 @@ func addOutputRules(
 			}
 		}
 	}
+<<<<<<< HEAD
 	nat.Output().
 		Append(
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(outboundChainName)),
 		)
+=======
+
+	// Add a default rule to direct all TCP traffic to the user-defined outbound
+	// chain.
+	nat.Output().AddRule(
+		Protocol(Tcp()),
+		Jump(ToUserDefinedChain(outboundChainName)),
+	)
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	return nil
 }
 
@@ -328,6 +369,7 @@ func addPreroutingRules(cfg config.Config, nat *table.NatTable, ipv6 bool) error
 	return nil
 }
 
+<<<<<<< HEAD
 func buildNatTable(
 	cfg config.Config,
 	dnsServers []string,
@@ -337,6 +379,18 @@ func buildNatTable(
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 	nat := table.Nat()
+=======
+func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, error) {
+	prefix := cfg.Redirect.NamePrefix
+	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
+
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
+	}
+
+	nat := tables.Nat()
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
