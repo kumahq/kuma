@@ -97,12 +97,8 @@ resourceRules:
     origin: [...]
 ```
 
-Policy plugins should implement a fallback logic when trying to get a conf for the given `MeshService{name: backend}`:
-
-1. Lookup `MeshService{name: backend}` in the new `ToRules.ResourceRules`
-2. If it exists then the real MeshService `backend` exists in the cluster and we can use `ResourceRule.Conf`
-3. If it's absent then fallback to legacy `ToRules.Rules` and get conf for `kuma.io/service: backend` tag
-
+Policy plugins should use old `ToRules.Rules` when computing configurations for legacy destinations with `kuma.io/service` tags.
+Policy plugins should use new `ToRules.ResourceRule` when computing configuration for the new MeshService resources.
 Eventually we're going to delete `ToRules.Rules`.
 
 When it comes to the Inspect API, we're going to add a new field `to `InspectRule`
