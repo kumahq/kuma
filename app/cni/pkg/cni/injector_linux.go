@@ -103,6 +103,16 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
 	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDsParsed
 
+	cfg.DropInvalidPackets, err = GetEnabled(intermediateConfig.dropInvalidPackets)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.Log.Enabled, err = GetEnabled(intermediateConfig.iptablesLogs)
+	if err != nil {
+		return nil, err
+	}
+
 	isGateway, err := GetEnabled(intermediateConfig.isGateway)
 	if err != nil {
 		return nil, err
