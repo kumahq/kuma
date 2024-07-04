@@ -186,7 +186,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
 		return errors.Wrap(configErr, "pod excluded - pod intermediateConfig failed due to bad params")
 	} else {
-		if err := Inject(args.Netns, logger, intermediateConfig); err != nil {
+		if err := Inject(ctx, args.Netns, intermediateConfig, logger); err != nil {
 			return errors.Wrap(err, "pod excluded - could not inject rules into namespace")
 		}
 	}

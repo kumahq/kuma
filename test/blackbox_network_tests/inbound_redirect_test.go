@@ -48,7 +48,12 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -127,7 +132,12 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				Log: config.LogConfig{
 					Enabled: true,
 				},
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -201,7 +211,13 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -291,7 +307,13 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -381,7 +403,13 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -473,7 +501,13 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			peerAddress := ns.Veth().PeerAddress()
 
 			redirectReadyC, redirectErrC := tcp.UnsafeStartTCPServer(
@@ -564,7 +598,12 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -640,7 +679,12 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,

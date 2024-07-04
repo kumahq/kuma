@@ -49,7 +49,12 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -128,7 +133,12 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -222,7 +232,12 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 				Log: config.LogConfig{
 					Enabled: true,
 				},
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -335,7 +350,12 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -445,7 +465,12 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 				Log: config.LogConfig{
 					Enabled: true,
 				},
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -542,7 +567,12 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -639,7 +669,12 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -734,7 +769,12 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -811,7 +851,12 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -906,7 +951,12 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns,
@@ -1014,7 +1064,12 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns2,
@@ -1105,7 +1160,12 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
 				ns2,

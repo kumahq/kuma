@@ -1,10 +1,14 @@
 package uninstall_test
 
 import (
+<<<<<<< HEAD
 	"bytes"
 	"os"
 	"path/filepath"
 	"regexp"
+=======
+	"strings"
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
+<<<<<<< HEAD
 var _ = Describe("kumactl install tracing", func() {
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -21,12 +26,15 @@ var _ = Describe("kumactl install tracing", func() {
 		stderr = &bytes.Buffer{}
 	})
 
+=======
+var _ = Describe("kumactl uninstall transparent-proxy", func() {
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	type testCase struct {
 		extraArgs  []string
 		goldenFile string
 	}
 
-	DescribeTable("should install transparent proxy",
+	DescribeTable("should uninstall transparent proxy",
 		func(given testCase) {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
@@ -39,7 +47,16 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
+<<<<<<< HEAD
 			Expect(stderr.String()).To(BeEmpty())
+=======
+			Expect(stderr.String()).To(WithTransform(func(in string) string {
+				return strings.ReplaceAll(
+					in,
+					"# [WARNING]: dry-run mode: No valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables\n", "",
+				)
+			}, Equal("Error: transparent proxy cleanup failed: cleanup is not supported\n")))
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 			// when
 			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))

@@ -56,7 +56,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -133,7 +139,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			originalAddress := &net.UDPAddr{IP: net.ParseIP(consts.LocalhostIPv4), Port: int(consts.DNSPort)}
 			redirectedToAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
@@ -224,7 +236,13 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			redirectedAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 			originalAddress := &net.UDPAddr{IP: net.ParseIP(consts.LocalhostIPv6), Port: int(consts.DNSPort)}
 
@@ -309,7 +327,13 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, dnsPort)
 
 			readyC, errC := tcp.UnsafeStartTCPServer(
@@ -396,7 +420,13 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -470,7 +500,13 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, dnsPort)
 
 			readyC, errC := tcp.UnsafeStartTCPServer(
@@ -562,7 +598,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -678,7 +720,13 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 				IPv6:          true,
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -782,7 +830,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 					},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -858,7 +912,13 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 				},
 				RuntimeStdout: io.Discard,
 				IPv6:          true,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
 
 			readyC, errC := udp.UnsafeStartUDPServer(ns, serverAddress, udp.ReplyWithReceivedMsg)
@@ -940,7 +1000,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			want := map[string]uint{
 				s1Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
 				s2Address: blackbox_network_tests.DNSConntrackZoneSplittingStressCallsAmount,
@@ -1073,7 +1139,13 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 					VNet: config.VNet{Networks: []string{"s-peer+:192.168.0.2/16"}},
 				},
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf(":%d", randomPort)
 			readyC, errC := udp.UnsafeStartUDPServer(ns2, serverAddress, udp.ReplyWithReceivedMsg)
 			Consistently(errC).ShouldNot(Receive())
@@ -1162,7 +1234,13 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
+<<<<<<< HEAD
 			}
+=======
+			}.Initialize(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			serverAddress := fmt.Sprintf(":%d", randomPort)
 			readyC, errC := udp.UnsafeStartUDPServer(ns2, serverAddress, udp.ReplyWithReceivedMsg)
 			Consistently(errC).ShouldNot(Receive())

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 \* nat
 -N (.*)_INBOUND
 -N (.*)_OUTBOUND
@@ -14,3 +15,24 @@
 -A (.*)_OUTBOUND -j (.*)_OUTBOUND_REDIRECT
 -A (.*)_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports (15006|15010)
 -A (.*)_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001
+=======
+### IPv4 ###
+
+* nat
+-N KUMA_MESH_INBOUND
+-N KUMA_MESH_OUTBOUND
+-N KUMA_MESH_INBOUND_REDIRECT
+-N KUMA_MESH_OUTBOUND_REDIRECT
+-A PREROUTING -p tcp -j KUMA_MESH_INBOUND
+-A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -s subnetPlaceholder/mask -o ifPlaceholder -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -o ifPlaceholder ! -d subnetPlaceholder/mask -m owner --uid-owner 0 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -p tcp -o ifPlaceholder -m owner ! --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -m owner --uid-owner 0 -j RETURN
+-A KUMA_MESH_OUTBOUND -d subnetPlaceholder/mask -j RETURN
+-A KUMA_MESH_OUTBOUND -j KUMA_MESH_OUTBOUND_REDIRECT
+-A KUMA_MESH_INBOUND_REDIRECT -p tcp -j REDIRECT --to-ports inboundPort
+-A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -j REDIRECT --to-ports 15001
+COMMIT
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
