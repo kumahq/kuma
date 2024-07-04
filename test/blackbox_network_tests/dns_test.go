@@ -58,7 +58,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
@@ -137,7 +137,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			originalAddress := &net.UDPAddr{IP: net.ParseIP(consts.LocalhostIPv4), Port: int(consts.DNSPort)}
@@ -230,7 +230,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			redirectedAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
@@ -317,7 +317,7 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, dnsPort)
@@ -406,7 +406,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
@@ -482,7 +482,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, dnsPort)
@@ -576,7 +576,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			want := map[string]uint{
@@ -694,7 +694,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 				IPv6:          true,
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			want := map[string]uint{
@@ -800,7 +800,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv4, randomPort)
@@ -878,7 +878,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 				},
 				RuntimeStdout: io.Discard,
 				IPv6:          true,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf("%s:%d", consts.LocalhostIPv6, randomPort)
@@ -962,7 +962,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			want := map[string]uint{
@@ -1097,7 +1097,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 					VNet: config.VNet{Networks: []string{"s-peer+:192.168.0.2/16"}},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf(":%d", randomPort)
@@ -1188,7 +1188,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			serverAddress := fmt.Sprintf(":%d", randomPort)

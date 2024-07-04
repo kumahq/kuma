@@ -255,7 +255,9 @@ func genEntriesForImage(
 		postStart = [][]string{aptUpdate, aptInstallIptables, userAdd}
 	case strings.Contains(image, "alpine"):
 		postStart = [][]string{apkAddIptables, addUser}
-	case strings.Contains(image, "redhat/ubi"), strings.Contains(image, "centos"):
+	case strings.Contains(image, "redhat/ubi"),
+		strings.Contains(image, "centos"),
+		strings.Contains(image, "fedora"):
 		postStart = [][]string{yumUpdate, yumInstallIptables, userAdd}
 	case strings.Contains(image, "amazonlinux"):
 		postStart = [][]string{

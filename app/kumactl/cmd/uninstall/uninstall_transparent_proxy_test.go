@@ -2,6 +2,7 @@ package uninstall_test
 
 import (
 	"bytes"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -9,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
-var _ = Describe("kumactl install tracing", func() {
+var _ = Describe("kumactl uninstall transparent-proxy", func() {
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 
@@ -23,7 +24,7 @@ var _ = Describe("kumactl install tracing", func() {
 		goldenFile string
 	}
 
-	DescribeTable("should install transparent proxy",
+	DescribeTable("should uninstall transparent proxy",
 		func(given testCase) {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
@@ -36,7 +37,12 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(stderr.String()).To(Equal("Error: transparent proxy cleanup failed: cleanup is not supported\n"))
+			Expect(stderr.String()).To(WithTransform(func(in string) string {
+				return strings.ReplaceAll(
+					in,
+					"# [WARNING]: dry-run mode: No valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables\n", "",
+				)
+			}, Equal("Error: transparent proxy cleanup failed: cleanup is not supported\n")))
 
 			// TODO once delete works again to something similar to what we do for `install_transparent_proxy_test.go` with Transform.
 		},

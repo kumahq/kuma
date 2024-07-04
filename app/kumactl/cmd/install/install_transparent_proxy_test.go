@@ -23,7 +23,7 @@ var _ = Describe("kumactl install transparent proxy", func() {
 	})
 
 	type testCase struct {
-		skip         func(stdout, stderr *bytes.Buffer) bool
+		skip         func(stdout, stderr string) bool
 		extraArgs    []string
 		goldenFile   string
 		errorMatcher gomega_types.GomegaMatcher
@@ -39,8 +39,12 @@ var _ = Describe("kumactl install transparent proxy", func() {
 
 			// when
 			err := rootCmd.Execute()
+			stdoutStr := stdout.String()
+			stderrStr := strings.NewReplacer(
+				"# [WARNING]: dry-run mode: No valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables\n", "",
+			).Replace(stderr.String())
 
-			if given.skip != nil && !given.skip(stdout, stderr) {
+			if given.skip != nil && given.skip(stdoutStr, stderrStr) {
 				Skip("test skipped")
 			}
 
@@ -48,15 +52,17 @@ var _ = Describe("kumactl install transparent proxy", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			if given.errorMatcher == nil {
-				Expect(stderr.String()).To(BeEmpty())
+				Expect(stderrStr).To(BeEmpty())
 			} else {
-				Expect(stderr.String()).To(given.errorMatcher)
+				Expect(stderrStr).To(given.errorMatcher)
 			}
 
-			Expect(stdout.String()).To(WithTransform(func(in string) string {
+			Expect(stdoutStr).To(WithTransform(func(in string) string {
 				// Replace some stuff that are environment dependent with placeholders
 				out := regexp.MustCompile(`-o ([^ ]+)`).ReplaceAllString(in, "-o ifPlaceholder")
 				out = regexp.MustCompile(`-([sd]) ([^ ]+)`).ReplaceAllString(out, "-$1 subnetPlaceholder/mask")
+				out = regexp.MustCompile(`(?m)^-I OUTPUT (\d+) -p udp --dport 53 -m owner --uid-owner (\d+) -j (\w+)$`).
+					ReplaceAllString(out, "-I OUTPUT $1 -p udp --dport 53 -m owner --uid-owner $2 -j dnsJumpTargetPlaceholder")
 				out = strings.ReplaceAll(out, "15006", "inboundPort")
 				out = strings.ReplaceAll(out, "15010", "inboundPort")
 				return out
@@ -80,13 +86,13 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
-			skip: func(stdout, stderr *bytes.Buffer) bool {
-				return strings.HasPrefix(
-					stderr.String(),
-					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+			skip: func(stdout, stderr string) bool {
+				return !strings.HasPrefix(
+					stderr,
+					"# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module",
 				)
 			},
-			errorMatcher: HavePrefix("# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:"),
+			errorMatcher: HavePrefix("# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module"),
 			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
@@ -95,10 +101,10 @@ var _ = Describe("kumactl install transparent proxy", func() {
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
-			skip: func(stdout, stderr *bytes.Buffer) bool {
-				return !strings.HasPrefix(
-					stderr.String(),
-					"# [WARNING] error occurred when validating if 'conntrack' iptables module is present. Rules for DNS conntrack zone splitting won't be applied:",
+			skip: func(stdout, stderr string) bool {
+				return strings.HasPrefix(
+					stderr,
+					"# [WARNING]: conntrack zone splitting for IPv4 is disabled. Functionality requires the 'conntrack' iptables module",
 				)
 			},
 			goldenFile: "install-transparent-proxy.dns.golden.txt",
