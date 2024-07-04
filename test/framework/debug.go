@@ -101,11 +101,12 @@ func ensureDebugDir() {
 func CpRestarted(cluster Cluster) bool {
 	switch cluster.(type) {
 	case *UniversalCluster:
+		// CP does not recover restart on universal. If it crashed, we can just check if the process is still running.
 		out, _, _ := cluster.Exec("", "", AppModeCP, "ps", "aux")
-		return strings.Contains(out, "kuma-cp run")
+		return !strings.Contains(out, "kuma-cp run")
 	case *K8sCluster:
 		restartCount := RestartCount(cluster.GetKuma().(*K8sControlPlane).GetKumaCPPods())
-		return restartCount == 0
+		return restartCount > 0
 	default:
 		return false
 	}
