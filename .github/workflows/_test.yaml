@@ -104,7 +104,7 @@ jobs:
             {
               "trusted_builds": {
                 "amd64": [
-                  "ubuntu-latest-kong"
+                  "ubuntu-latest"
                 ],
                 "arm64": [
                   "ubuntu-latest-arm64-kong"
