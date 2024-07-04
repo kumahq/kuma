@@ -160,8 +160,8 @@ func DetectIptablesExecutables(
 	cfg config.Config,
 	ipv6 bool,
 ) (*Executables, error) {
-	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)
-	legacy, legacyVerifyErr := newExecutables(ipv6, "legacy").verify(ctx, cfg)
+	nft, nftVerifyErr := newExecutables(ipv6, "nft").verify(ctx, cfg)          //nolint:contextcheck
+	legacy, legacyVerifyErr := newExecutables(ipv6, "legacy").verify(ctx, cfg) //nolint:contextcheck
 
 	if nftVerifyErr != nil && legacyVerifyErr != nil {
 		return nil, fmt.Errorf("no valid iptables executable found: %s, %s", nftVerifyErr, legacyVerifyErr)
