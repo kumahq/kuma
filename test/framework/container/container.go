@@ -1,7 +1,6 @@
 package container
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"strings"
@@ -50,10 +49,6 @@ func (b *ContainerBuilder) WithKumactlBinary(binary string) *ContainerBuilder {
 			WithStartupTimeout(10*time.Second).
 			WithExitCodeMatcher(func(exitCode int) bool {
 				return exitCode == 0
-			}).
-			WithResponseMatcher(func(body io.Reader) bool {
-				data, _ := io.ReadAll(body)
-				return bytes.Contains(data, []byte("Client: "))
 			}),
 	)
 
