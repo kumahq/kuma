@@ -164,7 +164,7 @@ From a code perspective, we used to build a map of supported tags: `kuma.io/serv
 
 Algorithm:
 
-1. Take each`MeshService`
+1. Take each `MeshService`
 2. For each `MeshService`, take tags from dpTags (`+kuma.io/zone`, +`kuma.io/origin`) and build a fake "DPP" with one inbound
 3. Execute MatchedPolicies on this "DPP" with a list of `MeshTrafficPermission` to get rules, in this case we have to trim tags from `MeshTrafficPermission` to have only one from `DPP`.
 4. Store rules for each `MeshService`.
@@ -232,7 +232,7 @@ metadata:
     kuma.io/origin: zone
     access.io/domain: "httpbin"
 spec:
-  destinations:
+  endpoints:
   - address: 192.168.0.1
     port: 9090 
 ---
