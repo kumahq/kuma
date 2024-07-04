@@ -58,6 +58,15 @@ func (m *HostnameGeneratorBuilder) WithMeshExternalServiceMatchLabels(labels map
 	return m
 }
 
+func (m *HostnameGeneratorBuilder) WithMeshMultiZoneServiceMatchLabels(labels map[string]string) *HostnameGeneratorBuilder {
+	m.res.Spec.Selector = hostnamegenerator_api.Selector{
+		MeshMultiZoneService: &hostnamegenerator_api.LabelSelector{
+			MatchLabels: labels,
+		},
+	}
+	return m
+}
+
 func (m *HostnameGeneratorBuilder) Build() *hostnamegenerator_api.HostnameGeneratorResource {
 	if err := m.res.Validate(); err != nil {
 		panic(err)

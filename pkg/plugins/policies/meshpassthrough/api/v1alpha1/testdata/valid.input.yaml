@@ -1,6 +1,5 @@
 targetRef:
   kind: Mesh
-  proxyTypes: ["Sidecar"]
 default:
   appendMatch:
   - type: IP

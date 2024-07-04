@@ -64,11 +64,26 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 	return pods[0].Status.PodIP, nil
 }
 
+func ServiceIP(cluster Cluster, name string, namespace string) (string, error) {
+	clusterIP, err := k8s.RunKubectlAndGetOutputE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(namespace),
+		"get", "service", name, "-ojsonpath={.spec.clusterIP}",
+	)
+	if err != nil {
+		return "", err
+	}
+	if clusterIP == "" {
+		return "", errors.Errorf("expected not empty ClusterIP for service: %s namespace: %s", name, namespace)
+	}
+	return clusterIP, nil
+}
+
 func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/experimental-install.yaml")
+		"apply", "-f", "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/experimental-install.yaml")
 }
 
 func UpdateKubeObject(
