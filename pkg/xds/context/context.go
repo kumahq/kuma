@@ -68,6 +68,7 @@ type MeshContext struct {
 	MeshServiceByName           map[string]*meshservice_api.MeshServiceResource
 	MeshExternalServiceByName   map[string]*meshexternalservice_api.MeshExternalServiceResource
 	EndpointMap                 xds.EndpointMap
+	IngressEndpointMap          xds.EndpointMap
 	ExternalServicesEndpointMap xds.EndpointMap
 	CrossMeshEndpoints          map[xds.MeshName]xds.EndpointMap
 	VIPDomains                  []xds.VIPDomains

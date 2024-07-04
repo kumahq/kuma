@@ -198,6 +198,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	externalServices := resources.ExternalServices().Items
 	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, meshExternalServices, loader, m.zone)
+	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -221,6 +222,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		MeshExternalServiceByName:   meshExternalServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
+		IngressEndpointMap:          ingressEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,
 		VIPDomains:                  domains,
 		VIPOutbounds:                outbounds,
