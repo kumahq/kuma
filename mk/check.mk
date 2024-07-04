@@ -1,6 +1,3 @@
-.PHONY: fmt
-fmt: fmt/proto fmt/ci ## Dev: Run various format tools
-
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
 	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT) -i
@@ -46,7 +43,7 @@ ginkgo/lint:
 format/common: generate docs tidy ginkgo/unfocus fmt/ci
 
 .PHONY: format
-format: fmt format/common
+format: fmt/proto fmt/ci format/common
 
 .PHONY: kube-lint
 kube-lint:
