@@ -124,6 +124,18 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 		exitCode, reader, err := container.Exec(
 			context.Background(),
 			[]string{cmd},
+			// Note: exec.Multiplexed() in testcontainers-go < v0.30.0
+			// prioritizes stderr. If there are messages on stderr, it will
+			// ignore stdout and return only stderr.
+			//
+			// We are ignoring stderr here because many tests produce
+			// non-critical warning messages such as:
+			//   # Warning: iptables-legacy tables present, use
+			//   iptables-legacy-save to see them
+			// These warnings can be safely ignored
+			exec.ProcessOptionFunc(func(opts *exec.ProcessOptions) {
+				opts.ExecConfig.AttachStderr = false
+			}),
 			exec.Multiplexed(),
 		)
 		Expect(err).NotTo(HaveOccurred())
