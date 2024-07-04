@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"net"
 	"path/filepath"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -223,7 +223,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				To(matchers.MatchGoldenYAML(endpointsGolden))
 		},
 
-		FEntry("split-traffic", func() outboundsTestCase {
+		Entry("split-traffic", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoints("backend",
 					xds_builders.Endpoint().
@@ -276,7 +276,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									},
 									{
 										TargetRef: builders.TargetRefService(
-										    "other-backend",
+											"other-backend",
 										),
 										Weight: pointer.To(uint(10)),
 									},
@@ -287,7 +287,7 @@ var _ = Describe("MeshTCPRoute", func() {
 											WithNamespace("kuma-system").
 											Build(),
 										Weight: pointer.To(uint(5)),
-										Port: pointer.To(uint32(8007)),
+										Port:   pointer.To(uint32(8007)),
 									},
 									{
 										TargetRef: builders.TargetRefService(
@@ -303,7 +303,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[v1alpha1.MeshServiceType] = &v1alpha1.MeshServiceResourceList{
-				Items:      []*v1alpha1.MeshServiceResource{
+				Items: []*v1alpha1.MeshServiceResource{
 					builders.MeshService().AddIntPort(8007, 8007, core_mesh.ProtocolHTTP).WithName("ms-1.kuma-system").WithMesh("default").Build(),
 				},
 			}

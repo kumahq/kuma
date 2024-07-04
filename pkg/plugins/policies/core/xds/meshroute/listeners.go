@@ -5,12 +5,12 @@ import (
 	"sort"
 	"strings"
 
-
 	"golang.org/x/exp/maps"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
@@ -72,6 +72,7 @@ func mapToSplitBackendRefs(refs []common_api.BackendRef) []BackendRef {
 
 	return newRefs
 }
+
 func MakeTCPSplit(
 	clusterCache map[BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
@@ -147,14 +148,16 @@ func CollectServices(
 				if port.AppProtocol != "" {
 					protocol = port.AppProtocol
 				}
+
 				dests = append(dests, DestinationService{
 					Outbound:    oface,
 					Protocol:    protocol,
 					ServiceName: ms.DestinationName(outbound.BackendRef.Port),
 					BackendRef: common_api.BackendRef{
 						TargetRef: common_api.TargetRef{
-							Kind: common_api.MeshService,
-							Name: ms.GetMeta().GetName(),
+							Kind:      common_api.MeshService,
+							Name:      ms.GetMeta().GetName(),
+							Namespace: ms.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
 						},
 						Port: &port.Port,
 					},
@@ -169,8 +172,9 @@ func CollectServices(
 					ServiceName: mes.DestinationName(outbound.BackendRef.Port),
 					BackendRef: common_api.BackendRef{
 						TargetRef: common_api.TargetRef{
-							Kind: common_api.MeshExternalService,
-							Name: mes.GetMeta().GetName(),
+							Kind:      common_api.MeshExternalService,
+							Name:      mes.GetMeta().GetName(),
+							Namespace: ms.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
 						},
 						Port: pointer.To(uint32(port)),
 					},
