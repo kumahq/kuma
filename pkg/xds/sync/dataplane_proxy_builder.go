@@ -144,6 +144,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				continue
 			}
 		} else {
+			/// add port check
 			if len(reachableBackends) != 0 {
 				if !reachableBackends[BackendKey{
 					Kind: outbound.BackendRef.Kind,
