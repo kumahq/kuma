@@ -1,5 +1,5 @@
 .PHONY: fmt
-fmt: golangci-lint-fmt fmt/proto fmt/ci ## Dev: Run various format tools
+fmt: fmt/proto fmt/ci ## Dev: Run various format tools
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
@@ -23,12 +23,6 @@ ifndef CI
 else
 	@echo "skipping golangci-lint as it's done as a github action"
 endif
-
-.PHONY: golangci-lint-fmt
-golangci-lint-fmt:
-	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
-		--disable-all \
-		--enable gofumpt
 
 .PHONY: fmt/ci
 fmt/ci:
