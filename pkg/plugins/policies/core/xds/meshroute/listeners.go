@@ -148,7 +148,10 @@ func CollectServices(
 				if port.AppProtocol != "" {
 					protocol = port.AppProtocol
 				}
-
+				ns := ""
+				if ms.GetMeta().GetNameExtensions() != nil {
+					ns = ms.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent]
+				}
 				dests = append(dests, DestinationService{
 					Outbound:    oface,
 					Protocol:    protocol,
@@ -157,7 +160,7 @@ func CollectServices(
 						TargetRef: common_api.TargetRef{
 							Kind:      common_api.MeshService,
 							Name:      ms.GetMeta().GetName(),
-							Namespace: ms.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
+							Namespace: ns,
 						},
 						Port: &port.Port,
 					},
@@ -166,6 +169,10 @@ func CollectServices(
 			if mesOk {
 				port := mes.Spec.Match.Port
 				protocol := mes.Spec.Match.Protocol
+				ns := ""
+				if mes.GetMeta().GetNameExtensions() != nil {
+					ns = mes.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent]
+				}
 				dests = append(dests, DestinationService{
 					Outbound:    oface,
 					Protocol:    core_mesh.Protocol(protocol),
@@ -174,7 +181,7 @@ func CollectServices(
 						TargetRef: common_api.TargetRef{
 							Kind:      common_api.MeshExternalService,
 							Name:      mes.GetMeta().GetName(),
-							Namespace: ms.GetMeta().GetNameExtensions()[model.K8sNamespaceComponent],
+							Namespace: ns,
 						},
 						Port: pointer.To(uint32(port)),
 					},
