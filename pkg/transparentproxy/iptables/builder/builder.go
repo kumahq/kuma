@@ -1,18 +1,20 @@
 package builder
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+<<<<<<< HEAD
 	"net"
 	"os"
+=======
+	"slices"
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
-	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -69,9 +71,39 @@ func (t *IPTables) Build(verbose bool) string {
 func BuildIPTables(
 	cfg config.Config,
 	dnsServers []string,
+=======
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+)
+
+// BuildIPTablesForRestore constructs the complete set of iptables rules for
+// restoring, based on the provided configuration and IP version.
+//
+// This function performs the following steps:
+//  1. Builds the NAT table rules by calling `buildNatTable`. If this step
+//     fails, it returns an error indicating the failure to build the NAT table.
+//  2. Builds the rules for the raw, NAT, and mangle tables using the
+//     `BuildRulesForRestore` function.
+//  3. Filters out any empty rule sets from the results.
+//  4. Joins the remaining rules with a separator based on the verbosity setting
+//     from the configuration.
+//  5. Returns the joined rules as a single string.
+//
+// Args:
+//
+//	cfg (config.InitializedConfig): The configuration used to initialize the
+//	  iptables rules.
+//	ipv6 (bool): A boolean indicating whether to build rules for IPv6.
+//
+// Returns:
+//
+//	string: The complete set of iptables rules as a single string.
+//	error: An error if the NAT table rules cannot be built.
+func BuildIPTablesForRestore(
+	cfg config.InitializedConfig,
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	ipv6 bool,
-	iptablesExecutablePath string,
 ) (string, error) {
+<<<<<<< HEAD
 	cfg = config.MergeConfigWithDefaults(cfg)
 
 	loopbackIface, err := getLoopback()
@@ -80,10 +112,15 @@ func BuildIPTables(
 	}
 
 	natTable, err := buildNatTable(cfg, dnsServers, loopbackIface.Name, ipv6)
+=======
+	// Attempt to build the NAT table rules.
+	natTable, err := buildNatTable(cfg, ipv6)
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	if err != nil {
-		return "", fmt.Errorf("build nat table: %s", err)
+		return "", fmt.Errorf("failed to build NAT table: %w", err)
 	}
 
+<<<<<<< HEAD
 	return newIPTables(
 		buildRawTable(cfg, dnsServers, iptablesExecutablePath),
 		natTable,
@@ -257,63 +294,60 @@ func RestoreIPTables(ctx context.Context, cfg config.Config) (string, error) {
 	}
 
 	ipv4Restorer, err := newIPTablesRestorer(ctx, cfg, false, dnsIpv4)
-	if err != nil {
-		return "", err
+=======
+	// Build the rules for raw, NAT, and mangle tables, filtering out any empty
+	// sets.
+	result := slices.DeleteFunc([]string{
+		tables.BuildRulesForRestore(buildRawTable(cfg, ipv6), cfg.Verbose),
+		tables.BuildRulesForRestore(natTable, cfg.Verbose),
+		tables.BuildRulesForRestore(buildMangleTable(cfg, ipv6), cfg.Verbose),
+	}, func(s string) bool { return s == "" })
+
+	// Determine the separator based on verbosity setting.
+	separator := "\n"
+	if cfg.Verbose {
+		separator = "\n\n"
 	}
 
-	output, err := ipv4Restorer.restore(ctx)
+	// Join the rules with the determined separator and return.
+	return strings.Join(result, separator) + "\n", nil
+}
+
+func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
+	cfg.Logger.Info("kumactl is about to apply the iptables rules that " +
+		"will enable transparent proxying on the machine. The SSH connection " +
+		"may drop. If that happens, just reconnect again.")
+
+	rules, err := BuildIPTablesForRestore(cfg, false)
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	if err != nil {
-		return "", fmt.Errorf("cannot restore ipv4 iptable rules: %s", err)
+		return "", errors.Wrap(err, "unable to build iptables rules")
+	}
+
+	output, err := cfg.Executables.IPv4.Restore(ctx, rules)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to restore iptables rules")
 	}
 
 	if cfg.IPv6 {
+<<<<<<< HEAD
 		ipv6Restorer, err := newIPTablesRestorer(ctx, cfg, true, dnsIpv6)
+=======
+		rules, err := BuildIPTablesForRestore(cfg, true)
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "unable to build ip6tables rules")
 		}
 
-		ipv6Output, err := ipv6Restorer.restore(ctx)
+		ipv6Output, err := cfg.Executables.IPv6.Restore(ctx, rules)
 		if err != nil {
-			return "", fmt.Errorf("cannot restore ipv6 iptable rules: %s", err)
+			return "", errors.Wrap(err, "unable to restore ip6tables rules")
 		}
 
 		output += ipv6Output
 	}
 
-	fmt.Fprintln(cfg.RuntimeStdout, "# iptables set to divert the traffic to Envoy")
+	cfg.Logger.Info("iptables set to divert the traffic to Envoy")
 
 	return output, nil
-}
-
-// configureIPv6Address sets up a new IP address on local interface. This is needed
-// for IPv6 but not IPv4, as IPv4 defaults to `netmask 255.0.0.0`, which allows binding to addresses
-// in the 127.x.y.z range, while IPv6 defaults to `prefixlen 128` which allows binding only to ::1.
-// Equivalent to `ip -6 addr add "::6/128" dev lo`
-func (r *restorer) configureIPv6Address() error {
-	if !r.ipv6 {
-		return nil
-	}
-	link, err := netlink.LinkByName("lo")
-	if err != nil {
-		return fmt.Errorf("failed to find 'lo' link: %v", err)
-	}
-	// Equivalent to `ip -6 addr add "::6/128" dev lo`
-	address := &net.IPNet{IP: net.ParseIP("::6"), Mask: net.CIDRMask(128, 128)}
-	addr := &netlink.Addr{IPNet: address}
-
-	err = netlink.AddrAdd(link, addr)
-	if ignoreExists(err) != nil {
-		return fmt.Errorf("failed to add IPv6 inbound address: %v", err)
-	}
-	return nil
-}
-
-func ignoreExists(err error) error {
-	if err == nil {
-		return nil
-	}
-	if strings.Contains(strings.ToLower(err.Error()), "file exists") {
-		return nil
-	}
-	return err
 }

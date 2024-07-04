@@ -1,12 +1,13 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"time"
 
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -46,6 +47,14 @@ type TransparentProxyConfig struct {
 
 const DebugLogLevel uint16 = 7
 
+=======
+	"github.com/miekg/dns"
+	"github.com/pkg/errors"
+
+	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+)
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 type Owner struct {
 	UID string
 }
@@ -86,6 +95,81 @@ type DNS struct {
 	ResolvConfigPath    string
 }
 
+<<<<<<< HEAD
+=======
+type InitializedDNS struct {
+	DNS
+	ServersIPv4            []string
+	ServersIPv6            []string
+	ConntrackZoneSplitIPv4 bool
+	ConntrackZoneSplitIPv6 bool
+}
+
+// Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
+// the nameservers from the file specified in the ResolvConfigPath field of
+// the input DNS struct.
+func (c DNS) Initialize(
+	l Logger,
+	cfg Config,
+	executables InitializedExecutablesIPvX,
+) (InitializedDNS, error) {
+	initialized := InitializedDNS{DNS: c}
+
+	// We don't have to continue initialization if the DNS traffic shouldn't be
+	// redirected
+	if !c.Enabled {
+		return initialized, nil
+	}
+
+	if c.ConntrackZoneSplit {
+		warning := func(ipvx string) string {
+			return fmt.Sprintf(
+				"conntrack zone splitting for %s is disabled. "+
+					"Functionality requires the 'conntrack' iptables module",
+				ipvx,
+			)
+		}
+
+		initialized.ConntrackZoneSplitIPv4 = executables.IPv4.Functionality.
+			ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplitIPv4 {
+			l.Warn(warning("IPv4"))
+		}
+
+		initialized.ConntrackZoneSplitIPv6 = executables.IPv6.Functionality.
+			ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplitIPv4 {
+			l.Warn(warning("IPv6"))
+		}
+	}
+
+	// We don't have to get DNS servers if we want to capture all DNS traffic
+	if c.CaptureAll {
+		return initialized, nil
+	}
+
+	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
+	if err != nil {
+		return initialized, errors.Wrapf(
+			err,
+			"unable to read file %s",
+			c.ResolvConfigPath,
+		)
+	}
+
+	for _, address := range dnsConfig.Servers {
+		parsed := net.ParseIP(address)
+		if parsed.To4() != nil {
+			initialized.ServersIPv4 = append(initialized.ServersIPv4, address)
+		} else {
+			initialized.ServersIPv6 = append(initialized.ServersIPv6, address)
+		}
+	}
+
+	return initialized, nil
+}
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 type VNet struct {
 	Networks []string
 }
@@ -99,6 +183,32 @@ type Redirect struct {
 	VNet       VNet
 }
 
+<<<<<<< HEAD
+=======
+type InitializedRedirect struct {
+	Redirect
+	DNS InitializedDNS
+}
+
+func (c Redirect) Initialize(
+	l Logger,
+	cfg Config,
+	executables InitializedExecutablesIPvX,
+) (InitializedRedirect, error) {
+	var err error
+
+	initialized := InitializedRedirect{Redirect: c}
+
+	// .DNS
+	initialized.DNS, err = c.DNS.Initialize(l, cfg, executables)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .DNS")
+	}
+
+	return initialized, nil
+}
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 type Chain struct {
 	Name string
 }
@@ -124,7 +234,12 @@ type LogConfig struct {
 }
 
 type RetryConfig struct {
-	MaxRetries         *int
+	// MaxRetries specifies the number of retries after the initial attempt.
+	// A value of 0 means no retries, and only the initial attempt will be made.
+	MaxRetries int
+	// SleepBetweenRetries defines the duration to wait between retry attempts.
+	// This delay helps in situations where immediate retries may not be
+	// beneficial, allowing time for transient issues to resolve.
 	SleepBetweenReties time.Duration
 }
 
@@ -168,6 +283,7 @@ type Config struct {
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
 	Retry RetryConfig
+<<<<<<< HEAD
 }
 
 // ShouldDropInvalidPackets is just a convenience function which can be used in
@@ -175,6 +291,71 @@ type Config struct {
 // i.e. AppendIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
 func (c Config) ShouldDropInvalidPackets() bool {
 	return c.DropInvalidPackets
+=======
+	// StoreFirewalld when set, configures firewalld to store the generated
+	// iptables rules.
+	StoreFirewalld bool
+	// Executables field holds configuration for the executables used to
+	// interact with iptables (or ip6tables). It can handle both nft (nftables)
+	// and legacy iptables modes, and supports IPv4 and IPv6 versions
+	Executables ExecutablesNftLegacy
+}
+
+// InitializedConfig extends the Config struct by adding fields that require
+// additional logic to retrieve their values. These values typically involve
+// interacting with the system or external resources.
+type InitializedConfig struct {
+	Config
+	// Redirect is an InitializedRedirect struct containing the initialized
+	// redirection configuration. If DNS redirection is enabled this includes
+	// the DNS servers retrieved from the specified resolv.conf file
+	// (/etc/resolv.conf by default)
+	Redirect InitializedRedirect
+	// Executables field holds the initialized version of Config.Executables.
+	// It attempts to locate the actual executable paths on the system based on
+	// the provided configuration and verifies their functionality.
+	Executables InitializedExecutablesIPvX
+	// LoopbackInterfaceName represents the name of the loopback interface which
+	// will be used to construct outbound iptable rules for outbound (i.e.
+	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
+	LoopbackInterfaceName string
+	// Logger is utilized for recording logs across the entire lifecycle of the
+	// InitializedConfig, from the initialization and configuration phases to
+	// ongoing operations involving iptables, such as rule setup, modification,
+	// and restoration. It ensures that logging capabilities are available not
+	// only during the setup of system resources and configurations but also
+	// throughout the execution of iptables-related activities.
+	Logger Logger
+}
+
+// ShouldDropInvalidPackets determines whether the configuration indicates
+// dropping invalid packets based on the configured behavior and the presence of
+// the mangle table for the specified IP version.
+//
+// Args:
+//
+//	ipv6 (bool): Flag indicating if the check is for IPv6 or IPv4 packets.
+//
+// Returns:
+//
+//	bool: True if the configuration indicates dropping invalid packets for the
+//	      specified IP version, and the corresponding mangle table is present.
+//	      False otherwise.
+//
+// This method considers the following factors:
+//   - `DropInvalidPackets` configuration setting: This setting should be enabled
+//     for dropping invalid packets.
+//   - Presence of Mangle Table: The mangle table is required for implementing
+//     packet filtering rules. The method checks for the appropriate mangle table
+//     based on the provided `ipv6` flag.
+func (c InitializedConfig) ShouldDropInvalidPackets(ipv6 bool) bool {
+	mangleTablePresent := c.Executables.IPv4.Functionality.Tables.Mangle
+	if ipv6 {
+		mangleTablePresent = c.Executables.IPv6.Functionality.Tables.Mangle
+	}
+
+	return c.DropInvalidPackets && mangleTablePresent
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 }
 
 // ShouldRedirectDNS is just a convenience function which can be used in
@@ -184,6 +365,7 @@ func (c Config) ShouldRedirectDNS() bool {
 	return c.Redirect.DNS.Enabled
 }
 
+<<<<<<< HEAD
 // ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AppendIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
@@ -191,6 +373,8 @@ func (c Config) ShouldFallbackDNSToUpstreamChain() bool {
 	return c.Redirect.DNS.UpstreamTargetChain != ""
 }
 
+=======
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 // ShouldCaptureAllDNS is just a convenience function which can be used in
 // iptables conditional command generations instead of inlining anonymous functions
 // i.e. AppendIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
@@ -198,6 +382,7 @@ func (c Config) ShouldCaptureAllDNS() bool {
 	return c.Redirect.DNS.CaptureAll
 }
 
+<<<<<<< HEAD
 // ShouldConntrackZoneSplit is a function which will check if DNS redirection and
 // conntrack zone splitting settings are enabled (return false if not), and then
 // will verify if there is conntrack iptables extension available to apply
@@ -228,6 +413,38 @@ func (c Config) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
 }
 
 func defaultConfig() Config {
+=======
+func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
+	var err error
+
+	l := Logger{
+		stdout: c.RuntimeStdout,
+		stderr: c.RuntimeStderr,
+		maxTry: c.Retry.MaxRetries + 1,
+	}
+
+	initialized := InitializedConfig{Config: c, Logger: l}
+
+	initialized.Executables, err = c.Executables.Initialize(ctx, l, c)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize Executables configuration")
+	}
+
+	initialized.Redirect, err = c.Redirect.Initialize(l, c, initialized.Executables)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
+	}
+
+	initialized.LoopbackInterfaceName, err = getLoopbackInterfaceName()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+	}
+
+	return initialized, nil
+}
+
+func DefaultConfig() Config {
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
@@ -273,17 +490,21 @@ func defaultConfig() Config {
 		DryRun:             false,
 		Log: LogConfig{
 			Enabled: false,
-			Level:   DebugLogLevel,
+			Level:   LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,
 		Retry: RetryConfig{
-			MaxRetries:         pointer.To(4),
+			// Specifies the number of retries after the initial attempt,
+			// totaling 5 tries
+			MaxRetries:         4,
 			SleepBetweenReties: 2 * time.Second,
 		},
+		Executables: NewExecutablesNftLegacy(),
 	}
 }
 
+<<<<<<< HEAD
 func MergeConfigWithDefaults(cfg Config) Config {
 	result := defaultConfig()
 
@@ -428,4 +649,24 @@ func MergeConfigWithDefaults(cfg Config) Config {
 	}
 
 	return result
+=======
+// getLoopbackInterfaceName retrieves the name of the loopback interface on the
+// system. This function iterates over all network interfaces and checks if the
+// 'net.FlagLoopback' flag is set. If a loopback interface is found, its name is
+// returned. Otherwise, an error message indicating that no loopback interface
+// was found is returned.
+func getLoopbackInterfaceName() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to retrieve network interfaces")
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			return iface.Name, nil
+		}
+	}
+
+	return "", errors.New("no loopback interface found on the system")
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 }

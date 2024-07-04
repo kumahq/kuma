@@ -7,14 +7,29 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/table"
 )
 
+<<<<<<< HEAD
 func buildRawTable(
 	cfg config.Config,
 	dnsServers []string,
 	iptablesExecutablePath string,
 ) *table.RawTable {
 	raw := table.Raw()
+=======
+func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
+	raw := tables.Raw()
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
-	if cfg.ShouldConntrackZoneSplit(iptablesExecutablePath) {
+	dnsServers := cfg.Redirect.DNS.ServersIPv4
+	if ipv6 {
+		dnsServers = cfg.Redirect.DNS.ServersIPv6
+	}
+
+	conntractZoneSplit := cfg.Redirect.DNS.ConntrackZoneSplitIPv4
+	if ipv6 {
+		conntractZoneSplit = cfg.Redirect.DNS.ConntrackZoneSplitIPv6
+	}
+
+	if conntractZoneSplit {
 		raw.Output().
 			Append(
 				Protocol(Udp(DestinationPort(DNSPort))),

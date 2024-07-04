@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type transparentProxyArgs struct {
@@ -183,7 +182,33 @@ runuser -u kuma-dp -- \
 				return err
 			}
 
+<<<<<<< HEAD
 			_, _ = cmd.OutOrStdout().Write([]byte("# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.\n"))
+=======
+			initializedConfig, err := cfg.Initialize(cmd.Context())
+			if err != nil {
+				return errors.Wrap(err, "failed to initialize config")
+			}
+
+			output, err := transparentproxy.Setup(cmd.Context(), initializedConfig)
+			if err != nil {
+				return errors.Wrap(err, "failed to setup transparent proxy")
+			}
+
+			if !cfg.Ebpf.Enabled && cfg.StoreFirewalld {
+				if _, err := firewalld.NewIptablesTranslator().
+					WithDryRun(cfg.DryRun).
+					WithOutput(cfg.RuntimeStdout).
+					StoreRules(output); err != nil {
+					return err
+				}
+			}
+
+			if !initializedConfig.DryRun {
+				initializedConfig.Logger.Info("Tansparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+			}
+
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 			return nil
 		},
 	}
@@ -216,11 +241,21 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] tcp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] udp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53, 3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundPortsForUIDs, "exclude-outbound-ports-for-uids", []string{}, "outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108")
+<<<<<<< HEAD
 	cmd.Flags().StringArrayVar(&args.VnetNetworks, "vnet", []string{}, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 	cmd.Flags().UintVar(&args.Wait, "wait", args.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
 	cmd.Flags().UintVar(&args.WaitInterval, "wait-interval", args.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
 	cmd.Flags().IntVar(&args.MaxRetries, "max-retries", args.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&args.SleepBetweenRetries, "sleep-between-retries", args.SleepBetweenRetries, "flag can be used to specify the amount of time to sleep between retries")
+=======
+	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
+	cmd.Flags().UintVar(&cfg.Wait, "wait", cfg.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
+	cmd.Flags().UintVar(&cfg.WaitInterval, "wait-interval", cfg.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
+	cmd.Flags().IntVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().DurationVar(&cfg.Retry.SleepBetweenReties, "sleep-between-retries", cfg.Retry.SleepBetweenReties, "flag can be used to specify the amount of time to sleep between retries")
+
+	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
+>>>>>>> f732b34e9 (refactor(transparent-proxy): move executables to config (#10619))
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 
