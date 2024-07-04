@@ -156,7 +156,7 @@ Another thing is adding another fields to the `BackendRef` in Dataplane object: 
 
 This enhancement should make it easier to match the reachable services provided by the user with the generated or provided outbounds. There is a disadventage that makes it maybe not the best option. If we expose it to the user, it might configure one `BackendRef` that reference many MeshServices. 
 
-Instead we can retrive `MeshService` and match based on its dpTags.
+Because of that we will retrive `MeshService` and match based on its dpTags.
 
 ### Autoreachable services
 
@@ -213,7 +213,7 @@ kind: MeshTrafficPermission
 spec:
   targetRef:
     kind: MeshExternalService
-    name: mydomain-HASH
+    name: mydomain
     namespace: kuma-system
 ```
 
