@@ -102,6 +102,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
 	}
+	err.AddErrorAt(path.Field("transparentProxing"), validateTransparentProxying(networking.GetTransparentProxying()))
 	return err
 }
 
@@ -254,6 +255,27 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		result.AddViolationAt(validators.RootedAt("backendRef"), "both backendRef and tags/service cannot be defined")
 	}
 
+	return result
+}
+
+func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_TransparentProxying) validators.ValidationError {
+	var result validators.ValidationError
+	path := validators.RootedAt("reachableBackendRefs")
+	if tp.ReachableBackendRefs != nil {
+		for i, backendRef := range tp.ReachableBackendRefs {
+			switch backendRef.Kind {
+			case "MeshExternalService", "MeshService":
+			default:
+				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
+			}
+			if backendRef.Name == "" && backendRef.Namespace != "" {
+				result.AddViolationAt(path.Index(i).Field("name"), "name is required, when namespace is defined")
+			}
+			if backendRef.Name != "" && len(backendRef.Labels) > 0 {
+				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")
+			}
+		}
+	}
 	return result
 }
 

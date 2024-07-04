@@ -162,6 +162,7 @@ const (
 	KumaTransparentProxyingIPFamilyMode                = "kuma.io/transparent-proxying-ip-family-mode"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
+	KumaReachableBackendsRef                           = "kuma.io/reachable-backend-refs"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
 	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"

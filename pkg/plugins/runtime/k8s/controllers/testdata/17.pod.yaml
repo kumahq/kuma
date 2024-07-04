@@ -9,6 +9,25 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: 15006
     kuma.io/transparent-proxying-outbound-port: 15001
     kuma.io/transparent-proxying-reachable-services: "test-app_playground_svc_80,test-app_playground_svc_443"
+    kuma.io/reachable-backend-refs: |
+      refs:
+      - kind: MeshService
+        name: demo-app
+        namespace: kuma-demo
+        port: 5000
+      - kind: MeshService
+        name: redis
+        namespace: redis-system
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: xyz
+          kuma.io/zone: east
+      - kind: MeshExternalService
+        name: demo-app
+        namespace: kuma-system
+      - kind: MeshExternalService
+        labels:
+          kuma.io/display-name: httpbin
 spec:
   containers:
     - ports: []

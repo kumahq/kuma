@@ -54,6 +54,7 @@ import (
 	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/policies"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
+	backends_graph "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
@@ -502,6 +503,9 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	rsGraphBuilder := xds_context.AnyToAnyReachableServicesGraphBuilder
 	if builder.Config().Experimental.AutoReachableServices {
 		rsGraphBuilder = graph.Builder
+		if builder.Config().Experimental.GenerateMeshServices {
+			rsGraphBuilder = backends_graph.Builder
+		}
 	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),

@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -114,6 +115,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 		reachableServices[reachableService] = true
 	}
 
+	reachableBackends := GetReachableBackends(meshContext, dataplane)
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {
@@ -136,6 +138,27 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					continue
 				}
 			}
+			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+				// Skip overlapping outbound interface with inbound.
+				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
+				continue
+			}
+		} else {
+			if len(reachableBackends) != 0 {
+				if !reachableBackends[BackendKey{
+					Kind: outbound.BackendRef.Kind,
+					Name: outbound.BackendRef.Name,
+				}] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+			} else {
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
+					continue
+				}
+			}
+
 			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
 				// Skip overlapping outbound interface with inbound.
 				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
@@ -191,4 +214,60 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
+}
+
+type BackendKey struct {
+	Kind string
+	Name string
+}
+
+type ReachableBackends map[BackendKey]bool
+
+func GetReachableBackends(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) ReachableBackends {
+	reachableBackends := ReachableBackends{}
+	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.ReachableBackendRefs {
+		name := ""
+		if reachableBackend.Name != "" {
+			name = reachableBackend.Name
+		}
+		if reachableBackend.Namespace != "" {
+			name += fmt.Sprintf(".%s", reachableBackend.Namespace)
+		}
+		resourcesLabels := meshContext.MeshServiceNamesByLabels
+		if reachableBackend.Kind == "MeshExternalService" {
+			resourcesLabels = meshContext.MeshExternalServiceNamesByLabels
+		}
+		if len(reachableBackend.Labels) > 0 {
+			reachable := GetResourceNamesForLabels(resourcesLabels, reachableBackend.Labels)
+			for name, count := range reachable {
+				if count == len(reachableBackend.Labels) {
+					reachableBackends[BackendKey{
+						Kind: reachableBackend.Kind,
+						Name: name,
+					}] = true
+				}
+			}
+		}
+		if name != "" {
+			reachableBackends[BackendKey{
+				Kind: reachableBackend.Kind,
+				Name: name,
+			}] = true
+		}
+	}
+	return reachableBackends
+}
+
+func GetResourceNamesForLabels(resourcesLabels map[string]map[string][]string, labels map[string]string) map[string]int {
+	reachable := map[string]int{}
+	for key, value := range labels {
+		if _, ok := resourcesLabels[key]; ok {
+			if _, ok := resourcesLabels[key][value]; ok {
+				for _, name := range resourcesLabels[key][value] {
+					reachable[name]++
+				}
+			}
+		}
+	}
+	return reachable
 }
