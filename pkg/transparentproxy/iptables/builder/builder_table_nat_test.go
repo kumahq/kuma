@@ -1,6 +1,8 @@
 package builder
 
 import (
+	"regexp"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -40,7 +42,12 @@ var _ = Describe("Builder nat", func() {
 
 			// then
 			for _, rule := range expect {
-				Expect(table).To(ContainSubstring(rule))
+				Expect(table).To(WithTransform(func(in string) string {
+					// Remove comments
+					return regexp.
+						MustCompile(`(?:-m|--match) comment --comment ".*?" `).
+						ReplaceAllString(in, "")
+				}, ContainSubstring(rule)))
 			}
 		},
 		Entry("ipv4 not verbose",
@@ -144,7 +151,12 @@ var _ = Describe("Builder nat", func() {
 
 			// then
 			for _, rule := range expect {
-				Expect(table).To(ContainSubstring(rule))
+				Expect(table).To(WithTransform(func(in string) string {
+					// Remove comments
+					return regexp.
+						MustCompile(`(?:-m|--match) comment --comment ".*?" `).
+						ReplaceAllString(in, "")
+				}, ContainSubstring(rule)))
 			}
 		},
 		Entry("ipv4 not verbose", false, false, "-A PREROUTING -p tcp -j MESH_INBOUND"),
