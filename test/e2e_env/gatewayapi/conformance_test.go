@@ -105,9 +105,6 @@ func TestConformance(t *testing.T) {
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
-		SkipTests: []string{
-			tests.HTTPRouteServiceTypes.ShortName,
-		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
