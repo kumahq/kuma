@@ -229,8 +229,8 @@ func defaultConfig() Config {
 			NamePrefix: "",
 			Inbound: TrafficFlow{
 				Enabled:       true,
-				Port:          15006,
-				PortIPv6:      15010,
+				Port:          DefaultRedirectInbountPort,
+				PortIPv6:      DefaultRedirectInbountPortIPv6,
 				Chain:         Chain{Name: "MESH_INBOUND"},
 				RedirectChain: Chain{Name: "MESH_INBOUND_REDIRECT"},
 				ExcludePorts:  []uint16{},
@@ -238,14 +238,14 @@ func defaultConfig() Config {
 			},
 			Outbound: TrafficFlow{
 				Enabled:       true,
-				Port:          15001,
+				Port:          DefaultRedirectOutboundPort,
 				Chain:         Chain{Name: "MESH_OUTBOUND"},
 				RedirectChain: Chain{Name: "MESH_OUTBOUND_REDIRECT"},
 				ExcludePorts:  []uint16{},
 				IncludePorts:  []uint16{},
 			},
 			DNS: DNS{
-				Port:               15053,
+				Port:               DefaultRedirectDNSPort,
 				Enabled:            false,
 				CaptureAll:         true,
 				ConntrackZoneSplit: true,
