@@ -1,6 +1,9 @@
 UPDATE_GOLDEN_FILES ?=
 TEST_PKG_LIST ?= ./...
 REPORTS_DIR ?= build/reports
+# Path to the kumactl binary for Linux. This binary will be uploaded to Docker
+# containers during transparent proxy tests.
+KUMACTL_LINUX_BIN ?= $(BUILD_DIR)/artifacts-linux-$(GOARCH)/kumactl/kumactl
 
 GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test --race
@@ -16,7 +19,7 @@ ifdef TEST_REPORTS
 	$(if $(findstring coverage,$(TEST_REPORTS)),GOFLAGS='${GOFLAGS}' go tool cover -html=$(REPORTS_DIR)/coverage.out -o "$(REPORTS_DIR)/coverage.html")
 endif
 ifndef TEST_REPORTS
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests")
+	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(LD_FLAGS) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):
@@ -37,3 +40,8 @@ test/kumactl: test ## Dev: Run `kumactl` tests only
 .PHONY: test/cni
 test/cni: TEST_PKG_LIST=./app/cni/...
 test/cni: test ## Dev: Run `cni` tests only
+
+.PHONY: test/transparentproxy
+test/transparentproxy:
+	GOOS=linux $(MAKE) build/kumactl
+	KUMACTL_LINUX_BIN=$(KUMACTL_LINUX_BIN) $(UNIT_TEST_ENV) $(GINKGO_TEST) ./test/transparentproxy/...
