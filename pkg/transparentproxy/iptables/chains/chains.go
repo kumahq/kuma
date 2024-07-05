@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 )
 
@@ -19,45 +18,9 @@ func (c *Chain) Name() string {
 	return c.name
 }
 
-func (c *Chain) AddRule(parameters ...*Parameter) *Chain {
-	c.rules = append(
-		c.rules,
-		rules.NewRule(parameters...).Build(c.table, c.name),
-	)
-
-	return c
-}
-
 func (c *Chain) AddRules(rules ...*rules.RuleBuilder) *Chain {
 	for _, rule := range rules {
 		c.rules = append(c.rules, rule.Build(c.table, c.name))
-	}
-
-	return c
-}
-
-func (c *Chain) AddRulesAtPosition(position uint, rules ...*rules.RuleBuilder) *Chain {
-	for _, rule := range rules {
-		c.rules = append(c.rules, rule.WithPosition(position).Build(c.table, c.name))
-	}
-
-	return c
-}
-
-func (c *Chain) AddRuleAtPosition(position uint, parameters ...*Parameter) *Chain {
-	c.rules = append(
-		c.rules,
-		rules.NewRule(parameters...).
-			WithPosition(position).
-			Build(c.table, c.name),
-	)
-
-	return c
-}
-
-func (c *Chain) AddRuleIf(predicate func() bool, parameters ...*Parameter) *Chain {
-	if predicate() {
-		return c.AddRule(parameters...)
 	}
 
 	return c
