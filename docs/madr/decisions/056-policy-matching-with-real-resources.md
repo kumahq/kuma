@@ -101,7 +101,7 @@ Policy plugins should use old `ToRules.Rules` when computing configurations for 
 Policy plugins should use new `ToRules.ResourceRule` when computing configuration for the new MeshService resources.
 Eventually we're going to delete `ToRules.Rules`.
 
-When it comes to the Inspect API, we're going to add a new field `to `InspectRule`
+When it comes to the Inspect API, we're going to add a new field to `InspectRule`
 
 ```yaml
 InspectRule:
