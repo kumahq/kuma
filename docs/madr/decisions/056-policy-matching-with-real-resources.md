@@ -59,6 +59,9 @@ type ToRules struct {
     ResourceRules map[UniqueResourceKey]ResourceRule // new field
 }
 
+// UniqueResourceKey is a way to uniquely identify a resource, should include ResourceType, Name and Mesh
+type UniqueResourceKey struct{}
+
 type ResourceRule struct {
     Resource core_model.ResourceMeta
     Conf     interface{}
