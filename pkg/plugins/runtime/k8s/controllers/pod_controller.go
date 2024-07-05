@@ -491,16 +491,16 @@ func EndpointSliceToPodsMapper(l logr.Logger, client kube_client.Client) kube_ha
 			kube_types.NamespacedName{Namespace: slice.Namespace, Name: slice.Name},
 		)
 
+		svcName, ok := slice.Labels[kube_discovery.LabelServiceName]
+		if !ok {
+			return nil
+		}
 		var req []kube_reconcile.Request
 		for _, endpoint := range slice.Endpoints {
 			l := l.WithValues(
 				"Endpoint",
 				endpoint,
 			)
-			svcName, ok := slice.Labels[kube_discovery.LabelServiceName]
-			if !ok {
-				continue
-			}
 
 			l = l.WithValues(
 				"Service",
