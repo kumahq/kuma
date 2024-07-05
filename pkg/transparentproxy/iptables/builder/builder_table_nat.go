@@ -110,7 +110,7 @@ func buildMeshOutbound(
 		return meshOutbound, nil
 	}
 
-	// Excluded outbound ports
+	// Exclude traffic from redirection on specified outbound ports
 	if !hasIncludedPorts {
 		for _, port := range excludePorts {
 			meshOutbound.AddRules(
@@ -122,6 +122,7 @@ func buildMeshOutbound(
 			)
 		}
 	}
+
 	meshOutbound.
 		// ipv4:
 		//   when tcp_packet to 192.168.0.10:7777 arrives ⤸
@@ -176,6 +177,7 @@ func buildMeshOutbound(
 					Jump(Return()),
 				),
 		)
+
 	if shouldRedirectDNS {
 		if cfg.ShouldCaptureAllDNS() {
 			meshOutbound.AddRules(
@@ -198,6 +200,7 @@ func buildMeshOutbound(
 			}
 		}
 	}
+
 	meshOutbound.AddRules(
 		rules.
 			NewRule(
@@ -228,14 +231,19 @@ func buildMeshOutbound(
 	return meshOutbound, nil
 }
 
+// buildMeshRedirect creates a chain in the NAT table to handle traffic redirection
+// to a specified port. The chain will be configured to redirect TCP traffic to the
+// provided port, which can be different for IPv4 and IPv6.
 func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain, error) {
 	chainName := cfg.RedirectChain.GetFullName(prefix)
 
+	// Determine the redirect port based on the IP version.
 	redirectPort := cfg.Port
 	if ipv6 && cfg.PortIPv6 != 0 {
 		redirectPort = cfg.PortIPv6
 	}
 
+	// Create a new chain in the NAT table with the specified name.
 	redirectChain, err := NewChain(TableNat, chainName)
 	if err != nil {
 		return nil, err
@@ -373,6 +381,8 @@ func addOutputRules(
 	return nil
 }
 
+// addPreroutingRules adds rules to the PREROUTING chain of the NAT table to
+// handle inbound traffic according to the provided configuration.
 func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6 bool) error {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	rulePosition := uint(1)
@@ -383,10 +393,11 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 		)
 	}
 
+	// Handle virtual networks if they are defined in the configuration.
 	if len(cfg.Redirect.VNet.Networks) > 0 {
 		interfaceAndCidr := map[string]string{}
 		for i := 0; i < len(cfg.Redirect.VNet.Networks); i++ {
-			// we accept only first : so in case of IPv6 there should be no problem with parsing
+			// Split the network definition into interface and CIDR.
 			pair := strings.SplitN(cfg.Redirect.VNet.Networks[i], ":", 2)
 			if len(pair) < 2 {
 				return fmt.Errorf("incorrect definition of virtual network: %s", cfg.Redirect.VNet.Networks[i])
@@ -395,7 +406,7 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 			if err != nil {
 				return fmt.Errorf("incorrect CIDR definition: %s", err)
 			}
-			// if is ipv6 and address is ipv6 or is ipv4 and address is ipv4
+			// Only include the address if it matches the IP version we are handling.
 			if (ipv6 && ipAddress.To4() == nil) || (!ipv6 && ipAddress.To4() != nil) {
 				interfaceAndCidr[pair[0]] = pair[1]
 			}
@@ -411,7 +422,9 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 					).
 					WithPosition(rulePosition),
 			)
-			rulePosition += 1
+			rulePosition++
+
+			// Redirect all TCP traffic on specified virtual networks to the outbound port.
 			nat.Prerouting().AddRules(
 				rules.
 					NewRule(
@@ -422,7 +435,7 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 					).
 					WithPosition(rulePosition),
 			)
-			rulePosition += 1
+			rulePosition++
 		}
 		nat.Prerouting().AddRules(
 			rules.
@@ -444,48 +457,58 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 	return nil
 }
 
+// buildNatTable constructs the NAT table for iptables with the necessary rules
+// for handling inbound and outbound traffic redirection, DNS redirection, and
+// specific port exclusions or inclusions. It sets up custom chains for mesh
+// traffic management based on the provided configuration.
 func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, error) {
 	prefix := cfg.Redirect.NamePrefix
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 
+	// Determine DNS servers based on IP version.
 	dnsServers := cfg.Redirect.DNS.ServersIPv4
 	if ipv6 {
 		dnsServers = cfg.Redirect.DNS.ServersIPv6
 	}
 
+	// Initialize the NAT table.
 	nat := tables.Nat()
 
+	// Add output rules to the NAT table.
 	if err := addOutputRules(cfg, dnsServers, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add output rules %s", err)
 	}
+
+	// Add prerouting rules to the NAT table.
 	if err := addPreroutingRules(cfg, nat, ipv6); err != nil {
 		return nil, fmt.Errorf("could not add prerouting rules %s", err)
 	}
 
-	// MESH_INBOUND
+	// Build the MESH_INBOUND chain.
 	meshInbound, err := buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)
 	if err != nil {
 		return nil, err
 	}
 
-	// MESH_INBOUND_REDIRECT
+	// Build the MESH_INBOUND_REDIRECT chain.
 	meshInboundRedirect, err := buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)
 	if err != nil {
 		return nil, err
 	}
 
-	// MESH_OUTBOUND
+	// Build the MESH_OUTBOUND chain.
 	meshOutbound, err := buildMeshOutbound(cfg, dnsServers, ipv6)
 	if err != nil {
 		return nil, err
 	}
 
-	// MESH_OUTBOUND_REDIRECT
+	// Build the MESH_OUTBOUND_REDIRECT chain.
 	meshOutboundRedirect, err := buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)
 	if err != nil {
 		return nil, err
 	}
 
+	// Add the custom chains to the NAT table and return it.
 	return nat.
 		WithCustomChain(meshInbound).
 		WithCustomChain(meshOutbound).
