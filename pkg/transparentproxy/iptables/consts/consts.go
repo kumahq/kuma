@@ -17,6 +17,14 @@ var IptablesCommandByFamily = map[bool]string{
 	true:  Ip6tables,
 }
 
+// Default ports used for iptables redirection.
+const (
+	DefaultRedirectInbountPort     uint16 = 15006
+	DefaultRedirectInbountPortIPv6 uint16 = 15010
+	DefaultRedirectOutboundPort    uint16 = 15001
+	DefaultRedirectDNSPort         uint16 = 15053
+)
+
 const (
 	DNSPort           uint16 = 53
 	LocalhostIPv4            = "127.0.0.1"

@@ -25,7 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	tp_cfg "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tp_iptables_consts "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -584,12 +584,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
 
-	defaultTPCfg := tp_cfg.DefaultConfig()
 	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
 		i.cfg.SidecarContainer.IpFamilyMode = metadata.IpFamilyModeIPv4
 	} else if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
-		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&
-		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.Port) {
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(tp_iptables_consts.DefaultRedirectInbountPortIPv6) &&
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(tp_iptables_consts.DefaultRedirectInbountPort) {
 		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
 	}
 	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
