@@ -31,11 +31,12 @@ var _ = Describe("Builder nat", func() {
 						Networks: vnet,
 					},
 				},
+				Verbose: verbose,
 			})
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
-			table := tables.BuildRulesForRestore(nat, verbose)
+			table := tables.BuildRulesForRestore(cfg, nat)
 
 			// then
 			for _, rule := range expect {
@@ -46,7 +47,7 @@ var _ = Describe("Builder nat", func() {
 			[]string{"docker:1.2.3.4/24", "br+:127.0.0.0/32"},
 			false,
 			false,
-			// rules have random order so we cannot compare addresses and names
+			// rules have random order, so we cannot compare addresses and names
 			"-I PREROUTING 1",
 			"-i docker -m udp -p udp --dport 53 -j REDIRECT --to-ports 15053",
 			"-I PREROUTING 2",
@@ -139,7 +140,7 @@ var _ = Describe("Builder nat", func() {
 
 			// when
 			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
-			table := tables.BuildRulesForRestore(nat, verbose)
+			table := tables.BuildRulesForRestore(cfg, nat)
 
 			// then
 			for _, rule := range expect {

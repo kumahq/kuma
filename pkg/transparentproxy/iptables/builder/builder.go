@@ -48,9 +48,9 @@ func BuildIPTablesForRestore(
 	// Build the rules for raw, NAT, and mangle tables, filtering out any empty
 	// sets.
 	result := slices.DeleteFunc([]string{
-		tables.BuildRulesForRestore(buildRawTable(cfg, ipv6), cfg.Verbose),
-		tables.BuildRulesForRestore(natTable, cfg.Verbose),
-		tables.BuildRulesForRestore(buildMangleTable(cfg, ipv6), cfg.Verbose),
+		tables.BuildRulesForRestore(cfg, buildRawTable(cfg, ipv6)),
+		tables.BuildRulesForRestore(cfg, natTable),
+		tables.BuildRulesForRestore(cfg, buildMangleTable(cfg, ipv6)),
 	}, func(s string) bool { return s == "" })
 
 	// Determine the separator based on verbosity setting.
