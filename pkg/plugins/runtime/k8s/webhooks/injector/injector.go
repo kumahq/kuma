@@ -25,6 +25,10 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+<<<<<<< HEAD
+=======
+	tp_iptables_consts "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+>>>>>>> ddef32cbe (refactor(transparent-proxy): put default ports in consts package (#10801))
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -501,6 +505,34 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts), metadata.KumaTrafficExcludeOutboundPorts); val != "" {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
+<<<<<<< HEAD
+=======
+
+	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
+		i.cfg.SidecarContainer.IpFamilyMode = metadata.IpFamilyModeIPv4
+	} else if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(tp_iptables_consts.DefaultRedirectInbountPortIPv6) &&
+		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(tp_iptables_consts.DefaultRedirectInbountPort) {
+		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
+	}
+	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
+	dropInvalidPackets, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets)
+	if err != nil {
+		return nil, err
+	}
+	if dropInvalidPackets {
+		annotations[metadata.KumaTrafficDropInvalidPackets] = "true"
+	}
+
+	iptablesLogs, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
+	if err != nil {
+		return nil, err
+	}
+	if iptablesLogs {
+		annotations[metadata.KumaTrafficIptablesLogs] = "true"
+	}
+
+>>>>>>> ddef32cbe (refactor(transparent-proxy): put default ports in consts package (#10801))
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err
