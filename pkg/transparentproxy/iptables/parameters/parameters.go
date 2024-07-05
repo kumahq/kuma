@@ -41,7 +41,9 @@ func (p *Parameter) Build(verbose bool) []string {
 
 	flag := p.short
 
-	if verbose {
+	// If verbose is true or the short version is not available, use the long
+	// version.
+	if verbose || p.short == "" {
 		flag = p.long
 	}
 
@@ -84,12 +86,6 @@ func (p *Parameter) Negate() ParameterBuilder {
 }
 
 type Parameters []*Parameter
-
-func NewParameters(parameters ...*Parameter) *Parameters {
-	var result Parameters
-	result = append(result, parameters...)
-	return &result
-}
 
 func (p *Parameters) Build(verbose bool, additionalParameters ...string) []string {
 	var result []string
