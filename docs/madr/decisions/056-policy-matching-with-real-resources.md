@@ -39,6 +39,8 @@ we're going to iterate over `Rules` and check if our outbound belongs to the `Ru
 The approach has a number of disadvantages:
 
 * even though it works well for "from" policies, using it for "to" policies doesn't feel natural
+  * there is no concept of "subsets" in outbounds, we have to artificially build `{kuma.io/service: $svc}` subset
+  * subset-based matching is build to handle subset overlapping scenarios, but it's never happening in outbounds
 * when referencing the real MeshHTTPRoute we had to use subset with artificial `__rule-matches-hash__` key
 * adding support for `MeshService` forces us to introduce another artificial key like `__resource-name__`
 * Inspect API with subsets is tricky when referencing real resources (like MeshHTTPRoute or MeshService)
@@ -62,6 +64,28 @@ type ResourceRule struct {
     Conf     interface{}
     Origin   []core_model.ResourceMeta
 }
+```
+
+For a simple targetRef with `name/namespace`:
+
+```yaml
+to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: finance
+    conf: conf1
+```
+
+we're going to produce a single `ResourceRule` entity:
+
+```yaml
+resourceRules:
+  - resource:
+      name: backend.finance
+      mesh: mesh-1
+    conf: conf-1
+    origin: [...]
 ```
 
 When targetRef has kind `MeshService` and uses `labels` we're going to produce multiple `ResourceRule` entities
@@ -120,7 +144,7 @@ InspectRule:
       description: a set of rules for the outbounds of this proxy
       items:
         $ref: '#/components/schemas/Rule'
-    resourceRules: # new field
+    toResourceRules: # new field
       type: array
       items:
         $ref: '#/components/schemas/ResourceRule'
