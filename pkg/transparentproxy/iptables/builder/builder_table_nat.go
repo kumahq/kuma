@@ -264,21 +264,22 @@ func addOutputRules(
 
 	// Conditionally add DNS redirection rules if DNS redirection is enabled.
 	if shouldRedirectDNS {
-		// Default jump target for DNS rules.
-		jumpTarget := Return()
-		// Determine if DockerOutput chain should be targeted based on IPv4/IPv6
+		// Determine if DOCKER_OUTPUT chain should be targeted based on IPv4/IPv6
 		// and functionality.
-		if (ipv6 && cfg.Executables.IPv6.Functionality.Chains.DockerOutput) ||
-			(!ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput) {
-			jumpTarget = ToUserDefinedChain(ChainDockerOutput)
-		}
+		dockerOutputIPv6 := ipv6 && cfg.Executables.IPv6.Functionality.Chains.DockerOutput
+		dockerOutputIPv4 := !ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput
+		dockerOutput := dockerOutputIPv6 || dockerOutputIPv4
 
 		// Add DNS rule for redirecting DNS traffic based on UID.
 		nat.Output().AddRuleAtPosition(
 			rulePosition,
 			Protocol(Udp(DestinationPort(DNSPort))),
 			Match(Owner(Uid(uid))),
-			Jump(jumpTarget),
+			JumpConditional(
+				dockerOutput,                          // if DOCKER_OUTPUT should be targeted
+				ToUserDefinedChain(ChainDockerOutput), // --jump DOCKER_OUTPUT
+				Return(),                              // else RETURN
+			),
 		)
 		rulePosition++
 

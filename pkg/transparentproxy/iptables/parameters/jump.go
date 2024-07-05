@@ -26,6 +26,18 @@ func Jump(parameter *JumpParameter) *Parameter {
 	}
 }
 
+func JumpConditional(
+	condition bool,
+	parameterTrue *JumpParameter,
+	parameterFalse *JumpParameter,
+) *Parameter {
+	if !condition {
+		return Jump(parameterFalse)
+	}
+
+	return Jump(parameterTrue)
+}
+
 func ToUserDefinedChain(chainName string) *JumpParameter {
 	return &JumpParameter{parameters: []string{chainName}}
 }
