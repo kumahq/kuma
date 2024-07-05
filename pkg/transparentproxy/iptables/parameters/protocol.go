@@ -95,7 +95,11 @@ func NotDestinationPort(port uint16) *TcpUdpParameter {
 }
 
 func NotDestinationPortIf(predicate func() bool, port uint16) *TcpUdpParameter {
-	if predicate() {
+	return NotDestinationPortIfBool(predicate(), port)
+}
+
+func NotDestinationPortIfBool(condition bool, port uint16) *TcpUdpParameter {
+	if condition {
 		return destinationPort(port, true)
 	}
 

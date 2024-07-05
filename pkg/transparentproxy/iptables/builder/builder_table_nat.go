@@ -72,9 +72,11 @@ func buildMeshOutbound(
 
 	localhost := LocalhostCIDRIPv4
 	inboundPassthroughSourceAddress := InboundPassthroughSourceAddressCIDRIPv4
+	shouldRedirectDNS := cfg.Redirect.DNS.EnabledIPv4
 	if ipv6 {
 		inboundPassthroughSourceAddress = InboundPassthroughSourceAddressCIDRIPv6
 		localhost = LocalhostCIDRIPv6
+		shouldRedirectDNS = cfg.Redirect.DNS.EnabledIPv6
 	}
 
 	meshOutbound, err := NewChain(TableNat, outboundChainName)
@@ -131,14 +133,14 @@ func buildMeshOutbound(
 			Jump(Return()),
 		).
 		AddRule(
-			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
+			Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
 			OutInterface(cfg.LoopbackInterfaceName),
 			NotDestination(localhost),
 			Match(Owner(Uid(uid))),
 			Jump(ToUserDefinedChain(inboundRedirectChainName)),
 		).
 		AddRule(
-			Protocol(Tcp(NotDestinationPortIf(cfg.ShouldRedirectDNS, DNSPort))),
+			Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
 			OutInterface(cfg.LoopbackInterfaceName),
 			Match(Owner(NotUid(uid))),
 			Jump(Return()),
@@ -147,7 +149,7 @@ func buildMeshOutbound(
 			Match(Owner(Uid(uid))),
 			Jump(Return()),
 		)
-	if cfg.ShouldRedirectDNS() {
+	if shouldRedirectDNS {
 		if cfg.ShouldCaptureAllDNS() {
 			meshOutbound.AddRule(
 				Protocol(Tcp(DestinationPort(DNSPort))),
@@ -220,6 +222,11 @@ func addOutputRules(
 	// Initial position for the first rule in the NAT table.
 	rulePosition := uint(1)
 
+	shouldRedirectDNS := cfg.Redirect.DNS.EnabledIPv4
+	if ipv6 {
+		shouldRedirectDNS = cfg.Redirect.DNS.EnabledIPv6
+	}
+
 	// Add logging rule if logging is enabled in the configuration.
 	if cfg.Log.Enabled {
 		nat.Output().AddRuleAtPosition(
@@ -256,7 +263,7 @@ func addOutputRules(
 	}
 
 	// Conditionally add DNS redirection rules if DNS redirection is enabled.
-	if cfg.ShouldRedirectDNS() {
+	if shouldRedirectDNS {
 		// Default jump target for DNS rules.
 		jumpTarget := Return()
 		// Determine if DockerOutput chain should be targeted based on IPv4/IPv6

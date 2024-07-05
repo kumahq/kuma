@@ -60,6 +60,8 @@ type InitializedDNS struct {
 	ServersIPv6            []string
 	ConntrackZoneSplitIPv4 bool
 	ConntrackZoneSplitIPv6 bool
+	EnabledIPv4            bool
+	EnabledIPv6            bool
 }
 
 // Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
@@ -70,7 +72,11 @@ func (c DNS) Initialize(
 	cfg Config,
 	executables InitializedExecutablesIPvX,
 ) (InitializedDNS, error) {
-	initialized := InitializedDNS{DNS: c}
+	initialized := InitializedDNS{
+		DNS:         c,
+		EnabledIPv4: c.Enabled,
+		EnabledIPv6: c.Enabled,
+	}
 
 	// We don't have to continue initialization if the DNS traffic shouldn't be
 	// redirected
@@ -121,6 +127,27 @@ func (c DNS) Initialize(
 		} else {
 			initialized.ServersIPv6 = append(initialized.ServersIPv6, address)
 		}
+	}
+
+	warning := func(ipvx string) string {
+		return fmt.Sprintf(
+			"couldn't find any %s servers in %s file. Capturing %[1]s DNS "+
+				"traffic will be disabled",
+			ipvx,
+			c.ResolvConfigPath,
+		)
+	}
+
+	if len(initialized.ServersIPv4) == 0 {
+		initialized.EnabledIPv4 = false
+		initialized.ConntrackZoneSplitIPv4 = false
+		l.Warn(warning("IPv4"))
+	}
+
+	if cfg.IPv6 && len(initialized.ServersIPv6) == 0 {
+		initialized.EnabledIPv6 = false
+		initialized.ConntrackZoneSplitIPv6 = false
+		l.Warn(warning("IPv6"))
 	}
 
 	return initialized, nil
@@ -324,13 +351,6 @@ func (c InitializedConfig) ShouldDropInvalidPackets(ipv6 bool) bool {
 	}
 
 	return c.DropInvalidPackets && mangleTablePresent
-}
-
-// ShouldRedirectDNS is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldRedirectDNS() bool {
-	return c.Redirect.DNS.Enabled
 }
 
 // ShouldCaptureAllDNS is just a convenience function which can be used in
