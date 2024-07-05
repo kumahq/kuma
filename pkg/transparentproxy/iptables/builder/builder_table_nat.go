@@ -30,7 +30,7 @@ func buildMeshInbound(
 		return meshInbound, nil
 	}
 
-	// Include inbound ports
+	// Include specific inbound ports for redirection
 	for _, port := range cfg.IncludePorts {
 		meshInbound.AddRule(
 			Protocol(Tcp(DestinationPort(port))),
@@ -39,13 +39,15 @@ func buildMeshInbound(
 	}
 
 	if len(cfg.IncludePorts) == 0 {
-		// Excluded outbound ports
+		// Exclude specific inbound ports from redirection
 		for _, port := range cfg.ExcludePorts {
 			meshInbound.AddRule(
 				Protocol(Tcp(DestinationPort(port))),
 				Jump(Return()),
 			)
 		}
+
+		// Redirect all other inbound traffic to the mesh inbound redirect chain
 		meshInbound.AddRule(
 			Protocol(Tcp()),
 			Jump(ToUserDefinedChain(meshInboundRedirect)),
