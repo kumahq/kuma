@@ -21,7 +21,6 @@ env:
   E2E_PARAM_LEGACY_KDS: ${{ fromJSON(inputs.matrix).legacyKDS }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
-  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
 jobs:
   e2e:
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
