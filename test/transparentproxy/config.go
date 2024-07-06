@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,12 +14,26 @@ import (
 
 var _ config.Config = TransparentProxyConfig{}
 
+type FlagsMap map[string][]string
+
+func (f *FlagsMap) Decode(value string) error {
+	result := map[string][]string{}
+
+	if err := json.Unmarshal([]byte(value), &result); err != nil {
+		return err
+	}
+
+	*f = result
+
+	return nil
+}
+
 type TransparentProxyConfig struct {
 	config.BaseConfig
 
 	KumactlLinuxBin    string            `json:"kumactlLinuxBin,omitempty" envconfig:"KUMACTL_LINUX_BIN"`
 	DockerImagesToTest map[string]string `json:"dockerImagesToTest,omitempty" envconfig:"DOCKER_IMAGES_TO_TEST"`
-	InstallFlagsToTest []string          `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
+	InstallFlagsToTest *FlagsMap         `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
 	IPV6               bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
 }
 
@@ -75,8 +90,10 @@ var defaultConfig = TransparentProxyConfig{
 		"Fedora 39":         "fedora:39",
 		"Fedora 38":         "fedora:38",
 	},
-	InstallFlagsToTest: []string{
-		"--redirect-all-dns-traffic",
+	InstallFlagsToTest: &FlagsMap{
+		"redirect-all-dns-traffic": {
+			"--redirect-all-dns-traffic",
+		},
 	},
 	IPV6: false,
 }
