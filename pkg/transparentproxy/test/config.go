@@ -5,6 +5,11 @@ import (
 )
 
 func InitializeConfig(cfg config.Config) config.InitializedConfig {
+	vnet, err := cfg.Redirect.VNet.Initialize()
+	if err != nil {
+		panic(err)
+	}
+
 	return config.InitializedConfig{
 		Config: cfg,
 		Redirect: config.InitializedRedirect{
@@ -14,6 +19,7 @@ func InitializeConfig(cfg config.Config) config.InitializedConfig {
 				ServersIPv4: nil,
 				ServersIPv6: nil,
 			},
+			VNet: vnet,
 		},
 		LoopbackInterfaceName: "",
 	}

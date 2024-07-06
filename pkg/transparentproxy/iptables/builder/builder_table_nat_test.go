@@ -37,7 +37,7 @@ var _ = Describe("Builder nat", func() {
 			})
 
 			// when
-			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
+			addPreroutingRules(cfg, nat, ipv6)
 			table := tables.BuildRulesForRestore(cfg, ipv6, nat)
 
 			// then
@@ -146,7 +146,7 @@ var _ = Describe("Builder nat", func() {
 			})
 
 			// when
-			Expect(addPreroutingRules(cfg, nat, ipv6)).ToNot(HaveOccurred())
+			addPreroutingRules(cfg, nat, ipv6)
 			table := tables.BuildRulesForRestore(cfg, ipv6, nat)
 
 			// then
