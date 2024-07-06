@@ -70,7 +70,7 @@ type InitializedDNS struct {
 func (c DNS) Initialize(
 	l Logger,
 	cfg Config,
-	executables InitializedExecutablesIPvX,
+	executables InitializedExecutables,
 ) (InitializedDNS, error) {
 	initialized := InitializedDNS{
 		DNS:         c,
@@ -174,7 +174,7 @@ type InitializedRedirect struct {
 func (c Redirect) Initialize(
 	l Logger,
 	cfg Config,
-	executables InitializedExecutablesIPvX,
+	executables InitializedExecutables,
 ) (InitializedRedirect, error) {
 	var err error
 
@@ -302,6 +302,13 @@ type Config struct {
 // interacting with the system or external resources.
 type InitializedConfig struct {
 	Config
+	// Logger is utilized for recording logs across the entire lifecycle of the
+	// InitializedConfig, from the initialization and configuration phases to
+	// ongoing operations involving iptables, such as rule setup, modification,
+	// and restoration. It ensures that logging capabilities are available not
+	// only during the setup of system resources and configurations but also
+	// throughout the execution of iptables-related activities.
+	Logger Logger
 	// Redirect is an InitializedRedirect struct containing the initialized
 	// redirection configuration. If DNS redirection is enabled this includes
 	// the DNS servers retrieved from the specified resolv.conf file
@@ -310,18 +317,11 @@ type InitializedConfig struct {
 	// Executables field holds the initialized version of Config.Executables.
 	// It attempts to locate the actual executable paths on the system based on
 	// the provided configuration and verifies their functionality.
-	Executables InitializedExecutablesIPvX
+	Executables InitializedExecutables
 	// LoopbackInterfaceName represents the name of the loopback interface which
 	// will be used to construct outbound iptable rules for outbound (i.e.
 	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
 	LoopbackInterfaceName string
-	// Logger is utilized for recording logs across the entire lifecycle of the
-	// InitializedConfig, from the initialization and configuration phases to
-	// ongoing operations involving iptables, such as rule setup, modification,
-	// and restoration. It ensures that logging capabilities are available not
-	// only during the setup of system resources and configurations but also
-	// throughout the execution of iptables-related activities.
-	Logger Logger
 }
 
 // ShouldDropInvalidPackets determines whether the configuration indicates
