@@ -91,8 +91,11 @@ var defaultConfig = TransparentProxyConfig{
 		"Fedora 38":         "fedora:38",
 	},
 	InstallFlagsToTest: &FlagsMap{
-		"redirect-all-dns-traffic": {
+		"with-multiple-flags": {
 			"--redirect-all-dns-traffic",
+			"--vnet", "docker0:172.17.0.0/16",
+			"--vnet", "br+:172.18.0.0/16",
+			"--vnet", "iface:::1/64",
 		},
 	},
 	IPV6: false,
