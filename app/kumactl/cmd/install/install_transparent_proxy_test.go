@@ -50,6 +50,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 				// Replace some stuff that are environment dependent with placeholders
 				out := regexp.MustCompile(`-o ([^ ]+)`).ReplaceAllString(in, "-o ifPlaceholder")
 				out = regexp.MustCompile(`-([sd]) ([^ ]+)`).ReplaceAllString(out, "-$1 subnetPlaceholder/mask")
+				out = regexp.MustCompile(`-m comment --comment ".*?" `).ReplaceAllString(out, "")
 				out = regexp.MustCompile(`(?m)^-I OUTPUT (\d+) -p udp --dport 53 -m owner --uid-owner (\d+) -j (\w+)$`).
 					ReplaceAllString(out, "-I OUTPUT $1 -p udp --dport 53 -m owner --uid-owner $2 -j dnsJumpTargetPlaceholder")
 				out = strings.ReplaceAll(out, "15006", "inboundPort")
