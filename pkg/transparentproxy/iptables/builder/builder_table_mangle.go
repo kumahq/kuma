@@ -15,13 +15,10 @@ func buildMangleTable(
 	cfg config.InitializedConfig,
 	ipv6 bool,
 ) *tables.MangleTable {
-	// Initialize the mangle table.
 	mangle := tables.Mangle()
 
-	// Add rule to drop invalid packets if the configuration specifies it.
 	if cfg.ShouldDropInvalidPackets(ipv6) {
 		mangle.Prerouting().AddRules(
-			// Drop packets in the INVALID state.
 			rules.
 				NewRule(
 					Match(Conntrack(Ctstate(INVALID))),
@@ -31,6 +28,5 @@ func buildMangleTable(
 		)
 	}
 
-	// Return the configured mangle table.
 	return mangle
 }

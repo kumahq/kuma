@@ -25,11 +25,8 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 		conntractZoneSplit = cfg.Redirect.DNS.ConntrackZoneSplitIPv6
 	}
 
-	// Add rules for connection tracking zone splitting if enabled.
 	if conntractZoneSplit {
 		raw.Output().AddRules(
-			// Add rule to assign connection tracking zone 1 to DNS traffic
-			// from the kuma-dp user.
 			rules.
 				NewRule(
 					Protocol(Udp(DestinationPort(DNSPort))),
@@ -37,8 +34,6 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 					Jump(Ct(Zone("1"))),
 				).
 				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.Owner.UID),
-			// Add rule to assign connection tracking zone 2 to DNS responses
-			// from the kuma-dp's DNS proxy.
 			rules.
 				NewRule(
 					Protocol(Udp(SourcePort(cfg.Redirect.DNS.Port))),
@@ -50,8 +45,6 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 
 		if cfg.ShouldCaptureAllDNS() {
 			raw.Output().AddRules(
-				// Add rule to assign connection tracking zone 2 to all DNS
-				// requests.
 				rules.
 					NewRule(
 						Protocol(Udp(DestinationPort(DNSPort))),
@@ -61,8 +54,6 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 			)
 
 			raw.Prerouting().AddRules(
-				// Add rule to assign connection tracking zone 1 to all DNS
-				// responses.
 				rules.
 					NewRule(
 						Protocol(Udp(SourcePort(DNSPort))),
@@ -73,8 +64,6 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 		} else {
 			for _, ip := range dnsServers {
 				raw.Output().AddRules(
-					// Add rule to assign connection tracking zone 2 to DNS
-					// requests destined for specific DNS servers.
 					rules.
 						NewRule(
 							Destination(ip),
@@ -84,8 +73,6 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip),
 				)
 				raw.Prerouting().AddRules(
-					// Add rule to assign connection tracking zone 1 to DNS
-					// responses from specific DNS servers.
 					rules.
 						NewRule(
 							Destination(ip),
@@ -98,6 +85,5 @@ func buildRawTable(cfg config.InitializedConfig, ipv6 bool) *tables.RawTable {
 		}
 	}
 
-	// Return the configured raw table.
 	return raw
 }

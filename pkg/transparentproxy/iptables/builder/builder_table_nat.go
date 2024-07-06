@@ -35,7 +35,6 @@ func buildMeshInbound(
 		return meshInbound, nil
 	}
 
-	// Include specific inbound ports for redirection
 	for _, port := range cfg.IncludePorts {
 		meshInbound.AddRules(
 			rules.
@@ -48,7 +47,6 @@ func buildMeshInbound(
 	}
 
 	if len(cfg.IncludePorts) == 0 {
-		// Exclude specific inbound ports from redirection
 		for _, port := range cfg.ExcludePorts {
 			meshInbound.AddRules(
 				rules.
@@ -60,7 +58,6 @@ func buildMeshInbound(
 			)
 		}
 
-		// Redirect all other inbound traffic to the mesh inbound redirect chain
 		meshInbound.AddRules(
 			rules.
 				NewRule(
@@ -115,7 +112,6 @@ func buildMeshOutbound(
 		return meshOutbound, nil
 	}
 
-	// Exclude traffic from redirection on specified outbound ports
 	if !hasIncludedPorts {
 		for _, port := range excludePorts {
 			meshOutbound.AddRules(
@@ -163,10 +159,6 @@ func buildMeshOutbound(
 					Jump(Return()),
 				).
 				WithCommentf("prevent traffic loops by ensuring traffic from the sidecar proxy (using %s) to loopback interface is not redirected again", inboundPassthroughSourceAddress),
-			// Redirect outbound TCP traffic (except DNS port 53) from the
-			// loopback interface, not targeting localhost, and owned by UID
-			// 5678 to the inbound redirect chain for proper handling by mesh's
-			// inbound rules.
 			rules.
 				NewRule(
 					Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
@@ -176,8 +168,6 @@ func buildMeshOutbound(
 					Jump(ToUserDefinedChain(inboundRedirectChainName)),
 				).
 				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, localhost, uid, inboundRedirectChainName),
-			// Return outbound TCP traffic (except DNS port 53) from loopback
-			// interface, owned by any UID other than 5678.
 			rules.
 				NewRule(
 					Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
@@ -186,7 +176,6 @@ func buildMeshOutbound(
 					Jump(Return()),
 				).
 				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, uid),
-			// Return outbound traffic owned by UID 5678.
 			rules.
 				NewRule(
 					Match(Owner(Uid(uid))),
@@ -197,7 +186,6 @@ func buildMeshOutbound(
 
 	if shouldRedirectDNS {
 		if cfg.ShouldCaptureAllDNS() {
-			// Redirect all DNS requests to kuma-dp DNS proxy.
 			meshOutbound.AddRules(
 				rules.
 					NewRule(
@@ -208,7 +196,6 @@ func buildMeshOutbound(
 			)
 		} else {
 			for _, dnsIp := range dnsServers {
-				// Redirect DNS requests to specified DNS resolvers to kuma-dp DNS proxy.
 				meshOutbound.AddRules(
 					rules.
 						NewRule(
@@ -223,7 +210,6 @@ func buildMeshOutbound(
 	}
 
 	meshOutbound.AddRules(
-		// Return traffic destined for localhost to avoid redirection.
 		rules.
 			NewRule(
 				Destination(localhost),
@@ -234,8 +220,6 @@ func buildMeshOutbound(
 
 	if hasIncludedPorts {
 		for _, port := range includePorts {
-			// Redirect outbound traffic from the specified included ports to
-			// the custom outbound redirect chain.
 			meshOutbound.AddRules(
 				rules.
 					NewRule(
@@ -246,8 +230,6 @@ func buildMeshOutbound(
 			)
 		}
 	} else {
-		// Redirect all other outbound traffic to the custom outbound redirect
-		// chain.
 		meshOutbound.AddRules(
 			rules.
 				NewRule(
@@ -278,7 +260,6 @@ func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain
 		return nil, err
 	}
 
-	// Add a rule to redirect TCP traffic to the determined port.
 	return redirectChain.AddRules(
 		rules.
 			NewRule(
@@ -310,7 +291,6 @@ func addOutputRules(
 		shouldRedirectDNS = cfg.Redirect.DNS.EnabledIPv6
 	}
 
-	// Add logging rule if logging is enabled in the configuration.
 	if cfg.Log.Enabled {
 		nat.Output().AddRules(
 			rules.
@@ -336,7 +316,6 @@ func addOutputRules(
 			return fmt.Errorf("unknown protocol %s, only 'tcp' or 'udp' allowed", uIDsToPorts.Protocol)
 		}
 
-		// Add rule to return early for specified ports and UID.
 		nat.Output().AddRules(
 			rules.
 				NewRule(
@@ -359,7 +338,6 @@ func addOutputRules(
 		dockerOutputIPv4 := !ipv6 && cfg.Executables.IPv4.Functionality.Chains.DockerOutput
 		dockerOutput := dockerOutputIPv6 || dockerOutputIPv4
 
-		// Add DNS rule for redirecting DNS traffic based on UID.
 		nat.Output().AddRules(
 			rules.
 				NewRule(
@@ -383,8 +361,6 @@ func addOutputRules(
 		)
 		rulePosition++
 
-		// Add rules to redirect all DNS requests or only those to specific
-		// servers.
 		if cfg.ShouldCaptureAllDNS() {
 			nat.Output().AddRules(
 				rules.
@@ -412,8 +388,6 @@ func addOutputRules(
 		}
 	}
 
-	// Add a default rule to direct all TCP traffic to the user-defined outbound
-	// chain.
 	nat.Output().AddRules(
 		rules.
 			NewRule(
@@ -460,7 +434,6 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 			}
 		}
 		for iface, cidr := range interfaceAndCidr {
-			// Redirect DNS requests to the configured DNS port.
 			nat.Prerouting().AddRules(
 				rules.
 					NewRule(
@@ -474,7 +447,6 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 			)
 			rulePosition++
 
-			// Redirect all TCP traffic on specified virtual networks to the outbound port.
 			nat.Prerouting().AddRules(
 				rules.
 					NewRule(
@@ -489,7 +461,6 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 			rulePosition++
 		}
 		nat.Prerouting().AddRules(
-			// Redirect all remaining TCP traffic to the inbound chain for processing.
 			rules.
 				NewRule(
 					Protocol(Tcp()),
@@ -500,7 +471,6 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 		)
 	} else {
 		nat.Prerouting().AddRules(
-			// Redirect inbound TCP traffic to the custom chain for processing.
 			rules.
 				NewRule(
 					Protocol(Tcp()),
@@ -509,6 +479,7 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 				WithComment("redirect inbound TCP traffic to our custom chain for processing"),
 		)
 	}
+
 	return nil
 }
 
