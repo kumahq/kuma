@@ -96,6 +96,7 @@ var defaultConfig = TransparentProxyConfig{
 			"--vnet", "docker0:172.17.0.0/16",
 			"--vnet", "br+:172.18.0.0/16",
 			"--vnet", "iface:::1/64",
+			"--exclude-outbound-ports-for-uids", "53,3000-5000:106-108",
 		},
 	},
 	IPV6: false,
