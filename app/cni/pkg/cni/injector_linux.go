@@ -85,14 +85,9 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	excludePortsForUIDs := []string{}
+	var excludePortsForUIDs []string
 	if intermediateConfig.excludeOutboundPortsForUIDs != "" {
 		excludePortsForUIDs = strings.Split(intermediateConfig.excludeOutboundPortsForUIDs, ";")
-	}
-
-	excludePortsForUIDsParsed, err := transparentproxy.ParseExcludePortsForUIDs(excludePortsForUIDs)
-	if err != nil {
-		return nil, err
 	}
 
 	cfg.Verbose = true
@@ -101,7 +96,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	cfg.Redirect.Outbound.Enabled = true
 	cfg.Redirect.Outbound.Port = port
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
-	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDsParsed
+	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDs
 
 	cfg.DropInvalidPackets, err = GetEnabled(intermediateConfig.dropInvalidPackets)
 	if err != nil {

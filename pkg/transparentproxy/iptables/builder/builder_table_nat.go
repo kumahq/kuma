@@ -13,7 +13,7 @@ import (
 )
 
 func buildMeshInbound(
-	cfg config.TrafficFlow,
+	cfg config.InitializedTrafficFlow,
 	prefix string,
 	meshInboundRedirect string,
 ) (*Chain, error) {
@@ -244,7 +244,11 @@ func buildMeshOutbound(
 // buildMeshRedirect creates a chain in the NAT table to handle traffic redirection
 // to a specified port. The chain will be configured to redirect TCP traffic to the
 // provided port, which can be different for IPv4 and IPv6.
-func buildMeshRedirect(cfg config.TrafficFlow, prefix string, ipv6 bool) (*Chain, error) {
+func buildMeshRedirect(
+	cfg config.InitializedTrafficFlow,
+	prefix string,
+	ipv6 bool,
+) (*Chain, error) {
 	chainName := cfg.RedirectChain.GetFullName(prefix)
 
 	// Determine the redirect port based on the IP version.
