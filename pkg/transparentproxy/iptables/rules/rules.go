@@ -82,7 +82,8 @@ func NewRule(parameters ...*parameters.Parameter) *RuleBuilder {
 //
 // The command string is built as a space-separated list of components:
 // the flag, the chain name, the optional position (if not zero), and the rule
-// parameters. If a comment is provided (`r.comment`), it is included in the
+// parameters. If a comment is provided (`r.comment`) and the comment
+// functionality is enabled in the configuration, it is included in the
 // parameters with the prefix specified by `consts.IptablesRuleCommentPrefix`.
 //
 // The `parameters.Build(cfg.Verbose)` method is used to generate the final
@@ -91,10 +92,11 @@ func NewRule(parameters ...*parameters.Parameter) *RuleBuilder {
 // Args:
 //   - cfg (config.InitializedConfig): Configuration settings that control the
 //     verbose output and other behaviors.
+//   - ipv6 (bool): Boolean flag indicating whether the rule is for IPv6.
 //
 // Returns:
 // - string: The constructed iptables rule formatted for `iptables-restore`.
-func (r *Rule) BuildForRestore(cfg config.InitializedConfig) string {
+func (r *Rule) BuildForRestore(cfg config.InitializedConfig, ipv6 bool) string {
 	flag := consts.FlagVariationsMap[consts.FlagAppend][cfg.Verbose]
 	if r.position != 0 {
 		flag = consts.FlagVariationsMap[consts.FlagInsert][cfg.Verbose]
@@ -108,7 +110,12 @@ func (r *Rule) BuildForRestore(cfg config.InitializedConfig) string {
 
 	var params parameters.Parameters
 
-	if r.comment != "" {
+	commentFunctionality := cfg.Executables.IPv4.Functionality.Modules.Comment
+	if ipv6 {
+		commentFunctionality = cfg.Executables.IPv6.Functionality.Modules.Comment
+	}
+
+	if commentFunctionality && r.comment != "" {
 		params = append(
 			params,
 			parameters.Match(
