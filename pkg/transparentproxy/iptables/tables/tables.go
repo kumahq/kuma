@@ -39,13 +39,17 @@ type Table interface {
 //
 // TODO (bartsmykla): refactor
 // TODO (bartsmykla): add tests
-func BuildRulesForRestore(cfg config.InitializedConfig, table Table) string {
+func BuildRulesForRestore(
+	cfg config.InitializedConfig,
+	ipv6 bool,
+	table Table,
+) string {
 	tableLine := fmt.Sprintf("* %s", table.Name())
 	var customChainLines []string
 	var ruleLines []string
 
 	for _, c := range table.Chains() {
-		ruleLines = append(ruleLines, c.BuildForRestore(cfg)...)
+		ruleLines = append(ruleLines, c.BuildForRestore(cfg, ipv6)...)
 	}
 
 	for _, c := range table.CustomChains() {
@@ -57,7 +61,7 @@ func BuildRulesForRestore(cfg config.InitializedConfig, table Table) string {
 				c.Name(),
 			),
 		)
-		ruleLines = append(ruleLines, c.BuildForRestore(cfg)...)
+		ruleLines = append(ruleLines, c.BuildForRestore(cfg, ipv6)...)
 	}
 
 	if cfg.Verbose {
