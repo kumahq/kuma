@@ -42,14 +42,14 @@ const (
 // the Gateway or specific Listener.
 // refSectionName is nil if the ref refers to the whole Gateway.
 func findRouteListenerAttachment(
-	gateway *gatewayapi.Gateway,
+	gatewayNs string,
 	routeNs kube_client.Object,
-	refSectionName *gatewayapi.SectionName,
+	attemptedAttachments []gatewayapi.Listener,
 ) (Attachment, error) {
 	// Build a map of whether attaching to each listener is possible
-	listeners := map[gatewayapi.SectionName]Attachment{}
+	listenerAttachments := map[gatewayapi.SectionName]Attachment{}
 
-	for _, l := range gateway.Spec.Listeners {
+	for _, l := range attemptedAttachments {
 		ns := l.AllowedRoutes.Namespaces
 
 		// The gateway controller ensures Kinds is either empty or contains
