@@ -75,15 +75,9 @@ func buildMeshOutbound(
 	dnsServers []string,
 	ipv6 bool,
 ) (*Chain, error) {
-	prefix := cfg.Redirect.NamePrefix
-	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
-	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(prefix)
-	outboundRedirectChainName := cfg.Redirect.Outbound.RedirectChain.GetFullName(prefix)
-	excludePorts := cfg.Redirect.Outbound.ExcludePorts
-	includePorts := cfg.Redirect.Outbound.IncludePorts
-	hasIncludedPorts := len(includePorts) > 0
-	dnsRedirectPort := cfg.Redirect.DNS.Port
-	uid := cfg.Owner.UID
+	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
+	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
+	outboundRedirectChainName := cfg.Redirect.Outbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
 
 	localhost := LocalhostCIDRIPv4
 	inboundPassthroughSourceAddress := InboundPassthroughSourceAddressCIDRIPv4
@@ -111,8 +105,8 @@ func buildMeshOutbound(
 		return meshOutbound, nil
 	}
 
-	if !hasIncludedPorts {
-		for _, port := range excludePorts {
+	if len(cfg.Redirect.Outbound.IncludePorts) == 0 {
+		for _, port := range cfg.Redirect.Outbound.ExcludePorts {
 			meshOutbound.AddRules(
 				rules.
 					NewRule(
@@ -163,24 +157,24 @@ func buildMeshOutbound(
 					Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(localhost),
-					Match(Owner(Uid(uid))),
+					Match(Owner(Uid(cfg.Owner.UID))),
 					Jump(ToUserDefinedChain(inboundRedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, localhost, uid, inboundRedirectChainName),
+				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, localhost, cfg.Owner.UID, inboundRedirectChainName),
 			rules.
 				NewRule(
 					Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
-					Match(Owner(NotUid(uid))),
+					Match(Owner(NotUid(cfg.Owner.UID))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, uid),
+				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, cfg.Owner.UID),
 			rules.
 				NewRule(
-					Match(Owner(Uid(uid))),
+					Match(Owner(Uid(cfg.Owner.UID))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", uid),
+				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.Owner.UID),
 		)
 
 	if shouldRedirectDNS {
@@ -189,9 +183,9 @@ func buildMeshOutbound(
 				rules.
 					NewRule(
 						Protocol(Tcp(DestinationPort(DNSPort))),
-						Jump(ToPort(dnsRedirectPort)),
+						Jump(ToPort(cfg.Redirect.DNS.Port)),
 					).
-					WithCommentf("redirect all DNS requests sent via TCP to kuma-dp DNS proxy (listening on port %d)", dnsRedirectPort),
+					WithCommentf("redirect all DNS requests sent via TCP to kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
 			)
 		} else {
 			for _, dnsIp := range dnsServers {
@@ -200,9 +194,9 @@ func buildMeshOutbound(
 						NewRule(
 							Destination(dnsIp),
 							Protocol(Tcp(DestinationPort(DNSPort))),
-							Jump(ToPort(dnsRedirectPort)),
+							Jump(ToPort(cfg.Redirect.DNS.Port)),
 						).
-						WithCommentf("redirect DNS requests sent via TCP to %s to kuma-dp DNS proxy (listening on port %d)", dnsIp, dnsRedirectPort),
+						WithCommentf("redirect DNS requests sent via TCP to %s to kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
 				)
 			}
 		}
@@ -217,8 +211,8 @@ func buildMeshOutbound(
 			WithCommentf("return traffic destined for localhost (%s) to avoid redirection", localhost),
 	)
 
-	if hasIncludedPorts {
-		for _, port := range includePorts {
+	if len(cfg.Redirect.Outbound.IncludePorts) > 0 {
+		for _, port := range cfg.Redirect.Outbound.IncludePorts {
 			meshOutbound.AddRules(
 				rules.
 					NewRule(
@@ -282,10 +276,6 @@ func addOutputRules(
 	// Retrieve the fully qualified name of the outbound chain based on
 	// configuration.
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
-	// DNS redirection port from configuration.
-	dnsRedirectPort := cfg.Redirect.DNS.Port
-	// Owner user ID for configuring UID-based rules.
-	uid := cfg.Owner.UID
 	// Initial position for the first rule in the NAT table.
 	rulePosition := uint(1)
 
@@ -345,7 +335,7 @@ func addOutputRules(
 			rules.
 				NewRule(
 					Protocol(Udp(DestinationPort(DNSPort))),
-					Match(Owner(Uid(uid))),
+					Match(Owner(Uid(cfg.Owner.UID))),
 					JumpConditional(
 						dockerOutput,                          // if DOCKER_OUTPUT should be targeted
 						ToUserDefinedChain(ChainDockerOutput), // --jump DOCKER_OUTPUT
@@ -369,10 +359,10 @@ func addOutputRules(
 				rules.
 					NewRule(
 						Protocol(Udp(DestinationPort(DNSPort))),
-						Jump(ToPort(dnsRedirectPort)),
+						Jump(ToPort(cfg.Redirect.DNS.Port)),
 					).
 					WithPosition(rulePosition).
-					WithCommentf("redirect all DNS requests to the kuma-dp DNS proxy (listening on port %d)", dnsRedirectPort),
+					WithCommentf("redirect all DNS requests to the kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
 			)
 		} else {
 			for _, dnsIp := range dnsServers {
@@ -381,10 +371,10 @@ func addOutputRules(
 						NewRule(
 							Destination(dnsIp),
 							Protocol(Udp(DestinationPort(DNSPort))),
-							Jump(ToPort(dnsRedirectPort)),
+							Jump(ToPort(cfg.Redirect.DNS.Port)),
 						).
 						WithPosition(rulePosition).
-						WithCommentf("redirect DNS requests to %s to the kuma-dp DNS proxy (listening on port %d)", dnsIp, dnsRedirectPort),
+						WithCommentf("redirect DNS requests to %s to the kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
 				)
 				rulePosition++
 			}
