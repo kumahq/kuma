@@ -102,6 +102,7 @@ func TestConformance(t *testing.T) {
 			features.SupportHTTPRouteRequestMirror,
 			features.SupportHTTPRouteSchemeRedirect,
 			features.SupportMesh,
+			features.SupportMeshConsumerRoute,
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
