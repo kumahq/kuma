@@ -95,6 +95,7 @@ func TestConformance(t *testing.T) {
 			features.SupportHTTPRoute,
 			features.SupportHTTPRouteHostRewrite,
 			features.SupportHTTPRouteMethodMatching,
+			features.SupportHTTPRouteParentRefPort,
 			features.SupportHTTPRoutePathRedirect,
 			features.SupportHTTPRoutePathRewrite,
 			features.SupportHTTPRoutePortRedirect,
