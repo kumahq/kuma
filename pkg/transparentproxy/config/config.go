@@ -38,15 +38,27 @@ type TrafficFlow struct {
 	Enabled             bool
 	Port                uint16
 	PortIPv6            uint16
-	Chain               Chain
-	RedirectChain       Chain
+	ChainName           string
+	RedirectChainName   string
 	ExcludePorts        []uint16
 	ExcludePortsForUIDs []string
 	IncludePorts        []uint16
 }
 
-func (c TrafficFlow) Initialize() (InitializedTrafficFlow, error) {
+func (c TrafficFlow) Initialize(
+	chainNamePrefix string,
+) (InitializedTrafficFlow, error) {
 	initialized := InitializedTrafficFlow{TrafficFlow: c}
+
+	if c.ChainName == "" {
+		return InitializedTrafficFlow{}, errors.New("no chain name provided")
+	}
+	initialized.ChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.ChainName)
+
+	if c.RedirectChainName == "" {
+		return InitializedTrafficFlow{}, errors.New("no redirect chain name provided")
+	}
+	initialized.RedirectChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.RedirectChainName)
 
 	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
 	if err != nil {
@@ -63,6 +75,8 @@ func (c TrafficFlow) Initialize() (InitializedTrafficFlow, error) {
 type InitializedTrafficFlow struct {
 	TrafficFlow
 	ExcludePortsForUIDs []UIDsToPorts
+	ChainName           string
+	RedirectChainName   string
 }
 
 type DNS struct {
@@ -296,26 +310,18 @@ func (c Redirect) Initialize(
 	}
 
 	// .Inbound
-	initialized.Inbound, err = c.Inbound.Initialize()
+	initialized.Inbound, err = c.Inbound.Initialize(c.NamePrefix)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .Inbound")
 	}
 
 	// .Outbound
-	initialized.Outbound, err = c.Outbound.Initialize()
+	initialized.Outbound, err = c.Outbound.Initialize(c.NamePrefix)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .Outbound")
 	}
 
 	return initialized, nil
-}
-
-type Chain struct {
-	Name string
-}
-
-func (c Chain) GetFullName(prefix string) string {
-	return prefix + c.Name
 }
 
 type Ebpf struct {
@@ -514,23 +520,23 @@ func DefaultConfig() Config {
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
-			NamePrefix: "KUMA_",
+			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
-				Enabled:       true,
-				Port:          DefaultRedirectInbountPort,
-				PortIPv6:      DefaultRedirectInbountPortIPv6,
-				Chain:         Chain{Name: "MESH_INBOUND"},
-				RedirectChain: Chain{Name: "MESH_INBOUND_REDIRECT"},
-				ExcludePorts:  []uint16{},
-				IncludePorts:  []uint16{},
+				Enabled:           true,
+				Port:              DefaultRedirectInbountPort,
+				PortIPv6:          DefaultRedirectInbountPortIPv6,
+				ChainName:         "INBOUND",
+				RedirectChainName: "INBOUND_REDIRECT",
+				ExcludePorts:      []uint16{},
+				IncludePorts:      []uint16{},
 			},
 			Outbound: TrafficFlow{
-				Enabled:       true,
-				Port:          DefaultRedirectOutboundPort,
-				Chain:         Chain{Name: "MESH_OUTBOUND"},
-				RedirectChain: Chain{Name: "MESH_OUTBOUND_REDIRECT"},
-				ExcludePorts:  []uint16{},
-				IncludePorts:  []uint16{},
+				Enabled:           true,
+				Port:              DefaultRedirectOutboundPort,
+				ChainName:         "OUTBOUND",
+				RedirectChainName: "OUTBOUND_REDIRECT",
+				ExcludePorts:      []uint16{},
+				IncludePorts:      []uint16{},
 			},
 			DNS: DNS{
 				Port:               DefaultRedirectDNSPort,

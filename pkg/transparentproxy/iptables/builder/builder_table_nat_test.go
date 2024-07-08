@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	tproxy_test "github.com/kumahq/kuma/pkg/transparentproxy/test"
 )
@@ -18,15 +19,18 @@ var _ = Describe("Builder nat", func() {
 			nat := tables.Nat()
 			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
+					NamePrefix: consts.IptablesChainsPrefix,
 					Inbound: config.TrafficFlow{
-						Enabled: true,
-						Port:    1234,
-						Chain:   config.Chain{Name: "MESH_INBOUND"},
+						Enabled:           true,
+						Port:              1234,
+						ChainName:         "INBOUND",
+						RedirectChainName: "INBOUND_REDIRECT",
 					},
 					Outbound: config.TrafficFlow{
-						Enabled: true,
-						Port:    12345,
-						Chain:   config.Chain{Name: "MESH_OUTBOUND"},
+						Enabled:           true,
+						Port:              12345,
+						ChainName:         "OUTBOUND",
+						RedirectChainName: "OUTBOUND_REDIRECT",
 					},
 					DNS: config.DNS{Port: 15053},
 					VNet: config.VNet{
@@ -63,7 +67,7 @@ var _ = Describe("Builder nat", func() {
 			"-i br+ -m udp -p udp --dport 53 -j REDIRECT --to-ports 15053",
 			"-I PREROUTING 4",
 			"! -d 127.0.0.0/32 -i br+ -p tcp -j REDIRECT --to-ports 12345",
-			"-I PREROUTING 5 -p tcp -j MESH_INBOUND",
+			"-I PREROUTING 5 -p tcp -j KUMA_MESH_INBOUND",
 		),
 		Entry("ipv4 not verbose",
 			[]string{"docker:1.2.3.4/24", "br+:127.0.0.0/32"},
@@ -77,7 +81,7 @@ var _ = Describe("Builder nat", func() {
 			"--in-interface br+ --match udp --protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053",
 			"--insert PREROUTING 4",
 			"! --destination 127.0.0.0/32 --in-interface br+ --protocol tcp --jump REDIRECT --to-ports 12345",
-			"--insert PREROUTING 5 --protocol tcp --jump MESH_INBOUND",
+			"--insert PREROUTING 5 --protocol tcp --jump KUMA_MESH_INBOUND",
 		),
 		Entry("ipv6 not verbose",
 			[]string{"docker:::6/24", "br+:1::1/128"},
@@ -91,7 +95,7 @@ var _ = Describe("Builder nat", func() {
 			"-i br+ -m udp -p udp --dport 53 -j REDIRECT --to-ports 15053",
 			"-I PREROUTING 4",
 			"! -d 1::1/128 -i br+ -p tcp -j REDIRECT --to-ports 12345",
-			"-I PREROUTING 5 -p tcp -j MESH_INBOUND",
+			"-I PREROUTING 5 -p tcp -j KUMA_MESH_INBOUND",
 		),
 		Entry("ipv6 not verbose",
 			[]string{"docker:::6/24", "br+:1::1/128"},
@@ -105,7 +109,7 @@ var _ = Describe("Builder nat", func() {
 			"--in-interface br+ --match udp --protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053",
 			"--insert PREROUTING 4",
 			"! --destination 1::1/128 --in-interface br+ --protocol tcp --jump REDIRECT --to-ports 12345",
-			"--insert PREROUTING 5 --protocol tcp --jump MESH_INBOUND",
+			"--insert PREROUTING 5 --protocol tcp --jump KUMA_MESH_INBOUND",
 		),
 		Entry("ipv4 without ipv6 rules",
 			[]string{"docker:127.0.0.6/24", "br+:1::1/128"},
@@ -113,7 +117,7 @@ var _ = Describe("Builder nat", func() {
 			false,
 			"--insert PREROUTING 1 --in-interface docker --match udp --protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053",
 			"--insert PREROUTING 2 ! --destination 127.0.0.6/24 --in-interface docker --protocol tcp --jump REDIRECT --to-ports 12345",
-			"--insert PREROUTING 3 --protocol tcp --jump MESH_INBOUND",
+			"--insert PREROUTING 3 --protocol tcp --jump KUMA_MESH_INBOUND",
 		),
 		Entry("ipv6 without ipv4 rules",
 			[]string{"docker:127.0.0.6/24", "br+:1::1/128"},
@@ -121,7 +125,7 @@ var _ = Describe("Builder nat", func() {
 			true,
 			"--insert PREROUTING 1 --in-interface br+ --match udp --protocol udp --destination-port 53 --jump REDIRECT --to-ports 15053",
 			"--insert PREROUTING 2 ! --destination 1::1/128 --in-interface br+ --protocol tcp --jump REDIRECT --to-ports 12345",
-			"--insert PREROUTING 3 --protocol tcp --jump MESH_INBOUND",
+			"--insert PREROUTING 3 --protocol tcp --jump KUMA_MESH_INBOUND",
 		),
 	)
 
@@ -131,15 +135,18 @@ var _ = Describe("Builder nat", func() {
 			nat := tables.Nat()
 			cfg := tproxy_test.InitializeConfig(config.Config{
 				Redirect: config.Redirect{
+					NamePrefix: consts.IptablesChainsPrefix,
 					Inbound: config.TrafficFlow{
-						Enabled: true,
-						Port:    1234,
-						Chain:   config.Chain{Name: "MESH_INBOUND"},
+						Enabled:           true,
+						Port:              1234,
+						ChainName:         "INBOUND",
+						RedirectChainName: "INBOUND_REDIRECT",
 					},
 					Outbound: config.TrafficFlow{
-						Enabled: true,
-						Port:    12345,
-						Chain:   config.Chain{Name: "MESH_OUTBOUND"},
+						Enabled:           true,
+						Port:              12345,
+						ChainName:         "OUTBOUND",
+						RedirectChainName: "OUTBOUND_REDIRECT",
 					},
 					DNS: config.DNS{Port: 15053},
 				},
@@ -159,6 +166,6 @@ var _ = Describe("Builder nat", func() {
 				}, ContainSubstring(rule)))
 			}
 		},
-		Entry("ipv4 not verbose", false, false, "-A PREROUTING -p tcp -j MESH_INBOUND"),
+		Entry("ipv4 not verbose", false, false, "-A PREROUTING -p tcp -j KUMA_MESH_INBOUND"),
 	)
 })

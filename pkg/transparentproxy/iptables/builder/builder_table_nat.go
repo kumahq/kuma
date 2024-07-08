@@ -12,12 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
-func buildMeshInbound(
-	cfg config.InitializedTrafficFlow,
-	prefix string,
-	meshInboundRedirect string,
-) *Chain {
-	meshInbound := MustNewChain(TableNat, cfg.Chain.GetFullName(prefix))
+func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
+	meshInbound := MustNewChain(TableNat, cfg.ChainName)
 
 	if !cfg.Enabled {
 		return meshInbound.AddRules(
@@ -35,7 +31,7 @@ func buildMeshInbound(
 			rules.
 				NewRule(
 					Protocol(Tcp(DestinationPort(port))),
-					Jump(ToUserDefinedChain(meshInboundRedirect)),
+					Jump(ToUserDefinedChain(cfg.RedirectChainName)),
 				).
 				WithCommentf("redirect inbound traffic from port %d to the custom chain for processing", port),
 		)
@@ -57,7 +53,7 @@ func buildMeshInbound(
 			rules.
 				NewRule(
 					Protocol(Tcp()),
-					Jump(ToUserDefinedChain(meshInboundRedirect)),
+					Jump(ToUserDefinedChain(cfg.RedirectChainName)),
 				).
 				WithComment("redirect all inbound traffic to the custom chain for processing"),
 		)
@@ -71,10 +67,6 @@ func buildMeshOutbound(
 	dnsServers []string,
 	ipv6 bool,
 ) *Chain {
-	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
-	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
-	outboundRedirectChainName := cfg.Redirect.Outbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
-
 	localhost := LocalhostCIDRIPv4
 	inboundPassthroughSourceAddress := InboundPassthroughSourceAddressCIDRIPv4
 	shouldRedirectDNS := cfg.Redirect.DNS.EnabledIPv4
@@ -84,7 +76,7 @@ func buildMeshOutbound(
 		shouldRedirectDNS = cfg.Redirect.DNS.EnabledIPv6
 	}
 
-	meshOutbound := MustNewChain(TableNat, outboundChainName)
+	meshOutbound := MustNewChain(TableNat, cfg.Redirect.Outbound.ChainName)
 
 	if !cfg.Redirect.Outbound.Enabled {
 		return meshOutbound.AddRules(
@@ -150,9 +142,9 @@ func buildMeshOutbound(
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(localhost),
 					Match(Owner(Uid(cfg.Owner.UID))),
-					Jump(ToUserDefinedChain(inboundRedirectChainName)),
+					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.RedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, localhost, cfg.Owner.UID, inboundRedirectChainName),
+				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, localhost, cfg.Owner.UID, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
 				NewRule(
 					Protocol(Tcp(NotDestinationPortIfBool(shouldRedirectDNS, DNSPort))),
@@ -203,22 +195,22 @@ func buildMeshOutbound(
 			WithCommentf("return traffic destined for localhost (%s) to avoid redirection", localhost),
 	)
 
-	if len(cfg.Redirect.Outbound.IncludePorts) > 0 {
-		for _, port := range cfg.Redirect.Outbound.IncludePorts {
-			meshOutbound.AddRules(
-				rules.
-					NewRule(
-						Protocol(Tcp(DestinationPort(port))),
-						Jump(ToUserDefinedChain(outboundRedirectChainName)),
-					).
-					WithCommentf("redirect outbound TCP traffic to port %d to our custom chain for further processing", port),
-			)
-		}
-	} else {
+	for _, port := range cfg.Redirect.Outbound.IncludePorts {
 		meshOutbound.AddRules(
 			rules.
 				NewRule(
-					Jump(ToUserDefinedChain(outboundRedirectChainName)),
+					Protocol(Tcp(DestinationPort(port))),
+					Jump(ToUserDefinedChain(cfg.Redirect.Outbound.RedirectChainName)),
+				).
+				WithCommentf("redirect outbound TCP traffic to port %d to our custom chain for further processing", port),
+		)
+	}
+
+	if len(cfg.Redirect.Outbound.IncludePorts) == 0 {
+		meshOutbound.AddRules(
+			rules.
+				NewRule(
+					Jump(ToUserDefinedChain(cfg.Redirect.Outbound.RedirectChainName)),
 				).
 				WithComment("redirect all other outbound traffic to our custom chain for further processing"),
 		)
@@ -230,12 +222,7 @@ func buildMeshOutbound(
 // buildMeshRedirect creates a chain in the NAT table to handle traffic redirection
 // to a specified port. The chain will be configured to redirect TCP traffic to the
 // provided port, which can be different for IPv4 and IPv6.
-func buildMeshRedirect(
-	cfg config.InitializedTrafficFlow,
-	prefix string,
-	ipv6 bool,
-) *Chain {
-	chainName := cfg.RedirectChain.GetFullName(prefix)
+func buildMeshRedirect(cfg config.InitializedTrafficFlow, ipv6 bool) *Chain {
 
 	// Determine the redirect port based on the IP version.
 	redirectPort := cfg.Port
@@ -243,7 +230,7 @@ func buildMeshRedirect(
 		redirectPort = cfg.PortIPv6
 	}
 
-	return MustNewChain(TableNat, chainName).AddRules(
+	return MustNewChain(TableNat, cfg.RedirectChainName).AddRules(
 		rules.
 			NewRule(
 				Protocol(Tcp()),
@@ -259,9 +246,6 @@ func addOutputRules(
 	nat *tables.NatTable,
 	ipv6 bool,
 ) error {
-	// Retrieve the fully qualified name of the outbound chain based on
-	// configuration.
-	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	// Initial position for the first rule in the NAT table.
 	rulePosition := uint(1)
 
@@ -371,7 +355,7 @@ func addOutputRules(
 		rules.
 			NewRule(
 				Protocol(Tcp()),
-				Jump(ToUserDefinedChain(outboundChainName)),
+				Jump(ToUserDefinedChain(cfg.Redirect.Outbound.ChainName)),
 			).
 			WithComment("redirect outbound TCP traffic to our custom chain for processing"),
 	)
@@ -382,7 +366,6 @@ func addOutputRules(
 // addPreroutingRules adds rules to the PREROUTING chain of the NAT table to
 // handle inbound traffic according to the provided configuration.
 func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6 bool) {
-	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	rulePosition := uint(1)
 
 	// Add a logging rule if logging is enabled.
@@ -404,7 +387,7 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 			rules.
 				NewRule(
 					Protocol(Tcp()),
-					Jump(ToUserDefinedChain(inboundChainName)),
+					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.ChainName)),
 				).
 				WithComment("redirect inbound TCP traffic to our custom chain for processing"),
 		)
@@ -439,7 +422,7 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 		rules.
 			NewRule(
 				Protocol(Tcp()),
-				Jump(ToUserDefinedChain(inboundChainName)),
+				Jump(ToUserDefinedChain(cfg.Redirect.Inbound.ChainName)),
 			).
 			WithPosition(rulePosition).
 			WithComment("redirect remaining TCP traffic to our custom chain for processing"),
@@ -451,8 +434,6 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 // specific port exclusions or inclusions. It sets up custom chains for mesh
 // traffic management based on the provided configuration.
 func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, error) {
-	prefix := cfg.Redirect.NamePrefix
-	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(prefix)
 
 	// Determine DNS servers based on IP version.
 	dnsServers := cfg.Redirect.DNS.ServersIPv4
@@ -471,8 +452,8 @@ func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, e
 	addPreroutingRules(cfg, nat, ipv6)
 
 	return nat.
-		WithCustomChain(buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)).
+		WithCustomChain(buildMeshInbound(cfg.Redirect.Inbound)).
 		WithCustomChain(buildMeshOutbound(cfg, dnsServers, ipv6)).
-		WithCustomChain(buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)).
-		WithCustomChain(buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)), nil
+		WithCustomChain(buildMeshRedirect(cfg.Redirect.Inbound, ipv6)).
+		WithCustomChain(buildMeshRedirect(cfg.Redirect.Outbound, ipv6)), nil
 }
