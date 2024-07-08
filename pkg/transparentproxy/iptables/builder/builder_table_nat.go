@@ -16,14 +16,11 @@ func buildMeshInbound(
 	cfg config.InitializedTrafficFlow,
 	prefix string,
 	meshInboundRedirect string,
-) (*Chain, error) {
-	meshInbound, err := NewChain(TableNat, cfg.Chain.GetFullName(prefix))
-	if err != nil {
-		return nil, err
-	}
+) *Chain {
+	meshInbound := MustNewChain(TableNat, cfg.Chain.GetFullName(prefix))
 
 	if !cfg.Enabled {
-		meshInbound.AddRules(
+		return meshInbound.AddRules(
 			rules.
 				NewRule(
 					Protocol(Tcp()),
@@ -31,7 +28,6 @@ func buildMeshInbound(
 				).
 				WithComment("inbound traffic redirection is disabled"),
 		)
-		return meshInbound, nil
 	}
 
 	for _, port := range cfg.IncludePorts {
@@ -67,14 +63,14 @@ func buildMeshInbound(
 		)
 	}
 
-	return meshInbound, nil
+	return meshInbound
 }
 
 func buildMeshOutbound(
 	cfg config.InitializedConfig,
 	dnsServers []string,
 	ipv6 bool,
-) (*Chain, error) {
+) *Chain {
 	inboundRedirectChainName := cfg.Redirect.Inbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
 	outboundChainName := cfg.Redirect.Outbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	outboundRedirectChainName := cfg.Redirect.Outbound.RedirectChain.GetFullName(cfg.Redirect.NamePrefix)
@@ -88,13 +84,10 @@ func buildMeshOutbound(
 		shouldRedirectDNS = cfg.Redirect.DNS.EnabledIPv6
 	}
 
-	meshOutbound, err := NewChain(TableNat, outboundChainName)
-	if err != nil {
-		return nil, err
-	}
+	meshOutbound := MustNewChain(TableNat, outboundChainName)
 
 	if !cfg.Redirect.Outbound.Enabled {
-		meshOutbound.AddRules(
+		return meshOutbound.AddRules(
 			rules.
 				NewRule(
 					Protocol(Tcp()),
@@ -102,7 +95,6 @@ func buildMeshOutbound(
 				).
 				WithComment("outbound traffic redirection is disabled"),
 		)
-		return meshOutbound, nil
 	}
 
 	if len(cfg.Redirect.Outbound.IncludePorts) == 0 {
@@ -232,7 +224,7 @@ func buildMeshOutbound(
 		)
 	}
 
-	return meshOutbound, nil
+	return meshOutbound
 }
 
 // buildMeshRedirect creates a chain in the NAT table to handle traffic redirection
@@ -242,7 +234,7 @@ func buildMeshRedirect(
 	cfg config.InitializedTrafficFlow,
 	prefix string,
 	ipv6 bool,
-) (*Chain, error) {
+) *Chain {
 	chainName := cfg.RedirectChain.GetFullName(prefix)
 
 	// Determine the redirect port based on the IP version.
@@ -251,20 +243,14 @@ func buildMeshRedirect(
 		redirectPort = cfg.PortIPv6
 	}
 
-	// Create a new chain in the NAT table with the specified name.
-	redirectChain, err := NewChain(TableNat, chainName)
-	if err != nil {
-		return nil, err
-	}
-
-	return redirectChain.AddRules(
+	return MustNewChain(TableNat, chainName).AddRules(
 		rules.
 			NewRule(
 				Protocol(Tcp()),
 				Jump(ToPort(redirectPort)),
 			).
 			WithCommentf("redirect TCP traffic to envoy (port %d)", redirectPort),
-	), nil
+	)
 }
 
 func addOutputRules(
@@ -482,37 +468,11 @@ func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, e
 		return nil, fmt.Errorf("could not add output rules %s", err)
 	}
 
-	// Add prerouting rules to the NAT table.
 	addPreroutingRules(cfg, nat, ipv6)
 
-	// Build the MESH_INBOUND chain.
-	meshInbound, err := buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build the MESH_INBOUND_REDIRECT chain.
-	meshInboundRedirect, err := buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build the MESH_OUTBOUND chain.
-	meshOutbound, err := buildMeshOutbound(cfg, dnsServers, ipv6)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build the MESH_OUTBOUND_REDIRECT chain.
-	meshOutboundRedirect, err := buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add the custom chains to the NAT table and return it.
 	return nat.
-		WithCustomChain(meshInbound).
-		WithCustomChain(meshOutbound).
-		WithCustomChain(meshInboundRedirect).
-		WithCustomChain(meshOutboundRedirect), nil
+		WithCustomChain(buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)).
+		WithCustomChain(buildMeshOutbound(cfg, dnsServers, ipv6)).
+		WithCustomChain(buildMeshRedirect(cfg.Redirect.Inbound, prefix, ipv6)).
+		WithCustomChain(buildMeshRedirect(cfg.Redirect.Outbound, prefix, ipv6)), nil
 }
