@@ -1,4 +1,4 @@
-package graph
+package backends
 
 import (
 	"golang.org/x/exp/maps"
@@ -16,18 +16,18 @@ import (
 
 var log = core.Log.WithName("rms-graph")
 
-type backendKey struct {
+type BackendKey struct {
 	Kind string
 	Name string
 }
 
 type Graph struct {
-	rules map[backendKey]core_rules.Rules
+	rules map[BackendKey]core_rules.Rules
 }
 
 func NewGraph() *Graph {
 	return &Graph{
-		rules: map[backendKey]core_rules.Rules{},
+		rules: map[BackendKey]core_rules.Rules{},
 	}
 }
 
@@ -40,7 +40,7 @@ func (r *Graph) CanReachBackend(fromTags map[string]string, backendRef *mesh_pro
 	if backendRef.Kind == "MeshExternalService" {
 		return true
 	}
-	rule := r.rules[backendKey{
+	rule := r.rules[BackendKey{
 		Kind: backendRef.Kind,
 		Name: backendRef.Name,
 	}].Compute(core_rules.SubsetFromTags(fromTags))
@@ -103,7 +103,7 @@ func BuildGraph(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 			continue
 		}
 
-		graph.rules[backendKey{
+		graph.rules[BackendKey{
 			Kind: "MeshService",
 			Name: ms.Meta.GetName(),
 		}] = rl

@@ -166,7 +166,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	meshServicesByLabels := map[string]map[string][]string{}
 	for _, ms := range meshServices {
 		meshServicesByName[ms.Meta.GetName()] = ms
-		getResourceNamesForLabels(ms.Meta.GetName(), ms.Meta.GetLabels(), meshServicesByLabels)
+		labels := ms.Meta.GetLabels()
+		for key, value := range ms.Spec.Selector.DataplaneTags {
+			labels[key] = value
+		}
+		getResourceNamesForLabels(ms.Meta.GetName(), labels, meshServicesByLabels)
 	}
 
 	meshExternalServices := resources.MeshExternalServices().Items
