@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,8 +41,28 @@ type TrafficFlow struct {
 	Chain               Chain
 	RedirectChain       Chain
 	ExcludePorts        []uint16
-	ExcludePortsForUIDs []UIDsToPorts
+	ExcludePortsForUIDs []string
 	IncludePorts        []uint16
+}
+
+func (c TrafficFlow) Initialize() (InitializedTrafficFlow, error) {
+	initialized := InitializedTrafficFlow{TrafficFlow: c}
+
+	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"parsing excluded outbound ports for uids failed",
+		)
+	}
+	initialized.ExcludePortsForUIDs = excludePortsForUIDs
+
+	return initialized, nil
+}
+
+type InitializedTrafficFlow struct {
+	TrafficFlow
+	ExcludePortsForUIDs []UIDsToPorts
 }
 
 type DNS struct {
@@ -247,8 +268,10 @@ type Redirect struct {
 
 type InitializedRedirect struct {
 	Redirect
-	DNS  InitializedDNS
-	VNet InitializedVNet
+	DNS      InitializedDNS
+	VNet     InitializedVNet
+	Inbound  InitializedTrafficFlow
+	Outbound InitializedTrafficFlow
 }
 
 func (c Redirect) Initialize(
@@ -270,6 +293,18 @@ func (c Redirect) Initialize(
 	initialized.VNet, err = c.VNet.Initialize()
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .VNet")
+	}
+
+	// .Inbound
+	initialized.Inbound, err = c.Inbound.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .Inbound")
+	}
+
+	// .Outbound
+	initialized.Outbound, err = c.Outbound.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .Outbound")
 	}
 
 	return initialized, nil
@@ -554,4 +589,151 @@ func getLoopbackInterfaceName() (string, error) {
 	}
 
 	return "", errors.New("no loopback interface found on the system")
+}
+
+// parseExcludePortsForUIDs parses a slice of strings representing port
+// exclusion rules based on UIDs and returns a slice of UIDsToPorts structs.
+//
+// Each input string should follow the format: <protocol:>?<ports:>?<uids>.
+// Examples:
+//   - "tcp:22:1000-2000"
+//   - "udp:53:1001"
+//   - "80:1002"
+//   - "1003"
+//
+// Args:
+//   - portsForUIDs ([]string): A slice of strings specifying port exclusion
+//     rules based on UIDs.
+//
+// Returns:
+//   - []UIDsToPorts: A slice of UIDsToPorts structs representing the parsed
+//     port exclusion rules.
+//   - error: An error if the input format is invalid or if validation fails.
+func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
+	var result []UIDsToPorts
+
+	for _, elem := range portsForUIDs {
+		parts := strings.Split(elem, ":")
+		if len(parts) == 0 || len(parts) > 3 {
+			return nil, errors.Errorf(
+				"invalid format for excluding ports by UIDs: '%s'. Expected format: <protocol:>?<ports:>?<uids>",
+				elem,
+			)
+		}
+
+		var portValuesOrRange, protocolOpts, uidValuesOrRange string
+
+		switch len(parts) {
+		case 1:
+			protocolOpts = "*"
+			portValuesOrRange = "*"
+			uidValuesOrRange = parts[0]
+		case 2:
+			protocolOpts = "*"
+			portValuesOrRange = parts[0]
+			uidValuesOrRange = parts[1]
+		case 3:
+			protocolOpts = parts[0]
+			portValuesOrRange = parts[1]
+			uidValuesOrRange = parts[2]
+		}
+
+		if uidValuesOrRange == "*" {
+			return nil, errors.New("wildcard '*' is not allowed for UIDs")
+		}
+
+		if portValuesOrRange == "*" || portValuesOrRange == "" {
+			portValuesOrRange = "1-65535"
+		}
+
+		if err := validateUintValueOrRange(portValuesOrRange); err != nil {
+			return nil, errors.Wrap(err, "invalid port range")
+		}
+
+		if strings.Contains(uidValuesOrRange, ",") {
+			return nil, errors.Errorf(
+				"invalid UID entry: '%s'. It should either be a single item or a range",
+				uidValuesOrRange,
+			)
+		}
+
+		if err := validateUintValueOrRange(uidValuesOrRange); err != nil {
+			return nil, errors.Wrap(err, "invalid UID range")
+		}
+
+		var protocols []string
+		if protocolOpts == "" || protocolOpts == "*" {
+			protocols = []string{"tcp", "udp"}
+		} else {
+			for _, p := range strings.Split(protocolOpts, ",") {
+				pCleaned := strings.ToLower(strings.TrimSpace(p))
+				if pCleaned != "tcp" && pCleaned != "udp" {
+					return nil, errors.Errorf(
+						"invalid or unsupported protocol: '%s'",
+						pCleaned,
+					)
+				}
+				protocols = append(protocols, pCleaned)
+			}
+		}
+
+		for _, p := range protocols {
+			ports := strings.ReplaceAll(portValuesOrRange, "-", ":")
+			uids := strings.ReplaceAll(uidValuesOrRange, "-", ":")
+
+			result = append(result, UIDsToPorts{
+				Ports:    ValueOrRangeList(ports),
+				UIDs:     ValueOrRangeList(uids),
+				Protocol: p,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// validateUintValueOrRange validates whether a given string represents a valid
+// single uint16 value or a range of uint16 values. The input string can contain
+// multiple comma-separated values or ranges (e.g., "80,1000-2000").
+//
+// Args:
+//   - valueOrRange (string): The input string to validate, which can be a
+//     single value, a range of values, or a comma-separated list of
+//     values/ranges.
+//
+// Returns:
+//   - error: An error if any value or range in the input string is not a valid
+//     uint16 value.
+func validateUintValueOrRange(valueOrRange string) error {
+	for _, element := range strings.Split(valueOrRange, ",") {
+		for _, port := range strings.Split(element, "-") {
+			if _, err := parseUint16(port); err != nil {
+				return errors.Wrapf(
+					err,
+					"validation failed for value or range '%s'",
+					valueOrRange,
+				)
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseUint16 parses a string representing a uint16 value and returns its
+// uint16 representation.
+//
+// Args:
+//   - port (string): The input string to parse.
+//
+// Returns:
+//   - uint16: The parsed uint16 value.
+//   - error: An error if the input string is not a valid uint16 value.
+func parseUint16(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return 0, fmt.Errorf("invalid uint16 value: '%s'", port)
+	}
+
+	return uint16(parsedPort), nil
 }

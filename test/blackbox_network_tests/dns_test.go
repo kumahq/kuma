@@ -129,11 +129,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(consts.DNSPort))),
-							Protocol: "udp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("udp:%d:%d", consts.DNSPort, dnsUserUid),
+						},
 					},
 				},
 				RuntimeStdout: io.Discard,
@@ -221,11 +219,9 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(consts.DNSPort))),
-							Protocol: "udp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("udp:%d:%d", consts.DNSPort, dnsUserUid),
+						},
 					},
 				},
 				IPv6:          true,

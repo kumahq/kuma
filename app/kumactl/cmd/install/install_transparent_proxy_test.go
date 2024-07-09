@@ -177,14 +177,17 @@ var _ = Context("kumactl install transparent proxy", func() {
 		func(given testCase) {
 			// given
 			args := append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...)
-			_, stderr, rootCmd := test.DefaultTestingRootCmd(args...)
+			_, stderrBuf, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
 			err := rootCmd.Execute()
+			stderr := strings.NewReplacer(
+				"# [WARNING]: dry-run mode: No valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables\n", "",
+			).Replace(stderrBuf.String())
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(stderr.String()).To(given.errorMatcher)
+			Expect(stderr).To(given.errorMatcher)
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs: []string{
@@ -200,35 +203,35 @@ var _ = Context("kumactl install transparent proxy", func() {
 				"--kuma-dp-user", "root",
 				"--exclude-outbound-ports-for-uids", "a3000-5000:1",
 			},
-			errorMatcher: Equal("Error: failed to setup transparent proxy: parsing excluded outbound ports for uids failed: values or range 'a3000-5000' failed validation: value 'a3000', is not valid uint16\n"),
+			errorMatcher: ContainSubstring("parsing excluded outbound ports for uids failed: invalid port range: validation failed for value or range 'a3000-5000': invalid uint16 value: 'a3000'\n"),
 		}),
 		Entry("should error out on invalid protocol value", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--exclude-outbound-ports-for-uids", "http:3000-5000:1",
 			},
-			errorMatcher: Equal("Error: failed to setup transparent proxy: parsing excluded outbound ports for uids failed: protocol 'http' is invalid or unsupported\n"),
+			errorMatcher: ContainSubstring("parsing excluded outbound ports for uids failed: invalid or unsupported protocol: 'http'\n"),
 		}),
 		Entry("should error out on wildcard on uids", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--exclude-outbound-ports-for-uids", "3000-5000:1:*",
 			},
-			errorMatcher: Equal("Error: failed to setup transparent proxy: parsing excluded outbound ports for uids failed: can't use wildcard '*' for uids\n"),
+			errorMatcher: ContainSubstring("parsing excluded outbound ports for uids failed: wildcard '*' is not allowed for UIDs\n"),
 		}),
 		Entry("should error out with list on uids", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--exclude-outbound-ports-for-uids", "3000-5000:1:1,2,3",
 			},
-			errorMatcher: Equal("Error: failed to setup transparent proxy: parsing excluded outbound ports for uids failed: uid entry invalid:'1,2,3', it should either be a single item or a range\n"),
+			errorMatcher: ContainSubstring("parsing excluded outbound ports for uids failed: invalid UID entry: '1,2,3'. It should either be a single item or a range\n"),
 		}),
 		Entry("should error out on invalid port in list", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
 				"--exclude-outbound-ports-for-uids", "tcp,http:1:1",
 			},
-			errorMatcher: Equal("Error: failed to setup transparent proxy: parsing excluded outbound ports for uids failed: protocol 'http' is invalid or unsupported\n"),
+			errorMatcher: ContainSubstring("parsing excluded outbound ports for uids failed: invalid or unsupported protocol: 'http'\n"),
 		}),
 	)
 })
