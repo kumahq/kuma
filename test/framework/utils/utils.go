@@ -91,57 +91,51 @@ func cleanName(name string) string {
 	).Replace(strings.ToLower(name))
 }
 
-// BuildIptablesGoldenFileName constructs the complete file path for a golden file used
-// for storing expected iptables rules based on a specific test configuration.
+// BuildIptablesGoldenFileName constructs the complete file path for a golden
+// file used for storing expected iptables rules based on a specific test
+// configuration.
 //
 // Args:
-//
-//	dir (string): The base directory containing transparent proxy tests.
-//	image (string): The Docker image name used for testing.
-//	cmd (string): The iptables save command used in the test.
-//	flags ([]string): The list of flags used during transparent proxy
-//	  installation.
+//   - dir (string): The base directory containing transparent proxy tests.
+//   - image (string): The Docker image name used for testing.
+//   - cmd (string): The iptables save command used in the test.
+//   - suffix (string): The optional suffix to be added to the file name.
 //
 // Returns:
-//
-//	[]string: A slice of strings representing the complete file path for the
-//	  golden file.
-//	  - The first element is the provided base directory.
-//	  - The second element is always "testdata", a subdirectory for storing
-//	    golden files.
-//	  - The third element is the actual golden file name based on the sanitized
-//	    image name and flags joined with hyphens with iptables cmd suffix.
+//   - []string: A slice of strings representing the complete file path for the
+//     golden file.
+//   - The first element is the provided base directory.
+//   - The second element is always "testdata", a subdirectory for storing
+//     golden files.
+//   - The third element is the actual golden file name based on the sanitized
+//     image name and flags joined with hyphens, ending with the command and
+//     ".golden" suffix.
 //
 // Example:
 //
 //	BuildIptablesGoldenFileName(
 //	  "install",
-//	  "Ubuntu 22.04",
+//	  "RHEL 8",
 //	  "iptables-save",
-//	  []string{"--redirect-dns"},
-//	) # Returns [
-//	  "install",
-//	  "testdata",
-//	  "ubuntu-22-04-iptables-redirect-dns.iptables.golden",
-//	]
+//	  "redirect-dns",
+//	) # Returns ["install", "testdata", "rhel-8-redirect-dns.iptables.golden"]
 func BuildIptablesGoldenFileName(
 	dir string,
 	image string,
 	cmd string,
-	flags []string,
+	suffix string,
 ) []string {
 	// Construct the golden file name by combining the sanitized image name,
-	// cleaned flag names joined with hyphens, and the optional suffix.
-	// The final file name has the format"<sanitized-image>-<flags>-<suffix>.golden".
+	// cleaned suffix joined with hyphens, and the trimmed command.
+	// The final file name has the format
+	// "<sanitized-image>-<suffix>.<cmd>.golden".
 	fileName := fmt.Sprintf(
 		"%s.%s.golden",
 		joinNonEmptyWithHyphen(
 			// Sanitize the Docker image name (e.g., "ubuntu:22.04" becomes
 			// "ubuntu-22-04").
 			cleanName(image),
-			// Sanitize and join the flag names with hyphens (e.g.,
-			// ["--redirect-dns"] becomes "redirect-dns").
-			cleanName(strings.Join(flags, "-")),
+			suffix,
 		),
 		// Remove the "-save" suffix from the command.
 		strings.TrimSuffix(cmd, "-save"),
