@@ -22,10 +22,10 @@ COMMIT
 :KUMA_MESH_INBOUND_REDIRECT -
 :KUMA_MESH_OUTBOUND -
 :KUMA_MESH_OUTBOUND_REDIRECT -
--A PREROUTING -i docker0 -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface docker0 to the kuma-dp DNS proxy (listening on port 15053)" -m udp --dport 53 -j REDIRECT --to-ports 15053
--A PREROUTING ! -d 172.17.0.0/16 -i docker0 -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface docker0, excluding destination 172.17.0.0/16, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
 -A PREROUTING -i br+ -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface br+ to the kuma-dp DNS proxy (listening on port 15053)" -m udp --dport 53 -j REDIRECT --to-ports 15053
 -A PREROUTING ! -d 172.18.0.0/16 -i br+ -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface br+, excluding destination 172.18.0.0/16, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
+-A PREROUTING -i docker0 -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface docker0 to the kuma-dp DNS proxy (listening on port 15053)" -m udp --dport 53 -j REDIRECT --to-ports 15053
+-A PREROUTING ! -d 172.17.0.0/16 -i docker0 -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface docker0, excluding destination 172.17.0.0/16, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
 -A PREROUTING -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect remaining TCP traffic to our custom chain for processing" -j KUMA_MESH_INBOUND
 -A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/return early for DNS traffic from kuma-dp" -m udp --dport 53 -m owner --uid-owner 5678 -j RETURN
 -A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect all DNS requests to the kuma-dp DNS proxy (listening on port 15053)" -m udp --dport 53 -j REDIRECT --to-ports 15053
