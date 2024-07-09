@@ -12,6 +12,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/exec"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	test_container "github.com/kumahq/kuma/test/framework/container"
 	"github.com/kumahq/kuma/test/framework/utils"
 	. "github.com/kumahq/kuma/test/transparentproxy"
@@ -36,10 +37,11 @@ var (
 )
 
 type testCase struct {
-	name            string
-	image           string
-	postStart       [][]string
-	additionalFlags []string
+	name             string
+	image            string
+	postStart        [][]string
+	goldenFileSuffix string
+	additionalFlags  []string
 }
 
 func Install() {
@@ -118,7 +120,7 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 			"install",
 			tc.name,
 			cmd,
-			tc.additionalFlags,
+			tc.goldenFileSuffix,
 		)
 
 		exitCode, reader, err := container.Exec(
@@ -183,16 +185,17 @@ func genEntriesForImages(
 	decorators ...interface{},
 ) []TableEntry {
 	var entries []TableEntry
-	var flags [][]string
-
-	for _, flag := range Config.InstallFlagsToTest {
-		flags = append(flags, strings.Split(flag, " "))
-	}
 
 	for name, image := range images {
 		entries = append(
 			entries,
-			genEntriesForImage(name, image, flags, entry, decorators...)...,
+			genEntriesForImage(
+				name,
+				image,
+				Config.InstallFlagsToTest,
+				entry,
+				decorators...,
+			)...,
 		)
 	}
 
@@ -203,32 +206,31 @@ func genEntriesForImages(
 // involving Transparent Proxy (tproxy) installation within a Docker image.
 //
 // Args:
-//
-//	name (string): The shortened name of the Docker image for easier reference.
-//	image (string): The base Docker image name to use for testing.
-//	additionalFlagsToTest ([][]string): A 2D slice of strings representing
-//	  optional flags to include during tproxy installation. Each inner slice
-//	  represents a set of flags for a single test case (e.g.,
-//	  ["--redirect-all-dns-traffic"]).
-//	entry (func(description interface{}, args ...interface{}) TableEntry):
-//	  A function used to create Ginkgo TableEntry objects. Use PEntry or XEntry
-//	  for creating paused or excluded entries.
-//	decorators (...interface{}): Optional decorators to apply to each TableEntry
-//	  for additional customization or configuration.
+//   - name (string): The shortened name of the Docker image for easier
+//     reference.
+//   - image (string): The base Docker image name to use for testing.
+//   - additionalFlagsToTest (*FlagsMap): A map of optional flags to include
+//     during tproxy installation. Each key is a string suffix for the golden
+//     file, and each value is a slice of flags for a single test case (e.g.,
+//     {"--redirect-all-dns-traffic"}).
+//   - entry (func(description interface{}, args ...interface{}) TableEntry):
+//     A function used to create Ginkgo TableEntry objects. Use PEntry or XEntry
+//     for creating paused or excluded entries.
+//   - decorators (...interface{}): Optional decorators to apply to each
+//     TableEntry for additional customization or configuration.
 //
 // Returns:
-//
-//	[]TableEntry: A slice of Ginkgo TableEntry objects, each representing a
-//	  unique test case with the following configuration:
-//	  - Image name: The Docker image name used for the test (may include
-//	    additional flags).
-//	  - testCase: A struct containing detailed test case parameters:
-//	    - name: The shortened name of the Docker image.
-//	    - image: The base Docker image name.
-//	    - postStart: Commands to execute after starting the container (e.g.,
-//	      adding a user, updating package lists, installing iptables).
-//	    - additionalFlags (optional): Additional flags to pass during tproxy
-//	      installation.
+//   - []TableEntry: A slice of Ginkgo TableEntry objects, each representing a
+//     unique test case with the following configuration:
+//   - Image name: The Docker image name used for the test (may include
+//     additional flags).
+//   - testCase: A struct containing detailed test case parameters:
+//   - name: The shortened name of the Docker image.
+//   - image: The base Docker image name.
+//   - postStart: Commands to execute after starting the container (e.g.,
+//     adding a user, updating package lists, installing iptables).
+//   - additionalFlags (optional): Additional flags to pass during tproxy
+//     installation.
 //
 // This function generates entries for the following test variations:
 //   - Base installation on different Docker images (Ubuntu, Debian, Alpine,
@@ -242,7 +244,7 @@ func genEntriesForImages(
 func genEntriesForImage(
 	name string,
 	image string,
-	additionalFlagsToTest [][]string,
+	additionalFlagsToTest *FlagsMap,
 	entry func(description interface{}, args ...interface{}) TableEntry,
 	decorators ...interface{},
 ) []TableEntry {
@@ -255,7 +257,9 @@ func genEntriesForImage(
 		postStart = [][]string{aptUpdate, aptInstallIptables, userAdd}
 	case strings.Contains(image, "alpine"):
 		postStart = [][]string{apkAddIptables, addUser}
-	case strings.Contains(image, "redhat/ubi"), strings.Contains(image, "centos"):
+	case strings.Contains(image, "redhat/ubi"),
+		strings.Contains(image, "centos"),
+		strings.Contains(image, "fedora"):
 		postStart = [][]string{yumUpdate, yumInstallIptables, userAdd}
 	case strings.Contains(image, "amazonlinux"):
 		postStart = [][]string{
@@ -268,14 +272,19 @@ func genEntriesForImage(
 
 	// buildArgs is a helper function that combines test case parameters with
 	// any additional decorators.
-	buildArgs := func(flags []string, decorators []interface{}) []interface{} {
+	buildArgs := func(
+		goldenFileSuffix string,
+		flags []string,
+		decorators []interface{},
+	) []interface{} {
 		var args []interface{}
 
 		args = append(args, testCase{
-			name:            name,
-			image:           image,
-			postStart:       postStart,
-			additionalFlags: flags,
+			name:             name,
+			image:            image,
+			postStart:        postStart,
+			goldenFileSuffix: goldenFileSuffix,
+			additionalFlags:  flags,
 		})
 		args = append(args, decorators...)
 
@@ -285,12 +294,12 @@ func genEntriesForImage(
 	entries := []TableEntry{
 		entry(
 			fmt.Sprintf("%s (%s)", name, image),
-			buildArgs(nil, decorators)...,
+			buildArgs("", nil, decorators)...,
 		),
 	}
 
-	for _, flags := range additionalFlagsToTest {
-		func(flags []string) {
+	for goldenFileSuffix, flags := range pointer.Deref(additionalFlagsToTest) {
+		func(goldenFileSuffix string, flags []string) {
 			entries = append(entries, entry(
 				fmt.Sprintf(
 					"%s (%s) with flags: %s",
@@ -298,9 +307,9 @@ func genEntriesForImage(
 					image,
 					strings.Join(flags, " "),
 				),
-				buildArgs(flags, decorators)...,
+				buildArgs(goldenFileSuffix, flags, decorators)...,
 			))
-		}(flags)
+		}(goldenFileSuffix, flags)
 	}
 
 	return entries

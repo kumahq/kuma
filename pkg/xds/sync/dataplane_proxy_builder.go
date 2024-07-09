@@ -157,13 +157,10 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					// Reachable services takes precedence over reachable services graph.
 					continue
 				}
-			} else {
-				// we don't support MeshExternalService, we need to figure out targetRef
-				if outbound.BackendRef.Kind != "MeshExternalService" {
-					// test
-					if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
-						continue
-					}
+			} else if outbound.BackendRef.Kind != "MeshExternalService" {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
+					continue
 				}
 			}
 			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {

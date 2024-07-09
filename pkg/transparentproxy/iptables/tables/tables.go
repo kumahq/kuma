@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
@@ -38,21 +39,32 @@ type Table interface {
 //
 // TODO (bartsmykla): refactor
 // TODO (bartsmykla): add tests
-func BuildRulesForRestore(table Table, verbose bool) string {
+func BuildRulesForRestore(
+	cfg config.InitializedConfig,
+	ipv6 bool,
+	table Table,
+) string {
 	tableLine := fmt.Sprintf("* %s", table.Name())
 	var customChainLines []string
 	var ruleLines []string
 
 	for _, c := range table.Chains() {
-		ruleLines = append(ruleLines, c.BuildForRestore(verbose)...)
+		ruleLines = append(ruleLines, c.BuildForRestore(cfg, ipv6)...)
 	}
 
 	for _, c := range table.CustomChains() {
-		customChainLines = append(customChainLines, fmt.Sprintf("%s %s", Flags[FlagNewChain][verbose], c.Name()))
-		ruleLines = append(ruleLines, c.BuildForRestore(verbose)...)
+		customChainLines = append(
+			customChainLines,
+			fmt.Sprintf(
+				"%s %s",
+				FlagVariationsMap[FlagNewChain][cfg.Verbose],
+				c.Name(),
+			),
+		)
+		ruleLines = append(ruleLines, c.BuildForRestore(cfg, ipv6)...)
 	}
 
-	if verbose {
+	if cfg.Verbose {
 		if len(customChainLines) > 0 {
 			customChainLines = append(
 				[]string{"# Custom Chains:"},
@@ -79,7 +91,7 @@ func BuildRulesForRestore(table Table, verbose bool) string {
 
 	lines = append(lines, rulesResult, "COMMIT")
 
-	if verbose {
+	if cfg.Verbose {
 		return strings.Join(lines, "\n\n")
 	}
 

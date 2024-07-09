@@ -319,7 +319,7 @@
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef"
                     },
                     "type": "array",
-                    "description": "List of reachable backend refs via transparent proxy when running with  MeshExternalService and MeshService. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                    "description": "List of reachable backend refs via transparent proxy when running with MeshExternalService and MeshService. Setting an explicit list can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
                 }
             },
             "additionalProperties": true,

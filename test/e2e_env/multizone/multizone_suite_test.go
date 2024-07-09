@@ -29,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 func TestE2E(t *testing.T) {
@@ -38,17 +37,8 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = E2ESynchronizedBeforeSuite(multizone.SetupAndGetState, multizone.RestoreState)
-	_ = SynchronizedAfterSuite(func() {}, func() {
-		multizone.ExpectCpsToNotCrash()
-		multizone.ExpectCpsToNotPanic()
-	})
-	_ = ReportAfterSuite("cleanup", func(report Report) {
-		if Config.CleanupLogsOnSuccess {
-			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
-		}
-	})
-	_ = ReportAfterSuite("cp logs", multizone.PrintCPLogsOnFailure)
-	_ = ReportAfterSuite("kube state", multizone.PrintKubeState)
+	_ = SynchronizedAfterSuite(func() {}, multizone.SynchronizedAfterSuite)
+	_ = ReportAfterSuite("multizone after suite", multizone.AfterSuite)
 )
 
 var (

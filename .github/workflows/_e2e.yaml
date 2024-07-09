@@ -7,7 +7,7 @@ on:
       runnersByArch:
         type: string
         required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
+        default: ''
 permissions:
   contents: read
 env:
@@ -22,8 +22,7 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-    # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
-    runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
     strategy:
       fail-fast: false
       matrix:
@@ -139,7 +138,7 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if: always()
         with:
           name: e2e-debug-${{ env.E2E_PARAM_TARGET }}

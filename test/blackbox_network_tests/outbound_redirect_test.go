@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,7 +49,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -130,7 +129,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -225,7 +224,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -328,18 +327,16 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 					Outbound: config.TrafficFlow{
 						Enabled: true,
 						Port:    serverPort,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(excludedPort))),
-							Protocol: "tcp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("tcp:%d:%d", excludedPort, dnsUserUid),
+						},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -450,7 +447,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 				Log: config.LogConfig{
 					Enabled: true,
 				},
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -548,7 +545,7 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -646,7 +643,7 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -742,7 +739,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -820,7 +817,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -904,11 +901,9 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 					Outbound: config.TrafficFlow{
 						Enabled: true,
 						Port:    serverPort,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(excludedPort))),
-							Protocol: "tcp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("tcp:%d:%d", excludedPort, dnsUserUid),
+						},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -916,7 +911,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -1025,7 +1020,7 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 					},
 				},
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(
@@ -1117,7 +1112,7 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 				},
 				IPv6:          true,
 				RuntimeStdout: io.Discard,
-			}.Initialize()
+			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			tcpReadyC, tcpErrC := tcp.UnsafeStartTCPServer(

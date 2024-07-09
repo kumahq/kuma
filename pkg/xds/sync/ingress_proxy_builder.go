@@ -13,7 +13,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -60,7 +59,6 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 	zoneIngress *core_mesh.ZoneIngressResource,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) *core_xds.ZoneIngressProxy {
-	zoneEgressesList := aggregatedMeshCtxs.ZoneEgresses()
 	var meshResourceList []*core_xds.MeshIngressResources
 
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
@@ -68,16 +66,9 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 		meshCtx := aggregatedMeshCtxs.MustGetMeshContext(meshName)
 
 		meshResources := &core_xds.MeshIngressResources{
-			Mesh: mesh,
-			EndpointMap: ingress.BuildEndpointMap( // todo reuse this for all ingress (follow egress pattern)
-				ingress.BuildDestinationMap(meshName, zoneIngress),
-				meshCtx.Resources.Dataplanes().Items,
-				meshCtx.Resources.ExternalServices().Items,
-				zoneEgressesList,
-				meshCtx.Resources.Gateways().Items,
-				meshCtx.Resources.MeshServices().Items,
-			),
-			Resources: meshCtx.Resources.MeshLocalResources,
+			Mesh:        mesh,
+			EndpointMap: meshCtx.IngressEndpointMap,
+			Resources:   meshCtx.Resources.MeshLocalResources,
 		}
 
 		meshResourceList = append(meshResourceList, meshResources)

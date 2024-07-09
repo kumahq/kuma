@@ -67,6 +67,5 @@ message ExternalService {
 
   // Tags associated with the external service,
   // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
-  map<string, string> tags = 2
-      [ (validate.rules).map.min_pairs = 1 ];
+  map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
 }

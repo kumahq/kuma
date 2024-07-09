@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -16,7 +17,6 @@ var Cluster *framework.UniversalCluster
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
 func SetupAndGetState() []byte {
 	Cluster = framework.NewUniversalCluster(framework.NewTestingT(), framework.Kuma3, framework.Silent)
-	framework.E2EDeferCleanup(Cluster.DismissCluster)
 	kumaOptions := append(
 		[]framework.KumaDeploymentOption{
 			framework.WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
@@ -76,4 +76,17 @@ func ExpectCpToNotPanic() {
 	} else {
 		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
 	}
+}
+
+func SynchronizedAfterSuite() {
+	ExpectCpToNotPanic()
+	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
+	Expect(Cluster.DismissCluster()).To(Succeed())
+}
+
+func AfterSuite(report ginkgo.Report) {
+	if framework.Config.CleanupLogsOnSuccess {
+		universal_logs.CleanupIfSuccess(framework.Config.UniversalE2ELogsPath, report)
+	}
+	PrintCPLogsOnFailure(report)
 }

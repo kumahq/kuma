@@ -293,9 +293,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
 		Entry("28. Pod with reachable backend refs", testCase{
-			pod:             "28.pod.yaml",
-			servicesForPod:  "28.services-for-pod.yaml",
-			dataplane:       "28.dataplane.yaml",
+			pod:            "28.pod.yaml",
+			servicesForPod: "28.services-for-pod.yaml",
+			dataplane:      "28.dataplane.yaml",
 		}),
 		Entry("should create dataplane even if service ports don't match", testCase{
 			pod:            "mismatch-ports.pod.yaml",

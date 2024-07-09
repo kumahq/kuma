@@ -71,6 +71,23 @@ func BuildEgressEndpointMap(
 	return outbound
 }
 
+func BuildIngressEndpointMap(
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	meshServices []*meshservice_api.MeshServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
+) core_xds.EndpointMap {
+	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
+	// This way we only keep local endpoints.
+	outbound := BuildEdsEndpointMap(mesh, localZone, meshServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
+	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
+	return outbound
+}
+
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
@@ -358,7 +375,18 @@ func BuildCrossMeshEndpointMap(
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
+	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, endpointWeight, localZone)
+	return outbound
+}
 
+func fillLocalCrossMeshOutbounds(
+	outbound core_xds.EndpointMap,
+	mesh *core_mesh.MeshResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	endpointWeight uint32,
+	localZone string,
+) {
 	for _, dataplane := range dataplanes {
 		if !dataplane.Spec.IsBuiltinGateway() {
 			continue
@@ -390,8 +418,6 @@ func BuildCrossMeshEndpointMap(
 			})
 		}
 	}
-
-	return outbound
 }
 
 func buildCoordinates(address string, port uint32) string {
