@@ -63,7 +63,7 @@ spec:
 apiVersion: kuma.io/v1alpha1 
 kind: MeshPassthrough
 metadata:
-  name: disable-passthrough
+  name: disable-passthrough-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -96,7 +96,7 @@ spec:
 apiVersion: kuma.io/v1alpha1 
 kind: MeshPassthrough
 metadata:
-  name: allow-specified
+  name: allow-specified-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s
