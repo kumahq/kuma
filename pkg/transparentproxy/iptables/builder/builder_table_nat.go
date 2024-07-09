@@ -2,8 +2,6 @@ package builder
 
 import (
 	"fmt"
-	"net"
-	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
@@ -11,6 +9,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
+	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
 func buildMeshInbound(
@@ -402,7 +401,7 @@ func addOutputRules(
 
 // addPreroutingRules adds rules to the PREROUTING chain of the NAT table to
 // handle inbound traffic according to the provided configuration.
-func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6 bool) error {
+func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6 bool) {
 	inboundChainName := cfg.Redirect.Inbound.Chain.GetFullName(cfg.Redirect.NamePrefix)
 	rulePosition := uint(1)
 
@@ -415,61 +414,12 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 		)
 	}
 
-	// Handle virtual networks if they are defined in the configuration.
-	if len(cfg.Redirect.VNet.Networks) > 0 {
-		interfaceAndCidr := map[string]string{}
-		for i := 0; i < len(cfg.Redirect.VNet.Networks); i++ {
-			// Split the network definition into interface and CIDR.
-			pair := strings.SplitN(cfg.Redirect.VNet.Networks[i], ":", 2)
-			if len(pair) < 2 {
-				return fmt.Errorf("incorrect definition of virtual network: %s", cfg.Redirect.VNet.Networks[i])
-			}
-			ipAddress, _, err := net.ParseCIDR(pair[1])
-			if err != nil {
-				return fmt.Errorf("incorrect CIDR definition: %s", err)
-			}
-			// Only include the address if it matches the IP version we are handling.
-			if (ipv6 && ipAddress.To4() == nil) || (!ipv6 && ipAddress.To4() != nil) {
-				interfaceAndCidr[pair[0]] = pair[1]
-			}
-		}
-		for iface, cidr := range interfaceAndCidr {
-			nat.Prerouting().AddRules(
-				rules.
-					NewRule(
-						InInterface(iface),
-						Match(MatchUdp()),
-						Protocol(Udp(DestinationPort(DNSPort))),
-						Jump(ToPort(cfg.Redirect.DNS.Port)),
-					).
-					WithPosition(rulePosition).
-					WithCommentf("redirect DNS requests on interface %s to the kuma-dp DNS proxy (listening on port %d)", iface, cfg.Redirect.DNS.Port),
-			)
-			rulePosition++
+	interfaceCIDRs := cfg.Redirect.VNet.IPv4.InterfaceCIDRs
+	if ipv6 {
+		interfaceCIDRs = cfg.Redirect.VNet.IPv6.InterfaceCIDRs
+	}
 
-			nat.Prerouting().AddRules(
-				rules.
-					NewRule(
-						NotDestination(cidr),
-						InInterface(iface),
-						Protocol(Tcp()),
-						Jump(ToPort(cfg.Redirect.Outbound.Port)),
-					).
-					WithPosition(rulePosition).
-					WithCommentf("redirect TCP traffic on interface %s, excluding destination %s, to the envoy's outbound passthrough port %d", iface, cidr, cfg.Redirect.Outbound.Port),
-			)
-			rulePosition++
-		}
-		nat.Prerouting().AddRules(
-			rules.
-				NewRule(
-					Protocol(Tcp()),
-					Jump(ToUserDefinedChain(inboundChainName)),
-				).
-				WithPosition(rulePosition).
-				WithComment("redirect remaining TCP traffic to our custom chain for processing"),
-		)
-	} else {
+	if len(interfaceCIDRs) == 0 {
 		nat.Prerouting().AddRules(
 			rules.
 				NewRule(
@@ -478,9 +428,42 @@ func addPreroutingRules(cfg config.InitializedConfig, nat *tables.NatTable, ipv6
 				).
 				WithComment("redirect inbound TCP traffic to our custom chain for processing"),
 		)
+		return
 	}
 
-	return nil
+	for _, iface := range maps.SortedKeys(interfaceCIDRs) {
+		nat.Prerouting().AddRules(
+			rules.
+				NewRule(
+					InInterface(iface),
+					Match(MatchUdp()),
+					Protocol(Udp(DestinationPort(DNSPort))),
+					Jump(ToPort(cfg.Redirect.DNS.Port)),
+				).
+				WithPosition(rulePosition).
+				WithCommentf("redirect DNS requests on interface %s to the kuma-dp DNS proxy (listening on port %d)", iface, cfg.Redirect.DNS.Port),
+			rules.
+				NewRule(
+					NotDestination(interfaceCIDRs[iface]),
+					InInterface(iface),
+					Protocol(Tcp()),
+					Jump(ToPort(cfg.Redirect.Outbound.Port)),
+				).
+				WithPosition(rulePosition+1).
+				WithCommentf("redirect TCP traffic on interface %s, excluding destination %s, to the envoy's outbound passthrough port %d", iface, interfaceCIDRs[iface], cfg.Redirect.Outbound.Port),
+		)
+		rulePosition += 2
+	}
+
+	nat.Prerouting().AddRules(
+		rules.
+			NewRule(
+				Protocol(Tcp()),
+				Jump(ToUserDefinedChain(inboundChainName)),
+			).
+			WithPosition(rulePosition).
+			WithComment("redirect remaining TCP traffic to our custom chain for processing"),
+	)
 }
 
 // buildNatTable constructs the NAT table for iptables with the necessary rules
@@ -506,9 +489,7 @@ func buildNatTable(cfg config.InitializedConfig, ipv6 bool) (*tables.NatTable, e
 	}
 
 	// Add prerouting rules to the NAT table.
-	if err := addPreroutingRules(cfg, nat, ipv6); err != nil {
-		return nil, fmt.Errorf("could not add prerouting rules %s", err)
-	}
+	addPreroutingRules(cfg, nat, ipv6)
 
 	// Build the MESH_INBOUND chain.
 	meshInbound, err := buildMeshInbound(cfg.Redirect.Inbound, prefix, inboundRedirectChainName)

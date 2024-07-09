@@ -60,6 +60,11 @@ func (l Logger) Warn(a ...any) {
 	loglnWithHashPrefix(l.stderr, append([]any{"[WARNING]:"}, a...))
 }
 
+// Warn logs warning messages to stderr, prefixed with "[WARNING]:"
+func (l Logger) Warnf(format string, a ...any) {
+	l.Warn(fmt.Sprintf(format, a...))
+}
+
 // Error logs error messages to stderr, prefixed with a hash.
 func (l Logger) Error(a ...any) {
 	loglnWithHashPrefix(l.stderr, a)

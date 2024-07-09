@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -70,7 +71,7 @@ type InitializedDNS struct {
 func (c DNS) Initialize(
 	l Logger,
 	cfg Config,
-	executables InitializedExecutablesIPvX,
+	executables InitializedExecutables,
 ) (InitializedDNS, error) {
 	initialized := InitializedDNS{
 		DNS:         c,
@@ -154,7 +155,85 @@ func (c DNS) Initialize(
 }
 
 type VNet struct {
+	// Networks specifies virtual networks using the format interfaceName:CIDR.
+	// The interface name can be exact or a prefix followed by a "+", allowing
+	// matching for interfaces starting with the given prefix.
+	// Examples:
+	// - "docker0:172.17.0.0/16"
+	// - "br+:172.18.0.0/16" (matches any interface starting with "br")
+	// - "iface:::1/64"
 	Networks []string
+}
+
+// Initialize processes the virtual networks specified in the VNet struct and
+// separates them into IPv4 and IPv6 categories based on their CIDR notation.
+// It returns an InitializedVNet struct that contains the parsed interface
+// names and corresponding CIDRs for both IPv4 and IPv6.
+//
+// This method performs the following steps:
+//  1. Iterates through each network definition in the Networks slice.
+//  2. Splits each network definition into an interface name and a CIDR block
+//     using the first colon (":") as the delimiter.
+//  3. Validates the format of the network definition, returning an error if it
+//     is invalid.
+//  4. Parses the CIDR block to determine whether it is an IPv4 or IPv6 address.
+//     - If the CIDR block is valid and contains an IPv4 address, it is added
+//     to the interfaceCIDRsIPv4 map.
+//     - If the CIDR block is valid and contains an IPv6 address, it is added
+//     to the interfaceCIDRsIPv6 map.
+//  5. Constructs and returns an InitializedVNet struct containing the
+//     populated interfaceCIDRsIPv4 and interfaceCIDRsIPv6 maps.
+//
+// Returns:
+//   - InitializedVNet: Struct containing the parsed interface names and
+//     corresponding CIDRs for both IPv4 and IPv6.
+//   - error: Error indicating any issues encountered during initialization.
+func (c VNet) Initialize() (InitializedVNet, error) {
+	initialized := InitializedVNet{
+		IPv4: InitializedVNetIPvX{InterfaceCIDRs: map[string]string{}},
+		IPv6: InitializedVNetIPvX{InterfaceCIDRs: map[string]string{}},
+	}
+
+	for _, network := range c.Networks {
+		// We accept only the first ":" so in case of IPv6 there should be no
+		// problem with parsing
+		pair := strings.SplitN(network, ":", 2)
+		if len(pair) < 2 {
+			return InitializedVNet{}, errors.Errorf(
+				"invalid virtual network definition: %s",
+				network,
+			)
+		}
+
+		address, _, err := net.ParseCIDR(pair[1])
+		if err != nil {
+			return InitializedVNet{}, errors.Wrapf(
+				err,
+				"invalid CIDR definition for %s",
+				pair[1],
+			)
+		}
+
+		if address.To4() != nil {
+			initialized.IPv4.InterfaceCIDRs[pair[0]] = pair[1]
+		} else {
+			initialized.IPv6.InterfaceCIDRs[pair[0]] = pair[1]
+		}
+	}
+
+	return initialized, nil
+}
+
+type InitializedVNet struct {
+	IPv4 InitializedVNetIPvX
+	IPv6 InitializedVNetIPvX
+}
+
+type InitializedVNetIPvX struct {
+	// InterfaceCIDRs is a map where the keys are interface names and the values
+	// are IP addresses in CIDR notation, representing the parsed and validated
+	// virtual network configurations.
+	InterfaceCIDRs map[string]string
 }
 
 type Redirect struct {
@@ -168,13 +247,14 @@ type Redirect struct {
 
 type InitializedRedirect struct {
 	Redirect
-	DNS InitializedDNS
+	DNS  InitializedDNS
+	VNet InitializedVNet
 }
 
 func (c Redirect) Initialize(
 	l Logger,
 	cfg Config,
-	executables InitializedExecutablesIPvX,
+	executables InitializedExecutables,
 ) (InitializedRedirect, error) {
 	var err error
 
@@ -184,6 +264,12 @@ func (c Redirect) Initialize(
 	initialized.DNS, err = c.DNS.Initialize(l, cfg, executables)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .DNS")
+	}
+
+	// .VNet
+	initialized.VNet, err = c.VNet.Initialize()
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .VNet")
 	}
 
 	return initialized, nil
@@ -302,6 +388,13 @@ type Config struct {
 // interacting with the system or external resources.
 type InitializedConfig struct {
 	Config
+	// Logger is utilized for recording logs across the entire lifecycle of the
+	// InitializedConfig, from the initialization and configuration phases to
+	// ongoing operations involving iptables, such as rule setup, modification,
+	// and restoration. It ensures that logging capabilities are available not
+	// only during the setup of system resources and configurations but also
+	// throughout the execution of iptables-related activities.
+	Logger Logger
 	// Redirect is an InitializedRedirect struct containing the initialized
 	// redirection configuration. If DNS redirection is enabled this includes
 	// the DNS servers retrieved from the specified resolv.conf file
@@ -310,18 +403,11 @@ type InitializedConfig struct {
 	// Executables field holds the initialized version of Config.Executables.
 	// It attempts to locate the actual executable paths on the system based on
 	// the provided configuration and verifies their functionality.
-	Executables InitializedExecutablesIPvX
+	Executables InitializedExecutables
 	// LoopbackInterfaceName represents the name of the loopback interface which
 	// will be used to construct outbound iptable rules for outbound (i.e.
 	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
 	LoopbackInterfaceName string
-	// Logger is utilized for recording logs across the entire lifecycle of the
-	// InitializedConfig, from the initialization and configuration phases to
-	// ongoing operations involving iptables, such as rule setup, modification,
-	// and restoration. It ensures that logging capabilities are available not
-	// only during the setup of system resources and configurations but also
-	// throughout the execution of iptables-related activities.
-	Logger Logger
 }
 
 // ShouldDropInvalidPackets determines whether the configuration indicates

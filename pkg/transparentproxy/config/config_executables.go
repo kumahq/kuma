@@ -82,13 +82,13 @@ func (c InitializedExecutable) Exec(
 	return execCmd(ctx, c.Path, append(c.args, args...)...)
 }
 
-type Executables struct {
+type ExecutablesIPvX struct {
 	Iptables        Executable
 	IptablesSave    Executable
 	IptablesRestore Executable
 }
 
-func NewExecutables(ipv6 bool, mode IptablesMode) Executables {
+func NewExecutablesIPvX(ipv6 bool, mode IptablesMode) ExecutablesIPvX {
 	newExecutable := func(name string) Executable {
 		return Executable{
 			name:   name,
@@ -97,18 +97,18 @@ func NewExecutables(ipv6 bool, mode IptablesMode) Executables {
 		}
 	}
 
-	return Executables{
+	return ExecutablesIPvX{
 		Iptables:        newExecutable(""),
 		IptablesSave:    newExecutable("save"),
 		IptablesRestore: newExecutable("restore"),
 	}
 }
 
-func (c Executables) Initialize(
+func (c ExecutablesIPvX) Initialize(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutables, error) {
+) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
 	iptables, err := c.Iptables.Initialize(ctx, nil)
@@ -128,7 +128,7 @@ func (c Executables) Initialize(
 	}
 
 	if len(errs) != 0 {
-		return InitializedExecutables{}, errors.Wrap(
+		return InitializedExecutablesIPvX{}, errors.Wrap(
 			std_errors.Join(errs...),
 			"failed to initialize executables",
 		)
@@ -136,13 +136,13 @@ func (c Executables) Initialize(
 
 	functionality, err := verifyFunctionality(ctx, iptables, iptablesSave)
 	if err != nil {
-		return InitializedExecutables{}, errors.Wrap(
+		return InitializedExecutablesIPvX{}, errors.Wrap(
 			err,
 			"failed to verify functionality",
 		)
 	}
 
-	return InitializedExecutables{
+	return InitializedExecutablesIPvX{
 		Iptables:        iptables,
 		IptablesSave:    iptablesSave,
 		IptablesRestore: iptablesRestore,
@@ -153,7 +153,7 @@ func (c Executables) Initialize(
 	}, nil
 }
 
-type InitializedExecutables struct {
+type InitializedExecutablesIPvX struct {
 	Iptables        InitializedExecutable
 	IptablesSave    InitializedExecutable
 	IptablesRestore InitializedExecutable
@@ -168,7 +168,8 @@ type InitializedExecutables struct {
 //
 // This method performs the following steps:
 //  1. Creates a temporary file with a name based on the
-//     `IptablesRestore.prefix` field of the `InitializedExecutables` struct.
+//     `IptablesRestore.prefix` field of the `InitializedExecutablesIPvX`
+//     struct.
 //  2. Logs the contents that will be written to the file.
 //  3. Writes the rules to the file using a buffered writer for efficiency.
 //  4. Flushes the buffer to ensure all data is written to the file.
@@ -182,7 +183,7 @@ type InitializedExecutables struct {
 //
 //	string: The path to the temporary file containing the iptables rules.
 //	error: An error if the file creation, writing, or flushing fails.
-func (c InitializedExecutables) writeRulesToFile(rules string) (string, error) {
+func (c InitializedExecutablesIPvX) writeRulesToFile(rules string) (string, error) {
 	// Create a temporary file with a name template based on the IptablesRestore
 	// prefix.
 	nameTemplate := fmt.Sprintf("%s-rules.*.txt", c.IptablesRestore.prefix)
@@ -230,7 +231,7 @@ func (c InitializedExecutables) writeRulesToFile(rules string) (string, error) {
 	return f.Name(), nil
 }
 
-func (c InitializedExecutables) Restore(
+func (c InitializedExecutablesIPvX) Restore(
 	ctx context.Context,
 	rules string,
 ) (string, error) {
@@ -265,16 +266,16 @@ func (c InitializedExecutables) Restore(
 	return "", errors.Errorf("%s failed", c.IptablesRestore.Path)
 }
 
-type ExecutablesIPvX struct {
-	IPv4 Executables
-	IPv6 Executables
+type Executables struct {
+	IPv4 ExecutablesIPvX
+	IPv6 ExecutablesIPvX
 	Mode IptablesMode
 }
 
-func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
-	return ExecutablesIPvX{
-		IPv4: NewExecutables(false, mode),
-		IPv6: NewExecutables(true, mode),
+func NewExecutables(mode IptablesMode) Executables {
+	return Executables{
+		IPv4: NewExecutablesIPvX(false, mode),
+		IPv6: NewExecutablesIPvX(true, mode),
 		Mode: mode,
 	}
 }
@@ -300,22 +301,22 @@ func NewExecutablesIPvX(mode IptablesMode) ExecutablesIPvX {
 // - l (Logger): Logger for logging initialization steps and errors.
 //
 // Returns:
-//   - InitializedExecutablesIPvX: Struct containing the initialized executables
+//   - InitializedExecutables: Struct containing the initialized executables
 //     for both IPv4 and IPv6.
 //   - error: Error indicating the failure of either IPv4 or IPv6
 //     initialization.
-func (c ExecutablesIPvX) Initialize(
+func (c Executables) Initialize(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutablesIPvX, error) {
+) (InitializedExecutables, error) {
 	var err error
 
-	initialized := InitializedExecutablesIPvX{ExecutablesIPvX: c}
+	initialized := InitializedExecutables{Executables: c}
 
 	initialized.IPv4, err = c.IPv4.Initialize(ctx, l, cfg)
 	if err != nil {
-		return InitializedExecutablesIPvX{}, errors.Wrap(
+		return InitializedExecutables{}, errors.Wrap(
 			err,
 			"failed to initialize IPv4 executables",
 		)
@@ -324,14 +325,14 @@ func (c ExecutablesIPvX) Initialize(
 	if cfg.IPv6 {
 		initialized.IPv6, err = c.IPv6.Initialize(ctx, l, cfg)
 		if err != nil {
-			return InitializedExecutablesIPvX{}, errors.Wrap(
+			return InitializedExecutables{}, errors.Wrap(
 				err,
 				"failed to initialize IPv6 executables",
 			)
 		}
 
 		if err := configureIPv6OutboundAddress(); err != nil {
-			initialized.IPv6 = InitializedExecutables{}
+			initialized.IPv6 = InitializedExecutablesIPvX{}
 			l.Warn("failed to configure IPv6 outbound address. IPv6 rules "+
 				"will be skipped:", err)
 		}
@@ -340,26 +341,26 @@ func (c ExecutablesIPvX) Initialize(
 	return initialized, nil
 }
 
-type InitializedExecutablesIPvX struct {
-	ExecutablesIPvX
-	IPv4 InitializedExecutables
-	IPv6 InitializedExecutables
+type InitializedExecutables struct {
+	Executables
+	IPv4 InitializedExecutablesIPvX
+	IPv6 InitializedExecutablesIPvX
 }
 
-func (c InitializedExecutablesIPvX) hasDockerOutputChain() bool {
+func (c InitializedExecutables) hasDockerOutputChain() bool {
 	return c.IPv4.Functionality.Chains.DockerOutput ||
 		c.IPv6.Functionality.Chains.DockerOutput
 }
 
 type ExecutablesNftLegacy struct {
-	Nft    ExecutablesIPvX
-	Legacy ExecutablesIPvX
+	Nft    Executables
+	Legacy Executables
 }
 
 func NewExecutablesNftLegacy() ExecutablesNftLegacy {
 	return ExecutablesNftLegacy{
-		Nft:    NewExecutablesIPvX(IptablesModeNft),
-		Legacy: NewExecutablesIPvX(IptablesModeLegacy),
+		Nft:    NewExecutables(IptablesModeNft),
+		Legacy: NewExecutables(IptablesModeLegacy),
 	}
 }
 
@@ -367,7 +368,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutablesIPvX, error) {
+) (InitializedExecutables, error) {
 	var errs []error
 
 	nft, nftErr := c.Nft.Initialize(ctx, l, cfg)
@@ -386,10 +387,10 @@ func (c ExecutablesNftLegacy) Initialize(
 		l.Warn("dry-run mode: No valid iptables executables found. The " +
 			"generated iptables rules may differ from those generated in an " +
 			"environment with valid iptables executables")
-		return InitializedExecutablesIPvX{}, nil
+		return InitializedExecutables{}, nil
 	// Regular mode when no vaild iptables executables are found
 	case len(errs) == 2:
-		return InitializedExecutablesIPvX{}, errors.Wrap(
+		return InitializedExecutables{}, errors.Wrap(
 			std_errors.Join(errs...),
 			"failed to find valid nft or legacy executables",
 		)
