@@ -17,6 +17,14 @@ var IptablesCommandByFamily = map[bool]string{
 	true:  Ip6tables,
 }
 
+// IPTypeMap is a map that translates a boolean value to a string representing
+// the type of IP address (IPv4 or IPv6). The key is a boolean where 'false'
+// corresponds to "IPv4" and 'true' corresponds to "IPv6".
+var IPTypeMap = map[bool]string{
+	false: "IPv4",
+	true:  "IPv6",
+}
+
 // Default ports used for iptables redirection.
 const (
 	DefaultRedirectInbountPort     uint16 = 15006

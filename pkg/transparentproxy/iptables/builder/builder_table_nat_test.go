@@ -17,7 +17,7 @@ var _ = Describe("Builder nat", func() {
 		func(vnet []string, verbose bool, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
-			cfg := tproxy_test.InitializeConfig(config.Config{
+			cfg := tproxy_test.InitializeConfigIPvX(config.Config{
 				Redirect: config.Redirect{
 					NamePrefix: consts.IptablesChainsPrefix,
 					Inbound: config.TrafficFlow{
@@ -38,11 +38,11 @@ var _ = Describe("Builder nat", func() {
 					},
 				},
 				Verbose: verbose,
-			})
+			}, ipv6)
 
 			// when
-			addPreroutingRules(cfg, nat, ipv6)
-			table := tables.BuildRulesForRestore(cfg, ipv6, nat)
+			addPreroutingRules(cfg, nat)
+			table := tables.BuildRulesForRestore(cfg, nat)
 
 			// then
 			for _, rule := range expect {
@@ -133,7 +133,7 @@ var _ = Describe("Builder nat", func() {
 		func(verbose bool, ipv6 bool, expect ...string) {
 			// given
 			nat := tables.Nat()
-			cfg := tproxy_test.InitializeConfig(config.Config{
+			cfg := tproxy_test.InitializeConfigIPvX(config.Config{
 				Redirect: config.Redirect{
 					NamePrefix: consts.IptablesChainsPrefix,
 					Inbound: config.TrafficFlow{
@@ -150,11 +150,11 @@ var _ = Describe("Builder nat", func() {
 					},
 					DNS: config.DNS{Port: 15053},
 				},
-			})
+			}, ipv6)
 
 			// when
-			addPreroutingRules(cfg, nat, ipv6)
-			table := tables.BuildRulesForRestore(cfg, ipv6, nat)
+			addPreroutingRules(cfg, nat)
+			table := tables.BuildRulesForRestore(cfg, nat)
 
 			// then
 			for _, rule := range expect {
