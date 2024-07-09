@@ -1,4 +1,4 @@
-name: "Transparent Proxy Tests"
+name: "Test Transparent Proxy"
 on:
   workflow_dispatch:
   schedule:
@@ -6,12 +6,11 @@ on:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   IPV6: "true"
-
 permissions:
   contents: read
 jobs:
-  test_transparentproxy:
-    timeout-minutes: 20
+  test:
+    timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
