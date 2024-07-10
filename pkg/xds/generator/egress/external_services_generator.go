@@ -205,7 +205,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 					routes = append(routes, envoy_common.NewRoute(
 						envoy_common.WithCluster(cluster),
-						envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+						envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, policy.MatchSourceRegex(rl)),
 						envoy_common.WithRateLimit(rl.Spec),
 					))
 				}

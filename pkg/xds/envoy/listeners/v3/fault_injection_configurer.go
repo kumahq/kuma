@@ -9,6 +9,7 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -64,9 +65,9 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_route.HeaderMatcher {
 	var selectorRegexs []string
 	for _, selector := range selectors {
-		selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
+		selectorRegexs = append(selectorRegexs, policy.MatchingRegex(selector))
 	}
-	regexOR := tags.RegexOR(selectorRegexs...)
+	regexOR := policy.RegexOR(selectorRegexs...)
 
 	return &envoy_route.HeaderMatcher{
 		Name: tags.TagsHeaderName,

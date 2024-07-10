@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -28,7 +29,7 @@ var _ = Describe("MatchingRegex", func() {
 	DescribeTable("should generate regex for matching service's tags",
 		func(given testCase) {
 			// when
-			regexStr := tags.MatchingRegex(given.selector)
+			regexStr := policy.MatchingRegex(given.selector)
 			re, err := regexp.Compile(regexStr)
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -152,9 +153,9 @@ var _ = Describe("RegexOR", func() {
 		func(given testCase) {
 			var rss []string
 			for _, s := range given.selectors {
-				rss = append(rss, tags.MatchingRegex(s))
+				rss = append(rss, policy.MatchingRegex(s))
 			}
-			regexOR := tags.RegexOR(rss...)
+			regexOR := policy.RegexOR(rss...)
 			re, err := regexp.Compile(regexOR)
 			Expect(err).ToNot(HaveOccurred())
 

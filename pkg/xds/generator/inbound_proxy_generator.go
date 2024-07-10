@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -81,7 +82,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 
 			routes = append(routes, envoy_common.NewRoute(
 				envoy_common.WithCluster(cluster),
-				envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+				envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, policy.MatchSourceRegex(rl)),
 				envoy_common.WithRateLimit(rl.Spec),
 			))
 		}

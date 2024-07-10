@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -29,9 +30,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 
 			var selectorRegexs []string
 			for _, selector := range rateLimit.SourceTags() {
-				selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
+				selectorRegexs = append(selectorRegexs, policy.MatchingRegex(selector))
 			}
-			regexOR := tags.RegexOR(selectorRegexs...)
+			regexOR := policy.RegexOR(selectorRegexs...)
 
 			route.Match.Headers[tags.TagsHeaderName] = &v1alpha1.TrafficRoute_Http_Match_StringMatcher{
 				MatcherType: &v1alpha1.TrafficRoute_Http_Match_StringMatcher_Regex{
