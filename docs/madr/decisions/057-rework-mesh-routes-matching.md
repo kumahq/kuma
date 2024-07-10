@@ -155,6 +155,7 @@ map[UniqueResourceKey]ResourceRule{
     },
     "backend-route.backend-ns": {
 		requestTimeout: "10s"
+		streamIdleTimeout: "1h"
     },
 }
 ```
@@ -250,6 +251,7 @@ map[UniqueResourceKey]ResourceRule{
     },
     "backend-route.backend-ns": {
 		requestTimeout: "15s" // from consumer policy
+		streamIdleTimeout: "2h" // from consumer policy
     },
 }
 ```
@@ -365,6 +367,7 @@ map[UniqueResourceKey]ResourceRule{
     },
     "backend-route": {
 		requestTimeout: "15s" // from timeout-on-backend-route-override policy
+		streamIdleTimeout: "2h" // from timeout-on-backend-service-override policy
     },
 }
 ```
