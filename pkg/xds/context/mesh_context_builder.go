@@ -527,11 +527,7 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 func getResourceNamesForLabels(name string, labels map[string]string, resourceNamesByLabels map[string]map[string][]string) {
 	for label, value := range labels {
 		if _, ok := resourceNamesByLabels[label]; ok {
-			if _, ok := resourceNamesByLabels[label][value]; ok {
-				resourceNamesByLabels[label][value] = append(resourceNamesByLabels[label][value], name)
-			} else {
-				resourceNamesByLabels[label][value] = []string{name}
-			}
+			resourceNamesByLabels[label][value] = append(resourceNamesByLabels[label][value], name)
 		} else {
 			resourceNamesByLabels[label] = map[string][]string{
 				value: {name},

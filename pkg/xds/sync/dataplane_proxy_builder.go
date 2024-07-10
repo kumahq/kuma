@@ -121,7 +121,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for key, val := range reachableBackends {
 		core.Log.Info("TEST_LOG_REACHABLE", "key", key, "val", val)
 	}
-	
+
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {

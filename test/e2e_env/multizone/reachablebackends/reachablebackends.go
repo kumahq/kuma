@@ -26,7 +26,7 @@ func ReachableBackends() {
           kuma.io/access: external-service
 `, namespace)
 
-		meshPassthrough := fmt.Sprintf(`
+	meshPassthrough := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1 
 kind: MeshPassthrough
 metadata:
@@ -44,8 +44,8 @@ spec:
   default:
     passthroughMode: None`, Config.KumaNamespace, meshName)
 
-		meshExternalService := func(serviceName string) string {
-			return fmt.Sprintf(`
+	meshExternalService := func(serviceName string) string {
+		return fmt.Sprintf(`
 type: MeshExternalService
 name: %s-reachable
 mesh: %s
@@ -60,7 +60,7 @@ spec:
     - address: %s.reachable-backends-non-mesh.svc.cluster.local
       port: 80
 `, serviceName, meshName, serviceName, serviceName)
-		}
+	}
 
 	hostnameGeneratorMs := func() string {
 		return fmt.Sprintf(`
@@ -184,7 +184,7 @@ spec:
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Or(Equal(52),Equal(56)))
+			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
 		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 
 		Consistently(func(g Gomega) {
@@ -206,7 +206,7 @@ spec:
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Or(Equal(52),Equal(56)))
+			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
 		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 	})
 }

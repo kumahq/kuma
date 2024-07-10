@@ -16,10 +16,7 @@ import (
 func AutoReachableServices() {
 	var k8sCluster Cluster
 	esNamespace := "external-service"
-	BeforeAll(func(){
-
-		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-	
+	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
@@ -36,9 +33,8 @@ func AutoReachableServices() {
 				testserver.WithEchoArgs("echo", "--instance", "external-http-service"),
 			)).
 			Setup(k8sCluster)
-	
+
 		Expect(err).ToNot(HaveOccurred())
-	
 	})
 
 	E2EAfterEach(func() {

@@ -49,9 +49,9 @@ spec:
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(YamlK8s(hostnameGenerator)).
 			Setup(k8sCluster)
-	
+
 		Expect(err).ToNot(HaveOccurred())
-	
+
 		E2EDeferCleanup(func() {
 			Expect(k8sCluster.DeleteKuma()).To(Succeed())
 			Expect(k8sCluster.DismissCluster()).To(Succeed())
@@ -94,7 +94,7 @@ spec:
 		Eventually(func(g Gomega) {
 			pod, err := PodNameOfApp(k8sCluster, "second-test-server", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s",meshName))
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("first-test-server_%s_svc_80", namespace))))
 		}, "30s", "1s").Should(Succeed())
@@ -102,7 +102,7 @@ spec:
 		Eventually(func(g Gomega) {
 			pod, err := PodNameOfApp(k8sCluster, "client-server", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s",meshName))
+			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("first-test-server_%s_svc_80", namespace)))
 		}, "30s", "1s").Should(Succeed())

@@ -16,8 +16,8 @@ func DefaultDataplaneProxyBuilder(
 	apiVersion core_xds.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		Zone:       config.Multizone.Zone.Name,
-		APIVersion: apiVersion,
+		Zone:           config.Multizone.Zone.Name,
+		APIVersion:     apiVersion,
 		UseMeshService: config.Experimental.GenerateMeshServices,
 	}
 }
