@@ -695,17 +695,17 @@ func getLoopbackInterfaceName() (string, error) {
 //   - "1003"
 //
 // Args:
-//   - portsForUIDs ([]string): A slice of strings specifying port exclusion
+//   - exclusionRules ([]string): A slice of strings specifying port exclusion
 //     rules based on UIDs.
 //
 // Returns:
 //   - []UIDsToPorts: A slice of UIDsToPorts structs representing the parsed
 //     port exclusion rules.
 //   - error: An error if the input format is invalid or if validation fails.
-func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
+func parseExcludePortsForUIDs(exclusionRules []string) ([]UIDsToPorts, error) {
 	var result []UIDsToPorts
 
-	for _, elem := range portsForUIDs {
+	for _, elem := range exclusionRules {
 		parts := strings.Split(elem, ":")
 		if len(parts) == 0 || len(parts) > 3 {
 			return nil, errors.Errorf(
