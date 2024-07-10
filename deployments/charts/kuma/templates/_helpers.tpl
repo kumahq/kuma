@@ -197,10 +197,6 @@ returns: formatted image string
 {{- define "kuma.defaultEnv" -}}
 env:
 {{ include "kuma.parentEnv" . }}
-{{/*- name: KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS*/}}
-{{/*  value: "true"*/}}
-{{/*- name: KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES*/}}
-{{/*  value: "true"*/}}
 - name: KUMA_ENVIRONMENT
   value: "kubernetes"
 - name: KUMA_STORE_TYPE

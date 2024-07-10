@@ -149,7 +149,7 @@ real resource in `to` section we will create confs by resources
 
 ```go
 map[UniqueResourceKey]ResourceRule{
-    "backend.backend-ns": {
+    "backend.backend-ns": {  // this is just a placeholder name for visualisation. UniqueResourceKey is build from ResourceType, Name and Mesh, I will update it after real resource matching madr is merged
         requestTimeout: "2s"
         streamIdleTimeout: "1h"
     },
