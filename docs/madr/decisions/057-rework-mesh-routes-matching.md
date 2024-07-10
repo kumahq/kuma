@@ -22,8 +22,8 @@ MeshHTTPRoute gets converted to a fake `to`.
 
 ### Positive consequences
 
-- improved policy validation, we can enforce applying only http config on MeshHttpRoute
 - simplifying topLevel targetRef as it will now match only whole proxies
+- ability to set different confs on different proxy for the same route
 - no need for specifying topLevel targetRef when targeting `Mesh`
 - easier policy matching code
 
