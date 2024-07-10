@@ -19,7 +19,9 @@ resources:
             - name: backend-c72efb5be46fae6b
               weight: 15
             - name: other-backend
-              weight: 15
+              weight: 10
+            - name: ms-1_kuma-system_svc_8007
+              weight: 5
             - name: externalservice
               weight: 15
     metadata:
