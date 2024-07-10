@@ -82,16 +82,16 @@ func SplitPorts(ports string) ([]uint16, error) {
 }
 
 func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
-	if cfg.Ebpf.Enabled {
-		return ebpf.Setup(cfg)
+	if cfg.IPv4.Ebpf.Enabled {
+		return ebpf.Setup(cfg.IPv4)
 	}
 
 	return iptables.Setup(ctx, cfg)
 }
 
 func Cleanup(cfg config.InitializedConfig) (string, error) {
-	if cfg.Ebpf.Enabled {
-		return ebpf.Cleanup(cfg)
+	if cfg.IPv4.Ebpf.Enabled {
+		return ebpf.Cleanup(cfg.IPv4)
 	}
 
 	return iptables.Cleanup(cfg)

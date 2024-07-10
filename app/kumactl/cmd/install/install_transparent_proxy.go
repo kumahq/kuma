@@ -229,6 +229,9 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
 
+	cmd.Flags().BoolVar(&cfg.Comment.Disabled, "disable-comments", cfg.Comment.Disabled, "Disable the addition of comments to iptables rules")
+	cmd.Flags().StringVar(&cfg.Comment.Prefix, "comments-prefix", cfg.Comment.Prefix, "Prefix for comments added to iptables rules")
+
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 
 	return cmd

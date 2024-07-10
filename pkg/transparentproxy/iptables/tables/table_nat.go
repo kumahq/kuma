@@ -52,15 +52,10 @@ func (t *NatTable) WithCustomChain(chain *chains.Chain) *NatTable {
 }
 
 func Nat() *NatTable {
-	prerouting, _ := chains.NewChain(consts.TableNat, consts.ChainPrerouting)
-	input, _ := chains.NewChain(consts.TableNat, consts.ChainInput)
-	output, _ := chains.NewChain(consts.TableNat, consts.ChainOutput)
-	postrouting, _ := chains.NewChain(consts.TableNat, consts.ChainPostrouting)
-
 	return &NatTable{
-		prerouting:  prerouting,
-		input:       input,
-		output:      output,
-		postrouting: postrouting,
+		prerouting:  chains.MustNewChain(consts.TableNat, consts.ChainPrerouting),
+		input:       chains.MustNewChain(consts.TableNat, consts.ChainInput),
+		output:      chains.MustNewChain(consts.TableNat, consts.ChainOutput),
+		postrouting: chains.MustNewChain(consts.TableNat, consts.ChainPostrouting),
 	}
 }

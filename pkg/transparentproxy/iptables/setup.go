@@ -3,21 +3,24 @@ package iptables
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	if cfg.DryRun {
-		return dryRun(cfg)
+		return dryRun(cfg), nil
 	}
 
 	return builder.RestoreIPTables(ctx, cfg)
 }
 
-func Cleanup(cfg config.InitializedConfig) (string, error) {
+func Cleanup(_ config.InitializedConfig) (string, error) {
 	return "", errors.New("cleanup is not supported")
 }
 
@@ -35,7 +38,7 @@ func Cleanup(cfg config.InitializedConfig) (string, error) {
 //     - Returns the formatted iptables rules or an error if the building
 //     process fails.
 //  2. Executes ipvxRun for IPv4 and, if enabled in the configuration, for IPv6.
-//  3. Concatenates the results from IPv4 and IPv6 runs, separating them with a
+//  3. Concatenates the results from IPv4 and IPv6 runs, separating them with
 //     newlines for clarity.
 //  4. Logs the final combined output using the configured logger without
 //     prefixing, to ensure that the output is clear and unmodified, suitable
@@ -43,52 +46,48 @@ func Cleanup(cfg config.InitializedConfig) (string, error) {
 //
 // Args:
 //
-//	cfg (config.InitializedConfig): Configuration settings that include flags
-//	 for dry run, logging, and IP version preferences.
+//   - cfg (config.InitializedConfig): Configuration settings that include flags
+//     for dry run, logging, and IP version preferences.
 //
 // Returns:
 //
-//	string: A combined string of formatted iptables commands for both IPv4 and
-//	 IPv6.
-//	error: An error if there is a failure in generating the iptables commands
-//	 for any version.
-func dryRun(cfg config.InitializedConfig) (string, error) {
-	ipvxRun := func(ipv6 bool) ([]string, error) {
-		var result []string
+//   - string: A combined string of formatted iptables commands for both IPv4
+//     and IPv6.
+//   - error: An error if there is a failure in generating the iptables commands
+//     for any version.
+func dryRun(cfg config.InitializedConfig) string {
+	output := strings.Join(
+		slices.Concat(
+			dryRunIPvX(cfg.IPv4, false),
+			dryRunIPvX(cfg.IPv6, true),
+		),
+		"\n\n",
+	)
 
-		output, err := builder.BuildIPTablesForRestore(cfg, ipv6)
-		if err != nil {
-			return nil, err
-		}
+	cfg.Logger.InfoWithoutPrefix(output)
 
-		if !ipv6 {
-			result = append(result, "### IPv4 ###")
-		} else {
-			result = append(result, "### IPv6 ###")
-		}
+	return output
+}
 
-		result = append(result, strings.TrimSpace(output))
-
-		return result, nil
+// dryRunIPvX generates iptables rules for either IPv4 or IPv6 based on the
+// provided configuration. It returns a slice with a header indicating the
+// IP version and the generated rules as a single string.
+//
+// Args:
+//   - cfg (config.InitializedConfigIPvX): Configuration settings for IPv4 or
+//     IPv6.
+//   - ipv6 (bool): Indicates if the configuration is for IPv6.
+//
+// Returns:
+//   - []string: A slice containing the header and the iptables rules for the
+//     specified IP version.
+func dryRunIPvX(cfg config.InitializedConfigIPvX, ipv6 bool) []string {
+	if !cfg.Enabled() {
+		return nil
 	}
 
-	output, err := ipvxRun(false)
-	if err != nil {
-		return "", err
+	return []string{
+		fmt.Sprintf("### %s ###", consts.IPTypeMap[ipv6]),
+		strings.TrimSpace(builder.BuildIPTablesForRestore(cfg)),
 	}
-
-	if cfg.IPv6 {
-		ipv6Output, err := ipvxRun(true)
-		if err != nil {
-			return "", err
-		}
-
-		output = append(output, ipv6Output...)
-	}
-
-	combinedOutput := strings.Join(output, "\n\n")
-
-	cfg.Logger.InfoWithoutPrefix(combinedOutput)
-
-	return combinedOutput, nil
 }
