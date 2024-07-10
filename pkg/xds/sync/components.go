@@ -18,6 +18,7 @@ func DefaultDataplaneProxyBuilder(
 	return &DataplaneProxyBuilder{
 		Zone:       config.Multizone.Zone.Name,
 		APIVersion: apiVersion,
+		UseMeshService: config.Experimental.GenerateMeshServices,
 	}
 }
 

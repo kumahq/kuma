@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
@@ -74,4 +75,5 @@ var (
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
+	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 )

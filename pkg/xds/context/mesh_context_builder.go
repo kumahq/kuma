@@ -530,9 +530,7 @@ func getResourceNamesForLabels(name string, labels map[string]string, resourceNa
 			if _, ok := resourceNamesByLabels[label][value]; ok {
 				resourceNamesByLabels[label][value] = append(resourceNamesByLabels[label][value], name)
 			} else {
-				resourceNamesByLabels[label] = map[string][]string{
-					value: {name},
-				}
+				resourceNamesByLabels[label][value] = []string{name}
 			}
 		} else {
 			resourceNamesByLabels[label] = map[string][]string{

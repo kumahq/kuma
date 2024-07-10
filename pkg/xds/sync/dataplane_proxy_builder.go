@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -26,9 +27,10 @@ import (
 )
 
 type DataplaneProxyBuilder struct {
-	Zone          string
-	APIVersion    core_xds.APIVersion
-	IncludeShadow bool
+	Zone           string
+	APIVersion     core_xds.APIVersion
+	IncludeShadow  bool
+	UseMeshService bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -116,6 +118,10 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	}
 
 	reachableBackends := GetReachableBackends(meshContext, dataplane)
+	for key, val := range reachableBackends {
+		core.Log.Info("TEST_LOG_REACHABLE", "key", key, "val", val)
+	}
+	
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {
@@ -123,8 +129,12 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	}
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	core.Log.Info("TEST vIPS", "meshContext.VIPOutbounds", meshContext.VIPOutbounds)
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
+			if p.UseMeshService {
+				continue
+			}
 			service := outbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {
@@ -151,6 +161,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					Name: outbound.BackendRef.Name,
 					Port: outbound.BackendRef.Port,
 				}
+				core.Log.Info("TEST FIND something", "backendKey", backendKey, "outbound", outbound)
+				core.Log.Info("TEST FIND", "!reachableBackends[backendKey]", !reachableBackends[backendKey], "!reachableBackends[BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}", !reachableBackends[BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}])
 				// check if there is an entry with specific port or without port
 				if !reachableBackends[backendKey] && !reachableBackends[BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
 					// ignore VIP outbound if reachableServices is defined and not specified
@@ -171,12 +183,14 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 		}
 		outbounds = append(outbounds, outbound)
 	}
+	core.Log.Info("TEST OUTBOUND", "outbounds", outbounds, "generatedVips", generatedVips)
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
 			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}
+	core.Log.Info("TEST OUTBOUND", "outbounds", outbounds)
 	dataplane.Spec.Networking.Outbound = outbounds
 }
 
@@ -247,6 +261,7 @@ func GetReachableBackends(meshContext xds_context.MeshContext, dataplane *core_m
 		if reachableBackend.Kind == "MeshExternalService" {
 			resourcesLabels = meshContext.MeshExternalServiceNamesByLabels
 		}
+		core.Log.Info("TEST_LOG_REACHABLE 2", "key", key)
 		if len(reachableBackend.Labels) > 0 {
 			reachable := GetResourceNamesForLabels(resourcesLabels, reachableBackend.Labels)
 			for name, count := range reachable {
@@ -276,5 +291,6 @@ func GetResourceNamesForLabels(resourcesLabels map[string]map[string][]string, l
 			}
 		}
 	}
+	core.Log.Info("GetResourceNamesForLabels", "resourcesLabels", resourcesLabels, "labels", labels)
 	return reachable
 }
