@@ -2,7 +2,7 @@ name: "Test Transparent Proxy"
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 4 * * *
+    - cron: 0 2 * * *
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   IPV6: "true"
@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   test:
-    timeout-minutes: 40
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
