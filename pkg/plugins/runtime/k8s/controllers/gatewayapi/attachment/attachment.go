@@ -15,6 +15,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type Attachment int
@@ -38,14 +39,18 @@ const (
 	Service
 )
 
-// findRouteListenerAttachment reports whether this ref is allowed to attach to
+// checkListenerFrom reports whether this ref is allowed to attach to
 // the Gateway or specific Listener.
-// refSectionName is nil if the ref refers to the whole Gateway.
-func findRouteListenerAttachment(
+func checkListenerFrom(
 	gatewayNs string,
 	routeNs kube_client.Object,
 	attemptedAttachments []gatewayapi.Listener,
 ) (Attachment, error) {
+	// If we don't have any attachments, our ref has NoMatchingParent
+	if len(attemptedAttachments) == 0 {
+		return NoMatchingParent, nil
+	}
+
 	// Build a map of whether attaching to each listener is possible
 	listenerAttachments := map[gatewayapi.SectionName]Attachment{}
 
@@ -79,11 +84,6 @@ func findRouteListenerAttachment(
 		case gatewayapi_v1.NamespacesFromAll:
 			listenerAttachments[l.Name] = Allowed
 		}
-	}
-
-	// If we don't find our listener, our ref has NoMatchingParent
-	if len(attemptedAttachments) == 0 {
-		return NoMatchingParent, nil
 	}
 
 	// If we aren't attaching to a specific listener then
@@ -188,6 +188,7 @@ func evaluateGatewayAttachment(
 	}
 
 	var attemptedAttachments []gatewayapi.Listener
+	var listenerHostnames []gatewayapi.Hostname
 	for _, listener := range gateway.Spec.Listeners {
 		if ref.SectionName != nil && *ref.SectionName != listener.Name {
 			continue
@@ -196,22 +197,17 @@ func evaluateGatewayAttachment(
 			continue
 		}
 		attemptedAttachments = append(attemptedAttachments, listener)
-	}
-
-	var listenerHostnames []gatewayapi.Hostname
-	for _, listener := range attemptedAttachments {
-		listenerHostname := gatewayapi.Hostname("")
-		if listener.Hostname != nil {
-			listenerHostname = *listener.Hostname
-		}
-		listenerHostnames = append(listenerHostnames, listenerHostname)
+		listenerHostnames = append(
+			listenerHostnames,
+			pointer.DerefOr(listener.Hostname, gatewayapi.Hostname("")),
+		)
 	}
 
 	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
 		return NoHostnameIntersection, nil
 	}
 
-	return findRouteListenerAttachment(gateway.Namespace, routeNs, attemptedAttachments)
+	return checkListenerFrom(gateway.Namespace, routeNs, attemptedAttachments)
 }
 
 // EvaluateParentRefAttachment reports whether a route in the given namespace can attach
