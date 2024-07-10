@@ -6,10 +6,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology/zoneproxy"
 )
 
 type InternalServicesGenerator struct{}
@@ -29,9 +32,15 @@ func (g *InternalServicesGenerator) Generate(
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
 
-	destinations := zoneproxy.BuildMeshDestinations(
+	xdsResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
+	destinations := xds_topology.BuildMeshDestinations(
 		availableServices,
-		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+		xdsResources.VirtualOutbounds().Items,
+		xdsResources.TrafficRoutes().Items,
+		xdsResources.Gateways().Items,
+		xdsResources.GatewayRoutes().Items,
+		xdsResources.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items,
+		xdsResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items,
 	)
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)

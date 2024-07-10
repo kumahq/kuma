@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type APIVersion string
@@ -210,10 +211,14 @@ type ZoneEgressProxy struct {
 	MeshResourcesList  []*MeshResources
 }
 
+type ProxyDestinations map[string][]envoy_tags.Tags
+
 type MeshIngressResources struct {
-	Mesh        *core_mesh.MeshResource
-	EndpointMap EndpointMap
-	Resources   map[core_model.ResourceType]core_model.ResourceList
+	Mesh              *core_mesh.MeshResource
+	EndpointMap       EndpointMap
+	AvailableServices []*mesh_proto.ZoneIngress_AvailableService
+	Destinations      ProxyDestinations
+	Resources         map[core_model.ResourceType]core_model.ResourceList
 }
 
 type ZoneIngressProxy struct {

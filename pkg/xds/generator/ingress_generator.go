@@ -5,7 +5,6 @@ import (
 
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -35,21 +34,12 @@ func (i IngressGenerator) Generate(
 	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, address, port, core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TLSInspector())
 
-	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
-	for _, service := range proxy.ZoneIngressProxy.ZoneIngressResource.Spec.AvailableServices {
-		availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
-	}
-
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		meshName := mr.Mesh.GetMeta().GetName()
-		dest := zoneproxy.BuildMeshDestinations(
-			availableSvcsByMesh[meshName],
-			xds_context.Resources{MeshLocalResources: mr.Resources},
-		)
 
-		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
+		services := zoneproxy.AddFilterChains(mr.AvailableServices, proxy.APIVersion, listenerBuilder, mr.Destinations, mr.EndpointMap)
 
-		cdsResources, err := zoneproxy.GenerateCDS(dest, services, proxy.APIVersion, meshName, OriginIngress)
+		cdsResources, err := zoneproxy.GenerateCDS(mr.Destinations, services, proxy.APIVersion, meshName, OriginIngress)
 		if err != nil {
 			return nil, err
 		}

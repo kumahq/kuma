@@ -7,29 +7,31 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
-	res xds_context.Resources,
-) map[string][]envoy_tags.Tags {
+	virtualOutbounds []*core_mesh.VirtualOutboundResource,
+	trafficRoutes []*core_mesh.TrafficRouteResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	gatewayRoutes []*core_mesh.MeshGatewayRouteResource,
+	meshTCPRoutes []*meshtcproute_api.MeshTCPRouteResource,
+	meshHTTPRoutes []*meshhttproute_api.MeshHTTPRouteResource,
+) xds.ProxyDestinations {
 	destForMesh := map[string][]envoy_tags.Tags{}
-	trafficRoutes := res.TrafficRoutes().Items
 	addTrafficRouteDestinations(trafficRoutes, destForMesh)
-	meshHTTPRoutes := res.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items
-	meshTCPRoutes := res.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items
 	addMeshHTTPRouteDestinations(trafficRoutes, meshHTTPRoutes, destForMesh)
 	addMeshTCPRouteDestinations(trafficRoutes, meshTCPRoutes, destForMesh)
-	addGatewayRouteDestinations(res.GatewayRoutes().Items, destForMesh)
-	addMeshGatewayDestinations(res.MeshGateways().Items, destForMesh)
-	addVirtualOutboundDestinations(res.VirtualOutbounds().Items, availableServices, destForMesh)
+	addGatewayRouteDestinations(gatewayRoutes, destForMesh)
+	addMeshGatewayDestinations(gateways, destForMesh)
+	addVirtualOutboundDestinations(virtualOutbounds, availableServices, destForMesh)
 	return destForMesh
 }
 

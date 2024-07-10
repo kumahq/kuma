@@ -76,7 +76,9 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(
 				zoneEgressesList,
 				meshCtx.Resources.Gateways().Items,
 			),
-			Resources: meshCtx.Resources.MeshLocalResources,
+			AvailableServices: meshCtx.ZoneIngressAvailableServices,
+			Destinations:      meshCtx.ZoneIngressDestinations,
+			Resources:         meshCtx.Resources.MeshLocalResources,
 		}
 
 		meshResourceList = append(meshResourceList, meshResources)

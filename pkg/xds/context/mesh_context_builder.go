@@ -23,9 +23,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/log"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	zoneproxy_topology "github.com/kumahq/kuma/pkg/xds/topology/zoneproxy"
 )
 
 var logger = core.Log.WithName("xds").WithName("context")
@@ -185,19 +188,43 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		)
 	}
 
+	availableSvcsByMesh := map[string][]*mesh_proto.ZoneIngress_AvailableService{}
+	ingresses := core_mesh.ZoneIngressResourceList{}
+	if err := m.rm.List(ctx, &ingresses); err != nil {
+		return nil, errors.Wrap(err, "couldn't list ZoneIngresses")
+	} else if len(ingresses.Items) > 0 {
+		// It's ok that we take the first ZoneIngress, they should have the same
+		// list of available services.
+		for _, service := range ingresses.Items[0].Spec.AvailableServices {
+			availableSvcsByMesh[service.Mesh] = append(availableSvcsByMesh[service.Mesh], service)
+		}
+	}
+
+	zoneIngressDestinations := zoneproxy_topology.BuildMeshDestinations(
+		availableSvcsByMesh[meshName],
+		resources.VirtualOutbounds().Items,
+		resources.TrafficRoutes().Items,
+		resources.Gateways().Items,
+		resources.GatewayRoutes().Items,
+		resources.ListOrEmpty(meshtcproute_api.MeshTCPRouteType).(*meshtcproute_api.MeshTCPRouteResourceList).Items,
+		resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).(*meshhttproute_api.MeshHTTPRouteResourceList).Items,
+	)
+
 	return &MeshContext{
-		Hash:                        newHash,
-		Resource:                    mesh,
-		Resources:                   resources,
-		DataplanesByName:            dataplanesByName,
-		EndpointMap:                 endpointMap,
-		ExternalServicesEndpointMap: esEndpointMap,
-		CrossMeshEndpoints:          crossMeshEndpointMap,
-		VIPDomains:                  domains,
-		VIPOutbounds:                outbounds,
-		ServicesInformation:         m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
-		DataSourceLoader:            loader,
-		ReachableServicesGraph:      m.rsGraphBuilder(meshName, resources),
+		Hash:                         newHash,
+		Resource:                     mesh,
+		Resources:                    resources,
+		DataplanesByName:             dataplanesByName,
+		EndpointMap:                  endpointMap,
+		ExternalServicesEndpointMap:  esEndpointMap,
+		CrossMeshEndpoints:           crossMeshEndpointMap,
+		VIPDomains:                   domains,
+		VIPOutbounds:                 outbounds,
+		ServicesInformation:          m.generateServicesInformation(mesh, resources.ServiceInsights(), endpointMap, esEndpointMap),
+		DataSourceLoader:             loader,
+		ReachableServicesGraph:       m.rsGraphBuilder(meshName, resources),
+		ZoneIngressAvailableServices: availableSvcsByMesh[meshName],
+		ZoneIngressDestinations:      zoneIngressDestinations,
 	}, nil
 }
 
