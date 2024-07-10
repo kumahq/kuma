@@ -145,6 +145,9 @@ spec:
 			To(Succeed())
 	})
 
+	// If you copy the test case from a non-gateway test or create a new test,
+	// remember the the name of policies needs to be unique.
+	// If they have the same name, one might override the other, causing a flake.
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))

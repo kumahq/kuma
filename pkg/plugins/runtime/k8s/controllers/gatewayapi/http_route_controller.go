@@ -201,9 +201,10 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			case attachment.Gateway:
 				tags := map[string]string{}
 				if ref.SectionName != nil {
-					tags = map[string]string{
-						mesh_proto.ListenerTag: string(*ref.SectionName),
-					}
+					tags[mesh_proto.ListenerTag] = string(*ref.SectionName)
+				}
+				if ref.Port != nil {
+					tags[mesh_proto.PortTag] = strconv.Itoa(int(*ref.Port))
 				}
 
 				var headers []string

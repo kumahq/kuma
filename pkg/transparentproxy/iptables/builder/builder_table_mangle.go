@@ -11,13 +11,10 @@ import (
 // buildMangleTable constructs the mangle table for iptables with the necessary
 // rules for handling invalid packets. This table is configured based on the
 // provided configuration and handles both IPv4 and IPv6 traffic.
-func buildMangleTable(
-	cfg config.InitializedConfig,
-	ipv6 bool,
-) *tables.MangleTable {
+func buildMangleTable(cfg config.InitializedConfigIPvX) *tables.MangleTable {
 	mangle := tables.Mangle()
 
-	if cfg.ShouldDropInvalidPackets(ipv6) {
+	if cfg.DropInvalidPackets {
 		mangle.Prerouting().AddRules(
 			rules.
 				NewRule(

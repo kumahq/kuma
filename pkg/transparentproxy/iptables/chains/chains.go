@@ -26,26 +26,53 @@ func (c *Chain) AddRules(rules ...*rules.RuleBuilder) *Chain {
 	return c
 }
 
-// BuildForRestore function generates all iptables rules within chain in
-// a format suitable for restoration using the `iptables-restore` command.
+// BuildForRestore generates all iptables rules within the chain in a format
+// suitable for restoration using the `iptables-restore` command.
 //
 // It iterates over each rule in the `rules` slice and calls the rule's
-// `BuildForRestore(verbose)` method to generate the individual command string
-// for each rule. The `verbose` flag is passed along to maintain consistent
-// output formatting throughout the chain.
-func (c *Chain) BuildForRestore(
-	cfg config.InitializedConfig,
-	ipv6 bool,
-) []string {
+// `BuildForRestore(cfg)` method to generate the individual command string
+// for each rule. The function accumulates these command strings into a slice,
+// which is then returned.
+//
+// Args:
+//   - cfg (config.InitializedConfigIPvX): Configuration settings used to build
+//     the rules.
+//
+// Returns:
+//   - []string: A slice of strings where each string represents an iptables
+//     rule formatted for use with `iptables-restore`.
+func (c *Chain) BuildForRestore(cfg config.InitializedConfigIPvX) []string {
 	var lines []string
 
 	for _, rule := range c.rules {
-		lines = append(lines, rule.BuildForRestore(cfg, ipv6))
+		lines = append(lines, rule.BuildForRestore(cfg))
 	}
 
 	return lines
 }
 
+// NewChain creates a new Chain object for a specified iptables table and chain
+// name.
+//
+// This function validates that the provided table is one of the supported
+// tables (raw, nat, or mangle) and that the chain name is not empty. If these
+// conditions are met, it returns a new Chain object initialized with the
+// provided table and chain name. If the validation fails, it returns an error.
+//
+// Args:
+//   - table (consts.TableName): The name of the iptables table. Supported
+//     values are "raw", "nat", and "mangle".
+//   - chain (string): The name of the chain. This cannot be an empty string.
+//
+// Returns:
+//   - *Chain: A pointer to a new Chain object if the inputs are valid.
+//   - error: An error if the table is unsupported or if the chain name is
+//     empty.
+//
+// Supported Tables:
+//   - consts.TableRaw    // "raw"
+//   - consts.TableNat    // "nat
+//   - consts.TableMangle // "mangle"
 func NewChain(table consts.TableName, chain string) (*Chain, error) {
 	switch table {
 	// Only raw, nat and mangle are supported
@@ -70,4 +97,38 @@ func NewChain(table consts.TableName, chain string) (*Chain, error) {
 		table: table,
 		name:  chain,
 	}, nil
+}
+
+// MustNewChain creates a new Chain object for a specified iptables table and
+// chain name, and panics if the provided table or chain is invalid.
+//
+// This function should be used when you are certain that the provided table is
+// one of the supported tables (raw, nat, or mangle) and that the chain name is
+// not empty. If these conditions are not met, the function will panic. This is
+// useful for scenarios where validation has been performed elsewhere, and you
+// want to ensure that the creation of the Chain object does not fail.
+//
+// Args:
+//   - table (consts.TableName): The name of the iptables table. Supported
+//     values are "raw", "nat", and "mangle".
+//   - chain (string): The name of the chain. This cannot be an empty string.
+//
+// Returns:
+//   - *Chain: A pointer to a new Chain object.
+//
+// Panics:
+//
+//	If the table is unsupported or the chain name is empty.
+//
+// Supported Tables:
+//   - consts.TableRaw    // "raw"
+//   - consts.TableNat    // "nat
+//   - consts.TableMangle // "mangle"
+func MustNewChain(table consts.TableName, chain string) *Chain {
+	newChain, err := NewChain(table, chain)
+	if err != nil {
+		panic(err)
+	}
+
+	return newChain
 }
