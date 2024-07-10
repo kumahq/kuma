@@ -97,6 +97,8 @@ var defaultConfig = TransparentProxyConfig{
 			"--vnet", "br+:172.18.0.0/16",
 			"--vnet", "iface:::1/64",
 			"--exclude-outbound-ports-for-uids", "53,3000-5000:106-108",
+			"--exclude-outbound-ips", "10.0.0.1,192.168.0.0/24,fe80::1",
+			"--exclude-outbound-ips", "fd00::/8",
 		},
 	},
 	IPV6: false,
