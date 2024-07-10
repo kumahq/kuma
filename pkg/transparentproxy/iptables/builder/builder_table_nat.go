@@ -233,7 +233,6 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 		rulePosition++
 	}
 
-	// Loop through UID-specific excluded ports and add corresponding NAT rules.
 	for _, exclusion := range cfg.Redirect.Outbound.Exclusions {
 		nat.Output().AddRules(
 			rules.
@@ -253,10 +252,11 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 						exclusion.UIDs != "",
 						Owner(UidRangeOrValue(exclusion)),
 					),
+					Destination(exclusion.Address),
 					Jump(Return()),
 				).
 				WithPosition(rulePosition).
-				WithComment("skip further processing for configured ports and UIDs"),
+				WithComment("skip further processing for configured IP addresses, ports and UIDs"),
 		)
 		rulePosition++
 	}
