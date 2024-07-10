@@ -37,3 +37,11 @@ test/kumactl: test ## Dev: Run `kumactl` tests only
 .PHONY: test/cni
 test/cni: TEST_PKG_LIST=./app/cni/...
 test/cni: test ## Dev: Run `cni` tests only
+<<<<<<< HEAD
+=======
+
+.PHONY: test/transparentproxy
+test/transparentproxy:
+	GOOS=linux $(MAKE) build/kumactl
+	KUMACTL_LINUX_BIN=$(KUMACTL_LINUX_BIN) $(UNIT_TEST_ENV) $(GINKGO_TEST) -v ./test/transparentproxy/...
+>>>>>>> 9917a3c9d (chore(transparent-proxy): enhance test configuration and logging (#10847))
