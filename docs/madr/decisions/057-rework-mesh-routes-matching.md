@@ -96,7 +96,7 @@ spec:
   to:
   - targetRef:
       kind: MeshService
-      name: backend_kuma-demo_svc_3001
+      name: backend
     rules:
     - matches:
       - path:
@@ -203,7 +203,7 @@ For policies on namespace this is as simple as creating consumer policy that tar
 (This can be useful when we consume MeshService from other zone)
 
 ```yaml
-# Producer MeshTimeout targeting whole MeshService
+# Consumer MeshTimeout targeting whole MeshService
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -221,12 +221,12 @@ spec:
       http:
         streamIdleTimeout: 2h
 ---
-# MeshTimeout targeting producer route
+# Consumer MeshTimeout targeting producer route
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
   name: timeout-on-backend-route
-  namespace: backend-ns
+  namespace: frontend-ns
   labels:
     kuma.io/mesh: default
 spec:
@@ -255,8 +255,8 @@ map[UniqueResourceKey]ResourceRule{
 ```
 
 Configuration priority (from most to least important): 
-1. consumer policy targeting Mesh*rRoute
-2. producer policy targeting Mesh*rRoute
+1. consumer policy targeting Mesh*Route
+2. producer policy targeting Mesh*Route
 3. consumer policy targeting MeshService
 4. producer policy targeting MeshService
 
@@ -277,7 +277,7 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        name: backend_kuma-demo_svc_3001
+        name: backend
       rules:
         - matches:
             - path:
