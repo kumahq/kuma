@@ -89,6 +89,7 @@ func TestConformance(t *testing.T) {
 		ManifestFS: []fs.FS{&conformance.Manifests},
 		SupportedFeatures: sets.New(
 			features.SupportGateway,
+			features.SupportGatewayHTTPListenerIsolation,
 			features.SupportGatewayPort8080,
 			features.SupportReferenceGrant,
 			features.SupportHTTPRouteResponseHeaderModification,
