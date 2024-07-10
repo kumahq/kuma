@@ -27,7 +27,7 @@ type Owner struct {
 // ranges and multiple values can be mixed e.g. 1000,1005:1006 meaning 1000,1005,1006
 type ValueOrRangeList string
 
-type UIDsToPorts struct {
+type Exclusion struct {
 	Protocol string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
@@ -72,17 +72,17 @@ func (c TrafficFlow) Initialize(
 			"parsing excluded outbound ports for uids failed",
 		)
 	}
-	initialized.ExcludePortsForUIDs = excludePortsForUIDs
+	initialized.Exclusions = excludePortsForUIDs
 
 	return initialized, nil
 }
 
 type InitializedTrafficFlow struct {
 	TrafficFlow
-	ExcludePortsForUIDs []UIDsToPorts
-	Port                uint16
-	ChainName           string
-	RedirectChainName   string
+	Exclusions        []Exclusion
+	Port              uint16
+	ChainName         string
+	RedirectChainName string
 }
 
 type DNS struct {
@@ -685,7 +685,7 @@ func getLoopbackInterfaceName() (string, error) {
 }
 
 // parseExcludePortsForUIDs parses a slice of strings representing port
-// exclusion rules based on UIDs and returns a slice of UIDsToPorts structs.
+// exclusion rules based on UIDs and returns a slice of Exclusion structs.
 //
 // Each input string should follow the format: <protocol:>?<ports:>?<uids>.
 // Examples:
@@ -699,11 +699,11 @@ func getLoopbackInterfaceName() (string, error) {
 //     rules based on UIDs.
 //
 // Returns:
-//   - []UIDsToPorts: A slice of UIDsToPorts structs representing the parsed
-//     port exclusion rules.
+//   - []Exclusion: A slice of Exclusion structs representing the parsed port
+//     exclusion rules.
 //   - error: An error if the input format is invalid or if validation fails.
-func parseExcludePortsForUIDs(exclusionRules []string) ([]UIDsToPorts, error) {
-	var result []UIDsToPorts
+func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
+	var result []Exclusion
 
 	for _, elem := range exclusionRules {
 		parts := strings.Split(elem, ":")
@@ -774,7 +774,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]UIDsToPorts, error) {
 			ports := strings.ReplaceAll(portValuesOrRange, "-", ":")
 			uids := strings.ReplaceAll(uidValuesOrRange, "-", ":")
 
-			result = append(result, UIDsToPorts{
+			result = append(result, Exclusion{
 				Ports:    ValueOrRangeList(ports),
 				UIDs:     ValueOrRangeList(uids),
 				Protocol: p,

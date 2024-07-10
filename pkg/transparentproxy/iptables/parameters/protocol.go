@@ -82,11 +82,11 @@ func DestinationPort(port uint16) *TcpUdpParameter {
 	return destinationPort(port, false)
 }
 
-func DestinationPortRangeOrValue(uIDsToPorts config.UIDsToPorts) *TcpUdpParameter {
+func DestinationPortRangeOrValue(exclusion config.Exclusion) *TcpUdpParameter {
 	return &TcpUdpParameter{
 		long:  "--destination-port",
 		short: "--dport",
-		value: string(uIDsToPorts.Ports),
+		value: string(exclusion.Ports),
 	}
 }
 
