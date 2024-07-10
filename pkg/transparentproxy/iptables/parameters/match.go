@@ -74,3 +74,11 @@ func Match(matchParameters ...*MatchParameter) *Parameter {
 		negate:     negateNestedParameters,
 	}
 }
+
+func MatchIf(predicate bool, matchParameters ...*MatchParameter) *Parameter {
+	if !predicate {
+		return nil
+	}
+
+	return Match(matchParameters...)
+}

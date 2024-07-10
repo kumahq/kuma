@@ -48,6 +48,10 @@ type TcpUdpParameter struct {
 }
 
 func (p *TcpUdpParameter) Build(verbose bool) []string {
+	if p.value == "" {
+		return nil
+	}
+
 	flag := p.short
 
 	if verbose {
@@ -83,6 +87,10 @@ func DestinationPort(port uint16) *TcpUdpParameter {
 }
 
 func DestinationPortRangeOrValue(exclusion config.Exclusion) *TcpUdpParameter {
+	if exclusion.Ports == "" {
+		return nil
+	}
+
 	return &TcpUdpParameter{
 		long:  "--destination-port",
 		short: "--dport",
@@ -138,15 +146,42 @@ func Udp(udpParameters ...*TcpUdpParameter) *ProtocolParameter {
 	return tcpUdp("udp", udpParameters)
 }
 
+func UdpIf(predicate bool, udpParameters ...*TcpUdpParameter) *ProtocolParameter {
+	if !predicate {
+		return nil
+	}
+
+	return tcpUdp("udp", udpParameters)
+}
+
 func Tcp(tcpParameters ...*TcpUdpParameter) *ProtocolParameter {
 	return tcpUdp("tcp", tcpParameters)
 }
 
-func Protocol(parameter *ProtocolParameter) *Parameter {
+func TcpIf(predicate bool, tcpParameters ...*TcpUdpParameter) *ProtocolParameter {
+	if !predicate {
+		return nil
+	}
+
+	return tcpUdp("tcp", tcpParameters)
+}
+
+func Protocol(p ...*ProtocolParameter) *Parameter {
+	var parameters []ParameterBuilder
+	for _, parameter := range p {
+		if parameter != nil {
+			parameters = append(parameters, parameter)
+		}
+	}
+
+	if parameters == nil {
+		return nil
+	}
+
 	return &Parameter{
 		long:       "--protocol",
 		short:      "-p",
-		parameters: []ParameterBuilder{parameter},
+		parameters: parameters,
 		negate:     negateSelf,
 	}
 }

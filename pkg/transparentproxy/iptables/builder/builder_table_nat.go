@@ -235,30 +235,24 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 
 	// Loop through UID-specific excluded ports and add corresponding NAT rules.
 	for _, exclusion := range cfg.Redirect.Outbound.Exclusions {
-		var protocol *Parameter
-
-		// Determine the protocol type and set up the correct parameter.
-		switch exclusion.Protocol {
-		case TCP:
-			protocol = Protocol(Tcp(DestinationPortRangeOrValue(exclusion)))
-		case UDP:
-			protocol = Protocol(Udp(DestinationPortRangeOrValue(exclusion)))
-		default:
-			// This was already validated during config initialization, so this
-			// warning should never appear
-			cfg.Logger.Warnf(
-				"unknown protocol %s, only 'tcp' or 'udp' allowed",
-				exclusion.Protocol,
-			)
-			continue
-		}
-
 		nat.Output().AddRules(
 			rules.
 				NewRule(
-					Match(Multiport()),
-					protocol,
-					Match(Owner(UidRangeOrValue(exclusion))),
+					MatchIf(exclusion.Ports != "", Multiport()),
+					Protocol(
+						TcpIf(
+							exclusion.Protocol == TCP,
+							DestinationPortRangeOrValue(exclusion),
+						),
+						UdpIf(
+							exclusion.Protocol == UDP,
+							DestinationPortRangeOrValue(exclusion),
+						),
+					),
+					MatchIf(
+						exclusion.UIDs != "",
+						Owner(UidRangeOrValue(exclusion)),
+					),
 					Jump(Return()),
 				).
 				WithPosition(rulePosition).
