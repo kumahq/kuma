@@ -99,6 +99,8 @@ var defaultConfig = TransparentProxyConfig{
 			"--exclude-outbound-ports-for-uids", "53,3000-5000:106-108",
 			"--exclude-outbound-ips", "10.0.0.1,192.168.0.0/24,fe80::1",
 			"--exclude-outbound-ips", "fd00::/8",
+			"--exclude-outbound-ports", "1,22,333",
+			"--exclude-inbound-ports", "4444,55555",
 		},
 	},
 	IPV6: false,
