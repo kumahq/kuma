@@ -102,8 +102,11 @@ is obsolete as Route will select gateway, and we want to apply policy on a route
 ### Affected policies
 
 At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR is based on MeshTimeout policy.
-Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route
-but we are configuring rate limit on inbound traffic, which does not apply to this MADR.
+Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route,
+but we are configuring rate limit on inbound traffic, which does not apply to this MADR. 
+
+It is worth to mention that rate limit would not work with our producer/consumer model. In our model consumer always has more priority
+but consumer should not override producer rate limit as owner of the service should know best, the amount of traffic it could handle.
 
 ### Merging and applying configurations
 
