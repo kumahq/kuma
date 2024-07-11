@@ -13,7 +13,9 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 const (
@@ -418,6 +420,52 @@ func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
 		return origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
+	}
+}
+
+func CoreTargetRef(rm ResourceMeta, tr common_api.TargetRef) common_api.TargetRef {
+	if len(tr.Labels) > 0 {
+		return tr
+	}
+
+	hashedName := func(name string) string {
+		// todo(lobkovilya): reuse code from KDS to build hashed name
+		var values []string
+		if zone, ok := rm.GetLabels()[mesh_proto.ZoneTag]; ok {
+			values = append(values, zone)
+		}
+		if ns, ok := rm.GetLabels()[mesh_proto.KubeNamespaceTag]; ok {
+			values = append(values, ns)
+		}
+		return hash.HashedName(rm.GetMesh(), name, values...)
+	}
+
+	addNamespaceIfNeeded := func(name string) string {
+		if ns, ok := rm.GetNameExtensions()[K8sNamespaceComponent]; ok {
+			return k8s.K8sNamespacedNameToCoreName(name, ns)
+		}
+		return name
+	}
+
+	isLocallyOriginated := func() bool {
+		// This is check is based on the fact that if .Name is equal to hashed name constructed from
+		// 'kuma.io/display-name', 'kuma.io/zone' and 'k8s.kuma.io/namespace' label then the resource is
+		// not locally originated.
+		// It's a bit hacky, but it saves us from passing `CpMode' to every function on its way.
+		return addNamespaceIfNeeded(hashedName(GetDisplayName(rm))) != rm.GetName()
+	}
+
+	name := tr.Name
+
+	if !isLocallyOriginated() {
+		name = hashedName(name)
+	}
+
+	name = addNamespaceIfNeeded(name)
+
+	return common_api.TargetRef{
+		Kind: tr.Kind,
+		Name: name,
 	}
 }
 

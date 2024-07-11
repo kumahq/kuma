@@ -16,6 +16,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -43,7 +45,8 @@ type FromRules struct {
 }
 
 type ToRules struct {
-	Rules Rules
+	Rules         Rules
+	ResourceRules ResourceRules
 }
 
 type InboundListenerHostname struct {
@@ -117,6 +120,14 @@ type Tag struct {
 
 // Subset represents a group of proxies
 type Subset []Tag
+
+func NewSubset(m map[string]string) Subset {
+	var s Subset
+	for _, k := range util_maps.SortedKeys(m) {
+		s = append(s, Tag{Key: k, Value: m[k]})
+	}
+	return s
+}
 
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
@@ -295,14 +306,14 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
-	toList := []PolicyItemWithMeta{}
-	for _, mp := range matchedPolicies {
-		tl, err := buildToList(mp, httpRoutes)
-		if err != nil {
-			return ToRules{}, err
-		}
-		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
+type ResourceLister interface {
+	ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList
+}
+
+func BuildToRules(matchedPolicies []core_model.Resource, lister ResourceLister) (ToRules, error) {
+	toList, err := BuildToList(matchedPolicies, lister)
+	if err != nil {
+		return ToRules{}, err
 	}
 
 	rules, err := BuildRules(toList)
@@ -310,25 +321,42 @@ func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model
 		return ToRules{}, err
 	}
 
-	return ToRules{Rules: rules}, nil
+	resourceRules, err := BuildResourceRules(toList, lister)
+	if err != nil {
+		return ToRules{}, err
+	}
+
+	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
+}
+
+func BuildToList(matchedPolicies []core_model.Resource, lister ResourceLister) ([]PolicyItemWithMeta, error) {
+	toList := []PolicyItemWithMeta{}
+	for _, mp := range matchedPolicies {
+		tl, err := buildToList(mp, lister.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+		if err != nil {
+			return nil, err
+		}
+		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
+	}
+	return toList, nil
 }
 
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
 	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
-	httpRoutes []core_model.Resource,
+	lister ResourceLister,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]Rules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]Rules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, httpRoutes)
+		toRules, err := BuildToRules(policies, lister)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules.Rules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, httpRoutes)
+		toRules, err := BuildToRules(policies, lister)
 		if err != nil {
 			return GatewayRules{}, err
 		}

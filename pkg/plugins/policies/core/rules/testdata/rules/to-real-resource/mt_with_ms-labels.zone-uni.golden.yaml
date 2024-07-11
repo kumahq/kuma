@@ -1,0 +1,58 @@
+MeshService.mesh-1.backend-1:
+  Conf:
+    connectionTimeout: 11s
+    http:
+      requestTimeout: 12s
+    idleTimeout: 10s
+  Origin:
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-mt-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-1
+    NameExtensions: null
+    Version: ""
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      env: dev
+      kuma.io/display-name: backend-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-1
+    NameExtensions: null
+    Version: ""
+MeshService.mesh-1.backend-2:
+  Conf:
+    connectionTimeout: 11s
+    http:
+      requestTimeout: 12s
+    idleTimeout: 10s
+  Origin:
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-mt-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-1
+    NameExtensions: null
+    Version: ""
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      env: dev
+      kuma.io/display-name: backend-2
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-2
+    NameExtensions: null
+    Version: ""

@@ -1,0 +1,39 @@
+MeshService.mesh-1.backend-z6v4648zfz9c6wbv.kuma-system:
+  Conf:
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: backend-z6v4648zfz9c6wbv.kuma-system
+          weight: 90
+        - kind: MeshService
+          name: backend-v1-ffxcdx8fw4x4cwvd.kuma-system
+          weight: 10
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+  Origin:
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-http-route-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-http-route-1-x4868cxfdvz8wv5w.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: matched-for-rules-http-route-1-x4868cxfdvz8wv5w
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: backend
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-z6v4648zfz9c6wbv.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: backend-z6v4648zfz9c6wbv
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""

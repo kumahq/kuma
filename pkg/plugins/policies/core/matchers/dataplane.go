@@ -88,7 +88,7 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create From rules: %s", err.Error()))
 	}
 
-	tr, err := core_rules.BuildToRules(dpPolicies, resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+	tr, err := core_rules.BuildToRules(dpPolicies, resources)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
@@ -96,7 +96,7 @@ func MatchedPolicies(
 	gr, err := core_rules.BuildGatewayRules(
 		matchedPoliciesByInbound,
 		matchedPoliciesByGatewayListener,
-		resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems(),
+		resources,
 	)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
