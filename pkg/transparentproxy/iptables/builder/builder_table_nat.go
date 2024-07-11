@@ -221,22 +221,18 @@ func buildMeshRedirect(cfg config.InitializedTrafficFlow) *Chain {
 }
 
 func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
-	rulePosition := uint(1)
-
 	if cfg.Log.Enabled {
 		nat.Output().AddRules(
 			rules.
-				NewRule(Jump(Log(OutputLogPrefix, cfg.Log.Level))).
-				WithPosition(rulePosition).
+				NewInsertRule(Jump(Log(OutputLogPrefix, cfg.Log.Level))).
 				WithComment("log matching packets using kernel logging"),
 		)
-		rulePosition++
 	}
 
 	for _, exclusion := range cfg.Redirect.Outbound.Exclusions {
 		nat.Output().AddRules(
 			rules.
-				NewRule(
+				NewInsertRule(
 					MatchIf(exclusion.Ports != "", Multiport()),
 					Protocol(
 						TcpIf(
@@ -255,17 +251,15 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 					Destination(exclusion.Address),
 					Jump(Return()),
 				).
-				WithPosition(rulePosition).
 				WithComment("skip further processing for configured IP addresses, ports and UIDs"),
 		)
-		rulePosition++
 	}
 
 	// Conditionally add DNS redirection rules if DNS redirection is enabled.
 	if cfg.Redirect.DNS.Enabled {
 		nat.Output().AddRules(
 			rules.
-				NewRule(
+				NewInsertRule(
 					Protocol(Udp(DestinationPort(DNSPort))),
 					Match(Owner(Uid(cfg.Owner.UID))),
 					JumpConditional(
@@ -274,7 +268,6 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 						Return(),                                          // else RETURN
 					),
 				).
-				WithPosition(rulePosition).
 				WithConditionalComment(
 					cfg.Executables.Functionality.Chains.DockerOutput,
 					fmt.Sprintf(
@@ -284,31 +277,27 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 					"return early for DNS traffic from kuma-dp",
 				),
 		)
-		rulePosition++
 
 		if cfg.Redirect.DNS.CaptureAll {
 			nat.Output().AddRules(
 				rules.
-					NewRule(
+					NewInsertRule(
 						Protocol(Udp(DestinationPort(DNSPort))),
 						Jump(ToPort(cfg.Redirect.DNS.Port)),
 					).
-					WithPosition(rulePosition).
 					WithCommentf("redirect all DNS requests to the kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
 			)
 		} else {
 			for _, dnsIp := range cfg.Redirect.DNS.Servers {
 				nat.Output().AddRules(
 					rules.
-						NewRule(
+						NewInsertRule(
 							Destination(dnsIp),
 							Protocol(Udp(DestinationPort(DNSPort))),
 							Jump(ToPort(cfg.Redirect.DNS.Port)),
 						).
-						WithPosition(rulePosition).
 						WithCommentf("redirect DNS requests to %s to the kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
 				)
-				rulePosition++
 			}
 		}
 	}
@@ -326,8 +315,6 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 // addPreroutingRules adds rules to the PREROUTING chain of the NAT table to
 // handle inbound traffic according to the provided configuration.
 func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
-	rulePosition := uint(1)
-
 	// Add a logging rule if logging is enabled.
 	if cfg.Log.Enabled {
 		nat.Prerouting().AddRules(
@@ -352,34 +339,30 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 	for _, iface := range maps.SortedKeys(cfg.Redirect.VNet.InterfaceCIDRs) {
 		nat.Prerouting().AddRules(
 			rules.
-				NewRule(
+				NewInsertRule(
 					InInterface(iface),
 					Match(MatchUdp()),
 					Protocol(Udp(DestinationPort(DNSPort))),
 					Jump(ToPort(cfg.Redirect.DNS.Port)),
 				).
-				WithPosition(rulePosition).
 				WithCommentf("redirect DNS requests on interface %s to the kuma-dp DNS proxy (listening on port %d)", iface, cfg.Redirect.DNS.Port),
 			rules.
-				NewRule(
+				NewInsertRule(
 					NotDestination(cfg.Redirect.VNet.InterfaceCIDRs[iface]),
 					InInterface(iface),
 					Protocol(Tcp()),
 					Jump(ToPort(cfg.Redirect.Outbound.Port)),
 				).
-				WithPosition(rulePosition+1).
 				WithCommentf("redirect TCP traffic on interface %s, excluding destination %s, to the envoy's outbound passthrough port %d", iface, cfg.Redirect.VNet.InterfaceCIDRs[iface], cfg.Redirect.Outbound.Port),
 		)
-		rulePosition += 2
 	}
 
 	nat.Prerouting().AddRules(
 		rules.
-			NewRule(
+			NewInsertRule(
 				Protocol(Tcp()),
 				Jump(ToUserDefinedChain(cfg.Redirect.Inbound.ChainName)),
 			).
-			WithPosition(rulePosition).
 			WithComment("redirect remaining TCP traffic to our custom chain for processing"),
 	)
 }

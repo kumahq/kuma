@@ -20,7 +20,7 @@ type Rule struct {
 type RuleBuilder struct {
 	parameters parameters.Parameters
 	comment    string
-	position   uint
+	insert     bool
 }
 
 func (b *RuleBuilder) WithComment(comment string) *RuleBuilder {
@@ -47,23 +47,32 @@ func (b *RuleBuilder) WithConditionalComment(
 	return b
 }
 
-func (b *RuleBuilder) WithPosition(position uint) *RuleBuilder {
-	b.position = position
-	return b
-}
-
-func (b *RuleBuilder) Build(table consts.TableName, chain string) *Rule {
-	return &Rule{
+func (b *RuleBuilder) Build(
+	table consts.TableName,
+	chain string,
+	position uint,
+) (*Rule, uint) {
+	rule := &Rule{
 		table:      table,
 		chain:      chain,
-		position:   b.position,
 		parameters: b.parameters,
 		comment:    b.comment,
 	}
+
+	if b.insert {
+		position++
+		rule.position = position
+	}
+
+	return rule, position
 }
 
 func NewRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters}
+}
+
+func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
+	return &RuleBuilder{parameters: parameters, insert: true}
 }
 
 // BuildForRestore generates an iptables rule formatted for use with
