@@ -203,7 +203,13 @@ ResourceRule: # new type
     origin:
       type: array
       items:
-        $ref: '#/components/schemas/Meta'
+        type: object
+        properties:
+          resourceMeta:
+            $ref: '#/components/schemas/Meta'
+          toIdx:
+            description: index of the to-item in the policy
+            type: integer
 ```
 
 ### Positive Consequences
