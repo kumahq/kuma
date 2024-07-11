@@ -65,7 +65,15 @@ type UniqueResourceKey struct{}
 type ResourceRule struct {
     Resource core_model.ResourceMeta
     Conf     interface{}
-    Origin   []core_model.ResourceMeta
+    Origin   []Origin
+}
+
+type Origin struct {
+    Resource core_model.ResourceMeta
+    // ToIdx is an index in the 'to[]' array, so we could unambiguously detect what to-item contributed to the final conf.
+    // Especially useful when to-item uses `targetRef.Labels`, because there is no obvious matching between the specific resource
+    // in `ResourceRule.Resource` and to-item.
+    ToIdx int 
 }
 ```
 
@@ -84,7 +92,8 @@ we're going to produce a single `ResourceRule` entity:
 
 ```yaml
 resourceRules:
-  - resource:
+  meshservice.mesh-1.backend.finance:
+    resource:
       name: backend.finance
       mesh: mesh-1
     conf: conf-1
@@ -107,17 +116,20 @@ we are going to fetch all `MeshService` resources, filter them by `k8s.kuma.io/n
 
 ```yaml
 resourceRules:
-  - resource:
+  meshservice.mesh-1.finance-backend.finance:
+    resource:
       name: finance-backend.finance
       mesh: mesh-1
     conf: conf-1
     origin: [...]
-  - resource:
+  meshservice.mesh-1.finance-frontend.finance:
+    resource:
       name: finance-frontend.finance
       mesh: mesh-1
     conf: conf-1
     origin: [...]
-  - resource:
+  meshservice.mesh-1.finance-db.finance:
+    resource:
       name: finance-db.finance
       mesh: mesh-1
     conf: conf-1
