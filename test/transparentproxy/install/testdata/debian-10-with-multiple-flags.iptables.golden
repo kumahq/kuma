@@ -27,7 +27,12 @@ COMMIT
 -A OUTPUT -p 17 -m udp --dport 53 -m owner --uid-owner 5678 -m comment --comment "kuma/mesh/transparent/proxy/return early for DNS traffic from kuma-dp" -j RETURN
 -A OUTPUT -p 17 -m udp --dport 53 -m comment --comment "kuma/mesh/transparent/proxy/redirect all DNS requests to the kuma-dp DNS proxy (listening on port 15053)" -j REDIRECT --to-ports 15053
 -A OUTPUT -p 6 -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic to our custom chain for processing" -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -p 6 -m tcp --dport 4444 -m comment --comment "kuma/mesh/transparent/proxy/exclude inbound traffic from port 4444 from redirection" -j RETURN
+-A KUMA_MESH_INBOUND -p 6 -m tcp --dport 55555 -m comment --comment "kuma/mesh/transparent/proxy/exclude inbound traffic from port 55555 from redirection" -j RETURN
 -A KUMA_MESH_INBOUND -p 6 -m comment --comment "kuma/mesh/transparent/proxy/redirect all inbound traffic to the custom chain for processing" -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -p 6 -m tcp --dport 1 -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 1 from redirection" -j RETURN
+-A KUMA_MESH_OUTBOUND -p 6 -m tcp --dport 22 -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 22 from redirection" -j RETURN
+-A KUMA_MESH_OUTBOUND -p 6 -m tcp --dport 333 -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 333 from redirection" -j RETURN
 -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o ifPlaceholder -m comment --comment "kuma/mesh/transparent/proxy/prevent traffic loops by ensuring traffic from the sidecar proxy (using 127.0.0.6/32) to loopback interface is not redirected again" -j RETURN
 -A KUMA_MESH_OUTBOUND ! -d 127.0.0.1/32 -o ifPlaceholder -p 6 -m tcp ! --dport 53 -m owner --uid-owner 5678 -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic (except to DNS port 53) destined for loopback interface, but not targeting address 127.0.0.1/32, and owned by UID 5678 (kuma-dp user) to KUMA_MESH_INBOUND_REDIRECT chain for proper handling" -j KUMA_MESH_INBOUND_REDIRECT
 -A KUMA_MESH_OUTBOUND -o ifPlaceholder -p 6 -m tcp ! --dport 53 -m owner ! --uid-owner 5678 -m comment --comment "kuma/mesh/transparent/proxy/return outbound TCP traffic (except to DNS port 53) destined for loopback interface, owned by any UID other than 5678 (kuma-dp user)" -j RETURN
