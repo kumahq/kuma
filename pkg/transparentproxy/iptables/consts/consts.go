@@ -2,6 +2,7 @@ package consts
 
 import (
 	"regexp"
+	"strings"
 )
 
 const (
@@ -45,9 +46,36 @@ const (
 	InboundPassthroughSourceAddressCIDRIPv6 = "::6/128"
 	OutputLogPrefix                         = "OUTPUT:"
 	PreroutingLogPrefix                     = "PREROUTING:"
-	UDP                                     = "udp"
-	TCP                                     = "tcp"
 )
+
+type ProtocolL4 string
+
+const (
+	ProtocolUDP ProtocolL4 = "udp"
+	ProtocolTCP ProtocolL4 = "tcp"
+	// ProtocolUndefined represents an undefined or unsupported protocol.
+	ProtocolUndefined ProtocolL4 = ""
+)
+
+// ParseProtocolL4 parses a string and returns the corresponding ProtocolL4
+// constant. If the input string is not "udp" or "tcp", it returns
+// ProtocolUndefined.
+//
+// Args:
+//   - s (string): The input string representing the protocol type.
+//
+// Returns:
+//   - ProtocolL4: The parsed ProtocolL4 constant. It will be ProtocolUDP for
+//     "udp", ProtocolTCP for "tcp", and ProtocolUndefined for any other input
+//     string.
+func ParseProtocolL4(s string) ProtocolL4 {
+	switch s := strings.ToLower(strings.TrimSpace(s)); s {
+	case "udp", "tcp":
+		return ProtocolL4(s)
+	default:
+		return ProtocolUndefined
+	}
+}
 
 type TableName string
 

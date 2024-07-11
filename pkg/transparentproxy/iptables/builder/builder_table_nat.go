@@ -236,11 +236,11 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 					MatchIf(exclusion.Ports != "", Multiport()),
 					Protocol(
 						TcpIf(
-							exclusion.Protocol == TCP,
+							exclusion.Protocol == ProtocolTCP,
 							DestinationPortRangeOrValue(exclusion),
 						),
 						UdpIf(
-							exclusion.Protocol == UDP,
+							exclusion.Protocol == ProtocolUDP,
 							DestinationPortRangeOrValue(exclusion),
 						),
 					),

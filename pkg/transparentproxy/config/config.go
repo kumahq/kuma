@@ -62,7 +62,7 @@ func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList 
 }
 
 type Exclusion struct {
-	Protocol string
+	Protocol ProtocolL4
 	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
@@ -804,19 +804,20 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 			return nil, errors.Wrap(err, "invalid UID range")
 		}
 
-		var protocols []string
+		var protocols []ProtocolL4
 		if protocolOpts == "" || protocolOpts == "*" {
-			protocols = []string{"tcp", "udp"}
+			protocols = []ProtocolL4{ProtocolTCP, ProtocolUDP}
 		} else {
-			for _, p := range strings.Split(protocolOpts, ",") {
-				pCleaned := strings.ToLower(strings.TrimSpace(p))
-				if pCleaned != "tcp" && pCleaned != "udp" {
-					return nil, errors.Errorf(
-						"invalid or unsupported protocol: '%s'",
-						pCleaned,
-					)
+			for _, s := range strings.Split(protocolOpts, ",") {
+				if p := ParseProtocolL4(s); p != ProtocolUndefined {
+					protocols = append(protocols, p)
+					continue
 				}
-				protocols = append(protocols, pCleaned)
+
+				return nil, errors.Errorf(
+					"invalid or unsupported protocol: '%s'",
+					s,
+				)
 			}
 		}
 
