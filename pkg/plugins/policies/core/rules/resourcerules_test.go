@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ = FDescribe("BuildResourceRules", func() {
+var _ = Describe("BuildResourceRules", func() {
 	DescribeTableSubtree("BuildToRules",
 		func(inputFile string) {
 			// Input:
@@ -128,8 +128,6 @@ var _ = FDescribe("BuildResourceRules", func() {
 					}
 					if v, ok := m.GetLabels()[mesh_proto.KubeNamespaceTag]; ok {
 						values = append(values, v)
-					} else {
-						//m.GetLabels()[mesh_proto.KubeNamespaceTag] = "kuma-system"
 					}
 					newName := hash.HashedName(m.GetMesh(), core_model.GetDisplayName(m), values...)
 					return &model.ResourceMeta{

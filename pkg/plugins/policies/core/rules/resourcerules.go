@@ -23,8 +23,10 @@ type ResourceRule struct {
 	Origin   []core_model.ResourceMeta
 }
 
-type UniqueResourceKey string
-type ResourceRules map[UniqueResourceKey]ResourceRule
+type (
+	UniqueResourceKey string
+	ResourceRules     map[UniqueResourceKey]ResourceRule
+)
 
 func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRules, error) {
 	rules := ResourceRules{}
