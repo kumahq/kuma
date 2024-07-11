@@ -67,10 +67,35 @@ func (b *RuleBuilder) Build(
 	return rule, position
 }
 
-func NewRule(parameters ...*parameters.Parameter) *RuleBuilder {
+// NewAppendRule creates a new RuleBuilder for an iptables rule that will be
+// appended to the end of an existing chain. This function takes a variable
+// number of parameters, each represented as a pointer to a Parameter object,
+// which specify the various conditions and actions for the rule.
+//
+// Args:
+//   - parameters (...*parameters.Parameter): A variadic list of pointers to
+//     Parameter objects that define the rule's conditions and actions.
+//
+// Returns:
+//   - *RuleBuilder: A pointer to a RuleBuilder configured to append a new rule
+//     with the specified parameters.
+func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters}
 }
 
+// NewInsertRule creates a new RuleBuilder for an iptables rule that will be
+// inserted at a specific position within an existing chain. This function takes
+// a variable number of parameters, each represented as a pointer to a Parameter
+// object, which specify the various conditions and actions for the rule.
+// The rule will be marked for insertion rather than appending.
+//
+// Args:
+//   - parameters (...*parameters.Parameter): A variadic list of pointers to
+//     Parameter objects that define the rule's conditions and actions.
+//
+// Returns:
+//   - *RuleBuilder: A pointer to a RuleBuilder configured to insert a new rule
+//     with the specified parameters.
 func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters, insert: true}
 }

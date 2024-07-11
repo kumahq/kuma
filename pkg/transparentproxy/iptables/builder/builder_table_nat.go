@@ -18,7 +18,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 	if !cfg.Enabled {
 		return meshInbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp()),
 					Jump(Return()),
 				).
@@ -29,7 +29,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 	for _, port := range cfg.IncludePorts {
 		meshInbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp(DestinationPort(port))),
 					Jump(ToUserDefinedChain(cfg.RedirectChainName)),
 				).
@@ -41,7 +41,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 		for _, port := range cfg.ExcludePorts {
 			meshInbound.AddRules(
 				rules.
-					NewRule(
+					NewAppendRule(
 						Protocol(Tcp(DestinationPort(port))),
 						Jump(Return()),
 					).
@@ -51,7 +51,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 
 		meshInbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp()),
 					Jump(ToUserDefinedChain(cfg.RedirectChainName)),
 				).
@@ -68,7 +68,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 	if !cfg.Redirect.Outbound.Enabled {
 		return meshOutbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp()),
 					Jump(Return()),
 				).
@@ -80,7 +80,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 		for _, port := range cfg.Redirect.Outbound.ExcludePorts {
 			meshOutbound.AddRules(
 				rules.
-					NewRule(
+					NewAppendRule(
 						Protocol(Tcp(DestinationPort(port))),
 						Jump(Return()),
 					).
@@ -117,14 +117,14 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 		//   localhost:7777
 		AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Source(Address(cfg.InboundPassthroughCIDR)),
 					OutInterface(cfg.LoopbackInterfaceName),
 					Jump(Return()),
 				).
 				WithCommentf("prevent traffic loops by ensuring traffic from the sidecar proxy (using %s) to loopback interface is not redirected again", cfg.InboundPassthroughCIDR),
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(cfg.LocalhostCIDR),
@@ -133,7 +133,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				).
 				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, cfg.LocalhostCIDR, cfg.Owner.UID, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
 					Match(Owner(NotUid(cfg.Owner.UID))),
@@ -141,7 +141,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				).
 				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, cfg.Owner.UID),
 			rules.
-				NewRule(
+				NewAppendRule(
 					Match(Owner(Uid(cfg.Owner.UID))),
 					Jump(Return()),
 				).
@@ -152,7 +152,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 		if cfg.Redirect.DNS.CaptureAll {
 			meshOutbound.AddRules(
 				rules.
-					NewRule(
+					NewAppendRule(
 						Protocol(Tcp(DestinationPort(DNSPort))),
 						Jump(ToPort(cfg.Redirect.DNS.Port)),
 					).
@@ -162,7 +162,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 			for _, dnsIp := range cfg.Redirect.DNS.Servers {
 				meshOutbound.AddRules(
 					rules.
-						NewRule(
+						NewAppendRule(
 							Destination(dnsIp),
 							Protocol(Tcp(DestinationPort(DNSPort))),
 							Jump(ToPort(cfg.Redirect.DNS.Port)),
@@ -175,7 +175,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 
 	meshOutbound.AddRules(
 		rules.
-			NewRule(
+			NewAppendRule(
 				Destination(cfg.LocalhostCIDR),
 				Jump(Return()),
 			).
@@ -185,7 +185,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 	for _, port := range cfg.Redirect.Outbound.IncludePorts {
 		meshOutbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp(DestinationPort(port))),
 					Jump(ToUserDefinedChain(cfg.Redirect.Outbound.RedirectChainName)),
 				).
@@ -196,7 +196,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 	if len(cfg.Redirect.Outbound.IncludePorts) == 0 {
 		meshOutbound.AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Jump(ToUserDefinedChain(cfg.Redirect.Outbound.RedirectChainName)),
 				).
 				WithComment("redirect all other outbound traffic to our custom chain for further processing"),
@@ -212,7 +212,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 func buildMeshRedirect(cfg config.InitializedTrafficFlow) *Chain {
 	return MustNewChain(TableNat, cfg.RedirectChainName).AddRules(
 		rules.
-			NewRule(
+			NewAppendRule(
 				Protocol(Tcp()),
 				Jump(ToPort(cfg.Port)),
 			).
@@ -304,7 +304,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 
 	nat.Output().AddRules(
 		rules.
-			NewRule(
+			NewAppendRule(
 				Protocol(Tcp()),
 				Jump(ToUserDefinedChain(cfg.Redirect.Outbound.ChainName)),
 			).
@@ -319,7 +319,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 	if cfg.Log.Enabled {
 		nat.Prerouting().AddRules(
 			rules.
-				NewRule(Jump(Log(PreroutingLogPrefix, cfg.Log.Level))).
+				NewAppendRule(Jump(Log(PreroutingLogPrefix, cfg.Log.Level))).
 				WithComment("log matching packets using kernel logging"),
 		)
 	}
@@ -327,7 +327,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 	if len(cfg.Redirect.VNet.InterfaceCIDRs) == 0 {
 		nat.Prerouting().AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Tcp()),
 					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.ChainName)),
 				).
