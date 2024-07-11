@@ -88,6 +88,17 @@ var defaultConfig = TransparentProxyConfig{
 	InstallFlagsToTest: &FlagsMap{
 		"redirect-all-dns-traffic": {
 			"--redirect-all-dns-traffic",
+<<<<<<< HEAD
+=======
+			"--vnet", "docker0:172.17.0.0/16",
+			"--vnet", "br+:172.18.0.0/16",
+			"--vnet", "iface:::1/64",
+			"--exclude-outbound-ports-for-uids", "53,3000-5000:106-108",
+			"--exclude-outbound-ips", "10.0.0.1,192.168.0.0/24,fe80::1",
+			"--exclude-outbound-ips", "fd00::/8",
+			"--exclude-outbound-ports", "1,22,333",
+			"--exclude-inbound-ports", "4444,55555",
+>>>>>>> 4b01e6496 (test(transparent-proxy): add exclude ports flags to tproxy tests (#10871))
 		},
 	},
 	IPV6: false,
