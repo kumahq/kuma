@@ -233,36 +233,30 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 		rulePosition++
 	}
 
-	// Loop through UID-specific excluded ports and add corresponding NAT rules.
-	for _, uIDsToPorts := range cfg.Redirect.Outbound.ExcludePortsForUIDs {
-		var protocol *Parameter
-
-		// Determine the protocol type and set up the correct parameter.
-		switch uIDsToPorts.Protocol {
-		case TCP:
-			protocol = Protocol(Tcp(DestinationPortRangeOrValue(uIDsToPorts)))
-		case UDP:
-			protocol = Protocol(Udp(DestinationPortRangeOrValue(uIDsToPorts)))
-		default:
-			// This was already validated during config initialization, so this
-			// warning should never appear
-			cfg.Logger.Warnf(
-				"unknown protocol %s, only 'tcp' or 'udp' allowed",
-				uIDsToPorts.Protocol,
-			)
-			continue
-		}
-
+	for _, exclusion := range cfg.Redirect.Outbound.Exclusions {
 		nat.Output().AddRules(
 			rules.
 				NewRule(
-					Match(Multiport()),
-					protocol,
-					Match(Owner(UidRangeOrValue(uIDsToPorts))),
+					MatchIf(exclusion.Ports != "", Multiport()),
+					Protocol(
+						TcpIf(
+							exclusion.Protocol == TCP,
+							DestinationPortRangeOrValue(exclusion),
+						),
+						UdpIf(
+							exclusion.Protocol == UDP,
+							DestinationPortRangeOrValue(exclusion),
+						),
+					),
+					MatchIf(
+						exclusion.UIDs != "",
+						Owner(UidRangeOrValue(exclusion)),
+					),
+					Destination(exclusion.Address),
 					Jump(Return()),
 				).
 				WithPosition(rulePosition).
-				WithComment("skip further processing for configured ports and UIDs"),
+				WithComment("skip further processing for configured IP addresses, ports and UIDs"),
 		)
 		rulePosition++
 	}

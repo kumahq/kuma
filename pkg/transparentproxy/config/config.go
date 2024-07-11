@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -27,8 +28,9 @@ type Owner struct {
 // ranges and multiple values can be mixed e.g. 1000,1005:1006 meaning 1000,1005,1006
 type ValueOrRangeList string
 
-type UIDsToPorts struct {
+type Exclusion struct {
 	Protocol string
+	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
 }
@@ -42,6 +44,7 @@ type TrafficFlow struct {
 	RedirectChainName   string
 	ExcludePorts        []uint16
 	ExcludePortsForUIDs []string
+	ExcludePortsForIPs  []string
 	IncludePorts        []uint16
 }
 
@@ -72,17 +75,30 @@ func (c TrafficFlow) Initialize(
 			"parsing excluded outbound ports for uids failed",
 		)
 	}
-	initialized.ExcludePortsForUIDs = excludePortsForUIDs
+
+	excludePortsForIPs, err := parseExcludePortsForIPs(c.ExcludePortsForIPs, ipv6)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"parsing excluded outbound ports for IPs failed",
+		)
+	}
+
+	initialized.Exclusions = slices.Concat(
+		initialized.Exclusions,
+		excludePortsForUIDs,
+		excludePortsForIPs,
+	)
 
 	return initialized, nil
 }
 
 type InitializedTrafficFlow struct {
 	TrafficFlow
-	ExcludePortsForUIDs []UIDsToPorts
-	Port                uint16
-	ChainName           string
-	RedirectChainName   string
+	Exclusions        []Exclusion
+	Port              uint16
+	ChainName         string
+	RedirectChainName string
 }
 
 type DNS struct {
@@ -685,27 +701,28 @@ func getLoopbackInterfaceName() (string, error) {
 }
 
 // parseExcludePortsForUIDs parses a slice of strings representing port
-// exclusion rules based on UIDs and returns a slice of UIDsToPorts structs.
+// exclusion rules based on UIDs and returns a slice of Exclusion structs.
 //
 // Each input string should follow the format: <protocol:>?<ports:>?<uids>.
-// Examples:
-//   - "tcp:22:1000-2000"
-//   - "udp:53:1001"
-//   - "80:1002"
-//   - "1003"
+// This means the string can contain optional protocol and port values,
+// followed by mandatory UID values. Examples of valid formats include:
+//   - "tcp:22:1000-2000" (TCP protocol, port 22, UIDs from 1000 to 2000)
+//   - "udp:53:1001" (UDP protocol, port 53, UID 1001)
+//   - "80:1002" (Any protocol, port 80, UID 1002)
+//   - "1003" (Any protocol, any port, UID 1003)
 //
 // Args:
-//   - portsForUIDs ([]string): A slice of strings specifying port exclusion
+//   - exclusionRules ([]string): A slice of strings specifying port exclusion
 //     rules based on UIDs.
 //
 // Returns:
-//   - []UIDsToPorts: A slice of UIDsToPorts structs representing the parsed
-//     port exclusion rules.
+//   - []Exclusion: A slice of Exclusion structs representing the parsed port
+//     exclusion rules.
 //   - error: An error if the input format is invalid or if validation fails.
-func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
-	var result []UIDsToPorts
+func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
+	var result []Exclusion
 
-	for _, elem := range portsForUIDs {
+	for _, elem := range exclusionRules {
 		parts := strings.Split(elem, ":")
 		if len(parts) == 0 || len(parts) > 3 {
 			return nil, errors.Errorf(
@@ -774,11 +791,61 @@ func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
 			ports := strings.ReplaceAll(portValuesOrRange, "-", ":")
 			uids := strings.ReplaceAll(uidValuesOrRange, "-", ":")
 
-			result = append(result, UIDsToPorts{
+			result = append(result, Exclusion{
 				Ports:    ValueOrRangeList(ports),
 				UIDs:     ValueOrRangeList(uids),
 				Protocol: p,
 			})
+		}
+	}
+
+	return result, nil
+}
+
+// parseExcludePortsForIPs parses a slice of strings representing port exclusion
+// rules based on IP addresses and returns a slice of IPToPorts structs.
+//
+// This function currently allows each exclusion rule to be a valid IPv4 or IPv6
+// address, with or without a CIDR suffix. It is designed to potentially support
+// more complex exclusion rules in the future.
+//
+// Examples:
+//   - "10.0.0.1"
+//   - "10.0.0.0/8"
+//   - "fe80::1"
+//   - "fe80::/10"
+//
+// Args:
+//   - exclusionRules ([]string): A slice of strings specifying port exclusion
+//     rules based on IP addresses.
+//   - ipv6 (bool): A boolean flag indicating whether the rules are for IPv6.
+//
+// Returns:
+//   - []IPToPorts: A slice of IPToPorts structs representing the parsed port
+//     exclusion rules.
+//   - error: An error if the input format is invalid or if validation fails.
+func parseExcludePortsForIPs(
+	exclusionRules []string,
+	ipv6 bool,
+) ([]Exclusion, error) {
+	var result []Exclusion
+
+	for _, rule := range exclusionRules {
+		if rule == "" {
+			return nil, errors.New(
+				"invalid exclusion rule: the rule cannot be empty",
+			)
+		}
+
+		for _, address := range strings.Split(rule, ",") {
+			err, isExpectedIPVersion := validateIP(address, ipv6)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid exclusion rule")
+			}
+
+			if isExpectedIPVersion {
+				result = append(result, Exclusion{Address: address})
+			}
 		}
 	}
 
@@ -811,6 +878,42 @@ func validateUintValueOrRange(valueOrRange string) error {
 	}
 
 	return nil
+}
+
+// validateIP validates an IP address or CIDR and checks if it matches the
+// expected IP version (IPv4 or IPv6).
+//
+// Args:
+//   - address (string): The IP address or CIDR to validate.
+//   - ipv6 (bool): A boolean flag indicating whether the expected IP version is
+//     IPv6.
+//
+// Returns:
+//   - error: An error if the IP address is invalid, with a message explaining
+//     the expected format.
+//   - bool: A boolean indicating whether the IP address matches the expected IP
+//     version (true for a match, false otherwise).
+func validateIP(address string, ipv6 bool) (error, bool) {
+	// Attempt to parse the address as a CIDR.
+	ip, _, err := net.ParseCIDR(address)
+	// If parsing as CIDR fails, attempt to parse it as a plain IP address.
+	if err != nil {
+		ip = net.ParseIP(address)
+	}
+
+	// If parsing as both CIDR and IP address fails, return an error with a
+	// message.
+	if ip == nil {
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> "+
+				"(e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		), false
+	}
+
+	// Check if the IP version matches the expected IP version.
+	// For IPv4, ip.To4() will not be nil. For IPv6, ip.To4() will be nil.
+	return nil, ipv6 == (ip.To4() == nil)
 }
 
 // parseUint16 parses a string representing a uint16 value and returns its

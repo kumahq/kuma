@@ -613,6 +613,14 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		return nil, err
 	}
 	annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", val)
+
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(
+		strings.Join(i.cfg.SidecarTraffic.ExcludeOutboundIPs, ","),
+		metadata.KumaTrafficExcludeOutboundIPs,
+	); val != "" {
+		annotations[metadata.KumaTrafficExcludeOutboundIPs] = val
+	}
+
 	return annotations, nil
 }
 
