@@ -28,6 +28,39 @@ type Owner struct {
 // ranges and multiple values can be mixed e.g. 1000,1005:1006 meaning 1000,1005,1006
 type ValueOrRangeList string
 
+// NewValueOrRangeList creates a ValueOrRangeList from a given value or range of
+// values. It accepts a parameter of type []uint16, uint16, or string and
+// converts it to a ValueOrRangeList, which is a comma-separated string
+// representation of the values.
+//
+// Args:
+//   - v (T): The input value which can be a slice of uint16, a single uint16,
+//     or a string.
+//
+// Returns:
+//   - ValueOrRangeList: A comma-separated string representation of the input
+//     values.
+//
+// The function panics if an unsupported type is provided, although the type
+// constraints should prevent this from occurring.
+func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList {
+	switch value := any(v).(type) {
+	case []uint16:
+		var ports []string
+		for _, port := range value {
+			ports = append(ports, strconv.Itoa(int(port)))
+		}
+		return ValueOrRangeList(strings.Join(ports, ","))
+	case uint16:
+		return ValueOrRangeList(strconv.Itoa(int(value)))
+	case string:
+		return ValueOrRangeList(value)
+	default:
+		// Shouldn't be possible to catch this
+		panic(errors.Errorf("invalid value type: %T", value))
+	}
+}
+
 type Exclusion struct {
 	Protocol string
 	Address  string
