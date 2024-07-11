@@ -97,6 +97,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	cfg.Redirect.Outbound.Port = port
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
 	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDs
+	cfg.Redirect.Outbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeOutboundIPs, ",")
 
 	cfg.DropInvalidPackets, err = GetEnabled(intermediateConfig.dropInvalidPackets)
 	if err != nil {

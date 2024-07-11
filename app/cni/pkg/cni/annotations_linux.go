@@ -2,6 +2,7 @@ package cni
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -36,6 +37,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 	"dropInvalidPackets":          {"traffic.kuma.io/drop-invalid-packets", "false", alwaysValidFunc},
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
+	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
 }
 
 type IntermediateConfig struct {
@@ -55,6 +57,7 @@ type IntermediateConfig struct {
 	builtinDNSPort              string
 	dropInvalidPackets          string
 	iptablesLogs                string
+	excludeOutboundIPs          string
 }
 
 type annotationValidationFunc func(value string) error
@@ -94,6 +97,50 @@ func parsePorts(portsString string) ([]int, error) {
 		}
 	}
 	return ports, nil
+}
+
+// validateIPs checks if the input string contains valid IP addresses or CIDR
+// notations. It accepts a comma-separated string of IP addresses and/or CIDR
+// blocks, trims any surrounding whitespace, and validates each entry.
+//
+// Args:
+//   - addresses (string): A comma-separated string of IP addresses or CIDR
+//     blocks.
+//
+// Returns:
+//   - error: An error if the input string is empty or if any of the IP
+//     addresses or CIDR blocks are invalid.
+func validateIPs(addresses string) error {
+	addresses = strings.TrimSpace(addresses)
+
+	if addresses == "" {
+		return errors.New("IPs cannot be empty")
+	}
+
+	// Split the string into individual addresses based on commas.
+	for _, address := range strings.Split(addresses, ",") {
+		address = strings.TrimSpace(address)
+
+		// Check if the address is a valid CIDR block.
+		if _, _, err := net.ParseCIDR(address); err == nil {
+			continue
+		}
+
+		// Check if the address is a valid IP address.
+		if ip := net.ParseIP(address); ip != nil {
+			continue
+		}
+
+		// If the address is neither a valid IP nor a valid CIDR block, return
+		// an error.
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> "+
+				"(e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		)
+	}
+
+	return nil
 }
 
 func validatePortList(ports string) error {
@@ -151,6 +198,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
+		"excludeOutboundIPs":          &intermediateConfig.excludeOutboundIPs,
 	}
 
 	for fieldName, fieldPointer := range allFields {

@@ -68,6 +68,7 @@ injector:
     waitForDataplaneReady: false
   sidecarTraffic:
     excludeInboundPorts: []
+    excludeOutboundIPs: []
     excludeOutboundPorts: []
   virtualProbesEnabled: true
   virtualProbesPort: 9000

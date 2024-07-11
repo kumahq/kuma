@@ -49,6 +49,7 @@ type PodRedirect struct {
 	ExcludeOutboundPortsForUIDs              []string
 	DropInvalidPackets                       bool
 	IptablesLogs                             bool
+	ExcludeOutboundIPs                       string
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -145,6 +146,20 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.TransparentProxyEbpfProgramsSourcePath = value
 	}
 
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(
+		metadata.KumaTrafficExcludeOutboundIPs,
+	); exists {
+		var addresses []string
+
+		for _, address := range strings.Split(value, ",") {
+			if trimmed := strings.TrimSpace(address); trimmed != "" {
+				addresses = append(addresses, trimmed)
+			}
+		}
+
+		podRedirect.ExcludeOutboundIPs = strings.Join(addresses, ",")
+	}
+
 	return podRedirect, nil
 }
 
@@ -220,6 +235,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 	if pr.IptablesLogs {
 		result = append(result, "--iptables-logs")
+	}
+
+	if pr.ExcludeOutboundIPs != "" {
+		result = append(result, "--exclude-outbound-ips", pr.ExcludeOutboundIPs)
 	}
 
 	return result
