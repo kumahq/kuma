@@ -314,6 +314,28 @@ var _ = Describe("Dataplane", func() {
                     kind: MeshExternalService
                     name: xyz`,
 		),
+		Entry("dataplane with reachableBackendRefs", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              transparentProxying:
+                reachableBackendRefs:
+                - kind: MeshService
+                  name: a
+                - kind: MeshExternalService
+                  name: es
+                  namespace: es1
+                - kind: MeshService
+                  labels:
+                    kuma.io/test: abc`,
+		),
 	)
 
 	type testCase struct {
@@ -1255,6 +1277,46 @@ var _ = Describe("Dataplane", func() {
                   message: port must be in the range [1, 65535]
                 - field: networking.outbound[1].backendRef
                   message: both backendRef and tags/service cannot be defined`,
+		}),
+		Entry("transparent proxy with reachable backend refs", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              transparentProxying:
+                reachableBackendRefs:
+                - kind: Something
+                  name: first
+                  labels:
+                    kuma.io/test: test
+                - kind: MeshService
+                  name: second
+                  namespace: not-valid
+                  labels:
+                    kuma.io/test: test
+                - kind: MeshService
+                  name: third
+                  labels:
+                    kuma.io/test: test`,
+			expected: `
+                violations:
+                - field: networking.transparentProxing.reachableBackendRefs[0].kind
+                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
+                - field: networking.transparentProxing.reachableBackendRefs[0].labels
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackendRefs[1].labels
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackendRefs[2].labels
+                  message: labels cannot be defined when name is specified`,
 		}),
 	)
 })

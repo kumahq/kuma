@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -25,9 +26,10 @@ import (
 )
 
 type DataplaneProxyBuilder struct {
-	Zone          string
-	APIVersion    core_xds.APIVersion
-	IncludeShadow bool
+	Zone           string
+	APIVersion     core_xds.APIVersion
+	IncludeShadow  bool
+	UseMeshService bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -113,6 +115,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
 		reachableServices[reachableService] = true
 	}
+	reachableBackends := GetReachableBackends(meshContext, dataplane)
 
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
@@ -123,6 +126,10 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
+			// TODO(lukidzi): should we support both Meshservice and kuma.io simultaneously?
+			if p.UseMeshService {
+				continue
+			}
 			service := outbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {
@@ -136,11 +143,30 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					continue
 				}
 			}
-			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
-				// Skip overlapping outbound interface with inbound.
-				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
-				continue
+		} else {
+			if len(reachableBackends) != 0 {
+				backendKey := BackendKey{
+					Kind: outbound.BackendRef.Kind,
+					Name: outbound.BackendRef.Name,
+					Port: outbound.BackendRef.Port,
+				}
+				// check if there is an entry with specific port or without port
+				if !reachableBackends[backendKey] && !reachableBackends[BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+			} else if outbound.BackendRef.Kind != "MeshExternalService" {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
+					continue
+				}
 			}
+		}
+		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+			// Skip overlapping outbound interface with inbound.
+			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
+			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}
@@ -191,4 +217,63 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
+}
+
+type BackendKey struct {
+	Kind string
+	Name string
+	Port uint32
+}
+
+type ReachableBackends map[BackendKey]bool
+
+func GetReachableBackends(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) ReachableBackends {
+	reachableBackends := ReachableBackends{}
+	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.ReachableBackendRefs {
+		key := BackendKey{Kind: reachableBackend.Kind}
+		name := ""
+		if reachableBackend.Name != "" {
+			name = reachableBackend.Name
+		}
+		if reachableBackend.Namespace != "" {
+			name += fmt.Sprintf(".%s", reachableBackend.Namespace)
+		}
+		key.Name = name
+		if reachableBackend.Port != nil {
+			key.Port = reachableBackend.Port.GetValue()
+		}
+		resourcesLabels := meshContext.MeshServiceNamesByLabels
+		if reachableBackend.Kind == "MeshExternalService" {
+			resourcesLabels = meshContext.MeshExternalServiceNamesByLabels
+		}
+		if len(reachableBackend.Labels) > 0 {
+			reachable := GetResourceNamesForLabels(resourcesLabels, reachableBackend.Labels)
+			for name, count := range reachable {
+				if count == len(reachableBackend.Labels) {
+					reachableBackends[BackendKey{
+						Kind: reachableBackend.Kind,
+						Name: name,
+					}] = true
+				}
+			}
+		}
+		if name != "" {
+			reachableBackends[key] = true
+		}
+	}
+	return reachableBackends
+}
+
+func GetResourceNamesForLabels(resourcesLabels map[string]map[string][]string, labels map[string]string) map[string]int {
+	reachable := map[string]int{}
+	for key, value := range labels {
+		if _, ok := resourcesLabels[key]; ok {
+			if _, ok := resourcesLabels[key][value]; ok {
+				for _, name := range resourcesLabels[key][value] {
+					reachable[name]++
+				}
+			}
+		}
+	}
+	return reachable
 }
