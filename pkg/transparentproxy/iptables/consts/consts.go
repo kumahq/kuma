@@ -111,6 +111,7 @@ const (
 	ModuleUdp       = "udp"
 	ModuleComment   = "comment"
 	ModuleConntrack = "conntrack"
+	ModuleMultiport = "multiport"
 )
 
 type IptablesMode string
