@@ -20,7 +20,7 @@ type Rule struct {
 type RuleBuilder struct {
 	parameters parameters.Parameters
 	comment    string
-	position   uint
+	insert     bool
 }
 
 func (b *RuleBuilder) WithComment(comment string) *RuleBuilder {
@@ -47,23 +47,57 @@ func (b *RuleBuilder) WithConditionalComment(
 	return b
 }
 
-func (b *RuleBuilder) WithPosition(position uint) *RuleBuilder {
-	b.position = position
-	return b
-}
-
-func (b *RuleBuilder) Build(table consts.TableName, chain string) *Rule {
-	return &Rule{
+func (b *RuleBuilder) Build(
+	table consts.TableName,
+	chain string,
+	position uint,
+) (*Rule, uint) {
+	rule := &Rule{
 		table:      table,
 		chain:      chain,
-		position:   b.position,
 		parameters: b.parameters,
 		comment:    b.comment,
 	}
+
+	if b.insert {
+		position++
+		rule.position = position
+	}
+
+	return rule, position
 }
 
-func NewRule(parameters ...*parameters.Parameter) *RuleBuilder {
+// NewAppendRule creates a new RuleBuilder for an iptables rule that will be
+// appended to the end of an existing chain. This function takes a variable
+// number of parameters, each represented as a pointer to a Parameter object,
+// which specify the various conditions and actions for the rule.
+//
+// Args:
+//   - parameters (...*parameters.Parameter): A variadic list of pointers to
+//     Parameter objects that define the rule's conditions and actions.
+//
+// Returns:
+//   - *RuleBuilder: A pointer to a RuleBuilder configured to append a new rule
+//     with the specified parameters.
+func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters}
+}
+
+// NewInsertRule creates a new RuleBuilder for an iptables rule that will be
+// inserted at a specific position within an existing chain. This function takes
+// a variable number of parameters, each represented as a pointer to a Parameter
+// object, which specify the various conditions and actions for the rule.
+// The rule will be marked for insertion rather than appending.
+//
+// Args:
+//   - parameters (...*parameters.Parameter): A variadic list of pointers to
+//     Parameter objects that define the rule's conditions and actions.
+//
+// Returns:
+//   - *RuleBuilder: A pointer to a RuleBuilder configured to insert a new rule
+//     with the specified parameters.
+func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
+	return &RuleBuilder{parameters: parameters, insert: true}
 }
 
 // BuildForRestore generates an iptables rule formatted for use with

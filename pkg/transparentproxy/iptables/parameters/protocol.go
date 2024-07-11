@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 var _ ParameterBuilder = &ProtocolParameter{}
@@ -127,7 +128,7 @@ func SourcePort(port uint16) *TcpUdpParameter {
 	return sourcePort(port, false)
 }
 
-func tcpUdp(proto string, params []*TcpUdpParameter) *ProtocolParameter {
+func tcpUdp(proto consts.ProtocolL4, params []*TcpUdpParameter) *ProtocolParameter {
 	var parameters []ParameterBuilder
 
 	for _, parameter := range params {
@@ -137,13 +138,13 @@ func tcpUdp(proto string, params []*TcpUdpParameter) *ProtocolParameter {
 	}
 
 	return &ProtocolParameter{
-		name:       proto,
+		name:       string(proto),
 		parameters: parameters,
 	}
 }
 
 func Udp(udpParameters ...*TcpUdpParameter) *ProtocolParameter {
-	return tcpUdp("udp", udpParameters)
+	return tcpUdp(consts.ProtocolUDP, udpParameters)
 }
 
 func UdpIf(predicate bool, udpParameters ...*TcpUdpParameter) *ProtocolParameter {
@@ -151,11 +152,11 @@ func UdpIf(predicate bool, udpParameters ...*TcpUdpParameter) *ProtocolParameter
 		return nil
 	}
 
-	return tcpUdp("udp", udpParameters)
+	return tcpUdp(consts.ProtocolUDP, udpParameters)
 }
 
 func Tcp(tcpParameters ...*TcpUdpParameter) *ProtocolParameter {
-	return tcpUdp("tcp", tcpParameters)
+	return tcpUdp(consts.ProtocolTCP, tcpParameters)
 }
 
 func TcpIf(predicate bool, tcpParameters ...*TcpUdpParameter) *ProtocolParameter {
@@ -163,7 +164,7 @@ func TcpIf(predicate bool, tcpParameters ...*TcpUdpParameter) *ProtocolParameter
 		return nil
 	}
 
-	return tcpUdp("tcp", tcpParameters)
+	return tcpUdp(consts.ProtocolTCP, tcpParameters)
 }
 
 func Protocol(p ...*ProtocolParameter) *Parameter {

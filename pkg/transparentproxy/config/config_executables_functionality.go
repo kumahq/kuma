@@ -32,6 +32,7 @@ type FunctionalityModules struct {
 	// more connection tracking information than the "state" match.
 	// ref. iptables-extensions(8) > conntrack
 	Conntrack bool
+	Multiport bool
 }
 
 type FunctionalityChains struct {
@@ -120,6 +121,7 @@ func verifyFunctionality(
 			Udp:       verifyModule(ctx, iptables, ModuleUdp),
 			Comment:   verifyModule(ctx, iptables, ModuleComment),
 			Conntrack: verifyModule(ctx, iptables, ModuleConntrack),
+			Multiport: verifyModule(ctx, iptables, ModuleMultiport),
 		},
 	}
 
