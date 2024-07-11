@@ -99,6 +99,12 @@ To introduce this change we need to deprecate specifying `Mesh*Route` in `spec.t
 Should we allow selecting MeshGateway in `spec.targetRef` when `Mesh*Route` is configured in `spec.to[].targetRef`? probably this 
 is obsolete as Route will select gateway, and we want to apply policy on a route. Is there a need to make it more specific than route? 
 
+### Affected policies
+
+At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR is based on MeshTimeout policy.
+Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route
+but we are configuring rate limit on inbound traffic, which does not apply to this MADR.
+
 ### Merging and applying configurations
 
 Let's start with an example:
