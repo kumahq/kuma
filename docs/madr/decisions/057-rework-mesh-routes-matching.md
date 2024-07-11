@@ -105,8 +105,14 @@ At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR 
 Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route,
 but we are configuring rate limit on inbound traffic, which does not apply to this MADR. 
 
+#### Producer/consumer model for targeting Mesh*Route in other policies
+
 It is worth to mention that rate limit would not work with our producer/consumer model. In our model consumer always has more priority
 but consumer should not override producer rate limit as owner of the service should know best, the amount of traffic it could handle.
+
+For MeshRetry our producer/consumer makes sense since producer config is a suggestion from owner of the service. If consumer
+wants to override it because they don't want to retry, they just want to fail fast or the want to retry on bigger number of errors
+they can configure it by applying consumer policy.
 
 ### Merging and applying configurations
 
