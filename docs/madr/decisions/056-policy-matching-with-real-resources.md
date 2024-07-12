@@ -212,6 +212,58 @@ ResourceRule: # new type
             type: integer
 ```
 
+The example of the Inspect API response for the given MeshTimeout policy would be:
+
+```yaml
+kind: MeshTimeout
+metadata:
+  name: mt-1
+  namespace: client-ns
+  labels:
+    kuma.io/mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      conf: conf1
+    - targetRef:
+        kind: MeshService
+        name: backend
+        namespace: finance
+      conf: conf2
+```
+
+```yaml
+resource: 
+  type: Dataplane
+  name: dpp-1.client-ns
+  mesh: mesh-1
+  labels: {}
+rules:
+  - type: MeshTimeout
+    toResourceRules:
+      - resourceMeta:
+          type: MeshService
+          mesh: mesh-1
+          name: backend.finance
+          labels: 
+            k8s.kuma.io/namespace: finance
+        conf: merge(conf1, conf2)
+        origin:
+          - resourceMeta:
+              type: MeshTimeout
+              mesh: mesh-1
+              name: mt-1
+              labels: {}
+            toIdx: 0
+          - resourceMeta:
+              type: MeshTimeout
+              mesh: mesh-1
+              name: mt-1
+              labels: {}
+            toIdx: 1
+```
+
 ### Positive Consequences
 
 * In Kuma GUI, it's possible to make links to the real MeshServices, MeshHTTPRoutes and MeshExternalServices when used in `to[]`
