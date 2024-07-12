@@ -33,7 +33,7 @@ Rules:
 
 This structure is used by both "from" and "to" policies plugins.
 Policy plugins use the `Rules` list to compute `Conf` for the known destination.
-In example, if we want to know the `Conf` for outbound with `kuma.io/service: bar` tags,
+For example, if we want to know the `Conf` for outbound with `kuma.io/service: bar` tags,
 we're going to iterate over `Rules` and check if our outbound belongs to the `Rules[].Subset`.
 
 The approach has a number of disadvantages:
