@@ -191,58 +191,8 @@ spec:
 ```
 
 In the case of `MeshExternalService`, we need to decide how we want to target them (this needs to be clarified in a separate MADR). For now, we are going to provide all `MeshExternalService` entries until we figure out targeting.
+Covered by the issue https://github.com/kumahq/kuma/issues/10868
 
-Option 1
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: mydomain
-  namespace: kuma-system
-  labels:
-    my.label.io/service: my-service 
-    kuma.io/mesh: default
-    kuma.io/zone: east-1
-    kuma.io/origin: zone
-spec:
-  destinations:
-  - address: 192.168.0.1
-    port: 9090 
----
-kind: MeshTrafficPermission
-spec:
-  targetRef:
-    kind: MeshExternalService
-    name: mydomain
-    namespace: kuma-system
-```
-
-Option 2
-Other option is to use labels and `MeshSubset`
-
-```yaml
-kind: MeshExternalService
-metadata:
-  name: mydomain
-  namespace: kuma-system
-  labels:
-    my.label.io/service: my-service 
-    kuma.io/mesh: default
-    kuma.io/zone: east-1
-    kuma.io/origin: zone
-    access.io/domain: "httpbin"
-spec:
-  endpoints:
-  - address: 192.168.0.1
-    port: 9090 
----
-kind: MeshTrafficPermission
-spec:
-  targetRef:
-    kind: MeshSubset
-    labels:
-      access.io/domain: "httpbin"
-```
 ### Positive Consequences
 
 * Feature parity with the current solution
