@@ -23,22 +23,20 @@ We want to iterate over policy design to fully utilize the fact that we are refe
 #### Advantages
 
 - simplifying policy api as `spec.targetRef` will always pick proxy and `spec.to[].targetRef` section will pick outbounds
-- ability to set different confs on different proxy for the same route (overriding default conf for route without producer/consumer policies)
+- ability to set different confs on different proxy for the same route (overriding default conf for route without producer/consumer policies, on universal)
 - no need for specifying `spec.targetRef` when targeting `Mesh`
 - easier policy matching code
 
 #### Disadvantages
 
-- can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will be rarely used)
-- yet another migration for users
-- unable to apply config per routes backendRef 
+- can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
+- yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
 
 ### Leave Mesh*Routes in top level targetRef as it is now
 
 #### Advantages
 
 - can be simpler as you are always targeting all proxies to which the route applies
-- can target specific backendRef from route
 - no need for additional implementation
 
 #### Disadvantages
@@ -408,120 +406,6 @@ map[UniqueResourceKey]ResourceRule{
     },
 }
 ```
-
-### Targeting specific backendRef from route
-
-Let's look at the example route that can be used for canary deployment:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshHTTPRoute
-metadata:
-  name: route-to-backend
-  namespace: backend-ns
-  labels:
-    kuma.io/mesh: default
-spec:
-  to:
-  - targetRef:
-      kind: MeshService
-      name: backend
-    rules:
-    - matches:
-      - path:
-          type: PathPrefix
-          value: "/slow-endpoint"
-      default:
-        backendRefs:
-          - kind: MeshService
-            name: backend
-            weight: 90
-          - kind: MeshService
-            name: backend-v2
-            weight: 10
-```
-
-with `Mesh*Route` in `spec.targetRef` you could configure MeshTimeout for each backendRef:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: timeout-on-backend-route
-  namespace: backend-ns
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: MeshHTTPRoute
-    name: route-to-backend
-  to:
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      http:
-        requestTimeout: 5s
-  - targetRef:
-      kind: MeshService
-      name: backend-v2
-    default:
-      http:
-        requestTimeout: 10s
-```
-
-with `Mesh*Route` in `spec.to[].targetRef` you won't be targeting route at all: 
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: timeout-on-backend
-  namespace: backend-ns
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-  - targetRef:
-      kind: MeshService
-      name: backend
-    default:
-      http:
-        requestTimeout: 5s
-  - targetRef:
-      kind: MeshService
-      name: backend-v2
-    default:
-      http:
-        requestTimeout: 10s
-```
-
-Drawback is that you will apply this config on every proxy that has these MeshServices outbounds. Even when the route is not present.
-On the other hand applying timeout on route:
-
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshTimeout
-metadata:
-  name: timeout-on-backend-route
-  namespace: backend-ns
-  labels:
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-  - targetRef:
-      kind: MeshHTTPRoute
-      name: route-to-backend
-    default:
-      http:
-        requestTimeout: 10s
-```
-
-will take precedence and will override timeouts for specific MeshService.
 
 ### Backward compatibility and migration
 
