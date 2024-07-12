@@ -323,6 +323,30 @@ func (c InitializedExecutablesIPvX) RestoreWithFlush(
 	return c.restore(ctx, rules)
 }
 
+// RestoreTest runs iptables-restore with the --test flag to validate the
+// iptables rules without applying them.
+//
+// This function calls the internal `restore` method with the --test flag to
+// ensure that the iptables rules specified in the `rules` string are valid. If
+// the rules are valid, it returns the output from iptables-restore. If there is
+// an error, it returns the error message.
+//
+// Args:
+//   - ctx (context.Context): The context for controlling the execution of the
+//     iptables-restore command.
+//   - rules (string): The iptables rules to be tested.
+//
+// Returns:
+//   - string: The output from iptables-restore if the rules are valid.
+//   - error: An error message if the rules are invalid or if there is an issue
+//     running iptables-restore.
+func (c InitializedExecutablesIPvX) RestoreTest(
+	ctx context.Context,
+	rules string,
+) (string, error) {
+	return c.restore(ctx, rules, FlagTest)
+}
+
 type Executables struct {
 	IPv4 ExecutablesIPvX
 	IPv6 ExecutablesIPvX
