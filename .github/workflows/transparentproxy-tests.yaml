@@ -3,6 +3,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: 0 2 * * *
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronize
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   IPV6: "true"

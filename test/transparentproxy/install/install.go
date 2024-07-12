@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -59,6 +60,13 @@ func Install() {
 
 			Expect(err).ToNot(HaveOccurred())
 
+			reader, err := container.Logs(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+
+			buf := new(strings.Builder)
+			_, _ = io.Copy(buf, reader)
+			fmt.Fprintln(os.Stderr, "DescribeTable", buf.String())
+
 			DeferCleanup(func() {
 				Expect(container.Terminate(context.Background())).To(Succeed())
 			})
@@ -88,6 +96,10 @@ func EnsureInstallSuccessful(container testcontainers.Container, flags []string)
 		exec.Multiplexed(),
 	)
 	Expect(err).NotTo(HaveOccurred())
+
+	buf := new(strings.Builder)
+	_, _ = io.Copy(buf, reader)
+	fmt.Fprintln(os.Stderr, "EnsureInstallSuccessful", buf.String())
 
 	if exitCode != 0 {
 		buf := new(strings.Builder)
@@ -132,6 +144,8 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 
 		buf := new(strings.Builder)
 		Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
+
+		fmt.Fprintln(os.Stderr, "EnsureGoldenFiles", buf.String())
 
 		if exitCode != 0 {
 			if !strings.Contains(buf.String(), "executable file not found") {
