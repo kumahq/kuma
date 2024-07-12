@@ -29,7 +29,7 @@ We want to iterate over policy design to fully utilize the fact that we are refe
 
 #### Disadvantages
 
-- can be harder to understand because `spec.targetRef` can be MeshSubset 
+- can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will be rarely used)
 - yet another migration for users
 - unable to apply config per routes backendRef 
 
