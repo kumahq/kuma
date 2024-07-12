@@ -381,14 +381,9 @@ type RetryConfig struct {
 }
 
 // Comment struct contains the configuration for iptables rule comments.
-// It includes options to enable or disable comments and a prefix to use
-// for comment text.
+// It includes an option to enable or disable comments.
 type Comment struct {
 	Disabled bool
-	// Prefix defines the prefix to be used for comments on iptables rules,
-	// aiding in identifying and organizing rules created by the transparent
-	// proxy.
-	Prefix string
 }
 
 // InitializedComment struct contains the processed configuration for iptables
@@ -415,12 +410,12 @@ type InitializedComment struct {
 //
 // Returns:
 //   - InitializedComment: The struct containing the processed comment
-//     configuration, indicating whether comments are enabled and the prefix to
-//     use for comments.
+//     configuration, indicating whether comments are enabled and the prefix
+//     to use for comments ("kuma/mesh/transparent/proxy").
 func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
 	return InitializedComment{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
-		Prefix:  c.Prefix,
+		Prefix:  IptablesRuleCommentPrefix,
 	}
 }
 
@@ -708,7 +703,6 @@ func DefaultConfig() Config {
 		Executables: NewExecutablesNftLegacy(),
 		Comment: Comment{
 			Disabled: false,
-			Prefix:   IptablesRuleCommentPrefix,
 		},
 	}
 }
