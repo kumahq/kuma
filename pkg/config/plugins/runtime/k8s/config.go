@@ -77,6 +77,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			SidecarTraffic: SidecarTraffic{
 				ExcludeInboundPorts:  []uint32{},
 				ExcludeOutboundPorts: []uint32{},
+				ExcludeInboundIPs:    []string{},
 				ExcludeOutboundIPs:   []string{},
 			},
 			Exceptions: Exceptions{
@@ -248,6 +249,10 @@ type SidecarTraffic struct {
 	// List of outbound ports that will be excluded from interception.
 	// This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ports annotation is specified on Pod.
 	ExcludeOutboundPorts []uint32 `json:"excludeOutboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_outbound_ports"`
+	// List of inbound IP addresses that will be excluded from interception.
+	// This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
+	// IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+	ExcludeInboundIPs []string `json:"excludeInboundIPs" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_inbound_ips"`
 	// List of outbound IP addresses that will be excluded from interception.
 	// This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ips annotation is specified on the Pod.
 	// IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.

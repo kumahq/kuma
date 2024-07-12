@@ -37,6 +37,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 	"dropInvalidPackets":          {"traffic.kuma.io/drop-invalid-packets", "false", alwaysValidFunc},
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
+	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
 	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
 }
 
@@ -57,6 +58,7 @@ type IntermediateConfig struct {
 	builtinDNSPort              string
 	dropInvalidPackets          string
 	iptablesLogs                string
+	excludeInboundIPs           string
 	excludeOutboundIPs          string
 }
 
@@ -198,6 +200,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
+		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
 		"excludeOutboundIPs":          &intermediateConfig.excludeOutboundIPs,
 	}
 

@@ -83,6 +83,7 @@ const (
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 	KumaTrafficDropInvalidPackets             = "traffic.kuma.io/drop-invalid-packets"
 	KumaTrafficIptablesLogs                   = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs              = "traffic.kuma.io/exclude-inbound-ips"
 	KumaTrafficExcludeOutboundIPs             = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token

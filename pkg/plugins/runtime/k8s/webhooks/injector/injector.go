@@ -621,6 +621,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTrafficExcludeOutboundIPs] = val
 	}
 
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(
+		strings.Join(i.cfg.SidecarTraffic.ExcludeInboundIPs, ","),
+		metadata.KumaTrafficExcludeInboundIPs,
+	); val != "" {
+		annotations[metadata.KumaTrafficExcludeInboundIPs] = val
+	}
+
 	return annotations, nil
 }
 
