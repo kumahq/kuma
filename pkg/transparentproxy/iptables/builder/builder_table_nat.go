@@ -26,6 +26,27 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 		)
 	}
 
+	// TODO(bartsmykla): Consider combining this loop with the one processing
+	//  `cfg.ExcludePorts` for logical consistency. However, this requires
+	//  careful handling as parsing `cfg.ExcludePorts` as `Exclusion`s would
+	//  alter the rule placement for **outbound**:
+	//  - Currently, exclusion rules for `--exclude-outbound-ports` are placed
+	//    in the KUMA_MESH_OUTBOUND chain.
+	//  - Exclusions from `--exclude-outbound-ports-for-uids` are placed in the
+	//    OUTPUT chain.
+	//  Combining these may require revisiting how we structure rule generation
+	//  for outbound traffic to maintain correct behavior.
+	for _, exclusion := range cfg.Exclusions {
+		meshInbound.AddRules(
+			rules.
+				NewAppendRule(
+					Source(Address(exclusion.Address)),
+					Jump(Return()),
+				).
+				WithComment("skip further processing for configured IP address"),
+		)
+	}
+
 	for _, port := range cfg.IncludePorts {
 		meshInbound.AddRules(
 			rules.

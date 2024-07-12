@@ -67,6 +67,7 @@ injector:
     uid: 5678
     waitForDataplaneReady: false
   sidecarTraffic:
+    excludeInboundIPs: []
     excludeInboundPorts: []
     excludeOutboundIPs: []
     excludeOutboundPorts: []
