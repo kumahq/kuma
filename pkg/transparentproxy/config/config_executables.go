@@ -231,9 +231,24 @@ func (c InitializedExecutablesIPvX) writeRulesToFile(rules string) (string, erro
 	return f.Name(), nil
 }
 
-func (c InitializedExecutablesIPvX) Restore(
+// restore executes the iptables-restore command with the given rules and
+// additional arguments. It writes the rules to a temporary file and tries
+// to restore the iptables rules from this file. If the command fails, it
+// retries the specified number of times.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - rules (string): The iptables rules to restore.
+//   - args (...string): Additional arguments for the iptables-restore command.
+//
+// Returns:
+//   - string: The standard output from the iptables-restore command if
+//     successful.
+//   - error: An error if the iptables-restore command fails after all retries.
+func (c InitializedExecutablesIPvX) restore(
 	ctx context.Context,
 	rules string,
+	args ...string,
 ) (string, error) {
 	fileName, err := c.writeRulesToFile(rules)
 	if err != nil {
@@ -241,16 +256,19 @@ func (c InitializedExecutablesIPvX) Restore(
 	}
 	defer os.Remove(fileName)
 
+	args = append(args, fileName)
+
+	argsAll := slices.DeleteFunc(
+		slices.Concat(c.IptablesRestore.args, args),
+		func(s string) bool { return s == "" },
+	)
+
 	for i := 0; i <= c.retry.MaxRetries; i++ {
 		c.logger.try = i + 1
 
-		c.logger.InfoTry(
-			c.IptablesRestore.Path,
-			strings.Join(c.IptablesRestore.args, " "),
-			fileName,
-		)
+		c.logger.InfoTry(c.IptablesRestore.Path, strings.Join(argsAll, " "))
 
-		stdout, _, err := c.IptablesRestore.Exec(ctx, fileName)
+		stdout, _, err := c.IptablesRestore.Exec(ctx, args...)
 		if err == nil {
 			return stdout.String(), nil
 		}
@@ -264,6 +282,45 @@ func (c InitializedExecutablesIPvX) Restore(
 	}
 
 	return "", errors.Errorf("%s failed", c.IptablesRestore.Path)
+}
+
+// Restore executes the iptables-restore command with the given rules and the
+// --noflush flag to ensure that the current rules are not flushed before
+// restoring. This function is a wrapper around the restore function with the
+// --noflush flag.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - rules (string): The iptables rules to restore.
+//
+// Returns:
+//   - string: The standard output from the iptables-restore command if
+//     successful.
+//   - error: An error if the iptables-restore command fails after all retries.
+func (c InitializedExecutablesIPvX) Restore(
+	ctx context.Context,
+	rules string,
+) (string, error) {
+	return c.restore(ctx, rules, FlagNoFlush)
+}
+
+// RestoreWithFlush executes the iptables-restore command with the given rules,
+// allowing the current rules to be flushed before restoring. This function is
+// a wrapper around the restore function without the --noflush flag.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - rules (string): The iptables rules to restore.
+//
+// Returns:
+//   - string: The standard output from the iptables-restore command if
+//     successful.
+//   - error: An error if the iptables-restore command fails after all retries.
+func (c InitializedExecutablesIPvX) RestoreWithFlush(
+	ctx context.Context,
+	rules string,
+) (string, error) {
+	return c.restore(ctx, rules)
 }
 
 type Executables struct {
@@ -417,37 +474,34 @@ func (c ExecutablesNftLegacy) Initialize(
 }
 
 // buildRestoreArgs constructs a slice of flags for restoring iptables rules
-// based on the provided wait time, wait interval, and iptables mode.
+// based on the provided configuration and iptables mode.
 //
 // This function generates a list of command-line flags to be used with
 // iptables-restore, tailored to the given parameters:
-//   - By default, it includes the `--noflush` flag to prevent flushing of
-//     existing rules.
-//   - If the iptables mode is not legacy, it returns only the `--noflush` flag.
+//   - For non-legacy iptables mode, it returns an empty slice, as no additional
+//     flags are required.
 //   - For legacy mode, it conditionally adds the `--wait` and `--wait-interval`
-//     flags based on the provided wait time and waitInterval.
+//     flags based on the provided configuration values.
 //
 // Args:
-//
-//	wait (uint): The wait time in seconds for iptables-restore to wait for the
-//	 xtables lock before aborting.
-//	interval (uint): The wait interval in seconds between attempts to acquire
-//	 the xtables lock.
-//	mode (IptablesMode): The mode of iptables in use, determining the
-//	 applicability of the wait flags.
+//   - cfg (Config): The configuration struct containing wait times for
+//     iptables-restore.
+//   - mode (consts.IptablesMode): The mode of iptables in use, determining the
+//     applicability of the wait flags.
 //
 // Returns:
-//
-//	[]string: A slice of strings representing the constructed flags for
-//	 iptables-restore.
+//   - []string: A slice of strings representing the constructed flags for
+//     iptables-restore.
 //
 // Example:
 //
-//	buildRestoreArgs(5, 2, IptablesModeNft) # Returns: []string{"--noflush"}
-//	buildRestoreArgs(5, 2, IptablesModeLegacy)
-//	 # Returns: []string{"--noflush", "--wait=5", "--wait-interval=2"}
+//	buildRestoreArgs(Config{Wait: 5, WaitInterval: 2}, IptablesModeNft)
+//	# Returns: []string{}
+//
+//	buildRestoreArgs(Config{Wait: 5, WaitInterval: 2}, IptablesModeLegacy)
+//	# Returns: []string{"--wait=5", "--wait-interval=2"}
 func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
-	flags := []string{FlagNoFlush}
+	var flags []string
 
 	if mode != IptablesModeLegacy {
 		return flags
