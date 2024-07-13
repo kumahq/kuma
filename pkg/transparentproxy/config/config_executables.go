@@ -170,7 +170,8 @@ type InitializedExecutablesIPvX struct {
 //
 // Args:
 //   - ctx (context.Context): The context for command execution.
-//   - rules (string): The iptables rules to restore.
+//   - f (*os.File): The file containing the iptables rules to restore.
+//   - quiet (bool): If true, suppresses verbose logging of the restore process.
 //   - args (...string): Additional arguments for the iptables-restore command.
 //
 // Returns:
@@ -180,6 +181,7 @@ type InitializedExecutablesIPvX struct {
 func (c InitializedExecutablesIPvX) restore(
 	ctx context.Context,
 	f *os.File,
+	quiet bool,
 	args ...string,
 ) (string, error) {
 	args = append(args, f.Name())
@@ -192,7 +194,9 @@ func (c InitializedExecutablesIPvX) restore(
 	for i := 0; i <= c.retry.MaxRetries; i++ {
 		c.logger.try = i + 1
 
-		c.logger.InfoTry(c.IptablesRestore.Path, strings.Join(argsAll, " "))
+		if !quiet {
+			c.logger.InfoTry(c.IptablesRestore.Path, strings.Join(argsAll, " "))
+		}
 
 		stdout, _, err := c.IptablesRestore.Exec(ctx, args...)
 		if err == nil {
@@ -202,7 +206,10 @@ func (c InitializedExecutablesIPvX) restore(
 		c.logger.ErrorTry(err, "restoring failed:")
 
 		if i < c.retry.MaxRetries {
-			c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+			if !quiet {
+				c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+			}
+
 			time.Sleep(c.retry.SleepBetweenReties)
 		}
 	}
@@ -218,6 +225,7 @@ func (c InitializedExecutablesIPvX) restore(
 // Args:
 //   - ctx (context.Context): The context for command execution.
 //   - rules (string): The iptables rules to restore.
+//   - quiet (bool): If true, suppresses verbose logging of the restore process.
 //
 // Returns:
 //   - string: The standard output from the iptables-restore command if
@@ -226,6 +234,7 @@ func (c InitializedExecutablesIPvX) restore(
 func (c InitializedExecutablesIPvX) Restore(
 	ctx context.Context,
 	rules string,
+	quiet bool,
 ) (string, error) {
 	f, err := createTempFile(c.IptablesRestore.prefix)
 	if err != nil {
@@ -235,14 +244,16 @@ func (c InitializedExecutablesIPvX) Restore(
 	defer os.Remove(f.Name())
 
 	// Log the file name and the rules to be written.
-	c.logger.Info("writing the following rules to file:", f.Name())
-	c.logger.InfoWithoutPrefix(strings.TrimSpace(rules))
+	if !quiet {
+		c.logger.Info("writing the following rules to file:", f.Name())
+		c.logger.InfoWithoutPrefix(strings.TrimSpace(rules))
+	}
 
 	if err := writeToFile(rules, f); err != nil {
 		return "", err
 	}
 
-	return c.restore(ctx, f, FlagNoFlush)
+	return c.restore(ctx, f, quiet, FlagNoFlush)
 }
 
 // RestoreWithFlush executes the iptables-restore command with the given rules,
@@ -252,6 +263,7 @@ func (c InitializedExecutablesIPvX) Restore(
 // Args:
 //   - ctx (context.Context): The context for command execution.
 //   - rules (string): The iptables rules to restore.
+//   - quiet (bool): If true, suppresses verbose logging of the restore process.
 //
 // Returns:
 //   - string: The standard output from the iptables-restore command if
@@ -260,6 +272,7 @@ func (c InitializedExecutablesIPvX) Restore(
 func (c InitializedExecutablesIPvX) RestoreWithFlush(
 	ctx context.Context,
 	rules string,
+	quiet bool,
 ) (string, error) {
 	// Create a backup file for existing iptables rules.
 	backupFile, err := createBackupFile(c.IptablesRestore.prefix)
@@ -307,11 +320,11 @@ func (c InitializedExecutablesIPvX) RestoreWithFlush(
 	}
 
 	// Attempt to restore the new iptables rules from the temporary file.
-	output, err := c.restore(ctx, restoreFile)
+	output, err := c.restore(ctx, restoreFile, quiet)
 	if err != nil {
 		c.logger.Errorf("restoring backup file: %s", backupFile.Name())
 
-		if _, err := c.restore(ctx, backupFile); err != nil {
+		if _, err := c.restore(ctx, backupFile, quiet); err != nil {
 			c.logger.Warnf("restoring backup failed: %s", err)
 		}
 

@@ -57,6 +57,7 @@ func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string,
 	output, err := cfg.IPv4.Executables.Restore(
 		ctx,
 		BuildIPTablesForRestore(cfg.IPv4),
+		false,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to restore iptables rules")
@@ -66,6 +67,7 @@ func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string,
 		ipv6Output, err := cfg.IPv6.Executables.Restore(
 			ctx,
 			BuildIPTablesForRestore(cfg.IPv6),
+			false,
 		)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to restore ip6tables rules")
