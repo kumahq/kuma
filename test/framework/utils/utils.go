@@ -100,35 +100,22 @@ func cleanName(name string) string {
 // configuration.
 //
 // Args:
-//   - dir (string): The base directory containing transparent proxy tests.
 //   - image (string): The Docker image name used for testing.
 //   - cmd (string): The iptables save command used in the test.
 //   - suffix (string): The optional suffix to be added to the file name.
 //
 // Returns:
 //   - []string: A slice of strings representing the complete file path for the
-//     golden file.
-//   - The first element is the provided base directory.
-//   - The second element is always "testdata", a subdirectory for storing
-//     golden files.
-//   - The third element is the actual golden file name based on the sanitized
+//     golden file. The first element is the subdirectory "testdata", and the
+//     second element is the actual golden file name based on the sanitized
 //     image name and flags joined with hyphens, ending with the command and
 //     ".golden" suffix.
 //
 // Example:
 //
-//	BuildIptablesGoldenFileName(
-//	  "install",
-//	  "RHEL 8",
-//	  "iptables-save",
-//	  "redirect-dns",
-//	) # Returns ["install", "testdata", "rhel-8-redirect-dns.iptables.golden"]
-func BuildIptablesGoldenFileName(
-	dir string,
-	image string,
-	cmd string,
-	suffix string,
-) []string {
+//	BuildIptablesGoldenFileName("RHEL 8", "iptables-save", "redirect-dns")
+//	# Returns ["testdata", "rhel-8-redirect-dns.iptables.golden"]
+func BuildIptablesGoldenFileName(image, cmd, suffix string) []string {
 	// Construct the golden file name by combining the sanitized image name,
 	// cleaned suffix joined with hyphens, and the trimmed command.
 	// The final file name has the format
@@ -145,7 +132,7 @@ func BuildIptablesGoldenFileName(
 		strings.TrimSuffix(cmd, "-save"),
 	)
 
-	return []string{dir, "testdata", fileName}
+	return []string{"testdata", fileName}
 }
 
 // joinNonEmptyWithHyphen joins a slice of strings with hyphens (-) as
