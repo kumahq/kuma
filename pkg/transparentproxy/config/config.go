@@ -533,10 +533,6 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
 	Comment InitializedComment
-	// IPv6 marks whether the current configuration refers to an IPv6 setup.
-	// This boolean field helps determine the appropriate actions and settings
-	// needed for handling IPv6-specific iptables rules and configurations.
-	IPv6 bool
 
 	enabled bool
 }
@@ -583,7 +579,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		Logger: l,
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
-			Logger:                 l,
+			Logger:                 l.WithPrefix(IptablesCommandByFamily[false]),
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
 			enabled:                true,
@@ -624,14 +620,13 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	if c.IPv6 {
 		initialized.IPv6 = InitializedConfigIPvX{
 			Config:                 c,
-			Logger:                 l,
+			Logger:                 l.WithPrefix(IptablesCommandByFamily[true]),
 			Executables:            e.IPv6,
 			LoopbackInterfaceName:  loopbackInterfaceName,
 			LocalhostCIDR:          LocalhostCIDRIPv6,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
 			Comment:                c.Comment.Initialize(e.IPv6),
 			DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
-			IPv6:                   true,
 			enabled:                true,
 		}
 

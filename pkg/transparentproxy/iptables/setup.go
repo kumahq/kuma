@@ -84,9 +84,8 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 		// If there are no transparent proxy rules or chains, there is
 		// nothing to do.
 		if cfg.Verbose {
-			cfg.Logger.Infof(
-				"no transparent proxy %s rules detected. No cleanup necessary",
-				consts.IptablesCommandByFamily[cfg.IPv6],
+			cfg.Logger.Info(
+				"no transparent proxy rules detected. No cleanup necessary",
 			)
 		}
 		return nil
@@ -123,10 +122,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	}
 
 	if cfg.DryRun {
-		cfg.Logger.Infof(
-			"dry run mode: %s rules after cleanup:",
-			consts.IptablesCommandByFamily[cfg.IPv6],
-		)
+		cfg.Logger.Info("[dry-run]: rules after cleanup:")
 		cfg.Logger.InfoWithoutPrefix(newRules)
 		return nil
 	}
