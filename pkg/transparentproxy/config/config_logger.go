@@ -44,6 +44,15 @@ func (l Logger) Info(a ...any) {
 	loglnWithHashPrefix(l.stdout, a)
 }
 
+// Infof logs formatted messages to stdout, prefixed with a hash.
+//
+// Args:
+//   - format (string): The format string for the log message.
+//   - a (...any): The arguments to format and log to stdout.
+func (l Logger) Infof(format string, a ...any) {
+	l.Info(fmt.Sprintf(format, a...))
+}
+
 // InfoWithoutPrefix logs messages to stdout without any prefix.
 func (l Logger) InfoWithoutPrefix(a ...any) {
 	logln(l.stdout, a)
@@ -68,6 +77,15 @@ func (l Logger) Warnf(format string, a ...any) {
 // Error logs error messages to stderr, prefixed with a hash.
 func (l Logger) Error(a ...any) {
 	loglnWithHashPrefix(l.stderr, a)
+}
+
+// Errorf logs formatted error messages to stderr, prefixed with a hash.
+//
+// Args:
+//   - format (string): The format string for the error message.
+//   - a (...any): The arguments to format and log as an error to stderr.
+func (l Logger) Errorf(format string, a ...any) {
+	l.Error(fmt.Sprintf(format, a...))
 }
 
 // ErrorTry logs error messages with retry context to stderr, transforming
