@@ -89,10 +89,10 @@ func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	return iptables.Setup(ctx, cfg)
 }
 
-func Cleanup(cfg config.InitializedConfig) (string, error) {
+func Cleanup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 	if cfg.IPv4.Ebpf.Enabled {
 		return ebpf.Cleanup(cfg.IPv4)
 	}
 
-	return iptables.Cleanup(cfg)
+	return "", iptables.Cleanup(ctx, cfg)
 }

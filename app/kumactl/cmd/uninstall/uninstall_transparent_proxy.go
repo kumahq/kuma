@@ -37,17 +37,13 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return errors.Wrap(err, "failed to initialize config")
 			}
 
-			output, err := transparentproxy.Cleanup(initializedConfig)
-			if err != nil {
+
+			if _, err := transparentproxy.Cleanup(cmd.Context(), initializedConfig); err != nil {
 				return errors.Wrap(err, "transparent proxy cleanup failed")
 			}
 
 			if cfg.Ebpf.Enabled {
 				return nil
-			}
-
-			if cfg.DryRun {
-				fmt.Fprintln(cfg.RuntimeStdout, output)
 			}
 
 			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
@@ -66,7 +62,9 @@ func newUninstallTransparentProxy() *cobra.Command {
 				fmt.Fprintln(cfg.RuntimeStdout, string(content))
 			}
 
-			fmt.Fprintln(cfg.RuntimeStdout, "Transparent proxy cleaned up successfully")
+			if !initializedConfig.DryRun {
+				initializedConfig.Logger.InfoWithoutPrefix("transparent proxy cleanup completed successfully")
+			}
 
 			return nil
 		},
