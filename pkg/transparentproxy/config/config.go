@@ -688,7 +688,7 @@ func DefaultConfig() Config {
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
-		IPv6:               false,
+		IPv6:               true,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
