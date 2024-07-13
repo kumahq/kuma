@@ -37,8 +37,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return errors.Wrap(err, "failed to initialize config")
 			}
 
-
-			if _, err := transparentproxy.Cleanup(cmd.Context(), initializedConfig); err != nil {
+			if err := transparentproxy.Cleanup(cmd.Context(), initializedConfig); err != nil {
 				return errors.Wrap(err, "transparent proxy cleanup failed")
 			}
 
