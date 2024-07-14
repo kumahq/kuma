@@ -2,6 +2,7 @@ package transparentproxy
 
 import (
 	"context"
+	std_errors "errors"
 	"fmt"
 	"io"
 	"slices"
@@ -9,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 
@@ -36,11 +38,44 @@ var (
 	apkAddIptables = []string{"apk", "add", "iptables"}
 )
 
+// customIptablesRules defines a set of custom iptables rules that are used to
+// ensure our cleanup process does not remove non-transparent-proxy related
+// rules. These rules create custom chains and add rules to various tables
+// (nat, raw, mangle) to confirm that the cleanup process will only remove
+// rules related to the transparent proxy, leaving other custom rules intact.
+//
+// The rules include:
+//   - Creating custom chains in the nat, raw, and mangle tables.
+//   - Adding rules to the OUTPUT and PREROUTING chains that direct traffic to
+//     the custom chains.
+var (
+	customIptablesRules = [][]string{
+		{"-t", "nat", "-N", "CUSTOM_CHAIN_NAT"},
+		{"-t", "raw", "-N", "CUSTOM_CHAIN_RAW"},
+		{"-t", "mangle", "-N", "CUSTOM_CHAIN_MANGLE"},
+		{"-t", "nat", "-A", "OUTPUT", "-p", "tcp", "-j", "CUSTOM_CHAIN_NAT"},
+		{"-t", "nat", "-A", "PREROUTING", "-p", "udp", "-j", "CUSTOM_CHAIN_NAT"},
+		{"-t", "raw", "-A", "OUTPUT", "-p", "tcp", "--dport", "53", "-j", "CUSTOM_CHAIN_RAW"},
+		{"-t", "raw", "-A", "PREROUTING", "-j", "CUSTOM_CHAIN_RAW"},
+		{"-t", "mangle", "-A", "OUTPUT", "-p", "udp", "--sport", "53", "-j", "CUSTOM_CHAIN_MANGLE"},
+		{"-t", "mangle", "-A", "PREROUTING", "-j", "CUSTOM_CHAIN_MANGLE"},
+	}
+)
+
 // The following variables are used in tests to manage and verify iptables rules
 // across different iptables implementations and versions. These lists include
-// commands for saving the rules to check against expected outcomes
-// (ipv4SaveCmds, ipv6SaveCmds).
+// commands for installing custom rules (iptablesCmds) and for saving the rules
+// to check against expected outcomes (ipv4SaveCmds, ipv6SaveCmds,
+// iptablesSaveCmds).
 var (
+	iptablesCmds = []string{
+		"iptables",
+		"iptables-nft",
+		"iptables-legacy",
+		"ip6tables",
+		"ip6tables-nft",
+		"ip6tables-legacy",
+	}
 	ipv4SaveCmds = []string{
 		"iptables-save",
 		"iptables-nft-save",
@@ -51,6 +86,7 @@ var (
 		"ip6tables-nft-save",
 		"ip6tables-legacy-save",
 	}
+	iptablesSaveCmds = slices.Concat(slices.Clone(ipv4SaveCmds), ipv6SaveCmds)
 )
 
 type testCase struct {
@@ -89,6 +125,54 @@ var _ = Describe("Transparent Proxy", func() {
 
 			// Then the golden files should match the expected output
 			EnsureGoldenFiles(ctx, c, tc)
+		},
+		// Generate entries for each Docker image to test
+		genEntriesForImages(Config.DockerImagesToTest, Entry, FlakeAttempts(3)),
+	)
+
+	DescribeTable(
+		"uninstall in container",
+		func(tc testCase) {
+			ctx := context.Background()
+
+			// Given the kumactl binary path is not empty
+			Expect(Config.KumactlLinuxBin).NotTo(BeEmpty())
+
+			// Given a container setup with specified image and settings
+			c, err := test_container.NewContainerSetup().
+				WithImage(tc.image).
+				WithKumactlBinary(Config.KumactlLinuxBin).
+				WithPostStart(tc.postStart).
+				WithPrivileged(true).
+				Start(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			// Clean up the container after the test
+			DeferCleanup(func() {
+				Expect(c.Terminate(ctx)).To(Succeed())
+			})
+
+			// Given custom iptables rules are added to the container
+			Expect(addCustomIptablesRules(ctx, c)).To(Succeed())
+
+			// Given the iptables-save output before installing the proxy
+			before := getIptablesSaveOutput(ctx, c)
+
+			// When the transparent proxy is installed successfully
+			EnsureInstallSuccessful(ctx, c, tc.additionalFlags)
+
+			// When the transparent proxy is uninstalled successfully
+			EnsureUninstallSuccessful(ctx, c)
+
+			// Then the iptables-save output after uninstall should match the
+			// output before install
+			after := getIptablesSaveOutput(ctx, c)
+
+			Expect(before).To(HaveLen(len(after)))
+
+			for cmd, output := range before {
+				Expect(after[cmd]).To(Equal(output))
+			}
 		},
 		// Generate entries for each Docker image to test
 		genEntriesForImages(Config.DockerImagesToTest, Entry, FlakeAttempts(3)),
@@ -137,6 +221,39 @@ func EnsureInstallSuccessful(
 		buf := new(strings.Builder)
 		Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
 		Fail(fmt.Sprintf("installation ended with code %d: %s", exitCode, buf))
+	}
+}
+
+// EnsureUninstallSuccessful runs the `kumactl uninstall transparent-proxy`
+// command in the specified container and checks if the uninstallation is
+// successful.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - c (testcontainers.Container): The container where the command will run.
+//
+// This function performs the following steps:
+//  1. Executes the `kumactl uninstall transparent-proxy` command inside the
+//     specified container using the provided context.
+//  2. Checks if the command execution returns an error. If an error occurs, the
+//     function fails the test.
+//  3. If the command exit code is not zero, it reads the command output, copies
+//     it to a buffer, and fails the test with a message containing the exit
+//     code and the command output.
+func EnsureUninstallSuccessful(ctx context.Context, c testcontainers.Container) {
+	GinkgoHelper()
+
+	exitCode, reader, err := c.Exec(
+		ctx,
+		[]string{"kumactl", "uninstall", "transparent-proxy"},
+		exec.Multiplexed(),
+	)
+	Expect(err).NotTo(HaveOccurred())
+
+	if exitCode != 0 {
+		buf := new(strings.Builder)
+		Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
+		Fail(fmt.Sprintf("uninstall ended with code %d: %s", exitCode, buf))
 	}
 }
 
@@ -352,4 +469,96 @@ func genEntriesForImage(
 	}
 
 	return entries
+}
+
+// getIptablesSaveOutput retrieves the output of iptables-save commands from a
+// given container.
+//
+// This function executes all the defined iptables-save commands inside the
+// provided container and collects their outputs. The outputs are cleaned and
+// returned in a map where the keys are the command names and the values are
+// their respective outputs.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - container (testcontainers.Container): The container from which to
+//     retrieve the iptables-save output.
+//
+// Returns:
+//   - map[string]string: A map containing the iptables-save command outputs,
+//     keyed by command name.
+func getIptablesSaveOutput(
+	ctx context.Context,
+	container testcontainers.Container,
+) map[string]string {
+	GinkgoHelper()
+
+	output := map[string]string{}
+
+	for _, cmd := range iptablesSaveCmds {
+		if exitCode, reader, err := container.Exec(
+			ctx,
+			[]string{cmd},
+			exec.Multiplexed(),
+		); exitCode == 0 && err == nil {
+			buf := new(strings.Builder)
+			Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
+			output[cmd] = utils.CleanIptablesSaveOutput(buf.String())
+		}
+	}
+
+	return output
+}
+
+// addCustomIptablesRules adds a set of custom iptables rules to a given
+// container.
+//
+// This function iterates over the predefined iptables commands and custom
+// iptables rules, attempting to add each rule using each iptables command.
+// If all attempts to add the rules using all iptables commands fail, it
+// returns an error detailing the failures.
+//
+// Args:
+//   - ctx (context.Context): The context for command execution.
+//   - c (testcontainers.Container): The container to which the custom
+//     iptables rules will be added.
+//
+// Returns:
+//   - error: An error if all attempts to add the custom iptables rules
+//     fail, nil otherwise.
+func addCustomIptablesRules(
+	ctx context.Context,
+	c testcontainers.Container,
+) error {
+	var errs []error
+
+	for _, iptables := range iptablesCmds {
+		var cmdErrs []error
+
+		for _, rule := range customIptablesRules {
+			if exitCode, _, err := c.Exec(
+				ctx,
+				slices.Concat([]string{iptables}, rule),
+				exec.Multiplexed(),
+			); err != nil || exitCode != 0 {
+				cmdErrs = append(
+					cmdErrs,
+					errors.Wrapf(err, "exit code %d", exitCode),
+				)
+			}
+		}
+
+		if len(cmdErrs) > 0 {
+			errs = append(errs, std_errors.Join(cmdErrs...))
+		}
+	}
+
+	if len(errs) == len(iptablesCmds) {
+		return errors.Wrap(
+			std_errors.Join(errs...),
+			"all iptables commands used to add custom iptables rules failed",
+		)
+	}
+
+	return nil
 }
