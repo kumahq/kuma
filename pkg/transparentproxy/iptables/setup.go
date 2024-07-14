@@ -18,9 +18,7 @@ func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 		return dryRun(cfg), nil
 	}
 
-	cfg.Logger.Info(
-		"cleaning up any existing transparent proxy iptables rules",
-	)
+	cfg.Logger.Info("cleaning up any existing transparent proxy iptables rules")
 
 	if err := Cleanup(ctx, cfg); err != nil {
 		return "", errors.Wrap(err, "cleanup failed during setup")
@@ -58,8 +56,8 @@ func Cleanup(ctx context.Context, cfg config.InitializedConfig) error {
 
 // cleanupIPvX removes iptables rules and chains related to the transparent
 // proxy, ensuring that only the relevant rules and chains are removed based on
-// the presence of iptables comments. It verifies the new rules after cleanup
-// and restores them if they are valid.
+// the presence of iptables comments and chain name prefixes. It verifies the
+// new rules after cleanup and restores them if they are valid.
 //
 // Args:
 //   - ctx (context.Context): The context for command execution.
@@ -69,6 +67,16 @@ func Cleanup(ctx context.Context, cfg config.InitializedConfig) error {
 // Returns:
 //   - error: An error if the cleanup process or verification fails.
 func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
+	if !cfg.Enabled() {
+		return nil
+	}
+
+	cfg.Logger.Infof(
+		"starting cleanup of existing transparent proxy rules. Any rule found in chains with names starting with %q or containing comments starting with %q will be deleted",
+		cfg.Redirect.NamePrefix,
+		cfg.Comment.Prefix,
+	)
+
 	// Execute iptables-save to retrieve current rules.
 	stdout, _, err := cfg.Executables.IptablesSave.Exec(ctx)
 	if err != nil {
@@ -98,17 +106,17 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	// Split the output into lines and remove lines related to transparent
 	// proxy rules and chains.
 	lines := strings.Split(output, "\n")
+	// Remove lines related to transparent proxy rules and chains.
+	// This includes:
+	// 1. Lines starting with "#" (comments).
+	// 2. Lines containing the comment prefix specified in the config.
+	// 3. Lines containing the redirect name prefix specified in the config.
 	linesCleaned := slices.DeleteFunc(
 		lines,
 		func(line string) bool {
-			isComment := strings.HasPrefix(line, "#")
-			isTProxyRule := strings.Contains(line, cfg.Comment.Prefix)
-			isTProxyChain := strings.HasPrefix(
-				line,
-				fmt.Sprintf(":%s_", cfg.Redirect.NamePrefix),
-			)
-
-			return isComment || isTProxyRule || isTProxyChain
+			return strings.HasPrefix(line, "#") ||
+				strings.Contains(line, cfg.Comment.Prefix) ||
+				strings.Contains(line, cfg.Redirect.NamePrefix)
 		},
 	)
 	newRules := strings.Join(linesCleaned, "\n")
@@ -123,7 +131,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 
 	if cfg.DryRun {
 		cfg.Logger.Info("[dry-run]: rules after cleanup:")
-		cfg.Logger.InfoWithoutPrefix(newRules)
+		cfg.Logger.InfoWithoutPrefix(strings.TrimSpace(newRules))
 		return nil
 	}
 
@@ -134,6 +142,8 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 			"failed to restore rules with flush after cleanup",
 		)
 	}
+
+	cfg.Logger.Info("cleanup of existing transparent proxy rules completed successfully")
 
 	return nil
 }

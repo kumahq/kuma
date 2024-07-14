@@ -372,6 +372,18 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 
 	stdout, _, err := c.IptablesRestore.Exec(ctx, FlagTest, f.Name())
 	if err != nil {
+		// There is an existing bug which occurs on Ubuntu 20.04
+		// ref. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003
+		if strings.Contains(strings.ToLower(err.Error()), "segmentation fault") {
+			c.logger.Warnf(
+				`cannot confirm rules are valid because "%s %s" is returning unexpected error: %q. See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003 for more details`,
+				c.IptablesRestore.Path,
+				FlagTest,
+				err,
+			)
+			return "", nil
+		}
+
 		return "", errors.Wrap(err, "rules are invalid")
 	}
 
