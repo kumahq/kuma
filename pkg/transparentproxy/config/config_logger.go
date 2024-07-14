@@ -26,7 +26,7 @@ func logln(w io.Writer, a []any) {
 //   - p (...string): Additional prefixes to add for context.
 func (l Logger) loglnWithPrefixes(w io.Writer, a []any, p ...string) {
 	prefixes := []any{"#"}
-	for _, prefix := range slices.Concat(p, l.defaultPrefixes) {
+	for _, prefix := range slices.Concat(slices.Clone(l.defaultPrefixes), p) {
 		if prefix != "" {
 			prefixes = append(prefixes, fmt.Sprintf("[%s]", prefix))
 		}

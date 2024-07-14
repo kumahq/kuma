@@ -91,16 +91,10 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	case !containsTProxyRules && !containsTProxyComments:
 		// If there are no transparent proxy rules or chains, there is
 		// nothing to do.
-		if cfg.Verbose {
-			cfg.Logger.Info(
-				"no transparent proxy rules detected. No cleanup necessary",
-			)
-		}
+		cfg.Logger.Info("no transparent proxy rules detected. No cleanup necessary")
 		return nil
 	case containsTProxyRules && !containsTProxyComments:
-		return errors.New(
-			"transparent proxy rules detected, but expected comments are missing. Cleanup cannot proceed safely without comments to identify rules. Please remove the transparent proxy iptables rules manually",
-		)
+		return errors.New("transparent proxy rules detected, but expected comments are missing. Cleanup cannot proceed safely without comments to identify rules. Please remove the transparent proxy iptables rules manually")
 	}
 
 	// Split the output into lines and remove lines related to transparent

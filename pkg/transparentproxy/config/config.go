@@ -171,10 +171,7 @@ func (c DNS) Initialize(
 	if c.ConntrackZoneSplit {
 		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplit {
-			l.Warnf(
-				"conntrack zone splitting for %s is disabled. Functionality requires the 'conntrack' iptables module",
-				IPTypeMap[ipv6],
-			)
+			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
 		}
 	}
 
@@ -575,11 +572,14 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
+	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
+	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
+
 	initialized := InitializedConfig{
 		Logger: l,
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
-			Logger:                 l.WithPrefix(IptablesCommandByFamily[false]),
+			Logger:                 loggerIPv4,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
 			enabled:                true,
@@ -596,7 +596,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	}
 	initialized.IPv4.Executables = e.IPv4
 
-	ipv4Redirect, err := c.Redirect.Initialize(l, e.IPv4, false)
+	ipv4Redirect, err := c.Redirect.Initialize(loggerIPv4, e.IPv4, false)
 	if err != nil {
 		return initialized, errors.Wrap(
 			err,
@@ -620,7 +620,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	if c.IPv6 {
 		initialized.IPv6 = InitializedConfigIPvX{
 			Config:                 c,
-			Logger:                 l.WithPrefix(IptablesCommandByFamily[true]),
+			Logger:                 loggerIPv6,
 			Executables:            e.IPv6,
 			LoopbackInterfaceName:  loopbackInterfaceName,
 			LocalhostCIDR:          LocalhostCIDRIPv6,
@@ -630,7 +630,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			enabled:                true,
 		}
 
-		ipv6Redirect, err := c.Redirect.Initialize(l, e.IPv6, true)
+		ipv6Redirect, err := c.Redirect.Initialize(loggerIPv6, e.IPv6, true)
 		if err != nil {
 			return initialized, errors.Wrap(
 				err,
@@ -933,8 +933,7 @@ func validateIP(address string, ipv6 bool) (error, bool) {
 	// message.
 	if ip == nil {
 		return errors.Errorf(
-			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> "+
-				"(e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
 			address,
 		), false
 	}

@@ -438,8 +438,11 @@ func (c Executables) Initialize(
 
 	initialized := InitializedExecutables{Executables: c}
 
-	initialized.IPv4, err = c.IPv4.Initialize(ctx, l, cfg)
-	if err != nil {
+	if initialized.IPv4, err = c.IPv4.Initialize(
+		ctx,
+		l.WithPrefix(IptablesCommandByFamily[false]),
+		cfg,
+	); err != nil {
 		return InitializedExecutables{}, errors.Wrap(
 			err,
 			"failed to initialize IPv4 executables",
@@ -447,8 +450,11 @@ func (c Executables) Initialize(
 	}
 
 	if cfg.IPv6 {
-		initialized.IPv6, err = c.IPv6.Initialize(ctx, l, cfg)
-		if err != nil {
+		if initialized.IPv6, err = c.IPv6.Initialize(
+			ctx,
+			l.WithPrefix(IptablesCommandByFamily[true]),
+			cfg,
+		); err != nil {
 			return InitializedExecutables{}, errors.Wrap(
 				err,
 				"failed to initialize IPv6 executables",
@@ -457,8 +463,10 @@ func (c Executables) Initialize(
 
 		if err := configureIPv6OutboundAddress(); err != nil {
 			initialized.IPv6 = InitializedExecutablesIPvX{}
-			l.Warn("failed to configure IPv6 outbound address. IPv6 rules "+
-				"will be skipped:", err)
+			l.Warn(
+				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
+				err,
+			)
 		}
 	}
 
@@ -508,9 +516,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	switch {
 	// Dry-run mode when no valid iptables executables are found.
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("dry-run mode: No valid iptables executables found. The " +
-			"generated iptables rules may differ from those generated in an " +
-			"environment with valid iptables executables")
+		l.Warn("[dry-run]: no valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables")
 		return InitializedExecutables{}, nil
 	// Regular mode when no vaild iptables executables are found
 	case len(errs) == 2:
@@ -527,11 +533,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		l.Warn("conflicting iptables modes detected. Two iptables " +
-			"versions (iptables-nft and iptables-legacy) were found. " +
-			"Both contain a nat table with a chain named 'DOCKER_OUTPUT'. " +
-			"To avoid potential conflicts, iptables-legacy will be ignored " +
-			"and iptables-nft will be used")
+		l.Warn("conflicting iptables modes detected. Two iptables versions (iptables-nft and iptables-legacy) were found. Both contain a nat table with a chain named 'DOCKER_OUTPUT'. To avoid potential conflicts, iptables-legacy will be ignored and iptables-nft will be used")
 		return nft, nil
 	case legacy.hasDockerOutputChain():
 		return legacy, nil
