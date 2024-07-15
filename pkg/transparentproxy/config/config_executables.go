@@ -167,17 +167,6 @@ type InitializedExecutablesIPvX struct {
 // additional arguments. It writes the rules to a temporary file and tries
 // to restore the iptables rules from this file. If the command fails, it
 // retries the specified number of times.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - f (*os.File): The file containing the iptables rules to restore.
-//   - quiet (bool): If true, suppresses verbose logging of the restore process.
-//   - args (...string): Additional arguments for the iptables-restore command.
-//
-// Returns:
-//   - string: The standard output from the iptables-restore command if
-//     successful.
-//   - error: An error if the iptables-restore command fails after all retries.
 func (c InitializedExecutablesIPvX) restore(
 	ctx context.Context,
 	f *os.File,
@@ -221,16 +210,6 @@ func (c InitializedExecutablesIPvX) restore(
 // --noflush flag to ensure that the current rules are not flushed before
 // restoring. This function is a wrapper around the restore function with the
 // --noflush flag.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - rules (string): The iptables rules to restore.
-//   - quiet (bool): If true, suppresses verbose logging of the restore process.
-//
-// Returns:
-//   - string: The standard output from the iptables-restore command if
-//     successful.
-//   - error: An error if the iptables-restore command fails after all retries.
 func (c InitializedExecutablesIPvX) Restore(
 	ctx context.Context,
 	rules string,
@@ -259,16 +238,6 @@ func (c InitializedExecutablesIPvX) Restore(
 // RestoreWithFlush executes the iptables-restore command with the given rules,
 // allowing the current rules to be flushed before restoring. This function is
 // a wrapper around the restore function without the --noflush flag.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - rules (string): The iptables rules to restore.
-//   - quiet (bool): If true, suppresses verbose logging of the restore process.
-//
-// Returns:
-//   - string: The standard output from the iptables-restore command if
-//     successful.
-//   - error: An error if the iptables-restore command fails after all retries.
 func (c InitializedExecutablesIPvX) RestoreWithFlush(
 	ctx context.Context,
 	rules string,
@@ -326,16 +295,6 @@ func (c InitializedExecutablesIPvX) RestoreWithFlush(
 // ensure that the iptables rules specified in the `rules` string are valid. If
 // the rules are valid, it returns the output from iptables-restore. If there is
 // an error, it returns the error message.
-//
-// Args:
-//   - ctx (context.Context): The context for controlling the execution of the
-//     iptables-restore command.
-//   - rules (string): The iptables rules to be tested.
-//
-// Returns:
-//   - string: The output from iptables-restore if the rules are valid.
-//   - error: An error message if the rules are invalid or if there is an issue
-//     running iptables-restore.
 func (c InitializedExecutablesIPvX) RestoreTest(
 	ctx context.Context,
 	rules string,
@@ -399,17 +358,6 @@ func NewExecutables(mode IptablesMode) Executables {
 //  3. If IPv6 initialization is successful, it attempts to configure the IPv6
 //     outbound address. If this configuration fails, a warning is logged, and
 //     IPv6 rules will be skipped.
-//
-// Args:
-// - ctx (context.Context): The context for managing request lifetime.
-// - cfg (Config): Configuration settings for initializing the executables.
-// - l (Logger): Logger for logging initialization steps and errors.
-//
-// Returns:
-//   - InitializedExecutables: Struct containing the initialized executables
-//     for both IPv4 and IPv6.
-//   - error: Error indicating the failure of either IPv4 or IPv6
-//     initialization.
 func (c Executables) Initialize(
 	ctx context.Context,
 	l Logger,
@@ -532,16 +480,6 @@ func (c ExecutablesNftLegacy) Initialize(
 //     flags are required.
 //   - For legacy mode, it conditionally adds the `--wait` and `--wait-interval`
 //     flags based on the provided configuration values.
-//
-// Args:
-//   - cfg (Config): The configuration struct containing wait times for
-//     iptables-restore.
-//   - mode (consts.IptablesMode): The mode of iptables in use, determining the
-//     applicability of the wait flags.
-//
-// Returns:
-//   - []string: A slice of strings representing the constructed flags for
-//     iptables-restore.
 func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
 	var flags []string
 

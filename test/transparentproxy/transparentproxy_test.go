@@ -272,12 +272,6 @@ func EnsureUninstallSuccessful(ctx context.Context, c testcontainers.Container) 
 //     file.
 //   - If the command exits unsuccessfully, it checks if the error is due to the
 //     executable not being found and handles it accordingly.
-//
-// Args:
-//   - ctx (context.Context): The context for controlling the command execution.
-//   - c (testcontainers.Container): The test container where the commands will
-//     be executed.
-//   - tc (testCase): The test case containing the name and golden file suffix.
 func EnsureGoldenFiles(
 	ctx context.Context,
 	c testcontainers.Container,
@@ -326,15 +320,6 @@ func EnsureGoldenFiles(
 
 // genEntriesForImages generates Ginkgo test entries for Transparent Proxy
 // (tproxy) installation scenarios across a set of Docker images.
-//
-// Args:
-//   - images (map[string]string): A map of Docker image names for testing.
-//   - entry (func(description interface{}, args ...interface{}) TableEntry):
-//     A function to create Ginkgo TableEntry objects.
-//   - decorators (...interface{}): Optional decorators for each TableEntry.
-//
-// Returns:
-//   - []TableEntry: A slice of Ginkgo test entries for each Docker image.
 func genEntriesForImages(
 	images map[string]string,
 	entry func(description interface{}, args ...interface{}) TableEntry,
@@ -478,15 +463,6 @@ func genEntriesForImage(
 // provided container and collects their outputs. The outputs are cleaned and
 // returned in a map where the keys are the command names and the values are
 // their respective outputs.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - container (testcontainers.Container): The container from which to
-//     retrieve the iptables-save output.
-//
-// Returns:
-//   - map[string]string: A map containing the iptables-save command outputs,
-//     keyed by command name.
 func getIptablesSaveOutput(
 	ctx context.Context,
 	container testcontainers.Container,
@@ -517,15 +493,6 @@ func getIptablesSaveOutput(
 // iptables rules, attempting to add each rule using each iptables command.
 // If all attempts to add the rules using all iptables commands fail, it
 // returns an error detailing the failures.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - c (testcontainers.Container): The container to which the custom
-//     iptables rules will be added.
-//
-// Returns:
-//   - error: An error if all attempts to add the custom iptables rules
-//     fail, nil otherwise.
 func addCustomIptablesRules(
 	ctx context.Context,
 	c testcontainers.Container,

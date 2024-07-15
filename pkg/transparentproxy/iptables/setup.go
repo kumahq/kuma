@@ -29,19 +29,9 @@ func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
 
 // Cleanup removes iptables rules and chains related to the transparent proxy
 // for both IPv4 and IPv6 configurations. It calls the internal cleanupIPvX
-// function for each IP version, ensuring that only the relevant rules and
+// function for each IP version, ensuring that only the relevant rules andran
 // chains are removed based on the presence of iptables comments. If either
 // cleanup process fails, an error is returned.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - cfg (config.InitializedConfig): The configuration containing the
-//     iptables settings for both IPv4 and IPv6, including comments and redirect
-//     information.
-//
-// Returns:
-//   - error: An error if the cleanup process for either IPv4 or IPv6 fails,
-//     including specific context about which IP version encountered the error.
 func Cleanup(ctx context.Context, cfg config.InitializedConfig) error {
 	if err := cleanupIPvX(ctx, cfg.IPv4); err != nil {
 		return errors.Wrap(err, "failed to cleanup IPv4 rules")
@@ -58,14 +48,6 @@ func Cleanup(ctx context.Context, cfg config.InitializedConfig) error {
 // proxy, ensuring that only the relevant rules and chains are removed based on
 // the presence of iptables comments and chain name prefixes. It verifies the
 // new rules after cleanup and restores them if they are valid.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - cfg (config.InitializedConfigIPvX): The configuration containing the
-//     iptables settings, including comments and redirect information.
-//
-// Returns:
-//   - error: An error if the cleanup process or verification fails.
 func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	if !cfg.Enabled() {
 		return nil
@@ -161,18 +143,6 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 //  4. Logs the final combined output using the configured logger without
 //     prefixing, to ensure that the output is clear and unmodified, suitable
 //     for review or documentation purposes.
-//
-// Args:
-//
-//   - cfg (config.InitializedConfig): Configuration settings that include flags
-//     for dry run, logging, and IP version preferences.
-//
-// Returns:
-//
-//   - string: A combined string of formatted iptables commands for both IPv4
-//     and IPv6.
-//   - error: An error if there is a failure in generating the iptables commands
-//     for any version.
 func dryRun(cfg config.InitializedConfig) string {
 	output := strings.Join(
 		slices.Concat(
@@ -190,15 +160,7 @@ func dryRun(cfg config.InitializedConfig) string {
 // dryRunIPvX generates iptables rules for either IPv4 or IPv6 based on the
 // provided configuration. It returns a slice with a header indicating the
 // IP version and the generated rules as a single string.
-//
-// Args:
-//   - cfg (config.InitializedConfigIPvX): Configuration settings for IPv4 or
-//     IPv6.
-//   - ipv6 (bool): Indicates if the configuration is for IPv6.
-//
-// Returns:
-//   - []string: A slice containing the header and the iptables rules for the
-//     specified IP version.
+
 func dryRunIPvX(cfg config.InitializedConfigIPvX, ipv6 bool) []string {
 	if !cfg.Enabled() {
 		return nil

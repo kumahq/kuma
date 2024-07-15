@@ -33,14 +33,6 @@ type ValueOrRangeList string
 // converts it to a ValueOrRangeList, which is a comma-separated string
 // representation of the values.
 //
-// Args:
-//   - v (T): The input value which can be a slice of uint16, a single uint16,
-//     or a string.
-//
-// Returns:
-//   - ValueOrRangeList: A comma-separated string representation of the input
-//     values.
-//
 // The function panics if an unsupported type is provided, although the type
 // constraints should prevent this from occurring.
 func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList {
@@ -241,15 +233,6 @@ type VNet struct {
 //     it is added to the InterfaceCIDRs map.
 //  5. Constructs and returns an InitializedVNet struct containing the
 //     populated InterfaceCIDRs map.
-//
-// Args:
-//   - ipv6 (bool): Indicates whether to process IPv6 addresses. If false,
-//     only IPv4 addresses are processed.
-//
-// Returns:
-//   - InitializedVNet: Struct containing the parsed interface names and
-//     corresponding CIDRs for the specified IP version.
-//   - error: Error indicating any issues encountered during initialization.
 func (c VNet) Initialize(ipv6 bool) (InitializedVNet, error) {
 	initialized := InitializedVNet{InterfaceCIDRs: map[string]string{}}
 
@@ -400,15 +383,6 @@ type InitializedComment struct {
 // iptables rule comments should be enabled. It checks the system's
 // functionality to see if the comment module is available and returns
 // an InitializedComment struct with the result.
-//
-// Args:
-//   - e (InitializedExecutablesIPvX): The initialized executables containing
-//     system functionality details, including available modules.
-//
-// Returns:
-//   - InitializedComment: The struct containing the processed comment
-//     configuration, indicating whether comments are enabled and the prefix
-//     to use for comments ("kuma/mesh/transparent/proxy").
 func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
 	return InitializedComment{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
@@ -737,15 +711,6 @@ func getLoopbackInterfaceName() (string, error) {
 //   - "udp:53:1001" (UDP protocol, port 53, UID 1001)
 //   - "80:1002" (Any protocol, port 80, UID 1002)
 //   - "1003" (Any protocol, any port, UID 1003)
-//
-// Args:
-//   - exclusionRules ([]string): A slice of strings specifying port exclusion
-//     rules based on UIDs.
-//
-// Returns:
-//   - []Exclusion: A slice of Exclusion structs representing the parsed port
-//     exclusion rules.
-//   - error: An error if the input format is invalid or if validation fails.
 func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 	var result []Exclusion
 
@@ -836,22 +801,6 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 // This function currently allows each exclusion rule to be a valid IPv4 or IPv6
 // address, with or without a CIDR suffix. It is designed to potentially support
 // more complex exclusion rules in the future.
-//
-// Examples:
-//   - "10.0.0.1"
-//   - "10.0.0.0/8"
-//   - "fe80::1"
-//   - "fe80::/10"
-//
-// Args:
-//   - exclusionRules ([]string): A slice of strings specifying port exclusion
-//     rules based on IP addresses.
-//   - ipv6 (bool): A boolean flag indicating whether the rules are for IPv6.
-//
-// Returns:
-//   - []IPToPorts: A slice of IPToPorts structs representing the parsed port
-//     exclusion rules.
-//   - error: An error if the input format is invalid or if validation fails.
 func parseExcludePortsForIPs(
 	exclusionRules []string,
 	ipv6 bool,
@@ -883,15 +832,6 @@ func parseExcludePortsForIPs(
 // validateUintValueOrRange validates whether a given string represents a valid
 // single uint16 value or a range of uint16 values. The input string can contain
 // multiple comma-separated values or ranges (e.g., "80,1000-2000").
-//
-// Args:
-//   - valueOrRange (string): The input string to validate, which can be a
-//     single value, a range of values, or a comma-separated list of
-//     values/ranges.
-//
-// Returns:
-//   - error: An error if any value or range in the input string is not a valid
-//     uint16 value.
 func validateUintValueOrRange(valueOrRange string) error {
 	for _, element := range strings.Split(valueOrRange, ",") {
 		for _, port := range strings.Split(element, "-") {
@@ -910,17 +850,6 @@ func validateUintValueOrRange(valueOrRange string) error {
 
 // validateIP validates an IP address or CIDR and checks if it matches the
 // expected IP version (IPv4 or IPv6).
-//
-// Args:
-//   - address (string): The IP address or CIDR to validate.
-//   - ipv6 (bool): A boolean flag indicating whether the expected IP version is
-//     IPv6.
-//
-// Returns:
-//   - error: An error if the IP address is invalid, with a message explaining
-//     the expected format.
-//   - bool: A boolean indicating whether the IP address matches the expected IP
-//     version (true for a match, false otherwise).
 func validateIP(address string, ipv6 bool) (error, bool) {
 	// Attempt to parse the address as a CIDR.
 	ip, _, err := net.ParseCIDR(address)
@@ -945,13 +874,6 @@ func validateIP(address string, ipv6 bool) (error, bool) {
 
 // parseUint16 parses a string representing a uint16 value and returns its
 // uint16 representation.
-//
-// Args:
-//   - port (string): The input string to parse.
-//
-// Returns:
-//   - uint16: The parsed uint16 value.
-//   - error: An error if the input string is not a valid uint16 value.
 func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
