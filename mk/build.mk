@@ -104,7 +104,7 @@ build/artifacts-$(1)-$(2)/coredns:
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/envoy ] || \
-	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$(ENVOY_VERSION)/envoy-$(1)-$(2)-v$(ENVOY_VERSION)$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
+	gh run download --repo kumahq/envoy-builds 9853520214 -n envoy-linux-amd64-true -D $$(@) && mv $$(@)/envoy-v1.27.7+fips $$(@)/envoy
 
 .PHONY: build/artifacts-$(1)-$(2)/test-server
 build/artifacts-$(1)-$(2)/test-server:
