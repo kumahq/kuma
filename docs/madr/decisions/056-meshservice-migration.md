@@ -39,13 +39,14 @@ is no longer load balanced across all zones.
 We need to take measures to prevent this change from happening on upgrade.
 
 In particular with Kubernetes, it's important to keep in mind that after
-MeshService is enabled, _any_ requests to the Kubernetes IP/via Kube DNS
-go to the same outbound as to MeshService hostnames.
+MeshService is enabled we no longer generate our own VIP.
+So any requests to MeshService hostnames go to the same
+outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
 
 #### Status quo
 
 - On Kubernetes there are two outbound listeners:
-  - Traffic to the Kube DNS name/Cluster IP is load-balanced cross-zone
+  - Traffic to the Kubernetes DNS name/ClusterIP is load-balanced cross-zone
   - Traffic to the `<kuma.io/service>.mesh`/VIP is load-balanced cross-zone
 
 #### `MeshService`
@@ -71,6 +72,8 @@ go to the same outbound as to MeshService hostnames.
 
 * Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService `{name: demo-app, namespace: kuma-demo, spec.ports[port == 5000]}`.
+* Change `MeshService` to do cross-zone load balancing by default and have users
+  switch over to local zone plus `MeshMultiZoneServices`
 
 ## Pros and Cons of the Options
 
