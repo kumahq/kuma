@@ -277,46 +277,31 @@ func (c InitializedExecutablesIPvX) RestoreWithFlush(
 	// Create a backup file for existing iptables rules.
 	backupFile, err := createBackupFile(c.IptablesRestore.prefix)
 	if err != nil {
-		return "", errors.Wrap(
-			err,
-			"failed to create backup file for iptables rules",
-		)
+		return "", errors.Wrap(err, "failed to create backup file for iptables rules")
 	}
 	defer backupFile.Close()
 
 	// Save the current iptables rules to the backup file.
 	stdout, _, err := c.IptablesSave.Exec(ctx)
 	if err != nil {
-		return "", errors.Wrap(
-			err,
-			"failed to execute iptables-save command",
-		)
+		return "", errors.Wrap(err, "failed to execute iptables-save command")
 	}
 
 	if err := writeToFile(stdout.String(), backupFile); err != nil {
-		return "", errors.Wrap(
-			err,
-			"failed to write current iptables rules to backup file",
-		)
+		return "", errors.Wrap(err, "failed to write current iptables rules to backup file")
 	}
 
 	// Create a temporary file for the new iptables rules.
 	restoreFile, err := createTempFile(c.IptablesRestore.prefix)
 	if err != nil {
-		return "", errors.Wrap(
-			err,
-			"failed to create temporary file for new iptables rules",
-		)
+		return "", errors.Wrap(err, "failed to create temporary file for new iptables rules")
 	}
 	defer restoreFile.Close()
 	defer os.Remove(restoreFile.Name())
 
 	// Write the new iptables rules to the temporary file.
 	if err := writeToFile(rules, restoreFile); err != nil {
-		return "", errors.Wrap(
-			err,
-			"failed to write new iptables rules to temporary file",
-		)
+		return "", errors.Wrap(err, "failed to write new iptables rules to temporary file")
 	}
 
 	// Attempt to restore the new iptables rules from the temporary file.
@@ -328,11 +313,7 @@ func (c InitializedExecutablesIPvX) RestoreWithFlush(
 			c.logger.Warnf("restoring backup failed: %s", err)
 		}
 
-		return "", errors.Wrapf(
-			err,
-			"failed to restore rules from file: %s",
-			restoreFile.Name(),
-		)
+		return "", errors.Wrapf(err, "failed to restore rules from file: %s", restoreFile.Name())
 	}
 
 	return output, nil
@@ -561,14 +542,6 @@ func (c ExecutablesNftLegacy) Initialize(
 // Returns:
 //   - []string: A slice of strings representing the constructed flags for
 //     iptables-restore.
-//
-// Example:
-//
-//	buildRestoreArgs(Config{Wait: 5, WaitInterval: 2}, IptablesModeNft)
-//	# Returns: []string{}
-//
-//	buildRestoreArgs(Config{Wait: 5, WaitInterval: 2}, IptablesModeLegacy)
-//	# Returns: []string{"--wait=5", "--wait-interval=2"}
 func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
 	var flags []string
 
@@ -812,11 +785,7 @@ func configureIPv6OutboundAddress() error {
 			return nil
 		}
 
-		return errors.Wrapf(
-			err,
-			"failed to add IPv6 address %s to loopback interface",
-			addr.IPNet,
-		)
+		return errors.Wrapf(err, "failed to add IPv6 address %s to loopback interface", addr.IPNet)
 	}
 
 	return nil
@@ -825,19 +794,6 @@ func configureIPv6OutboundAddress() error {
 // createBackupFile generates a backup file with a specified prefix and a
 // timestamp suffix. The file is created in the system's temporary directory and
 // is used to store iptables rules for backup purposes.
-//
-// This function performs the following steps:
-//  1. Generates a timestamp suffix in the format "YYYY-MM-DD-HHMMSS".
-//  2. Constructs the backup file name using the provided prefix and the
-//     timestamp suffix.
-//  3. Creates the backup file in the system's temporary directory.
-//
-// Args:
-//   - prefix (string): The prefix to be used in the backup file name.
-//
-// Returns:
-//   - *os.File: A pointer to the created backup file.
-//   - error: An error if the file creation fails.
 func createBackupFile(prefix string) (*os.File, error) {
 	// Generate a timestamp suffix for the backup file name.
 	dateSuffix := time.Now().Format("2006-01-02-150405")
@@ -850,31 +806,20 @@ func createBackupFile(prefix string) (*os.File, error) {
 	// Create the backup file in the system's temporary directory.
 	f, err := os.Create(filePath)
 	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to create backup file: %s",
-			filePath,
-		)
+		return nil, errors.Wrapf(err, "failed to create backup file: %s", filePath)
 	}
 
 	return f, nil
 }
 
-// createTempFile generates a temporary file with a specified prefix.
-// The file is created in the system's default temporary directory and is used
-// for storing iptables rules temporarily.
+// createTempFile generates a temporary file with a specified prefix. The file
+// is created in the system's default temporary directory and is used for
+// storing iptables rules temporarily.
 //
 // This function performs the following steps:
 //  1. Constructs a template for the temporary file name using the provided
 //     prefix.
 //  2. Creates the temporary file in the system's default temporary directory.
-//
-// Args:
-//   - prefix (string): The prefix to be used in the temporary file name.
-//
-// Returns:
-//   - *os.File: A pointer to the created temporary file.
-//   - error: An error if the file creation fails.
 func createTempFile(prefix string) (*os.File, error) {
 	// Construct a template for the temporary file name using the provided prefix.
 	nameTemplate := fmt.Sprintf("%s-rules.*.txt", prefix)
@@ -882,11 +827,7 @@ func createTempFile(prefix string) (*os.File, error) {
 	// Create the temporary file in the system's default temporary directory.
 	f, err := os.CreateTemp(os.TempDir(), nameTemplate)
 	if err != nil {
-		return nil, errors.Wrapf(
-			err,
-			"failed to create temporary file with template: %s",
-			nameTemplate,
-		)
+		return nil, errors.Wrapf(err, "failed to create temporary file with template: %s", nameTemplate)
 	}
 
 	return f, nil
@@ -899,14 +840,6 @@ func createTempFile(prefix string) (*os.File, error) {
 // This function performs the following steps:
 //  1. Writes the content to the file using a buffered writer for efficiency.
 //  2. Flushes the buffer to ensure all data is written to the file.
-//
-// Args:
-//   - content (string): The content to be written to the file.
-//   - f (*os.File): The file to which the content should be written.
-//
-// Returns:
-//   - error: An error if writing or flushing the buffer fails, with detailed
-//     context.
 func writeToFile(content string, f *os.File) error {
 	// Write the content to the file using a buffered writer.
 	writer := bufio.NewWriter(f)
@@ -915,9 +848,9 @@ func writeToFile(content string, f *os.File) error {
 	}
 
 	// Flush the buffer to ensure all data is written.
-	return errors.Wrapf(
-		writer.Flush(),
-		"failed to flush the buffered writer for file: %s",
-		f.Name(),
-	)
+	if err := writer.Flush(); err != nil {
+		return errors.Wrapf(err, "failed to flush the buffered writer for file: %s", f.Name())
+	}
+
+	return nil
 }

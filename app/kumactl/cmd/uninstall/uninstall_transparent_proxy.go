@@ -62,7 +62,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 			}
 
 			if !initializedConfig.DryRun {
-				initializedConfig.Logger.InfoWithoutPrefix("transparent proxy cleanup completed successfully")
+				initializedConfig.Logger.Info("transparent proxy cleanup completed successfully")
 			}
 
 			return nil
