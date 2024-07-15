@@ -82,11 +82,6 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	// Split the output into lines and remove lines related to transparent
 	// proxy rules and chains.
 	lines := strings.Split(output, "\n")
-	// Remove lines related to transparent proxy rules and chains.
-	// This includes:
-	// 1. Lines starting with "#" (comments).
-	// 2. Lines containing the comment prefix specified in the config.
-	// 3. Lines containing the redirect name prefix specified in the config.
 	linesCleaned := slices.DeleteFunc(
 		lines,
 		func(line string) bool {

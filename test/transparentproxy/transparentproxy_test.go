@@ -227,19 +227,6 @@ func EnsureInstallSuccessful(
 // EnsureUninstallSuccessful runs the `kumactl uninstall transparent-proxy`
 // command in the specified container and checks if the uninstallation is
 // successful.
-//
-// Args:
-//   - ctx (context.Context): The context for command execution.
-//   - c (testcontainers.Container): The container where the command will run.
-//
-// This function performs the following steps:
-//  1. Executes the `kumactl uninstall transparent-proxy` command inside the
-//     specified container using the provided context.
-//  2. Checks if the command execution returns an error. If an error occurs, the
-//     function fails the test.
-//  3. If the command exit code is not zero, it reads the command output, copies
-//     it to a buffer, and fails the test with a message containing the exit
-//     code and the command output.
 func EnsureUninstallSuccessful(ctx context.Context, c testcontainers.Container) {
 	GinkgoHelper()
 
