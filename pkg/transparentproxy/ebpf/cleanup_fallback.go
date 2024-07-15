@@ -8,6 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
-func Cleanup(config.InitializedConfig) (string, error) {
+func Cleanup(config.InitializedConfigIPvX) (string, error) {
 	return "", fmt.Errorf("ebpf is currently supported only on linux")
 }

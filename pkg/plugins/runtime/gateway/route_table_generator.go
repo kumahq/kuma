@@ -22,12 +22,12 @@ const emptyGatewayMsg = "This is a Kuma MeshGateway. No routes match this MeshGa
 
 // GenerateVirtualHost generates xDS resources for the current route table.
 func GenerateVirtualHost(
-	ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost, routes []route.Entry,
+	ctx xds_context.Context, info GatewayListenerInfo, hostname string, routes []route.Entry,
 ) (
 	*envoy_virtual_hosts.VirtualHostBuilder, error,
 ) {
-	vh := envoy_virtual_hosts.NewVirtualHostBuilder(info.Proxy.APIVersion, host.Hostname).Configure(
-		envoy_virtual_hosts.DomainNames(host.Hostname),
+	vh := envoy_virtual_hosts.NewVirtualHostBuilder(info.Proxy.APIVersion, hostname).Configure(
+		envoy_virtual_hosts.DomainNames(hostname),
 	)
 
 	// Ensure that we get TLS on HTTPS protocol listeners or crossMesh.

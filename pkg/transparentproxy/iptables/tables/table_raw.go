@@ -33,11 +33,8 @@ func (t *RawTable) CustomChains() []*chains.Chain {
 }
 
 func Raw() *RawTable {
-	prerouting, _ := chains.NewChain(consts.TableRaw, consts.ChainPrerouting)
-	output, _ := chains.NewChain(consts.TableRaw, consts.ChainOutput)
-
 	return &RawTable{
-		prerouting: prerouting,
-		output:     output,
+		prerouting: chains.MustNewChain(consts.TableRaw, consts.ChainPrerouting),
+		output:     chains.MustNewChain(consts.TableRaw, consts.ChainOutput),
 	}
 }
