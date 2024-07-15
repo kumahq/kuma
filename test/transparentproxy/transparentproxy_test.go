@@ -1,9 +1,10 @@
-package install
+package transparentproxy
 
 import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	test_container "github.com/kumahq/kuma/test/framework/container"
 	"github.com/kumahq/kuma/test/framework/utils"
-	. "github.com/kumahq/kuma/test/transparentproxy"
 )
 
 var (
@@ -36,6 +36,23 @@ var (
 	apkAddIptables = []string{"apk", "add", "iptables"}
 )
 
+// The following variables are used in tests to manage and verify iptables rules
+// across different iptables implementations and versions. These lists include
+// commands for saving the rules to check against expected outcomes
+// (ipv4SaveCmds, ipv6SaveCmds).
+var (
+	ipv4SaveCmds = []string{
+		"iptables-save",
+		"iptables-nft-save",
+		"iptables-legacy-save",
+	}
+	ipv6SaveCmds = []string{
+		"ip6tables-save",
+		"ip6tables-nft-save",
+		"ip6tables-legacy-save",
+	}
+)
+
 type testCase struct {
 	name             string
 	image            string
@@ -44,90 +61,127 @@ type testCase struct {
 	additionalFlags  []string
 }
 
-func Install() {
+var _ = Describe("Transparent Proxy", func() {
 	DescribeTable(
-		"kumactl install transparent-proxy inside Docker container",
+		"install in container",
 		func(tc testCase) {
+			ctx := context.Background()
+
+			// Given the kumactl binary path is not empty
 			Expect(Config.KumactlLinuxBin).NotTo(BeEmpty())
 
-			container, err := test_container.NewContainerSetup().
+			// Given a container setup with specified image and settings
+			c, err := test_container.NewContainerSetup().
 				WithImage(tc.image).
 				WithKumactlBinary(Config.KumactlLinuxBin).
 				WithPostStart(tc.postStart).
 				WithPrivileged(true).
-				Start(context.Background())
-
+				Start(ctx)
 			Expect(err).ToNot(HaveOccurred())
 
+			// Clean up the container after the test
 			DeferCleanup(func() {
-				Expect(container.Terminate(context.Background())).To(Succeed())
+				Expect(c.Terminate(ctx)).To(Succeed())
 			})
 
-			EnsureInstallSuccessful(container, tc.additionalFlags)
-			EnsureGoldenFiles(container, tc)
-		},
-		EntriesForImages(Config.DockerImagesToTest),
-	)
-}
+			// When the transparent proxy is installed successfully
+			EnsureInstallSuccessful(ctx, c, tc.additionalFlags)
 
-func EnsureInstallSuccessful(container testcontainers.Container, flags []string) {
+			// Then the golden files should match the expected output
+			EnsureGoldenFiles(ctx, c, tc)
+		},
+		// Generate entries for each Docker image to test
+		genEntriesForImages(Config.DockerImagesToTest, Entry, FlakeAttempts(3)),
+	)
+})
+
+// EnsureInstallSuccessful installs the transparent proxy in a test container
+// using the provided flags, and ensures the installation completes
+// successfully.
+//
+// This function performs the following steps:
+//   - Constructs the kumactl install command with the given flags.
+//   - Executes the command in the specified container context.
+//   - Asserts that no error occurred during execution.
+//   - If the command does not exit successfully (exit code != 0), it reads the
+//     command output and fails the test with an appropriate message.
+//
+// Args:
+//   - ctx (context.Context): The context for controlling the command execution.
+//   - c (testcontainers.Container): The test container where the command will
+//     be executed.
+//   - flags ([]string): Additional flags to pass to the kumactl install
+//     command.
+func EnsureInstallSuccessful(
+	ctx context.Context,
+	c testcontainers.Container,
+	flags []string,
+) {
 	GinkgoHelper()
 
-	exitCode, reader, err := container.Exec(
-		context.Background(),
-		append(
-			[]string{
-				"kumactl",
-				"install",
-				"transparent-proxy",
-				"--kuma-dp-user",
-				"kuma-dp",
-			},
-			flags...,
-		),
-		exec.Multiplexed(),
+	cmd := slices.Concat(
+		[]string{
+			"kumactl",
+			"install",
+			"transparent-proxy",
+			"--kuma-dp-user",
+			"kuma-dp",
+		},
+		flags,
 	)
+
+	exitCode, reader, err := c.Exec(ctx, cmd, exec.Multiplexed())
 	Expect(err).NotTo(HaveOccurred())
 
 	if exitCode != 0 {
 		buf := new(strings.Builder)
-		_, _ = io.Copy(buf, reader)
-
+		Expect(io.Copy(buf, reader)).Error().NotTo(HaveOccurred())
 		Fail(fmt.Sprintf("installation ended with code %d: %s", exitCode, buf))
 	}
 }
 
-func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
+// EnsureGoldenFiles validates the current iptables rules in a test container
+// against predefined golden files, ensuring the rules match the expected
+// configuration.
+//
+// This function performs the following steps:
+//   - Clones the list of IPv4 save commands and optionally includes IPv6 save
+//     commands if configured.
+//   - Iterates through each save command, executing it in the specified
+//     container context.
+//   - Constructs the golden file name based on the test case name, command, and
+//     suffix.
+//   - Reads the command output and compares it against the corresponding golden
+//     file.
+//   - If the command exits unsuccessfully, it checks if the error is due to the
+//     executable not being found and handles it accordingly.
+//
+// Args:
+//   - ctx (context.Context): The context for controlling the command execution.
+//   - c (testcontainers.Container): The test container where the commands will
+//     be executed.
+//   - tc (testCase): The test case containing the name and golden file suffix.
+func EnsureGoldenFiles(
+	ctx context.Context,
+	c testcontainers.Container,
+	tc testCase,
+) {
 	GinkgoHelper()
 
-	saveCmds := []string{
-		"iptables-save",
-		"iptables-legacy-save",
-		"iptables-nft-save",
-	}
+	saveCmds := slices.Clone(ipv4SaveCmds)
 
 	if Config.IPV6 {
-		saveCmds = append(
-			saveCmds,
-			"ip6tables-save",
-			"ip6tables-legacy-save",
-			"ip6tables-nft-save",
-		)
+		saveCmds = slices.Concat(saveCmds, ipv6SaveCmds)
 	}
 
 	for _, cmd := range saveCmds {
 		golden := utils.BuildIptablesGoldenFileName(
-			"install",
 			tc.name,
 			cmd,
 			tc.goldenFileSuffix,
 		)
 
-		exitCode, reader, err := container.Exec(
-			context.Background(),
-			[]string{cmd},
-			exec.Multiplexed(),
-		)
+		exitCode, reader, err := c.Exec(ctx, []string{cmd}, exec.Multiplexed())
 		Expect(err).NotTo(HaveOccurred())
 
 		buf := new(strings.Builder)
@@ -136,7 +190,7 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 		if exitCode != 0 {
 			if !strings.Contains(buf.String(), "executable file not found") {
 				Fail(fmt.Sprintf(
-					"installation ended with code %d: %s",
+					"command ended with code %d: %s",
 					exitCode,
 					buf.String(),
 				))
@@ -157,28 +211,13 @@ func EnsureGoldenFiles(container testcontainers.Container, tc testCase) {
 // (tproxy) installation scenarios across a set of Docker images.
 //
 // Args:
-//
-//	images (map[string]string): A map where the keys are descriptive names of
-//	  the Docker images, and the values are the actual Docker image names to use
-//	  for testing.
-//	entry (func(description interface{}, args ...interface{}) TableEntry):
-//	  A function used to create Ginkgo TableEntry objects. Use PEntry or XEntry
-//	  for creating paused or excluded entries, or Entry for regular ones.
-//	decorators (...interface{}): Optional decorators to apply to each TableEntry
-//	  for additional customization or configuration.
+//   - images (map[string]string): A map of Docker image names for testing.
+//   - entry (func(description interface{}, args ...interface{}) TableEntry):
+//     A function to create Ginkgo TableEntry objects.
+//   - decorators (...interface{}): Optional decorators for each TableEntry.
 //
 // Returns:
-//
-//	[]TableEntry: A slice of Ginkgo test entries, each representing a unique
-//	  test case for a combination of Docker image and optional flags.
-//
-// This function performs the following steps:
-//  1. Iterates through the provided map of Docker images.
-//  2. For each image, it calls the genEntriesForImage function to generate
-//     individual test entries. The genEntriesForImage function creates test
-//     entries based on the base image and all possible combinations of
-//     additional flags defined in the configuration.
-//  3. Combines all generated test entries into a single slice and returns it.
+//   - []TableEntry: A slice of Ginkgo test entries for each Docker image.
 func genEntriesForImages(
 	images map[string]string,
 	entry func(description interface{}, args ...interface{}) TableEntry,
@@ -187,7 +226,7 @@ func genEntriesForImages(
 	var entries []TableEntry
 
 	for name, image := range images {
-		entries = append(
+		entries = slices.Concat(
 			entries,
 			genEntriesForImage(
 				name,
@@ -195,7 +234,7 @@ func genEntriesForImages(
 				Config.InstallFlagsToTest,
 				entry,
 				decorators...,
-			)...,
+			),
 		)
 	}
 
@@ -313,19 +352,4 @@ func genEntriesForImage(
 	}
 
 	return entries
-}
-
-// EntriesForImages generates Ginkgo test entries for various Transparent Proxy
-// installation scenarios on a given set of Docker images.
-//
-// Note:
-//   - Container lifecycle hooks can sometimes fail silently, especially during
-//     critical operations like installing iptables. Handling these failures is
-//     challenging and can complicate the tests. To mitigate this, the function
-//     includes FlakeAttempts(3) to retry the test up to three times. This
-//     approach ensures robustness without significantly increasing test
-//     complexity. It is extremaly unlikely that tproxy installation would be
-//     flaky, so this method should provide a reliable solution.
-func EntriesForImages(images map[string]string) []TableEntry {
-	return genEntriesForImages(images, Entry, FlakeAttempts(3))
 }
