@@ -104,7 +104,7 @@ build/artifacts-$(1)-$(2)/coredns:
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/envoy ] || \
-	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v1.27.7-dns-fix/envoy-v1.27.7-dns-fix -o $$(@)/envoy \
+	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v1.27.7-dns-fix/envoy-v1.27.7-dns-fix -o $$(@)/envoy && \
 	chmod +x $$(@)/envoy
 
 .PHONY: build/artifacts-$(1)-$(2)/test-server
