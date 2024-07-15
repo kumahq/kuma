@@ -186,6 +186,10 @@ func (k *K8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Image:           k.image,
 					Args:            []string{"--config=/conf/otel-collector-config.yaml"},
 					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							"cpu":    resource.MustParse("100m"),
+							"memory": resource.MustParse("256Mi"),
+						},
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("500m"),
 							"memory": resource.MustParse("500Mi"),
