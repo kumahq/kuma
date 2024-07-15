@@ -31,6 +31,8 @@ We want to iterate over policy design to fully utilize the fact that we are refe
 
 - can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
 - yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
+- mixing outbounds and routes in `spec.to[].targetRef`
+- hides the most often most important information under `to[]`
 
 ### Leave Mesh*Routes in top level targetRef as it is now
 
