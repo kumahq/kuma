@@ -113,6 +113,7 @@ const (
 	FlagWait         = "--wait"
 	FlagWaitInterval = "--wait-interval"
 	FlagNoFlush      = "--noflush"
+	FlagTest         = "--test"
 )
 
 // FlagVariationsMap maps a flag name (e.g., "-t") to a map containing its long

@@ -163,94 +163,31 @@ type InitializedExecutablesIPvX struct {
 	logger Logger
 }
 
-// writeRulesToFile writes the provided iptables rules to a temporary file and
-// returns the file path.
-//
-// This method performs the following steps:
-//  1. Creates a temporary file with a name based on the
-//     `IptablesRestore.prefix` field of the `InitializedExecutablesIPvX`
-//     struct.
-//  2. Logs the contents that will be written to the file.
-//  3. Writes the rules to the file using a buffered writer for efficiency.
-//  4. Flushes the buffer to ensure all data is written to the file.
-//  5. Returns the file path if successful, or an error if any step fails.
-//
-// Args:
-//
-//	rules (string): The iptables rules to be written to the temporary file.
-//
-// Returns:
-//
-//	string: The path to the temporary file containing the iptables rules.
-//	error: An error if the file creation, writing, or flushing fails.
-func (c InitializedExecutablesIPvX) writeRulesToFile(rules string) (string, error) {
-	// Create a temporary file with a name template based on the IptablesRestore
-	// prefix.
-	nameTemplate := fmt.Sprintf("%s-rules.*.txt", c.IptablesRestore.prefix)
-	f, err := os.CreateTemp("", nameTemplate)
-	if err != nil {
-		return "", errors.Wrapf(
-			err,
-			"failed to create temporary file: %s",
-			nameTemplate,
-		)
-	}
-	defer f.Close()
-
-	// Remove the temporary file if an error occurs after creation.
-	defer func() {
-		if err != nil {
-			os.Remove(f.Name())
-		}
-	}()
-
-	// Log the file name and the rules to be written.
-	c.logger.Info("writing the following rules to file:", f.Name())
-	c.logger.InfoWithoutPrefix(strings.TrimSpace(rules))
-
-	// Write the rules to the file using a buffered writer.
-	writer := bufio.NewWriter(f)
-	if _, err = writer.WriteString(rules); err != nil {
-		return "", errors.Wrapf(
-			err,
-			"failed to write rules to the temporary file: %s",
-			f.Name(),
-		)
-	}
-
-	// Flush the buffer to ensure all data is written.
-	if err = writer.Flush(); err != nil {
-		return "", errors.Wrapf(
-			err,
-			"failed to flush the buffered writer for file: %s",
-			f.Name(),
-		)
-	}
-
-	// Return the file path.
-	return f.Name(), nil
-}
-
-func (c InitializedExecutablesIPvX) Restore(
+// restore executes the iptables-restore command with the given rules and
+// additional arguments. It writes the rules to a temporary file and tries
+// to restore the iptables rules from this file. If the command fails, it
+// retries the specified number of times.
+func (c InitializedExecutablesIPvX) restore(
 	ctx context.Context,
-	rules string,
+	f *os.File,
+	quiet bool,
+	args ...string,
 ) (string, error) {
-	fileName, err := c.writeRulesToFile(rules)
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(fileName)
+	args = append(args, f.Name())
+
+	argsAll := slices.DeleteFunc(
+		slices.Concat(c.IptablesRestore.args, args),
+		func(s string) bool { return s == "" },
+	)
 
 	for i := 0; i <= c.retry.MaxRetries; i++ {
 		c.logger.try = i + 1
 
-		c.logger.InfoTry(
-			c.IptablesRestore.Path,
-			strings.Join(c.IptablesRestore.args, " "),
-			fileName,
-		)
+		if !quiet {
+			c.logger.InfoTry(c.IptablesRestore.Path, strings.Join(argsAll, " "))
+		}
 
-		stdout, _, err := c.IptablesRestore.Exec(ctx, fileName)
+		stdout, _, err := c.IptablesRestore.Exec(ctx, args...)
 		if err == nil {
 			return stdout.String(), nil
 		}
@@ -258,12 +195,139 @@ func (c InitializedExecutablesIPvX) Restore(
 		c.logger.ErrorTry(err, "restoring failed:")
 
 		if i < c.retry.MaxRetries {
-			c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+			if !quiet {
+				c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+			}
+
 			time.Sleep(c.retry.SleepBetweenReties)
 		}
 	}
 
 	return "", errors.Errorf("%s failed", c.IptablesRestore.Path)
+}
+
+// Restore executes the iptables-restore command with the given rules and the
+// --noflush flag to ensure that the current rules are not flushed before
+// restoring. This function is a wrapper around the restore function with the
+// --noflush flag.
+func (c InitializedExecutablesIPvX) Restore(
+	ctx context.Context,
+	rules string,
+	quiet bool,
+) (string, error) {
+	f, err := createTempFile(c.IptablesRestore.prefix)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	defer os.Remove(f.Name())
+
+	// Log the file name and the rules to be written.
+	if !quiet {
+		c.logger.Info("writing the following rules to file:", f.Name())
+		c.logger.InfoWithoutPrefix(strings.TrimSpace(rules))
+	}
+
+	if err := writeToFile(rules, f); err != nil {
+		return "", err
+	}
+
+	return c.restore(ctx, f, quiet, FlagNoFlush)
+}
+
+// RestoreWithFlush executes the iptables-restore command with the given rules,
+// allowing the current rules to be flushed before restoring. This function is
+// a wrapper around the restore function without the --noflush flag.
+func (c InitializedExecutablesIPvX) RestoreWithFlush(
+	ctx context.Context,
+	rules string,
+	quiet bool,
+) (string, error) {
+	// Create a backup file for existing iptables rules.
+	backupFile, err := createBackupFile(c.IptablesRestore.prefix)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create backup file for iptables rules")
+	}
+	defer backupFile.Close()
+
+	// Save the current iptables rules to the backup file.
+	stdout, _, err := c.IptablesSave.Exec(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to execute iptables-save command")
+	}
+
+	if err := writeToFile(stdout.String(), backupFile); err != nil {
+		return "", errors.Wrap(err, "failed to write current iptables rules to backup file")
+	}
+
+	// Create a temporary file for the new iptables rules.
+	restoreFile, err := createTempFile(c.IptablesRestore.prefix)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create temporary file for new iptables rules")
+	}
+	defer restoreFile.Close()
+	defer os.Remove(restoreFile.Name())
+
+	// Write the new iptables rules to the temporary file.
+	if err := writeToFile(rules, restoreFile); err != nil {
+		return "", errors.Wrap(err, "failed to write new iptables rules to temporary file")
+	}
+
+	// Attempt to restore the new iptables rules from the temporary file.
+	output, err := c.restore(ctx, restoreFile, quiet)
+	if err != nil {
+		c.logger.Errorf("restoring backup file: %s", backupFile.Name())
+
+		if _, err := c.restore(ctx, backupFile, quiet); err != nil {
+			c.logger.Warnf("restoring backup failed: %s", err)
+		}
+
+		return "", errors.Wrapf(err, "failed to restore rules from file: %s", restoreFile.Name())
+	}
+
+	return output, nil
+}
+
+// RestoreTest runs iptables-restore with the --test flag to validate the
+// iptables rules without applying them.
+//
+// This function calls the internal `restore` method with the --test flag to
+// ensure that the iptables rules specified in the `rules` string are valid. If
+// the rules are valid, it returns the output from iptables-restore. If there is
+// an error, it returns the error message.
+func (c InitializedExecutablesIPvX) RestoreTest(
+	ctx context.Context,
+	rules string,
+) (string, error) {
+	f, err := createTempFile(c.IptablesRestore.prefix)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	defer os.Remove(f.Name())
+
+	if err := writeToFile(rules, f); err != nil {
+		return "", err
+	}
+
+	stdout, _, err := c.IptablesRestore.Exec(ctx, FlagTest, f.Name())
+	if err != nil {
+		// There is an existing bug which occurs on Ubuntu 20.04
+		// ref. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003
+		if strings.Contains(strings.ToLower(err.Error()), "segmentation fault") {
+			c.logger.Warnf(
+				`cannot confirm rules are valid because "%s %s" is returning unexpected error: %q. See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003 for more details`,
+				c.IptablesRestore.Path,
+				FlagTest,
+				err,
+			)
+			return "", nil
+		}
+
+		return "", errors.Wrap(err, "rules are invalid")
+	}
+
+	return stdout.String(), nil
 }
 
 type Executables struct {
@@ -294,17 +358,6 @@ func NewExecutables(mode IptablesMode) Executables {
 //  3. If IPv6 initialization is successful, it attempts to configure the IPv6
 //     outbound address. If this configuration fails, a warning is logged, and
 //     IPv6 rules will be skipped.
-//
-// Args:
-// - ctx (context.Context): The context for managing request lifetime.
-// - cfg (Config): Configuration settings for initializing the executables.
-// - l (Logger): Logger for logging initialization steps and errors.
-//
-// Returns:
-//   - InitializedExecutables: Struct containing the initialized executables
-//     for both IPv4 and IPv6.
-//   - error: Error indicating the failure of either IPv4 or IPv6
-//     initialization.
 func (c Executables) Initialize(
 	ctx context.Context,
 	l Logger,
@@ -314,8 +367,11 @@ func (c Executables) Initialize(
 
 	initialized := InitializedExecutables{Executables: c}
 
-	initialized.IPv4, err = c.IPv4.Initialize(ctx, l, cfg)
-	if err != nil {
+	if initialized.IPv4, err = c.IPv4.Initialize(
+		ctx,
+		l.WithPrefix(IptablesCommandByFamily[false]),
+		cfg,
+	); err != nil {
 		return InitializedExecutables{}, errors.Wrap(
 			err,
 			"failed to initialize IPv4 executables",
@@ -323,8 +379,11 @@ func (c Executables) Initialize(
 	}
 
 	if cfg.IPv6 {
-		initialized.IPv6, err = c.IPv6.Initialize(ctx, l, cfg)
-		if err != nil {
+		if initialized.IPv6, err = c.IPv6.Initialize(
+			ctx,
+			l.WithPrefix(IptablesCommandByFamily[true]),
+			cfg,
+		); err != nil {
 			return InitializedExecutables{}, errors.Wrap(
 				err,
 				"failed to initialize IPv6 executables",
@@ -333,8 +392,10 @@ func (c Executables) Initialize(
 
 		if err := configureIPv6OutboundAddress(); err != nil {
 			initialized.IPv6 = InitializedExecutablesIPvX{}
-			l.Warn("failed to configure IPv6 outbound address. IPv6 rules "+
-				"will be skipped:", err)
+			l.Warn(
+				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
+				err,
+			)
 		}
 	}
 
@@ -384,9 +445,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	switch {
 	// Dry-run mode when no valid iptables executables are found.
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("dry-run mode: No valid iptables executables found. The " +
-			"generated iptables rules may differ from those generated in an " +
-			"environment with valid iptables executables")
+		l.Warn("[dry-run]: no valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables")
 		return InitializedExecutables{}, nil
 	// Regular mode when no vaild iptables executables are found
 	case len(errs) == 2:
@@ -403,11 +462,7 @@ func (c ExecutablesNftLegacy) Initialize(
 	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
 	// table. We are prioritizing nft
 	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		l.Warn("conflicting iptables modes detected. Two iptables " +
-			"versions (iptables-nft and iptables-legacy) were found. " +
-			"Both contain a nat table with a chain named 'DOCKER_OUTPUT'. " +
-			"To avoid potential conflicts, iptables-legacy will be ignored " +
-			"and iptables-nft will be used")
+		l.Warn("conflicting iptables modes detected. Two iptables versions (iptables-nft and iptables-legacy) were found. Both contain a nat table with a chain named 'DOCKER_OUTPUT'. To avoid potential conflicts, iptables-legacy will be ignored and iptables-nft will be used")
 		return nft, nil
 	case legacy.hasDockerOutputChain():
 		return legacy, nil
@@ -417,37 +472,16 @@ func (c ExecutablesNftLegacy) Initialize(
 }
 
 // buildRestoreArgs constructs a slice of flags for restoring iptables rules
-// based on the provided wait time, wait interval, and iptables mode.
+// based on the provided configuration and iptables mode.
 //
 // This function generates a list of command-line flags to be used with
 // iptables-restore, tailored to the given parameters:
-//   - By default, it includes the `--noflush` flag to prevent flushing of
-//     existing rules.
-//   - If the iptables mode is not legacy, it returns only the `--noflush` flag.
+//   - For non-legacy iptables mode, it returns an empty slice, as no additional
+//     flags are required.
 //   - For legacy mode, it conditionally adds the `--wait` and `--wait-interval`
-//     flags based on the provided wait time and waitInterval.
-//
-// Args:
-//
-//	wait (uint): The wait time in seconds for iptables-restore to wait for the
-//	 xtables lock before aborting.
-//	interval (uint): The wait interval in seconds between attempts to acquire
-//	 the xtables lock.
-//	mode (IptablesMode): The mode of iptables in use, determining the
-//	 applicability of the wait flags.
-//
-// Returns:
-//
-//	[]string: A slice of strings representing the constructed flags for
-//	 iptables-restore.
-//
-// Example:
-//
-//	buildRestoreArgs(5, 2, IptablesModeNft) # Returns: []string{"--noflush"}
-//	buildRestoreArgs(5, 2, IptablesModeLegacy)
-//	 # Returns: []string{"--noflush", "--wait=5", "--wait-interval=2"}
+//     flags based on the provided configuration values.
 func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
-	flags := []string{FlagNoFlush}
+	var flags []string
 
 	if mode != IptablesModeLegacy {
 		return flags
@@ -689,11 +723,71 @@ func configureIPv6OutboundAddress() error {
 			return nil
 		}
 
-		return errors.Wrapf(
-			err,
-			"failed to add IPv6 address %s to loopback interface",
-			addr.IPNet,
-		)
+		return errors.Wrapf(err, "failed to add IPv6 address %s to loopback interface", addr.IPNet)
+	}
+
+	return nil
+}
+
+// createBackupFile generates a backup file with a specified prefix and a
+// timestamp suffix. The file is created in the system's temporary directory and
+// is used to store iptables rules for backup purposes.
+func createBackupFile(prefix string) (*os.File, error) {
+	// Generate a timestamp suffix for the backup file name.
+	dateSuffix := time.Now().Format("2006-01-02-150405")
+
+	// Construct the backup file name using the provided prefix and the
+	// timestamp suffix.
+	fileName := fmt.Sprintf("%s-rules.%s.txt.backup", prefix, dateSuffix)
+	filePath := filepath.Join(os.TempDir(), fileName)
+
+	// Create the backup file in the system's temporary directory.
+	f, err := os.Create(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create backup file: %s", filePath)
+	}
+
+	return f, nil
+}
+
+// createTempFile generates a temporary file with a specified prefix. The file
+// is created in the system's default temporary directory and is used for
+// storing iptables rules temporarily.
+//
+// This function performs the following steps:
+//  1. Constructs a template for the temporary file name using the provided
+//     prefix.
+//  2. Creates the temporary file in the system's default temporary directory.
+func createTempFile(prefix string) (*os.File, error) {
+	// Construct a template for the temporary file name using the provided prefix.
+	nameTemplate := fmt.Sprintf("%s-rules.*.txt", prefix)
+
+	// Create the temporary file in the system's default temporary directory.
+	f, err := os.CreateTemp(os.TempDir(), nameTemplate)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create temporary file with template: %s", nameTemplate)
+	}
+
+	return f, nil
+}
+
+// writeToFile writes the provided content to the specified file using a
+// buffered writer. It ensures that all data is written to the file by flushing
+// the buffer.
+//
+// This function performs the following steps:
+//  1. Writes the content to the file using a buffered writer for efficiency.
+//  2. Flushes the buffer to ensure all data is written to the file.
+func writeToFile(content string, f *os.File) error {
+	// Write the content to the file using a buffered writer.
+	writer := bufio.NewWriter(f)
+	if _, err := writer.WriteString(content); err != nil {
+		return errors.Wrapf(err, "failed to write to file: %s", f.Name())
+	}
+
+	// Flush the buffer to ensure all data is written.
+	if err := writer.Flush(); err != nil {
+		return errors.Wrapf(err, "failed to flush the buffered writer for file: %s", f.Name())
 	}
 
 	return nil
