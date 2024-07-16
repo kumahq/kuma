@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -165,6 +166,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, ms := range meshServices {
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
+	meshExternalServices := resources.MeshExternalServices().Items
+	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
+	for _, mes := range meshExternalServices {
+		meshExternalServicesByName[mes.Meta.GetName()] = mes
+	}
 
 	var domains []xds.VIPDomains
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
@@ -181,15 +187,18 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	msDomains, msOutbounds := xds_topology.MeshServiceOutbounds(meshServices)
 	outbounds = append(outbounds, msOutbounds...)
 	domains = append(domains, msDomains...)
-
+	mesDomains, mesOutbounds := xds_topology.MeshExternalServiceOutbounds(meshExternalServices)
+	outbounds = append(outbounds, mesOutbounds...)
+	domains = append(domains, mesDomains...)
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
-	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, meshExternalServices, loader, m.zone)
+	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -210,8 +219,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		Resources:                   resources,
 		DataplanesByName:            dataplanesByName,
 		MeshServiceByName:           meshServicesByName,
+		MeshExternalServiceByName:   meshExternalServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
+		IngressEndpointMap:          ingressEndpointMap,
 		CrossMeshEndpoints:          crossMeshEndpointMap,
 		VIPDomains:                  domains,
 		VIPOutbounds:                outbounds,
@@ -341,12 +352,13 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 			if !ok {
 				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
 			}
-			zi, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
+
+			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
 			if err != nil {
 				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
 				return nil, nil
 			}
-			return zi, nil
+			return resolvedZoneIngress, nil
 		case core_mesh.DataplaneType:
 			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
 				dp, ok := resource.(*core_mesh.DataplaneResource)
@@ -538,8 +550,14 @@ func inferServiceProtocol(endpoints []xds.Endpoint) core_mesh.Protocol {
 		return core_mesh.ProtocolUnknown
 	}
 	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
+	if endpoints[0].ExternalService != nil && endpoints[0].ExternalService.Protocol != "" {
+		serviceProtocol = endpoints[0].ExternalService.Protocol
+	}
 	for _, endpoint := range endpoints[1:] {
 		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		if endpoint.ExternalService != nil && endpoint.ExternalService.Protocol != "" {
+			endpointProtocol = endpoint.ExternalService.Protocol
+		}
 		serviceProtocol = util_protocol.GetCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol

@@ -337,6 +337,14 @@ runtime:
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        # List of inbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeInboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_IPS
+        # List of outbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeOutboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_IPS
       builtinDNS:
         # Use the built-in DNS
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
@@ -534,6 +542,9 @@ multizone:
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF
     # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
     disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
+    # IngressUpdateInterval is the interval between the CP updating the list of
+    # available services on ZoneIngress.
+    ingressUpdateInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -791,9 +802,15 @@ policies:
     - meshtraces
     - meshtrafficpermissions
 coreResources:
+  status:
+    # How often we compute status of MeshMultiZoneService
+    meshMultiZoneServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL
+    # How often we compute status of MeshService
+    meshServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices
+    - meshmultizoneservices
     - meshservices
 # IP address management configuration
 ipam:
@@ -804,5 +821,8 @@ ipam:
   meshExternalService:
     # CIDR for MeshExternalService IPs
     cidr: 242.0.0.0/8 # ENV: KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR
+  meshMultiZoneService:
+    # CIDR for MeshMultiZoneService IPs
+    cidr: 243.0.0.0/8 # ENV: KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR
   # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
   allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL

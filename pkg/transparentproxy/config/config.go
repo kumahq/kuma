@@ -1,20 +1,21 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"os/exec"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
-
-const DebugLogLevel uint16 = 7
 
 type Owner struct {
 	UID string
@@ -27,8 +28,42 @@ type Owner struct {
 // ranges and multiple values can be mixed e.g. 1000,1005:1006 meaning 1000,1005,1006
 type ValueOrRangeList string
 
-type UIDsToPorts struct {
-	Protocol string
+// NewValueOrRangeList creates a ValueOrRangeList from a given value or range of
+// values. It accepts a parameter of type []uint16, uint16, or string and
+// converts it to a ValueOrRangeList, which is a comma-separated string
+// representation of the values.
+//
+// Args:
+//   - v (T): The input value which can be a slice of uint16, a single uint16,
+//     or a string.
+//
+// Returns:
+//   - ValueOrRangeList: A comma-separated string representation of the input
+//     values.
+//
+// The function panics if an unsupported type is provided, although the type
+// constraints should prevent this from occurring.
+func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList {
+	switch value := any(v).(type) {
+	case []uint16:
+		var ports []string
+		for _, port := range value {
+			ports = append(ports, strconv.Itoa(int(port)))
+		}
+		return ValueOrRangeList(strings.Join(ports, ","))
+	case uint16:
+		return ValueOrRangeList(strconv.Itoa(int(value)))
+	case string:
+		return ValueOrRangeList(value)
+	default:
+		// Shouldn't be possible to catch this
+		panic(errors.Errorf("invalid value type: %T", value))
+	}
+}
+
+type Exclusion struct {
+	Protocol ProtocolL4
+	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
 }
@@ -38,11 +73,65 @@ type TrafficFlow struct {
 	Enabled             bool
 	Port                uint16
 	PortIPv6            uint16
-	Chain               Chain
-	RedirectChain       Chain
+	ChainName           string
+	RedirectChainName   string
 	ExcludePorts        []uint16
-	ExcludePortsForUIDs []UIDsToPorts
+	ExcludePortsForUIDs []string
+	ExcludePortsForIPs  []string
 	IncludePorts        []uint16
+}
+
+func (c TrafficFlow) Initialize(
+	ipv6 bool,
+	chainNamePrefix string,
+) (InitializedTrafficFlow, error) {
+	initialized := InitializedTrafficFlow{TrafficFlow: c, Port: c.Port}
+
+	if c.ChainName == "" {
+		return InitializedTrafficFlow{}, errors.New("no chain name provided")
+	}
+	initialized.ChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.ChainName)
+
+	if c.RedirectChainName == "" {
+		return InitializedTrafficFlow{}, errors.New("no redirect chain name provided")
+	}
+	initialized.RedirectChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.RedirectChainName)
+
+	if ipv6 && c.PortIPv6 != 0 {
+		initialized.Port = c.PortIPv6
+	}
+
+	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"parsing excluded outbound ports for uids failed",
+		)
+	}
+
+	excludePortsForIPs, err := parseExcludePortsForIPs(c.ExcludePortsForIPs, ipv6)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"parsing excluded outbound ports for IPs failed",
+		)
+	}
+
+	initialized.Exclusions = slices.Concat(
+		initialized.Exclusions,
+		excludePortsForUIDs,
+		excludePortsForIPs,
+	)
+
+	return initialized, nil
+}
+
+type InitializedTrafficFlow struct {
+	TrafficFlow
+	Exclusions        []Exclusion
+	Port              uint16
+	ChainName         string
+	RedirectChainName string
 }
 
 type DNS struct {
@@ -58,41 +147,149 @@ type DNS struct {
 
 type InitializedDNS struct {
 	DNS
-	ServersIPv4 []string
-	ServersIPv6 []string
+	Servers            []string
+	ConntrackZoneSplit bool
+	Enabled            bool
 }
 
 // Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
 // the nameservers from the file specified in the ResolvConfigPath field of
 // the input DNS struct.
-func (c DNS) Initialize() (InitializedDNS, error) {
-	initialized := InitializedDNS{DNS: c}
+func (c DNS) Initialize(
+	l Logger,
+	executables InitializedExecutablesIPvX,
+	ipv6 bool,
+) (InitializedDNS, error) {
+	initialized := InitializedDNS{DNS: c, Enabled: c.Enabled}
 
-	// We don't have to get DNS servers if DNS traffic shouldn't be redirected,
-	// or if we want to capture all DNS traffic
-	if !c.Enabled || c.CaptureAll {
+	// We don't have to continue initialization if the DNS traffic shouldn't be
+	// redirected
+	if !c.Enabled {
+		return initialized, nil
+	}
+
+	if c.ConntrackZoneSplit {
+		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
+		if !initialized.ConntrackZoneSplit {
+			l.Warnf(
+				"conntrack zone splitting for %s is disabled. Functionality requires the 'conntrack' iptables module",
+				IPTypeMap[ipv6],
+			)
+		}
+	}
+
+	// We don't have to get DNS servers if we want to capture all DNS traffic
+	if c.CaptureAll {
 		return initialized, nil
 	}
 
 	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
 	if err != nil {
-		return initialized, errors.Errorf("unable to read file %s: %s", c.ResolvConfigPath, err)
+		return initialized, errors.Wrapf(
+			err,
+			"unable to read file %s",
+			c.ResolvConfigPath,
+		)
 	}
 
+	// Loop through each DNS server address parsed from the resolv.conf file.
 	for _, address := range dnsConfig.Servers {
 		parsed := net.ParseIP(address)
-		if parsed.To4() != nil {
-			initialized.ServersIPv4 = append(initialized.ServersIPv4, address)
-		} else {
-			initialized.ServersIPv6 = append(initialized.ServersIPv6, address)
+		// Check if the address matches the expected IP version.
+		// - If config is not for IPv6 and the address is IPv4, add to the list.
+		// - If config is for IPv6 and the address is IPv6, add to the list.
+		if !ipv6 && parsed.To4() != nil || ipv6 && parsed.To4() == nil {
+			initialized.Servers = append(initialized.Servers, address)
 		}
+	}
+
+	if len(initialized.Servers) == 0 {
+		initialized.Enabled = false
+		initialized.ConntrackZoneSplit = false
+
+		l.Warnf(
+			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
+			IPTypeMap[ipv6],
+			c.ResolvConfigPath,
+		)
 	}
 
 	return initialized, nil
 }
 
 type VNet struct {
+	// Networks specifies virtual networks using the format interfaceName:CIDR.
+	// The interface name can be exact or a prefix followed by a "+", allowing
+	// matching for interfaces starting with the given prefix.
+	// Examples:
+	// - "docker0:172.17.0.0/16"
+	// - "br+:172.18.0.0/16" (matches any interface starting with "br")
+	// - "iface:::1/64"
 	Networks []string
+}
+
+// Initialize processes the virtual networks specified in the VNet struct and
+// separates them into IPv4 and IPv6 categories based on their CIDR notation.
+// It returns an InitializedVNet struct that contains the parsed interface
+// names and corresponding CIDRs for the specified IP version (IPv4 or IPv6).
+//
+// This method performs the following steps:
+//  1. Iterates through each network definition in the Networks slice.
+//  2. Splits each network definition into an interface name and a CIDR block
+//     using the first colon (":") as the delimiter.
+//  3. Validates the format of the network definition, returning an error if it
+//     is invalid.
+//  4. Parses the CIDR block to determine whether it is an IPv4 or IPv6 address.
+//     - If the CIDR block is valid and matches the specified IP version,
+//     it is added to the InterfaceCIDRs map.
+//  5. Constructs and returns an InitializedVNet struct containing the
+//     populated InterfaceCIDRs map.
+//
+// Args:
+//   - ipv6 (bool): Indicates whether to process IPv6 addresses. If false,
+//     only IPv4 addresses are processed.
+//
+// Returns:
+//   - InitializedVNet: Struct containing the parsed interface names and
+//     corresponding CIDRs for the specified IP version.
+//   - error: Error indicating any issues encountered during initialization.
+func (c VNet) Initialize(ipv6 bool) (InitializedVNet, error) {
+	initialized := InitializedVNet{InterfaceCIDRs: map[string]string{}}
+
+	for _, network := range c.Networks {
+		// We accept only the first ":" so in case of IPv6 there should be no
+		// problem with parsing
+		pair := strings.SplitN(network, ":", 2)
+		if len(pair) < 2 {
+			return InitializedVNet{}, errors.Errorf(
+				"invalid virtual network definition: %s",
+				network,
+			)
+		}
+
+		address, _, err := net.ParseCIDR(pair[1])
+		if err != nil {
+			return InitializedVNet{}, errors.Wrapf(
+				err,
+				"invalid CIDR definition for %s",
+				pair[1],
+			)
+		}
+
+		// Add the address to the map if it matches the specified IP version
+		if (!ipv6 && address.To4() != nil) || (ipv6 && address.To4() == nil) {
+			initialized.InterfaceCIDRs[pair[0]] = pair[1]
+		}
+	}
+
+	return initialized, nil
+}
+
+type InitializedVNet struct {
+	// InterfaceCIDRs is a map where the keys are interface names and the values
+	// are IP addresses in CIDR notation, representing the parsed and validated
+	// virtual network configurations.
+	InterfaceCIDRs map[string]string
 }
 
 type Redirect struct {
@@ -106,29 +303,46 @@ type Redirect struct {
 
 type InitializedRedirect struct {
 	Redirect
-	DNS InitializedDNS
+	DNS      InitializedDNS
+	VNet     InitializedVNet
+	Inbound  InitializedTrafficFlow
+	Outbound InitializedTrafficFlow
 }
 
-func (c Redirect) Initialize() (InitializedRedirect, error) {
+func (c Redirect) Initialize(
+	l Logger,
+	executables InitializedExecutablesIPvX,
+	ipv6 bool,
+) (InitializedRedirect, error) {
 	var err error
 
 	initialized := InitializedRedirect{Redirect: c}
 
 	// .DNS
-	initialized.DNS, err = c.DNS.Initialize()
+	initialized.DNS, err = c.DNS.Initialize(l, executables, ipv6)
 	if err != nil {
 		return initialized, errors.Wrap(err, "unable to initialize .DNS")
 	}
 
+	// .VNet
+	initialized.VNet, err = c.VNet.Initialize(ipv6)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .VNet")
+	}
+
+	// .Inbound
+	initialized.Inbound, err = c.Inbound.Initialize(ipv6, c.NamePrefix)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .Inbound")
+	}
+
+	// .Outbound
+	initialized.Outbound, err = c.Outbound.Initialize(ipv6, c.NamePrefix)
+	if err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize .Outbound")
+	}
+
 	return initialized, nil
-}
-
-type Chain struct {
-	Name string
-}
-
-func (c Chain) GetFullName(prefix string) string {
-	return prefix + c.Name
 }
 
 type Ebpf struct {
@@ -143,21 +357,92 @@ type Ebpf struct {
 }
 
 type LogConfig struct {
+	// Enabled determines whether iptables rules logging is activated. When
+	// true, each packet matching an iptables rule will have its details logged,
+	// aiding in diagnostics and monitoring of packet flows.
 	Enabled bool
-	Level   uint16
+	// Level specifies the log level for iptables logging as defined by
+	// netfilter. This level controls the verbosity and detail of the log
+	// entries for matching packets. Higher values increase the verbosity.
+	// Commonly used levels are: 1 (alerts), 4 (warnings), 5 (notices),
+	// 7 (debugging). The exact behavior can depend on the system's syslog
+	// configuration.
+	Level uint16
 }
 
 type RetryConfig struct {
-	MaxRetries         *int
+	// MaxRetries specifies the number of retries after the initial attempt.
+	// A value of 0 means no retries, and only the initial attempt will be made.
+	MaxRetries int
+	// SleepBetweenRetries defines the duration to wait between retry attempts.
+	// This delay helps in situations where immediate retries may not be
+	// beneficial, allowing time for transient issues to resolve.
 	SleepBetweenReties time.Duration
+}
+
+// Comment struct contains the configuration for iptables rule comments.
+// It includes options to enable or disable comments and a prefix to use
+// for comment text.
+type Comment struct {
+	Disabled bool
+	// Prefix defines the prefix to be used for comments on iptables rules,
+	// aiding in identifying and organizing rules created by the transparent
+	// proxy.
+	Prefix string
+}
+
+// InitializedComment struct contains the processed configuration for iptables
+// rule comments. It indicates whether comments are enabled and the prefix to
+// use for comment text.
+type InitializedComment struct {
+	// Enabled indicates whether iptables rule comments are enabled based on
+	// the initial configuration and system capabilities.
+	Enabled bool
+	// Prefix defines the prefix to be used for comments on iptables rules,
+	// aiding in identifying and organizing rules created by the transparent
+	// proxy.
+	Prefix string
+}
+
+// Initialize processes the Comment configuration and determines whether
+// iptables rule comments should be enabled. It checks the system's
+// functionality to see if the comment module is available and returns
+// an InitializedComment struct with the result.
+//
+// Args:
+//   - e (InitializedExecutablesIPvX): The initialized executables containing
+//     system functionality details, including available modules.
+//
+// Returns:
+//   - InitializedComment: The struct containing the processed comment
+//     configuration, indicating whether comments are enabled and the prefix to
+//     use for comments.
+func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
+	return InitializedComment{
+		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
+		Prefix:  c.Prefix,
+	}
 }
 
 type Config struct {
 	Owner    Owner
 	Redirect Redirect
 	Ebpf     Ebpf
-	// DropInvalidPackets when set will enable configuration which should drop
-	// packets in invalid states
+	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
+	// packets that are considered invalid. This is useful in scenarios where
+	// out-of-order packets bypass DNAT by iptables and reach the application
+	// directly, causing connection resets.
+	//
+	// This behavior is typically observed during high-throughput requests (like
+	// uploading large files). Enabling this option can improve application
+	// stability by preventing these invalid packets from reaching the
+	// application.
+	//
+	// However, enabling `DropInvalidPackets` might introduce slight performance
+	// overhead. Consider the trade-off between connection stability and
+	// performance before enabling this option.
+	//
+	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
 	DropInvalidPackets bool
 	// IPv6 when set will be used to configure iptables as well as ip6tables
 	IPv6 bool
@@ -173,8 +458,11 @@ type Config struct {
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
 	DryRun bool
-	// Log is the place where configuration for logging iptables rules will
-	// be placed
+	// Log configures logging for iptables rules using the LOG chain. When
+	// enabled, this setting causes the kernel to log details about packets that
+	// match the iptables rules, including IP/IPv6 headers. The logs are useful
+	// for debugging and can be accessed via tools like dmesg or syslog. The
+	// logging behavior is defined by the nested LogConfig struct.
 	Log LogConfig
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
@@ -195,109 +483,166 @@ type Config struct {
 	// StoreFirewalld when set, configures firewalld to store the generated
 	// iptables rules.
 	StoreFirewalld bool
+	// Executables field holds configuration for the executables used to
+	// interact with iptables (or ip6tables). It can handle both nft (nftables)
+	// and legacy iptables modes, and supports IPv4 and IPv6 versions
+	Executables ExecutablesNftLegacy
+	// Comment configures the prefix and enable/disable status for iptables rule
+	// comments. This setting helps in identifying and organizing iptables rules
+	// created by the transparent proxy, making them easier to manage and debug.
+	Comment Comment
 }
 
-// InitializedConfig extends the Config struct by adding fields that require
+// InitializedConfigIPvX extends the Config struct by adding fields that require
 // additional logic to retrieve their values. These values typically involve
 // interacting with the system or external resources.
-type InitializedConfig struct {
+type InitializedConfigIPvX struct {
 	Config
+	// Logger is utilized for detailed logging throughout the lifecycle of the
+	// InitializedConfigIPvX. This includes specific logging for iptables
+	// operations such as rule setup, modification, and restoration. The Logger
+	// in this struct ensures detailed, step-by-step logs are available for
+	// operations related to the corresponding IP version (IPv4 or IPv6), aiding
+	// in diagnostics and debugging.
+	Logger Logger
 	// Redirect is an InitializedRedirect struct containing the initialized
 	// redirection configuration. If DNS redirection is enabled this includes
 	// the DNS servers retrieved from the specified resolv.conf file
 	// (/etc/resolv.conf by default)
 	Redirect InitializedRedirect
+	// Executables field holds the initialized version of Config.Executables.
+	// It attempts to locate the actual executable paths on the system based on
+	// the provided configuration and verifies their functionality.
+	Executables InitializedExecutablesIPvX
+	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
+	// packets that are considered invalid. This is useful in scenarios where
+	// out-of-order packets bypass DNAT by iptables and reach the application
+	// directly, causing connection resets. This field is set during
+	// configuration initialization and considers whether the mangle table is
+	// available for the corresponding IP version (IPv4 or IPv6).
+	DropInvalidPackets bool
 	// LoopbackInterfaceName represents the name of the loopback interface which
 	// will be used to construct outbound iptable rules for outbound (i.e.
 	// -A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o lo -j RETURN)
 	LoopbackInterfaceName string
+	// LocalhostCIDR is a string representing the CIDR notation of the localhost
+	// address for the given IP version (IPv4 or IPv6). This is used to
+	// construct rules related to the loopback interface.
+	LocalhostCIDR string
+	// InboundPassthroughCIDR is a string representing the CIDR notation of the
+	// address used for inbound passthrough traffic. This is used to construct
+	// rules allowing specific traffic to bypass normal proxying.
+	InboundPassthroughCIDR string
+	// Comment holds the processed configuration for iptables rule comments,
+	// indicating whether comments are enabled and the prefix to use for comment
+	// text. This helps in identifying and organizing iptables rules created by
+	// the transparent proxy, making them easier to manage and debug.
+	Comment InitializedComment
+
+	enabled bool
 }
 
-// ShouldDropInvalidPackets is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldDropInvalidPackets, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldDropInvalidPackets() bool {
-	return c.DropInvalidPackets
+// Enabled returns the state of the 'enabled' field, indicating whether the
+// IP version-specific configuration is enabled.
+//
+// This method simply returns the value of the 'enabled' field which
+// determines if the corresponding IPv4 or IPv6 configuration is active.
+func (c InitializedConfigIPvX) Enabled() bool {
+	return c.enabled
 }
 
-// ShouldRedirectDNS is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldRedirectDNS, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldRedirectDNS() bool {
-	return c.Redirect.DNS.Enabled
+type InitializedConfig struct {
+	// Logger is utilized for recording general logs during the lifecycle of the
+	// InitializedConfig, including the initialization and finalization phases
+	// of the transparent proxy installation process. This logger is used to log
+	// high-level information and statuses, while more specific logging related
+	// to iptables operations is handled by the Logger in InitializedConfigIPvX.
+	Logger Logger
+	// DryRun when set will not execute, but just display instructions which
+	// otherwise would have served to install transparent proxy
+	DryRun bool
+	// IPv4 contains the initialized configuration specific to IPv4. This
+	// includes all settings, executables, and rules relevant to IPv4 iptables
+	// management.
+	IPv4 InitializedConfigIPvX
+	// IPv6 contains the initialized configuration specific to IPv6. This
+	// includes all settings, executables, and rules relevant to IPv6 ip6tables
+	// management.
+	IPv6 InitializedConfigIPvX
 }
 
-// ShouldFallbackDNSToUpstreamChain is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldFallbackDNSToUpstreamChain, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldFallbackDNSToUpstreamChain() bool {
-	return c.Redirect.DNS.UpstreamTargetChain != ""
-}
-
-// ShouldCaptureAllDNS is just a convenience function which can be used in
-// iptables conditional command generations instead of inlining anonymous functions
-// i.e. AddRuleIf(ShouldCaptureAllDNS, Match(...), Jump(Drop()))
-func (c InitializedConfig) ShouldCaptureAllDNS() bool {
-	return c.Redirect.DNS.CaptureAll
-}
-
-// ShouldConntrackZoneSplit is a function which will check if DNS redirection and
-// conntrack zone splitting settings are enabled (return false if not), and then
-// will verify if there is conntrack iptables extension available to apply
-// the DNS conntrack zone splitting iptables rules
-func (c InitializedConfig) ShouldConntrackZoneSplit(iptablesExecutable string) bool {
-	if !c.Redirect.DNS.Enabled || !c.Redirect.DNS.ConntrackZoneSplit {
-		return false
-	}
-
-	if iptablesExecutable == "" {
-		iptablesExecutable = "iptables"
-	}
-
-	// There are situations where conntrack extension is not present (WSL2)
-	// instead of failing the whole iptables application, we can log the warning,
-	// skip conntrack related rules and move forward
-	if err := exec.Command(iptablesExecutable, "-m", "conntrack", "--help").Run(); err != nil {
-		_, _ = fmt.Fprintf(c.RuntimeStderr,
-			"# [WARNING] error occurred when validating if 'conntrack' iptables "+
-				"module is present. Rules for DNS conntrack zone "+
-				"splitting won't be applied: %s\n", err,
-		)
-
-		return false
-	}
-
-	return true
-}
-
-func getLoopbackInterfaceName() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to list network interfaces")
-	}
-
-	for _, iface := range interfaces {
-		if iface.Flags&net.FlagLoopback != 0 {
-			return iface.Name, nil
-		}
-	}
-
-	return "", errors.New("loopback interface not found")
-}
-
-func (c Config) Initialize() (InitializedConfig, error) {
+func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	var err error
 
-	initialized := InitializedConfig{Config: c}
-
-	initialized.Redirect, err = c.Redirect.Initialize()
-	if err != nil {
-		return initialized, errors.Wrap(err, "unable to initialize Redirect configuration")
+	l := Logger{
+		stdout: c.RuntimeStdout,
+		stderr: c.RuntimeStderr,
+		maxTry: c.Retry.MaxRetries + 1,
 	}
 
-	initialized.LoopbackInterfaceName, err = getLoopbackInterfaceName()
+	initialized := InitializedConfig{
+		Logger: l,
+		IPv4: InitializedConfigIPvX{
+			Config:                 c,
+			Logger:                 l,
+			LocalhostCIDR:          LocalhostCIDRIPv4,
+			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			enabled:                true,
+		},
+		DryRun: c.DryRun,
+	}
+
+	e, err := c.Executables.Initialize(ctx, l, c)
 	if err != nil {
-		return initialized, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+		return initialized, errors.Wrap(
+			err,
+			"unable to initialize Executables configuration",
+		)
+	}
+	initialized.IPv4.Executables = e.IPv4
+
+	ipv4Redirect, err := c.Redirect.Initialize(l, e.IPv4, false)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"unable to initialize IPv4 Redirect configuration",
+		)
+	}
+	initialized.IPv4.Redirect = ipv4Redirect
+
+	loopbackInterfaceName, err := getLoopbackInterfaceName()
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"unable to initialize LoopbackInterfaceName",
+		)
+	}
+	initialized.IPv4.LoopbackInterfaceName = loopbackInterfaceName
+
+	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
+	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
+
+	if c.IPv6 {
+		initialized.IPv6 = InitializedConfigIPvX{
+			Config:                 c,
+			Logger:                 l,
+			Executables:            e.IPv6,
+			LoopbackInterfaceName:  loopbackInterfaceName,
+			LocalhostCIDR:          LocalhostCIDRIPv6,
+			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
+			Comment:                c.Comment.Initialize(e.IPv6),
+			DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+			enabled:                true,
+		}
+
+		ipv6Redirect, err := c.Redirect.Initialize(l, e.IPv6, true)
+		if err != nil {
+			return initialized, errors.Wrap(
+				err,
+				"unable to initialize IPv6 Redirect configuration",
+			)
+		}
+		initialized.IPv6.Redirect = ipv6Redirect
 	}
 
 	return initialized, nil
@@ -307,26 +652,26 @@ func DefaultConfig() Config {
 	return Config{
 		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
-			NamePrefix: "KUMA_",
+			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
-				Enabled:       true,
-				Port:          15006,
-				PortIPv6:      15010,
-				Chain:         Chain{Name: "MESH_INBOUND"},
-				RedirectChain: Chain{Name: "MESH_INBOUND_REDIRECT"},
-				ExcludePorts:  []uint16{},
-				IncludePorts:  []uint16{},
+				Enabled:           true,
+				Port:              DefaultRedirectInbountPort,
+				PortIPv6:          DefaultRedirectInbountPortIPv6,
+				ChainName:         "INBOUND",
+				RedirectChainName: "INBOUND_REDIRECT",
+				ExcludePorts:      []uint16{},
+				IncludePorts:      []uint16{},
 			},
 			Outbound: TrafficFlow{
-				Enabled:       true,
-				Port:          15001,
-				Chain:         Chain{Name: "MESH_OUTBOUND"},
-				RedirectChain: Chain{Name: "MESH_OUTBOUND_REDIRECT"},
-				ExcludePorts:  []uint16{},
-				IncludePorts:  []uint16{},
+				Enabled:           true,
+				Port:              DefaultRedirectOutboundPort,
+				ChainName:         "OUTBOUND",
+				RedirectChainName: "OUTBOUND_REDIRECT",
+				ExcludePorts:      []uint16{},
+				IncludePorts:      []uint16{},
 			},
 			DNS: DNS{
-				Port:               15053,
+				Port:               DefaultRedirectDNSPort,
 				Enabled:            false,
 				CaptureAll:         false,
 				ConntrackZoneSplit: true,
@@ -350,13 +695,275 @@ func DefaultConfig() Config {
 		DryRun:             false,
 		Log: LogConfig{
 			Enabled: false,
-			Level:   DebugLogLevel,
+			Level:   LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,
 		Retry: RetryConfig{
-			MaxRetries:         pointer.To(4),
+			// Specifies the number of retries after the initial attempt,
+			// totaling 5 tries
+			MaxRetries:         4,
 			SleepBetweenReties: 2 * time.Second,
 		},
+		Executables: NewExecutablesNftLegacy(),
+		Comment: Comment{
+			Disabled: false,
+			Prefix:   IptablesRuleCommentPrefix,
+		},
 	}
+}
+
+// getLoopbackInterfaceName retrieves the name of the loopback interface on the
+// system. This function iterates over all network interfaces and checks if the
+// 'net.FlagLoopback' flag is set. If a loopback interface is found, its name is
+// returned. Otherwise, an error message indicating that no loopback interface
+// was found is returned.
+func getLoopbackInterfaceName() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to retrieve network interfaces")
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagLoopback != 0 {
+			return iface.Name, nil
+		}
+	}
+
+	return "", errors.New("no loopback interface found on the system")
+}
+
+// parseExcludePortsForUIDs parses a slice of strings representing port
+// exclusion rules based on UIDs and returns a slice of Exclusion structs.
+//
+// Each input string should follow the format: <protocol:>?<ports:>?<uids>.
+// This means the string can contain optional protocol and port values,
+// followed by mandatory UID values. Examples of valid formats include:
+//   - "tcp:22:1000-2000" (TCP protocol, port 22, UIDs from 1000 to 2000)
+//   - "udp:53:1001" (UDP protocol, port 53, UID 1001)
+//   - "80:1002" (Any protocol, port 80, UID 1002)
+//   - "1003" (Any protocol, any port, UID 1003)
+//
+// Args:
+//   - exclusionRules ([]string): A slice of strings specifying port exclusion
+//     rules based on UIDs.
+//
+// Returns:
+//   - []Exclusion: A slice of Exclusion structs representing the parsed port
+//     exclusion rules.
+//   - error: An error if the input format is invalid or if validation fails.
+func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
+	var result []Exclusion
+
+	for _, elem := range exclusionRules {
+		parts := strings.Split(elem, ":")
+		if len(parts) == 0 || len(parts) > 3 {
+			return nil, errors.Errorf(
+				"invalid format for excluding ports by UIDs: '%s'. Expected format: <protocol:>?<ports:>?<uids>",
+				elem,
+			)
+		}
+
+		var portValuesOrRange, protocolOpts, uidValuesOrRange string
+
+		switch len(parts) {
+		case 1:
+			protocolOpts = "*"
+			portValuesOrRange = "*"
+			uidValuesOrRange = parts[0]
+		case 2:
+			protocolOpts = "*"
+			portValuesOrRange = parts[0]
+			uidValuesOrRange = parts[1]
+		case 3:
+			protocolOpts = parts[0]
+			portValuesOrRange = parts[1]
+			uidValuesOrRange = parts[2]
+		}
+
+		if uidValuesOrRange == "*" {
+			return nil, errors.New("wildcard '*' is not allowed for UIDs")
+		}
+
+		if portValuesOrRange == "*" || portValuesOrRange == "" {
+			portValuesOrRange = "1-65535"
+		}
+
+		if err := validateUintValueOrRange(portValuesOrRange); err != nil {
+			return nil, errors.Wrap(err, "invalid port range")
+		}
+
+		if strings.Contains(uidValuesOrRange, ",") {
+			return nil, errors.Errorf(
+				"invalid UID entry: '%s'. It should either be a single item or a range",
+				uidValuesOrRange,
+			)
+		}
+
+		if err := validateUintValueOrRange(uidValuesOrRange); err != nil {
+			return nil, errors.Wrap(err, "invalid UID range")
+		}
+
+		var protocols []ProtocolL4
+		if protocolOpts == "" || protocolOpts == "*" {
+			protocols = []ProtocolL4{ProtocolTCP, ProtocolUDP}
+		} else {
+			for _, s := range strings.Split(protocolOpts, ",") {
+				if p := ParseProtocolL4(s); p != ProtocolUndefined {
+					protocols = append(protocols, p)
+					continue
+				}
+
+				return nil, errors.Errorf(
+					"invalid or unsupported protocol: '%s'",
+					s,
+				)
+			}
+		}
+
+		for _, p := range protocols {
+			ports := strings.ReplaceAll(portValuesOrRange, "-", ":")
+			uids := strings.ReplaceAll(uidValuesOrRange, "-", ":")
+
+			result = append(result, Exclusion{
+				Ports:    ValueOrRangeList(ports),
+				UIDs:     ValueOrRangeList(uids),
+				Protocol: p,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+// parseExcludePortsForIPs parses a slice of strings representing port exclusion
+// rules based on IP addresses and returns a slice of IPToPorts structs.
+//
+// This function currently allows each exclusion rule to be a valid IPv4 or IPv6
+// address, with or without a CIDR suffix. It is designed to potentially support
+// more complex exclusion rules in the future.
+//
+// Examples:
+//   - "10.0.0.1"
+//   - "10.0.0.0/8"
+//   - "fe80::1"
+//   - "fe80::/10"
+//
+// Args:
+//   - exclusionRules ([]string): A slice of strings specifying port exclusion
+//     rules based on IP addresses.
+//   - ipv6 (bool): A boolean flag indicating whether the rules are for IPv6.
+//
+// Returns:
+//   - []IPToPorts: A slice of IPToPorts structs representing the parsed port
+//     exclusion rules.
+//   - error: An error if the input format is invalid or if validation fails.
+func parseExcludePortsForIPs(
+	exclusionRules []string,
+	ipv6 bool,
+) ([]Exclusion, error) {
+	var result []Exclusion
+
+	for _, rule := range exclusionRules {
+		if rule == "" {
+			return nil, errors.New(
+				"invalid exclusion rule: the rule cannot be empty",
+			)
+		}
+
+		for _, address := range strings.Split(rule, ",") {
+			err, isExpectedIPVersion := validateIP(address, ipv6)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid exclusion rule")
+			}
+
+			if isExpectedIPVersion {
+				result = append(result, Exclusion{Address: address})
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// validateUintValueOrRange validates whether a given string represents a valid
+// single uint16 value or a range of uint16 values. The input string can contain
+// multiple comma-separated values or ranges (e.g., "80,1000-2000").
+//
+// Args:
+//   - valueOrRange (string): The input string to validate, which can be a
+//     single value, a range of values, or a comma-separated list of
+//     values/ranges.
+//
+// Returns:
+//   - error: An error if any value or range in the input string is not a valid
+//     uint16 value.
+func validateUintValueOrRange(valueOrRange string) error {
+	for _, element := range strings.Split(valueOrRange, ",") {
+		for _, port := range strings.Split(element, "-") {
+			if _, err := parseUint16(port); err != nil {
+				return errors.Wrapf(
+					err,
+					"validation failed for value or range '%s'",
+					valueOrRange,
+				)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateIP validates an IP address or CIDR and checks if it matches the
+// expected IP version (IPv4 or IPv6).
+//
+// Args:
+//   - address (string): The IP address or CIDR to validate.
+//   - ipv6 (bool): A boolean flag indicating whether the expected IP version is
+//     IPv6.
+//
+// Returns:
+//   - error: An error if the IP address is invalid, with a message explaining
+//     the expected format.
+//   - bool: A boolean indicating whether the IP address matches the expected IP
+//     version (true for a match, false otherwise).
+func validateIP(address string, ipv6 bool) (error, bool) {
+	// Attempt to parse the address as a CIDR.
+	ip, _, err := net.ParseCIDR(address)
+	// If parsing as CIDR fails, attempt to parse it as a plain IP address.
+	if err != nil {
+		ip = net.ParseIP(address)
+	}
+
+	// If parsing as both CIDR and IP address fails, return an error with a
+	// message.
+	if ip == nil {
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> "+
+				"(e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		), false
+	}
+
+	// Check if the IP version matches the expected IP version.
+	// For IPv4, ip.To4() will not be nil. For IPv6, ip.To4() will be nil.
+	return nil, ipv6 == (ip.To4() == nil)
+}
+
+// parseUint16 parses a string representing a uint16 value and returns its
+// uint16 representation.
+//
+// Args:
+//   - port (string): The input string to parse.
+//
+// Returns:
+//   - uint16: The parsed uint16 value.
+//   - error: An error if the input string is not a valid uint16 value.
+func parseUint16(port string) (uint16, error) {
+	parsedPort, err := strconv.ParseUint(port, 10, 16)
+	if err != nil {
+		return 0, fmt.Errorf("invalid uint16 value: '%s'", port)
+	}
+
+	return uint16(parsedPort), nil
 }

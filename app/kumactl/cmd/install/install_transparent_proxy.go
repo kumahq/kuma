@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type transparentProxyArgs struct {
@@ -26,7 +25,6 @@ type transparentProxyArgs struct {
 	ExcludeOutboundPorts           string
 	ExcludeOutboundTCPPortsForUIDs []string
 	ExcludeOutboundUDPPortsForUIDs []string
-	ExcludeOutboundPortsForUIDs    []string
 	UID                            string
 	User                           string
 	AgentDNSListenerPort           string
@@ -152,13 +150,13 @@ runuser -u kuma-dp -- \
 			if len(args.ExcludeOutboundTCPPortsForUIDs) > 0 {
 				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
 				for _, v := range args.ExcludeOutboundTCPPortsForUIDs {
-					args.ExcludeOutboundPortsForUIDs = append(args.ExcludeOutboundPortsForUIDs, fmt.Sprintf("tcp:%s", v))
+					cfg.Redirect.Outbound.ExcludePortsForUIDs = append(cfg.Redirect.Outbound.ExcludePortsForUIDs, fmt.Sprintf("tcp:%s", v))
 				}
 			}
 			if len(args.ExcludeOutboundUDPPortsForUIDs) > 0 {
 				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-udp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
 				for _, v := range args.ExcludeOutboundUDPPortsForUIDs {
-					args.ExcludeOutboundPortsForUIDs = append(args.ExcludeOutboundPortsForUIDs, fmt.Sprintf("udp:%s", v))
+					cfg.Redirect.Outbound.ExcludePortsForUIDs = append(cfg.Redirect.Outbound.ExcludePortsForUIDs, fmt.Sprintf("udp:%s", v))
 				}
 			}
 
@@ -166,7 +164,7 @@ runuser -u kuma-dp -- \
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}
 
-			initializedConfig, err := cfg.Initialize()
+			initializedConfig, err := cfg.Initialize(cmd.Context())
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize config")
 			}
@@ -185,7 +183,9 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			fmt.Fprintln(cfg.RuntimeStdout, "# Transparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+			if !initializedConfig.DryRun {
+				initializedConfig.Logger.Info("Tansparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+			}
 
 			return nil
 		},
@@ -208,6 +208,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
+	cmd.Flags().BoolVar(&cfg.DropInvalidPackets, "drop-invalid-packets", cfg.DropInvalidPackets, "This flag enables dropping of packets in invalid states, improving application stability by preventing them from reaching the backend. This is particularly beneficial during high-throughput requests where out-of-order packets might bypass DNAT. Note: Enabling this flag may introduce slight performance overhead. Weigh the trade-off between connection stability and performance before enabling it.")
 
 	// ebpf
 	cmd.Flags().BoolVar(&cfg.Ebpf.Enabled, "ebpf-enabled", cfg.Ebpf.Enabled, "use ebpf instead of iptables to install transparent proxy")
@@ -219,12 +220,20 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] tcp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] udp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53, 3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
-	cmd.Flags().StringArrayVar(&args.ExcludeOutboundPortsForUIDs, "exclude-outbound-ports-for-uids", []string{}, "outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108")
+	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForUIDs, "exclude-outbound-ports-for-uids", []string{}, "outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 	cmd.Flags().UintVar(&cfg.Wait, "wait", cfg.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
 	cmd.Flags().UintVar(&cfg.WaitInterval, "wait-interval", cfg.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
-	cmd.Flags().IntVar(cfg.Retry.MaxRetries, "max-retries", pointer.Deref(cfg.Retry.MaxRetries), "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().IntVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().DurationVar(&cfg.Retry.SleepBetweenReties, "sleep-between-retries", cfg.Retry.SleepBetweenReties, "flag can be used to specify the amount of time to sleep between retries")
+
+	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
+
+	cmd.Flags().BoolVar(&cfg.Comment.Disabled, "disable-comments", cfg.Comment.Disabled, "Disable the addition of comments to iptables rules")
+	cmd.Flags().StringVar(&cfg.Comment.Prefix, "comments-prefix", cfg.Comment.Prefix, "Prefix for comments added to iptables rules")
+
+	cmd.Flags().StringArrayVar(&cfg.Redirect.Inbound.ExcludePortsForIPs, "exclude-inbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy inbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
+	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForIPs, "exclude-outbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy outbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 
@@ -288,13 +297,6 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 			return errors.Wrap(err, "cannot parse inbound ports to exclude")
 		}
 	}
-	var excludeOutboundPortsForUids []config.UIDsToPorts
-	if len(args.ExcludeOutboundPortsForUIDs) > 0 {
-		excludeOutboundPortsForUids, err = transparentproxy.ParseExcludePortsForUIDs(args.ExcludeOutboundPortsForUIDs)
-		if err != nil {
-			return errors.Wrap(err, "parsing excluded outbound ports for uids failed")
-		}
-	}
 
 	var excludeOutboundPorts []uint16
 	if args.ExcludeOutboundPorts != "" {
@@ -329,7 +331,6 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 
 	cfg.Redirect.Outbound.Port = redirectOutboundPort
 	cfg.Redirect.Outbound.ExcludePorts = excludeOutboundPorts
-	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludeOutboundPortsForUids
 
 	cfg.Redirect.DNS.Port = agentDNSListenerPort
 	cfg.Redirect.DNS.ConntrackZoneSplit = !args.SkipDNSConntrackZoneSplit

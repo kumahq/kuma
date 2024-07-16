@@ -563,7 +563,7 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
 					testserver.WithName("test-server-mlbs"),
-					testserver.WithStatefulSet(true),
+					testserver.WithStatefulSet(),
 					testserver.WithReplicas(3),
 				)).
 				Install(YamlK8s(routes...)).

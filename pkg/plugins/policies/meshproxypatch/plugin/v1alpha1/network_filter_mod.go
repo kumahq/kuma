@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
@@ -78,13 +80,9 @@ func (n *networkFilterModificator) addBefore(chain *envoy_listener.FilterChain, 
 }
 
 func (n *networkFilterModificator) remove(chain *envoy_listener.FilterChain) {
-	var filters []*envoy_listener.Filter
-	for _, filter := range chain.Filters {
-		if !n.filterMatches(filter) {
-			filters = append(filters, filter)
-		}
-	}
-	chain.Filters = filters
+	chain.Filters = slices.DeleteFunc(chain.Filters, func(filter *envoy_listener.Filter) bool {
+		return n.filterMatches(filter)
+	})
 }
 
 func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filterPatch *envoy_listener.Filter) error {

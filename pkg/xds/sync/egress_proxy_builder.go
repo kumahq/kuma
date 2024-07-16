@@ -67,6 +67,7 @@ func (p *EgressProxyBuilder) Build(
 		externalServices := meshCtx.Resources.ExternalServices().Items
 		faultInjections := meshCtx.Resources.FaultInjections().Items
 		rateLimits := meshCtx.Resources.RateLimits().Items
+		mes := meshCtx.Resources.MeshExternalServices().Items
 
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
@@ -77,6 +78,7 @@ func (p *EgressProxyBuilder) Build(
 				p.zone,
 				zoneIngresses,
 				externalServices,
+				mes,
 				meshCtx.DataSourceLoader,
 			),
 			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(

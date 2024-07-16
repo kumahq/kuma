@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/ebpf"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables"
@@ -83,100 +81,17 @@ func SplitPorts(ports string) ([]uint16, error) {
 	return result, nil
 }
 
-func ParseExcludePortsForUIDs(excludeOutboundPortsForUIDs []string) ([]config.UIDsToPorts, error) {
-	var uidsToPorts []config.UIDsToPorts
-	for _, excludePort := range excludeOutboundPortsForUIDs {
-		parts := strings.Split(excludePort, ":")
-		if len(parts) == 0 || len(parts) > 3 {
-			return nil, fmt.Errorf("value: '%s' is invalid - format for excluding ports by uids <protocol:>?<ports:>?uids", excludePort)
-		}
-		var portValuesOrRange string
-		var protocolOpts string
-		var uidValuesOrRange string
-		switch len(parts) {
-		case 1:
-			protocolOpts = "*"
-			portValuesOrRange = "*"
-			uidValuesOrRange = parts[0]
-		case 2:
-			protocolOpts = "*"
-			portValuesOrRange = parts[0]
-			uidValuesOrRange = parts[1]
-		case 3:
-			protocolOpts = parts[0]
-			portValuesOrRange = parts[1]
-			uidValuesOrRange = parts[2]
-		}
-		if uidValuesOrRange == "*" {
-			return nil, errors.New("can't use wildcard '*' for uids")
-		}
-		if portValuesOrRange == "*" || portValuesOrRange == "" {
-			portValuesOrRange = "1-65535"
-		}
-
-		if err := validateUintValueOrRange(portValuesOrRange); err != nil {
-			return nil, err
-		}
-
-		if strings.Contains(uidValuesOrRange, ",") {
-			return nil, fmt.Errorf("uid entry invalid:'%s', it should either be a single item or a range", uidValuesOrRange)
-		}
-		if err := validateUintValueOrRange(uidValuesOrRange); err != nil {
-			return nil, err
-		}
-
-		var protocols []string
-		if protocolOpts == "" || protocolOpts == "*" {
-			protocols = []string{"tcp", "udp"}
-		} else {
-			for _, p := range strings.Split(protocolOpts, ",") {
-				pCleaned := strings.ToLower(strings.TrimSpace(p))
-				if pCleaned != "tcp" && pCleaned != "udp" {
-					return nil, fmt.Errorf("protocol '%s' is invalid or unsupported", pCleaned)
-				}
-				protocols = append(protocols, pCleaned)
-			}
-		}
-		for _, p := range protocols {
-			uidsToPorts = append(uidsToPorts, config.UIDsToPorts{
-				Ports:    config.ValueOrRangeList(strings.ReplaceAll(portValuesOrRange, "-", ":")),
-				UIDs:     config.ValueOrRangeList(strings.ReplaceAll(uidValuesOrRange, "-", ":")),
-				Protocol: p,
-			})
-		}
-	}
-
-	return uidsToPorts, nil
-}
-
-func validateUintValueOrRange(valueOrRange string) error {
-	elements := strings.Split(valueOrRange, ",")
-
-	for _, element := range elements {
-		portRanges := strings.Split(element, "-")
-
-		for _, port := range portRanges {
-			_, err := ParseUint16(port)
-			if err != nil {
-				return errors.Wrapf(err, "values or range '%s' failed validation", valueOrRange)
-			}
-		}
-	}
-
-	return nil
-}
-
 func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
-	if cfg.Ebpf.Enabled {
-		return ebpf.Setup(cfg)
+	if cfg.IPv4.Ebpf.Enabled {
+		return ebpf.Setup(cfg.IPv4)
 	}
 
 	return iptables.Setup(ctx, cfg)
 }
 
 func Cleanup(cfg config.InitializedConfig) (string, error) {
-	if cfg.Ebpf.Enabled {
-		return ebpf.Cleanup(cfg)
+	if cfg.IPv4.Ebpf.Enabled {
+		return ebpf.Cleanup(cfg.IPv4)
 	}
 
 	return iptables.Cleanup(cfg)

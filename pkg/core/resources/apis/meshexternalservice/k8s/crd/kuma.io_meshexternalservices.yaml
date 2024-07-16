@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -247,10 +247,10 @@ spec:
                       type: string
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                     origin:
                       type: string
@@ -310,10 +310,10 @@ spec:
                       x-kubernetes-list-type: map
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                   required:
                   - hostnameGeneratorRef

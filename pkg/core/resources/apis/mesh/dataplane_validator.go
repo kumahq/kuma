@@ -13,8 +13,11 @@ import (
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
+const meshExternalServiceKind = "MeshExternalService"
+
 var allowedKinds = map[string]struct{}{
-	"MeshService": {},
+	"MeshService":           {},
+	meshExternalServiceKind: {},
 }
 
 func (d *DataplaneResource) Validate() error {
@@ -232,7 +235,10 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		if outbound.BackendRef.Name == "" {
 			result.AddViolation("backendRef.name", "cannot be empty")
 		}
-		result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
+		// for MeshExternalService the port does not matter because it's taken from endpoints
+		if outbound.BackendRef.Kind != meshExternalServiceKind {
+			result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
+		}
 	case len(outbound.Tags) == 0:
 		// nolint:staticcheck
 		if outbound.GetService() == "" {

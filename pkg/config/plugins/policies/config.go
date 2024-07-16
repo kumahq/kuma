@@ -14,3 +14,9 @@ func (c *Config) Sanitize() {
 func (c *Config) Validate() error {
 	return nil
 }
+
+func Default() *Config {
+	return &Config{
+		Enabled: DefaultEnabled,
+	}
+}

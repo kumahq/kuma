@@ -15,11 +15,10 @@ import (
 	mes_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/hostname"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
@@ -46,52 +45,26 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 
-		generator := hostnamegenerator_api.NewHostnameGeneratorResource()
-		generator.Meta = &test_model.ResourceMeta{
-			Mesh: core_model.DefaultMesh,
-			Name: "byname",
-		}
-		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
-			Template: "{{ .Name }}.byname.mesh",
-			Selector: hostnamegenerator_api.Selector{
-				MeshExternalService: hostnamegenerator_api.NameLabelsSelector{
-					MatchName: "test-external-svc",
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
-		generator = hostnamegenerator_api.NewHostnameGeneratorResource()
-		generator.Meta = &test_model.ResourceMeta{
-			Mesh: core_model.DefaultMesh,
-			Name: "example",
-		}
-		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
-			Template: "{{ .Name }}.mesh",
-			Selector: hostnamegenerator_api.Selector{
-				MeshExternalService: hostnamegenerator_api.NameLabelsSelector{
-					MatchLabels: map[string]string{
-						"label": "value",
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
-		generator = hostnamegenerator_api.NewHostnameGeneratorResource()
-		generator.Meta = &test_model.ResourceMeta{
-			Mesh: core_model.DefaultMesh,
-			Name: "static",
-		}
-		generator.Spec = &hostnamegenerator_api.HostnameGenerator{
-			Template: "static.mesh",
-			Selector: hostnamegenerator_api.Selector{
-				MeshExternalService: hostnamegenerator_api.NameLabelsSelector{
-					MatchLabels: map[string]string{
-						"generate": "static",
-					},
-				},
-			},
-		}
-		Expect(resManager.Create(context.Background(), generator, store.CreateBy(core_model.MetaToResourceKey(generator.GetMeta())))).To(Succeed())
+		err = builders.HostnameGenerator().
+			WithName("display-name").
+			WithTemplate("{{ .DisplayName }}.dn.mesh").
+			WithMeshExternalServiceMatchLabels(map[string]string{"dn": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = builders.HostnameGenerator().
+			WithName("example").
+			WithTemplate("{{ .Name }}.mesh").
+			WithMeshExternalServiceMatchLabels(map[string]string{"label": "value"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshExternalServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -99,7 +72,7 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 		Expect(resManager.DeleteAll(context.Background(), &meshexternalservice_api.MeshExternalServiceResourceList{})).To(Succeed())
 	})
 
-	vipOfMeshExternalService := func(name string) *meshexternalservice_api.MeshExternalServiceStatus {
+	meshExternalServiceStatus := func(name string) *meshexternalservice_api.MeshExternalServiceStatus {
 		ms := meshexternalservice_api.NewMeshExternalServiceResource()
 		err := resManager.Get(context.Background(), ms, store.GetByKey(name, model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -113,10 +86,10 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 
 		// then
 		Consistently(func(g Gomega) {
-			status := vipOfMeshExternalService("example")
+			status := meshExternalServiceStatus("example")
 			g.Expect(status.Addresses).Should(BeEmpty())
 			g.Expect(status.HostnameGenerators).Should(BeEmpty())
-		}, "10s", "100ms").Should(Succeed())
+		}, "1s", "100ms").Should(Succeed())
 	})
 
 	It("should generate hostname if a generator selects a given MeshExternalService", func() {
@@ -128,22 +101,44 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 
 		// then
 		Eventually(func(g Gomega) {
-			status := vipOfMeshExternalService("example")
+			status := meshExternalServiceStatus("example")
 			g.Expect(status.Addresses).Should(Not(BeEmpty()))
 			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	It("should generate hostname if a generator selects a given MeshExternalService by name", func() {
+	It("should generate hostname if for MeshExternalService using .DisplayName taken from label", func() {
 		// when
-		err := samples.MeshExternalServiceExampleBuilder().WithoutVIP().WithName("test-external-svc").Create(resManager)
+		err := samples.MeshExternalServiceExampleBuilder().
+			WithoutVIP().
+			WithName("test-external-svc").
+			WithLabels(map[string]string{"kuma.io/display-name": "other-name", "dn": "true"}).
+			Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Eventually(func(g Gomega) {
-			status := vipOfMeshExternalService("test-external-svc")
+			status := meshExternalServiceStatus("test-external-svc")
 			g.Expect(status.Addresses).Should(Not(BeEmpty()))
-			g.Expect(status.Addresses[0].Hostname).Should(Equal("test-external-svc.byname.mesh"))
+			g.Expect(status.Addresses[0].Hostname).Should(Equal("other-name.dn.mesh"))
+			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
+		}, "2000s", "100ms").Should(Succeed())
+	})
+
+	It("should generate hostname if for MeshExternalService using .DisplayName taken from name", func() {
+		// when
+		err := samples.MeshExternalServiceExampleBuilder().
+			WithoutVIP().
+			WithName("test-external-svc").
+			WithLabels(map[string]string{"dn": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			status := meshExternalServiceStatus("test-external-svc")
+			g.Expect(status.Addresses).Should(Not(BeEmpty()))
+			g.Expect(status.Addresses[0].Hostname).Should(Equal("test-external-svc.dn.mesh"))
 			g.Expect(status.HostnameGenerators).Should(Not(BeEmpty()))
 		}, "2000s", "100ms").Should(Succeed())
 	})
@@ -163,8 +158,8 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 
 		// then
 		Eventually(func(g Gomega) {
-			otherStatus := vipOfMeshExternalService("other")
-			exampleStatus := vipOfMeshExternalService("example")
+			otherStatus := meshExternalServiceStatus("other")
+			exampleStatus := meshExternalServiceStatus("example")
 			g.Expect(otherStatus.Addresses).Should(BeEmpty())
 			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
 				hostnamegenerator_api.HostnameGeneratorStatus{
@@ -188,6 +183,28 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 					}},
 				},
 			))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should not generate hostname when selector is not MeshExternalService", func() {
+		// when
+		err := builders.HostnameGenerator().
+			WithName("ms-generator").
+			WithTemplate("{{ .DisplayName }}.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"test": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = samples.MeshExternalServiceExampleBuilder().
+			WithLabels(map[string]string{"test": "true"}).
+			Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func(g Gomega) {
+			status := meshExternalServiceStatus("example")
+			g.Expect(status.Addresses).Should(BeEmpty())
+			g.Expect(status.HostnameGenerators).Should(BeEmpty())
 		}, "2s", "100ms").Should(Succeed())
 	})
 })

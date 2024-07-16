@@ -16,13 +16,16 @@ type MeshPassthrough struct {
 }
 
 type Conf struct {
-	// Enabled defines whether the passthrough behavior, which allows all traffic going
-	// outside of the cluster, is active. If true, AppendMatch
-	// has no effect.
-	Enabled *bool `json:"enabled,omitempty"`
+	// Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+	// When `All` or `None` `appendMatch` has no effect.
+	// +kubebuilder:default=None
+	PassthroughMode *PassthroughMode `json:"passthroughMode,omitempty"`
 	// AppendMatch is a list of destinations that should be allowed through the sidecar.
 	AppendMatch []Match `json:"appendMatch,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=All;Matched;None
+type PassthroughMode string
 
 // +kubebuilder:validation:Enum=Domain;IP;CIDR
 type MatchType string

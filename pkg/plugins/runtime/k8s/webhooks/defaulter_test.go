@@ -53,6 +53,7 @@ var _ = Describe("Defaulter", func() {
 			FederatedZone:                federatedZone,
 			DisableOriginLabelValidation: !originValidation,
 			SystemNamespace:              "kuma-system",
+			ZoneName:                     "zone-1",
 		}
 	}
 
@@ -270,6 +271,7 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
                   "kuma.io/mesh": "default",
                   "kuma.io/policy-role": "workload-owner",
                   "k8s.kuma.io/namespace": "example"
@@ -313,6 +315,51 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
+		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
@@ -354,6 +401,7 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
@@ -405,7 +453,8 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "zone"
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"

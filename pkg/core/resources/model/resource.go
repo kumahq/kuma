@@ -193,6 +193,8 @@ type ResourceTypeDescriptor struct {
 	Overview Resource
 	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
 	DumpForGlobal bool
+	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
+	AllowedOnSystemNamespaceOnly bool
 }
 
 func newObject(baseResource Resource) Resource {
@@ -436,7 +438,7 @@ func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string) map[string]string {
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) map[string]string {
 	labels := r.GetMeta().GetLabels()
 	if len(labels) == 0 {
 		labels = map[string]string{}
@@ -454,6 +456,9 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 
 	if mode == config_core.Zone {
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
+		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
+			setIfNotExist(mesh_proto.ZoneTag, localZone)
+		}
 	}
 
 	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
@@ -489,11 +494,11 @@ func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
 	}
 }
 
-func PolicyRole(r Resource) mesh_proto.PolicyRole {
-	if r.GetMeta() == nil || r.GetMeta().GetLabels() == nil || r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
+func PolicyRole(rm ResourceMeta) mesh_proto.PolicyRole {
+	if rm == nil || rm.GetLabels() == nil || rm.GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
 		return mesh_proto.SystemPolicyRole
 	}
-	return mesh_proto.PolicyRole(r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel])
+	return mesh_proto.PolicyRole(rm.GetLabels()[mesh_proto.PolicyRoleLabel])
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

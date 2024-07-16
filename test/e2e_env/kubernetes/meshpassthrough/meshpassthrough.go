@@ -93,10 +93,11 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
@@ -127,10 +128,11 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
-    enabled: false
+    passthroughMode: None
 `, Config.KumaNamespace, meshName)
 
 		// when
@@ -158,9 +160,11 @@ metadata:
 spec:
   targetRef:
     kind: MeshSubset
+    proxyTypes: ["Sidecar"]
     tags:
       kuma.io/service: demo-client_mesh-passthrough_svc
   default:
+    passthroughMode: Matched
     appendMatch:
     - type: Domain
       value: external-service.mesh-passthrough-mes.svc.cluster.local
@@ -201,7 +205,7 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.ResponseCode).To(Equal(404))
+			g.Expect(resp.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -210,7 +214,7 @@ spec:
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.ResponseCode).To(Equal(404))
+			g.Expect(resp.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

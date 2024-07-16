@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
+	netutils "k8s.io/utils/net"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -25,7 +26,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 }
 
 func (r *MeshHTTPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	switch core_model.PolicyRole(r) {
+	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
 		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
@@ -295,7 +296,7 @@ func validatePreciseHostname(hostname *PreciseHostname) validators.ValidationErr
 		return errs
 	}
 
-	if len(k8s_validation.IsValidIP(string(*hostname))) == 0 {
+	if netutils.ParseIPSloppy(string(*hostname)) != nil {
 		errs.AddViolationAt(validators.Root(), "cannot be an IP address")
 		return errs
 	}

@@ -2,7 +2,9 @@ items:
 - metadata:
     creationTimestamp: null
     labels:
+      k8s.kuma.io/is-headless-service: "false"
       k8s.kuma.io/service-name: example
+      kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: example
     namespace: demo
@@ -14,13 +16,15 @@ items:
     resourceVersion: "1"
   spec:
     ports:
-    - port: 80
-      protocol: http
+    - appProtocol: http
+      port: 80
       targetPort: 8080
-    - port: 443
-      protocol: tcp
+    - appProtocol: tcp
+      port: 443
       targetPort: 8443
-    selector: {}
+    selector:
+      dataplaneTags:
+        k8s.kuma.io/namespace: demo
   status:
     tls: {}
     vips:

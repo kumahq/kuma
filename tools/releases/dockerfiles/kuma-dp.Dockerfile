@@ -1,5 +1,5 @@
 ARG ARCH
-FROM kumahq/envoy:no-push-$ARCH as envoy
+FROM kumahq/envoy:no-push-$ARCH AS envoy
 FROM kumahq/base-nossl-debian11:no-push-$ARCH
 ARG ARCH
 

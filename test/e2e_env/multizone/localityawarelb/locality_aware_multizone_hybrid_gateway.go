@@ -93,7 +93,7 @@ conf:
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
-			Install(GatewayProxyUniversal(mesh, "edge-gateway")).
+			Install(GatewayProxyUniversal(mesh, "edge-gateway", WithConcurrency(1))).
 			Install(TestServerUniversal("gateway-client", mesh, WithoutDataplane())).
 			Install(TestServerUniversal("test-server-zone-4", mesh,
 				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),

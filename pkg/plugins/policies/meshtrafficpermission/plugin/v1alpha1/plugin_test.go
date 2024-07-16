@@ -226,6 +226,22 @@ var _ = Describe("RBAC", func() {
 										},
 									},
 								},
+								"example-mes": {
+									policies_api.MeshTrafficPermissionType: core_xds.TypedMatchingPolicies{
+										FromRules: core_rules.FromRules{
+											Rules: map[core_rules.InboundListener]core_rules.Rules{
+												{
+													Address: "192.168.0.1", Port: 10002,
+												}: {
+													{
+														Subset: core_rules.MeshSubset(),
+														Conf:   policies_api.Conf{Action: policies_api.Allow},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 						{

@@ -6,7 +6,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
-	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	xds_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 const (
@@ -68,30 +68,33 @@ func (c Configurer) configureListener(
 			return err
 		}
 	}
-	return c.configureListenerFilter(listener)
+	if err := c.configureListenerFilter(listener); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) error {
 	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {
-		if filter.Name == xds_listeners.TlsInspectorName {
+		if filter.Name == xds_listeners_v3.TlsInspectorName {
 			hasTlsInspector = true
 		}
-		if filter.Name == xds_listeners.HttpInspectorName {
+		if filter.Name == xds_listeners_v3.HttpInspectorName {
 			hasHttpInspector = true
 		}
 	}
 	var err error
 	if !hasTlsInspector {
-		configurer := xds_listeners.TLSInspectorConfigurer{}
+		configurer := xds_listeners_v3.TLSInspectorConfigurer{}
 		err = configurer.Configure(listener)
 	}
 	if err != nil {
 		return err
 	}
 	if !hasHttpInspector {
-		configurer := xds_listeners.HTTPInspectorConfigurer{}
+		configurer := xds_listeners_v3.HTTPInspectorConfigurer{}
 		err = configurer.Configure(listener)
 	}
 	return err

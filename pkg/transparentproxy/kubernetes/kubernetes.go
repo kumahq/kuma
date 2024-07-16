@@ -47,6 +47,10 @@ type PodRedirect struct {
 	TransparentProxyEbpfInstanceIPEnvVarName string
 	TransparentProxyEbpfProgramsSourcePath   string
 	ExcludeOutboundPortsForUIDs              []string
+	DropInvalidPackets                       bool
+	IptablesLogs                             bool
+	ExcludeInboundIPs                        string
+	ExcludeOutboundIPs                       string
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -111,6 +115,10 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.IpFamilyMode, _ = metadata.Annotations(pod.Annotations).GetStringWithDefault(metadata.IpFamilyModeDualStack, metadata.KumaTransparentProxyingIPFamilyMode)
 
+	podRedirect.DropInvalidPackets, _, _ = metadata.Annotations(pod.Annotations).GetBoolean(metadata.KumaTrafficDropInvalidPackets)
+
+	podRedirect.IptablesLogs, _, _ = metadata.Annotations(pod.Annotations).GetBoolean(metadata.KumaTrafficIptablesLogs)
+
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
 	if value, exists, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingEbpf); err != nil {
@@ -137,6 +145,34 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	if value, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTransparentProxyingEbpfProgramsSourcePath); exists {
 		podRedirect.TransparentProxyEbpfProgramsSourcePath = value
+	}
+
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(
+		metadata.KumaTrafficExcludeInboundIPs,
+	); exists {
+		var addresses []string
+
+		for _, address := range strings.Split(value, ",") {
+			if trimmed := strings.TrimSpace(address); trimmed != "" {
+				addresses = append(addresses, trimmed)
+			}
+		}
+
+		podRedirect.ExcludeInboundIPs = strings.Join(addresses, ",")
+	}
+
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(
+		metadata.KumaTrafficExcludeOutboundIPs,
+	); exists {
+		var addresses []string
+
+		for _, address := range strings.Split(value, ",") {
+			if trimmed := strings.TrimSpace(address); trimmed != "" {
+				addresses = append(addresses, trimmed)
+			}
+		}
+
+		podRedirect.ExcludeOutboundIPs = strings.Join(addresses, ",")
 	}
 
 	return podRedirect, nil
@@ -206,6 +242,22 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		if pr.TransparentProxyEbpfProgramsSourcePath != "" {
 			result = append(result, "--ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath)
 		}
+	}
+
+	if pr.DropInvalidPackets {
+		result = append(result, "--drop-invalid-packets")
+	}
+
+	if pr.IptablesLogs {
+		result = append(result, "--iptables-logs")
+	}
+
+	if pr.ExcludeOutboundIPs != "" {
+		result = append(result, "--exclude-outbound-ips", pr.ExcludeOutboundIPs)
+	}
+
+	if pr.ExcludeInboundIPs != "" {
+		result = append(result, "--exclude-inbound-ips", pr.ExcludeInboundIPs)
 	}
 
 	return result

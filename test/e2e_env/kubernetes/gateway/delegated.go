@@ -24,6 +24,18 @@ func Delegated() {
 		KicIP:                       "",
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace",
+		IPV6:                        Config.IPV6,
+	}
+
+	externalNameService := func(serviceName string) string {
+		return fmt.Sprintf(`apiVersion: v1
+kind: Service
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  type: ExternalName
+  externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
 	}
 
 	BeforeAll(func() {
@@ -40,12 +52,16 @@ func Delegated() {
 				testserver.WithMesh(config.Mesh),
 				testserver.WithNamespace(config.Namespace),
 				testserver.WithName("test-server"),
-				testserver.WithStatefulSet(true),
+				testserver.WithStatefulSet(),
 				testserver.WithReplicas(3),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(config.NamespaceOutsideMesh),
 				testserver.WithName("external-service"),
+			)).
+			Install(testserver.Install(
+				testserver.WithNamespace(config.NamespaceOutsideMesh),
+				testserver.WithName("another-external-service"),
 			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(config.NamespaceOutsideMesh),
@@ -69,6 +85,8 @@ func Delegated() {
 				kic.WithName("delegated"),
 				kic.WithNamespace(config.Namespace),
 			)).
+			Install(YamlK8s(externalNameService("external-service"))).
+			Install(YamlK8s(externalNameService("another-external-service"))).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -87,6 +105,24 @@ spec:
         backend:
           service:
             name: test-server
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /external-service
+        pathType: Prefix
+        backend:
+          service:
+            name: external-service
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /another-external-service
+        pathType: Prefix
+        backend:
+          service:
+            name: another-external-service
             port:
               number: 80
 `, config.Namespace, config.Mesh))).
@@ -109,6 +145,9 @@ spec:
 			To(Succeed())
 	})
 
+	// If you copy the test case from a non-gateway test or create a new test,
+	// remember the the name of policies needs to be unique.
+	// If they have the same name, one might override the other, causing a flake.
 	Context("MeshCircuitBreaker", delegated.CircuitBreaker(&config))
 	Context("MeshProxyPatch", delegated.MeshProxyPatch(&config))
 	Context("MeshHealthCheck", delegated.MeshHealthCheck(&config))
@@ -120,4 +159,5 @@ spec:
 	Context("MeshLoadBalancingStrategy", delegated.MeshLoadBalancingStrategy(&config))
 	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
 	XContext("MeshTCPRoute", delegated.MeshTCPRoute(&config))
+	Context("MeshPassthrough", delegated.MeshPassthrough(&config))
 }

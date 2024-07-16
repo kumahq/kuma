@@ -41,7 +41,9 @@ func (p *Parameter) Build(verbose bool) []string {
 
 	flag := p.short
 
-	if verbose {
+	// If verbose is true or the short version is not available, use the long
+	// version.
+	if verbose || p.short == "" {
 		flag = p.long
 	}
 
@@ -85,12 +87,6 @@ func (p *Parameter) Negate() ParameterBuilder {
 
 type Parameters []*Parameter
 
-func NewParameters(parameters ...*Parameter) *Parameters {
-	var result Parameters
-	result = append(result, parameters...)
-	return &result
-}
-
 func (p *Parameters) Build(verbose bool, additionalParameters ...string) []string {
 	var result []string
 
@@ -110,5 +106,46 @@ func (p *Parameters) AppendIf(predicate bool, parameters ...*Parameter) *Paramet
 		*p = append(*p, parameters...)
 	}
 
+	return p
+}
+
+var _ ParameterBuilder = &SimpleParameter{}
+
+// SimpleParameter represents a straightforward iptables parameter that doesn't
+// involve nested parameters or complex logic. It holds both the short and long
+// versions of the parameter name, as well as its value.
+type SimpleParameter struct {
+	short string // Short version of the parameter (e.g., "-j").
+	long  string // Long version of the parameter (e.g., "--jump").
+	value string // The value associated with the parameter (e.g., "ACCEPT").
+}
+
+// Build constructs the command-line representation of the SimpleParameter.
+// It returns a slice of strings containing the flag (short or long based on
+// verbosity) followed by the parameter value.
+//
+// Args:
+//   - verbose (bool): If true, use the long version of the parameter;
+//     otherwise, use the short version if available.
+//
+// Returns:
+// - []string: A slice containing the flag and value for the parameter.
+func (p *SimpleParameter) Build(verbose bool) []string {
+	flag := p.short
+	// If verbose is true or the short version is not available, use the long
+	// version.
+	if verbose || p.short == "" {
+		flag = p.long
+	}
+
+	return []string{flag, p.value}
+}
+
+// Negate is a no-op for SimpleParameter since negation does not apply to simple
+// parameters. It simply returns the receiver.
+//
+// Returns:
+// - ParameterBuilder: The same SimpleParameter instance.
+func (p *SimpleParameter) Negate() ParameterBuilder {
 	return p
 }

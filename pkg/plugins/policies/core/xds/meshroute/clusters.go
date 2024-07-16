@@ -10,6 +10,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -50,8 +51,16 @@ func GenerateClusters(
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedEndpointCluster(isIPv6, endpoints...)).
-						Configure(envoy_clusters.ClientSideTLS(endpoints))
+						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
+					if isMeshExternalService(endpoints) {
+						edsClusterBuilder.WithName(envoy_names.GetMeshExternalServiceName(serviceName))
+						edsClusterBuilder.Configure(
+							envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, proxy.Metadata.SystemCaPath, true),
+						)
+					} else {
+						edsClusterBuilder.
+							Configure(envoy_clusters.ClientSideTLS(endpoints))
+					}
 				}
 
 				switch protocol {
@@ -129,4 +138,11 @@ func GenerateClusters(
 	}
 
 	return resources, nil
+}
+
+func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
+	if len(endpoints) > 0 {
+		return endpoints[0].IsMeshExternalService()
+	}
+	return false
 }

@@ -12,6 +12,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -85,8 +86,9 @@ var _ = Describe("EgressGenerator", func() {
 					if _, ok := meshResourcesMap[meshName]; !ok {
 						meshResourcesMap[meshName] = &core_xds.MeshResources{
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								core_mesh.TrafficRouteType:          &core_mesh.TrafficRouteResourceList{},
-								meshhttproute_api.MeshHTTPRouteType: &meshhttproute_api.MeshHTTPRouteResourceList{},
+								core_mesh.TrafficRouteType:                      &core_mesh.TrafficRouteResourceList{},
+								meshhttproute_api.MeshHTTPRouteType:             &meshhttproute_api.MeshHTTPRouteResourceList{},
+								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{},
 							},
 						}
 					}
@@ -100,6 +102,12 @@ var _ = Describe("EgressGenerator", func() {
 					meshResourcesMap[meshName].ExternalServices = append(
 						meshResourcesMap[meshName].ExternalServices,
 						res.(*core_mesh.ExternalServiceResource),
+					)
+				case meshexternalservice_api.MeshExternalServiceType:
+					mesList := meshResourcesMap[meshName].Resources[meshexternalservice_api.MeshExternalServiceType].(*meshexternalservice_api.MeshExternalServiceResourceList)
+					mesList.Items = append(
+						mesList.Items,
+						res.(*meshexternalservice_api.MeshExternalServiceResource),
 					)
 				case core_mesh.TrafficRouteType:
 					if _, ok := meshResourcesMap[meshName]; !ok {
@@ -125,12 +133,19 @@ var _ = Describe("EgressGenerator", func() {
 			loader := fakeLoader{}
 
 			for _, meshResources := range meshResourcesMap {
+				mes := []*meshexternalservice_api.MeshExternalServiceResource{}
+				if _, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
+					for _, m := range meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
+						mes = append(mes, m.(*meshexternalservice_api.MeshExternalServiceResource))
+					}
+				}
 				meshResources.EndpointMap = xds_topology.BuildEgressEndpointMap(
 					context.Background(),
 					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,
 					meshResources.ExternalServices,
+					mes,
 					&loader,
 				)
 

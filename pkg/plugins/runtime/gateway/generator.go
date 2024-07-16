@@ -78,12 +78,18 @@ type GatewayHost struct {
 
 type GatewayListenerHostname struct {
 	Hostname  string
+	Protocol  mesh_proto.MeshGateway_Listener_Protocol
 	TLS       *mesh_proto.MeshGateway_TLS_Conf
 	HostInfos []GatewayHostInfo
 }
 
 func (h GatewayListenerHostname) EnvoyRouteName(envoyListenerName string) string {
-	return envoyListenerName + ":" + h.Hostname
+	switch h.Protocol {
+	case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_HTTP:
+		return envoyListenerName + ":*"
+	default:
+		return envoyListenerName + ":" + h.Hostname
+	}
 }
 
 type GatewayListener struct {
@@ -180,11 +186,11 @@ func gatewayListenerInfoFromProxy(
 	for k, v := range meshCtx.EndpointMap {
 		outboundEndpoints[k] = v
 	}
-
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,
 		matchedExternalServices,
+		meshCtx.Resources.MeshExternalServices().Items,
 		meshCtx.DataSourceLoader,
 		proxy.Zone,
 	)
@@ -340,7 +346,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 
 		// Make a pass over the generators for each virtual host.
 		for _, hostInfo := range hostInfos.HostInfos {
-			vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
+			vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host.Hostname, hostInfo.Entries())
 			if err != nil {
 				return nil, err
 			}
@@ -450,6 +456,7 @@ func MakeGatewayListener(
 
 		listenerHostnames = append(listenerHostnames, GatewayListenerHostname{
 			Hostname:  hostname,
+			Protocol:  listeners[0].GetProtocol(),
 			TLS:       hostAcc.tls,
 			HostInfos: hostInfos,
 		})

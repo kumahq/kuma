@@ -67,7 +67,9 @@ injector:
     uid: 5678
     waitForDataplaneReady: false
   sidecarTraffic:
+    excludeInboundIPs: []
     excludeInboundPorts: []
+    excludeOutboundIPs: []
     excludeOutboundPorts: []
   virtualProbesEnabled: true
   virtualProbesPort: 9000

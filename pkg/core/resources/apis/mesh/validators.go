@@ -388,7 +388,7 @@ func ValidateTargetRef(
 		if len(ref.Labels) > 0 && ref.SectionName != "" {
 			err.AddViolation("sectionName", "sectionName should not be combined with labels")
 		}
-	case common_api.MeshServiceSubset, common_api.MeshGateway:
+	case common_api.MeshServiceSubset, common_api.MeshGateway, common_api.MeshExternalService:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))

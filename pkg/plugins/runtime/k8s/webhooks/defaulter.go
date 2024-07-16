@@ -33,7 +33,7 @@ type defaultingHandler struct {
 	ResourceAdmissionChecker
 
 	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	decoder   admission.Decoder
 }
 
 func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) admission.Response {
@@ -71,7 +71,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 	labels, annotations := k8s.SplitLabelsAndAnnotations(
-		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace),
+		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName),
 		obj.GetAnnotations(),
 	)
 	obj.SetLabels(labels)

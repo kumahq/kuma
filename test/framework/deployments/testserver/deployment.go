@@ -20,6 +20,7 @@ type DeploymentOpts struct {
 	WaitingToBeReady    bool
 	EnableProbes        bool
 	EnableService       bool
+	HeadlessService     bool
 	PodAnnotations      map[string]string
 	PodLabels           map[string]string
 	NodeSelector        map[string]string
@@ -82,9 +83,9 @@ func WithReplicas(n int32) DeploymentOptsFn {
 	}
 }
 
-func WithStatefulSet(apply bool) DeploymentOptsFn {
+func WithStatefulSet() DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.WithStatefulSet = apply
+		opts.WithStatefulSet = true
 	}
 }
 
@@ -133,6 +134,12 @@ func WithoutProbes() DeploymentOptsFn {
 func WithoutService() DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.EnableService = false
+	}
+}
+
+func WithHeadlessService() DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.HeadlessService = true
 	}
 }
 

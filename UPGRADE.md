@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upgrade to `2.8.x`
 
+### MeshFaultInjection responseBandwidth.limit
+
+With [#10371](https://github.com/kumahq/kuma/pull/10371) we have tightened the validation of the `responseBandwidth.limit` field in `MeshFaultInjection` policy. Policies with invalid values, such as `-10kbps`, will be rejected.
+
 ### MeshRetry tcp.MaxConnectAttempt
 
 With [#10250](https://github.com/kumahq/kuma/pull/10250) `MeshRetry` policies with `spec.tcp.MaxConnectAttempt=0` will be rejected.
@@ -17,6 +21,14 @@ Now this is rejected sooner to avoid service disruption.
 ### Removal of legacy tokens
 
 Tokens issued from versions before 2.1.x needs to renewed before upgrading.
+
+If you observe following log in control-plane logs, please rotate your tokens before upgrade.
+```yaml
+[WARNING] Using token with KID header, you should rotate this token as it will not be valid in future versions of Kuma
+```
+* [User token](https://kuma.io/docs/2.7.x/production/secure-deployment/api-server-auth/)
+* [Dataplane token](https://kuma.io/docs/2.7.x/production/secure-deployment/dp-auth/)
+* [Zone token](https://kuma.io/docs/2.7.x/production/cp-deployment/zoneproxy-auth/#zone-token)
 
 ## Upgrade to `2.7.x`
 
