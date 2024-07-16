@@ -11,6 +11,13 @@ being automatically created, either from `Services` in Kubernetes or from
 When upgrading from 2.8 to 2.9, nothing at the data plane level should change.
 But MeshService behaves differently in several different ways.
 
+In general the migration process for MeshService consists of no longer using
+`kuma.io/service` so:
+
+- targeting policies to the real `MeshService` resource
+- switching over to the `MeshService` i.e. `HostnameGenerator` hostnames, if not
+  using Kubernetes DNS
+
 ### Policy
 
 If for example we have a policy targeted at:
@@ -24,32 +31,49 @@ spec:
 
 when switching over to MeshService, this policy will no longer apply.
 
-### Local traffic
+### Traffic
+
+At the moment, we generate a VIP for every `kuma.io/service` and a hostname
+`<kuma.io/service>.mesh` that points to this VIP. The VIP leads to an outbound
+listener and a cluster being created.
+
+Once a MeshService is created, it takes over _the cluster generation_ but does
+not affect the VIP generation. So we now have:
+
+- `kuma.io.service` VIP
+- On Kubernetes the Cluster IP
+- `MeshService` VIP
+
+but all of these point to a cluster generated "the MeshService way".
+This affects the data plane as follows.
+
+#### Local traffic
 
 Because the `MeshServices` we generate have selectors equivalent to the `Service`,
 they will select the same `Dataplanes` that previously had the `kuma.io/service`
-corresponding to the `Service` and thus, absent any policies, traffic flows to
+corresponding to the `Service` and thus, ignoring the question of policy, traffic flows to
 the same endpoints and Envoy has the same cluster configuration.
 
-### Cross-zone traffic
+#### Cross-zone traffic
 
 One of the fundamental changes with `MeshService` is that traffic to a service
 is no longer load balanced across all zones.
 
-We need to take measures to prevent this change from happening on upgrade.
+We need to take measures to prevent this change from happening immediately
+upon upgrade.
 
 In particular with Kubernetes, it's important to keep in mind that after
 MeshService is enabled we no longer generate our own VIP.
 So any requests to MeshService hostnames go to the same
 outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
 
-#### Status quo
+##### Status quo
 
 - On Kubernetes there are two outbound listeners:
   - Traffic to the Kubernetes DNS name/ClusterIP is load-balanced cross-zone
   - Traffic to the `<kuma.io/service>.mesh`/VIP is load-balanced cross-zone
 
-#### `MeshService`
+##### `MeshService`
 
 - We now have one outbound listener:
   - Traffic to the generated hostname of the `MeshService` goes through the Cluster IP
@@ -59,6 +83,7 @@ outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
 
 * Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService {name: demo-app, namespace: kuma-demo, spec.ports[port == 5000]}`.
+  * we can drop this behavior when we drop `kuma.io/service` support
 * For cross-zone:
   * don't generate MeshService by default
   * have a setting to disable using MeshServices
