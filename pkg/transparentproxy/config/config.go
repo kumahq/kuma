@@ -13,6 +13,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+	"github.com/vishvananda/netlink"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
@@ -64,7 +65,6 @@ type Exclusion struct {
 type TrafficFlow struct {
 	Enabled             bool
 	Port                uint16
-	PortIPv6            uint16
 	ChainName           string
 	RedirectChainName   string
 	ExcludePorts        []uint16
@@ -88,10 +88,6 @@ func (c TrafficFlow) Initialize(
 		return InitializedTrafficFlow{}, errors.New("no redirect chain name provided")
 	}
 	initialized.RedirectChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.RedirectChainName)
-
-	if ipv6 && c.PortIPv6 != 0 {
-		initialized.Port = c.PortIPv6
-	}
 
 	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
 	if err != nil {
@@ -591,27 +587,41 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
 	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
 
-	if c.IPv6 {
-		initialized.IPv6 = InitializedConfigIPvX{
-			Config:                 c,
-			Logger:                 loggerIPv6,
-			Executables:            e.IPv6,
-			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          LocalhostCIDRIPv6,
-			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-			Comment:                c.Comment.Initialize(e.IPv6),
-			DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
-			enabled:                true,
-		}
+	if !c.IPv6 {
+		return initialized, nil
+	}
 
-		ipv6Redirect, err := c.Redirect.Initialize(loggerIPv6, e.IPv6, true)
-		if err != nil {
-			return initialized, errors.Wrap(
+	if ok, err := hasLocalIPv6(); !ok || err != nil {
+		if c.Verbose {
+			loggerIPv6.Warn("IPv6 executables initialization skipped:", err)
+		}
+		return initialized, nil
+	}
+
+	if err := configureIPv6OutboundAddress(); err != nil {
+		if c.Verbose {
+			loggerIPv6.Warn(
+				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
 				err,
-				"unable to initialize IPv6 Redirect configuration",
 			)
 		}
-		initialized.IPv6.Redirect = ipv6Redirect
+		return initialized, nil
+	}
+
+	initialized.IPv6 = InitializedConfigIPvX{
+		Config:                 c,
+		Logger:                 loggerIPv6,
+		Executables:            e.IPv6,
+		LoopbackInterfaceName:  loopbackInterfaceName,
+		LocalhostCIDR:          LocalhostCIDRIPv6,
+		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
+		Comment:                c.Comment.Initialize(e.IPv6),
+		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+		enabled:                true,
+	}
+
+	if initialized.IPv6.Redirect, err = c.Redirect.Initialize(loggerIPv6, e.IPv6, true); err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize IPv6 Redirect configuration")
 	}
 
 	return initialized, nil
@@ -625,7 +635,6 @@ func DefaultConfig() Config {
 			Inbound: TrafficFlow{
 				Enabled:           true,
 				Port:              DefaultRedirectInbountPort,
-				PortIPv6:          DefaultRedirectInbountPortIPv6,
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
 				ExcludePorts:      []uint16{},
@@ -881,4 +890,63 @@ func parseUint16(port string) (uint16, error) {
 	}
 
 	return uint16(parsedPort), nil
+}
+
+// hasLocalIPv6 checks if the local system has an active non-loopback IPv6
+// address. It scans through all network interfaces to find any IPv6 address
+// that is not a loopback address.
+func hasLocalIPv6() (bool, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return false, err
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			ipnet.IP.To4() == nil {
+			return true, nil
+		}
+	}
+
+	return false, errors.New("no local IPv6 addresses detected")
+}
+
+// configureIPv6OutboundAddress sets up a dedicated IPv6 address (::6) on the
+// loopback interface ("lo") for our transparent proxy functionality.
+//
+// Background:
+//   - The default IPv6 configuration (prefix length 128) only allows binding to
+//     the loopback address (::1).
+//   - Our transparent proxy requires a distinct IPv6 address (::6 in this case)
+//     to identify traffic processed by the kuma-dp sidecar.
+//   - This identification allows for further processing and avoids redirection
+//     loops.
+//
+// This function is equivalent to running the command:
+// `ip -6 addr add "::6/128" dev lo`
+func configureIPv6OutboundAddress() error {
+	link, err := netlink.LinkByName("lo")
+	if err != nil {
+		return errors.Wrap(err, "failed to find loopback interface ('lo')")
+	}
+
+	// Equivalent to "::6/128"
+	addr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   net.ParseIP("::6"),
+			Mask: net.CIDRMask(128, 128),
+		},
+	}
+
+	if err := netlink.AddrAdd(link, addr); err != nil {
+		// Address already exists, ignore error and continue
+		if strings.Contains(strings.ToLower(err.Error()), "file exists") {
+			return nil
+		}
+
+		return errors.Wrapf(err, "failed to add IPv6 address %s to loopback interface", addr.IPNet)
+	}
+
+	return nil
 }

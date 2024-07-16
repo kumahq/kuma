@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -28,28 +27,6 @@ func HasLocalIPv6() (bool, error) {
 	}
 
 	return false, nil
-}
-
-// ShouldEnableIPv6 checks if system supports IPv6. The port has a value of
-// RedirectPortInBoundV6 and when equals 0 means that IPv6 was disabled by the user.
-func ShouldEnableIPv6(port uint16) (bool, error) {
-	if port == 0 {
-		return false, nil
-	}
-
-	hasIPv6Address, err := HasLocalIPv6()
-	if !hasIPv6Address || err != nil {
-		return false, err
-	}
-
-	// We are executing this command to work around the problem with COS_CONTAINERD
-	// image which is being used on GKE nodes. This image is missing "ip6tables_nat"
-	// kernel module which is adding `nat` table, so we are checking if this table
-	// exists and if so, we are assuming we can safely proceed with ip6tables
-	// ref. https://github.com/kumahq/kuma/issues/2046
-	err = exec.Command("ip6tables", "-t", "nat", "-L").Run()
-
-	return err == nil, nil
 }
 
 func ParseUint16(port string) (uint16, error) {

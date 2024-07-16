@@ -6,7 +6,6 @@ import (
 	"context"
 	std_errors "errors"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/vishvananda/netlink"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
@@ -367,36 +365,20 @@ func (c Executables) Initialize(
 
 	initialized := InitializedExecutables{Executables: c}
 
-	if initialized.IPv4, err = c.IPv4.Initialize(
-		ctx,
-		l.WithPrefix(IptablesCommandByFamily[false]),
-		cfg,
-	); err != nil {
-		return InitializedExecutables{}, errors.Wrap(
-			err,
-			"failed to initialize IPv4 executables",
-		)
+	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
+
+	if initialized.IPv4, err = c.IPv4.Initialize(ctx, loggerIPv4, cfg); err != nil {
+		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv4 executables")
 	}
 
-	if cfg.IPv6 {
-		if initialized.IPv6, err = c.IPv6.Initialize(
-			ctx,
-			l.WithPrefix(IptablesCommandByFamily[true]),
-			cfg,
-		); err != nil {
-			return InitializedExecutables{}, errors.Wrap(
-				err,
-				"failed to initialize IPv6 executables",
-			)
-		}
+	if !cfg.IPv6 {
+		return initialized, nil
+	}
 
-		if err := configureIPv6OutboundAddress(); err != nil {
-			initialized.IPv6 = InitializedExecutablesIPvX{}
-			l.Warn(
-				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
-				err,
-			)
-		}
+	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
+
+	if initialized.IPv6, err = c.IPv6.Initialize(ctx, loggerIPv6, cfg); err != nil {
+		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv6 executables")
 	}
 
 	return initialized, nil
@@ -688,45 +670,6 @@ func execCmd(
 	}
 
 	return &stdout, &stderr, nil
-}
-
-// configureIPv6OutboundAddress sets up a dedicated IPv6 address (::6) on the
-// loopback interface ("lo") for our transparent proxy functionality.
-//
-// Background:
-//   - The default IPv6 configuration (prefix length 128) only allows binding to
-//     the loopback address (::1).
-//   - Our transparent proxy requires a distinct IPv6 address (::6 in this case)
-//     to identify traffic processed by the kuma-dp sidecar.
-//   - This identification allows for further processing and avoids redirection
-//     loops.
-//
-// This function is equivalent to running the command:
-// `ip -6 addr add "::6/128" dev lo`
-func configureIPv6OutboundAddress() error {
-	link, err := netlink.LinkByName("lo")
-	if err != nil {
-		return errors.Wrap(err, "failed to find loopback interface ('lo')")
-	}
-
-	// Equivalent to "::6/128"
-	addr := &netlink.Addr{
-		IPNet: &net.IPNet{
-			IP:   net.ParseIP("::6"),
-			Mask: net.CIDRMask(128, 128),
-		},
-	}
-
-	if err := netlink.AddrAdd(link, addr); err != nil {
-		// Address already exists, ignore error and continue
-		if strings.Contains(strings.ToLower(err.Error()), "file exists") {
-			return nil
-		}
-
-		return errors.Wrapf(err, "failed to add IPv6 address %s to loopback interface", addr.IPNet)
-	}
-
-	return nil
 }
 
 // createBackupFile generates a backup file with a specified prefix and a

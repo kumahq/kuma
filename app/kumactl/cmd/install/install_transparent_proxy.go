@@ -35,11 +35,8 @@ func newInstallTransparentProxy() *cobra.Command {
 	cfg := config.DefaultConfig()
 
 	args := transparentProxyArgs{
-		RedirectPortOutBound: "15001",
-		RedirectPortInBound:  "15006",
-		// this argument is to be deprecated, it now defaults to the same port with ipv4 (instead of 15010)
-		// before deprecation, the user can still change it as needed
-		RedirectPortInBoundV6:          "15006",
+		RedirectPortOutBound:           "15001",
+		RedirectPortInBound:            "15006",
 		IpFamilyMode:                   "dualstack",
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
@@ -137,13 +134,6 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			defaultCfg := config.DefaultConfig()
-			// Backward compatibility
-			if args.RedirectPortInBoundV6 != "" &&
-				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.Port) /* new default value, identical to ipv4 port */ &&
-				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.PortIPv6) /* old default value, dedicated for ipv6 */ {
-				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead")
-			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
 				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
 			}
@@ -199,7 +189,6 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&cfg.Redirect.Inbound.Enabled, "redirect-inbound", cfg.Redirect.Inbound.Enabled, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "[DEPRECATED (use --redirect-inbound-port or --ip-family-mode ipv4)] IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
@@ -272,15 +261,6 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 		return errors.Wrap(err, "parsing inbound redirect port failed")
 	}
 
-	var redirectInboundPortIPv6 uint16
-
-	if args.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = transparentproxy.ParseUint16(args.RedirectPortInBoundV6)
-		if err != nil {
-			return errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
-		}
-	}
-
 	redirectOutboundPort, err := transparentproxy.ParseUint16(args.RedirectPortOutBound)
 	if err != nil {
 		return errors.Wrap(err, "parsing outbound redirect port failed")
@@ -307,27 +287,11 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 		}
 	}
 
-	var ipv6 bool
-	if args.IpFamilyMode == "ipv4" {
-		ipv6 = false
-		redirectInboundPortIPv6 = 0
-	} else {
-		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
-			redirectInboundPortIPv6 = redirectInboundPort
-		}
-
-		ipv6, err = transparentproxy.ShouldEnableIPv6(redirectInboundPortIPv6)
-		if err != nil {
-			return errors.Wrap(err, "cannot verify if IPv6 should be enabled")
-		}
-	}
-
-	cfg.IPv6 = ipv6
+	cfg.IPv6 = args.IpFamilyMode != "ipv4"
 
 	cfg.Owner.UID = uid
 
 	cfg.Redirect.Inbound.Port = redirectInboundPort
-	cfg.Redirect.Inbound.PortIPv6 = redirectInboundPortIPv6
 	cfg.Redirect.Inbound.ExcludePorts = excludeInboundPorts
 
 	cfg.Redirect.Outbound.Port = redirectOutboundPort

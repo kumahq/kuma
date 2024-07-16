@@ -28,10 +28,9 @@ var IPTypeMap = map[bool]string{
 
 // Default ports used for iptables redirection.
 const (
-	DefaultRedirectInbountPort     uint16 = 15006
-	DefaultRedirectInbountPortIPv6 uint16 = 15010
-	DefaultRedirectOutboundPort    uint16 = 15001
-	DefaultRedirectDNSPort         uint16 = 15053
+	DefaultRedirectInbountPort  uint16 = 15006
+	DefaultRedirectOutboundPort uint16 = 15001
+	DefaultRedirectDNSPort      uint16 = 15053
 )
 
 const (

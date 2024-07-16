@@ -6,6 +6,92 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.9.x`
+
+### Upgrading Transparent Proxy Configuration
+
+#### Removal of Deprecated IPv6 Redirection Flag and Annotation
+
+In this release, the following deprecated options for configuring IPv6 transparent proxy redirection have been removed:
+
+- The `--redirect-inbound-port-ipv6` flag in `kumactl install transparent-proxy`.
+- The `kuma.io/transparent-proxying-inbound-v6-port` annotation.
+
+Previously, disabling IPv6 transparent proxy redirection could be achieved by setting these options to `0`. This method is no longer supported.
+
+To disable IPv6 transparent proxy redirection, you should now use the `--ip-family-mode` flag or the `kuma.io/transparent-proxying-ip-family-mode` annotation and set their value to `ipv4`. The default value for these options is `dualstack`.
+
+**Example:**
+
+In Universal mode, to install a transparent proxy:
+
+```sh
+kumactl install transparent-proxy --ip-family-mode ipv4 ...
+```
+
+In the definition of the `Dataplane` resource:
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+    ipFamilyMode: ipv4
+```
+
+To set the configuration for Kubernetes workloads:
+
+```sh
+kumactl install control-plane --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ...
+```
+
+or
+
+```sh
+helm install --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ... kuma kuma/kuma
+```
+
+For more information about disabling IPv6 in transparent proxy redirection, visit our documentation: [Disabling IPv6](https://kuma.io/docs/2.8.x/production/dp-config/ipv6/#disabling-ipv6).
+
+Please update your configurations accordingly to ensure a smooth transition and avoid any disruptions in your service.
+
+#### Removal of `redirectPortInboundV6` Field from Dataplane Resource
+
+The `Dataplane` resource no longer includes the `redirectPortInboundV6` field. Any configuration containing this field will fail validation. Update your `Dataplane` resources as shown below:
+
+**Previous configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortInboundV6: 15006
+    redirectPortOutbound: 15001
+```
+
+**Updated configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+```
+
+Ensure to update your Dataplane resources to the new format to avoid any validation errors.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

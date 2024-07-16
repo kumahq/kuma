@@ -37,7 +37,6 @@ type PodRedirect struct {
 	RedirectInbound                          bool
 	ExcludeInboundPorts                      string
 	RedirectPortInbound                      uint32
-	RedirectPortInboundV6                    uint32
 	IpFamilyMode                             string
 	UID                                      string
 	TransparentProxyEnableEbpf               bool
@@ -104,11 +103,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	podRedirect.ExcludeInboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 
 	podRedirect.RedirectPortInbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
-	if err != nil {
-		return nil, err
-	}
-
-	podRedirect.RedirectPortInboundV6, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +188,8 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--exclude-outbound-ports",
 		pr.ExcludeOutboundPorts,
 		"--verbose",
+		"--ip-family-mode",
+		pr.IpFamilyMode,
 	}
 
 	for _, exclusion := range pr.ExcludeOutboundPortsForUIDs {
@@ -207,15 +203,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
 		)
-	}
-
-	result = append(result, "--ip-family-mode", pr.IpFamilyMode)
-	if pr.IpFamilyMode != metadata.IpFamilyModeIPv4 &&
-		pr.RedirectPortInboundV6 > 0 &&
-		pr.RedirectPortInboundV6 != pr.RedirectPortInbound {
-		result = append(result,
-			"--redirect-inbound-port-v6",
-			fmt.Sprintf("%d", pr.RedirectPortInboundV6))
 	}
 
 	if pr.TransparentProxyEnableEbpf {

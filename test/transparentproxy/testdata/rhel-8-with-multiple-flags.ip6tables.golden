@@ -1,3 +1,11 @@
+*raw
+:PREROUTING ACCEPT
+:OUTPUT ACCEPT
+-A PREROUTING -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to all DNS responses" -m udp --sport 53 -j CT --zone 1
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID 5678)" -m udp --dport 53 -m owner --uid-owner 5678 -j CT --zone 1
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to DNS responses from the kuma-dp DNS proxy" -m udp --sport 15053 -m owner --uid-owner 5678 -j CT --zone 2
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to all DNS requests" -m udp --dport 53 -j CT --zone 2
+COMMIT
 *nat
 :PREROUTING ACCEPT
 :INPUT ACCEPT
@@ -34,12 +42,4 @@
 -A KUMA_MESH_OUTBOUND -m comment --comment "kuma/mesh/transparent/proxy/redirect all other outbound traffic to our custom chain for further processing" -j KUMA_MESH_OUTBOUND_REDIRECT
 -A KUMA_MESH_INBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15006)" -j REDIRECT --to-ports 15006
 -A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15001)" -j REDIRECT --to-ports 15001
-COMMIT
-*raw
-:PREROUTING ACCEPT
-:OUTPUT ACCEPT
--A PREROUTING -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to all DNS responses" -m udp --sport 53 -j CT --zone 1
--A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID 5678)" -m udp --dport 53 -m owner --uid-owner 5678 -j CT --zone 1
--A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to DNS responses from the kuma-dp DNS proxy" -m udp --sport 15053 -m owner --uid-owner 5678 -j CT --zone 2
--A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to all DNS requests" -m udp --dport 53 -j CT --zone 2
 COMMIT

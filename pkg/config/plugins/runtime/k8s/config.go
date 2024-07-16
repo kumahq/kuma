@@ -28,10 +28,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
-				IpFamilyMode:          "dualstack",
-				RedirectPortInbound:   15006,
-				RedirectPortInboundV6: 15006,
-				RedirectPortOutbound:  15001,
+				IpFamilyMode:         "dualstack",
+				RedirectPortInbound:  15006,
+				RedirectPortOutbound: 15001,
 				DataplaneContainer: DataplaneContainer{
 					Image:     "kuma/kuma-dp:latest",
 					UID:       5678,
@@ -288,9 +287,6 @@ type SidecarContainer struct {
 	DataplaneContainer `json:",inline"`
 	// Redirect port for inbound traffic.
 	RedirectPortInbound uint32 `json:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
-	// Redirect port for inbound IPv6 traffic.
-	// Deprecated: Use RedirectPortInbound or IpFamilyMode instead.
-	RedirectPortInboundV6 uint32 `json:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// The IP family mode to enable traffic redirection for. Can be "ipv4" or "dualstack".
 	IpFamilyMode string `json:"ipFamilyMode,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_ip_family_mode"`
 	// Redirect port for outbound traffic.
@@ -515,9 +511,6 @@ func (c *SidecarContainer) Validate() error {
 	}
 	if 65535 < c.RedirectPortInbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
-	}
-	if 0 != c.RedirectPortInboundV6 && 65535 < c.RedirectPortInboundV6 {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
 	}
 	if 65535 < c.RedirectPortOutbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))

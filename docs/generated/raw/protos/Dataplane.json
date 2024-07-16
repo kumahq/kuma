@@ -282,10 +282,6 @@
                     "type": "array",
                     "description": "List of services that will be accessed directly via IP:PORT Use `*` to indicate direct access to every service in the Mesh. Using `*` to directly access every service is a resource-intensive operation, use it only if needed."
                 },
-                "redirect_port_inbound_v6": {
-                    "type": "integer",
-                    "description": "Port on which all IPv6 inbound traffic is being transparently redirected."
-                },
                 "reachable_services": {
                     "items": {
                         "type": "string"

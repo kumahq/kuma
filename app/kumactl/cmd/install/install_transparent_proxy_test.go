@@ -128,12 +128,10 @@ var _ = Context("kumactl install transparent proxy", func() {
 				"--kuma-dp-user", "root",
 				"--redirect-outbound-port", "12345",
 				"--redirect-inbound-port", "12346",
-				"--redirect-inbound-port-v6", "12346",
 				"--exclude-outbound-ports", "2000,2001",
 				"--exclude-inbound-ports", "1000,1001",
 			},
-			errorMatcher: Equal("# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead\n"),
-			goldenFile:   "install-transparent-proxy.overrides.golden.txt",
+			goldenFile: "install-transparent-proxy.overrides.golden.txt",
 		}),
 		Entry("should generate when ipv6 disabled", testCase{
 			extraArgs: []string{
