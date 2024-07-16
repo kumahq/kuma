@@ -136,11 +136,11 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					continue
 				}
 			}
-			if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
-				// Skip overlapping outbound interface with inbound.
-				// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
-				continue
-			}
+		}
+		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+			// Skip overlapping outbound interface with inbound.
+			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
+			continue
 		}
 		outbounds = append(outbounds, outbound)
 	}
