@@ -69,6 +69,9 @@ func CollectServices(
 ) []DestinationService {
 	var dests []DestinationService
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
+		if outbound.GetAddress() == proxy.Dataplane.Spec.GetNetworking().GetAddress() {
+			continue
+		}
 		var destinationService *DestinationService
 		switch outbound.GetBackendRef().GetKind() {
 		case string(common_api.MeshService):

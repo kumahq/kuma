@@ -74,6 +74,6 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
-	_ = PDescribe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered) // todo just to check if there is a test clash
+	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 )
