@@ -7,7 +7,8 @@ Technical story: https://github.com/kumahq/kuma/issues/10247
 ## Context and Problem Statement
 
 At the moment when targeting `Mesh*Route` you need to put it in topLevel targetRef. 
-We want to iterate over policy design to fully utilize the fact that we are referencing real objects.
+We want to iterate over policy design and move `Mesh*Route` to `spec.to[].targetRef` section follow model where `spec.targetRef`
+selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].targetRef` selects outbounds
 
 ## Decision Outcome
 
@@ -15,16 +16,18 @@ We want to iterate over policy design to fully utilize the fact that we are refe
 
 ## Considered options
 
-- add possibility to put `Mesh*Routes` in `spec.to[].targetRef`
-- leave `Mesh*Routes` in top level targetRef as it is now
+1. add possibility to put `Mesh*Routes` in `spec.to[].targetRef` -> `spec.targerRef` selects proxies, `spec.from[].targetRef` selects inbounds, `spec.to[].targetRef` selects outbounds.
+2. leave `Mesh*Routes` in top level targetRef as it is now, and introduce `spec.workloadTargetRef` to match whole proxies
 
 ### Add possibility to put Mesh*Routes in `spec.to[].targetRef`
 
 #### Advantages
 
-- simplifying policy api as `spec.targetRef` will always pick proxy and `spec.to[].targetRef` section will pick outbounds
+- simplifying policy api as `spec.targetRef` will always pick proxy and `spec.to[].targetRef` section will select outgoing traffic
 - ability to set different confs on different proxy for the same route (overriding default conf for route without producer/consumer policies, on universal)
-- no need for specifying `spec.targetRef` when targeting `Mesh`
+- no need for specifying `spec.targetRef` when targeting `Mesh`, simplifies policy
+- gives more flexibility as you can target multiple outbounds in single policy. Reducing number of consumer policies
+- more consistent with current approach
 - easier policy matching code
 
 #### Disadvantages
@@ -32,22 +35,341 @@ We want to iterate over policy design to fully utilize the fact that we are refe
 - can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
 - yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
 - mixing outbounds and routes in `spec.to[].targetRef`
-- hides the most often most important information under `to[]`
+- hides the most often most important information under `to[]` (only in certain cases as most of the time policy will target Mesh and will have only `spec.to[].targetRef`)  
 
-### Leave Mesh*Routes in top level targetRef as it is now
+### Leave Mesh*Routes in top level targetRef as it is now and introduce `spec.workloadTargetRef`
 
 #### Advantages
 
-- can be simpler as you are always targeting all proxies to which the route applies
-- no need for additional implementation
+- can be simpler with clear distinction of selecting proxies in `spec.workloadTargetRef` and other resources in `spec.targetRef`
 
 #### Disadvantages
 
-- you cannot override route config for subset of proxies without producer/consumer policies (universal use case)
-- mixing proxies and outbounds in `spec.targetRef`
-- when `Mesh*Route` is in `spec.targetRef` targetRef we still have `spec.to[].targetRef` section which can be misleading as route already points to some outbound  
+- mixing proxies, outbounds and routes in `spec.targetRef`
+- when `Mesh*Route` is in `spec.targetRef` targetRef we still have `spec.to[].targetRef` section which can be misleading as route already points to some outbound
+- cannot configure multiple outbounds in the same policy, forcing users to create and later manage multiple policies, which can be problematic with consumer policies
+- MeshService in topLevel can be misleading. Is it targeting all proxies belonging to MeshService or outbound to MeshService?
+- need to introduce entirely new `spec.workloadTargetRef` section
 
-## Design
+## Comparing UX of two approaches
+
+In both cases we assume that either `spec.targetRef` or `spec.workloadTargetRef` selects whole Mesh which can be omitted as default.
+With examples fist yaml is always with `to` section and second is with `spec.workloadTargetRef` approach.
+
+Looking at the examples we can see that when we omit selecting Mesh as default both approaches look almost the same. With 
+first approach giving a little bit more flexibility as `spec.to[]` is a list.
+
+### Examples
+
+1. Producer timeout to MeshService
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+2. Consumer timeout to MeshService
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+3. Consumer timeout to MeshService applied to labeled proxies
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshSubset
+    tag:
+      service-type: ui
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  workloadTargetRef:
+    kind: MeshSubset
+    tags:
+      service-type: ui
+  targetRef:
+    kind: MeshService
+    name: backend
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+4. Producer timeout to MeshHTTPRoute
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: backend-route
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: backend-route
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+5. Consumer timeout to MeshHTTPRoute
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: backend-route
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: backend-route
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+6. Consumer timeout to MeshHTTPRoute applied to labeled proxies
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshSubset
+    tag:
+      service-type: ui
+  to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: backend-route
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 10s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  workloadTargetRef:
+    kind: MeshSubset
+    tags:
+      service-type: ui
+  targetRef:
+    kind: MeshHTTPRoute
+    name: backend-route
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 10s
+```
+
+7. Consumer timeout to both MeshService and MeshHttpRoute
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 5s
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: slow-backend-route
+      namespace: backend-ns
+    default:
+      http:
+        requestTimeout: 15s
+```
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: backend
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 5s
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshHTTPRoute
+    name: slow-backend-route
+    namespace: backend-ns
+  default:
+    http:
+      requestTimeout: 15s
+```
+
+## Mesh*Route in spec.to[].targetRef design
 
 The design is grounded in multiple recent MADRs around improvements to policies: 
 
