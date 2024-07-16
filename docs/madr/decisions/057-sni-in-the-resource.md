@@ -1,0 +1,130 @@
+# SNI in the resource definition
+
+* Status: accepted
+
+Technical Story: 
+
+## Context and Problem Statement
+
+SNI is used for cross-zone communication to proxy the traffic through zone proxies.
+Recently we decided on SNI format in MADR 053.
+
+The SNI is constructed on the server and the client side. This approach has a couple of downsides
+* We hit multiple edge cases of constructing it on the client side, because of resource hashing.
+  This logic is not as simple as it should be.
+* Any migration of this format would be hard to execute
+* If we introduce a functionality to enter the mesh directly through zone ingress (assuming that cert is acquired) it would be hard for the client to construct this.
+
+## Considered Options
+
+* SNI in the resource definition
+* Keep it implicit
+
+## Decision Outcome
+
+Chosen option: "Option 1 - SNI in the resource definition", because it solves the problems described in previous section.
+For `MeshMultiZoneService` "Option 2 - compute ports on global cp", because advantages outweights other option.
+
+## Pros and Cons of the Options
+
+### Option 1 - SNI in the resource definition
+
+SNI is unique for each port, therefore we need to define it for each port
+
+```yaml
+kind: MeshService
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+      sni: ae10a8071b8a8eeb8.backend.8080.demo.ms # new field
+```
+
+The `sni` field will be filled out automatically be the original Zone CP and synced cross zone.
+The field will be filled out by the same mechanism as Mesh Defaulter, which is webhook on Kubernetes and `ResourceManager` on Universal.
+This way we can avoid a situation that we drop SNI by the resource update.
+
+Advantages:
+* Slightly debuggability because SNI is in MeshService object
+* Easy migration
+* Easy usage from the client side
+
+Disadvantages:
+* Putting more stuff in the object
+
+#### MeshMultiZoneService
+
+SNI should always be filled out by the source of truth of the resource.
+In case of `MeshMultiZoneService`, this is global CP.
+However, the problem is that `MeshMultiZoneService` does not require defining ports directly.
+Global CP does not have list of ports, so it cannot update them with SNI.
+
+```yaml
+kind: MeshMultiZoneService
+name: test-server
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+        k8s.kuma.io/namespace: mzmsconnectivity
+status: # computed on the zone
+  vips:
+    - ip: 241.0.0.1
+  meshServices:
+    - name: test-server.mzmsconnectivity
+    - name: test-server-234jhg34yt34.kuma-system
+  ports:
+    - port: 80
+      targetPort: 8080
+```
+
+##### Option 1 - require ports from user
+
+We can require ports from user, so it's
+
+```yaml
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+        k8s.kuma.io/namespace: mzmsconnectivity
+  ports:
+    - port: 80
+      targetPort: 8080
+      sni: ae10a8071b8a8eeb8.backend.80.demo.mzms # new field
+```
+
+SNI is then applied the same way as MeshService (via webhook/ResourceManager) and is synced down to zones.
+
+Advantage:
+* We see ports in the GUI
+* We avoid mistakes when ports are different between services. What to do when
+  * One service has port 80 and other has port 8080
+  * One service has appProtocol http on port 80 and other has tcp on port 80
+
+Disadvantage:
+* It might be annoying for the user to repeat the information that is already defined on MeshServices
+
+##### Option 2 - compute ports on global cp
+
+Global CP can have a similar component to Zone CP which is to go over all `MeshServices` and fill this data for the user.
+Computed ports are stored in `spec.ports` so it's synced down to all zones
+
+Advantage:
+* We see ports in the GUI
+* Asking less things from the user
+
+Disadvantage:
+* Putting more compute operations on Global CP.
+  However, we may need to have a component to compute `status` on global anyway to give better GUI visibility of aggregated services. 
+
+### Option 2 - Keep it implicit
+
+Advantages:
+* No new fields in objects
+
+Disadvantages:
+* Keep the existing tradeoffs
+* Don't see ports of `MeshMultiZoneService` in the GUI.
