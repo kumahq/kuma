@@ -110,7 +110,6 @@ networking:
       version: %s
   transparentProxying:
     redirectPortInbound: %s
-    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 
@@ -182,7 +181,6 @@ networking:
 %s
   transparentProxying:
     redirectPortInbound: %s
-    redirectPortInboundV6: %s
     redirectPortOutbound: %s
     reachableServices: [%s]
 `

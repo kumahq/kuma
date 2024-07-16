@@ -161,7 +161,6 @@ const (
 	KumaEnvoyAdminPort                                 = "kuma.io/envoy-admin-port"
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
 	KumaTransparentProxyingIPFamilyMode                = "kuma.io/transparent-proxying-ip-family-mode"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"

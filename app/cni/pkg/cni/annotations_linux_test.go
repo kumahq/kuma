@@ -36,16 +36,5 @@ var _ = Describe("NewIntermediateConfig", func() {
 		cfg, err := NewIntermediateConfig(a)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.inboundPort).To(Equal("1234"))
-		Expect(cfg.inboundPortV6).To(Equal("1234"))
-	})
-
-	It("should disable ipv6 inbound redirect when disabled by annotation", func() {
-		a := map[string]string{
-			"kuma.io/transparent-proxying-inbound-v6-port": "0",
-		}
-		cfg, err := NewIntermediateConfig(a)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(cfg.ipFamilyMode).To(Equal("ipv4"))
-		Expect(cfg.inboundPortV6).To(Equal("0"))
 	})
 })

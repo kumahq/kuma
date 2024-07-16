@@ -50,7 +50,6 @@ injector:
       successThreshold: 1
       timeoutSeconds: 3
     redirectPortInbound: 15006
-    redirectPortInboundV6: 15006
     redirectPortOutbound: 15001
     resources:
       limits:

@@ -161,11 +161,11 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     - --redirect-all-dns-traffic
     - --redirect-dns-port
     - "25053"
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install
