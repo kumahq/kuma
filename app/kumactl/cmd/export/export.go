@@ -53,9 +53,10 @@ $ kumactl export --profile federation --format universal > policies.yaml
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := pctx.CheckServerVersionCompatibility(); err != nil {
-				cmd.PrintErrln(err)
-			}
+			version := kumactl_cmd.CheckCompatibility(pctx.FetchServerVersion, cmd.ErrOrStderr())
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(),
+				"# Product: %s, Version: %s, Hostname: %s, ClusterId: %s, InstanceId: %s\n",
+				version.Product, version.Version, version.Hostname, version.ClusterId, version.InstanceId)
 
 			if !slices.Contains([]string{profileFederation, profileFederationWithPolicies, profileAll}, ctx.args.profile) {
 				return errors.New("invalid profile")

@@ -17,8 +17,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/pkg/test"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/version"
 )
 
@@ -149,7 +149,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 		It("should fail on invalid api server", func() {
 			// setup
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
-				_, err := writer.Write([]byte(`{"tagLine": "OtherProduct"}`))
+				_, err := writer.Write([]byte(`{"product": "OtherProduct"}`))
 				Expect(err).ToNot(HaveOccurred())
 			})
 			defer server.Close()
@@ -287,7 +287,7 @@ switched active Control Plane to "example"
 func setupCpIndexServer() (*httptest.Server, int) {
 	return setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 		response := types.IndexResponse{
-			Tagline: version.Product,
+			Product: version.Product,
 			Version: "unknown",
 		}
 		marshaled, err := json.Marshal(response)
