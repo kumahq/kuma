@@ -55,18 +55,34 @@ Therefore, no default HostnameGenerator is needed for it.
 
 ```yaml
 spec:
-  template: '{{ label "k8s.kuma.io/service-name" }}.{{ label "k8s.kuma.io/namespace" }}.svc.mesh.{{ label "kuma.io/zone" }}'
+  template: '{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.{{ .Zone }}'
   selector:
     meshService:
       matchLabels:
         kuma.io/env: kubernetes # short term "kuma.io/managed-by: kube-controller"
         kuma.io/origin: global # only select synced resources
+        k8s.kuma.io/is-headless-service: false
 ```
 
 It's important to only select Kubernetes MeshServices, so we won't try and fail to evaluate this template for Universal MeshServices.
 MeshService controller will add `kuma.io/managed-by: kube-controller` to all services created by it.
 It means that short term we won't take into account manually applied MeshServices on Kubernetes.
 This is not something we want to recommend to users anyway. They should use Service object. 
+
+This HostnameGenerator could be automatically created by Global CP so that it's synced down to every Zone CP.
+
+#### Synced Headless Kubernetes MeshService
+
+```yaml
+spec:
+  template: '{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.{{ .Zone }}'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/env: kubernetes # short term "kuma.io/managed-by: kube-controller"
+        kuma.io/origin: global # only select synced resources
+        k8s.kuma.io/is-headless-service: true
+```
 
 This HostnameGenerator could be automatically created by Global CP so that it's synced down to every Zone CP.
 
@@ -89,7 +105,7 @@ This HostnameGenerator could be automatically created by Universal Zone CP.
 
 ```yaml
 spec:
-  template: '{{ .DisplayName }}.svc.mesh.{{ label "kuma.io/zone" }}'
+  template: '{{ .DisplayName }}.svc.mesh.{{ .Zone }}'
   selector:
     meshService:
       matchLabels:
