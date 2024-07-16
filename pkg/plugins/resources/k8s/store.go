@@ -298,8 +298,12 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	} else {
 		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
 	}
-	if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok && m.Namespace != "" {
-		labels[v1alpha1.KubeNamespaceTag] = m.Namespace
+	origin := labels[v1alpha1.ResourceOriginLabel]
+	_, zoneLabelPresent := labels[v1alpha1.ZoneTag]
+	if !(origin == string(v1alpha1.ZoneResourceOrigin) && zoneLabelPresent) {
+		if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok && m.Namespace != "" {
+			labels[v1alpha1.KubeNamespaceTag] = m.Namespace
+		}
 	}
 	return labels
 }

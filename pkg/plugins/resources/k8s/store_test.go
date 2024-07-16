@@ -560,6 +560,37 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual.Meta.GetLabels()[mesh_proto.DisplayName]).To(Equal("dn"))
 		})
+
+		It("should not add namespace label when resource is synced from zone", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: kuma.io/v1alpha1
+            kind: TrafficRoute
+            mesh: default
+            metadata:
+              labels:
+                kuma.io/zone: zone-1
+                kuma.io/origin: zone
+              annotations:
+                kuma.io/display-name: dn
+              name: %s
+            spec:
+              conf:
+                destination:
+                  path: /example
+`, name))
+			backend.Create(expected)
+
+			// given
+			actual := core_mesh.NewTrafficRouteResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual.Meta.GetLabels()[mesh_proto.KubeNamespaceTag]).To(Equal(""))
+		})
 	})
 
 	Describe("Delete()", func() {
