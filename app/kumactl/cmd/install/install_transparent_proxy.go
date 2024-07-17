@@ -92,9 +92,22 @@ runuser -u kuma-dp -- \
     --binary-path /usr/local/bin/envoy
 
 `,
-		PreRun: func(cmd *cobra.Command, _ []string) {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
+
+			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified.
+			// The Set method contains logic to check for the existence of a user with the default
+			// UID "5678", and if that does not exist, it checks for the default username "kuma-dp".
+			// Since the cobra library does not call the Set method when --kuma-dp-user is not specified,
+			// we need to invoke it manually here to ensure the proper user is set.
+			if kumaDpUser := cmd.Flag("kuma-dp-user"); !kumaDpUser.Changed {
+				if err := cfg.Owner.Set(""); err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !cfg.DryRun && runtime.GOOS != "linux" {
