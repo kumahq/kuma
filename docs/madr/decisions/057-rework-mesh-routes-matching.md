@@ -41,7 +41,7 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 #### Advantages
 
-- can be simpler as we move most interesting part of the policy from `to` section
+- can be simpler as we move most interesting part of the policy from `to` section and remove noise
 
 #### Disadvantages
 
