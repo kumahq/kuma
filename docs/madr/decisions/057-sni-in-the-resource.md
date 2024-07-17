@@ -40,12 +40,12 @@ spec:
       sni: ae10a8071b8a8eeb8.backend.8080.demo.ms # new field
 ```
 
-The `sni` field will be filled out automatically be the original Zone CP and synced cross zone.
+The `sni` field will be filled out automatically by the original Zone CP and synced cross zone.
 The field will be filled out by the same mechanism as Mesh Defaulter, which is webhook on Kubernetes and `ResourceManager` on Universal.
 This way we can avoid a situation that we drop SNI by the resource update.
 
 Advantages:
-* Slightly debuggability because SNI is in MeshService object
+* Slightly better debuggability because SNI is in MeshService object
 * Easy migration
 * Easy usage from the client side
 
@@ -57,6 +57,7 @@ Disadvantages:
 SNI should always be filled out by the source of truth of the resource.
 In case of `MeshMultiZoneService`, this is global CP.
 However, the problem is that `MeshMultiZoneService` does not require defining ports directly.
+They are derived from the `MeshServices` selected by `MeshMultiZoneService`.
 Global CP does not have list of ports, so it cannot update them with SNI.
 
 ```yaml
@@ -120,7 +121,7 @@ Disadvantage:
 * Putting more compute operations on Global CP.
   However, we may need to have a component to compute `status` on global anyway to give better GUI visibility of aggregated services. 
 
-### Option 2 - Keep it implicit
+### Option 3 - Keep it implicit
 
 Advantages:
 * No new fields in objects
