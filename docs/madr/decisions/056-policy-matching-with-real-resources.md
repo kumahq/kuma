@@ -249,6 +249,22 @@ and we'll sort this list based on fields in the following order:
 
 Note: today we basically do 1 and 3, ignoring the field 2.
 
+After that, if we want to find a conf for the resource `r`, we do:
+
+```go
+confs := []
+for _, item := range toItemsWithTopLevel:
+    if includes(item, r) {
+        confs = append(confs, item.conf)
+    }
+}
+resultingConf := merge(confs...)
+```
+
+Function `includes(r1, r2 core_model.Resource) bool` checks if one resource is included into another:
+* every resource is included into `Mesh`
+* `Mesh*Route` is included into `MeshService` if route's `to[].targetRef` references the MeshService
+
 #### Migration
 
 ResourceRule is a new structure, it will be used when configuring outbounds for the real MeshService resources.
