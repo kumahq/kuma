@@ -236,3 +236,4 @@ There are policies that make more sense on egress and in both places.
 ## Links
 
 * https://github.com/kumahq/kuma/issues/5050
+* https://github.com/kumahq/kuma/issues/8417
