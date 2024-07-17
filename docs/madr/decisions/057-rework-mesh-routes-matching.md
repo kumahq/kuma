@@ -35,7 +35,7 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 - can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
 - yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
 - mixing outbounds and routes in `spec.to[].targetRef`
-- hides the most often most important information under `to[]` (only in certain cases as most of the time policy will target Mesh and will have only `spec.to[].targetRef`)  
+- hides the most often most important information under `to[]` adding noise when targeting Mesh in `spec.targetRef`  
 
 ### Leave Mesh*Routes in top level targetRef as it is now and introduce `spec.workloadTargetRef`
 
