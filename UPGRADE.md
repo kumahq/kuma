@@ -92,6 +92,26 @@ networking:
 
 Ensure to update your Dataplane resources to the new format to avoid any validation errors.
 
+#### Deprecation of `--kuma-dp-uid` Flag
+
+In this release, the `--kuma-dp-uid` flag used in the `kumactl install transparent-proxy` command has been deprecated. The functionality of specifying a user by UID is now included in the `--kuma-dp-user` flag, which accepts both usernames and UIDs.
+
+**New Usage Example:**
+
+Instead of using:
+```sh
+kumactl install transparent-proxy --kuma-dp-uid 1234
+```
+
+You should now use:
+```sh
+kumactl install transparent-proxy --kuma-dp-user 1234
+```
+
+If the `--kuma-dp-user` flag is not provided, the system will attempt to use the default UID (`5678`) or the default username (`kuma-dp`).
+
+Please update your scripts and configurations accordingly to accommodate this change.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

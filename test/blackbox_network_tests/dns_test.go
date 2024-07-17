@@ -570,7 +570,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 						Enabled: true,
 					},
 				},
-				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
+				Owner:         strconv.Itoa(int(uid)),
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -688,7 +688,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 					},
 				},
 				IPFamilyMode:  config.IPFamilyModeDualStack,
-				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
+				Owner:         strconv.Itoa(int(uid)),
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -956,7 +956,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 						ResolvConfigPath:   "testdata/resolv4.conf",
 					},
 				},
-				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
+				Owner:         strconv.Itoa(int(uid)),
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())

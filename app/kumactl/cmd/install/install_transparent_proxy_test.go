@@ -78,13 +78,13 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected when no conntrack module present", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
@@ -99,7 +99,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
@@ -113,7 +113,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 				"--skip-dns-conntrack-zone-split",

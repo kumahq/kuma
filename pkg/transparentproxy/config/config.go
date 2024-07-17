@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	os_user "os/user"
 	"slices"
 	"strconv"
 	"strings"
@@ -387,7 +388,7 @@ func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
 }
 
 type Config struct {
-	Owner    Owner
+	Owner    string
 	Redirect Redirect
 	Ebpf     Ebpf
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
@@ -543,6 +544,7 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
 	Comment InitializedComment
+	Owner   Owner
 
 	enabled bool
 }
@@ -588,6 +590,11 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
 	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
 
+	owner, err := findOwner(c.Owner)
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to find the kuma-dp user")
+	}
+
 	initialized := InitializedConfig{
 		Logger: l,
 		IPv4: InitializedConfigIPvX{
@@ -595,6 +602,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			Owner:                  owner,
 			enabled:                true,
 		},
 		DryRun: c.DryRun,
@@ -660,6 +668,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
 		Comment:                c.Comment.Initialize(e.IPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+		Owner:                  owner,
 		enabled:                true,
 	}
 
@@ -672,7 +681,6 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
@@ -992,4 +1000,41 @@ func configureIPv6OutboundAddress() error {
 	}
 
 	return nil
+}
+
+func findUserUID(user string) (string, error) {
+	if user != "" {
+		if u, err := os_user.LookupId(user); err == nil {
+			return u.Uid, nil
+		}
+
+		if u, err := os_user.Lookup(user); err == nil {
+			return u.Uid, nil
+		}
+	}
+
+	return "", errors.Errorf("the specified UID or username (%q) does not refer to a valid user on the host", user)
+}
+
+func findOwner(user string) (Owner, error) {
+	if uid, err := findUserUID(user); err == nil {
+		return Owner{UID: uid}, nil
+	} else if user != "" && user != OwnerDefaultUID && user != OwnerDefaultUsername {
+		return Owner{}, err
+	}
+
+	if uid, err := findUserUID(OwnerDefaultUID); err == nil {
+		return Owner{UID: uid}, nil
+	}
+
+	if uid, err := findUserUID(OwnerDefaultUsername); err == nil {
+		return Owner{UID: uid}, nil
+	}
+
+	return Owner{}, errors.Errorf(
+		"the specified UID or username (%q) does not refer to a valid user on the host. Additionally, the default UID (%q) and username (%q) could not be found",
+		user,
+		OwnerDefaultUID,
+		OwnerDefaultUsername,
+	)
 }
