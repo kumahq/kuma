@@ -370,7 +370,7 @@ func (c Executables) Initialize(
 		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv4 executables")
 	}
 
-	if !cfg.IPv6 {
+	if cfg.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
 	}
 

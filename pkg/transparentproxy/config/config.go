@@ -406,8 +406,6 @@ type Config struct {
 	//
 	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
 	DropInvalidPackets bool
-	// IPv6 when set will be used to configure iptables as well as ip6tables
-	IPv6 bool
 	// RuntimeStdout is the place where Any debugging, runtime information
 	// will be placed (os.Stdout by default)
 	RuntimeStdout io.Writer
@@ -453,6 +451,51 @@ type Config struct {
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
 	Comment Comment
+	// IPFamilyMode specifies the IP family mode to be used by the
+	// configuration. It determines whether the system operates in dualstack
+	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
+	// crucial for environments where both IP families are in use, ensuring that
+	// the correct iptables rules are applied for the specified IP family.
+	IPFamilyMode IPFamilyMode
+}
+
+type IPFamilyMode string
+
+const (
+	IPFamilyModeDualStack IPFamilyMode = "dualstack"
+	IPFamilyModeIPv4      IPFamilyMode = "ipv4"
+)
+
+// String returns the string representation of the IPFamilyMode.
+// This is used both by fmt.Print and by Cobra in help text.
+func (e *IPFamilyMode) String() string {
+	return string(*e)
+}
+
+// Type returns the type of the IPFamilyMode.
+// This is only used in help text by Cobra.
+func (e *IPFamilyMode) Type() string {
+	return "string"
+}
+
+// Set assigns the IPFamilyMode based on the provided value. It validates the
+// input and sets the appropriate mode or returns an error if the input is
+// invalid.
+func (e *IPFamilyMode) Set(v string) error {
+	switch strings.ToLower(v) {
+	case "": // Default value is "dualstack"
+		*e = IPFamilyModeDualStack
+	case string(IPFamilyModeDualStack), string(IPFamilyModeIPv4):
+		*e = IPFamilyMode(v)
+	default:
+		return errors.Errorf(
+			"must be one of %q or %q",
+			IPFamilyModeDualStack,
+			IPFamilyModeIPv4,
+		)
+	}
+
+	return nil
 }
 
 // InitializedConfigIPvX extends the Config struct by adding fields that require
@@ -587,7 +630,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
 	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
 
-	if !c.IPv6 {
+	if c.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
 	}
 
@@ -666,7 +709,6 @@ func DefaultConfig() Config {
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
-		IPv6:               true,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
@@ -687,6 +729,7 @@ func DefaultConfig() Config {
 		Comment: Comment{
 			Disabled: false,
 		},
+		IPFamilyMode: IPFamilyModeDualStack,
 	}
 }
 

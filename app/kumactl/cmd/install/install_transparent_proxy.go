@@ -18,9 +18,7 @@ import (
 
 type transparentProxyArgs struct {
 	RedirectPortOutBound           string
-	IpFamilyMode                   string
 	RedirectPortInBound            string
-	RedirectPortInBoundV6          string
 	ExcludeInboundPorts            string
 	ExcludeOutboundPorts           string
 	ExcludeOutboundTCPPortsForUIDs []string
@@ -37,7 +35,6 @@ func newInstallTransparentProxy() *cobra.Command {
 	args := transparentProxyArgs{
 		RedirectPortOutBound:           "15001",
 		RedirectPortInBound:            "15006",
-		IpFamilyMode:                   "dualstack",
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
 		ExcludeOutboundTCPPortsForUIDs: []string{},
@@ -185,7 +182,7 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
 	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
-	cmd.Flags().StringVar(&args.IpFamilyMode, "ip-family-mode", args.IpFamilyMode, "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
+	cmd.Flags().Var(&cfg.IPFamilyMode, "ip-family-mode", "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&cfg.Redirect.Inbound.Enabled, "redirect-inbound", cfg.Redirect.Inbound.Enabled, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
@@ -286,8 +283,6 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 			return errors.Wrap(err, "cannot parse outbound ports to exclude")
 		}
 	}
-
-	cfg.IPv6 = args.IpFamilyMode != "ipv4"
 
 	cfg.Owner.UID = uid
 
