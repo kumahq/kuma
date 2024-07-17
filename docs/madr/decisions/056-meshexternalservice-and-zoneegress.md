@@ -46,7 +46,6 @@ and if it makes sense for the user to pick where.
 | MeshCircuitBreaker        | Yes          | Maybe        | No      | No                |
 | MeshFaultInjection        | Maybe        | Yes          | No      | No                |
 | MeshHealthCheck           | Yes          | Maybe        | No      | No                |
-| MeshHealthCheck           | Yes          | Maybe        | No      | No                |
 | MeshMetric                | Yes          | Yes          | Yes     | Maybe             |
 | MeshProxyPatch            | Yes          | Yes          | Yes     | Yes               |
 | MeshRateLimit             | Probably not | Yes          | No      | No                |
