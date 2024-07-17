@@ -298,10 +298,11 @@ spec:
           kuma.io/service: backend
       default: 
         action: Allow
-# resulting behaviour is 'action: Deny` for all
 ```
 
-but it probably means the user already had policies in the obscure state. 
+Current behaviour is 'action: Deny' for all, because `aaa` happens to be more specific than `bbb`.
+The new behaviour is 'action: Deny' for all except `backend` and 'action: Allow' for `backend`.
+If such change in behaviour happens it probably means the user already had policies in the obscure state. 
 The change is harmless, and we don't need to provide a migration path for `from[]`.
 
 ### Sparse ResourceRules structure
@@ -321,6 +322,7 @@ mesh: mesh-1
 name: labeled-service
 labels:
   a-common-label: foo
+  another-common-label: foo
 ---
 type: MeshService
 mesh: mesh-1
@@ -359,16 +361,30 @@ spec:
          kind: MeshService
          name: my-service
        conf: $conf3
+---
+type: Policy
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: MeshSubset
+    labels:
+      foo: bar
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          another-common-label: foo
+        conf: $conf4
 ```
 
-Kuma CP should produce the following structure:
+Kuma CP should produce the following structure for the DPP that has the label `foo: bar`:
 
 ```yaml
 resourceRules:
   meshservice:mesh/mesh-1:name/my-service:
     conf: merge($conf1, $conf2, $conf3)
   meshservice:mesh/mesh-1:name/labeled-service:
-    conf: merge($conf1, $conf2)
+    conf: merge($conf1, $conf2, $conf4)
   mesh:name/mesh-1:
     conf: $conf1
 ```
@@ -442,6 +458,9 @@ ResourceRule: # new type
       x-go-type: 'interface{}'
     origin:
       type: array
+      description: |
+        The list of policies that contributed to the 'conf'. The order is important as it reflects 
+        in what order confs were merged to get the resulting 'conf'. 
       items:
         type: object
         properties:
