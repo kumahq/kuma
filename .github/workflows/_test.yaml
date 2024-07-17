@@ -103,18 +103,12 @@ jobs:
           ALL_RUNNERS: |-
             {
               "trusted_builds": {
-                "amd64": [
-                  "ubuntu-latest"
-                ],
-                "arm64": [
-                  "ubuntu-latest-arm64-kong"
-                ]
+                "amd64": "ubuntu-latest-kong",
+                "arm64": "ubuntu-latest-arm64-kong"
               },
               "untrusted_builds": {
-                "amd64": [
-                  "ubuntu-latest"
-                ],
-                "arm64": []
+                "amd64": "ubuntu-latest",
+                "arm64": ""
               }
             }
         run: |-
@@ -124,15 +118,6 @@ jobs:
           else
             ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.untrusted_builds')
           fi
-
-          for ARCH in amd64 arm64; do
-            COUNT=$(echo $ALL_RUNNERS | jq -r ".$ARCH | length")
-            if [[ $COUNT -eq 0 ]]; then
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=\"\"")
-            else
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[0]")
-            fi
-          done
 
           echo "final runners: $ALL_RUNNERS"
           echo "runners<<EOF" >> $GITHUB_OUTPUT

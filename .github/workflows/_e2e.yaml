@@ -23,6 +23,7 @@ jobs:
   e2e:
     timeout-minutes: 60
     runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
+    if: ${{ inputs.runnersByArch != '' && fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] != '' }}
     strategy:
       fail-fast: false
       matrix:
