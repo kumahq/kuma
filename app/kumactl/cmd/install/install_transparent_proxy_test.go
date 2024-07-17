@@ -40,7 +40,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			args := append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...)
+			args := append([]string{"install", "transparent-proxy", "--dry-run", "--ip-family-mode", "ipv4"}, given.extraArgs...)
 			stdoutBuf, stderrBuf, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
@@ -64,12 +64,9 @@ var _ = Context("kumactl install transparent proxy", func() {
 			Expect(stdout).To(WithTransform(func(in string) string {
 				// Replace some stuff that are environment dependent with placeholders
 				out := regexp.MustCompile(`-o ([^ ]+)`).ReplaceAllString(in, "-o ifPlaceholder")
-				out = regexp.MustCompile(`-([sd]) ([^ ]+)`).ReplaceAllString(out, "-$1 subnetPlaceholder/mask")
 				out = regexp.MustCompile(`-m comment --comment ".*?" `).ReplaceAllString(out, "")
 				out = regexp.MustCompile(`(?m)^-I OUTPUT (\d+) -p udp --dport 53 -m owner --uid-owner (\d+) -j (\w+)$`).
 					ReplaceAllString(out, "-I OUTPUT $1 -p udp --dport 53 -m owner --uid-owner $2 -j dnsJumpTargetPlaceholder")
-				out = strings.ReplaceAll(out, "15006", "inboundPort")
-				out = strings.ReplaceAll(out, "15010", "inboundPort")
 				return out
 			}, matchers.MatchGoldenEqual("testdata", given.goldenFile)))
 		},
@@ -81,13 +78,13 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected when no conntrack module present", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
@@ -102,7 +99,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 			},
@@ -116,7 +113,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 		}),
 		Entry("should generate defaults with user id and DNS redirected without conntrack zone splitting and log deprecate", testCase{
 			extraArgs: []string{
-				"--kuma-dp-uid", "0",
+				"--kuma-dp-user", "0",
 				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 				"--skip-dns-conntrack-zone-split",

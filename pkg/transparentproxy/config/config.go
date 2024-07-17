@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/user"
 	"slices"
 	"strconv"
 	"strings"
@@ -20,6 +21,40 @@ import (
 
 type Owner struct {
 	UID string
+}
+
+func (c *Owner) String() string {
+	return c.UID
+}
+
+func (c *Owner) Type() string {
+	return "uid|username"
+}
+
+func (c *Owner) Set(s string) error {
+	var ok bool
+
+	if s != "" {
+		if c.UID, ok = findUserUID(s); ok {
+			return nil
+		}
+
+		return errors.Errorf("the specified UID or username ('%s') does not refer to a valid user on the host", s)
+	}
+
+	if c.UID, ok = findUserUID(OwnerDefaultUID); ok {
+		return nil
+	}
+
+	if c.UID, ok = findUserUID(OwnerDefaultUsername); ok {
+		return nil
+	}
+
+	return errors.Errorf(
+		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
+		OwnerDefaultUID,
+		OwnerDefaultUsername,
+	)
 }
 
 // ValueOrRangeList is a format acceptable by iptables in which
@@ -406,8 +441,6 @@ type Config struct {
 	//
 	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
 	DropInvalidPackets bool
-	// IPv6 when set will be used to configure iptables as well as ip6tables
-	IPv6 bool
 	// RuntimeStdout is the place where Any debugging, runtime information
 	// will be placed (os.Stdout by default)
 	RuntimeStdout io.Writer
@@ -453,6 +486,51 @@ type Config struct {
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
 	Comment Comment
+	// IPFamilyMode specifies the IP family mode to be used by the
+	// configuration. It determines whether the system operates in dualstack
+	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
+	// crucial for environments where both IP families are in use, ensuring that
+	// the correct iptables rules are applied for the specified IP family.
+	IPFamilyMode IPFamilyMode
+}
+
+type IPFamilyMode string
+
+const (
+	IPFamilyModeDualStack IPFamilyMode = "dualstack"
+	IPFamilyModeIPv4      IPFamilyMode = "ipv4"
+)
+
+// String returns the string representation of the IPFamilyMode.
+// This is used both by fmt.Print and by Cobra in help text.
+func (e *IPFamilyMode) String() string {
+	return string(*e)
+}
+
+// Type returns the type of the IPFamilyMode.
+// This is only used in help text by Cobra.
+func (e *IPFamilyMode) Type() string {
+	return "string"
+}
+
+// Set assigns the IPFamilyMode based on the provided value. It validates the
+// input and sets the appropriate mode or returns an error if the input is
+// invalid.
+func (e *IPFamilyMode) Set(v string) error {
+	switch strings.ToLower(v) {
+	case "": // Default value is "dualstack"
+		*e = IPFamilyModeDualStack
+	case string(IPFamilyModeDualStack), string(IPFamilyModeIPv4):
+		*e = IPFamilyMode(v)
+	default:
+		return errors.Errorf(
+			"must be one of %q or %q",
+			IPFamilyModeDualStack,
+			IPFamilyModeIPv4,
+		)
+	}
+
+	return nil
 }
 
 // InitializedConfigIPvX extends the Config struct by adding fields that require
@@ -500,6 +578,7 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
 	Comment InitializedComment
+	Owner   Owner
 
 	enabled bool
 }
@@ -552,6 +631,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			Owner:                  c.Owner,
 			enabled:                true,
 		},
 		DryRun: c.DryRun,
@@ -587,7 +667,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
 	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
 
-	if !c.IPv6 {
+	if c.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
 	}
 
@@ -617,6 +697,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
 		Comment:                c.Comment.Initialize(e.IPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+		Owner:                  c.Owner,
 		enabled:                true,
 	}
 
@@ -629,7 +710,6 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
@@ -666,7 +746,6 @@ func DefaultConfig() Config {
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
-		IPv6:               true,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
@@ -687,6 +766,7 @@ func DefaultConfig() Config {
 		Comment: Comment{
 			Disabled: false,
 		},
+		IPFamilyMode: IPFamilyModeDualStack,
 	}
 }
 
@@ -949,4 +1029,20 @@ func configureIPv6OutboundAddress() error {
 	}
 
 	return nil
+}
+
+func findUserUID(userOrUID string) (string, bool) {
+	if userOrUID == "" {
+		return "", false
+	}
+
+	if u, err := user.LookupId(userOrUID); err == nil {
+		return u.Uid, true
+	}
+
+	if u, err := user.Lookup(userOrUID); err == nil {
+		return u.Uid, true
+	}
+
+	return "", false
 }

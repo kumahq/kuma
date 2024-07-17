@@ -124,7 +124,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
@@ -294,7 +294,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -480,7 +480,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -650,7 +650,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())

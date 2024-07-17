@@ -117,7 +117,9 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	cfg.IPv6 = intermediateConfig.ipFamilyMode != "ipv4"
+	if err := cfg.IPFamilyMode.Set(intermediateConfig.ipFamilyMode); err != nil {
+		return nil, err
+	}
 
 	cfg.Redirect.Inbound.Enabled = !isGateway
 	if cfg.Redirect.Inbound.Enabled {

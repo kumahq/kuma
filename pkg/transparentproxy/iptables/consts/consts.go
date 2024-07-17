@@ -188,3 +188,10 @@ const IptablesRuleCommentPrefix = "kuma/mesh/transparent/proxy"
 // chains. The chains named with this prefix are used to apply specific rules
 // necessary for the operation of the transparent proxy.
 const IptablesChainsPrefix = "KUMA_MESH"
+
+// Default user identification constants used for running kuma-dp.
+// These defaults are utilized when no specific user is provided.
+const (
+	OwnerDefaultUID      = "5678"
+	OwnerDefaultUsername = "kuma-dp"
+)

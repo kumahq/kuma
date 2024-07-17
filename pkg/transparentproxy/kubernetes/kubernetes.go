@@ -181,7 +181,7 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
 		"--redirect-inbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortInbound),
-		"--kuma-dp-uid",
+		"--kuma-dp-user",
 		pr.UID,
 		"--exclude-inbound-ports",
 		pr.ExcludeInboundPorts,
