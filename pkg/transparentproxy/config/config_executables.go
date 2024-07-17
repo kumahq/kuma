@@ -362,8 +362,7 @@ func (c Executables) Initialize(
 	cfg Config,
 ) (InitializedExecutables, error) {
 	var err error
-
-	initialized := InitializedExecutables{Executables: c}
+	var initialized InitializedExecutables
 
 	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
 
@@ -385,7 +384,6 @@ func (c Executables) Initialize(
 }
 
 type InitializedExecutables struct {
-	Executables
 	IPv4 InitializedExecutablesIPvX
 	IPv6 InitializedExecutablesIPvX
 }
