@@ -10,11 +10,10 @@ Configuration (like timeouts, retries, circuit breakers) of MeshExternalService 
 
 This MADR will go into the details of each policy type and the placement to figure out what is the best option.
 
-## Decision Drivers <!-- optional -->
+## Decision Drivers
 
-* {driver 1, e.g., a force, facing concern, …}
-* {driver 2, e.g., a force, facing concern, …}
-* … <!-- numbers of drivers can vary -->
+* flexible enough that we don't limit users in scenarios where it makes sense to configuration in both/one place
+* restrictive enough so that it's hard for the user to "shoot themselves in the foot" (e.g. having squared no. of circuit breakers)
 
 ## Considered Options
 
@@ -25,21 +24,42 @@ This MADR will go into the details of each policy type and the placement to figu
 
 ## Decision Outcome
 
-Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
-
-### Positive Consequences <!-- optional -->
-
-* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
-* …
-
-### Negative Consequences <!-- optional -->
-
-* {e.g., compromising quality attribute, follow-up decisions required, …}
-* …
+Chosen option: "Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense"
+because it fits the decision drivers (flexibility / restiveness).
 
 ## Pros and Cons of the Options
 
-### Mixed approach on a case-by-case basis
+### Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense
+
+#### Table summary
+
+The table below shows a summary of policies and if it makes sense to configure them on:
+- sidecar
+- egress
+- on both
+
+and if it makes sense for the user to pick where.
+
+| Policy                    | On sidecar   | On egress    | On both | User configurable |
+|---------------------------|--------------|--------------|---------|-------------------|
+| MeshAccessLog             | Yes          | Yes          | Yes     | Yes               |
+| MeshCircuitBreaker        | Yes          | Maybe        | No      | No                |
+| MeshFaultInjection        | Maybe        | Yes          | No      | No                |
+| MeshHealthCheck           | Yes          | Maybe        | No      | No                |
+| MeshHealthCheck           | Yes          | Maybe        | No      | No                |
+| MeshMetric                | Yes          | Yes          | Yes     | Maybe             |
+| MeshProxyPatch            | Yes          | Yes          | Yes     | Yes               |
+| MeshRateLimit             | Probably not | Yes          | No      | No                |
+| MeshRetry                 | Yes          | Maybe        | No      | Maybe             |
+| MeshTimeout               | Yes          | Probably not | No      | No                |
+| MeshTrace                 | Yes          | Yes          | Yes     | Maybe             |
+| MeshTrafficPermission     | Maybe        | Yes          | Maybe   | Maybe             |
+| MeshLoadBalancingStrategy | Yes          | Yes          | No      | Maybe             |
+| MeshTCPRoute              | Yes          | Yes          | No      | No                |
+| MeshHTTPRoute             | Yes          | Yes          | No      | No                |
+
+In paragraphs below I go deeper into each policy.
+**After PR review / discussion I will update this table to reflect the actual decision**.
 
 #### MeshAccessLog
 
@@ -107,7 +127,8 @@ I don't see any reason not to allow this in the future.
 
 ##### Old ExternalService behaviour
 
-It does not look like it's even possible to modify egress with MeshProxyPatch or ProxyTemplate so this needs work outside the scope of this MADR.
+It does not look like it's even possible to modify egress with MeshProxyPatch or ProxyTemplate so this needs work outside the scope of this MADR,
+but it makes sense to be able to do this.
 
 #### MeshRateLimit
 
@@ -200,20 +221,19 @@ It worked for both egress and sidecar.
 
 I don't see why we would change that behaviour.
 
-### only on the egress
+#### How to configure it
 
-Are there any policies that only make sense on sidecar?
+Explain how we will configure each policy and how we will expose the option to pick where it's configured for the user.
+This section will be filled out in the next iteration on this PR after internal effort review.
 
+### Only on the egress
 
-### {option 3}
+There are policies that make sense to be in both places and the ones like MeshTimeout that only have drawbacks on egress.
 
-{example | description | pointer to more information | …} <!-- optional -->
+### Only on sidecar
 
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
+There are policies that make more sense on egress and in both places.
 
-## Links <!-- optional -->
+## Links
 
 * https://github.com/kumahq/kuma/issues/5050
