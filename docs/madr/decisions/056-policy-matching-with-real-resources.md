@@ -280,7 +280,7 @@ name: aaa
 spec:
   targetRef:
     kind: Mesh
-  to:
+  from:
     - targetRef:
         kind: Mesh
       default: 
