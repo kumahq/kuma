@@ -92,7 +92,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 
 	cfg.Verbose = true
 	cfg.RuntimeStdout = logWriter
-	cfg.Owner = intermediateConfig.noRedirectUID
+	cfg.Owner.UID = intermediateConfig.noRedirectUID
 	cfg.Redirect.Outbound.Enabled = true
 	cfg.Redirect.Outbound.Port = port
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
