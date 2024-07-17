@@ -40,7 +40,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			args := append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...)
+			args := append([]string{"install", "transparent-proxy", "--dry-run", "--ip-family-mode", "ipv4"}, given.extraArgs...)
 			stdoutBuf, stderrBuf, rootCmd := test.DefaultTestingRootCmd(args...)
 
 			// when
