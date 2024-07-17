@@ -25,10 +25,10 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 - simplifying policy api as `spec.targetRef` will always pick proxy and `spec.to[].targetRef` section will select outgoing traffic
 - ability to set different confs on different proxy for the same route (overriding default conf for route without producer/consumer policies, on universal)
-- no need for specifying `spec.targetRef` when targeting `Mesh`, simplifies policy
 - gives more flexibility as you can target multiple outbounds in single policy. Reducing number of consumer policies
 - more consistent with current approach
 - easier policy matching code
+- least problematic migration
 
 #### Disadvantages
 
@@ -41,15 +41,12 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 #### Advantages
 
-- can be simpler with clear distinction of selecting proxies in `spec.workloadTargetRef` and other resources in `spec.targetRef`
+- can be simpler as we move most interesting part of the policy from `to` section
 
 #### Disadvantages
 
-- mixing proxies, outbounds and routes in `spec.targetRef`
-- when `Mesh*Route` is in `spec.targetRef` targetRef we still have `spec.to[].targetRef` section which can be misleading as route already points to some outbound
 - cannot configure multiple outbounds in the same policy, forcing users to create and later manage multiple policies, which can be problematic with consumer policies
-- MeshService in topLevel can be misleading. Is it targeting all proxies belonging to MeshService or outbound to MeshService?
-- need to introduce entirely new `spec.workloadTargetRef` section
+- MeshService in topLevel can be misleading for current users that could use MeshService in topLevel to select proxies. Is it targeting all proxies belonging to MeshService or outbound to MeshService?
 
 ## Comparing UX of two approaches
 
