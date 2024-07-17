@@ -59,13 +59,14 @@ type ToRules struct {
     ResourceRules map[UniqueResourceKey]ResourceRule // new field
 }
 
-// UniqueResourceKey is a way to uniquely identify a resource, should include ResourceType, Name and Mesh
+// UniqueResourceKey is a way to uniquely identify a resource, should include ResourceType, Name, Mesh and SectionName (for MeshServices)
 type UniqueResourceKey struct{}
 
 type ResourceRule struct {
-    Resource core_model.ResourceMeta
-    Conf     interface{}
-    Origin   []Origin
+    Resource            core_model.ResourceMeta
+	ResourceSectionName string
+    Conf                interface{}
+    Origin              []Origin
 }
 
 type Origin struct {
@@ -92,7 +93,7 @@ we're going to produce a single `ResourceRule` entity:
 
 ```yaml
 resourceRules:
-  meshservice.mesh-1.backend.finance:
+  meshservice:mesh/mesh-1:name/backend:ns/finance:
     resource:
       name: backend.finance
       mesh: mesh-1
@@ -116,19 +117,19 @@ we are going to fetch all `MeshService` resources, filter them by `k8s.kuma.io/n
 
 ```yaml
 resourceRules:
-  meshservice.mesh-1.finance-backend.finance:
+  meshservice:mesh/mesh-1:name/finance-backend:ns/finance:
     resource:
       name: finance-backend.finance
       mesh: mesh-1
     conf: conf-1
     origin: [...]
-  meshservice.mesh-1.finance-frontend.finance:
+  meshservice:mesh/mesh-1:name:finance-frontend:ns/finance:
     resource:
       name: finance-frontend.finance
       mesh: mesh-1
     conf: conf-1
     origin: [...]
-  meshservice.mesh-1.finance-db.finance:
+  meshservice:mesh/mesh-1:name/finance-db:ns/finance:
     resource:
       name: finance-db.finance
       mesh: mesh-1
@@ -136,9 +137,230 @@ resourceRules:
     origin: [...]
 ```
 
+When targetRef is using `sectionName` (supported only for MeshService):
+
+```yaml
+to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+      namespace: finance
+      sectionName: http-port
+    conf: conf1
+```
+
+we're going to produce the following `ResourceRule`:
+
+```yaml
+resourceRules:
+  meshservice:mesh/mesh-1:name/backend:ns/finance:section/http-port:
+    resource:
+      name: backend.finance
+      mesh: mesh-1
+    resourceSectionName: http-port
+    conf: conf-1
+    origin: [...]
+```
+
 Policy plugins should use old `ToRules.Rules` when computing configurations for legacy destinations with `kuma.io/service` tags.
 Policy plugins should use new `ToRules.ResourceRule` when computing configuration for the new MeshService resources.
 Eventually we're going to delete `ToRules.Rules`.
+
+### Merging
+
+#### Problem
+
+The way merging works today is explained in the [initial policy matching MADR](https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/005-policy-matching.md#merging).
+In short, we take all matched policies, sort them by **the top-level targetRef** and concatenate their `to[]` arrays. 
+After that, we merge `confs` from each to-items purely based on their order in the resulted `to[]` array, greater index has more priority.
+Given the `to[]`:
+
+```yaml
+to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default: $conf1
+  - targetRef:
+      kind: Mesh
+    default: $conf2
+```
+
+the resulting conf for `backend` will be `merge($conf1, $conf2)`. 
+IMPORTANT, it will **not** be `merge($conf2, $conf1)`, because to-item with `conf2` has greater index in `to[]`.
+Basically, we discard `to[].targetRef.kind` when performing merging.
+
+This approach has a major flaw, that was explained in https://github.com/kumahq/kuma/issues/9151.
+When user creates 2 policies with the same top-level targetRef kind, the order of concatenation is decided by 
+the alphabetical order of policies' names. 
+Given 2 policies:
+
+```yaml
+kind: Policy
+name: aaa
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default: $conf2
+---
+kind: Policy
+name: bbb
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default: $conf1
+```
+
+The result for `backend` will be `merge($conf1, $conf2)` because `aaa < bbb`.
+While intuitively the conf shouldn't depend on the policy name in this case and be `merge($conf2, $conf1)`,
+because `kind: MeshService` is more specific than `kind: Mesh` and we clearly have to prioritize `conf1`.
+
+Now is a good moment to improve the way sorting/merging works, because ResourceRules is a new structure
+and it's going to be used only when computing config for the new MeshServices.
+
+#### New approach
+
+We're going to take all matched policies and produce a list of the following items:
+
+```yaml
+toItemsWithTopLevel:
+  - topLevelTargetRefKind: Mesh
+    policyName: aaa
+    toTargetRefKind: Mesh
+    conf: $conf2
+  - topLevelTargetRefKind: Mesh
+    policyName: bbb
+    toTargetRefKind: MeshService
+    conf: $conf1
+```
+
+and we'll sort this list based on fields in the following order:
+
+1. topLevelTargetRefKind
+2. toTargetRefKind
+3. policyName
+
+Note: today we basically do 1 and 3, ignoring the field 2.
+
+#### Migration
+
+ResourceRule is a new structure, it will be used when configuring outbounds for the real MeshService resources.
+That's why we don't need backwards compatibility for `to[]`.
+
+For `from[]` policies the sorting algorithm should be changed as well. 
+But the problem is less visible due to the fact `from[].targetRef.kind` is `Mesh` in the overwhelming majority of cases.
+For MeshTrafficPermission it can be `Mesh` and `MeshSubset`, and technically the behaviour of the following policies is going to change:
+
+```yaml
+kind: MeshTrafficPermission
+name: aaa
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default: 
+        action: Deny
+---
+kind: MeshTrafficPermission
+name: bbb
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: backend
+      default: 
+        action: Allow
+# resulting behaviour is 'action: Deny` for all
+```
+
+but it probably means the user already had policies in the obscure state. 
+The change is harmless, and we don't need to provide a migration path for `from[]`.
+
+### Sparse ResourceRules structure
+
+ResourceRule structure is going to have only resources that were specified in policies.
+Given the following resources:
+
+```yaml
+type: MeshService
+mesh: mesh-1
+name: my-service
+labels:
+  a-common-label: foo
+---
+type: MeshService
+mesh: mesh-1
+name: labeled-service
+labels:
+  a-common-label: foo
+---
+type: MeshService
+mesh: mesh-1
+name: other-service
+labels: {}
+---
+type: Policy
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+         kind: Mesh
+       conf: $conf1
+---
+type: Policy
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+         kind: MeshService
+         labels:
+             a-common-label: foo
+       conf: $conf2
+---
+type: Policy
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+         kind: MeshService
+         name: my-service
+       conf: $conf3
+```
+
+Kuma CP should produce the following structure:
+
+```yaml
+resourceRules:
+  meshservice:mesh/mesh-1:name/my-service:
+    conf: merge($conf1, $conf2, $conf3)
+  meshservice:mesh/mesh-1:name/labeled-service:
+    conf: merge($conf1, $conf2)
+  mesh:name/mesh-1:
+    conf: $conf1
+```
+
+Note that the structure doesn't contain `other-service`, but instead it contains entry for `mesh-1`.
+The code that computes confs should handle the absence of `other-service` and replace it with conf of the `mesh-1`.
+
+### Inspect API
 
 When it comes to the Inspect API, we're going to add a new field to `InspectRule`
 
@@ -155,7 +377,7 @@ InspectRule:
       description: a rule that affects the entire proxy
       $ref: '#/components/schemas/ProxyRule'
     toRules: # should be removed eventually
-      type: array
+      type: array 
       description: a set of rules for the outbounds of this proxy
       items:
         $ref: '#/components/schemas/Rule'
@@ -196,6 +418,8 @@ ResourceRule: # new type
   properties:
     resourceMeta:
       $ref: '#/components/schemas/Meta'
+    resourceSectionName:
+      type: string
     conf:
       description: The actual conf generated
       type: object
@@ -264,12 +488,18 @@ rules:
             toIdx: 1
 ```
 
+The Inspect API response should contain rules for all existing MeshServices/MeshHTTPRoutes in the cluster
+even if there are no policies that'd directly reference them. 
+Such complete structure potentially means duplication of confs, but on the bright side, client code in the GUI/kumactl
+doesn't need to know how to compute conf for the resource – it can perform a simple lookup by key.
+
 ### Positive Consequences
 
 * In Kuma GUI, it's possible to make links to the real MeshServices, MeshHTTPRoutes and MeshExternalServices when used in `to[]`
 * Policy plugins code is simpler with the clean fallback logic
 * O(1) instead of O(N) when the policy plugin is getting conf for the known MeshService
   (`ToRules.ResourceRules` is a map, while `ToRules.Rules` is a list)
+* Sorting/Merging algorithm is more intuitive and doesn't fall back upon alphabetical order of names in common use cases
 
 ### Negative Consequences
 
