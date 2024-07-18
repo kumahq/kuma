@@ -49,10 +49,19 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 }
 
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+	opts := store.NewCreateOptions(fs...)
+
+	// Create temporary meta so validation can see the meta that the store will set
+	existingMeta := resource.GetMeta()
+	if existingMeta == nil {
+		resource.SetMeta(metaFromCreateOpts(resource.Descriptor(), *opts))
+	}
 	if err := model.Validate(resource); err != nil {
 		return err
 	}
-	opts := store.NewCreateOptions(fs...)
+	if existingMeta == nil {
+		resource.SetMeta(existingMeta)
+	}
 
 	var owner model.Resource
 	if resource.Descriptor().Scope == model.ScopeMesh {
