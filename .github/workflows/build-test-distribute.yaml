@@ -64,7 +64,8 @@ jobs:
       - name: "initial state"
         run: |
           docker info
-          cat ~/.docker/config.json
+          echo "docker auth info:"
+          cat  ~/.docker/config.json | $CI_TOOLS_DIR/bin/yq '.auths | keys'
       - name: "pull by docker"
         run: |
           for i in `seq 1 1 150`; do
@@ -143,7 +144,8 @@ jobs:
         run: |
           make docker/login
           docker info
-          cat ~/.docker/config.json
+          echo "docker auth info:"
+          cat  ~/.docker/config.json | $CI_TOOLS_DIR/bin/yq '.auths | keys'
       - name: "pull by docker after login"
         run: |
           for i in `seq 1 1 150`; do
@@ -220,7 +222,8 @@ jobs:
         run: |
             make docker/logout
             docker info
-            cat ~/.docker/config.json
+            echo "docker auth info:"
+            cat  ~/.docker/config.json | $CI_TOOLS_DIR/bin/yq '.auths | keys'
       - name: "pull by docker after logout"
         run: |
           for i in `seq 1 1 150`; do
