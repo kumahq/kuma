@@ -50,6 +50,245 @@ jobs:
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+  pull_images:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest-kong
+    env:
+      CI_TOOLS_DIR: '/work/kuma/kuma/.ci_tools'
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+      - run: |
+          make dev/tools
+      - name: "initial state"
+        run: |
+          docker info
+      - name: "pull by docker"
+        run: |
+          for i in `seq 1 1 150`; do
+            docker pull busybox:stable-musl
+            docker rmi busybox:stable-musl
+            sleep 1
+          done
+      - name: "pull by k3d"
+        run: |
+          make test/e2e/k8s/start/cluster/kuma-1
+          $CI_TOOLS_DIR/bin/k3d kubeconfig get kuma-1 > ./kuma-1.kubeconfig
+          export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: busybox
+            namespace: default
+            labels:
+              app: busybox
+          spec:
+            ports:
+              - port: 80
+                name: busybox
+            clusterIP: None
+            selector:
+              app: busybox
+          ---
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: busybox
+            namespace: default
+          spec:
+            selector:
+              matchLabels:
+                app: busybox
+            serviceName: "busybox"
+            replicas: 100
+            template:
+              metadata:
+                labels:
+                  app: busybox
+              spec:
+                containers:
+                  - name: busybox
+                    image: busybox:stable
+                    imagePullPolicy: Always
+                    command:
+                      - sleep
+                    args:
+                      - infinity
+                    resources:
+                      requests:
+                        cpu: 10m
+                        memory: 15Mi
+                      limits:
+                        cpu: 50m
+                        memory: 50Mi
+              EOF
+          
+              echo "waiting for sts to finish"
+              kubectl rollout status sts/busybox --timeout 15m
+              kubectl get events > pod-events-1.log
+              kubectl delete sts/busybox
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        if: always()
+        with:
+          name: pod-events-1.log
+          if-no-files-found: ignore
+          path: |
+            pod-events-1.log
+          retention-days: 30
+
+      - name: "login"
+        run: |
+          make docker/login
+          docker info
+      - name: "pull by docker after login"
+        run: |
+          for i in `seq 1 1 150`; do
+            docker pull busybox:stable-musl
+            docker rmi busybox:stable-musl
+            sleep 1
+          done
+      - name: "pull by k3d after login"
+        run: |
+          export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: busybox
+            namespace: default
+            labels:
+              app: busybox
+          spec:
+            ports:
+              - port: 80
+                name: busybox
+            clusterIP: None
+            selector:
+              app: busybox
+          ---
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: busybox
+            namespace: default
+          spec:
+            selector:
+              matchLabels:
+                app: busybox
+            serviceName: "busybox"
+            replicas: 100
+            template:
+              metadata:
+                labels:
+                  app: busybox
+              spec:
+                containers:
+                  - name: busybox
+                    image: busybox:stable
+                    imagePullPolicy: Always
+                    command:
+                      - sleep
+                    args:
+                      - infinity
+                    resources:
+                      requests:
+                        cpu: 10m
+                        memory: 15Mi
+                      limits:
+                        cpu: 50m
+                        memory: 50Mi
+              EOF
+          
+              echo "waiting for sts to finish"
+              kubectl rollout status sts/busybox --timeout 15m
+              kubectl get events > pod-events-2.log
+              kubectl delete sts/busybox
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        if: always()
+        with:
+          name: pod-events-2.log
+          if-no-files-found: ignore
+          path: |
+            pod-events-2.log
+          retention-days: 30
+      - name: "logout"
+        run: |
+            make docker/logout
+            docker info
+      - name: "pull by docker after logout"
+        run: |
+          for i in `seq 1 1 150`; do
+            docker pull busybox:stable-musl
+            docker rmi busybox:stable-musl
+            sleep 1
+          done
+      - name: "pull by k3d after logout"
+        run: |
+          export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
+          cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: busybox
+            namespace: default
+            labels:
+              app: busybox
+          spec:
+            ports:
+              - port: 80
+                name: busybox
+            clusterIP: None
+            selector:
+              app: busybox
+          ---
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: busybox
+            namespace: default
+          spec:
+            selector:
+              matchLabels:
+                app: busybox
+            serviceName: "busybox"
+            replicas: 100
+            template:
+              metadata:
+                labels:
+                  app: busybox
+              spec:
+                containers:
+                  - name: busybox
+                    image: busybox:stable
+                    imagePullPolicy: Always
+                    command:
+                      - sleep
+                    args:
+                      - infinity
+                    resources:
+                      requests:
+                        cpu: 10m
+                        memory: 15Mi
+                      limits:
+                        cpu: 50m
+                        memory: 50Mi
+              EOF
+          
+              echo "waiting for sts to finish"
+              kubectl rollout status sts/busybox --timeout 15m
+              kubectl get events > pod-events-3.log
+              kubectl delete sts/busybox
+
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        if: always()
+        with:
+          name: pod-events-3.log
+          if-no-files-found: ignore
+          path: |
+            pod-events-3.log
+          retention-days: 30
   test:
     permissions:
       contents: read
