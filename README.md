@@ -1,7 +1,12 @@
 [![][kuma-logo]][kuma-url]
 
 **Builds**
+<<<<<<< HEAD
 [![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
+=======
+
+![GitHub Actions master](https://github.com/kumahq/kuma/actions/workflows/build-test-distribute.yaml/badge.svg?branch=master)
+>>>>>>> e780588b9 (ci(circleci): cleanup circleci configuration and scripts (#10908))
 
 **Code quality**
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
