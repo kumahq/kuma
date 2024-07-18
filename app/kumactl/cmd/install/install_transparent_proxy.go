@@ -5,7 +5,6 @@ package install
 
 import (
 	"fmt"
-	os_user "os/user"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -14,19 +13,16 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
+	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type transparentProxyArgs struct {
 	RedirectPortOutBound           string
-	IpFamilyMode                   string
 	RedirectPortInBound            string
-	RedirectPortInBoundV6          string
 	ExcludeInboundPorts            string
 	ExcludeOutboundPorts           string
 	ExcludeOutboundTCPPortsForUIDs []string
 	ExcludeOutboundUDPPortsForUIDs []string
-	UID                            string
-	User                           string
 	AgentDNSListenerPort           string
 	SkipDNSConntrackZoneSplit      bool
 }
@@ -35,18 +31,12 @@ func newInstallTransparentProxy() *cobra.Command {
 	cfg := config.DefaultConfig()
 
 	args := transparentProxyArgs{
-		RedirectPortOutBound: "15001",
-		RedirectPortInBound:  "15006",
-		// this argument is to be deprecated, it now defaults to the same port with ipv4 (instead of 15010)
-		// before deprecation, the user can still change it as needed
-		RedirectPortInBoundV6:          "15006",
-		IpFamilyMode:                   "dualstack",
+		RedirectPortOutBound:           "15001",
+		RedirectPortInBound:            "15006",
 		ExcludeInboundPorts:            "",
 		ExcludeOutboundPorts:           "",
 		ExcludeOutboundTCPPortsForUIDs: []string{},
 		ExcludeOutboundUDPPortsForUIDs: []string{},
-		UID:                            "",
-		User:                           "",
 		AgentDNSListenerPort:           "15053",
 		SkipDNSConntrackZoneSplit:      false,
 	}
@@ -60,7 +50,7 @@ Follow the following steps to use the Kuma data plane proxy in Transparent Proxy
 
  1) create a dedicated user for the Kuma data plane proxy, e.g. 'kuma-dp'
  2) run this command as a 'root' user to modify the host's iptables and /etc/resolv.conf
-    - supply the dedicated username with '--kuma-dp-uid'
+    - supply the dedicated username with '--kuma-dp-user'
     - all changes are easly revertible by issuing 'kumactl uninstall transparent-proxy'
     - by default the SSH port tcp/22 will not be redirected to Envoy, but everything else will.
       Use '--exclude-inbound-ports' to provide a comma separated list of ports that should also be excluded
@@ -102,17 +92,26 @@ runuser -u kuma-dp -- \
     --binary-path /usr/local/bin/envoy
 
 `,
-		PreRun: func(cmd *cobra.Command, _ []string) {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
+
+			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified.
+			// The Set method contains logic to check for the existence of a user with the default
+			// UID "5678", and if that does not exist, it checks for the default username "kuma-dp".
+			// Since the cobra library does not call the Set method when --kuma-dp-user is not specified,
+			// we need to invoke it manually here to ensure the proper user is set.
+			if kumaDpUser := cmd.Flag("kuma-dp-user"); !kumaDpUser.Changed {
+				if err := cfg.Owner.Set(""); err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !cfg.DryRun && runtime.GOOS != "linux" {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
-			}
-
-			if args.User == "" && args.UID == "" {
-				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
 			if cfg.Redirect.DNS.CaptureAll && cfg.Redirect.DNS.Enabled {
@@ -137,13 +136,6 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			defaultCfg := config.DefaultConfig()
-			// Backward compatibility
-			if args.RedirectPortInBoundV6 != "" &&
-				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.Port) /* new default value, identical to ipv4 port */ &&
-				args.RedirectPortInBoundV6 != fmt.Sprintf("%d", defaultCfg.Redirect.Inbound.PortIPv6) /* old default value, dedicated for ipv6 */ {
-				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --redirect-inbound-port-v6 is deprecated, use --redirect-inbound-port or --ip-family-mode ipv4 instead")
-			}
 			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
 				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
 			}
@@ -184,7 +176,9 @@ runuser -u kuma-dp -- \
 			}
 
 			if !initializedConfig.DryRun {
-				initializedConfig.Logger.Info("Tansparent proxy set up successfully, you can now run kuma-dp using transparent-proxy.")
+				initializedConfig.Logger.Info(
+					"transparent proxy setup completed successfully. You can now run kuma-dp with the transparent-proxy feature enabled",
+				)
 			}
 
 			return nil
@@ -193,15 +187,14 @@ runuser -u kuma-dp -- \
 
 	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
 	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
-	cmd.Flags().StringVar(&args.IpFamilyMode, "ip-family-mode", args.IpFamilyMode, "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
+	cmd.Flags().Var(&cfg.IPFamilyMode, "ip-family-mode", "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&cfg.Redirect.Inbound.Enabled, "redirect-inbound", cfg.Redirect.Inbound.Enabled, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "[DEPRECATED (use --redirect-inbound-port or --ip-family-mode ipv4)] IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
-	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
-	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the uid of the user that will run kuma-dp")
+	cmd.Flags().Var(&cfg.Owner, "kuma-dp-user", fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
+	cmd.Flags().Var(&cfg.Owner, "kuma-dp-uid", "the uid of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, "redirect-dns", cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
@@ -230,51 +223,20 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
 
 	cmd.Flags().BoolVar(&cfg.Comment.Disabled, "disable-comments", cfg.Comment.Disabled, "Disable the addition of comments to iptables rules")
-	cmd.Flags().StringVar(&cfg.Comment.Prefix, "comments-prefix", cfg.Comment.Prefix, "Prefix for comments added to iptables rules")
+
+	cmd.Flags().StringArrayVar(&cfg.Redirect.Inbound.ExcludePortsForIPs, "exclude-inbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy inbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
+	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForIPs, "exclude-outbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy outbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
+	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
 
 	return cmd
 }
 
-func findUidGid(uid, user string) (string, string, error) {
-	var u *os_user.User
-	var err error
-
-	if u, err = os_user.LookupId(uid); err != nil {
-		if user != "" {
-			if u, err = os_user.Lookup(user); err != nil {
-				return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
-			}
-		} else {
-			u = &os_user.User{
-				Uid: uid,
-				Gid: uid,
-			}
-		}
-	}
-
-	return u.Uid, u.Gid, nil
-}
-
 func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
-	uid, _, err := findUidGid(args.UID, args.User)
-	if err != nil {
-		return errors.Wrapf(err, "unable to find the kuma-dp user")
-	}
-
 	redirectInboundPort, err := transparentproxy.ParseUint16(args.RedirectPortInBound)
 	if err != nil {
 		return errors.Wrap(err, "parsing inbound redirect port failed")
-	}
-
-	var redirectInboundPortIPv6 uint16
-
-	if args.RedirectPortInBoundV6 != "" {
-		redirectInboundPortIPv6, err = transparentproxy.ParseUint16(args.RedirectPortInBoundV6)
-		if err != nil {
-			return errors.Wrap(err, "parsing inbound redirect port IPv6 failed")
-		}
 	}
 
 	redirectOutboundPort, err := transparentproxy.ParseUint16(args.RedirectPortOutBound)
@@ -303,27 +265,7 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 		}
 	}
 
-	var ipv6 bool
-	if args.IpFamilyMode == "ipv4" {
-		ipv6 = false
-		redirectInboundPortIPv6 = 0
-	} else {
-		if redirectInboundPortIPv6 == config.DefaultConfig().Redirect.Inbound.PortIPv6 {
-			redirectInboundPortIPv6 = redirectInboundPort
-		}
-
-		ipv6, err = transparentproxy.ShouldEnableIPv6(redirectInboundPortIPv6)
-		if err != nil {
-			return errors.Wrap(err, "cannot verify if IPv6 should be enabled")
-		}
-	}
-
-	cfg.IPv6 = ipv6
-
-	cfg.Owner.UID = uid
-
 	cfg.Redirect.Inbound.Port = redirectInboundPort
-	cfg.Redirect.Inbound.PortIPv6 = redirectInboundPortIPv6
 	cfg.Redirect.Inbound.ExcludePorts = excludeInboundPorts
 
 	cfg.Redirect.Outbound.Port = redirectOutboundPort

@@ -17,7 +17,7 @@ func buildMangleTable(cfg config.InitializedConfigIPvX) *tables.MangleTable {
 	if cfg.DropInvalidPackets {
 		mangle.Prerouting().AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Match(Conntrack(Ctstate(INVALID))),
 					Jump(Drop()),
 				).

@@ -18,14 +18,14 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 	if cfg.Redirect.DNS.ConntrackZoneSplit {
 		raw.Output().AddRules(
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Udp(DestinationPort(DNSPort))),
 					Match(Owner(Uid(cfg.Owner.UID))),
 					Jump(Ct(Zone("1"))),
 				).
 				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.Owner.UID),
 			rules.
-				NewRule(
+				NewAppendRule(
 					Protocol(Udp(SourcePort(cfg.Redirect.DNS.Port))),
 					Match(Owner(Uid(cfg.Owner.UID))),
 					Jump(Ct(Zone("2"))),
@@ -36,7 +36,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 		if cfg.Redirect.DNS.CaptureAll {
 			raw.Output().AddRules(
 				rules.
-					NewRule(
+					NewAppendRule(
 						Protocol(Udp(DestinationPort(DNSPort))),
 						Jump(Ct(Zone("2"))),
 					).
@@ -45,7 +45,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 
 			raw.Prerouting().AddRules(
 				rules.
-					NewRule(
+					NewAppendRule(
 						Protocol(Udp(SourcePort(DNSPort))),
 						Jump(Ct(Zone("1"))),
 					).
@@ -55,7 +55,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			for _, ip := range cfg.Redirect.DNS.Servers {
 				raw.Output().AddRules(
 					rules.
-						NewRule(
+						NewAppendRule(
 							Destination(ip),
 							Protocol(Udp(DestinationPort(DNSPort))),
 							Jump(Ct(Zone("2"))),
@@ -64,7 +64,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 				)
 				raw.Prerouting().AddRules(
 					rules.
-						NewRule(
+						NewAppendRule(
 							Destination(ip),
 							Protocol(Udp(SourcePort(DNSPort))),
 							Jump(Ct(Zone("1"))),

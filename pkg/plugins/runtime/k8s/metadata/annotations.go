@@ -83,6 +83,8 @@ const (
 	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
 	KumaTrafficDropInvalidPackets             = "traffic.kuma.io/drop-invalid-packets"
 	KumaTrafficIptablesLogs                   = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs              = "traffic.kuma.io/exclude-inbound-ips"
+	KumaTrafficExcludeOutboundIPs             = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
@@ -159,7 +161,6 @@ const (
 	KumaEnvoyAdminPort                                 = "kuma.io/envoy-admin-port"
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
 	KumaTransparentProxyingIPFamilyMode                = "kuma.io/transparent-proxying-ip-family-mode"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"

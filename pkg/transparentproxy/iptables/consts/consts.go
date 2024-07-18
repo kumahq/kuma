@@ -2,6 +2,7 @@ package consts
 
 import (
 	"regexp"
+	"strings"
 )
 
 const (
@@ -27,10 +28,9 @@ var IPTypeMap = map[bool]string{
 
 // Default ports used for iptables redirection.
 const (
-	DefaultRedirectInbountPort     uint16 = 15006
-	DefaultRedirectInbountPortIPv6 uint16 = 15010
-	DefaultRedirectOutboundPort    uint16 = 15001
-	DefaultRedirectDNSPort         uint16 = 15053
+	DefaultRedirectInbountPort  uint16 = 15006
+	DefaultRedirectOutboundPort uint16 = 15001
+	DefaultRedirectDNSPort      uint16 = 15053
 )
 
 const (
@@ -45,9 +45,36 @@ const (
 	InboundPassthroughSourceAddressCIDRIPv6 = "::6/128"
 	OutputLogPrefix                         = "OUTPUT:"
 	PreroutingLogPrefix                     = "PREROUTING:"
-	UDP                                     = "udp"
-	TCP                                     = "tcp"
 )
+
+type ProtocolL4 string
+
+const (
+	ProtocolUDP ProtocolL4 = "udp"
+	ProtocolTCP ProtocolL4 = "tcp"
+	// ProtocolUndefined represents an undefined or unsupported protocol.
+	ProtocolUndefined ProtocolL4 = ""
+)
+
+// ParseProtocolL4 parses a string and returns the corresponding ProtocolL4
+// constant. If the input string is not "udp" or "tcp", it returns
+// ProtocolUndefined.
+//
+// Args:
+//   - s (string): The input string representing the protocol type.
+//
+// Returns:
+//   - ProtocolL4: The parsed ProtocolL4 constant. It will be ProtocolUDP for
+//     "udp", ProtocolTCP for "tcp", and ProtocolUndefined for any other input
+//     string.
+func ParseProtocolL4(s string) ProtocolL4 {
+	switch s := strings.ToLower(strings.TrimSpace(s)); s {
+	case "udp", "tcp":
+		return ProtocolL4(s)
+	default:
+		return ProtocolUndefined
+	}
+}
 
 type TableName string
 
@@ -85,6 +112,7 @@ const (
 	FlagWait         = "--wait"
 	FlagWaitInterval = "--wait-interval"
 	FlagNoFlush      = "--noflush"
+	FlagTest         = "--test"
 )
 
 // FlagVariationsMap maps a flag name (e.g., "-t") to a map containing its long
@@ -111,6 +139,7 @@ const (
 	ModuleUdp       = "udp"
 	ModuleComment   = "comment"
 	ModuleConntrack = "conntrack"
+	ModuleMultiport = "multiport"
 )
 
 type IptablesMode string
@@ -159,3 +188,10 @@ const IptablesRuleCommentPrefix = "kuma/mesh/transparent/proxy"
 // chains. The chains named with this prefix are used to apply specific rules
 // necessary for the operation of the transparent proxy.
 const IptablesChainsPrefix = "KUMA_MESH"
+
+// Default user identification constants used for running kuma-dp.
+// These defaults are utilized when no specific user is provided.
+const (
+	OwnerDefaultUID      = "5678"
+	OwnerDefaultUsername = "kuma-dp"
+)

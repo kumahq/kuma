@@ -26,7 +26,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.46.16
+	github.com/gruntwork-io/terratest v0.47.0
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
@@ -74,7 +74,7 @@ require (
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	helm.sh/helm/v3 v3.15.2
+	helm.sh/helm/v3 v3.15.3
 	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.2
 	k8s.io/apimachinery v0.30.2

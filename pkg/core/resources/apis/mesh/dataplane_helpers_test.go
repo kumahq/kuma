@@ -604,19 +604,7 @@ var _ = Describe("Dataplane", func() {
 `,
 				expected: true,
 			}),
-			Entry("dataplane with DualStack transparent proxy and ipv6 port", testCase{
-				dataplane: `
-                networking:
-                  address: fd00::123
-                  transparent_proxying:
-                    ipFamilyMode: DualStack
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-                    redirect_port_inbound_v6: 12345
-`,
-				expected: true,
-			}),
-			Entry("old dataplane with transparent proxy configured and ipv4 only", testCase{
+			Entry("old dataplane with transparent proxy configured and ipv4 address", testCase{
 				dataplane: `
                 networking:
                   address: 10.244.16.28
@@ -626,26 +614,15 @@ var _ = Describe("Dataplane", func() {
 `,
 				expected: true,
 			}),
-			Entry("old dataplane with transparent proxy configured and ipv6", testCase{
+			Entry("old dataplane with transparent proxy configured and ipv6 address", testCase{
 				dataplane: `
                 networking:
                   address: fd00::123
                   transparent_proxying:
                     redirect_port_inbound: 123
                     redirect_port_outbound: 1234
-                    redirect_port_inbound_v6: 12345
 `,
 				expected: true,
-			}),
-			Entry("old dataplane with transparent proxy configured and ipv6 but no port", testCase{
-				dataplane: `
-                networking:
-                  address: fd00::123
-                  transparent_proxying:
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-`,
-				expected: false,
 			}),
 		)
 	})

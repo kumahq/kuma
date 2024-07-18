@@ -9,9 +9,18 @@ import (
 )
 
 type Chain struct {
+	// The name of the iptables table (e.g., "nat", "filter") to which this
+	// chain belongs.
 	table consts.TableName
-	name  string
+	// The name of the iptables chain (e.g., "PREROUTING", "OUTPUT").
+	name string
+	// A slice of rules contained within this chain.
 	rules []*rules.Rule
+	// position reflects the current position for "insert" rules, indicating
+	// where new rules should be inserted within the chain. This is crucial for
+	// maintaining the correct order of rules when specific positioning is
+	// required.
+	position uint
 }
 
 func (c *Chain) Name() string {
@@ -19,8 +28,10 @@ func (c *Chain) Name() string {
 }
 
 func (c *Chain) AddRules(rules ...*rules.RuleBuilder) *Chain {
-	for _, rule := range rules {
-		c.rules = append(c.rules, rule.Build(c.table, c.name))
+	for _, r := range rules {
+		rule, newPosition := r.Build(c.table, c.name, c.position)
+		c.rules = append(c.rules, rule)
+		c.position = newPosition
 	}
 
 	return c

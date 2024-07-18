@@ -676,7 +676,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 		}
 		if appYaml == "" {
 			if transparent {
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, additionalTags, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, additionalTags, redirectPortInbound, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
 					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, additionalTags, "80", "8080")
@@ -780,9 +780,8 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			transparentProxy = fmt.Sprintf(`
   transparentProxying:
     redirectPortInbound: %s
-    redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, redirectPortInbound, redirectPortOutbound)
 		}
 		token := opts.token
 		var err error

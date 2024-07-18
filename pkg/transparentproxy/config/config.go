@@ -6,18 +6,55 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/user"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+	"github.com/vishvananda/netlink"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type Owner struct {
 	UID string
+}
+
+func (c *Owner) String() string {
+	return c.UID
+}
+
+func (c *Owner) Type() string {
+	return "uid|username"
+}
+
+func (c *Owner) Set(s string) error {
+	var ok bool
+
+	if s != "" {
+		if c.UID, ok = findUserUID(s); ok {
+			return nil
+		}
+
+		return errors.Errorf("the specified UID or username ('%s') does not refer to a valid user on the host", s)
+	}
+
+	if c.UID, ok = findUserUID(OwnerDefaultUID); ok {
+		return nil
+	}
+
+	if c.UID, ok = findUserUID(OwnerDefaultUsername); ok {
+		return nil
+	}
+
+	return errors.Errorf(
+		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
+		OwnerDefaultUID,
+		OwnerDefaultUsername,
+	)
 }
 
 // ValueOrRangeList is a format acceptable by iptables in which
@@ -27,8 +64,34 @@ type Owner struct {
 // ranges and multiple values can be mixed e.g. 1000,1005:1006 meaning 1000,1005,1006
 type ValueOrRangeList string
 
-type UIDsToPorts struct {
-	Protocol string
+// NewValueOrRangeList creates a ValueOrRangeList from a given value or range of
+// values. It accepts a parameter of type []uint16, uint16, or string and
+// converts it to a ValueOrRangeList, which is a comma-separated string
+// representation of the values.
+//
+// The function panics if an unsupported type is provided, although the type
+// constraints should prevent this from occurring.
+func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList {
+	switch value := any(v).(type) {
+	case []uint16:
+		var ports []string
+		for _, port := range value {
+			ports = append(ports, strconv.Itoa(int(port)))
+		}
+		return ValueOrRangeList(strings.Join(ports, ","))
+	case uint16:
+		return ValueOrRangeList(strconv.Itoa(int(value)))
+	case string:
+		return ValueOrRangeList(value)
+	default:
+		// Shouldn't be possible to catch this
+		panic(errors.Errorf("invalid value type: %T", value))
+	}
+}
+
+type Exclusion struct {
+	Protocol ProtocolL4
+	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
 }
@@ -37,11 +100,11 @@ type UIDsToPorts struct {
 type TrafficFlow struct {
 	Enabled             bool
 	Port                uint16
-	PortIPv6            uint16
 	ChainName           string
 	RedirectChainName   string
 	ExcludePorts        []uint16
 	ExcludePortsForUIDs []string
+	ExcludePortsForIPs  []string
 	IncludePorts        []uint16
 }
 
@@ -61,10 +124,6 @@ func (c TrafficFlow) Initialize(
 	}
 	initialized.RedirectChainName = fmt.Sprintf("%s_%s", chainNamePrefix, c.RedirectChainName)
 
-	if ipv6 && c.PortIPv6 != 0 {
-		initialized.Port = c.PortIPv6
-	}
-
 	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
 	if err != nil {
 		return initialized, errors.Wrap(
@@ -72,17 +131,30 @@ func (c TrafficFlow) Initialize(
 			"parsing excluded outbound ports for uids failed",
 		)
 	}
-	initialized.ExcludePortsForUIDs = excludePortsForUIDs
+
+	excludePortsForIPs, err := parseExcludePortsForIPs(c.ExcludePortsForIPs, ipv6)
+	if err != nil {
+		return initialized, errors.Wrap(
+			err,
+			"parsing excluded outbound ports for IPs failed",
+		)
+	}
+
+	initialized.Exclusions = slices.Concat(
+		initialized.Exclusions,
+		excludePortsForUIDs,
+		excludePortsForIPs,
+	)
 
 	return initialized, nil
 }
 
 type InitializedTrafficFlow struct {
 	TrafficFlow
-	ExcludePortsForUIDs []UIDsToPorts
-	Port                uint16
-	ChainName           string
-	RedirectChainName   string
+	Exclusions        []Exclusion
+	Port              uint16
+	ChainName         string
+	RedirectChainName string
 }
 
 type DNS struct {
@@ -122,10 +194,7 @@ func (c DNS) Initialize(
 	if c.ConntrackZoneSplit {
 		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplit {
-			l.Warnf(
-				"conntrack zone splitting for %s is disabled. Functionality requires the 'conntrack' iptables module",
-				IPTypeMap[ipv6],
-			)
+			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
 		}
 	}
 
@@ -195,15 +264,6 @@ type VNet struct {
 //     it is added to the InterfaceCIDRs map.
 //  5. Constructs and returns an InitializedVNet struct containing the
 //     populated InterfaceCIDRs map.
-//
-// Args:
-//   - ipv6 (bool): Indicates whether to process IPv6 addresses. If false,
-//     only IPv4 addresses are processed.
-//
-// Returns:
-//   - InitializedVNet: Struct containing the parsed interface names and
-//     corresponding CIDRs for the specified IP version.
-//   - error: Error indicating any issues encountered during initialization.
 func (c VNet) Initialize(ipv6 bool) (InitializedVNet, error) {
 	initialized := InitializedVNet{InterfaceCIDRs: map[string]string{}}
 
@@ -332,14 +392,9 @@ type RetryConfig struct {
 }
 
 // Comment struct contains the configuration for iptables rule comments.
-// It includes options to enable or disable comments and a prefix to use
-// for comment text.
+// It includes an option to enable or disable comments.
 type Comment struct {
 	Disabled bool
-	// Prefix defines the prefix to be used for comments on iptables rules,
-	// aiding in identifying and organizing rules created by the transparent
-	// proxy.
-	Prefix string
 }
 
 // InitializedComment struct contains the processed configuration for iptables
@@ -359,19 +414,10 @@ type InitializedComment struct {
 // iptables rule comments should be enabled. It checks the system's
 // functionality to see if the comment module is available and returns
 // an InitializedComment struct with the result.
-//
-// Args:
-//   - e (InitializedExecutablesIPvX): The initialized executables containing
-//     system functionality details, including available modules.
-//
-// Returns:
-//   - InitializedComment: The struct containing the processed comment
-//     configuration, indicating whether comments are enabled and the prefix to
-//     use for comments.
 func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
 	return InitializedComment{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
-		Prefix:  c.Prefix,
+		Prefix:  IptablesRuleCommentPrefix,
 	}
 }
 
@@ -395,8 +441,6 @@ type Config struct {
 	//
 	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
 	DropInvalidPackets bool
-	// IPv6 when set will be used to configure iptables as well as ip6tables
-	IPv6 bool
 	// RuntimeStdout is the place where Any debugging, runtime information
 	// will be placed (os.Stdout by default)
 	RuntimeStdout io.Writer
@@ -442,6 +486,51 @@ type Config struct {
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
 	Comment Comment
+	// IPFamilyMode specifies the IP family mode to be used by the
+	// configuration. It determines whether the system operates in dualstack
+	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
+	// crucial for environments where both IP families are in use, ensuring that
+	// the correct iptables rules are applied for the specified IP family.
+	IPFamilyMode IPFamilyMode
+}
+
+type IPFamilyMode string
+
+const (
+	IPFamilyModeDualStack IPFamilyMode = "dualstack"
+	IPFamilyModeIPv4      IPFamilyMode = "ipv4"
+)
+
+// String returns the string representation of the IPFamilyMode.
+// This is used both by fmt.Print and by Cobra in help text.
+func (e *IPFamilyMode) String() string {
+	return string(*e)
+}
+
+// Type returns the type of the IPFamilyMode.
+// This is only used in help text by Cobra.
+func (e *IPFamilyMode) Type() string {
+	return "string"
+}
+
+// Set assigns the IPFamilyMode based on the provided value. It validates the
+// input and sets the appropriate mode or returns an error if the input is
+// invalid.
+func (e *IPFamilyMode) Set(v string) error {
+	switch strings.ToLower(v) {
+	case "": // Default value is "dualstack"
+		*e = IPFamilyModeDualStack
+	case string(IPFamilyModeDualStack), string(IPFamilyModeIPv4):
+		*e = IPFamilyMode(v)
+	default:
+		return errors.Errorf(
+			"must be one of %q or %q",
+			IPFamilyModeDualStack,
+			IPFamilyModeIPv4,
+		)
+	}
+
+	return nil
 }
 
 // InitializedConfigIPvX extends the Config struct by adding fields that require
@@ -489,6 +578,7 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
 	Comment InitializedComment
+	Owner   Owner
 
 	enabled bool
 }
@@ -531,13 +621,17 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
+	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
+	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
+
 	initialized := InitializedConfig{
 		Logger: l,
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
-			Logger:                 l,
+			Logger:                 loggerIPv4,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			Owner:                  c.Owner,
 			enabled:                true,
 		},
 		DryRun: c.DryRun,
@@ -552,7 +646,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	}
 	initialized.IPv4.Executables = e.IPv4
 
-	ipv4Redirect, err := c.Redirect.Initialize(l, e.IPv4, false)
+	ipv4Redirect, err := c.Redirect.Initialize(loggerIPv4, e.IPv4, false)
 	if err != nil {
 		return initialized, errors.Wrap(
 			err,
@@ -573,27 +667,42 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
 	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
 
-	if c.IPv6 {
-		initialized.IPv6 = InitializedConfigIPvX{
-			Config:                 c,
-			Logger:                 l,
-			Executables:            e.IPv6,
-			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          LocalhostCIDRIPv6,
-			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-			Comment:                c.Comment.Initialize(e.IPv6),
-			DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
-			enabled:                true,
-		}
+	if c.IPFamilyMode == IPFamilyModeIPv4 {
+		return initialized, nil
+	}
 
-		ipv6Redirect, err := c.Redirect.Initialize(l, e.IPv6, true)
-		if err != nil {
-			return initialized, errors.Wrap(
+	if ok, err := hasLocalIPv6(); !ok || err != nil {
+		if c.Verbose {
+			loggerIPv6.Warn("IPv6 executables initialization skipped:", err)
+		}
+		return initialized, nil
+	}
+
+	if err := configureIPv6OutboundAddress(); err != nil {
+		if c.Verbose {
+			loggerIPv6.Warn(
+				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
 				err,
-				"unable to initialize IPv6 Redirect configuration",
 			)
 		}
-		initialized.IPv6.Redirect = ipv6Redirect
+		return initialized, nil
+	}
+
+	initialized.IPv6 = InitializedConfigIPvX{
+		Config:                 c,
+		Logger:                 loggerIPv6,
+		Executables:            e.IPv6,
+		LoopbackInterfaceName:  loopbackInterfaceName,
+		LocalhostCIDR:          LocalhostCIDRIPv6,
+		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
+		Comment:                c.Comment.Initialize(e.IPv6),
+		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+		Owner:                  c.Owner,
+		enabled:                true,
+	}
+
+	if initialized.IPv6.Redirect, err = c.Redirect.Initialize(loggerIPv6, e.IPv6, true); err != nil {
+		return initialized, errors.Wrap(err, "unable to initialize IPv6 Redirect configuration")
 	}
 
 	return initialized, nil
@@ -601,13 +710,11 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		Owner: Owner{UID: "5678"},
 		Redirect: Redirect{
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
 				Enabled:           true,
 				Port:              DefaultRedirectInbountPort,
-				PortIPv6:          DefaultRedirectInbountPortIPv6,
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
 				ExcludePorts:      []uint16{},
@@ -639,7 +746,6 @@ func DefaultConfig() Config {
 			ProgramsSourcePath: "/tmp/kuma-ebpf",
 		},
 		DropInvalidPackets: false,
-		IPv6:               false,
 		RuntimeStdout:      os.Stdout,
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
@@ -659,8 +765,8 @@ func DefaultConfig() Config {
 		Executables: NewExecutablesNftLegacy(),
 		Comment: Comment{
 			Disabled: false,
-			Prefix:   IptablesRuleCommentPrefix,
 		},
+		IPFamilyMode: IPFamilyModeDualStack,
 	}
 }
 
@@ -685,27 +791,19 @@ func getLoopbackInterfaceName() (string, error) {
 }
 
 // parseExcludePortsForUIDs parses a slice of strings representing port
-// exclusion rules based on UIDs and returns a slice of UIDsToPorts structs.
+// exclusion rules based on UIDs and returns a slice of Exclusion structs.
 //
 // Each input string should follow the format: <protocol:>?<ports:>?<uids>.
-// Examples:
-//   - "tcp:22:1000-2000"
-//   - "udp:53:1001"
-//   - "80:1002"
-//   - "1003"
-//
-// Args:
-//   - portsForUIDs ([]string): A slice of strings specifying port exclusion
-//     rules based on UIDs.
-//
-// Returns:
-//   - []UIDsToPorts: A slice of UIDsToPorts structs representing the parsed
-//     port exclusion rules.
-//   - error: An error if the input format is invalid or if validation fails.
-func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
-	var result []UIDsToPorts
+// This means the string can contain optional protocol and port values,
+// followed by mandatory UID values. Examples of valid formats include:
+//   - "tcp:22:1000-2000" (TCP protocol, port 22, UIDs from 1000 to 2000)
+//   - "udp:53:1001" (UDP protocol, port 53, UID 1001)
+//   - "80:1002" (Any protocol, port 80, UID 1002)
+//   - "1003" (Any protocol, any port, UID 1003)
+func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
+	var result []Exclusion
 
-	for _, elem := range portsForUIDs {
+	for _, elem := range exclusionRules {
 		parts := strings.Split(elem, ":")
 		if len(parts) == 0 || len(parts) > 3 {
 			return nil, errors.Errorf(
@@ -754,19 +852,20 @@ func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
 			return nil, errors.Wrap(err, "invalid UID range")
 		}
 
-		var protocols []string
+		var protocols []ProtocolL4
 		if protocolOpts == "" || protocolOpts == "*" {
-			protocols = []string{"tcp", "udp"}
+			protocols = []ProtocolL4{ProtocolTCP, ProtocolUDP}
 		} else {
-			for _, p := range strings.Split(protocolOpts, ",") {
-				pCleaned := strings.ToLower(strings.TrimSpace(p))
-				if pCleaned != "tcp" && pCleaned != "udp" {
-					return nil, errors.Errorf(
-						"invalid or unsupported protocol: '%s'",
-						pCleaned,
-					)
+			for _, s := range strings.Split(protocolOpts, ",") {
+				if p := ParseProtocolL4(s); p != ProtocolUndefined {
+					protocols = append(protocols, p)
+					continue
 				}
-				protocols = append(protocols, pCleaned)
+
+				return nil, errors.Errorf(
+					"invalid or unsupported protocol: '%s'",
+					s,
+				)
 			}
 		}
 
@@ -774,7 +873,7 @@ func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
 			ports := strings.ReplaceAll(portValuesOrRange, "-", ":")
 			uids := strings.ReplaceAll(uidValuesOrRange, "-", ":")
 
-			result = append(result, UIDsToPorts{
+			result = append(result, Exclusion{
 				Ports:    ValueOrRangeList(ports),
 				UIDs:     ValueOrRangeList(uids),
 				Protocol: p,
@@ -785,18 +884,43 @@ func parseExcludePortsForUIDs(portsForUIDs []string) ([]UIDsToPorts, error) {
 	return result, nil
 }
 
+// parseExcludePortsForIPs parses a slice of strings representing port exclusion
+// rules based on IP addresses and returns a slice of IPToPorts structs.
+//
+// This function currently allows each exclusion rule to be a valid IPv4 or IPv6
+// address, with or without a CIDR suffix. It is designed to potentially support
+// more complex exclusion rules in the future.
+func parseExcludePortsForIPs(
+	exclusionRules []string,
+	ipv6 bool,
+) ([]Exclusion, error) {
+	var result []Exclusion
+
+	for _, rule := range exclusionRules {
+		if rule == "" {
+			return nil, errors.New(
+				"invalid exclusion rule: the rule cannot be empty",
+			)
+		}
+
+		for _, address := range strings.Split(rule, ",") {
+			err, isExpectedIPVersion := validateIP(address, ipv6)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid exclusion rule")
+			}
+
+			if isExpectedIPVersion {
+				result = append(result, Exclusion{Address: address})
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // validateUintValueOrRange validates whether a given string represents a valid
 // single uint16 value or a range of uint16 values. The input string can contain
 // multiple comma-separated values or ranges (e.g., "80,1000-2000").
-//
-// Args:
-//   - valueOrRange (string): The input string to validate, which can be a
-//     single value, a range of values, or a comma-separated list of
-//     values/ranges.
-//
-// Returns:
-//   - error: An error if any value or range in the input string is not a valid
-//     uint16 value.
 func validateUintValueOrRange(valueOrRange string) error {
 	for _, element := range strings.Split(valueOrRange, ",") {
 		for _, port := range strings.Split(element, "-") {
@@ -813,15 +937,32 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
+// validateIP validates an IP address or CIDR and checks if it matches the
+// expected IP version (IPv4 or IPv6).
+func validateIP(address string, ipv6 bool) (error, bool) {
+	// Attempt to parse the address as a CIDR.
+	ip, _, err := net.ParseCIDR(address)
+	// If parsing as CIDR fails, attempt to parse it as a plain IP address.
+	if err != nil {
+		ip = net.ParseIP(address)
+	}
+
+	// If parsing as both CIDR and IP address fails, return an error with a
+	// message.
+	if ip == nil {
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		), false
+	}
+
+	// Check if the IP version matches the expected IP version.
+	// For IPv4, ip.To4() will not be nil. For IPv6, ip.To4() will be nil.
+	return nil, ipv6 == (ip.To4() == nil)
+}
+
 // parseUint16 parses a string representing a uint16 value and returns its
 // uint16 representation.
-//
-// Args:
-//   - port (string): The input string to parse.
-//
-// Returns:
-//   - uint16: The parsed uint16 value.
-//   - error: An error if the input string is not a valid uint16 value.
 func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
@@ -829,4 +970,79 @@ func parseUint16(port string) (uint16, error) {
 	}
 
 	return uint16(parsedPort), nil
+}
+
+// hasLocalIPv6 checks if the local system has an active non-loopback IPv6
+// address. It scans through all network interfaces to find any IPv6 address
+// that is not a loopback address.
+func hasLocalIPv6() (bool, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return false, err
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok &&
+			!ipnet.IP.IsLoopback() &&
+			ipnet.IP.To4() == nil {
+			return true, nil
+		}
+	}
+
+	return false, errors.New("no local IPv6 addresses detected")
+}
+
+// configureIPv6OutboundAddress sets up a dedicated IPv6 address (::6) on the
+// loopback interface ("lo") for our transparent proxy functionality.
+//
+// Background:
+//   - The default IPv6 configuration (prefix length 128) only allows binding to
+//     the loopback address (::1).
+//   - Our transparent proxy requires a distinct IPv6 address (::6 in this case)
+//     to identify traffic processed by the kuma-dp sidecar.
+//   - This identification allows for further processing and avoids redirection
+//     loops.
+//
+// This function is equivalent to running the command:
+// `ip -6 addr add "::6/128" dev lo`
+func configureIPv6OutboundAddress() error {
+	link, err := netlink.LinkByName("lo")
+	if err != nil {
+		return errors.Wrap(err, "failed to find loopback interface ('lo')")
+	}
+
+	// Equivalent to "::6/128"
+	addr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   net.ParseIP("::6"),
+			Mask: net.CIDRMask(128, 128),
+		},
+	}
+
+	if err := netlink.AddrAdd(link, addr); err != nil {
+		// Address already exists, ignore error and continue
+		if strings.Contains(strings.ToLower(err.Error()), "file exists") {
+			return nil
+		}
+
+		return errors.Wrapf(err, "failed to add IPv6 address %s to loopback interface", addr.IPNet)
+	}
+
+	return nil
+}
+
+func findUserUID(userOrUID string) (string, bool) {
+	if userOrUID == "" {
+		return "", false
+	}
+
+	if u, err := user.LookupId(userOrUID); err == nil {
+		return u.Uid, true
+	}
+
+	if u, err := user.Lookup(userOrUID); err == nil {
+		return u.Uid, true
+	}
+
+	return "", false
 }

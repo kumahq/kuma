@@ -50,13 +50,12 @@ func BuildIPTablesForRestore(cfg config.InitializedConfigIPvX) string {
 }
 
 func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
-	cfg.Logger.Info("kumactl is about to apply the iptables rules that " +
-		"will enable transparent proxying on the machine. The SSH connection " +
-		"may drop. If that happens, just reconnect again.")
+	cfg.Logger.Info("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again")
 
 	output, err := cfg.IPv4.Executables.Restore(
 		ctx,
 		BuildIPTablesForRestore(cfg.IPv4),
+		false,
 	)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to restore iptables rules")
@@ -66,6 +65,7 @@ func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string,
 		ipv6Output, err := cfg.IPv6.Executables.Restore(
 			ctx,
 			BuildIPTablesForRestore(cfg.IPv6),
+			false,
 		)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to restore ip6tables rules")
@@ -73,8 +73,6 @@ func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string,
 
 		output += ipv6Output
 	}
-
-	cfg.Logger.Info("iptables set to divert the traffic to Envoy")
 
 	return output, nil
 }

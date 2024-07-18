@@ -32,7 +32,6 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("kuma-sidecar:latest"))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1234)))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(1236)))
-		Expect(cfg.Injector.SidecarContainer.RedirectPortInboundV6).To(Equal(uint32(1237)))
 		Expect(cfg.Injector.SidecarContainer.IpFamilyMode).To(Equal("ipv4"))
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
 		Expect(cfg.Injector.SidecarContainer.GID).To(Equal(int64(3456)))

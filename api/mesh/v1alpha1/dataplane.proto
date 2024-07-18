@@ -255,10 +255,10 @@ message Dataplane {
       // operation, use it only if needed.
       repeated string direct_access_services = 3;
 
-      // Port on which all IPv6 inbound traffic is being transparently
-      // redirected.
-      uint32 redirect_port_inbound_v6 = 4
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      // `redirect_port_inbound_v6` has been removed since both IPv4 and IPv6
+      // now use the same port for inbound redirection.
+      reserved 4;
+      reserved "redirect_port_inbound_v6";
 
       // List of reachable services (represented by the value of
       // `kuma.io/service`) via transparent proxying. Setting an explicit list
