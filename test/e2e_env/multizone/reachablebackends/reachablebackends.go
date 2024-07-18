@@ -111,6 +111,7 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 				testserver.WithReachableBackends(reachableBackends),
+				testserver.WithReachableServices("non-existing"), // non existing so we don't get non targetRef outbounds
 			)).
 			Install(testserver.Install(
 				testserver.WithName("first-test-server"),
@@ -146,7 +147,6 @@ spec:
 	})
 
 	It("should be able to connect to reachable backends", func() {
-		// time.Sleep(1*time.Hour)
 		Eventually(func(g Gomega) {
 			_, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server", "first-test-server.mesh",

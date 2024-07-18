@@ -125,11 +125,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
-			// TODO(lukidzi): should we support both Meshservice and kuma.io simultaneously?
-			if p.UseMeshService {
-				continue
-			}
+		if outbound.BackendRef == nil {
 			service := outbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {

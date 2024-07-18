@@ -1,4 +1,4 @@
-package graph
+package services
 
 import (
 	"golang.org/x/exp/maps"
@@ -19,44 +19,6 @@ var SupportedTags = map[string]struct{}{
 	mesh_proto.KubeNamespaceTag: {},
 	mesh_proto.KubeServiceTag:   {},
 	mesh_proto.KubePortTag:      {},
-}
-
-type Graph struct {
-	rules map[string]core_rules.Rules
-}
-
-func NewGraph() *Graph {
-	return &Graph{
-		rules: map[string]core_rules.Rules{},
-	}
-}
-
-func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) bool {
-	if _, crossMeshTagExist := toTags[mesh_proto.MeshTag]; crossMeshTagExist {
-		// we cannot compute graph for cross mesh, so it's better to allow the traffic
-		return true
-	}
-	rule := r.rules[toTags[mesh_proto.ServiceTag]].Compute(core_rules.SubsetFromTags(fromTags))
-	if rule == nil {
-		return false
-	}
-	action := rule.Conf.(mtp_api.Conf).Action
-	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
-}
-
-func (r *Graph) CanReachBackend(map[string]string, *mesh_proto.Dataplane_Networking_Outbound_BackendRef) bool {
-	panic("not implemented")
-}
-
-func Builder(meshName string, resources context.Resources) context.ReachableServicesGraph {
-	services := BuildServices(
-		meshName,
-		resources.Dataplanes().Items,
-		resources.ExternalServices().Items,
-		resources.ZoneIngresses().Items,
-	)
-	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
-	return BuildGraph(services, mtps.Items)
 }
 
 // BuildServices we could just take result of xds_topology.VIPOutbounds, however it does not have a context of additional tags
@@ -99,7 +61,7 @@ func BuildServices(
 	return services
 }
 
-func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) *Graph {
+func BuildRules(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) map[string]core_rules.Rules {
 	resources := context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
@@ -108,7 +70,7 @@ func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 		},
 	}
 
-	graph := NewGraph()
+	rules := map[string]core_rules.Rules{}
 
 	for service, tags := range services {
 		// build artificial dpp for matching
@@ -141,10 +103,10 @@ func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 			continue
 		}
 
-		graph.rules[service] = rl
+		rules[service] = rl
 	}
 
-	return graph
+	return rules
 }
 
 // trimNotSupportedTags replaces tags present in subsets of top-level target ref.

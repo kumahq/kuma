@@ -31,12 +31,7 @@ func NewGraph() *Graph {
 	}
 }
 
-func (r *Graph) CanReach(map[string]string, map[string]string) bool {
-	panic("not implemented")
-}
-
 func (r *Graph) CanReachBackend(fromTags map[string]string, backendRef *mesh_proto.Dataplane_Networking_Outbound_BackendRef) bool {
-	log.Info("TEST_LOG", "rules", r.rules, "fromTags", fromTags, "backendRef", backendRef)
 	if backendRef.Kind == "MeshExternalService" {
 		return true
 	}
@@ -51,14 +46,8 @@ func (r *Graph) CanReachBackend(fromTags map[string]string, backendRef *mesh_pro
 	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 
-func Builder(meshName string, resources context.Resources) context.ReachableServicesGraph {
-	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
-	ms := resources.ListOrEmpty(ms_api.MeshServiceType).(*ms_api.MeshServiceResourceList)
-	return BuildGraph(ms.Items, mtps.Items)
-}
-
-func BuildGraph(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) *Graph {
-	graph := NewGraph()
+func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[BackendKey]core_rules.Rules {
+	rules := map[BackendKey]core_rules.Rules{}
 	for _, ms := range meshServices {
 		dpTags := maps.Clone(ms.Spec.Selector.DataplaneTags)
 		if origin, ok := core_model.ResourceOrigin(ms.GetMeta()); ok {
@@ -103,13 +92,12 @@ func BuildGraph(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 			continue
 		}
 
-		graph.rules[BackendKey{
+		rules[BackendKey{
 			Kind: "MeshService",
 			Name: ms.Meta.GetName(),
 		}] = rl
 	}
-	log.Info("TEST_LOG_BUILD", "rules", graph.rules)
-	return graph
+	return rules
 }
 
 // trimNotSupportedTags replaces tags present in subsets of top-level target ref.

@@ -1,4 +1,4 @@
-package backends_test
+package graph_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -7,12 +7,14 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
 
-var _ = Describe("Reachable Services Graph", func() {
+var _ = Describe("Reachable Backends Graph", func() {
 	type testCase struct {
 		mtps                []*v1alpha1.MeshTrafficPermissionResource
 		expectedFromAll     map[string]struct{}
@@ -43,7 +45,10 @@ var _ = Describe("Reachable Services Graph", func() {
 	DescribeTable("should check reachability of the graph",
 		func(given testCase) {
 			// when
-			g := backends.BuildGraph(services, given.mtps)
+			g := graph.NewGraph(
+				map[string]core_rules.Rules{},
+				backends.BuildRules(services, given.mtps),
+			)
 
 			// then
 			for _, from := range services {
@@ -223,17 +228,19 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := backends.BuildGraph(services, mtps)
-
+		g := graph.NewGraph(
+			map[string]core_rules.Rules{},
+			backends.BuildRules(services, mtps),
+		)
 		// then
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"app": "b", "version": "v1"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
 				Name: "a",
 			},
 		)).To(BeTrue())
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
@@ -257,24 +264,27 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := backends.BuildGraph(services, mtps)
+		g := graph.NewGraph(
+			map[string]core_rules.Rules{},
+			backends.BuildRules(services, mtps),
+		)
 
 		// then
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "east"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
 				Name: "a",
 			},
 		)).To(BeTrue())
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "west"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
 				Name: "a",
 			},
 		)).To(BeFalse())
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"othertag": "other"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
@@ -304,17 +314,20 @@ var _ = Describe("Reachable Services Graph", func() {
 			}
 
 			// when
-			graph := backends.BuildGraph(services, mtps)
+			g := graph.NewGraph(
+				map[string]core_rules.Rules{},
+				backends.BuildRules(services, mtps),
+			)
 
 			// then
-			Expect(graph.CanReachBackend(
+			Expect(g.CanReachBackend(
 				map[string]string{"app": "b"},
 				&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 					Kind: "MeshService",
 					Name: "a",
 				},
 			)).To(BeTrue())
-			Expect(graph.CanReachBackend(
+			Expect(g.CanReachBackend(
 				map[string]string{"app": "a"},
 				&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 					Kind: "MeshService",
@@ -351,10 +364,13 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := backends.BuildGraph(services, mtps)
+		g := graph.NewGraph(
+			map[string]core_rules.Rules{},
+			backends.BuildRules(services, mtps),
+		)
 
 		// then
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"app": "b"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
@@ -363,7 +379,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		)).To(BeTrue())
 		// because we are removing tags for MTP that are not in a MeshService selector + origin and zone
 		// it passes MeshSubset with empty list and matches this service
-		Expect(graph.CanReachBackend(
+		Expect(g.CanReachBackend(
 			map[string]string{"app": "a"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
@@ -386,7 +402,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		_ = backends.BuildGraph(services, mtps)
+		_ = backends.BuildRules(services, mtps)
 
 		// then
 		Expect(mtps[0].Spec.TargetRef.Tags).NotTo(BeNil())
