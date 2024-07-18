@@ -23,7 +23,7 @@ The SNI is constructed on the server and the client side. This approach has a co
 ## Decision Outcome
 
 Chosen option: "Option 1 - SNI in the resource definition", because it solves the problems described in previous section.
-For `MeshMultiZoneService` "Option 2 - compute ports on global cp", because advantages outweights other option.
+For `MeshMultiZoneService` "Option 2 - compute ports on global cp", because advantages outweighs other option.
 
 ## Pros and Cons of the Options
 
@@ -37,12 +37,35 @@ spec:
   ports:
     - port: 80
       targetPort: 8080
-      sni: ae10a8071b8a8eeb8.backend.8080.demo.ms # new field
+      snis: # new field
+      - value: "ae10a8071b8a8eeb8.backend.8080.demo.ms"
 ```
 
-The `sni` field will be filled out automatically by the original Zone CP and synced cross zone.
+The `snis` field will be filled out automatically by the original Zone CP and synced cross zone.
 The field will be filled out by the same mechanism as Mesh Defaulter, which is webhook on Kubernetes and `ResourceManager` on Universal.
 This way we can avoid a situation that we drop SNI by the resource update.
+
+**Migration**
+SNIs is a list, not a field, so we can perform a migration of SNI. If we ever change the format we can provide multiple snis in the list.
+The client should use the first SNI on the list. This way we can go from
+```yaml
+snis:
+- value: old
+```
+to
+```yaml
+snis:
+- value: new
+- value: old
+```
+to
+```yaml
+snis:
+- value: new
+```
+
+Item in an array is an object with just `value` field.
+It's an object, so we can potentially expand this field if we need it to add fields like `type` or `version` etc.
 
 Advantages:
 * Slightly better debuggability because SNI is in MeshService object
@@ -94,7 +117,8 @@ spec:
   ports:
     - port: 80
       targetPort: 8080
-      sni: ae10a8071b8a8eeb8.backend.80.demo.mzms # new field
+      snis:  # new field
+      - value: "ae10a8071b8a8eeb8.backend.80.demo.mzms"
 ```
 
 SNI is then applied the same way as MeshService (via webhook/ResourceManager) and is synced down to zones.
