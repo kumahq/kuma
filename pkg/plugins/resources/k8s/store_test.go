@@ -565,19 +565,22 @@ var _ = Describe("KubernetesStore", func() {
 			// setup
 			expected := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: kuma.io/v1alpha1
-            kind: TrafficRoute
-            mesh: default
+            kind: MeshTimeout
             metadata:
+              name: %s
+              namespace: kuma-system
               labels:
+                kuma.io/mesh: default
                 kuma.io/zone: zone-1
                 kuma.io/origin: zone
-              annotations:
-                kuma.io/display-name: dn
-              name: %s
             spec:
-              conf:
-                destination:
-                  path: /example
+              to:
+                - targetRef:
+                    kind: MeshHTTPRoute
+                    name: backend-route
+                  default:
+                    http:
+                      requestTimeout: 10s
 `, name))
 			backend.Create(expected)
 
