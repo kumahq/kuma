@@ -627,3 +627,12 @@ type PolicyWithSingleItem interface {
 	Policy
 	GetPolicyItem() PolicyItem
 }
+
+func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
+	indexedResources := make(map[ResourceKey]T)
+	for _, resource := range resources {
+		key := MetaToResourceKey(resource.GetMeta())
+		indexedResources[key] = resource
+	}
+	return indexedResources
+}
