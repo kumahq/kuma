@@ -38,16 +38,36 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 - hides the most often most important information under `to[]` adding noise when targeting Mesh in `spec.targetRef`
 - is it consistent in the case of MeshGateways? MeshHTTPRoutes aren't on outbound listeners in the case of MeshGateways, they're on inbound listeners
 
-### Leave Mesh*Routes in top level targetRef as it is now and introduce `spec.workloadTargetRef`
+### Leave Mesh\*Routes in top level targetRef as it is now and refine semantics of `spec.targetRef`
 
-#### Advantages
+Instead of having `targetRef` always refer to a workload,
+instead `targetRef` selects some part of the Envoy configuration of a workload,
+where that part is represented by a real Kuma resource.
 
-- can be simpler as we move most interesting part of the policy from `to` section and remove noise
+In fact `targetRef` is the wrong concept for selecting workloads,
+since "targetRef refers to a workload" means we aren't targeting
+an arbitrary `Kind` of resource but instead always a `Dataplane`.
 
-#### Disadvantages
+In order to allow limiting the effects of a policy further
+we can introduce `spec.workloadSelector` which would basically be some variation of `labelSelector`.
 
-- cannot configure multiple outbounds in the same policy, forcing users to create and later manage multiple policies, which can be problematic with consumer policies
-- MeshService in topLevel can be misleading for current users that could use MeshService in topLevel to select proxies. Is it targeting all proxies belonging to MeshService or outbound to MeshService?
+#### Advantages:
+
+- the workloads targeted by the policy is often "all workloads" or can be
+  inferred from the namespace so we kind of waste the top level, "special" `spec.targetRef`
+- tends to be less noisy as we move most interesting part of the policy from `to` /`from`section
+- Doesn't force every potential resource into a "to" or a "from", instead using the semantics of the `kind` itself
+	- `HTTPRoute` is a route, regardless of whether it's inbound or outbound
+	- `MeshService` _is_ a destination so `spec.targetRef.kind: MeshService` targets the configuration for a given destination
+	- `WorkloadIdentity` (obviously doesn't exist yet but we want to change how we manage identity)
+      would represent an identity so fits as `spec.targetRef` for e.g. `MeshTrafficPermission`
+
+#### Disadvantages:
+
+- `targetRef` is a single field, so it's not easy to share configuration
+  in a single resource to avoid duplication.
+  Though the very WIP policy attachment GEPs do propose a `targetRefs` field
+- requires a huge migration
 
 ## Comparing UX of two approaches
 
