@@ -7,7 +7,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -15,41 +17,78 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 type MeshDestinations struct {
 	KumaIoServices map[string][]envoy_tags.Tags
-	MeshServices   []MeshServiceDestination
+	BackendRefs    []BackendRefDestination
 }
 
-type MeshServiceDestination struct {
-	Name            string
-	Mesh            string
-	Port            uint32
+type BackendRefDestination struct {
+	Mesh string
+	// DestinationName is a string to reference Type+Name+Mesh+Port. Effectively an Envoy Cluster name
 	DestinationName string
+	SNI             string
 }
 
 func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	res xds_context.Resources,
 	meshServices []*meshservice_api.MeshServiceResource,
+	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
+	systemNamespace string,
 ) MeshDestinations {
-	var msDestinations []MeshServiceDestination
+	return MeshDestinations{
+		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
+		BackendRefs:    append(buildMeshServiceDestinations(meshServices, systemNamespace), buildMeshMultiZoneServiceDestinations(meshMzSvc)...),
+	}
+}
+
+func buildMeshServiceDestinations(
+	meshServices []*meshservice_api.MeshServiceResource,
+	systemNamespace string,
+) []BackendRefDestination {
+	var msDestinations []BackendRefDestination
 	for _, ms := range meshServices {
 		for _, port := range ms.Spec.Ports {
-			msDestinations = append(msDestinations, MeshServiceDestination{
-				Name:            ms.GetMeta().GetName(),
+			sni := tls.SNIForResource(
+				ms.SNIName(systemNamespace),
+				ms.GetMeta().GetMesh(),
+				meshservice_api.MeshServiceType,
+				port.Port,
+				nil,
+			)
+			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
-				Port:            port.Port,
 				DestinationName: ms.DestinationName(port.Port),
+				SNI:             sni,
 			})
 		}
 	}
+	return msDestinations
+}
 
-	return MeshDestinations{
-		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
-		MeshServices:   msDestinations,
+func buildMeshMultiZoneServiceDestinations(
+	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
+) []BackendRefDestination {
+	var msDestinations []BackendRefDestination
+	for _, ms := range meshMzSvc {
+		for _, port := range ms.Status.Ports {
+			msDestinations = append(msDestinations, BackendRefDestination{
+				Mesh:            ms.GetMeta().GetMesh(),
+				DestinationName: ms.DestinationName(port.Port),
+				SNI: tls.SNIForResource(
+					core_model.GetDisplayName(ms.GetMeta()),
+					ms.GetMeta().GetMesh(),
+					v1alpha1.MeshMultiZoneServiceType,
+					port.Port,
+					nil,
+				),
+			})
+		}
 	}
+	return msDestinations
 }
 
 func buildKumaIoServiceDestinations(

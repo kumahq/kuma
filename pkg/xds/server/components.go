@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/pkg/errors"
 
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -69,11 +70,15 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
+	systemNamespace := ""
+	if rt.Config().Store.Type == config_store.KubernetesStore {
+		systemNamespace = rt.Config().Store.Kubernetes.SystemNamespace
+	}
 	envoyCpCtx := &xds_context.ControlPlaneContext{
 		CLACache:        claCache,
 		Secrets:         secrets,
 		Zone:            rt.Config().Multizone.Zone.Name,
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		SystemNamespace: systemNamespace,
 	}
 
 	if err := v3.RegisterXDS(statsCallbacks, rt.XDS().Metrics, envoyCpCtx, rt); err != nil {

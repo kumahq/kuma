@@ -5,6 +5,7 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -161,6 +162,18 @@ func (r Resources) MeshExternalServices() *meshextsvc.MeshExternalServiceResourc
 		}
 	}
 	return list.(*meshextsvc.MeshExternalServiceResourceList)
+}
+
+func (r Resources) MeshMultiZoneServices() *meshmzservice_api.MeshMultiZoneServiceResourceList {
+	list, ok := r.MeshLocalResources[meshmzservice_api.MeshMultiZoneServiceType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(meshmzservice_api.MeshMultiZoneServiceType)
+		if err != nil {
+			return &meshmzservice_api.MeshMultiZoneServiceResourceList{}
+		}
+	}
+	return list.(*meshmzservice_api.MeshMultiZoneServiceResourceList)
 }
 
 type MeshGatewayDataplanes struct {

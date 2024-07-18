@@ -12,13 +12,16 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -209,7 +212,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", nil, nil, dataplanes.Items, nil, nil, externalServices.Items,
+				defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -288,8 +291,9 @@ var _ = Describe("TrafficRoute", func() {
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
 			dataplanes           []*core_mesh.DataplaneResource
-			meshServices         []*v1alpha1.MeshServiceResource
+			meshServices         []*meshservice_api.MeshServiceResource
 			meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource
+			meshMultiZoneService []*meshmzservice_api.MeshMultiZoneServiceResource
 			zoneIngresses        []*core_mesh.ZoneIngressResource
 			zoneEgresses         []*core_mesh.ZoneEgressResource
 			externalServices     []*core_mesh.ExternalServiceResource
@@ -299,8 +303,20 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
+				meshServiceByName := map[string]*meshservice_api.MeshServiceResource{}
+				for _, ms := range given.meshServices {
+					meshServiceByName[ms.GetMeta().GetName()] = ms
+				}
 				endpoints := BuildEdsEndpointMap(
-					given.mesh, "zone-1", given.meshServices, given.meshExternalServices, given.dataplanes, given.zoneIngresses, given.zoneEgresses, given.externalServices,
+					given.mesh,
+					"zone-1",
+					meshServiceByName,
+					given.meshMultiZoneService,
+					given.meshExternalServices,
+					given.dataplanes,
+					given.zoneIngresses,
+					given.zoneEgresses,
+					given.externalServices,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, given.meshExternalServices, dataSourceLoader, "zone-1",
@@ -1203,19 +1219,19 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				meshServices: []*v1alpha1.MeshServiceResource{
+				meshServices: []*meshservice_api.MeshServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Mesh: "default",
 							Name: "kong.kong-system",
 						},
-						Spec: &v1alpha1.MeshService{
-							Selector: v1alpha1.Selector{
+						Spec: &meshservice_api.MeshService{
+							Selector: meshservice_api.Selector{
 								DataplaneTags: map[string]string{
 									"app": "kong",
 								},
 							},
-							Ports: []v1alpha1.Port{
+							Ports: []meshservice_api.Port{
 								{
 									Port:        80,
 									TargetPort:  intstr.FromInt(8080),
@@ -1234,13 +1250,13 @@ var _ = Describe("TrafficRoute", func() {
 							Mesh: "default",
 							Name: "redis",
 						},
-						Spec: &v1alpha1.MeshService{
-							Selector: v1alpha1.Selector{
+						Spec: &meshservice_api.MeshService{
+							Selector: meshservice_api.Selector{
 								DataplaneTags: map[string]string{
 									mesh_proto.ServiceTag: "redis_svc_6379",
 								},
 							},
-							Ports: []v1alpha1.Port{
+							Ports: []meshservice_api.Port{
 								{
 									Port:       6379,
 									TargetPort: intstr.FromInt(6379),
@@ -1253,13 +1269,13 @@ var _ = Describe("TrafficRoute", func() {
 							Mesh: "default",
 							Name: "redis-0",
 						},
-						Spec: &v1alpha1.MeshService{
-							Selector: v1alpha1.Selector{
-								DataplaneRef: &v1alpha1.DataplaneRef{
+						Spec: &meshservice_api.MeshService{
+							Selector: meshservice_api.Selector{
+								DataplaneRef: &meshservice_api.DataplaneRef{
 									Name: "redis-0",
 								},
 							},
-							Ports: []v1alpha1.Port{
+							Ports: []meshservice_api.Port{
 								{
 									Port:       6379,
 									TargetPort: intstr.FromInt(6379),
@@ -1483,6 +1499,84 @@ var _ = Describe("TrafficRoute", func() {
 									},
 								},
 							},
+						},
+					},
+				},
+			}),
+			Entry("uses MeshMultiZoneService", testCase{
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					builders.ZoneIngress().
+						WithZone("east").
+						WithAdvertisedAddress("192.168.0.100").
+						WithAdvertisedPort(12345).
+						Build(),
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					samples.DataplaneBackend(),
+				},
+				meshServices: []*meshservice_api.MeshServiceResource{
+					samples.MeshServiceBackend(),
+					samples.MeshServiceSyncedBackend(),
+				},
+				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
+					samples.MeshMultiZoneServiceBackendBuilder().
+						AddMatchedMeshServiceName(samples.MeshServiceBackend().GetMeta().GetName()).
+						AddMatchedMeshServiceName(samples.MeshServiceSyncedBackend().GetMeta().GetName()).
+						AddPort(samples.MeshServiceBackend().Spec.Ports[0]).
+						Build(),
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"backend": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   80,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+							Weight: 1,
+						},
+					},
+					"backend_svc_80": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   80,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+							Weight: 1,
+						},
+					},
+					"backend-4v44xv7dwv4v8z2d_svc_80": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.100",
+							Port:   12345,
+							Tags: map[string]string{
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_svc_80",
+								"kuma.io/zone":    "east",
+							},
+							Weight:   1,
+							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
+						},
+					},
+					"backend_mzsvc_80": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   80,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+							Weight: 1,
+						},
+						{
+							Target: "192.168.0.100",
+							Port:   12345,
+							Tags: map[string]string{
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_svc_80",
+								"kuma.io/zone":    "east",
+							},
+							Weight:   1,
+							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
 						},
 					},
 				},

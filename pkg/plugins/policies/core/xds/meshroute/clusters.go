@@ -3,10 +3,13 @@ package meshroute
 import (
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -87,35 +90,14 @@ func GenerateClusters(
 						}
 					}
 				} else {
-					if msName := service.MeshServiceName(); len(msName) > 0 {
-						ms := meshCtx.MeshServiceByName[msName]
-						name := ms.Meta.GetName()
-						// we need to use original name and namespace for services that were synced from another cluster
-						if dn := ms.GetMeta().GetLabels()[mesh_proto.DisplayName]; dn != "" {
-							name = dn
-							if ns := ms.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; ns != "" {
-								// when we sync resources from universal to kube, when we retrieve it has KubeNamespaceTag as label value
-								if systemNamespace == "" || systemNamespace != ns {
-									name += "." + ns
-								}
-							}
-						}
-						var serviceTagIdentities []string
-						for _, identity := range ms.Spec.Identities {
-							if identity.Type == v1alpha1.MeshServiceIdentityServiceTagType {
-								serviceTagIdentities = append(serviceTagIdentities, identity.Value)
-							}
-						}
-						sni := tls.SNIForResource(
-							name,
-							ms.Meta.GetMesh(),
-							ms.Descriptor().Name,
-							service.MeshServicePort(),
-							nil, // todo(jakubdyszkiewicz) splits not yet supported
-						)
+					if service.BackendRef().ReferencesRealObject() {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
-							meshCtx.Resource, tlsReady, sni, serviceTagIdentities))
+							meshCtx.Resource,
+							tlsReady,
+							sniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+							serviceTagIdentities(service.BackendRef(), meshCtx),
+						))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
 							proxy.SecretsTracker,
@@ -138,6 +120,63 @@ func GenerateClusters(
 	}
 
 	return resources, nil
+}
+
+func sniForBackendRef(
+	backendRef common_api.BackendRef,
+	meshCtx xds_context.MeshContext,
+	systemNamespace string,
+) string {
+	var resource core_model.Resource
+	var name string
+	switch backendRef.Kind {
+	case common_api.MeshService:
+		ms := meshCtx.MeshServiceByName[backendRef.Name]
+		resource = ms
+		name = ms.SNIName(systemNamespace)
+	case common_api.MeshMultiZoneService:
+		resource = meshCtx.MeshMultiZoneServiceByName[backendRef.Name]
+		name = core_model.GetDisplayName(resource.GetMeta())
+	}
+	return tls.SNIForResource(
+		name,
+		resource.GetMeta().GetMesh(),
+		resource.Descriptor().Name,
+		*backendRef.Port,
+		nil,
+	)
+}
+
+func serviceTagIdentities(
+	backendRef common_api.BackendRef,
+	meshCtx xds_context.MeshContext,
+) []string {
+	var result []string
+	switch backendRef.Kind {
+	case common_api.MeshService:
+		ms := meshCtx.MeshServiceByName[backendRef.Name]
+		for _, identity := range ms.Spec.Identities {
+			if identity.Type == v1alpha1.MeshServiceIdentityServiceTagType {
+				result = append(result, identity.Value)
+			}
+		}
+	case common_api.MeshMultiZoneService:
+		svc := meshCtx.MeshMultiZoneServiceByName[backendRef.Name]
+		identities := map[string]struct{}{}
+		for _, matchedMs := range svc.Status.MeshServices {
+			ms, ok := meshCtx.MeshServiceByName[matchedMs.Name]
+			if !ok {
+				continue
+			}
+			for _, identity := range ms.Spec.Identities {
+				if identity.Type == v1alpha1.MeshServiceIdentityServiceTagType {
+					identities[identity.Value] = struct{}{}
+				}
+			}
+		}
+		result = util_maps.SortedKeys(identities)
+	}
+	return result
 }
 
 func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
