@@ -418,21 +418,123 @@ To introduce this change we need to deprecate specifying `Mesh*Route` in `spec.t
 
 Should we allow selecting MeshGateway in `spec.targetRef` when `Mesh*Route` is configured in `spec.to[].targetRef`? probably this 
 is obsolete as Route will select gateway, and we want to apply policy on a route. Is there a need to make it more specific than route? 
+For example when user creates route targeting MeshGateway:
+
+```yaml
+kind: MeshHTTPRoute
+metadata:
+  name: demo-app-route
+  namespace: kuma-system
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: demo-app
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: "/"
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: demo-app_kuma-demo_svc_5000
+```
+
+then when you create timeout that targets this route: 
+
+```yaml
+kind: MeshTimeout
+metadata:
+  name: demo-app-timeout
+  namespace: kuma-system
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: demo-app-route
+      default:
+        requestTimeout: 5s
+```
+
+This route already will be created only on MeshGateway, so is there a need to specify anything else then a Mesh in `spec.targetRef`
+of timeout policy?
 
 ### Affected policies
 
 At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR is based on MeshTimeout policy.
 Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route,
-but we are configuring rate limit on inbound traffic, which does not apply to this MADR. 
+but we are configuring rate limit on inbound traffic, which does not apply to this MADR. `MeshLoadBalancingStrategy` also
+configures hashing per route and we should probably add support for routes in the future
 
 #### Producer/consumer model for targeting Mesh*Route in other policies
-
-It is worth to mention that rate limit would not work with our producer/consumer model. In our model consumer always has more priority
-but consumer should not override producer rate limit as owner of the service should know best, the amount of traffic it could handle.
 
 For MeshRetry our producer/consumer makes sense since producer config is a suggestion from owner of the service. If consumer
 wants to override it because they don't want to retry, they just want to fail fast or the want to retry on bigger number of errors
 they can configure it by applying consumer policy.
+
+MeshRetry example:
+
+```yaml
+# Producer policy with retry on 500 HTTP error code
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: producer-retry
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        http:
+          numRetries: 3
+          backOff:
+            baseInterval: 10ms
+            maxInterval: 1s
+          retryOn:
+            - "500"
+---
+# Consumer policy with override to retry on all 5xx errors
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: producer-retry
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: web
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        http:
+          retryOn:
+            - "5xx"
+```
+
+For MeshLoadBalancingStrategy adding producer/consumer model can be problematic, for load balancing and hashing. Since this
+is configured on outbound it falls into producer/consumer policy model. But who should have more power on deciding hashing rules?
+I think it should be producer who is an owner of service who decides how to apply this configuration which is not compliant
+with our consumer/producer model.
 
 ### Merging and applying configurations
 
@@ -475,10 +577,7 @@ spec:
   - targetRef:
       kind: MeshService
       name: backend
-    default:
-      http:
-        requestTimeout: 2s
-        streamIdleTimeout: 1h
+    default: conf1
 ---
 # MeshTimeout targeting producer route
 apiVersion: kuma.io/v1alpha1
@@ -493,9 +592,7 @@ spec:
   - targetRef:
       kind: MeshHTTPRoute
       name: route-to-backend
-    default:
-      http:
-        requestTimeout: 10s
+    default: conf2
 ```
 
 All of these policies have `spec.targetRef` `Mesh` and these are producer policies so this configuration will be applied 
@@ -504,17 +601,12 @@ As described in targeting real resources MADR, while merging policies we will cr
 field that holds configuration for a given resource identified by `UniqueResourceKey`. So when user creates policy that has 
 real resource in `spec.to[].targetRef` we will create confs by resources: (this is configuration that will be applied to selected dataplane)
 
-```go
-map[UniqueResourceKey]ResourceRule{
-    "backend.backend-ns": {  // this is just a placeholder name for visualisation. UniqueResourceKey is build from ResourceType, Name and Mesh, I will update it after real resource matching madr is merged
-        requestTimeout: "2s"
-        streamIdleTimeout: "1h"
-    },
-    "backend-route.backend-ns": {
-		requestTimeout: "10s"
-		streamIdleTimeout: "1h"
-    },
-}
+```yaml
+resourceRules:
+  backend.backend-ns:
+    conf: $conf1
+  backend-route.backend-ns:
+    conf: merge($conf1, $conf2)
 ```
 
 Route configuration will be applied when route was created for a given DPP, if not MeshService config will be applied. 
@@ -553,7 +645,8 @@ spec:
 ```
 
 After applying this two policies timeout won't be applied to any proxy, since `Mesh*Route` and MeshTimeout is applied
-on different subset of proxies. We should detect this situation and add warning in Inspect API.
+on different subset of proxies. We should ignore this situation as this will just have no effect. Also we don't have possibility
+to show warnings with this information to users. 
 
 #### Overriding configuration
 
@@ -575,9 +668,7 @@ spec:
       kind: MeshService
       name: backend
       namespace: backend-ns
-    default:
-      http:
-        streamIdleTimeout: 2h
+    default: $conf1
 ---
 # Consumer MeshTimeout targeting producer route
 apiVersion: kuma.io/v1alpha1
@@ -593,24 +684,17 @@ spec:
       kind: MeshHTTPRoute
       name: route-to-backend
       namespace: backend-ns
-    default:
-      http:
-        requestTimeout: 15s
+    default: $conf2
 ```
 
 After merging conf we will get:
 
-```go
-map[UniqueResourceKey]ResourceRule{
-    "backend.backend-ns": {
-        requestTimeout: "2s" // from producer policy
-        streamIdleTimeout: "2h" // from consumer policy
-    },
-    "backend-route.backend-ns": {
-		requestTimeout: "15s" // from consumer policy
-		streamIdleTimeout: "2h" // from consumer policy
-    },
-}
+```yaml
+resourceRules:
+  backend.backend-ns: 
+    conf: $conf1
+  backend-route.backend-ns:
+    conf: merge($conf1, $conf2)
 ```
 
 Configuration priority (from most to least important): 
@@ -656,10 +740,7 @@ spec:
     - targetRef:
         kind: MeshService
         name: backend
-      default:
-        http:
-          requestTimeout: 2s
-          streamIdleTimeout: 1h
+      default: conf1
 ---
 # MeshTimeout targeting route
 type: MeshTimeout
@@ -670,9 +751,7 @@ spec:
     - targetRef:
         kind: MeshHTTPRoute
         name: route-to-backend
-      default:
-        http:
-          requestTimeout: 10s
+      default: conf2
 ```
 
 To override this configuration for a service consuming this route we have to create policy with `spec.targetRef` MeshSubset: 
@@ -691,10 +770,7 @@ spec:
     - targetRef:
         kind: MeshService
         name: backend
-      default:
-        http:
-          requestTimeout: 2s
-          streamIdleTimeout: 1h
+      default: conf3
 ---
 # MeshTimeout targeting route
 type: MeshTimeout
@@ -709,24 +785,17 @@ spec:
     - targetRef:
         kind: MeshHTTPRoute
         name: route-to-backend
-      default:
-        http:
-          requestTimeout: 10s
+      default: conf4
 ```
 
 This will result in the same configuration as in previous example, because `MeshSubset` kind is more specific than `Mesh`:
 
-```go
-map[UniqueResourceKey]ResourceRule{
-    "backend": {
-        requestTimeout: "2s" // from timeout-on-backend-service policy
-        streamIdleTimeout: "2h" // from timeout-on-backend-service-override policy
-    },
-    "backend-route": {
-		requestTimeout: "15s" // from timeout-on-backend-route-override policy
-		streamIdleTimeout: "2h" // from timeout-on-backend-service-override policy
-    },
-}
+```yaml
+resourceRules:
+  backend:
+    conf: merge($conf1, $conf3)
+  backend-route:
+    conf: merge($conf1, $conf2, $conf3, $conf4)
 ```
 
 ### Backward compatibility and migration
