@@ -32,8 +32,13 @@ golangci-lint-fmt:
 
 .PHONY: fmt/ci
 fmt/ci:
+<<<<<<< HEAD
 	$(CI_TOOLS_BIN_DIR)/yq -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
 	find .github/workflows -name '*ml' | xargs -n 1 $(CI_TOOLS_BIN_DIR)/yq -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
+=======
+	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
+	grep -r "golangci/golangci-lint-action" .github/workflows --include \*ml | cut -d ':' -f 1 | xargs -n 1 $(YQ) -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
+>>>>>>> e780588b9 (ci(circleci): cleanup circleci configuration and scripts (#10908))
 
 .PHONY: helm-lint
 helm-lint:
