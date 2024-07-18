@@ -59,9 +59,7 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	if err := model.Validate(resource); err != nil {
 		return err
 	}
-	if existingMeta == nil {
-		resource.SetMeta(existingMeta)
-	}
+	resource.SetMeta(existingMeta)
 
 	var owner model.Resource
 	if resource.Descriptor().Scope == model.ScopeMesh {
