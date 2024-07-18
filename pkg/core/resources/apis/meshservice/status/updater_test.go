@@ -93,6 +93,7 @@ var _ = Describe("Updater", func() {
 	type testCase struct {
 		meshBuilder            *builders.MeshBuilder
 		dpInsightIssuedBackend string
+		dpInsightMissing       bool
 		existingTLSStatus      meshservice_api.TLSStatus
 		expectedTLSStatus      meshservice_api.TLSStatus
 	}
@@ -102,10 +103,12 @@ var _ = Describe("Updater", func() {
 			// given
 			Expect(given.meshBuilder.WithName("test").Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().WithMesh("test").Create(resManager)).To(Succeed())
-			Expect(samples.DataplaneInsightBackendBuilder().
-				WithMesh("test").
-				WithMTLSIssuedBackend(given.dpInsightIssuedBackend).
-				Create(resManager)).To(Succeed())
+			if !given.dpInsightMissing {
+				Expect(samples.DataplaneInsightBackendBuilder().
+					WithMesh("test").
+					WithMTLSIssuedBackend(given.dpInsightIssuedBackend).
+					Create(resManager)).To(Succeed())
+			}
 			Expect(samples.MeshServiceBackendBuilder().
 				WithMesh("test").
 				WithTLSStatus(given.existingTLSStatus).
@@ -145,6 +148,13 @@ var _ = Describe("Updater", func() {
 			dpInsightIssuedBackend: "",
 			existingTLSStatus:      meshservice_api.TLSReady,
 			expectedTLSStatus:      meshservice_api.TLSReady,
+		}),
+		Entry("should set TLS to NotReady when DP has no insight", testCase{
+			meshBuilder:            samples.MeshMTLSBuilder(),
+			dpInsightMissing:       true,
+			dpInsightIssuedBackend: "",
+			existingTLSStatus:      "",
+			expectedTLSStatus:      meshservice_api.TLSNotReady,
 		}),
 	)
 

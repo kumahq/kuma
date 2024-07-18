@@ -160,11 +160,12 @@ func buildTLS(
 
 	issuedBackends := 0
 	for _, dpp := range dpps {
-		insight := insightsByName[core_model.MetaToResourceKey(dpp.Meta)]
-		// Cert issued by any backend means that mTLS cert was issued to the DP
-		// We don't want to check specific backend value, because we might be in a middle of CA rotation.
-		if insight.Spec.GetMTLS().GetIssuedBackend() != "" {
-			issuedBackends++
+		if insight := insightsByName[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil {
+			// Cert issued by any backend means that mTLS cert was issued to the DP
+			// We don't want to check specific backend value, because we might be in a middle of CA rotation.
+			if insight.Spec.GetMTLS().GetIssuedBackend() != "" {
+				issuedBackends++
+			}
 		}
 	}
 	if issuedBackends == len(dpps) {
