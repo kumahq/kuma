@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshhttproute"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshmultizoneservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtcproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
@@ -74,6 +75,7 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
+	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 )

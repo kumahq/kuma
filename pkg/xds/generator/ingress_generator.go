@@ -51,7 +51,13 @@ func (i IngressGenerator) Generate(
 		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
 		// we only want to expose local mesh services
 		localMs := localMeshServices(xdsCtx.ControlPlane.Zone, meshResources.MeshServices().Items)
-		dest := zoneproxy.BuildMeshDestinations(availableSvcsByMesh[meshName], meshResources, localMs)
+		dest := zoneproxy.BuildMeshDestinations(
+			availableSvcsByMesh[meshName],
+			meshResources,
+			localMs,
+			meshResources.MeshMultiZoneServices().Items,
+			xdsCtx.ControlPlane.SystemNamespace,
+		)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 

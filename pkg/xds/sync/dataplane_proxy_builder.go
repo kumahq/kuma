@@ -2,7 +2,6 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -115,7 +114,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
 		reachableServices[reachableService] = true
 	}
-	reachableBackends := GetReachableBackends(meshContext, dataplane)
+	reachableBackends := meshContext.GetReachableBackends(dataplane)
 
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
@@ -141,13 +140,13 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 			}
 		} else {
 			if len(reachableBackends) != 0 {
-				backendKey := BackendKey{
+				backendKey := xds_context.BackendKey{
 					Kind: outbound.BackendRef.Kind,
 					Name: outbound.BackendRef.Name,
 					Port: outbound.BackendRef.Port,
 				}
 				// check if there is an entry with specific port or without port
-				if !reachableBackends[backendKey] && !reachableBackends[BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
+				if !reachableBackends[backendKey] && !reachableBackends[xds_context.BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
 					continue
@@ -213,63 +212,4 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
-}
-
-type BackendKey struct {
-	Kind string
-	Name string
-	Port uint32
-}
-
-type ReachableBackends map[BackendKey]bool
-
-func GetReachableBackends(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) ReachableBackends {
-	reachableBackends := ReachableBackends{}
-	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.ReachableBackendRefs {
-		key := BackendKey{Kind: reachableBackend.Kind}
-		name := ""
-		if reachableBackend.Name != "" {
-			name = reachableBackend.Name
-		}
-		if reachableBackend.Namespace != "" {
-			name += fmt.Sprintf(".%s", reachableBackend.Namespace)
-		}
-		key.Name = name
-		if reachableBackend.Port != nil {
-			key.Port = reachableBackend.Port.GetValue()
-		}
-		resourcesLabels := meshContext.MeshServiceNamesByLabels
-		if reachableBackend.Kind == "MeshExternalService" {
-			resourcesLabels = meshContext.MeshExternalServiceNamesByLabels
-		}
-		if len(reachableBackend.Labels) > 0 {
-			reachable := GetResourceNamesForLabels(resourcesLabels, reachableBackend.Labels)
-			for name, count := range reachable {
-				if count == len(reachableBackend.Labels) {
-					reachableBackends[BackendKey{
-						Kind: reachableBackend.Kind,
-						Name: name,
-					}] = true
-				}
-			}
-		}
-		if name != "" {
-			reachableBackends[key] = true
-		}
-	}
-	return reachableBackends
-}
-
-func GetResourceNamesForLabels(resourcesLabels map[string]map[string][]string, labels map[string]string) map[string]int {
-	reachable := map[string]int{}
-	for key, value := range labels {
-		if _, ok := resourcesLabels[key]; ok {
-			if _, ok := resourcesLabels[key][value]; ok {
-				for _, name := range resourcesLabels[key][value] {
-					reachable[name]++
-				}
-			}
-		}
-	}
-	return reachable
 }
