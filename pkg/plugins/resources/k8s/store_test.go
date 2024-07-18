@@ -14,6 +14,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtimeout_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	v1alpha1_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -75,6 +77,7 @@ var _ = Describe("KubernetesStore", func() {
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&v1alpha1.MeshTrace{}, &v1alpha1_k8s.MeshTrace{})).To(Succeed())
+		Expect(kubeTypes.RegisterObjectType(&meshtimeout_api.MeshTimeout{}, &meshtimeout_k8s.MeshTimeout{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 
@@ -563,6 +566,7 @@ var _ = Describe("KubernetesStore", func() {
 
 		It("should not add namespace label when resource is synced from zone", func() {
 			// setup
+			name := "demo-b4xvb9w446dcf5ff"
 			expected := backend.ParseYAML(fmt.Sprintf(`
             apiVersion: kuma.io/v1alpha1
             kind: MeshTimeout
@@ -573,6 +577,8 @@ var _ = Describe("KubernetesStore", func() {
                 kuma.io/mesh: default
                 kuma.io/zone: zone-1
                 kuma.io/origin: zone
+              annotations:
+                kuma.io/display-name: demo
             spec:
               to:
                 - targetRef:
@@ -585,10 +591,10 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := core_mesh.NewTrafficRouteResource()
+			actual := meshtimeout_api.NewMeshTimeoutResource()
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), actual, store.GetByKey(fmt.Sprintf("%s.kuma-system", name), mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

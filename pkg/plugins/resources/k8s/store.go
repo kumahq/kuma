@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -298,8 +299,19 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 	} else {
 		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
 	}
-	if core_model.IsLocallyOriginatedByLabels(m) {
-		if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok && m.Namespace != "" {
+
+	var values []string
+	if zone, ok := labels[v1alpha1.ZoneTag]; ok {
+		values = append(values, zone)
+	}
+	ns, namespacePresent := labels[v1alpha1.KubeNamespaceTag]
+	if namespacePresent {
+		values = append(values, ns)
+	}
+	hashedName := util_k8s.K8sNamespacedNameToCoreName(hash.HashedName(m.GetMesh(), labels[v1alpha1.DisplayName], values...), m.Namespace)
+	// if hashed name is different then resource name then resource is locally originated and we can add namespace
+	if hashedName != m.GetName() {
+		if !namespacePresent && m.Namespace != "" {
 			labels[v1alpha1.KubeNamespaceTag] = m.Namespace
 		}
 	}
