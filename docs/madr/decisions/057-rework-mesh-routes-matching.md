@@ -16,8 +16,8 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 ## Considered options
 
-1. add possibility to put `Mesh*Routes` in `spec.to[].targetRef` -> `spec.targerRef` selects proxies, `spec.from[].targetRef` selects inbounds, `spec.to[].targetRef` selects outbounds.
-2. leave `Mesh*Routes` in top level targetRef as it is now, and introduce `spec.workloadTargetRef` to match whole proxies
+1. add possibility to put `Mesh*Routes` in `spec.to[].targetRef` -> `spec.targetRef` selects proxies, `spec.from[].targetRef` selects inbounds, `spec.to[].targetRef` selects outbounds.
+2. leave `Mesh*Routes` in top level targetRef as it is now, improve the semantics of `spec.targetRef` and introduce `spec.workloadSelector` to select whole proxies
 
 ### Add possibility to put Mesh*Routes in `spec.to[].targetRef`
 
@@ -71,8 +71,8 @@ we can introduce `spec.workloadSelector` which would basically be some variation
 
 ## Comparing UX of two approaches
 
-In both cases we assume that either `spec.targetRef` or `spec.workloadTargetRef` selects whole Mesh which can be omitted as default.
-With examples fist yaml is always with `to` section and second is with `spec.workloadTargetRef` approach.
+In both cases we assume that either `spec.targetRef` or `spec.workloadSelector` selects whole Mesh which can be omitted as default.
+With examples fist yaml is always with `to` section and second is with `spec.workloadSelector` approach.
 
 Looking at the examples we can see that when we omit selecting Mesh as default both approaches look almost the same. With 
 first approach giving a little bit more flexibility as `spec.to[]` is a list.
@@ -189,9 +189,8 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  workloadTargetRef:
-    kind: MeshSubset
-    tags:
+  workloadSelector:
+    labels:
       service-type: ui
   targetRef:
     kind: MeshService
@@ -312,9 +311,8 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  workloadTargetRef:
-    kind: MeshSubset
-    tags:
+  workloadSelector:
+    labels:
       service-type: ui
   targetRef:
     kind: MeshHTTPRoute
