@@ -29,6 +29,7 @@ jobs:
       matrix:
         parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
     steps:
+<<<<<<< HEAD
       - name: "Print parameters"
         id: eval-params
         run: |
@@ -49,22 +50,24 @@ jobs:
       - name: "GitHub Actions: setup go"
         if: steps.eval-params.outputs.run-type == 'github'
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+=======
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+>>>>>>> e780588b9 (ci(circleci): cleanup circleci configuration and scripts (#10908))
         with:
           go-version-file: go.mod
-      - name: "GitHub Actions: set up cache"
-        if: steps.eval-params.outputs.run-type == 'github'
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      - if: steps.eval-params.outputs.run-type == 'github'
-        run: |
+      - run: |
           make dev/tools
-      - name: "Github Actions: Free up disk space for the Runner"
-        if: steps.eval-params.outputs.run-type == 'github'
+      - name: "Free up disk space for the Runner"
         run: |
           echo "Disk usage before cleanup"
           sudo df -h
@@ -74,25 +77,17 @@ jobs:
           docker system prune --all -f
           echo "Disk usage after cleanup"
           sudo df -h
-      - name: "Github Actions: build"
-        if: steps.eval-params.outputs.run-type == 'github'
-        run: |
+      - run: |
           make build
-      - name: "Github Actions: distributions"
-        if: steps.eval-params.outputs.run-type == 'github'
-        run: |
+      - run: |
           make -j build/distributions
-      - name: "Github Actions: images"
-        if: steps.eval-params.outputs.run-type == 'github'
-        run: |
+      - run: |
           make -j images
           make -j docker/save
-      - name: "GitHub Actions: setup helm"
-        if: steps.eval-params.outputs.run-type == 'github'
-        run: |
+      - run: |
           make dev/set-kuma-helm-repo
-      - name: "GitHub Actions: enable ipv6 for docker"
-        if: ${{ steps.eval-params.outputs.run-type == 'github' && env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
+      - name: "Enable ipv6 for docker"
+        if: ${{ env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
@@ -103,8 +98,7 @@ jobs:
           }
           EOF
           sudo service docker restart
-      - name: "GitHub Actions: run E2E tests"
-        if: steps.eval-params.outputs.run-type == 'github'
+      - name: "Run E2E tests"
         run: |
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
@@ -139,6 +133,7 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
+<<<<<<< HEAD
       - name: "CircleCI: make circleci parameters"
         if: steps.eval-params.outputs.run-type == 'circleci'
         id: circleci-gen-params
@@ -327,3 +322,13 @@ jobs:
           }
 
           request POST https://circleci.com/api/v2/workflow/${{ steps.circle-ci-trigger.outputs.workflow_id }}/cancel
+=======
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        if: always()
+        with:
+          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}
+          if-no-files-found: ignore
+          path: |
+            /tmp/e2e-debug/
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+>>>>>>> e780588b9 (ci(circleci): cleanup circleci configuration and scripts (#10908))
