@@ -1,4 +1,4 @@
-# MeshExternalService policies and ZoneEgress
+# MeshExternalService and ZoneEgress
 
 * Status: accepted
 
@@ -6,17 +6,28 @@ Technical Story: https://github.com/kumahq/kuma/issues/10897
 
 ## Context and Problem Statement
 
-Configuration (like timeouts, retries, circuit breakers) of MeshExternalService can be applied both on a sidecar and on an egress.
+MeshExternalService traffic can go out directly from the sidecar or through egress.
 
-This MADR will go into the details of each policy type and the placement to figure out what is the best option.
+Configuration (like timeouts, retries, circuit breakers) of MeshExternalService can also be applied both on a sidecar and on an egress.
+
+This MADR will go into the details of:
+- limitations / features that occur / are possible when running the traffic directly from sidecar vs through egress
+- each policy type and the placement to figure out what is the best option
 
 ## Decision Drivers
 
+* not restricting any useful use-cases
 * flexible enough that we don't limit users in scenarios where it makes sense to configuration in both/one place
 * restrictive enough so that it's hard for the user to "shoot themselves in the foot" (e.g. having squared no. of circuit breakers)
 
 ## Considered Options
 
+Running traffic through:
+* egress only
+* sidecar only
+* mix of sidecar and egress
+
+Configuration placement:
 * configurable where it makes sense on both sidecar and egress, predefined where only one makes sense
 * predefined mixed approach on a case-by-case basis
 * only on the egress
@@ -24,10 +35,31 @@ This MADR will go into the details of each policy type and the placement to figu
 
 ## Decision Outcome
 
-Chosen option: "Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense"
+Chosen option:
+
+Chosen option for configuration placement: "Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense"
 because it fits the decision drivers (flexibility / restiveness).
 
 ## Pros and Cons of the Options
+
+### Running traffic through egress only
+
+- there is a bit of operational cost to running egress
+- it's a bit tricky to set up on universal
+- we've got a bit of a gap in other functionalities on egress (configuration, observability)
+- it's more probable to hit scalability issues than with sidecar (egress needs to know about all services / external services)
+- we'd need to relax the requirement of mTLS (it's only needed for services) to run egress
+- there is additional network hop
+- there is a load balancing issue with TCP traffic using zone egress when we make a connection and change the load
+  balancing algorithm we have to wait for the connection to be re-created for the reconfiguration to take place
+
+Conclusion: **it seems like we're not cutting any serious use case**.
+
+### Running traffic through sidecar only
+
+- 
+
+### Running traffic through sidecar and egress
 
 ### Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense
 
