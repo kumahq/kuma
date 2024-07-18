@@ -35,7 +35,7 @@ Configuration placement:
 
 ## Decision Outcome
 
-Chosen option:
+Chosen option: ?
 
 Chosen option for configuration placement: "Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense"
 because it fits the decision drivers (flexibility / restiveness).
@@ -52,14 +52,19 @@ because it fits the decision drivers (flexibility / restiveness).
 - there is additional network hop
 - there is a load balancing issue with TCP traffic using zone egress when we make a connection and change the load
   balancing algorithm we have to wait for the connection to be re-created for the reconfiguration to take place
+- with the introduction of MeshPassthrough the barrier for external traffic is lower and some cases can be covered by that
 
 Conclusion: **it seems like we're not cutting any serious use case**.
 
 ### Running traffic through sidecar only
 
-- 
+- all the problems of running through egress are not applicable (operational cost, extra networking hop, scalability etc.)
+- no single exit point for all the external traffic
 
 ### Running traffic through sidecar and egress
+
+- we can mix and match the pros/cons of both approaches
+- it's harder to implement / explain how it's working
 
 ### Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense
 
@@ -72,22 +77,22 @@ The table below shows a summary of policies and if it makes sense to configure t
 
 and if it makes sense for the user to pick where.
 
-| Policy                    | On sidecar   | On egress    | On both | User configurable |
-|---------------------------|--------------|--------------|---------|-------------------|
-| MeshAccessLog             | Yes          | Yes          | Yes     | Yes               |
-| MeshCircuitBreaker        | Yes          | Maybe        | No      | No                |
-| MeshFaultInjection        | Maybe        | Yes          | No      | No                |
-| MeshHealthCheck           | Yes          | Maybe        | No      | No                |
-| MeshMetric                | Yes          | Yes          | Yes     | Maybe             |
-| MeshProxyPatch            | Yes          | Yes          | Yes     | Yes               |
-| MeshRateLimit             | Probably not | Yes          | No      | No                |
-| MeshRetry                 | Yes          | Maybe        | No      | Maybe             |
-| MeshTimeout               | Yes          | Probably not | No      | No                |
-| MeshTrace                 | Yes          | Yes          | Yes     | Maybe             |
-| MeshTrafficPermission     | Maybe        | Yes          | Maybe   | Maybe             |
-| MeshLoadBalancingStrategy | Yes          | Yes          | No      | Maybe             |
-| MeshTCPRoute              | Yes          | Yes          | No      | No                |
-| MeshHTTPRoute             | Yes          | Yes          | No      | No                |
+| Policy                    | On sidecar   | On egress | On both | User configurable |
+|---------------------------|--------------|-----------|---------|-------------------|
+| MeshAccessLog             | Yes          | Yes       | Yes     | Yes               |
+| MeshCircuitBreaker        | Yes          | Maybe     | No      | No                |
+| MeshFaultInjection        | Maybe        | Yes       | No      | No                |
+| MeshHealthCheck           | Yes          | Maybe     | No      | No                |
+| MeshMetric                | Yes          | Yes       | Yes     | Maybe             |
+| MeshProxyPatch            | Yes          | Yes       | Yes     | Yes               |
+| MeshRateLimit             | Probably not | Yes       | No      | No                |
+| MeshRetry                 | Yes          | Maybe     | No      | Maybe             |
+| MeshTimeout               | Yes          | Maybe     | No      | No                |
+| MeshTrace                 | Yes          | Yes       | Yes     | Maybe             |
+| MeshTrafficPermission     | Maybe        | Yes       | Maybe   | Maybe             |
+| MeshLoadBalancingStrategy | Yes          | Yes       | No      | Maybe             |
+| MeshTCPRoute              | Yes          | Yes       | No      | No                |
+| MeshHTTPRoute             | Yes          | Yes       | No      | No                |
 
 In paragraphs below I go deeper into each policy.
 **After PR review / discussion I will update this table to reflect the actual decision**.
@@ -200,7 +205,7 @@ Both Timeout and MeshTimeout are configured on the sidecar.
 
 If on egress:
 - we would have to match the timeouts from the sidecar not to have a clash (that server times out before client)
-- I don't see any advantages of having this on egress
+- I don't see any advantages of having this on egress but nothing rules it out
 
 #### MeshTrace
 
