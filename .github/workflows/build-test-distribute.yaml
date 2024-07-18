@@ -151,6 +151,7 @@ jobs:
           done
       - name: "pull by k3d after login"
         run: |
+          mkdir ./build
           export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
