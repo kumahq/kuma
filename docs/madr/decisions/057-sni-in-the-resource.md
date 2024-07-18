@@ -17,17 +17,25 @@ The SNI is constructed on the server and the client side. This approach has a co
 
 ## Considered Options
 
-* SNI in the resource definition
-* Keep it implicit
+MeshService:
+* Option 1 - SNI in the resource definition
+* Option 2 - Keep it implicit
+
+MeshMultiZoneService:
+* Option 1 - SNI in the resource definition and require ports from user
+* Option 2 - SNI in the resource definition and compute ports on global cp
+* Option 3 - Keep it implicit
 
 ## Decision Outcome
 
 Chosen option: "Option 1 - SNI in the resource definition", because it solves the problems described in previous section.
-For `MeshMultiZoneService` "Option 2 - compute ports on global cp", because advantages outweighs other option.
+For `MeshMultiZoneService` "Option 2 - SNI in the resource definition and compute ports on global cp", because advantages outweighs other option.
 
 ## Pros and Cons of the Options
 
-### Option 1 - SNI in the resource definition
+### MeshService
+
+#### Option 1 - SNI in the resource definition
 
 SNI is unique for each port, therefore we need to define it for each port
 
@@ -75,7 +83,15 @@ Advantages:
 Disadvantages:
 * Putting more stuff in the object
 
-#### MeshMultiZoneService
+#### Option 2 - Keep it implicit
+
+Advantages:
+* No new fields in objects
+
+Disadvantages:
+* Keep the existing tradeoffs
+
+### MeshMultiZoneService
 
 SNI should always be filled out by the source of truth of the resource.
 In case of `MeshMultiZoneService`, this is global CP.
@@ -103,7 +119,7 @@ status: # computed on the zone
       targetPort: 8080
 ```
 
-##### Option 1 - require ports from user
+#### Option 1 - SNI in the resource definition and require ports from user
 
 We can require ports from user, so it's
 
@@ -132,7 +148,7 @@ Advantage:
 Disadvantage:
 * It might be annoying for the user to repeat the information that is already defined on MeshServices
 
-##### Option 2 - compute ports on global cp
+#### Option 2 - SNI in the resource definition and compute ports on global cp
 
 Global CP can have a similar component to Zone CP which is to go over all `MeshServices` and fill this data for the user.
 Computed ports are stored in `spec.ports` so it's synced down to all zones
@@ -145,7 +161,7 @@ Disadvantage:
 * Putting more compute operations on Global CP.
   However, we may need to have a component to compute `status` on global anyway to give better GUI visibility of aggregated services. 
 
-### Option 3 - Keep it implicit
+#### Option 3 - Keep it implicit
 
 Advantages:
 * No new fields in objects
