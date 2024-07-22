@@ -4,8 +4,8 @@ set -e
 if [[ "$DOCKERHUB_PULL_CREDENTIAL" == "" ]]; then
     >&2 echo "No docker pull credential information specified"
 else
-    DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | base64 --decode | cut -d ':' -f 1)
-    DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | base64 --decode | cut -d ':' -f 2)
+    DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+    DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
     echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin > /dev/null
     cat <<EOF > "$HOME/.docker/k3d-registry.yaml"
 configs:
