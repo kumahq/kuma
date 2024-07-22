@@ -46,11 +46,8 @@ Chosen option for configuration placement: ?
 - there is a bit of operational cost to running egress
 - it's a bit tricky to set up on universal
 - we've got a bit of a gap in other functionalities on egress (configuration, observability)
-- it's more probable to hit scalability issues than with sidecar (egress needs to know about all services / external services)
-- we'd need to relax the requirement of mTLS (it's only needed for services) to run egress
+- mTLS is required to run egress
 - there is additional network hop
-- there is a load balancing issue with TCP traffic using zone egress when we make a connection and change the load
-  balancing algorithm we have to wait for the connection to be re-created for the reconfiguration to take place
 - with the introduction of MeshPassthrough the barrier for external traffic is lower and some cases can be covered by that
 
 Conclusion: **it seems like we're not cutting any serious use case**.
@@ -59,6 +56,8 @@ Conclusion: **it seems like we're not cutting any serious use case**.
 
 - all the problems of running through egress are not applicable (operational cost, extra networking hop, scalability etc.)
 - no single exit point for all the external traffic
+- if we put credentials in the ExternalService then these credentials are accessible to the app owners (need to check Envoy secrets)
+- it's hard to emulate ExternalService because there is no "from" section (there is no destination that is inside the mesh)
 
 ### Running traffic through sidecar and egress
 
