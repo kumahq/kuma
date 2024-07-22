@@ -133,6 +133,12 @@ jobs:
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
             export KUMA_DEFAULT_RETRIES=60
           fi
+          
+          K3D_REGISTRY_FILE=$(tools/ci/prepare-pull-credentials.sh)
+          if [[ "$K3D_REGISTRY_FILE" != "" ]]; then
+            export K3D_REGISTRY_FILE
+          fi
+          
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else
