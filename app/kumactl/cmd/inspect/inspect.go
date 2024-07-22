@@ -20,9 +20,7 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		if err := kumactl_cmd.RunParentPreRunE(inspectCmd, args); err != nil {
 			return err
 		}
-		if err := pctx.CheckServerVersionCompatibility(); err != nil {
-			cmd.PrintErrln(err)
-		}
+		_ = kumactl_cmd.CheckCompatibility(pctx.FetchServerVersion, cmd.ErrOrStderr())
 		return nil
 	}
 	// flags

@@ -59,9 +59,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := pctx.CheckServerVersionCompatibility(); err != nil {
-				cmd.PrintErrln(err)
-			}
+			_ = kumactl_cmd.CheckCompatibility(pctx.FetchServerVersion, cmd.ErrOrStderr())
 
 			var b []byte
 			var err error
