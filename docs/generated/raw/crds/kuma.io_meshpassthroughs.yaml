@@ -81,8 +81,6 @@ spec:
                         value:
                           description: Value for the specified Type.
                           type: string
-                      required:
-                      - port
                       type: object
                     type: array
                   passthroughMode:
