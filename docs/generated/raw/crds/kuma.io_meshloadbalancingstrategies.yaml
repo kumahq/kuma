@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -28,14 +28,19 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -44,9 +49,10 @@ spec:
               resource.
             properties:
               targetRef:
-                description: TargetRef is a reference to the resource the policy takes
-                  an effect on. The resource could be either a real store object or
-                  virtual resource defined inplace.
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined inplace.
                 properties:
                   kind:
                     description: Kind of the referenced resource
@@ -63,14 +69,16 @@ spec:
                       mesh resources.
                     type: string
                   name:
-                    description: 'Name of the referenced resource. Can only be used
-                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                      `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
                   tags:
                     additionalProperties:
                       type: string
-                    description: Tags used to select a subset of proxies by tags.
-                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
               to:
@@ -79,42 +87,40 @@ spec:
                 items:
                   properties:
                     default:
-                      description: Default is a configuration specific to the group
-                        of destinations referenced in 'targetRef'
+                      description: |-
+                        Default is a configuration specific to the group of destinations referenced in
+                        'targetRef'
                       properties:
                         loadBalancer:
                           description: LoadBalancer allows to specify load balancing
                             algorithm.
                           properties:
                             leastRequest:
-                              description: LeastRequest selects N random available
-                                hosts as specified in 'choiceCount' (2 by default)
+                              description: |-
+                                LeastRequest selects N random available hosts as specified in 'choiceCount' (2 by default)
                                 and picks the host which has the fewest active requests
                               properties:
                                 choiceCount:
-                                  description: ChoiceCount is the number of random
-                                    healthy hosts from which the host with the fewest
-                                    active requests will be chosen. Defaults to 2
-                                    so that Envoy performs two-choice selection if
-                                    the field is not set.
+                                  description: |-
+                                    ChoiceCount is the number of random healthy hosts from which the host with
+                                    the fewest active requests will be chosen. Defaults to 2 so that Envoy performs
+                                    two-choice selection if the field is not set.
                                   format: int32
                                   minimum: 2
                                   type: integer
                               type: object
                             maglev:
-                              description: Maglev implements consistent hashing to
-                                upstream hosts. Maglev can be used as a drop in replacement
-                                for the ring hash load balancer any place in which
+                              description: |-
+                                Maglev implements consistent hashing to upstream hosts. Maglev can be used as
+                                a drop in replacement for the ring hash load balancer any place in which
                                 consistent hashing is desired.
                               properties:
                                 hashPolicies:
-                                  description: HashPolicies specify a list of request/connection
-                                    properties that are used to calculate a hash.
-                                    These hash policies are executed in the specified
-                                    order. If a hash policy has the “terminal” attribute
-                                    set to true, and there is already a hash generated,
-                                    the hash is returned immediately, ignoring the
-                                    rest of the hash policy list.
+                                  description: |-
+                                    HashPolicies specify a list of request/connection properties that are used to calculate a hash.
+                                    These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
+                                    set to true, and there is already a hash generated, the hash is returned immediately,
+                                    ignoring the rest of the hash policy list.
                                   items:
                                     properties:
                                       connection:
@@ -145,12 +151,10 @@ spec:
                                       filterState:
                                         properties:
                                           key:
-                                            description: The name of the Object in
-                                              the per-request filterState, which is
-                                              an Envoy::Hashable object. If there
-                                              is no data associated with the key,
-                                              or the stored object is not Envoy::Hashable,
-                                              no hash will be produced.
+                                            description: |-
+                                              The name of the Object in the per-request filterState, which is
+                                              an Envoy::Hashable object. If there is no data associated with the key,
+                                              or the stored object is not Envoy::Hashable, no hash will be produced.
                                             minLength: 1
                                             type: string
                                         required:
@@ -170,25 +174,21 @@ spec:
                                       queryParameter:
                                         properties:
                                           name:
-                                            description: The name of the URL query
-                                              parameter that will be used to obtain
-                                              the hash key. If the parameter is not
-                                              present, no hash will be produced. Query
-                                              parameter names are case-sensitive.
+                                            description: |-
+                                              The name of the URL query parameter that will be used to obtain the hash key.
+                                              If the parameter is not present, no hash will be produced. Query parameter names
+                                              are case-sensitive.
                                             minLength: 1
                                             type: string
                                         required:
                                         - name
                                         type: object
                                       terminal:
-                                        description: 'Terminal is a flag that short-circuits
-                                          the hash computing. This field provides
-                                          a ‘fallback’ style of configuration: “if
-                                          a terminal policy doesn’t work, fallback
-                                          to rest of the policy list”, it saves time
-                                          when the terminal policy works. If true,
-                                          and there is already a hash computed, ignore
-                                          rest of the list of hash polices.'
+                                        description: |-
+                                          Terminal is a flag that short-circuits the hash computing. This field provides
+                                          a ‘fallback’ style of configuration: “if a terminal policy doesn’t work, fallback
+                                          to rest of the policy list”, it saves time when the terminal policy works.
+                                          If true, and there is already a hash computed, ignore rest of the list of hash polices.
                                         type: boolean
                                       type:
                                         enum:
@@ -203,51 +203,45 @@ spec:
                                     type: object
                                   type: array
                                 tableSize:
-                                  description: The table size for Maglev hashing.
-                                    Maglev aims for “minimal disruption” rather than
-                                    an absolute guarantee. Minimal disruption means
-                                    that when the set of upstream hosts change, a
-                                    connection will likely be sent to the same upstream
-                                    as it was before. Increasing the table size reduces
-                                    the amount of disruption. The table size must
-                                    be prime number limited to 5000011. If it is not
-                                    specified, the default is 65537.
+                                  description: |-
+                                    The table size for Maglev hashing. Maglev aims for “minimal disruption”
+                                    rather than an absolute guarantee. Minimal disruption means that when
+                                    the set of upstream hosts change, a connection will likely be sent
+                                    to the same upstream as it was before. Increasing the table size reduces
+                                    the amount of disruption. The table size must be prime number limited to 5000011.
+                                    If it is not specified, the default is 65537.
                                   format: int32
                                   maximum: 5000011
                                   minimum: 1
                                   type: integer
                               type: object
                             random:
-                              description: Random selects a random available host.
-                                The random load balancer generally performs better
-                                than round-robin if no health checking policy is configured.
-                                Random selection avoids bias towards the host in the
-                                set that comes after a failed host.
+                              description: |-
+                                Random selects a random available host. The random load balancer generally
+                                performs better than round-robin if no health checking policy is configured.
+                                Random selection avoids bias towards the host in the set that comes after a failed host.
                               type: object
                             ringHash:
-                              description: RingHash  implements consistent hashing
-                                to upstream hosts. Each host is mapped onto a circle
-                                (the “ring”) by hashing its address; each request
-                                is then routed to a host by hashing some property
-                                of the request, and finding the nearest corresponding
-                                host clockwise around the ring.
+                              description: |-
+                                RingHash  implements consistent hashing to upstream hosts. Each host is mapped
+                                onto a circle (the “ring”) by hashing its address; each request is then routed
+                                to a host by hashing some property of the request, and finding the nearest
+                                corresponding host clockwise around the ring.
                               properties:
                                 hashFunction:
-                                  description: HashFunction is a function used to
-                                    hash hosts onto the ketama ring. The value defaults
-                                    to XX_HASH. Available values – XX_HASH, MURMUR_HASH_2.
+                                  description: |-
+                                    HashFunction is a function used to hash hosts onto the ketama ring.
+                                    The value defaults to XX_HASH. Available values – XX_HASH, MURMUR_HASH_2.
                                   enum:
                                   - XXHash
                                   - MurmurHash2
                                   type: string
                                 hashPolicies:
-                                  description: HashPolicies specify a list of request/connection
-                                    properties that are used to calculate a hash.
-                                    These hash policies are executed in the specified
-                                    order. If a hash policy has the “terminal” attribute
-                                    set to true, and there is already a hash generated,
-                                    the hash is returned immediately, ignoring the
-                                    rest of the hash policy list.
+                                  description: |-
+                                    HashPolicies specify a list of request/connection properties that are used to calculate a hash.
+                                    These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
+                                    set to true, and there is already a hash generated, the hash is returned immediately,
+                                    ignoring the rest of the hash policy list.
                                   items:
                                     properties:
                                       connection:
@@ -278,12 +272,10 @@ spec:
                                       filterState:
                                         properties:
                                           key:
-                                            description: The name of the Object in
-                                              the per-request filterState, which is
-                                              an Envoy::Hashable object. If there
-                                              is no data associated with the key,
-                                              or the stored object is not Envoy::Hashable,
-                                              no hash will be produced.
+                                            description: |-
+                                              The name of the Object in the per-request filterState, which is
+                                              an Envoy::Hashable object. If there is no data associated with the key,
+                                              or the stored object is not Envoy::Hashable, no hash will be produced.
                                             minLength: 1
                                             type: string
                                         required:
@@ -303,25 +295,21 @@ spec:
                                       queryParameter:
                                         properties:
                                           name:
-                                            description: The name of the URL query
-                                              parameter that will be used to obtain
-                                              the hash key. If the parameter is not
-                                              present, no hash will be produced. Query
-                                              parameter names are case-sensitive.
+                                            description: |-
+                                              The name of the URL query parameter that will be used to obtain the hash key.
+                                              If the parameter is not present, no hash will be produced. Query parameter names
+                                              are case-sensitive.
                                             minLength: 1
                                             type: string
                                         required:
                                         - name
                                         type: object
                                       terminal:
-                                        description: 'Terminal is a flag that short-circuits
-                                          the hash computing. This field provides
-                                          a ‘fallback’ style of configuration: “if
-                                          a terminal policy doesn’t work, fallback
-                                          to rest of the policy list”, it saves time
-                                          when the terminal policy works. If true,
-                                          and there is already a hash computed, ignore
-                                          rest of the list of hash polices.'
+                                        description: |-
+                                          Terminal is a flag that short-circuits the hash computing. This field provides
+                                          a ‘fallback’ style of configuration: “if a terminal policy doesn’t work, fallback
+                                          to rest of the policy list”, it saves time when the terminal policy works.
+                                          If true, and there is already a hash computed, ignore rest of the list of hash polices.
                                         type: boolean
                                       type:
                                         enum:
@@ -336,28 +324,27 @@ spec:
                                     type: object
                                   type: array
                                 maxRingSize:
-                                  description: Maximum hash ring size. Defaults to
-                                    8M entries, and limited to 8M entries, but can
-                                    be lowered to further constrain resource use.
+                                  description: |-
+                                    Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries,
+                                    but can be lowered to further constrain resource use.
                                   format: int32
                                   maximum: 8000000
                                   minimum: 1
                                   type: integer
                                 minRingSize:
-                                  description: Minimum hash ring size. The larger
-                                    the ring is (that is, the more hashes there are
-                                    for each provided host) the better the request
-                                    distribution will reflect the desired weights.
-                                    Defaults to 1024 entries, and limited to 8M entries.
+                                  description: |-
+                                    Minimum hash ring size. The larger the ring is (that is,
+                                    the more hashes there are for each provided host) the better the request distribution
+                                    will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries.
                                   format: int32
                                   maximum: 8000000
                                   minimum: 1
                                   type: integer
                               type: object
                             roundRobin:
-                              description: RoundRobin is a load balancing algorithm
-                                that distributes requests across available upstream
-                                hosts in round-robin order.
+                              description: |-
+                                RoundRobin is a load balancing algorithm that distributes requests
+                                across available upstream hosts in round-robin order.
                               type: object
                             type:
                               enum:
@@ -375,8 +362,8 @@ spec:
                             locality aware load balancing.
                           properties:
                             crossZone:
-                              description: CrossZone defines locality aware load balancing
-                                priorities when dataplane proxies inside local zone
+                              description: |-
+                                CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
                                 are unavailable
                               properties:
                                 failover:
@@ -420,14 +407,12 @@ spec:
                                     type: object
                                   type: array
                                 failoverThreshold:
-                                  description: 'FailoverThreshold defines the percentage
-                                    of live destination dataplane proxies below which
-                                    load balancing to the next priority starts. Example:
-                                    If you configure failoverThreshold to 70, and
-                                    you have deployed 10 destination dataplane proxies.
-                                    Load balancing to next priority will start when
-                                    number of live destination dataplane proxies drops
-                                    below 7. Default 50'
+                                  description: |-
+                                    FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
+                                    next priority starts.
+                                    Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
+                                    Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
+                                    Default 50
                                   properties:
                                     percentage:
                                       anyOf:
@@ -439,9 +424,9 @@ spec:
                                   type: object
                               type: object
                             disabled:
-                              description: Disabled allows to disable locality-aware
-                                load balancing. When disabled requests are distributed
-                                across all endpoints regardless of locality.
+                              description: |-
+                                Disabled allows to disable locality-aware load balancing.
+                                When disabled requests are distributed across all endpoints regardless of locality.
                               type: boolean
                             localZone:
                               description: LocalZone defines locality aware load balancing
@@ -457,22 +442,13 @@ spec:
                                           is configured
                                         type: string
                                       weight:
-                                        description: 'Weight of the tag used for load
-                                          balancing. The bigger the weight the bigger
-                                          the priority. Percentage of local traffic
-                                          load balanced to tag is computed by dividing
-                                          weight by sum of weights from all tags.
-                                          For example with two affinity tags first
-                                          with weight 80 and second with weight 20,
-                                          then 80% of traffic will be redirected to
-                                          the first tag, and 20% of traffic will be
-                                          redirected to second one. Setting weights
-                                          is not mandatory. When weights are not set
-                                          control plane will compute default weight
-                                          based on list order. Default: If you do
-                                          not specify weight we will adjust them so
-                                          that 90% traffic goes to first tag, 9% to
-                                          next, and 1% to third and so on.'
+                                        description: |-
+                                          Weight of the tag used for load balancing. The bigger the weight the bigger the priority.
+                                          Percentage of local traffic load balanced to tag is computed by dividing weight by sum of weights from all tags.
+                                          For example with two affinity tags first with weight 80 and second with weight 20,
+                                          then 80% of traffic will be redirected to the first tag, and 20% of traffic will be redirected to second one.
+                                          Setting weights is not mandatory. When weights are not set control plane will compute default weight based on list order.
+                                          Default: If you do not specify weight we will adjust them so that 90% traffic goes to first tag, 9% to next, and 1% to third and so on.
                                         format: int32
                                         type: integer
                                     required:
@@ -483,8 +459,9 @@ spec:
                           type: object
                       type: object
                     targetRef:
-                      description: TargetRef is a reference to the resource that represents
-                        a group of destinations.
+                      description: |-
+                        TargetRef is a reference to the resource that represents a group of
+                        destinations.
                       properties:
                         kind:
                           description: Kind of the referenced resource
@@ -501,15 +478,16 @@ spec:
                             cross mesh resources.
                           type: string
                         name:
-                          description: 'Name of the referenced resource. Can only
-                            be used with kinds: `MeshService`, `MeshServiceSubset`
-                            and `MeshGatewayRoute`'
+                          description: |-
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                            `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
                         tags:
                           additionalProperties:
                             type: string
-                          description: Tags used to select a subset of proxies by
-                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          description: |-
+                            Tags used to select a subset of proxies by tags. Can only be used with kinds
+                            `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
                   required:

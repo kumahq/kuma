@@ -37,7 +37,7 @@ require (
 	github.com/moby/sys/mountinfo v0.7.1
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
@@ -83,7 +83,7 @@ require (
 	k8s.io/kubectl v0.29.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.3
-	sigs.k8s.io/controller-tools v0.13.0
+	sigs.k8s.io/controller-tools v0.14.0
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.0.1-0.20231106150010-c39f0c1568c1
 	sigs.k8s.io/yaml v1.4.0
@@ -114,7 +114,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
-	github.com/fatih/color v1.15.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
