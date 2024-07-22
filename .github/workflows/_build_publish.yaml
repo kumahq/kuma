@@ -148,15 +148,9 @@ jobs:
           DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
           DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
         run: |-
-          if [[ -f "$HOME/.docker/config.json" ]]; then
-            cp $HOME/.docker/config.json $HOME/.docker/config.json.bak
-          fi
           make docker/login
           # ensure we always logout
           function on_exit() {
-            if [[ -f "$HOME/.docker/config.json.bak" ]]; then
-              mv $HOME/.docker/config.json.bak $HOME/.docker/config.json
-            fi
             make docker/logout
           }
           trap on_exit EXIT
