@@ -40,6 +40,7 @@ KUMA_NAMESPACE ?= kuma-system
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
 K3D_NETWORK_CNI ?= flannel
+K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=servicelb@server:0' \
@@ -47,6 +48,10 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
+
+ifneq ($(strip $(K3D_REGISTRY_FILE)),)
+	K3D_CLUSTER_CREATE_OPTS += --registry-config "$(K3D_REGISTRY_FILE)"
+endif
 
 ifeq ($(K3D_NETWORK_CNI),calico)
 	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
