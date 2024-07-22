@@ -37,8 +37,7 @@ Configuration placement:
 
 Chosen option: ?
 
-Chosen option for configuration placement: "Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense"
-because it fits the decision drivers (flexibility / restiveness).
+Chosen option for configuration placement: ?
 
 ## Pros and Cons of the Options
 
@@ -77,22 +76,22 @@ The table below shows a summary of policies and if it makes sense to configure t
 
 and if it makes sense for the user to pick where.
 
-| Policy                    | On sidecar   | On egress | On both | User configurable |
-|---------------------------|--------------|-----------|---------|-------------------|
-| MeshAccessLog             | Yes          | Yes       | Yes     | Yes               |
-| MeshCircuitBreaker        | Yes          | Maybe     | No      | No                |
-| MeshFaultInjection        | Maybe        | Yes       | No      | No                |
-| MeshHealthCheck           | Yes          | Maybe     | No      | No                |
-| MeshMetric                | Yes          | Yes       | Yes     | Maybe             |
-| MeshProxyPatch            | Yes          | Yes       | Yes     | Yes               |
-| MeshRateLimit             | Probably not | Yes       | No      | No                |
-| MeshRetry                 | Yes          | Maybe     | No      | Maybe             |
-| MeshTimeout               | Yes          | Maybe     | No      | No                |
-| MeshTrace                 | Yes          | Yes       | Yes     | Maybe             |
-| MeshTrafficPermission     | Maybe        | Yes       | Maybe   | Maybe             |
-| MeshLoadBalancingStrategy | Yes          | Yes       | No      | Maybe             |
-| MeshTCPRoute              | Yes          | Yes       | No      | No                |
-| MeshHTTPRoute             | Yes          | Yes       | No      | No                |
+| Policy                    | On sidecar    | On egress              | On both | User configurable |
+|---------------------------|---------------|------------------------|---------|-------------------|
+| MeshAccessLog             | Yes (in `to`) | Yes (both `to`/`from`) | Yes     | Yes               |
+| MeshCircuitBreaker        | Yes           | Maybe                  | No      | No                |
+| MeshFaultInjection        | Maybe         | Yes                    | No      | No                |
+| MeshHealthCheck           | Yes           | Maybe                  | No      | No                |
+| MeshMetric                | Yes           | Yes                    | Yes     | Maybe             |
+| MeshProxyPatch            | Yes           | Yes                    | Yes     | Yes               |
+| MeshRateLimit             | Probably not  | Yes                    | No      | No                |
+| MeshRetry                 | Yes           | Maybe                  | No      | Maybe             |
+| MeshTimeout               | Yes           | Maybe                  | No      | No                |
+| MeshTrace                 | Yes           | Yes                    | Yes     | Maybe             |
+| MeshTrafficPermission     | Maybe         | Yes                    | Maybe   | Maybe             |
+| MeshLoadBalancingStrategy | Yes           | Yes                    | No      | Maybe             |
+| MeshTCPRoute              | Yes           | Yes                    | No      | No                |
+| MeshHTTPRoute             | Yes           | Yes                    | No      | No                |
 
 In paragraphs below I go deeper into each policy.
 **After PR review / discussion I will update this table to reflect the actual decision**.
