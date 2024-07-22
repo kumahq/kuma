@@ -13,11 +13,16 @@ import (
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
-const meshExternalServiceKind = "MeshExternalService"
+const (
+	meshServiceKind          = "MeshService"
+	meshExternalServiceKind  = "MeshExternalService"
+	meshMultiZoneServiceKind = "MeshMultiZoneService"
+)
 
 var allowedKinds = map[string]struct{}{
-	"MeshService":           {},
-	meshExternalServiceKind: {},
+	meshServiceKind:          {},
+	meshExternalServiceKind:  {},
+	meshMultiZoneServiceKind: {},
 }
 
 func (d *DataplaneResource) Validate() error {
@@ -264,7 +269,7 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 	if tp != nil && tp.ReachableBackendRefs != nil {
 		for i, backendRef := range tp.ReachableBackendRefs {
 			switch backendRef.Kind {
-			case "MeshExternalService", "MeshService", "MeshMultiZoneService":
+			case meshMultiZoneServiceKind, meshServiceKind, meshExternalServiceKind:
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}

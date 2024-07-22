@@ -783,9 +783,9 @@ type Dataplane_Networking_TransparentProxying struct {
 	// The IP family mode to enable for. Can be "IPv4" or "DualStack".
 	IpFamilyMode Dataplane_Networking_TransparentProxying_IpFamilyMode `protobuf:"varint,6,opt,name=ip_family_mode,json=ipFamilyMode,proto3,enum=kuma.mesh.v1alpha1.Dataplane_Networking_TransparentProxying_IpFamilyMode" json:"ip_family_mode,omitempty"`
 	// List of reachable backend refs via transparent proxy when running with
-	// MeshExternalService and MeshService. Setting an explicit list
-	// can dramatically improve the performance of the mesh. If not specified,
-	// all services in the mesh are reachable.
+	// MeshExternalService, MeshService and MeshMultiZoneService. Setting an
+	// explicit list can dramatically improve the performance of the mesh. If
+	// not specified, all services in the mesh are reachable.
 	ReachableBackendRefs []*Dataplane_Networking_TransparentProxying_ReachableBackendRef `protobuf:"bytes,7,rep,name=reachable_backend_refs,json=reachableBackendRefs,proto3" json:"reachable_backend_refs,omitempty"`
 }
 

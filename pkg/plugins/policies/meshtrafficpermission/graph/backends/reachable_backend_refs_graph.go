@@ -100,14 +100,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 	return rules
 }
 
-// trimNotSupportedTags replaces tags present in subsets of top-level target ref.
-// Because we need to do policy matching on services instead of individual proxies, we have to handle subsets in a special way.
-// What we do is we only support subsets with predefined tags listed in SupportedTags.
-// This assumes that tags listed in SupportedTags have the same value between all instances of a given service.
-// Otherwise, we trim the tags making the target ref subset wider.
-//
-// Alternatively, we could have computed all common tags between instances of a given service and then allow subsets with those common tags.
-// However, this would require calling this function for every service.
+// trimNotSupportedTags removes tags that are not available in MeshService.dpTags + kuma.io/origin and kuma.io/zone
 func trimNotSupportedTags(mtps []*mtp_api.MeshTrafficPermissionResource, supportedTags map[string]string) []*mtp_api.MeshTrafficPermissionResource {
 	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {

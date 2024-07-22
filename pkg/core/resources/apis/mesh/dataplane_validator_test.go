@@ -1235,7 +1235,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.outbound[0].backendRef.kind
-                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
+                  message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
                 - field: networking.outbound[0].backendRef.name
                   message: cannot be empty
                 - field: networking.outbound[0].backendRef.port
@@ -1310,7 +1310,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.transparentProxing.reachableBackendRefs[0].kind
-                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
+                  message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
                 - field: networking.transparentProxing.reachableBackendRefs[0].labels
                   message: labels cannot be defined when name is specified
                 - field: networking.transparentProxing.reachableBackendRefs[1].labels

@@ -113,15 +113,8 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 		if reachableBackend.Port != nil {
 			key.Port = reachableBackend.Port.GetValue()
 		}
-		resourcesLabels := mc.MeshServiceNamesByLabels
-		if reachableBackend.Kind == "MeshExternalService" {
-			resourcesLabels = mc.MeshExternalServiceNamesByLabels
-		}
-		if reachableBackend.Kind == "MeshMultiZoneService" {
-			resourcesLabels = mc.MeshMultiZoneServiceNamesByLabels
-		}
 		if len(reachableBackend.Labels) > 0 {
-			reachable := getResourceNamesForLabels(resourcesLabels, reachableBackend.Labels)
+			reachable := mc.getResourceNamesForLabels(reachableBackend.Kind, reachableBackend.Labels)
 			for name, count := range reachable {
 				if count == len(reachableBackend.Labels) {
 					reachableBackends[BackendKey{
@@ -136,6 +129,30 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 		}
 	}
 	return reachableBackends
+}
+
+func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[string]int {
+	reachable := map[string]int{}
+	for key, value := range labels {
+		var values map[string][]string
+		var found bool
+		switch kind {
+		case string(meshexternalservice_api.MeshExternalServiceType):
+			values, found = mc.MeshExternalServiceNamesByLabels[key]
+		case string(meshservice_api.MeshServiceType):
+			values, found = mc.MeshServiceNamesByLabels[key]
+		case string(meshmzservice_api.MeshMultiZoneServiceType):
+			values, found = mc.MeshMultiZoneServiceNamesByLabels[key]
+		}
+		if found {
+			if _, ok := values[value]; ok {
+				for _, name := range values[value] {
+					reachable[name]++
+				}
+			}
+		}
+	}
+	return reachable
 }
 
 func (mc *MeshContext) Get(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
@@ -257,18 +274,4 @@ func (m AggregatedMeshContexts) AllMeshGateways() []*core_mesh.MeshGatewayResour
 		resources = append(resources, meshCtx.Resources.MeshGateways().Items...)
 	}
 	return resources
-}
-
-func getResourceNamesForLabels(resourcesLabels map[string]map[string][]string, labels map[string]string) map[string]int {
-	reachable := map[string]int{}
-	for key, value := range labels {
-		if _, ok := resourcesLabels[key]; ok {
-			if _, ok := resourcesLabels[key][value]; ok {
-				for _, name := range resourcesLabels[key][value] {
-					reachable[name]++
-				}
-			}
-		}
-	}
-	return reachable
 }
