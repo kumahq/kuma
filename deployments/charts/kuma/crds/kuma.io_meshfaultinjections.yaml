@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -28,14 +28,19 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -49,8 +54,9 @@ spec:
                 items:
                   properties:
                     default:
-                      description: Default is a configuration specific to the group
-                        of destinations referenced in 'targetRef'
+                      description: |-
+                        Default is a configuration specific to the group of destinations referenced in
+                        'targetRef'
                       properties:
                         http:
                           description: Http allows to define list of Http faults between
@@ -60,10 +66,10 @@ spec:
                               of faults between dataplanes.
                             properties:
                               abort:
-                                description: Abort defines a configuration of not
-                                  delivering requests to destination service and replacing
-                                  the responses from destination dataplane by predefined
-                                  status code
+                                description: |-
+                                  Abort defines a configuration of not delivering requests to destination
+                                  service and replacing the responses from destination dataplane by
+                                  predefined status code
                                 properties:
                                   httpStatus:
                                     description: HTTP status code which will be returned
@@ -74,9 +80,9 @@ spec:
                                     anyOf:
                                     - type: integer
                                     - type: string
-                                    description: Percentage of requests on which abort
-                                      will be injected, has to be either int or decimal
-                                      represented as string.
+                                    description: |-
+                                      Percentage of requests on which abort will be injected, has to be
+                                      either int or decimal represented as string.
                                     x-kubernetes-int-or-string: true
                                 required:
                                 - httpStatus
@@ -90,9 +96,9 @@ spec:
                                     anyOf:
                                     - type: integer
                                     - type: string
-                                    description: Percentage of requests on which delay
-                                      will be injected, has to be either int or decimal
-                                      represented as string.
+                                    description: |-
+                                      Percentage of requests on which delay will be injected, has to be
+                                      either int or decimal represented as string.
                                     x-kubernetes-int-or-string: true
                                   value:
                                     description: The duration during which the response
@@ -103,20 +109,22 @@ spec:
                                 - value
                                 type: object
                               responseBandwidth:
-                                description: ResponseBandwidth defines a configuration
-                                  to limit the speed of responding to the requests
+                                description: |-
+                                  ResponseBandwidth defines a configuration to limit the speed of
+                                  responding to the requests
                                 properties:
                                   limit:
-                                    description: Limit is represented by value measure
-                                      in gbps, mbps, kbps or bps, e.g. 10kbps
+                                    description: |-
+                                      Limit is represented by value measure in gbps, mbps, kbps or bps, e.g.
+                                      10kbps
                                     type: string
                                   percentage:
                                     anyOf:
                                     - type: integer
                                     - type: string
-                                    description: Percentage of requests on which response
-                                      bandwidth limit will be either int or decimal
-                                      represented as string.
+                                    description: |-
+                                      Percentage of requests on which response bandwidth limit will be
+                                      either int or decimal represented as string.
                                     x-kubernetes-int-or-string: true
                                 required:
                                 - limit
@@ -126,8 +134,9 @@ spec:
                           type: array
                       type: object
                     targetRef:
-                      description: TargetRef is a reference to the resource that represents
-                        a group of destinations.
+                      description: |-
+                        TargetRef is a reference to the resource that represents a group of
+                        destinations.
                       properties:
                         kind:
                           description: Kind of the referenced resource
@@ -144,15 +153,16 @@ spec:
                             cross mesh resources.
                           type: string
                         name:
-                          description: 'Name of the referenced resource. Can only
-                            be used with kinds: `MeshService`, `MeshServiceSubset`
-                            and `MeshGatewayRoute`'
+                          description: |-
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                            `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
                         tags:
                           additionalProperties:
                             type: string
-                          description: Tags used to select a subset of proxies by
-                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          description: |-
+                            Tags used to select a subset of proxies by tags. Can only be used with kinds
+                            `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
                   required:
@@ -160,9 +170,10 @@ spec:
                   type: object
                 type: array
               targetRef:
-                description: TargetRef is a reference to the resource the policy takes
-                  an effect on. The resource could be either a real store object or
-                  virtual resource defined inplace.
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined inplace.
                 properties:
                   kind:
                     description: Kind of the referenced resource
@@ -179,14 +190,16 @@ spec:
                       mesh resources.
                     type: string
                   name:
-                    description: 'Name of the referenced resource. Can only be used
-                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                      `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
                   tags:
                     additionalProperties:
                       type: string
-                    description: Tags used to select a subset of proxies by tags.
-                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
             required:
