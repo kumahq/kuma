@@ -75,6 +75,7 @@ jobs:
           done
       - name: "pull by k3d"
         run: |
+          mkdir ./build
           make test/e2e/k8s/start/cluster/kuma-1
           $CI_TOOLS_DIR/bin/k3d kubeconfig get kuma-1 > ./kuma-1.kubeconfig
           export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
@@ -155,7 +156,6 @@ jobs:
           done
       - name: "pull by k3d after login"
         run: |
-          mkdir ./build
           export KUBECONFIG=$(pwd)/kuma-1.kubeconfig
           cat <<EOF | kubectl apply -f -
           apiVersion: v1
