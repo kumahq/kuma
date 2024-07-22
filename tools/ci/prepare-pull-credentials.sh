@@ -6,7 +6,7 @@ if [[ "$DOCKERHUB_PULL_CREDENTIAL" == "" ]]; then
 else
     DOCKER_USER=$(echo $DOCKERHUB_PULL_CREDENTIAL | base64 --decode | cut -d ':' -f 1)
     DOCKER_PWD=$(echo $DOCKERHUB_PULL_CREDENTIAL | base64 --decode | cut -d ':' -f 2)
-    echo -n $(DOCKER_PWD) | docker login -u $(DOCKER_USER) --password-stdin > /dev/null
+    echo -n $DOCKER_PWD | docker login -u $DOCKER_USER --password-stdin > /dev/null
     cat <<EOF > $HOME/.docker/k3d-registry.yaml
 configs:
   registry-1.docker.io:
