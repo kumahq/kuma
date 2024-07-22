@@ -16,6 +16,7 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/api-server/mappers"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -39,6 +40,11 @@ var _ = Describe("kumactl export", func() {
 		defs := registry.Global().ObjectDescriptors()
 		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, defs...)
 		Expect(err).ToNot(HaveOccurred())
+		res := test_kumactl.DummyIndexResponse
+		res.Version = "0.0.0-testversion"
+		rootCtx.Runtime.NewAPIServerClient = func(client util_http.Client) resources.ApiServerClient {
+			return resources.NewStaticApiServiceClient(res)
+		}
 		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
 			return fileBasedKubernetesResourcesClient{}
 		}
