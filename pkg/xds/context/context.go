@@ -155,21 +155,6 @@ func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]
 	return reachable
 }
 
-func (mc *MeshContext) Get(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
-	if tt == nil {
-		return nil
-	}
-	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		core.Log.WithName("xds").Info("Tracing backend is not found. Ignoring.",
-			"backendName", tt.Spec.GetConf().GetBackend(),
-			"trafficTraceName", tt.GetMeta().GetName(),
-			"trafficTraceMesh", tt.GetMeta().GetMesh())
-		return nil
-	} else {
-		return tb
-	}
-}
-
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
 	if tt == nil {
 		return nil

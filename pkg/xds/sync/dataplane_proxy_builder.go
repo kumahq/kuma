@@ -28,7 +28,6 @@ type DataplaneProxyBuilder struct {
 	Zone           string
 	APIVersion     core_xds.APIVersion
 	IncludeShadow  bool
-	UseMeshService bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
