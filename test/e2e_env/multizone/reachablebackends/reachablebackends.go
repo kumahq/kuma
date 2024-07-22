@@ -24,6 +24,9 @@ func ReachableBackends() {
       - kind: MeshExternalService
         labels:
           kuma.io/access: external-service
+      - kind: MeshMultiZoneService
+        labels:
+          reachable: "true"
 `, namespace)
 
 	meshPassthrough := fmt.Sprintf(`
@@ -62,8 +65,7 @@ spec:
 `, serviceName, meshName, serviceName, serviceName)
 	}
 
-	hostnameGeneratorMs := func() string {
-		return fmt.Sprintf(`
+	hostnameGeneratorMs := fmt.Sprintf(`
 type: HostnameGenerator
 name: hg-ms-reachable
 spec:
@@ -73,10 +75,8 @@ spec:
         k8s.kuma.io/namespace: %s
   template: "{{ .DisplayName }}.mesh"
 `, namespace)
-	}
 
-	hostnameGeneratorMes := func() string {
-		return fmt.Sprintf(`
+	hostnameGeneratorMes := fmt.Sprintf(`
 type: HostnameGenerator
 name: hg-mes-reachable
 spec:
@@ -86,15 +86,58 @@ spec:
         k8s.kuma.io/namespace: %s
   template: "{{ .DisplayName }}.mesh"
 `, namespaceOutside)
-	}
+
+	hostnameGeneratorMmzs := `
+type: HostnameGenerator
+name: hg-mmzs-reachable
+spec:
+  template: '{{ .DisplayName }}.global.mmzsreachable'
+  selector:
+    meshMultiZoneService:
+      matchLabels:
+        test-name: mmzsreachable
+`
+
+	mmzs := fmt.Sprintf(`
+type: MeshMultiZoneService
+name: other-zone-test-server
+mesh: %s
+labels:
+  reachable: "true"
+  test-name: mmzsreachable
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: other-zone-test-server
+        k8s.kuma.io/namespace: %s
+`, meshName, namespace)
+
+	mmzsNotAccessible := fmt.Sprintf(`
+type: MeshMultiZoneService
+name: other-zone-not-accessible
+mesh: %s
+labels:
+  reachable: "false"
+  test-name: mmzsreachable
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: other-zone-not-accessible
+        k8s.kuma.io/namespace: %s
+`, meshName, namespace)
 
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(hostnameGeneratorMes())).
-			Install(YamlUniversal(hostnameGeneratorMs())).
+			Install(YamlUniversal(hostnameGeneratorMes)).
+			Install(YamlUniversal(hostnameGeneratorMs)).
+			Install(YamlUniversal(hostnameGeneratorMmzs)).
+			Install(YamlUniversal(mmzs)).
+			Install(YamlUniversal(mmzsNotAccessible)).
 			Install(YamlUniversal(meshExternalService("external-service"))).
 			Install(YamlUniversal(meshExternalService("not-accessible-es"))).
 			Setup(multizone.Global)
@@ -133,6 +176,70 @@ spec:
 			)).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
+
+		// Zone Kube2
+		kubeServiceYAML := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: other-zone-test-server
+  namespace: %s
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: %s
+    kuma.io/managed-by: k8s-controller
+    k8s.kuma.io/is-headless-service: "false"
+spec:
+  selector:
+    dataplaneTags:
+      app: other-zone-test-server
+      k8s.kuma.io/namespace: %s
+  ports:
+  - port: 80
+    name: main
+    targetPort: main
+    appProtocol: http
+`, namespace, meshName, namespace)
+		kubeServiceNotAccessibleYAML := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: other-zone-not-accessible
+  namespace: %s
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: %s
+    kuma.io/managed-by: k8s-controller
+    k8s.kuma.io/is-headless-service: "false"
+spec:
+  selector:
+    dataplaneTags:
+      app: other-zone-not-accessible
+      k8s.kuma.io/namespace: %s
+  ports:
+  - port: 80
+    name: main
+    targetPort: main
+    appProtocol: http
+`, namespace, meshName, namespace)
+		err = NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithName("other-zone-test-server"),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("other-zone-not-accessible"),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
+			)).
+			Install(YamlK8s(kubeServiceYAML)).
+			Install(YamlK8s(kubeServiceNotAccessibleYAML)).
+			Setup(multizone.KubeZone2)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
@@ -143,6 +250,7 @@ spec:
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespaceOutside)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
@@ -158,6 +266,14 @@ spec:
 		Eventually(func(g Gomega) {
 			_, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server", "external-service.mesh",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			_, err := client.CollectFailure(
+				multizone.KubeZone1, "client-server", "other-zone-test-server.global.mmzsreachable",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -207,6 +323,17 @@ spec:
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
+		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
+
+		Consistently(func(g Gomega) {
+			// when trying to connect to non-reachable mesh multizone service via Kuma DNS
+			response, err := client.CollectFailure(
+				multizone.KubeZone1, "client-server", "other-zone-not-accessible.global.mmzsreachable",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
+			// then it fails because we don't encrypt traffic to unknown destination in the mesh
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(6)))
 		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 	})
 }
