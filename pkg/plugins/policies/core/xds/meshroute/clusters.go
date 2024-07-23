@@ -91,6 +91,11 @@ func GenerateClusters(
 					}
 				} else {
 					if service.BackendRef().ReferencesRealObject() {
+						if service.BackendRef().Kind == common_api.MeshService {
+							if ms := meshCtx.MeshServiceByName[service.BackendRef().Name]; ms != nil {
+								tlsReady = ms.Status.TLS.Status == v1alpha1.TLSReady
+							}
+						}
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 							proxy.SecretsTracker,
 							meshCtx.Resource,
