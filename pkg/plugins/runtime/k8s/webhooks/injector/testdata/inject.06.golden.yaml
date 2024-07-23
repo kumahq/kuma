@@ -132,7 +132,7 @@ spec:
     - --redirect-inbound=false
     - --redirect-inbound-port
     - "15006"
-    - --kuma-dp-uid
+    - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
     - ""

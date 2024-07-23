@@ -90,7 +90,7 @@
   branch: release-2.7
   lts: true
 - edition: kuma
-  version: 2.8.1
+  version: 2.8.2
   release: 2.8.x
   latest: true
   releaseDate: "2024-06-24"

@@ -42,18 +42,18 @@ spec:
     - --redirect-inbound=true
     - --redirect-inbound-port
     - "15006"
-    - --kuma-dp-uid
+    - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
     - ""
     - --exclude-outbound-ports
     - ""
     - --verbose
+    - --ip-family-mode
+    - dualstack
     - --redirect-all-dns-traffic
     - --redirect-dns-port
     - "25053"
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install

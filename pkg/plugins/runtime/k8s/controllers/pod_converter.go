@@ -111,7 +111,6 @@ func (p *PodConverter) dataplaneFor(
 
 		tpEnabledIPMode, ipModeExists := annotations.GetStringWithDefault(metadata.IpFamilyModeDualStack,
 			metadata.KumaTransparentProxyingIPFamilyMode)
-		inboundPortV6, v6PortExists, _ := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 		ipMode := mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
 		if ipModeExists {
 			switch tpEnabledIPMode {
@@ -124,10 +123,6 @@ func (p *PodConverter) dataplaneFor(
 			default:
 				return nil, errors.Errorf("invalid ip family mode '%s'", ipMode)
 			}
-		} else if v6PortExists && inboundPortV6 == 0 {
-			// an existing pod that was created before the introduction of the `KumaTransparentProxyingIPFamilyMode` annotation
-			// can disable ipv6 using such annotation
-			ipMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
 		}
 
 		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
@@ -138,10 +133,9 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
 		}
 		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPortInbound:   inboundPort,
-			RedirectPortOutbound:  outboundPort,
-			RedirectPortInboundV6: inboundPortV6,
-			IpFamilyMode:          ipMode,
+			RedirectPortInbound:  inboundPort,
+			RedirectPortOutbound: outboundPort,
+			IpFamilyMode:         ipMode,
 		}
 
 		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {

@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/maps"
@@ -69,6 +70,8 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 		resTypeAbbrv = "ms"
 	case meshexternalservice_api.MeshExternalServiceType:
 		resTypeAbbrv = "mes"
+	case meshmzservice_api.MeshMultiZoneServiceType:
+		resTypeAbbrv = "mzms"
 	default:
 		panic("resource type not supported for SNI")
 	}

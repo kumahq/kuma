@@ -1,3 +1,4 @@
+# Product: Kuma, Version: 0.0.0-testversion, Hostname: localhost, ClusterId: test-cluster, InstanceId: test-instance
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:

@@ -28,10 +28,9 @@ var IPTypeMap = map[bool]string{
 
 // Default ports used for iptables redirection.
 const (
-	DefaultRedirectInbountPort     uint16 = 15006
-	DefaultRedirectInbountPortIPv6 uint16 = 15010
-	DefaultRedirectOutboundPort    uint16 = 15001
-	DefaultRedirectDNSPort         uint16 = 15053
+	DefaultRedirectInbountPort  uint16 = 15006
+	DefaultRedirectOutboundPort uint16 = 15001
+	DefaultRedirectDNSPort      uint16 = 15053
 )
 
 const (
@@ -189,3 +188,10 @@ const IptablesRuleCommentPrefix = "kuma/mesh/transparent/proxy"
 // chains. The chains named with this prefix are used to apply specific rules
 // necessary for the operation of the transparent proxy.
 const IptablesChainsPrefix = "KUMA_MESH"
+
+// Default user identification constants used for running kuma-dp.
+// These defaults are utilized when no specific user is provided.
+const (
+	OwnerDefaultUID      = "5678"
+	OwnerDefaultUsername = "kuma-dp"
+)
