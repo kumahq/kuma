@@ -200,6 +200,7 @@ spec:
 		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(autoGenerateUniversalCluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
+		Expect(autoGenerateUniversalCluster.DismissCluster()).To(Succeed())
 	})
 
 	type testCase struct {
