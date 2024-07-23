@@ -94,7 +94,7 @@ var _ = Describe("MeshService generator", func() {
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 	})
 
 	It("should not change MeshService if a conflicting Dataplanes appears", func() {
@@ -112,7 +112,7 @@ var _ = Describe("MeshService generator", func() {
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 
 		err = samples.DataplaneBackendBuilder().WithName("dp-2").
 			AddInbound(
@@ -135,7 +135,7 @@ var _ = Describe("MeshService generator", func() {
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 	})
 
 	It("should allow MeshService to be changed if all Dataplanes change", func() {
@@ -153,7 +153,7 @@ var _ = Describe("MeshService generator", func() {
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 
 		dp := core_mesh.NewDataplaneResource()
 		Expect(resManager.Get(context.Background(), dp, store.GetByKey("dp-1", model.DefaultMesh))).To(Succeed())
@@ -170,12 +170,12 @@ var _ = Describe("MeshService generator", func() {
 					AppProtocol: core_mesh.ProtocolTCP,
 				},
 			}))
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 	})
 
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
-		}, "10s", "100ms").Should(Succeed())
+		}, "2s", "100ms").Should(Succeed())
 	})
 })
