@@ -49,10 +49,6 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
 	--timeout 120s
 
-ifneq ($(strip $(K3D_REGISTRY_FILE)),)
-	K3D_CLUSTER_CREATE_OPTS += --registry-config "$(K3D_REGISTRY_FILE)"
-endif
-
 ifeq ($(K3D_NETWORK_CNI),calico)
 	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
@@ -84,11 +80,22 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
+.PHONY: k3d/setup-docker-credentials
+k3d/setup-docker-credentials:
+ifneq ($(strip $(K3D_PULL_CREDENTIAL)),)
+  @DOCKER_USER=$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
+  DOCKER_PWD=$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
+  echo -n $${DOCKER_PWD} | docker login -u $${DOCKER_USER} --password-stdin > /dev/null ; \
+  echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\": \"$${DOCKER_PWD}\"}}}}" | $(YQ) -o yaml -P > "$(HOME)/.docker/k3d-registry.yaml"
+  K3D_CLUSTER_CREATE_OPTS += --registry-config "$(HOME)/.docker/k3d-registry.yaml"
+endif
+
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
+	@if [[ "$(K3D_CLUSTER_CREATE_OPTS)" == *"k3d-registry.yaml" ]]; then rm "$(HOME)/.docker/k3d-registry.yaml"; fi
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
