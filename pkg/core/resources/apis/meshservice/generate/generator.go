@@ -176,7 +176,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			dps = append(dps, dp.dataplane.GetName())
 		}
 		if len(conflicting) > 0 {
-			log.Info("conflicting for MeshService", "dps", dps)
+			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		if newMeshService != nil && !reflect.DeepEqual(meshService.Spec, newMeshService) {
@@ -204,7 +204,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			dps = append(dps, dp.dataplane.GetName())
 		}
 		if len(conflicting) > 0 {
-			log.Info("conflicting for MeshService", "dps", dps)
+			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
 			mesh_proto.ManagedByLabel:      "meshservice-generator",
