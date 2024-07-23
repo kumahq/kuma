@@ -151,6 +151,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 }
 
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource) {
+	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range dataplanes {
 		// TODO order these
@@ -164,25 +165,27 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 
 	msList := meshservice_api.MeshServiceResourceList{}
 	if err := g.resManager.List(ctx, &msList, store.ListByMesh(mesh)); err != nil {
-		g.logger.Error(err, "failed to list MeshServices")
+		log.Error(err, "failed to list MeshServices")
 	}
 
 	for _, meshService := range msList.Items {
+		log := log.WithValues("MeshService", meshService.GetMeta().GetName())
 		conflicting, newMeshService := checkMeshServicesConsistency(meshService.Spec, meshservicesByName[meshService.GetMeta().GetName()])
 		var dps []string
 		for _, dp := range conflicting {
 			dps = append(dps, dp.dataplane.GetName())
 		}
 		if len(conflicting) > 0 {
-			g.logger.Info("conflicting for MeshService", "MeshService", meshService.GetMeta().GetName(), "dps", dps)
+			log.Info("conflicting for MeshService", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		if newMeshService != nil && !reflect.DeepEqual(meshService.Spec, newMeshService) {
 			meshService.Spec = newMeshService
 			if err := g.resManager.Update(ctx, meshService); err != nil {
-				g.logger.Error(err, "couldn't update MeshService", "name", meshService.GetMeta().GetName())
+				log.Error(err, "couldn't update MeshService")
 				continue
 			}
+			log.Info("updated MeshService")
 		} else if newMeshService == nil {
 			if err := g.resManager.Delete(ctx, meshService, store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
 				log.Error(err, "couldn't delete MeshService")
@@ -192,6 +195,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		}
 	}
 	for name, meshServices := range meshservicesByName {
+		log := log.WithValues("MeshService", name)
 		conflicting, newMeshService := checkMeshServicesConsistency(nil, meshServices)
 		meshService := meshservice_api.NewMeshServiceResource()
 		meshService.Spec = newMeshService
@@ -200,15 +204,16 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			dps = append(dps, dp.dataplane.GetName())
 		}
 		if len(conflicting) > 0 {
-			g.logger.Info("conflicting for MeshService", "MeshService", meshService.GetMeta().GetName(), "dps", dps)
+			log.Info("conflicting for MeshService", "dps", dps)
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
 			mesh_proto.ManagedByLabel:      "meshservice-generator",
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 		})); err != nil {
-			g.logger.Error(err, "couldn't create MeshService", "name", name)
+			log.Error(err, "couldn't create MeshService")
 			continue
 		}
+		log.Info("created MeshService")
 	}
 }
 
