@@ -3,7 +3,6 @@ package generate
 import (
 	"context"
 	"reflect"
-	"slices"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -109,9 +108,7 @@ func checkMeshServicesConsistency(
 	}
 	var conflicting []dataplaneAndMeshService
 	for _, generatedMeshService := range generated {
-		if !slices.EqualFunc(meshService.Ports, generatedMeshService.meshService.Ports, func(a, b meshservice_api.Port) bool {
-			return reflect.DeepEqual(a, b)
-		}) {
+		if servicesDiffer(meshService, generatedMeshService.meshService) {
 			conflicting = append(conflicting, generatedMeshService)
 		}
 	}
@@ -151,6 +148,10 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 	}
 }
 
+func servicesDiffer(a, b *meshservice_api.MeshService) bool {
+	return !reflect.DeepEqual(a.Ports, b.Ports)
+}
+
 func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, meshServices []*meshservice_api.MeshServiceResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
@@ -175,7 +176,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
-		if newMeshService != nil && !reflect.DeepEqual(meshService.Spec, newMeshService) {
+		if newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService) {
 			meshService.Spec = newMeshService
 			if err := g.resManager.Update(ctx, meshService); err != nil {
 				log.Error(err, "couldn't update MeshService")
