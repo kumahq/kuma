@@ -139,7 +139,8 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
 				dataplanes := meshCtx.Resources.Dataplanes()
-				g.generate(ctx, mesh, dataplanes.Items)
+				meshServices := meshCtx.Resources.MeshServices()
+				g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
 			}
 			g.metric.Observe(float64(time.Since(start).Milliseconds()))
 
@@ -150,7 +151,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource) {
+func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*core_mesh.DataplaneResource, meshServices []*meshservice_api.MeshServiceResource) {
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range dataplanes {
@@ -163,12 +164,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		}
 	}
 
-	msList := meshservice_api.MeshServiceResourceList{}
-	if err := g.resManager.List(ctx, &msList, store.ListByMesh(mesh)); err != nil {
-		log.Error(err, "failed to list MeshServices")
-	}
-
-	for _, meshService := range msList.Items {
+	for _, meshService := range meshServices {
 		log := log.WithValues("MeshService", meshService.GetMeta().GetName())
 		conflicting, newMeshService := checkMeshServicesConsistency(meshService.Spec, meshservicesByName[meshService.GetMeta().GetName()])
 		var dps []string
