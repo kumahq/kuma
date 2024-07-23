@@ -46,7 +46,7 @@ This information is computed by the source zone and synced to global for visibil
 
 Fields:
 * `dataplaneProxies.connected` - number of DPPs connected to the Zone CP
-* `dataplaneProxies.healthy` - number of DPPs connected with all healthy inbounds
+* `dataplaneProxies.healthy` - number of DPPs connected with all healthy inbounds selected by the MeshService
 
 Fields that are in `ServiceInsights`, but won't be included in status of `MeshService`
 * `status` - If we want to present in the GUI if `MeshService` is available to consume, we can use `spec.state` described in the next section
