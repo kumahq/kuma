@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -28,14 +28,19 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -48,16 +53,18 @@ spec:
                 items:
                   properties:
                     default:
-                      description: Default is a configuration specific to the group
-                        of clients referenced in 'targetRef'
+                      description: |-
+                        Default is a configuration specific to the group of clients referenced in
+                        'targetRef'
                       properties:
                         local:
                           description: LocalConf defines local http or/and tcp rate
                             limit configuration
                           properties:
                             http:
-                              description: LocalHTTP defines confguration of local
-                                HTTP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                              description: |-
+                                LocalHTTP defines confguration of local HTTP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
                               properties:
                                 disabled:
                                   description: Define if rate limiting should be disabled.
@@ -124,9 +131,9 @@ spec:
                                         is accounted for.
                                       type: string
                                     num:
-                                      description: Number of units per interval (depending
-                                        on usage it can be a number of requests, or
-                                        a number of connections).
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
                                       format: int32
                                       type: integer
                                   required:
@@ -135,8 +142,9 @@ spec:
                                   type: object
                               type: object
                             tcp:
-                              description: LocalTCP defines confguration of local
-                                TCP rate limiting https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                              description: |-
+                                LocalTCP defines confguration of local TCP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
                               properties:
                                 connectionRate:
                                   description: Defines how many connections are allowed
@@ -147,9 +155,9 @@ spec:
                                         is accounted for.
                                       type: string
                                     num:
-                                      description: Number of units per interval (depending
-                                        on usage it can be a number of requests, or
-                                        a number of connections).
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
                                       format: int32
                                       type: integer
                                   required:
@@ -157,15 +165,17 @@ spec:
                                   - num
                                   type: object
                                 disabled:
-                                  description: 'Define if rate limiting should be
-                                    disabled. Default: false'
+                                  description: |-
+                                    Define if rate limiting should be disabled.
+                                    Default: false
                                   type: boolean
                               type: object
                           type: object
                       type: object
                     targetRef:
-                      description: TargetRef is a reference to the resource that represents
-                        a group of clients.
+                      description: |-
+                        TargetRef is a reference to the resource that represents a group of
+                        clients.
                       properties:
                         kind:
                           description: Kind of the referenced resource
@@ -182,15 +192,16 @@ spec:
                             cross mesh resources.
                           type: string
                         name:
-                          description: 'Name of the referenced resource. Can only
-                            be used with kinds: `MeshService`, `MeshServiceSubset`
-                            and `MeshGatewayRoute`'
+                          description: |-
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                            `MeshServiceSubset` and `MeshGatewayRoute`
                           type: string
                         tags:
                           additionalProperties:
                             type: string
-                          description: Tags used to select a subset of proxies by
-                            tags. Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                          description: |-
+                            Tags used to select a subset of proxies by tags. Can only be used with kinds
+                            `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
                   required:
@@ -198,9 +209,10 @@ spec:
                   type: object
                 type: array
               targetRef:
-                description: TargetRef is a reference to the resource the policy takes
-                  an effect on. The resource could be either a real store object or
-                  virtual resource defined inplace.
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined inplace.
                 properties:
                   kind:
                     description: Kind of the referenced resource
@@ -217,14 +229,16 @@ spec:
                       mesh resources.
                     type: string
                   name:
-                    description: 'Name of the referenced resource. Can only be used
-                      with kinds: `MeshService`, `MeshServiceSubset` and `MeshGatewayRoute`'
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                      `MeshServiceSubset` and `MeshGatewayRoute`
                     type: string
                   tags:
                     additionalProperties:
                       type: string
-                    description: Tags used to select a subset of proxies by tags.
-                      Can only be used with kinds `MeshSubset` and `MeshServiceSubset`
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
             required:
