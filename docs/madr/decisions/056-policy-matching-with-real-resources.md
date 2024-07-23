@@ -303,7 +303,12 @@ spec:
 Current behaviour is 'action: Deny' for all, because `aaa` happens to be more specific than `bbb`.
 The new behaviour is 'action: Deny' for all except `backend` and 'action: Allow' for `backend`.
 If such change in behaviour happens it probably means the user already had policies in the obscure state. 
-The change is harmless, and we don't need to provide a migration path for `from[]`.
+
+Technically, there is a legitimate case when users could rely on the existing behaviour. 
+In example, Mesh Operator decided to step in and create policy named `aaaaaa-the-most-specific-mtp` to override 
+the unwanted behaviour that was configured by application developers.
+We should cover the change in UPGRADE.md and docs to make sure it's visible for users,
+but overall the change is harmless and doesn't require the backwards compatibility.
 
 ### Sparse ResourceRules structure
 
