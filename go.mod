@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121
 	github.com/cilium/ebpf v0.15.0
-	github.com/containernetworking/cni v1.2.2
+	github.com/containernetworking/cni v1.2.3
 	github.com/containernetworking/plugins v1.5.1
 	github.com/emicklei/go-restful/v3 v3.12.1
 	github.com/envoyproxy/go-control-plane v0.12.0
@@ -34,7 +34,7 @@ require (
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/miekg/dns v1.1.61
-	github.com/moby/sys/mountinfo v0.7.1
+	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
@@ -75,13 +75,13 @@ require (
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.15.3
-	k8s.io/api v0.30.2
-	k8s.io/apiextensions-apiserver v0.30.2
-	k8s.io/apimachinery v0.30.2
-	k8s.io/client-go v0.30.2
+	k8s.io/api v0.30.3
+	k8s.io/apiextensions-apiserver v0.30.3
+	k8s.io/apimachinery v0.30.3
+	k8s.io/client-go v0.30.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108
-	k8s.io/kubectl v0.30.2
+	k8s.io/kubectl v0.30.3
 	k8s.io/utils v0.0.0-20240423183400-0849a56e8f22
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/controller-tools v0.15.0

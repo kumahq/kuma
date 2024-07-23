@@ -21,7 +21,7 @@ func LocalityAwareLBGateway() {
 
 	meshLoadBalancingStrategyTestServer := fmt.Sprintf(`
 type: MeshLoadBalancingStrategy
-name: mlbs-1
+name: mlbs-1-gateway
 mesh: %s
 spec:
   targetRef:
@@ -52,10 +52,10 @@ spec:
 	meshGateway := YamlUniversal(fmt.Sprintf(`
 type: MeshGateway
 mesh: %s
-name: edge-gateway
+name: lb-edge-gateway
 selectors:
 - match:
-    kuma.io/service: edge-gateway
+    kuma.io/service: lb-edge-gateway
 conf:
   listeners:
   - port: 8080
@@ -67,10 +67,10 @@ conf:
 	meshGatewayRoute := YamlUniversal(fmt.Sprintf(`
 type: MeshGatewayRoute
 mesh: %s
-name: edge-gateway
+name: lb-edge-gateway-route
 selectors:
 - match:
-    kuma.io/service: edge-gateway
+    kuma.io/service: lb-edge-gateway
 conf:
   http:
     rules:
@@ -93,7 +93,7 @@ conf:
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
-			Install(GatewayProxyUniversal(mesh, "edge-gateway", WithConcurrency(1))).
+			Install(GatewayProxyUniversal(mesh, "lb-edge-gateway", WithConcurrency(1))).
 			Install(TestServerUniversal("gateway-client", mesh, WithoutDataplane())).
 			Install(TestServerUniversal("test-server-zone-4", mesh,
 				WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
@@ -148,14 +148,14 @@ conf:
 
 	It("should route based on defined strategy when making requests through gateway", func() {
 		// no lb priorities
-		gatewayIP := multizone.UniZone1.GetApp("edge-gateway").GetIP()
+		gatewayIP := multizone.UniZone1.GetApp("lb-edge-gateway").GetIP()
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(200))
 		}, "2m", "10s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 50, 10)),
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 25, 10)),
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 25, 10)),
+				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 40)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 50, 20)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 50, 20)),
 			),
 		)
 

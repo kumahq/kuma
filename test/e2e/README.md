@@ -7,8 +7,8 @@ Executing those tests is very expensive, it is the longest job on the CI.
 Adding the tests here potentially slows down the velocity of all contributors.
 Please consider writing the test in `e2e_env` directory instead, where all the tests are parallelized on one Kuma deployment.
 
-On CircleCI, all the tests are parallelized into multiple VMs. You can control on which VM the test will run using `job-X` label. 
-All the tests requires `job-X` label, otherwise CircleCI won't run them.
+All the tests are parallelized into multiple VMs. You can control on which VM the test will run using `job-X` label. 
+All the tests require `job-X` label, otherwise they won't be run.
 
 ## Reasons to write the test in this package over `e2e_env`
 

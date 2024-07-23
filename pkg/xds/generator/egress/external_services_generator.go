@@ -37,6 +37,8 @@ func (g *ExternalServicesGenerator) Generate(
 		nil,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 		nil,
+		nil,
+		"",
 	)
 	services := g.buildServices(endpointMap, zone, meshResources)
 

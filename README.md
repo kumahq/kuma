@@ -2,7 +2,7 @@
 
 **Builds**
 
-[![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
+![GitHub Actions master](https://github.com/kumahq/kuma/actions/workflows/build-test-distribute.yaml/badge.svg?branch=master)
 
 **Code quality**
 

@@ -1,4 +1,4 @@
-package resources
+package resources_test
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 )
 
 var _ = Describe("httpApiServerClient", func() {
@@ -21,20 +23,18 @@ var _ = Describe("httpApiServerClient", func() {
 			buildVersion := fmt.Sprintf(`
 			{
 				"hostname": "%s",
-				"tagline": "Kuma",
+				"product": "Kuma",
 				"version": "0.4.0"
 			}`, hostname)
-			client := httpApiServerClient{
-				Client: &http.Client{
-					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-						Expect(req.URL.String()).To(Equal("/"))
-						return &http.Response{
-							StatusCode: http.StatusOK,
-							Body:       io.NopCloser(bytes.NewBufferString(buildVersion)),
-						}, nil
-					}),
-				},
-			}
+			client := resources.NewAPIServerClient(&http.Client{
+				Transport: resources.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					Expect(req.URL.String()).To(Equal("/"))
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(bytes.NewBufferString(buildVersion)),
+					}, nil
+				}),
+			})
 
 			// when
 			version, err := client.GetVersion(context.Background())
@@ -43,20 +43,18 @@ var _ = Describe("httpApiServerClient", func() {
 			// and
 			Expect(version.Version).To(Equal("0.4.0"))
 			Expect(version.Hostname).To(Equal(hostname))
-			Expect(version.Tagline).To(Equal("Kuma"))
+			Expect(version.Product).To(Equal("Kuma"))
 		})
 		It("should return error from the server", func() {
 			// given
-			client := httpApiServerClient{
-				Client: &http.Client{
-					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
-						return &http.Response{
-							StatusCode: http.StatusBadRequest,
-							Body:       io.NopCloser(strings.NewReader("some error from server")),
-						}, nil
-					}),
-				},
-			}
+			client := resources.NewAPIServerClient(&http.Client{
+				Transport: resources.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusBadRequest,
+						Body:       io.NopCloser(strings.NewReader("some error from server")),
+					}, nil
+				}),
+			})
 
 			// when
 			_, err := client.GetVersion(context.Background())

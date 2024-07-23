@@ -140,7 +140,7 @@ func Setup(rt runtime.Runtime) error {
 			return
 		}
 
-		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && status.Code(err) != codes.Canceled {
+		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 			select {
 			case errChan <- err:
 			default:
@@ -174,7 +174,7 @@ func Setup(rt runtime.Runtime) error {
 		)
 		go func() {
 			err := sink.Receive()
-			if err != nil && status.Code(err) != codes.Canceled {
+			if err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
 				err = errors.Wrap(err, "KDSSyncClient finished with an error")
 				select {
 				case errChan <- err:
