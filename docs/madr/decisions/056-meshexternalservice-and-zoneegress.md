@@ -58,7 +58,7 @@ Conclusion: **it seems like we're not cutting any serious use case**.
 
 - all the problems of running through egress are not applicable (operational cost, extra networking hop, scalability etc.)
 - no single exit point for all the external traffic
-- if we put credentials in the ExternalService then these credentials are accessible to the app owners (need to check Envoy secrets)
+- if we put credentials in the ExternalService then these credentials are accessible to the app owners if not delivered via generic_secret
 - it's hard to emulate ExternalService because there is no "from" section (there is no destination that is inside the mesh)
 
 #### Running traffic through sidecar and egress
