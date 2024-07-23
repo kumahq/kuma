@@ -29,7 +29,8 @@ MeshMultiZoneService:
 ## Decision Outcome
 
 Chosen option: "Option 1 - SNI in the resource definition", because it solves the problems described in previous section.
-For `MeshMultiZoneService` "Option 2 - SNI in the resource definition and compute ports on global cp", because advantages outweighs other option.
+For `MeshMultiZoneService` "Option 1 - SNI in the resource definition and require ports from user", because of benefits of being explicit.
+If we find this to be to annoying, the right route is probably to autogenerate MeshMultiZoneService.
 
 ## Pros and Cons of the Options
 
