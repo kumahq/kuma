@@ -80,22 +80,28 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
+K3D_PULL_CREDENTIAL ?=
+ifneq ($(strip $(K3D_PULL_CREDENTIAL)),)
+K3D_CLUSTER_CREATE_OPTS += --registry-config "/tmp/.kuma-dev/k3d-registry.yaml"
+endif
 .PHONY: k3d/setup-docker-credentials
 k3d/setup-docker-credentials:
-ifneq ($(strip $(K3D_PULL_CREDENTIAL)),)
-  @DOCKER_USER=$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
-  DOCKER_PWD=$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
-  echo -n $${DOCKER_PWD} | docker login -u $${DOCKER_USER} --password-stdin > /dev/null ; \
-  echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\": \"$${DOCKER_PWD}\"}}}}" | $(YQ) -o yaml -P > "$(HOME)/.docker/k3d-registry.yaml"
-  K3D_CLUSTER_CREATE_OPTS += --registry-config "$(HOME)/.docker/k3d-registry.yaml"
-endif
+	@if [[ "$(K3D_PULL_CREDENTIAL)" != "" ]]; then \
+  		mkdir -p /tmp/.kuma-dev ; \
+  		DOCKER_USER=$$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
+        DOCKER_PWD=$$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
+  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" | $(YQ) -o yaml -P > /tmp/.kuma-dev/k3d-registry.yaml ; \
+  	fi
+
+.PHONY: k3d/cleanup-docker-credentials
+k3d/cleanup-docker-credentials:
+	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
 
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
-	@if [[ "$(K3D_CLUSTER_CREATE_OPTS)" == *"k3d-registry.yaml" ]]; then rm "$(HOME)/.docker/k3d-registry.yaml"; fi
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -138,7 +144,7 @@ k3d/wait:
     done
 
 .PHONY: k3d/stop
-k3d/stop:
+k3d/stop: k3d/cleanup-docker-credentials
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(K3D_BIN) cluster delete "$(KIND_CLUSTER_NAME)"
 
 .PHONY: k3d/stop/all
