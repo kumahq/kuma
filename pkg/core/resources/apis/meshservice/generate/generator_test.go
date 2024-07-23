@@ -173,6 +173,31 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should delete MeshService if all Dataplanes disappear", func() {
+		err := samples.DataplaneBackendBuilder().Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		ms := meshservice_api.NewMeshServiceResource()
+
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
+				{
+					Port:        80,
+					TargetPort:  intstr.FromInt(80),
+					AppProtocol: core_mesh.ProtocolTCP,
+				},
+			}))
+		}, "2s", "100ms").Should(Succeed())
+
+		dp := core_mesh.NewDataplaneResource()
+		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
