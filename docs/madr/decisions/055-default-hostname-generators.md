@@ -4,7 +4,7 @@
 
 ## Context and Problem Statement
 
-We introduced HostnameGenerator for MeshService and MeshExternalService which is also compatible with upcoming MeshMultizoneService.
+We introduced HostnameGenerator for MeshService, MeshExternalService and MeshMultizoneService.
 This MADR proposes default generators taking into account different scenarios.
 
 ## Considered Options
@@ -17,14 +17,14 @@ Shipping:
 * Create
 
 Suffix:
-* `.svc.{{ type }}.{{ zone }}`
-* `.{{ zone }}.{{ type }}`
+* `.{{ type }}.mesh.{{ zone }}`
+* `.{{ type }}.{{ optional zone }}.mesh.local`
 
 ## Decision Outcome
 
 Template and matching - Proposed options.
 Shipping - short term document. Once we get all prerequisites and MeshService/MeshExternalService/MeshMultizoneService goes GA, we create by default.
-Suffix - ?
+Suffix - `.{{ type }}.{{ optional zone }}.mesh.local`, because it's more "correct" (no conflicts).
 
 ## Pros and Cons of the Options - Template and matching
 
@@ -49,13 +49,28 @@ It's better than `{{ label "kuma.io/display-name" }}`, because looking at Kube r
 #### Local Kubernetes MeshService
 
 It's rather unlikely for user to use custom hostnames to consume MeshService that is local in the Kubernetes cluster.
-Therefore, no default HostnameGenerator is needed for it.
+Therefore, no default HostnameGenerator is needed for it. If there is a need for it. We can define it as follows
+
+```yaml
+name: local-kube-mesh-service
+spec:
+  template: '{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.local'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/env: kubernetes # short term "kuma.io/managed-by: kube-controller"
+        kuma.io/origin: zone # only select local resources
+        k8s.kuma.io/is-headless-service: false
+```
+
+This HostnameGenerator could be automatically created by Zone CP.
 
 #### Synced Kubernetes MeshService
 
 ```yaml
+name: synced-kube-mesh-service
 spec:
-  template: '{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.{{ .Zone }}'
+  template: '{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local'
   selector:
     meshService:
       matchLabels:
@@ -71,11 +86,31 @@ This is not something we want to recommend to users anyway. They should use Serv
 
 This HostnameGenerator could be automatically created by Global CP so that it's synced down to every Zone CP.
 
+#### Local Headless Kubernetes MeshService
+
+It's rather unlikely for user to use custom hostnames to consume MeshService that is local in the Kubernetes cluster.
+Therefore, no default HostnameGenerator is needed for it. If there is a need for it. We can define it as follows
+
+```yaml
+name: local-headless-kube-mesh-service
+spec:
+  template: '{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.local'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/env: kubernetes # short term "kuma.io/managed-by: kube-controller"
+        kuma.io/origin: zone # only select local resources
+        k8s.kuma.io/is-headless-service: true
+```
+
+This HostnameGenerator could be automatically created by Zone CP.
+
 #### Synced Headless Kubernetes MeshService
 
 ```yaml
+name: synced-headless-kube-mesh-service
 spec:
-  template: '{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.mesh.{{ .Zone }}'
+  template: '{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local'
   selector:
     meshService:
       matchLabels:
@@ -89,6 +124,7 @@ This HostnameGenerator could be automatically created by Global CP so that it's 
 #### Local Universal MeshService
 
 ```yaml
+name: local-universal-mesh-service
 spec:
   template: '{{ .Name }}.svc.mesh.local' # .DisplayName would work as well
   selector:
@@ -104,8 +140,9 @@ This HostnameGenerator could be automatically created by Universal Zone CP.
 #### Synced Universal MeshService
 
 ```yaml
+name: synced-universal-mesh-service
 spec:
-  template: '{{ .DisplayName }}.svc.mesh.{{ .Zone }}'
+  template: '{{ .DisplayName }}.svc.{{ .Zone }}.mesh.local'
   selector:
     meshService:
       matchLabels:
@@ -120,8 +157,9 @@ This HostnameGenerator could be automatically created by Global CP so that it's 
 #### MeshExternalService applied on Zone CP
 
 ```yaml
+name: local-mesh-external-service
 spec:
-  template: '{{ .DisplayName }}.svc.meshext.local'
+  template: '{{ .DisplayName }}.extsvc.mesh.local'
   selector:
     meshExternalService:
       matchLabels:
@@ -139,13 +177,14 @@ metadata:
   namespace: kuma-system
 ```
 
-Would be `httpbin.svc.meshext.local`
+Would be `httpbin.extsvc.mesh.local`
 
 #### MeshExternalService applied on Global CP
 
 ```yaml
+name: synced-mesh-external-service
 spec:
-  template: '{{ .DisplayName }}.svc.meshext.global'
+  template: '{{ .DisplayName }}.extsvc.mesh.local'
   selector:
     meshExternalService:
       matchLabels:
@@ -159,26 +198,19 @@ This HostnameGenerator could be automatically created by Global CP.
 #### MeshMultizoneService applied on Global CP
 
 ```yaml
+name: synced-mesh-multi-zone-service
 spec:
-  template: '{{ .DisplayName }}.svc.meshmz.global'
+  template: '{{ .DisplayName }}.mzsvc.mesh.local'
   selector:
-    kuma.io/origin: global # only consider synced MeshMultizoneService
+    meshMultiZoneService: {}
 ```
 
 This HostnameGenerator could be automatically created by Global CP.
 
 #### MeshMultizoneService applied on Zone CP
 
-The plan is to only allow applying MeshMultizoneService on Global CP. However, if we want to extend this so it's also possible to apply it on Zone CP, we can do this
-
-```yaml
-spec:
-  template: '{{ .DisplayName }}.svc.meshmz.local'
-  selector:
-    kuma.io/origin: zone # only consider local MeshMultizoneService
-```
-
-This HostnameGenerator could be automatically created by Zone CP.
+The plan is to only allow applying MeshMultizoneService on Global CP.
+However, if we want to extend this we could just use the same hostname generator as above. 
 
 ## Pros and Cons of the Options - Shipping
 
@@ -192,43 +224,42 @@ We can create HostnameGenerators for users. The what and where is described in t
 
 ## Pros and Cons of the Options - Suffix
 
-### `.svc.{{ type }}.{{ zone }}`
-
 Types:
-* `mesh` for MeshService
-* `meshext` - MeshExternalService
-* `meshmz` - MeshMultizoneService
+* `svc` for MeshService
+* `extsvc` - MeshExternalService
+* `mzsvc` - MeshMultiZoneService
+
+### `.{{ type }}.mesh.{{ zone }}`
 
 Examples:
-* `redis.kuma-demo.mesh.east`
-* `backend.west.mesh.west`
-* `httpbin.meshext.local`
-* `google.meshext.global`
-* `auth.meshmz.global`
+* `redis.kuma-demo.svc.mesh.local` - local Kubernetes MeshService
+* `elasticsearch.svc.mesh.local` - local Universal MeshService
+* `redis.kuma-demo.svc.mesh.east` - synced Kubernetes MeshService
+* `elasticsearch.svc.mesh.west` - synced Universal MeshService
+* `httpbin.extsvc.mesh.global` - synced MeshExternalService
+* `auth.mzsvc.mesh.global` - synced MeshMultiZoneService
 
 Advantages:
 * It's familiar to Kubernetes pattern of `svc.cluster.local`
+* Clear distinction between `local` and `global` hostnames 
 
 Disadvantages:
 * `{{ zone }}` might violate TLD. Although we can validate zone name to prevent this.
+* `{{ zone }}` can clash with existing TLD. What if someone name the zone with `com`?
 
-### `.{{ zone }}.{{ type }}`
+### `.{{ type }}.{{ optional zone }}.mesh.local`
 
-Types:
-* `meshsvc` for MeshService
-* `meshext` - MeshExternalService
-* `meshmz` - MeshMultizoneService
-
-For example:
-* `redis.kuma-demo.east.meshsvc`
-* `backend.west.meshsvc`
-* `httpbin.local.meshext`
-* `google.global.meshext`
-* `auth.global.meshmz`
+Examples:
+* `redis.kuma-demo.svc.mesh.local`  - local Kubernetes MeshService
+* `elasticsearch.svc.mesh.local` - local Universal MeshService
+* `redis.kuma-demo.svc.east.mesh.local` - synced Kubernetes MeshService
+* `elasticsearch.svc.west.mesh.local` - synced Universal MeshService
+* `httpbin.extsvc.mesh.local` - synced MeshExternalService
+* `auth.mzsvc.mesh.local` - synced MeshMultiZoneService
 
 Advantages:
-* Shorter, `.svc` does not sound useful for us.
-* Easier to recognize our hostnames, because it ends with the known types.
+* Stable TLD. It's possible to add `.mesh.local` or `.svc.mesh.local` to search section in `/etc/resolv.conf` to simplify hostnames.
+* `.local` TLD is reserved so there is no way of clashing with existing TLD
 
 Disadvantages:
-* Less recognizable pattern.
+* Awkward `.local` when the service is "global".
