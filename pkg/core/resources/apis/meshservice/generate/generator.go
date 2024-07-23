@@ -183,6 +183,12 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 				g.logger.Error(err, "couldn't update MeshService", "name", meshService.GetMeta().GetName())
 				continue
 			}
+		} else if newMeshService == nil {
+			if err := g.resManager.Delete(ctx, meshService, store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
+				log.Error(err, "couldn't delete MeshService")
+				continue
+			}
+			log.Info("deleted MeshService")
 		}
 	}
 	for name, meshServices := range meshservicesByName {
