@@ -138,7 +138,6 @@ func SetupAndGetState() []byte {
 	uniZone2Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2),
 		WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
-		WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 	)
 	UniZone2 = setupUniZone(&wg, Kuma5, uniZone2Options...)
 

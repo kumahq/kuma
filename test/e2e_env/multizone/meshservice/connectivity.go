@@ -57,7 +57,7 @@ spec:
     meshService:
       matchLabels:
         kuma.io/origin: global
-        kuma.io/managed-by: meshservice-generator
+        kuma.io/env: universal
 `)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -126,6 +126,23 @@ spec:
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 
+		uniServiceYAML := `
+type: MeshService
+name: test-server
+mesh: msconnectivity
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+`
+
 		err = NewClusterSetup().
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			Setup(multizone.UniZone1)
@@ -133,6 +150,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
