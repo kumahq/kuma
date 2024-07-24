@@ -9,6 +9,7 @@
   "kuma.io/zone": "default"
  },
  "spec": {
+  "state": "Unavailable",
   "selector": {
    "dataplaneTags": {
     "app": "redis"

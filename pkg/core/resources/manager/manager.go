@@ -56,6 +56,11 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	if existingMeta == nil {
 		resource.SetMeta(metaFromCreateOpts(resource.Descriptor(), *opts))
 	}
+	if defaulter, ok := resource.(model.Defaulter); ok {
+		if err := defaulter.Default(); err != nil {
+			return err
+		}
+	}
 	if err := model.Validate(resource); err != nil {
 		return err
 	}
@@ -100,6 +105,11 @@ func DeleteAllResources(manager ResourceManager, ctx context.Context, list model
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
+	if defaulter, ok := resource.(model.Defaulter); ok {
+		if err := defaulter.Default(); err != nil {
+			return err
+		}
+	}
 	if err := model.Validate(resource); err != nil {
 		return err
 	}

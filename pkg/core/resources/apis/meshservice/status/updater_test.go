@@ -36,10 +36,10 @@ var _ = Describe("Updater", func() {
 		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m, "east")
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
-		go func() {
+		go func(stopCh chan struct{}) {
 			defer GinkgoRecover()
 			Expect(updater.Start(stopCh)).To(Succeed())
-		}()
+		}(stopCh)
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 	})
