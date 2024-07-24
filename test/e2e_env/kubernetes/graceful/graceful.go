@@ -90,7 +90,7 @@ spec:
             kuma.io/service: graceful_graceful_svc_80
 `
 
-	var gatewayIP string
+	var gwIP string
 
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
@@ -111,14 +111,10 @@ spec:
 		Expect(err).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			out, err := k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(namespace),
-				"get", "service", "edge-gateway", "-ojsonpath={.status.loadBalancer.ingress[0].ip}",
-			)
+			address, err := kubernetes.Cluster.GetServiceIP("edge-gateway", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(BeEmpty())
-			gatewayIP = out
+			g.Expect(address).ToNot(BeEmpty())
+			gwIP = address
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 
 		// remove retries to avoid covering failed request
@@ -135,7 +131,7 @@ spec:
 	})
 
 	requestThroughGateway := func() error {
-		resp, err := httpClient.Get("http://" + gatewayIP + ":8080")
+		resp, err := httpClient.Get("http://" + gwIP)
 		if err != nil {
 			return err
 		}

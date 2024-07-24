@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -446,11 +445,7 @@ spec:
 
 		It("should passthrough TLS connections", func() {
 			Eventually(func(g Gomega) {
-				clusterIP, err := k8s.RunKubectlAndGetOutputE(
-					kubernetes.Cluster.GetTesting(),
-					kubernetes.Cluster.GetKubectlOptions(namespace),
-					"get", "service", "mtls-edge-gateway", "-ojsonpath={.spec.clusterIP}",
-				)
+				clusterIP, err := kubernetes.Cluster.GetServiceIP("mtls-edge-gateway", namespace)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				response, err := client.CollectEchoResponse(
@@ -468,11 +463,7 @@ spec:
 
 		It("should not passthrough TLS connections that don't match SNI", func() {
 			Consistently(func(g Gomega) {
-				clusterIP, err := k8s.RunKubectlAndGetOutputE(
-					kubernetes.Cluster.GetTesting(),
-					kubernetes.Cluster.GetKubectlOptions(namespace),
-					"get", "service", "mtls-edge-gateway", "-ojsonpath={.spec.clusterIP}",
-				)
+				clusterIP, err := kubernetes.Cluster.GetServiceIP("mtls-edge-gateway", namespace)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(err).ToNot(HaveOccurred())
