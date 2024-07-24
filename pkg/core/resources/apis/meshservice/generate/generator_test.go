@@ -198,6 +198,18 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should not delete MeshService not managed by the generator", func() {
+		err := samples.DataplaneBackendBuilder().Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(samples.MeshServiceWebBuilder().Create(resManager)).To(Succeed())
+
+		ms := meshservice_api.NewMeshServiceResource()
+		Consistently(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("web", model.DefaultMesh))).To(Succeed())
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
