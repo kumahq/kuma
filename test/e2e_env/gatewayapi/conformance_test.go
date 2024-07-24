@@ -89,12 +89,14 @@ func TestConformance(t *testing.T) {
 		ManifestFS: []fs.FS{&conformance.Manifests},
 		SupportedFeatures: sets.New(
 			features.SupportGateway,
+			features.SupportGatewayHTTPListenerIsolation,
 			features.SupportGatewayPort8080,
 			features.SupportReferenceGrant,
 			features.SupportHTTPRouteResponseHeaderModification,
 			features.SupportHTTPRoute,
 			features.SupportHTTPRouteHostRewrite,
 			features.SupportHTTPRouteMethodMatching,
+			features.SupportHTTPRouteParentRefPort,
 			features.SupportHTTPRoutePathRedirect,
 			features.SupportHTTPRoutePathRewrite,
 			features.SupportHTTPRoutePortRedirect,
@@ -102,12 +104,10 @@ func TestConformance(t *testing.T) {
 			features.SupportHTTPRouteRequestMirror,
 			features.SupportHTTPRouteSchemeRedirect,
 			features.SupportMesh,
+			features.SupportMeshConsumerRoute,
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
-		SkipTests: []string{
-			tests.HTTPRouteServiceTypes.ShortName,
-		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)

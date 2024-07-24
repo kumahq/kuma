@@ -102,11 +102,6 @@ func PrintKubeState(report ginkgo.Report) {
 	}
 }
 
-func ExpectCpToNotCrash() {
-	restartCount := framework.RestartCount(Cluster.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "CP restarted in this suite, this should not happen.")
-}
-
 func ExpectCpToNotPanic() {
 	logs, err := Cluster.GetKumaCPLogs()
 	if err != nil {
@@ -114,4 +109,14 @@ func ExpectCpToNotPanic() {
 	} else {
 		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
 	}
+}
+
+func SynchronizedAfterSuite() {
+	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
+	ExpectCpToNotPanic()
+}
+
+func AfterSuite(report ginkgo.Report) {
+	PrintCPLogsOnFailure(report)
+	PrintKubeState(report)
 }

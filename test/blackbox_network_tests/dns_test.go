@@ -129,11 +129,9 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(consts.DNSPort))),
-							Protocol: "udp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("udp:%d:%d", consts.DNSPort, dnsUserUid),
+						},
 					},
 				},
 				RuntimeStdout: io.Discard,
@@ -221,14 +219,12 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						ExcludePortsForUIDs: []config.UIDsToPorts{{
-							UIDs:     config.ValueOrRangeList(strconv.Itoa(int(dnsUserUid))),
-							Ports:    config.ValueOrRangeList(strconv.Itoa(int(consts.DNSPort))),
-							Protocol: "udp",
-						}},
+						ExcludePortsForUIDs: []string{
+							fmt.Sprintf("udp:%d:%d", consts.DNSPort, dnsUserUid),
+						},
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -404,7 +400,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -480,7 +476,7 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -691,7 +687,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
@@ -877,7 +873,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 					},
 				},
 				RuntimeStdout: io.Discard,
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1186,7 +1182,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 					// interface name and its network
 					VNet: config.VNet{Networks: []string{"s-peer+:fd00::10:1:2/64"}},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())

@@ -5,12 +5,13 @@ import (
 	"sync"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
@@ -65,7 +66,7 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 	options = append(options, extraOptions...)
 	zone := NewK8sCluster(NewTestingT(), clusterName, Verbose)
 	go func() {
-		defer GinkgoRecover()
+		defer ginkgo.GinkgoRecover()
 		defer wg.Done()
 		Expect(zone.Install(Kuma(core.Zone, options...))).To(Succeed())
 	}()
@@ -85,9 +86,8 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framew
 		extraOptions...,
 	)
 	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
-	E2EDeferCleanup(zone.DismissCluster) // clean up any containers if needed
 	go func() {
-		defer GinkgoRecover()
+		defer ginkgo.GinkgoRecover()
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, options...)).
@@ -102,7 +102,6 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framew
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-	E2EDeferCleanup(Global.DismissCluster) // clean up any containers if needed
 	globalOptions := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF", "1s"),
@@ -114,6 +113,7 @@ func SetupAndGetState() []byte {
 
 	kubeZone1Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1),
+		WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 		WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 	)
 	if Config.IPV6 {
@@ -244,7 +244,23 @@ func RestoreState(bytes []byte) {
 	UniZone2 = restoreUniZone(Kuma5, &state.UniZone2)
 }
 
-func PrintCPLogsOnFailure(report Report) {
+func SynchronizedAfterSuite() {
+	ExpectCpsToNotCrash()
+	ExpectCpsToNotPanic()
+	Expect(Global.DismissCluster()).To(Succeed())
+	Expect(UniZone1.DismissCluster()).To(Succeed())
+	Expect(UniZone2.DismissCluster()).To(Succeed())
+}
+
+func AfterSuite(report ginkgo.Report) {
+	if Config.CleanupLogsOnSuccess {
+		universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
+	}
+	PrintCPLogsOnFailure(report)
+	PrintKubeState(report)
+}
+
+func PrintCPLogsOnFailure(report ginkgo.Report) {
 	if !report.SuiteSucceeded {
 		for _, cluster := range append(Zones(), Global) {
 			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
@@ -258,7 +274,7 @@ func PrintCPLogsOnFailure(report Report) {
 	}
 }
 
-func PrintKubeState(report Report) {
+func PrintKubeState(report ginkgo.Report) {
 	if !report.SuiteSucceeded {
 		for _, cluster := range []Cluster{KubeZone1, KubeZone2} {
 			Logf("Kube state of cluster: " + cluster.Name())
@@ -271,10 +287,9 @@ func PrintKubeState(report Report) {
 }
 
 func ExpectCpsToNotCrash() {
-	restartCount := framework.RestartCount(KubeZone1.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
-	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
+	for _, cluster := range append(Zones(), Global) {
+		Expect(CpRestarted(cluster)).To(BeFalse(), cluster.Name()+" restarted in this suite, this should not happen.")
+	}
 }
 
 func ExpectCpsToNotPanic() {

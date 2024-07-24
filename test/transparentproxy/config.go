@@ -1,6 +1,7 @@
 package transparentproxy
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,12 +14,26 @@ import (
 
 var _ config.Config = TransparentProxyConfig{}
 
+type FlagsMap map[string][]string
+
+func (f *FlagsMap) Decode(value string) error {
+	result := map[string][]string{}
+
+	if err := json.Unmarshal([]byte(value), &result); err != nil {
+		return err
+	}
+
+	*f = result
+
+	return nil
+}
+
 type TransparentProxyConfig struct {
 	config.BaseConfig
 
 	KumactlLinuxBin    string            `json:"kumactlLinuxBin,omitempty" envconfig:"KUMACTL_LINUX_BIN"`
 	DockerImagesToTest map[string]string `json:"dockerImagesToTest,omitempty" envconfig:"DOCKER_IMAGES_TO_TEST"`
-	InstallFlagsToTest []string          `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
+	InstallFlagsToTest *FlagsMap         `json:"additionalFlagsToTest,omitempty" envconfig:"ADDITIONAL_FLAGS_TO_TEST"`
 	IPV6               bool              `json:"ipv6,omitempty" envconfig:"IPV6"`
 }
 
@@ -75,8 +90,20 @@ var defaultConfig = TransparentProxyConfig{
 		"Fedora 39":         "fedora:39",
 		"Fedora 38":         "fedora:38",
 	},
-	InstallFlagsToTest: []string{
-		"--redirect-all-dns-traffic",
+	InstallFlagsToTest: &FlagsMap{
+		"with-multiple-flags": {
+			"--redirect-all-dns-traffic",
+			"--vnet", "docker0:172.17.0.0/16",
+			"--vnet", "br+:172.18.0.0/16",
+			"--vnet", "iface:::1/64",
+			"--exclude-outbound-ports-for-uids", "53,3000-5000:106-108",
+			"--exclude-outbound-ips", "10.0.0.1,192.168.0.0/24,fe80::1",
+			"--exclude-outbound-ips", "fd00::/8",
+			"--exclude-outbound-ports", "1,22,333",
+			"--exclude-inbound-ports", "4444,55555",
+			"--exclude-inbound-ips", "192.168.0.1,172.32.16.8/16,fe80::/10",
+			"--exclude-inbound-ips", "a81b:a033:6399:73c7:72b6:aa8c:6f22:7098",
+		},
 	},
 	IPV6: false,
 }

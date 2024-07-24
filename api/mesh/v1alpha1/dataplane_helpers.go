@@ -40,6 +40,9 @@ const (
 	// Listener tag is used to select Gateway listeners
 	ListenerTag = "gateways.kuma.io/listener-name"
 
+	// Port tag is used to select Gateway listeners
+	PortTag = "gateways.kuma.io/listener-port"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 

@@ -20,8 +20,7 @@ message TrafficRoute {
   option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match data plane proxies that are sources of traffic.
-  repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that are destinations of traffic.
   //
@@ -46,13 +45,11 @@ message TrafficRoute {
     // Notice that an endpoint can be either inside or outside the mesh.
     // In the former case an endpoint corresponds to a data plane proxy,
     // in the latter case an endpoint is an External Service.
-    map<string, string> destination = 2 [
-      (validate.rules).map = {
-        min_pairs : 1,
-        keys : {string : {min_len : 1}},
-        values : {string : {min_len : 1}}
-      }
-    ];
+    map<string, string> destination = 2 [ (validate.rules).map = {
+      min_pairs : 1,
+      keys : {string : {min_len : 1}},
+      values : {string : {min_len : 1}}
+    } ];
   };
 
   // LoadBalancer defines the load balancing policy and configuration.
@@ -222,6 +219,5 @@ message TrafficRoute {
   }
 
   // Configuration for the route.
-  Conf conf = 3
-      [ (validate.rules).message.required = true ];
+  Conf conf = 3 [ (validate.rules).message.required = true ];
 }

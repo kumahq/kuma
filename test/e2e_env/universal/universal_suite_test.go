@@ -44,7 +44,6 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/zoneegress"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 func TestE2E(t *testing.T) {
@@ -53,13 +52,8 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = E2ESynchronizedBeforeSuite(universal.SetupAndGetState, universal.RestoreState)
-	_ = SynchronizedAfterSuite(func() {}, universal.ExpectCpToNotPanic)
-	_ = ReportAfterSuite("cleanup", func(report Report) {
-		if Config.CleanupLogsOnSuccess {
-			universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
-		}
-	})
-	_ = ReportAfterSuite("cp logs", universal.PrintCPLogsOnFailure)
+	_ = SynchronizedAfterSuite(func() {}, universal.SynchronizedAfterSuite)
+	_ = ReportAfterSuite("universal after suite", universal.AfterSuite)
 )
 
 var (

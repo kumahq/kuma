@@ -117,14 +117,14 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
-						Enabled:  true,
-						PortIPv6: serverPort,
+						Enabled: true,
+						Port:    serverPort,
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 				Log: config.LogConfig{
 					Enabled: true,
@@ -287,14 +287,14 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						PortIPv6:     serverPort,
+						Port:         serverPort,
 						ExcludePorts: []uint16{excludedPort},
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -472,7 +472,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						PortIPv6:     serverPort,
+						Port:         serverPort,
 						IncludePorts: []uint16{includedPort},
 						ExcludePorts: []uint16{includedPort},
 					},
@@ -480,7 +480,7 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())
@@ -643,14 +643,14 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
-						Enabled:  false,
-						PortIPv6: serverPort,
+						Enabled: false,
+						Port:    serverPort,
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
 					},
 				},
-				IPv6:          true,
+				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
 			}.Initialize(context.Background())
 			Expect(err).ToNot(HaveOccurred())

@@ -258,9 +258,6 @@ runtime:
         image: kuma/kuma-dp:latest # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
-        # Redirect port for inbound traffic.
-        # Deprecated: Use redirectPortInbound or ipFamilyMode instead.
-        redirectPortInboundV6: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
         # IP family mode enabled for traffic redirection, can be 'dualstack' or 'ipv4'
         ipFamilyMode: dualstack # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE
         # Redirect port for outbound traffic.
@@ -337,6 +334,14 @@ runtime:
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        # List of inbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeInboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_IPS
+        # List of outbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeOutboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_IPS
       builtinDNS:
         # Use the built-in DNS
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
