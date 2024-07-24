@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
