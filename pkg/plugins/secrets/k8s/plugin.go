@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 )
@@ -21,5 +22,13 @@ func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.Pl
 	if !ok {
 		return nil, errors.Errorf("secret client hasn't been configured")
 	}
+<<<<<<< HEAD
 	return NewStore(client, client, pc.Config().Store.Kubernetes.SystemNamespace)
+=======
+	coreStore, err := NewStore(client, client, mgr.GetScheme(), pc.Config().Store.Kubernetes.SystemNamespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't create k8s secret store")
+	}
+	return core_store.NewPaginationStore(coreStore), nil
+>>>>>>> c71c1f554 (fix(kuma-cp): paginate Secrets correctly in universal (#10954))
 }
