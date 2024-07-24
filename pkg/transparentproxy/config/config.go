@@ -367,7 +367,7 @@ type Ebpf struct {
 	ProgramsSourcePath string
 }
 
-type LogConfig struct {
+type Log struct {
 	// Enabled determines whether iptables rules logging is activated. When
 	// true, each packet matching an iptables rule will have its details logged,
 	// aiding in diagnostics and monitoring of packet flows.
@@ -381,7 +381,7 @@ type LogConfig struct {
 	Level uint16
 }
 
-type RetryConfig struct {
+type Retry struct {
 	// MaxRetries specifies the number of retries after the initial attempt.
 	// A value of 0 means no retries, and only the initial attempt will be made.
 	MaxRetries int
@@ -457,8 +457,8 @@ type Config struct {
 	// enabled, this setting causes the kernel to log details about packets that
 	// match the iptables rules, including IP/IPv6 headers. The logs are useful
 	// for debugging and can be accessed via tools like dmesg or syslog. The
-	// logging behavior is defined by the nested LogConfig struct.
-	Log LogConfig
+	// logging behavior is defined by the nested Log struct.
+	Log Log
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
 	// available within the specified time, the application will exit with
@@ -474,7 +474,7 @@ type Config struct {
 	WaitInterval uint
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
-	Retry RetryConfig
+	Retry Retry
 	// StoreFirewalld when set, configures firewalld to store the generated
 	// iptables rules.
 	StoreFirewalld bool
@@ -751,13 +751,13 @@ func DefaultConfig() Config {
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
 		DryRun:             false,
-		Log: LogConfig{
+		Log: Log{
 			Enabled: false,
 			Level:   LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,
-		Retry: RetryConfig{
+		Retry: Retry{
 			// Specifies the number of retries after the initial attempt,
 			// totaling 5 tries
 			MaxRetries:          4,

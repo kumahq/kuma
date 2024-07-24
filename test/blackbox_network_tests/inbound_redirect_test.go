@@ -46,7 +46,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				},
 				RuntimeStdout: io.Discard,
 				RuntimeStderr: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())
@@ -126,7 +126,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				},
 				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())

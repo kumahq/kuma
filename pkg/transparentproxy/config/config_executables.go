@@ -232,7 +232,7 @@ type InitializedExecutablesIPvX struct {
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
 
-	retry  RetryConfig
+	retry  Retry
 	logger Logger
 }
 
