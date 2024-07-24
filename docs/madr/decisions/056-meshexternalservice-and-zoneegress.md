@@ -341,30 +341,6 @@ There are policies that make sense to be in both places and the ones like MeshTi
 
 There are policies that make more sense on egress and in both places.
 
-#### Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense
-
-We've not seen any significant advantages to putting `to` policies on egress.
-Almost all seem to suffer from the same problems as described in [MeshCircuitBreaker](#MeshCircuitBreaker).
-
-Although for MeshAccessLog we could do:
-
-```yaml
-kind: MeshAccessLog
-spec:
-  targetRef:
-    kind: Mesh
-    proxyType: egress # or `sidecar`
-  to:
-    - targetRef:
-        kind: MeshExternalService
-        name: httpbin
-      default:
-        backends:
-          - type: File
-            file:
-              path: /tmp/access.log
-```
-
 ## Links
 
 * https://github.com/kumahq/kuma/issues/5050
