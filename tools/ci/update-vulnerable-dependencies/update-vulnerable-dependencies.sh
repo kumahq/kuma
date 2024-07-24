@@ -22,7 +22,6 @@ for dep in $(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod --json
     echo "Updating $package to $fixVersion"
 
     if [[ "$package" == "stdlib" ]]; then
-      yq -i e ".parameters.go_version.default = \"$fixVersion\"" .circleci/config.yml
       go mod edit -go="$fixVersion"
     else
       go get -u "$package"@v"$fixVersion"

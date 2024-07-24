@@ -110,7 +110,6 @@ networking:
       version: %s
   transparentProxying:
     redirectPortInbound: %s
-    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 
@@ -182,7 +181,6 @@ networking:
 %s
   transparentProxying:
     redirectPortInbound: %s
-    redirectPortInboundV6: %s
     redirectPortOutbound: %s
     reachableServices: [%s]
 `
@@ -486,7 +484,6 @@ func (s *UniversalApp) setupTransparent(builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
-		"--kuma-dp-uid", "5678",
 		"--skip-dns-conntrack-zone-split",
 		"--exclude-inbound-ports", "22",
 	}

@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	generate_context "github.com/kumahq/kuma/app/kumactl/cmd/generate/context"
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
@@ -14,9 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -333,31 +334,31 @@ func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, er
 	return rc.Runtime.NewAPIServerClient(client), nil
 }
 
-func (rc *RootContext) CheckServerVersionCompatibility() error {
-	kumactlLog := core.Log.WithName("kumactl")
-
-	var kumaBuildVersion *types.IndexResponse
-
-	client, err := rc.CurrentApiClient()
+func CheckCompatibility(fn func() (*types.IndexResponse, error), outStream io.Writer) *types.IndexResponse {
+	kumaBuildVersion, err := fn()
 	if err != nil {
-		kumactlLog.Error(err, "Unable to get index client")
-	} else {
-		kumaBuildVersion, err = client.GetVersion(context.Background())
-		if err != nil {
-			kumactlLog.Error(err, "Unable to retrieve server version")
-		}
-	}
-
-	if kumaBuildVersion == nil {
-		return errors.New("WARNING: Unable to confirm the server supports this kumactl version")
-	}
-	if kuma_version.IsPreviewVersion(kumaBuildVersion.Version) {
+		_, _ = fmt.Fprintf(outStream, "WARNING: Failed to retrieve server version, can't check compatibility: %v\n", err.Error())
 		return nil
 	}
-
-	if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
-		return errors.New("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version)
+	if kuma_version.IsPreviewVersion(kumaBuildVersion.Version) {
+		return kumaBuildVersion
 	}
 
-	return nil
+	if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Product != kuma_version.Product {
+		_, _ = fmt.Fprintf(outStream, "WARNING: You are using kumactl version %s for %s, but the server returned version: %s for %s\n", kuma_version.Build.Version, kuma_version.Product, kumaBuildVersion.Product, kumaBuildVersion.Version)
+	}
+	return kumaBuildVersion
+}
+
+func (rc *RootContext) FetchServerVersion() (*types.IndexResponse, error) {
+	cl, err := rc.CurrentApiClient()
+	if err != nil {
+		return nil, err
+	}
+	kumaBuildVersion, err := cl.GetVersion(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to retrieve server version")
+	}
+
+	return kumaBuildVersion, nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -371,4 +372,18 @@ func RestartCount(pods []v1.Pod) int {
 		}
 	}
 	return restartCount
+}
+
+func ScaleApp(cluster Cluster, app, namespace string, replicas int) error {
+	if err := k8s.RunKubectlE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(namespace),
+		"scale", "deployment", app, "--replicas", strconv.Itoa(replicas),
+	); err != nil {
+		return errors.Wrap(err, "could not scale")
+	}
+	if err := WaitNumPods(namespace, replicas, app)(cluster); err != nil {
+		return errors.Wrap(err, "could not wait until app is scaled")
+	}
+	return nil
 }

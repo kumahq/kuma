@@ -98,6 +98,11 @@ func (m *MeshServiceBuilder) WithoutVIP() *MeshServiceBuilder {
 	return m
 }
 
+func (m *MeshServiceBuilder) WithTLSStatus(status v1alpha1.TLSStatus) *MeshServiceBuilder {
+	m.res.Status.TLS.Status = status
+	return m
+}
+
 func (m *MeshServiceBuilder) Build() *v1alpha1.MeshServiceResource {
 	if err := m.res.Validate(); err != nil {
 		panic(err)

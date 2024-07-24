@@ -6,20 +6,33 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	kumactl_app "github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var defaultArgs = kumactl_cmd.RootArgs{
 	ConfigType: kumactl_cmd.InMemory,
 }
 
-var defaultNewAPIServerClient = GetMockNewAPIServerClient()
+var DummyIndexResponse = types.IndexResponse{
+	Hostname:   "localhost",
+	Product:    kuma_version.Product,
+	Version:    kuma_version.Build.Version,
+	InstanceId: "test-instance",
+	ClusterId:  "test-cluster",
+}
+
+var defaultNewAPIServerClient = func(client util_http.Client) resources.ApiServerClient {
+	return resources.NewStaticApiServiceClient(DummyIndexResponse)
+}
 
 var defaultNewBaseAPIServerClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 	return nil, nil

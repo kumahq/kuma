@@ -4,6 +4,19 @@ info:
   description: Kuma API
   version: '1.0.0'
 paths:
+  /:
+    get:
+      operationId: index
+      summary: The index endpoint
+      description: The index endpoint, some common metadata
+      tags: ["System"]
+      resources:
+        '200':
+          $ref: '#/components/responses/IndexResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -161,6 +174,32 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    Index:
+      type: object
+      title: Index
+      description: Some metadata about the service
+      required: [hostname, product, version, instanceId, clusterId, gui]
+      properties:
+        hostname:
+          type: string
+        product:
+          type: string
+          description: "The product line (Kuma for OSS, different for other distributions)"
+        version:
+          type: string
+          description: "The semantic version of the server running"
+        instanceId:
+          type: string
+          description: "A unique id to identify the instance requested"
+        clusterId:
+          type: string
+          description: "A unique id to identify the cluster being connected to"
+        gui:
+          type: string
+          description: "The path to the GUI"
+        basedOnKuma:
+          type: string
+          description: "In case of an alternative distribution of Kuma the Kuma version this release is based on"
     ResourceTypeDescriptionList:
       type: object
       title: ResourceTypeDescriptionList
@@ -378,6 +417,12 @@ components:
           allOf:
             - $ref: "#/components/schemas/MeshesStats"
   responses:
+    IndexResponse:
+      description: A response for the index endpoint
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Index'
     ResourceTypeDescriptionListResponse:
       description: A response containing a list of all resources installed in Kuma
       content:

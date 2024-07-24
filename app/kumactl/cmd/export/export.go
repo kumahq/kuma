@@ -53,9 +53,9 @@ $ kumactl export --profile federation --format universal > policies.yaml
 `,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := pctx.CheckServerVersionCompatibility(); err != nil {
-				cmd.PrintErrln(err)
-			}
+			version := kumactl_cmd.CheckCompatibility(pctx.FetchServerVersion, cmd.ErrOrStderr())
+			cmd.Printf("# Product: %s, Version: %s, Hostname: %s, ClusterId: %s, InstanceId: %s\n",
+				version.Product, version.Version, version.Hostname, version.ClusterId, version.InstanceId)
 
 			if !slices.Contains([]string{profileFederation, profileFederationWithPolicies, profileAll}, ctx.args.profile) {
 				return errors.New("invalid profile")
@@ -81,10 +81,12 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			}
 
 			var allResources []model.Resource
+			var incompatibleTypes []string
 			for _, resType := range resTypes {
 				resDesc, err := pctx.Runtime.Registry.DescriptorFor(resType)
 				if err != nil {
-					return err
+					incompatibleTypes = append(incompatibleTypes, string(resType))
+					continue
 				}
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
@@ -120,6 +122,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
 			resources = append(resources, userTokenSigningKeys...)
 
+			if len(incompatibleTypes) > 0 {
+				msg := fmt.Sprintf("The following types won't be exported because they are unknown to kumactl: %s", strings.Join(incompatibleTypes, ","))
+				cmd.Printf("# %s\n", msg)
+				cmd.PrintErrf("WARNING: %s. Are you using a compatible version of kumactl?\n", msg)
+			}
 			switch ctx.args.format {
 			case formatUniversal:
 				for _, res := range resources {

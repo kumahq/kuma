@@ -9,6 +9,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
+	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -17,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -74,7 +76,8 @@ func BuildEgressEndpointMap(
 func BuildIngressEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	externalServices []*core_mesh.ExternalServiceResource,
@@ -83,7 +86,7 @@ func BuildIngressEndpointMap(
 ) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(mesh, localZone, meshServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
+	outbound := BuildEdsEndpointMap(mesh, localZone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
 	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
 	return outbound
 }
@@ -91,7 +94,8 @@ func BuildIngressEndpointMap(
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
@@ -99,6 +103,8 @@ func BuildEdsEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
+
+	meshServices := exp_maps.Values(meshServicesByName)
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
 	// we want to prefer endpoints build by MeshService
@@ -122,7 +128,31 @@ func BuildEdsEndpointMap(
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
 	}
 
+	// it has to be last because it reuses endpoints for other cases
+	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices)
+
 	return outbound
+}
+
+func fillMeshMultiZoneServices(
+	outbound core_xds.EndpointMap,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+) {
+	for _, mzSvc := range meshMultiZoneServices {
+		for _, matchedMs := range mzSvc.Status.MeshServices {
+			ms, ok := meshServicesByName[matchedMs.Name]
+			if !ok {
+				continue
+			}
+			for _, port := range mzSvc.Status.Ports {
+				serviceName := mzSvc.DestinationName(port.Port)
+
+				existingEndpoints := outbound[ms.DestinationName(port.Port)]
+				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
+			}
+		}
+	}
 }
 
 func fillRemoteMeshServices(
@@ -179,6 +209,10 @@ func fillRemoteMeshServices(
 			serviceName := ms.DestinationName(port.Port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
+				ep.Locality = &core_xds.Locality{
+					Zone:     msZone,
+					Priority: priorityRemote,
+				}
 				ep.Tags = map[string]string{
 					mesh_proto.ServiceTag: serviceName,
 					mesh_proto.ZoneTag:    msZone,
