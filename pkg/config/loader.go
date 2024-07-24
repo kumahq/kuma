@@ -11,10 +11,10 @@ import (
 )
 
 func Load(file string, cfg Config) error {
-	return LoadWithOption(file, cfg, false, true, true)
+	return LoadWithOption(file, cfg, false, true, true, "")
 }
 
-func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool) error {
+func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool, envConfigPrefix string) error {
 	if file == "" {
 		core.Log.WithName("config").Info("skipping reading config from file")
 	} else if err := loadFromFile(file, cfg, strict); err != nil {
@@ -22,7 +22,7 @@ func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, valid
 	}
 
 	if includeEnv {
-		if err := envconfig.Process("", cfg); err != nil {
+		if err := envconfig.Process(envConfigPrefix, cfg); err != nil {
 			return err
 		}
 	}
