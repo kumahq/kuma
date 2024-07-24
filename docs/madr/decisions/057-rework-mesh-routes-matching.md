@@ -516,13 +516,10 @@ metadata:
   labels:
     kuma.io/mesh: default
 spec:
-  targetRef:
-    kind: MeshService
-    name: web
   to:
     - targetRef:
-        kind: MeshService
-        name: backend
+        kind: MeshHTTPRoute
+        name: backend-route
       default:
         http:
           numRetries: 3
@@ -536,18 +533,16 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshRetry
 metadata:
-  name: producer-retry
-  namespace: backend-ns
+  name: consumer-retry
+  namespace: frontend-ns
   labels:
     kuma.io/mesh: default
 spec:
-  targetRef:
-    kind: MeshService
-    name: web
   to:
     - targetRef:
-        kind: MeshService
-        name: backend
+        kind: MeshHTTPRoute
+        name: backend-route
+        namespace: backend-ns
       default:
         http:
           retryOn:
