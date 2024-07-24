@@ -20,7 +20,7 @@ import (
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
+	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
@@ -408,7 +408,7 @@ func ValidateTargetRef(
 func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
 	var err validators.ValidationError
 
-	if !slices.Contains(allowedInvalidNames, value) && !nameCharacterSet.MatchString(value) {
+	if !slices.Contains(allowedInvalidNames, value) && !NameCharacterSet.MatchString(value) {
 		err.AddViolation(
 			"name",
 			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",

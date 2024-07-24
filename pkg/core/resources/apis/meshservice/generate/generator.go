@@ -60,10 +60,15 @@ func New(
 	}, nil
 }
 
-func (g *Generator) meshServicesForDataplane(dataplane *mesh_proto.Dataplane) map[string]*meshservice_api.MeshService {
+func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResource) map[string]*meshservice_api.MeshService {
+	log := g.logger.WithValues("mesh", dataplane.GetMeta().GetMesh(), "Dataplane", dataplane.GetMeta().GetName())
 	portsByService := map[string][]meshservice_api.Port{}
-	for _, inbound := range dataplane.Networking.Inbound {
-		serviceTag := inbound.GetTags()[mesh_proto.ServiceTag]
+	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
+		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
+		if !core_mesh.NameCharacterSet.MatchString(serviceTagValue) {
+			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "regex", core_mesh.NameCharacterSet)
+			continue
+		}
 		appProtocol, hasProtocol := inbound.GetTags()[mesh_proto.ProtocolTag]
 		if !hasProtocol {
 			appProtocol = core_mesh.ProtocolTCP
@@ -73,7 +78,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *mesh_proto.Dataplane) ma
 			TargetPort:  intstr.FromInt(int(inbound.Port)),
 			AppProtocol: core_mesh.Protocol(appProtocol),
 		}
-		portsByService[serviceTag] = append(portsByService[serviceTag], port)
+		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)
 	}
 
 	services := map[string]*meshservice_api.MeshService{}
@@ -136,33 +141,6 @@ func sortDataplanes(dps []*core_mesh.DataplaneResource) []*core_mesh.DataplaneRe
 	return sorted
 }
 
-func (g *Generator) Start(stop <-chan struct{}) error {
-	g.logger.Info("starting")
-	ticker := time.NewTicker(g.interval)
-	ctx := user.Ctx(context.Background(), user.ControlPlane)
-
-	for {
-		select {
-		case <-ticker.C:
-			start := time.Now()
-			aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, g.resManager, g.meshCache.GetMeshContext)
-			if err != nil {
-				return err
-			}
-			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-				dataplanes := meshCtx.Resources.Dataplanes()
-				meshServices := meshCtx.Resources.MeshServices()
-				g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
-			}
-			g.metric.Observe(float64(time.Since(start).Milliseconds()))
-
-		case <-stop:
-			g.logger.Info("stopping")
-			return nil
-		}
-	}
-}
-
 func servicesDiffer(a, b *meshservice_api.MeshService) bool {
 	return !reflect.DeepEqual(a.Ports, b.Ports)
 }
@@ -171,7 +149,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	log := g.logger.WithValues("mesh", mesh)
 	meshservicesByName := map[string][]dataplaneAndMeshService{}
 	for _, dataplane := range sortDataplanes(dataplanes) {
-		for name, ms := range g.meshServicesForDataplane(dataplane.Spec) {
+		for name, ms := range g.meshServicesForDataplane(dataplane) {
 			meshservicesByName[name] = append(meshservicesByName[name], dataplaneAndMeshService{
 				dataplane:   dataplane.GetMeta(),
 				meshService: ms,
@@ -230,4 +208,31 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 
 func (g *Generator) NeedLeaderElection() bool {
 	return true
+}
+
+func (g *Generator) Start(stop <-chan struct{}) error {
+	g.logger.Info("starting")
+	ticker := time.NewTicker(g.interval)
+	ctx := user.Ctx(context.Background(), user.ControlPlane)
+
+	for {
+		select {
+		case <-ticker.C:
+			start := time.Now()
+			aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, g.resManager, g.meshCache.GetMeshContext)
+			if err != nil {
+				return err
+			}
+			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
+				dataplanes := meshCtx.Resources.Dataplanes()
+				meshServices := meshCtx.Resources.MeshServices()
+				g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
+			}
+			g.metric.Observe(float64(time.Since(start).Milliseconds()))
+
+		case <-stop:
+			g.logger.Info("stopping")
+			return nil
+		}
+	}
 }
