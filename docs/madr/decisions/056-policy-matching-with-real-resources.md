@@ -71,10 +71,10 @@ type ResourceRule struct {
 
 type Origin struct {
     Resource core_model.ResourceMeta
-    // ToIdx is an index in the 'to[]' array, so we could unambiguously detect what to-item contributed to the final conf.
+    // RuleIndex is an index in the 'to[]' array, so we could unambiguously detect what to-item contributed to the final conf.
     // Especially useful when to-item uses `targetRef.Labels`, because there is no obvious matching between the specific resource
     // in `ResourceRule.Resource` and to-item.
-    ToIdx int 
+    RuleIndex int 
 }
 ```
 
@@ -399,7 +399,8 @@ The code that computes confs should handle the absence of `other-service` and re
 
 ### Inspect API
 
-When it comes to the Inspect API, we're going to add a new field to `InspectRule`
+When it comes to the Inspect API, we're going to add a new field `toResourceRules` to `InspectRule`.
+Note, while the internal structure is a dictionary it's going to be transformed into an array in the Inspect API.
 
 ```yaml
 InspectRule:
@@ -471,7 +472,7 @@ ResourceRule: # new type
         properties:
           resourceMeta:
             $ref: '#/components/schemas/Meta'
-          toIdx:
+          ruleIndex:
             description: index of the to-item in the policy
             type: integer
 ```
@@ -519,13 +520,13 @@ rules:
               mesh: mesh-1
               name: mt-1
               labels: {}
-            toIdx: 0
+            ruleIndex: 0
           - resourceMeta:
               type: MeshTimeout
               mesh: mesh-1
               name: mt-1
               labels: {}
-            toIdx: 1
+            ruleIndex: 1
 ```
 
 The Inspect API response should contain rules for all existing MeshServices/MeshHTTPRoutes in the cluster
