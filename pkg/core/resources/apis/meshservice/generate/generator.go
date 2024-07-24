@@ -169,6 +169,9 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		if newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService) {
+			meta := meshService.GetMeta()
+			meshService = meshservice_api.NewMeshServiceResource()
+			meshService.Meta = meta
 			meshService.Spec = newMeshService
 			if err := g.resManager.Update(ctx, meshService); err != nil {
 				log.Error(err, "couldn't update MeshService")
@@ -176,7 +179,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			}
 			log.Info("updated MeshService")
 		} else if newMeshService == nil {
-			if err := g.resManager.Delete(ctx, meshService, store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
+			if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
 				log.Error(err, "couldn't delete MeshService")
 				continue
 			}
