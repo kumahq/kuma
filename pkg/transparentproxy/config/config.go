@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -18,6 +19,8 @@ import (
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
+
+var _ json.Unmarshaler = &Owner{}
 
 type Owner struct {
 	UID string
@@ -65,6 +68,27 @@ func (c *Owner) Set(s string) error {
 		OwnerDefaultUID,
 		OwnerDefaultUsername,
 	)
+}
+
+func (c *Owner) UnmarshalJSON(bs []byte) error {
+	var jsonValue interface{}
+
+	if err := json.Unmarshal(bs, &jsonValue); err != nil {
+		return err
+	}
+
+	switch typedValue := jsonValue.(type) {
+	case string, float64:
+		return c.Set(fmt.Sprint(jsonValue))
+	case map[string]interface{}:
+		for mapKey, mapValue := range typedValue {
+			if strings.ToLower(mapKey) == "uid" {
+				return c.Set(fmt.Sprint(mapValue))
+			}
+		}
+	}
+
+	return c.Set(string(bs))
 }
 
 // ValueOrRangeList is a format acceptable by iptables in which
