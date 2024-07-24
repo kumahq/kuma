@@ -41,7 +41,7 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 ### Leave Mesh\*Routes in top level targetRef as it is now and refine semantics of `spec.targetRef`
 
 Instead of having `targetRef` always refer to a workload,
-instead `targetRef` selects some part of the Envoy configuration of a workload,
+`targetRef` selects some part of the Envoy configuration of a workload,
 where that part is represented by a real Kuma resource.
 
 In fact `targetRef` is the wrong concept for selecting workloads,
