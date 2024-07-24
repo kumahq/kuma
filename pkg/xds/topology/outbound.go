@@ -26,6 +26,8 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
+var log = core.Log.WithName("xds")
+
 func BuildExternalServicesEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
@@ -605,7 +607,7 @@ func fillExternalServicesReachableFromZone(
 		if mes.IsReachableFromZone(zone) {
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 			if err != nil {
-				core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 				return
 			}
 		}
@@ -628,7 +630,7 @@ func fillExternalServicesOutbounds(
 	for _, mes := range meshExternalServices {
 		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 		if err != nil {
-			core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+			log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 		}
 	}
 }
@@ -776,7 +778,7 @@ func createExternalServiceEndpoint(
 	service := externalService.Spec.GetService()
 	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
 	if err != nil {
-		core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
+		log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 		return
 	}
 	outbound[service] = append(outbound[service], *externalServiceEndpoint)
