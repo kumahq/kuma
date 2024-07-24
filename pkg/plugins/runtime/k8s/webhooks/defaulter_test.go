@@ -357,7 +357,6 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "global",
                   "kuma.io/policy-role": "workload-owner"
