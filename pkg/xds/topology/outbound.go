@@ -26,7 +26,7 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-var log = core.Log.WithName("xds")
+var log = core.Log.WithName("xds").WithName("outbound")
 
 func BuildExternalServicesEndpointMap(
 	ctx context.Context,
