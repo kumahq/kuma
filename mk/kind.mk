@@ -21,13 +21,13 @@ CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 
-KIND_PULL_CREDENTIAL ?=
+DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: kind/setup-docker-credentials
 kind/setup-docker-credentials:
 	@mkdir -p /tmp/.kuma-dev ; \
 	echo '{"auths":{}}' > /tmp/.kuma-dev/kind-config.json ; \
-	if [[ "$(KIND_PULL_CREDENTIAL)" != "" ]]; then \
-		echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$$(echo -n "$(KIND_PULL_CREDENTIAL)" | base64)\"}}}" > /tmp/.kuma-dev/kind-config.json ; \
+	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
+		echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$$(echo -n "$(DOCKERHUB_PULL_CREDENTIAL)" | base64)\"}}}" > /tmp/.kuma-dev/kind-config.json ; \
 	fi
 
 .PHONY: kind/cleanup-docker-credentials

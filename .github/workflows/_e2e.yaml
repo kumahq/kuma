@@ -76,6 +76,8 @@ jobs:
           EOF
           sudo service docker restart
       - name: "Run E2E tests"
+        env:
+          DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
         run: |
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
@@ -112,12 +114,10 @@ jobs:
           
           # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
           # to prevent this, we support specifying a pull credential here
-          if [[ "${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}" != "" ]]; then
-            export K3D_PULL_CREDENTIAL="${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}"
-            export KIND_PULL_CREDENTIAL="${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}"
-            DOCKER_USER=$(echo "${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}" | cut -d ':' -f 1)
-            DOCKER_PWD=$(echo "${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}" | cut -d ':' -f 2)
-            echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin > /dev/null
+          if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
+            DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+            DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
+            echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
             trap "on_exit" EXIT
           fi
           

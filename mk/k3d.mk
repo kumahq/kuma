@@ -47,6 +47,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
     --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
+	--registry-config "/tmp/.kuma-dev/k3d-registry.yaml" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
@@ -80,16 +81,14 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
-K3D_PULL_CREDENTIAL ?=
-ifneq ($(strip $(K3D_PULL_CREDENTIAL)),)
-K3D_CLUSTER_CREATE_OPTS += --registry-config "/tmp/.kuma-dev/k3d-registry.yaml"
-endif
+DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: k3d/setup-docker-credentials
 k3d/setup-docker-credentials:
-	@if [[ "$(K3D_PULL_CREDENTIAL)" != "" ]]; then \
-  		mkdir -p /tmp/.kuma-dev ; \
-  		DOCKER_USER=$$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
-        DOCKER_PWD=$$(echo "$(K3D_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
+	@mkdir -p /tmp/.kuma-dev ; \
+	echo '{\"configs\": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
+	@if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
+  		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
+  		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
   		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" | $(YQ) -o yaml -P > /tmp/.kuma-dev/k3d-registry.yaml ; \
   	fi
 
