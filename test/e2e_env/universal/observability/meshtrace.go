@@ -51,7 +51,7 @@ func PluginTest() {
 			Install(TestServerUniversal("test-server", mesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))).
 			Install(GatewayProxyUniversal(mesh, "edge-gateway")).
-			Install(YamlUniversal(gateway.MkGateway("edge-gateway", mesh, false, "example.kuma.io", "test-server", 8080))).
+			Install(YamlUniversal(gateway.MkGateway("edge-gateway", mesh, "edge-gateway", false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
 			Setup(universal.Cluster)
 		obsClient = obs.From(obsDeployment, universal.Cluster)
