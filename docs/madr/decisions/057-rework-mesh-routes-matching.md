@@ -486,6 +486,11 @@ spec:
 This route already will be created only on MeshGateway, so is there a need to specify anything else then a Mesh in `spec.targetRef`
 of timeout policy?
 
+#### Additional validation
+
+When referencing Mesh*Route we should validate policy configuration to make sure user is applying only configuration 
+that can be applied on route.
+
 ### Affected policies
 
 At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR is based on MeshTimeout policy.
@@ -665,6 +670,77 @@ spec:
 After applying this two policies timeout won't be applied to any proxy, since `Mesh*Route` and MeshTimeout is applied
 on different subset of proxies. We should ignore this situation as this will just have no effect. Also we don't have possibility
 to show warnings with this information to users. 
+
+#### Mesh*Route with multiple spec.to[].targetRef
+
+At the moment users can create `Mesh*Route` that references multiple MeshServices, like in example:
+
+```yaml
+kind: MeshHTTPRoute
+metadata:
+  name: route-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules: [...]
+    - targetRef:
+        kind: MeshService
+        name: frontend
+      rules: [...]
+```
+
+When we create MeshTimeout policy that configures `Mesh*Route` and each of `MeshService` when merging configuration we will
+have problem which conf should we pick for merging. With example timeout policy:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend
+  namespace: backend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default: conf1
+  - targetRef:
+      kind: MeshService
+      name: frontend
+    default: conf2
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: slow-backend-route
+      namespace: backend-ns
+    default: conf3
+```
+
+When merging we will merge `$conf1` and `$conf2` for MeshService with `$conf3` for `Mesh*Route`. 
+
+```yaml
+resourceRules:
+  backend.backend-ns: 
+    conf: $conf1
+  frontend.backend-ns:
+    conf: $conf2
+  backend-route.backend-ns:
+    conf: merge($conf1, $conf2, $conf3)
+```
+
+Which makes it problematic when applying conf since we are applying policy per outbound, and we have merged config for 
+multiple outbounds. 
+
+Possible solutions:
+
+1. We can deprecate and then remove possibility to have multiple `spec.to[]` items in `Mesh*Route` policy to make it referencable. 
+(this is basically step into removing `to` section altogether, why do we need it if we cannot put multiple items in it)
+2. When merging we should only merge confs for given resource, don't treat `Mesh*Route` as subtype of `MeshService` and then
+when applying configuration to resource we should be more mindful on which outbound the route is configured and configure 
+it based on conf for that MeshService
 
 #### Overriding configuration
 
