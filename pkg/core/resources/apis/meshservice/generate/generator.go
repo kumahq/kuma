@@ -24,6 +24,10 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
+const (
+	managedByValue string = "meshservice-generator"
+)
+
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
@@ -158,6 +162,9 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 	}
 
 	for _, meshService := range meshServices {
+		if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
+			continue
+		}
 		log := log.WithValues("MeshService", meshService.GetMeta().GetName())
 		conflicting, newMeshService := checkMeshServicesConsistency(meshService.Spec, meshservicesByName[meshService.GetMeta().GetName()])
 		var dps []string
@@ -199,7 +206,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
-			mesh_proto.ManagedByLabel:      "meshservice-generator",
+			mesh_proto.ManagedByLabel:      managedByValue,
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 		})); err != nil {
 			log.Error(err, "couldn't create MeshService")
