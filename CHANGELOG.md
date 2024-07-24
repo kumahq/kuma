@@ -9,6 +9,21 @@
 * fix(k8s): avoid nil TargetRef pointer dereference (backport of #10746) [#10763](https://github.com/kumahq/kuma/pull/10763) @kumahq
 
 
+## 2.4.10
+> Released on 2024/07/23
+
+* chore(deps): update go to 1.22.5 (backport of #10096) [#10855](https://github.com/kumahq/kuma/pull/10855) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10930](https://github.com/kumahq/kuma/pull/10930) @michaelbeaumont
+
+
+## 2.5.9
+> Released on 2024/07/22
+
+* chore(deps): update go to 1.22.5 and kube controller-tools to v0.14.0 (backport of #10096) [#10854](https://github.com/kumahq/kuma/pull/10854) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10931](https://github.com/kumahq/kuma/pull/10931) @michaelbeaumont
+* fix(transparent-proxy): allow iptables executable without mode [#10794](https://github.com/kumahq/kuma/pull/10794) @bartsmykla
+
+
 ## 2.7.6
 > Released on 2024/07/18
 
