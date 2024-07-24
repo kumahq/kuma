@@ -4,6 +4,9 @@ on:
       FULL_MATRIX:
         required: true
         type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
 permissions:
   contents: read
 env:
@@ -39,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
-      runners: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
     steps:
       - id: generate-matrix
         name: Generate matrix
@@ -106,7 +108,7 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
+      runnersByArch: ${{ inputs.RUNNERS_BY_ARCH }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -118,5 +120,5 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
+      runnersByArch: ${{ inputs.RUNNERS_BY_ARCH }}
     secrets: inherit

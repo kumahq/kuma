@@ -1,7 +1,7 @@
 name: "build-test-distribute"
 on:
   push:
-    branches: ["master", "release-*", "!*-merge-master"]
+    branches: ["amd64-sh-runners","master", "release-*", "!*-merge-master"]
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
@@ -13,6 +13,7 @@ permissions:
 env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
 jobs:
   check:
     permissions:
@@ -84,6 +85,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      RUNNERS_BY_ARCH: ${{ env.RUNNERS_BY_ARCH }}
     secrets: inherit
   build_publish:
     permissions:
