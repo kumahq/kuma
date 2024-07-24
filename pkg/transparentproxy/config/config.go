@@ -391,16 +391,16 @@ type RetryConfig struct {
 	SleepBetweenReties time.Duration
 }
 
-// Comment struct contains the configuration for iptables rule comments.
+// Comments struct contains the configuration for iptables rule comments.
 // It includes an option to enable or disable comments.
-type Comment struct {
+type Comments struct {
 	Disabled bool
 }
 
-// InitializedComment struct contains the processed configuration for iptables
+// InitializedComments struct contains the processed configuration for iptables
 // rule comments. It indicates whether comments are enabled and the prefix to
 // use for comment text.
-type InitializedComment struct {
+type InitializedComments struct {
 	// Enabled indicates whether iptables rule comments are enabled based on
 	// the initial configuration and system capabilities.
 	Enabled bool
@@ -410,12 +410,12 @@ type InitializedComment struct {
 	Prefix string
 }
 
-// Initialize processes the Comment configuration and determines whether
+// Initialize processes the Comments configuration and determines whether
 // iptables rule comments should be enabled. It checks the system's
 // functionality to see if the comment module is available and returns
-// an InitializedComment struct with the result.
-func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
-	return InitializedComment{
+// an InitializedComments struct with the result.
+func (c Comments) Initialize(e InitializedExecutablesIPvX) InitializedComments {
+	return InitializedComments{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
 		Prefix:  IptablesRuleCommentPrefix,
 	}
@@ -482,10 +482,10 @@ type Config struct {
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
 	Executables ExecutablesNftLegacy
-	// Comment configures the prefix and enable/disable status for iptables rule
+	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
-	Comment Comment
+	Comments Comments
 	// IPFamilyMode specifies the IP family mode to be used by the
 	// configuration. It determines whether the system operates in dualstack
 	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
@@ -574,12 +574,12 @@ type InitializedConfigIPvX struct {
 	// address used for inbound passthrough traffic. This is used to construct
 	// rules allowing specific traffic to bypass normal proxying.
 	InboundPassthroughCIDR string
-	// Comment holds the processed configuration for iptables rule comments,
+	// Comments holds the processed configuration for iptables rule comments,
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
-	Comment InitializedComment
-	Owner   Owner
+	Comments InitializedComments
+	Owner    Owner
 
 	enabled bool
 }
@@ -665,7 +665,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	}
 	initialized.IPv4.LoopbackInterfaceName = loopbackInterfaceName
 
-	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
+	initialized.IPv4.Comments = c.Comments.Initialize(e.IPv4)
 	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
 
 	if c.IPFamilyMode == IPFamilyModeIPv4 {
@@ -696,7 +696,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		LoopbackInterfaceName:  loopbackInterfaceName,
 		LocalhostCIDR:          LocalhostCIDRIPv6,
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-		Comment:                c.Comment.Initialize(e.IPv6),
+		Comments:               c.Comments.Initialize(e.IPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
 		Owner:                  c.Owner,
 		enabled:                true,
@@ -764,7 +764,7 @@ func DefaultConfig() Config {
 			SleepBetweenReties: 2 * time.Second,
 		},
 		Executables: NewExecutablesNftLegacy(),
-		Comment: Comment{
+		Comments: Comments{
 			Disabled: false,
 		},
 		IPFamilyMode: IPFamilyModeDualStack,
