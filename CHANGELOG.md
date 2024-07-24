@@ -32,6 +32,14 @@
 * fix(transparent-proxy): allow iptables executables without mode [#10792](https://github.com/kumahq/kuma/pull/10792) @bartsmykla
 
 
+## 2.6.10
+> Released on 2024/07/18
+
+* chore(deps): update go to 1.22.5 (backport of #10096) [#10853](https://github.com/kumahq/kuma/pull/10853) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10932](https://github.com/kumahq/kuma/pull/10932) @michaelbeaumont
+* fix(transparent-proxy): allow iptables executables without mode [#10793](https://github.com/kumahq/kuma/pull/10793) @bartsmykla
+
+
 ## 2.8.1
 > Released on 2024/07/03
 
