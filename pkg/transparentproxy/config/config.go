@@ -531,6 +531,20 @@ type Config struct {
 
 type IPFamilyMode string
 
+func (e *IPFamilyMode) UnmarshalJSON(bs []byte) error {
+	var value string
+
+	if err := json.Unmarshal(bs, &value); err != nil {
+		return errors.Wrapf(err, "value '%s' is not a valid IPFamilyMode", bs)
+	}
+
+	if err := e.Set(value); err != nil {
+		return errors.Wrapf(err, "value '%s' is not a valid IPFamilyMode", value)
+	}
+
+	return nil
+}
+
 const (
 	IPFamilyModeDualStack IPFamilyMode = "dualstack"
 	IPFamilyModeIPv4      IPFamilyMode = "ipv4"
@@ -559,7 +573,7 @@ func (e *IPFamilyMode) Set(v string) error {
 		*e = IPFamilyMode(v)
 	default:
 		return errors.Errorf(
-			"must be one of %q or %q",
+			"must be one of '%s' or '%s'",
 			IPFamilyModeDualStack,
 			IPFamilyModeIPv4,
 		)
