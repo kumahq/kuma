@@ -388,7 +388,7 @@ type RetryConfig struct {
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
-	SleepBetweenReties time.Duration
+	SleepBetweenRetries time.Duration
 }
 
 // Comments struct contains the configuration for iptables rule comments.
@@ -760,8 +760,8 @@ func DefaultConfig() Config {
 		Retry: RetryConfig{
 			// Specifies the number of retries after the initial attempt,
 			// totaling 5 tries
-			MaxRetries:         4,
-			SleepBetweenReties: 2 * time.Second,
+			MaxRetries:          4,
+			SleepBetweenRetries: 2 * time.Second,
 		},
 		Executables: NewExecutablesNftLegacy(),
 		Comments: Comments{
