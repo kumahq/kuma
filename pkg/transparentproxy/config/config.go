@@ -21,6 +21,14 @@ import (
 
 type Owner struct {
 	UID string
+	// Indicates if the property was set. This replaces similar logic previously
+	// handled by Cobra library, as the value can now also be set in the config
+	// file.
+	changed bool
+}
+
+func (c *Owner) Changed() bool {
+	return c.changed
 }
 
 func (c *Owner) String() string {
@@ -33,6 +41,8 @@ func (c *Owner) Type() string {
 
 func (c *Owner) Set(s string) error {
 	var ok bool
+
+	c.changed = true
 
 	if s != "" {
 		if c.UID, ok = findUserUID(s); ok {

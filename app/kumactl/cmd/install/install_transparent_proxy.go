@@ -90,12 +90,13 @@ runuser -u kuma-dp -- \
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
 
-			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified.
-			// The Set method contains logic to check for the existence of a user with the default
-			// UID "5678", and if that does not exist, it checks for the default username "kuma-dp".
-			// Since the cobra library does not call the Set method when --kuma-dp-user is not specified,
-			// we need to invoke it manually here to ensure the proper user is set.
-			if kumaDpUser := cmd.Flag("kuma-dp-user"); !kumaDpUser.Changed {
+			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
+			// or if the value was not set in the config file. The Set method contains logic to check
+			// for the existence of a user with the default UID "5678". If that does not exist, it
+			// checks for the default username "kuma-dp". Since the Cobra library does not call
+			// the Set method when --kuma-dp-user is not specified, we need to invoke it manually
+			// here to ensure the proper user is set.
+			if !cfg.Owner.Changed() {
 				if err := cfg.Owner.Set(""); err != nil {
 					return err
 				}
