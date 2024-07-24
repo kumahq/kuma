@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"math"
+	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"go.opentelemetry.io/otel/attribute"
@@ -10,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string) []metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string, requestTime time.Time) []metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
 
 	var openTelemetryMetrics []metricdata.Metrics
@@ -23,22 +24,22 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 		switch prometheusMetric.GetType() {
 		case io_prometheus_client.MetricType_GAUGE:
 			otelMetric.Data = metricdata.Gauge[float64]{
-				DataPoints: gaugeDataPoints(prometheusMetric.Metric, extraAttributes),
+				DataPoints: gaugeDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
 			}
 		case io_prometheus_client.MetricType_SUMMARY:
 			otelMetric.Data = metricdata.Summary{
-				DataPoints: summaryDataPoints(prometheusMetric.Metric, extraAttributes),
+				DataPoints: summaryDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
 			}
 		case io_prometheus_client.MetricType_COUNTER:
 			otelMetric.Data = metricdata.Sum[float64]{
 				IsMonotonic: true,
 				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  counterDataPoints(prometheusMetric.Metric, extraAttributes),
+				DataPoints:  counterDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
 			}
 		case io_prometheus_client.MetricType_HISTOGRAM:
 			otelMetric.Data = metricdata.Histogram[float64]{
 				Temporality: metricdata.CumulativeTemporality,
-				DataPoints:  histogramDataPoints(prometheusMetric.Metric, extraAttributes),
+				DataPoints:  histogramDataPoints(prometheusMetric.Metric, extraAttributes, requestTime),
 			}
 		default:
 			log.Info("got unsupported metric type", "type", prometheusMetric.Type)
@@ -49,24 +50,26 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 	return openTelemetryMetrics
 }
 
-func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.DataPoint[float64] {
+func gaugeDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.DataPoint[float64] {
 	var dataPoints []metricdata.DataPoint[float64]
 	for _, metric := range prometheusData {
 		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
 			Attributes: attributes,
+			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
 			Value:      metric.Gauge.GetValue(),
 		})
 	}
 	return dataPoints
 }
 
-func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.SummaryDataPoint {
+func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.SummaryDataPoint {
 	var dataPoints []metricdata.SummaryDataPoint
 	for _, metric := range prometheusData {
 		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.SummaryDataPoint{
 			Attributes:     attributes,
+			Time:           getTimeOrFallback(metric.TimestampMs, requestTime),
 			QuantileValues: toOpenTelemetryQuantile(metric.Summary.Quantile),
 			Sum:            pointer.Deref(metric.Summary.SampleSum),
 			Count:          pointer.Deref(metric.Summary.SampleCount),
@@ -75,19 +78,20 @@ func summaryDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttri
 	return dataPoints
 }
 
-func counterDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.DataPoint[float64] {
+func counterDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.DataPoint[float64] {
 	var dataPoints []metricdata.DataPoint[float64]
 	for _, metric := range prometheusData {
 		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
 		dataPoints = append(dataPoints, metricdata.DataPoint[float64]{
 			Attributes: attributes,
+			Time:       getTimeOrFallback(metric.TimestampMs, requestTime),
 			Value:      metric.Counter.GetValue(),
 		})
 	}
 	return dataPoints
 }
 
-func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue) []metricdata.HistogramDataPoint[float64] {
+func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAttributes []attribute.KeyValue, requestTime time.Time) []metricdata.HistogramDataPoint[float64] {
 	var dataPoints []metricdata.HistogramDataPoint[float64]
 	for _, metric := range prometheusData {
 		attributes := createOpenTelemetryAttributes(metric.Label, extraAttributes)
@@ -102,6 +106,7 @@ func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAtt
 		}
 
 		dataPoints = append(dataPoints, metricdata.HistogramDataPoint[float64]{
+			Time:         getTimeOrFallback(metric.TimestampMs, requestTime),
 			Attributes:   attributes,
 			Count:        metric.Histogram.GetSampleCount(),
 			Sum:          metric.Histogram.GetSampleSum(),
@@ -110,6 +115,14 @@ func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAtt
 		})
 	}
 	return dataPoints
+}
+
+func getTimeOrFallback(timestampMs *int64, fallback time.Time) time.Time {
+	if timestampMs != nil {
+		return time.Unix(0, int64(time.Millisecond)**timestampMs)
+	} else {
+		return fallback
+	}
 }
 
 func createOpenTelemetryAttributes(labels []*io_prometheus_client.LabelPair, extraAttributes []attribute.KeyValue) attribute.Set {
