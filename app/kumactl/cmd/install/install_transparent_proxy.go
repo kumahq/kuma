@@ -17,24 +17,22 @@ import (
 )
 
 type transparentProxyArgs struct {
-	RedirectPortOutBound      string
-	RedirectPortInBound       string
-	ExcludeInboundPorts       string
-	ExcludeOutboundPorts      string
-	AgentDNSListenerPort      string
-	SkipDNSConntrackZoneSplit bool
+	RedirectPortOutBound string
+	RedirectPortInBound  string
+	ExcludeInboundPorts  string
+	ExcludeOutboundPorts string
+	AgentDNSListenerPort string
 }
 
 func newInstallTransparentProxy() *cobra.Command {
 	cfg := config.DefaultConfig()
 
 	args := transparentProxyArgs{
-		RedirectPortOutBound:      "15001",
-		RedirectPortInBound:       "15006",
-		ExcludeInboundPorts:       "",
-		ExcludeOutboundPorts:      "",
-		AgentDNSListenerPort:      "15053",
-		SkipDNSConntrackZoneSplit: false,
+		RedirectPortOutBound: "15001",
+		RedirectPortInBound:  "15006",
+		ExcludeInboundPorts:  "",
+		ExcludeOutboundPorts: "",
+		AgentDNSListenerPort: "15053",
 	}
 
 	cmd := &cobra.Command{
@@ -127,7 +125,7 @@ runuser -u kuma-dp -- \
 					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --store-firewalld will be ignored when --ebpf-enabled is being used")
 				}
 
-				if args.SkipDNSConntrackZoneSplit {
+				if cfg.Redirect.DNS.SkipConntrackZoneSplit {
 					fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] --skip-dns-conntrack-zone-split will be ignored when --ebpf-enabled is being used")
 				}
 			}
@@ -180,7 +178,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
-	cmd.Flags().BoolVar(&args.SkipDNSConntrackZoneSplit, "skip-dns-conntrack-zone-split", args.SkipDNSConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
+	cmd.Flags().BoolVar(&cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip-dns-conntrack-zone-split", cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
 	cmd.Flags().BoolVar(&cfg.DropInvalidPackets, "drop-invalid-packets", cfg.DropInvalidPackets, "This flag enables dropping of packets in invalid states, improving application stability by preventing them from reaching the backend. This is particularly beneficial during high-throughput requests where out-of-order packets might bypass DNAT. Note: Enabling this flag may introduce slight performance overhead. Weigh the trade-off between connection stability and performance before enabling it.")
 
 	// ebpf
@@ -250,7 +248,6 @@ func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
 	cfg.Redirect.Outbound.ExcludePorts = excludeOutboundPorts
 
 	cfg.Redirect.DNS.Port = agentDNSListenerPort
-	cfg.Redirect.DNS.ConntrackZoneSplit = !args.SkipDNSConntrackZoneSplit
 
 	return nil
 }

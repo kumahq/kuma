@@ -163,9 +163,9 @@ type DNS struct {
 	Port       uint16
 	// The iptables chain where the upstream DNS requests should be directed to.
 	// It is only applied for IP V4. Use with care. (default "RETURN")
-	UpstreamTargetChain string
-	ConntrackZoneSplit  bool
-	ResolvConfigPath    string
+	UpstreamTargetChain    string
+	SkipConntrackZoneSplit bool
+	ResolvConfigPath       string
 }
 
 type InitializedDNS struct {
@@ -191,7 +191,7 @@ func (c DNS) Initialize(
 		return initialized, nil
 	}
 
-	if c.ConntrackZoneSplit {
+	if !c.SkipConntrackZoneSplit {
 		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplit {
 			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
@@ -730,11 +730,11 @@ func DefaultConfig() Config {
 				IncludePorts:      []uint16{},
 			},
 			DNS: DNS{
-				Port:               DefaultRedirectDNSPort,
-				Enabled:            false,
-				CaptureAll:         false,
-				ConntrackZoneSplit: true,
-				ResolvConfigPath:   "/etc/resolv.conf",
+				Port:                   DefaultRedirectDNSPort,
+				Enabled:                false,
+				CaptureAll:             false,
+				SkipConntrackZoneSplit: false,
+				ResolvConfigPath:       "/etc/resolv.conf",
 			},
 			VNet: VNet{
 				Networks: []string{},
@@ -967,7 +967,7 @@ func validateIP(address string, ipv6 bool) (error, bool) {
 func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("invalid uint16 value: '%s'", port)
+		return 0, errors.Errorf("invalid uint16 value: '%s'", port)
 	}
 
 	return uint16(parsedPort), nil

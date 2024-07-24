@@ -558,10 +558,10 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
-						Enabled:            true,
-						Port:               port,
-						ConntrackZoneSplit: true,
-						CaptureAll:         true,
+						Enabled:                true,
+						Port:                   port,
+						SkipConntrackZoneSplit: false,
+						CaptureAll:             true,
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -675,10 +675,10 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
-						Enabled:            true,
-						Port:               port,
-						ConntrackZoneSplit: true,
-						CaptureAll:         true,
+						Enabled:                true,
+						Port:                   port,
+						SkipConntrackZoneSplit: false,
+						CaptureAll:             true,
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -949,11 +949,11 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 			tproxyConfig, err := config.Config{
 				Redirect: config.Redirect{
 					DNS: config.DNS{
-						Enabled:            true,
-						Port:               port,
-						ConntrackZoneSplit: true,
-						CaptureAll:         false,
-						ResolvConfigPath:   "testdata/resolv4.conf",
+						Enabled:                true,
+						Port:                   port,
+						SkipConntrackZoneSplit: false,
+						CaptureAll:             false,
+						ResolvConfigPath:       "testdata/resolv4.conf",
 					},
 				},
 				Owner:         config.Owner{UID: strconv.Itoa(int(uid))},

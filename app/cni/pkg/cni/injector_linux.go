@@ -154,7 +154,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 
 		cfg.Redirect.DNS.Port = builtinDnsPort
 		cfg.Redirect.DNS.CaptureAll = true
-		cfg.Redirect.DNS.ConntrackZoneSplit = true
+		cfg.Redirect.DNS.SkipConntrackZoneSplit = false
 	}
 
 	return &cfg, nil
