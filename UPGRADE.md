@@ -112,6 +112,13 @@ If the `--kuma-dp-user` flag is not provided, the system will attempt to use the
 
 Please update your scripts and configurations accordingly to accommodate this change.
 
+### kumactl
+
+#### Default prometheus scrape config removes `service`
+
+If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
+Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit
