@@ -13,9 +13,7 @@ const (
 	defaultProxyStatusPort     = "9901"
 	defaultOutboundPort        = "15001"
 	defaultInboundPort         = "15006"
-	defaultInboundPortV6       = "15010"
-	zeroInboundPortV6          = "0"
-	defaultIPFamilyMode        = "unspecified"
+	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
 	defaultRedirectExcludePort = defaultProxyStatusPort
@@ -27,7 +25,6 @@ var annotationRegistry = map[string]*annotationParam{
 	"excludeInboundPorts":         {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
 	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
 	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
-	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
 	"ipFamilyMode":                {"kuma.io/transparent-proxying-ip-family-mode", defaultIPFamilyMode, validateIpFamilyMode},
 	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
@@ -37,6 +34,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 	"dropInvalidPackets":          {"traffic.kuma.io/drop-invalid-packets", "false", alwaysValidFunc},
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
+	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
 	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
 }
 
@@ -46,7 +44,6 @@ type IntermediateConfig struct {
 
 	targetPort                  string
 	inboundPort                 string
-	inboundPortV6               string
 	ipFamilyMode                string
 	noRedirectUID               string
 	excludeInboundPorts         string
@@ -57,6 +54,7 @@ type IntermediateConfig struct {
 	builtinDNSPort              string
 	dropInvalidPackets          string
 	iptablesLogs                string
+	excludeInboundIPs           string
 	excludeOutboundIPs          string
 }
 
@@ -188,7 +186,6 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"outboundPort":                &intermediateConfig.targetPort,
 		"inboundPort":                 &intermediateConfig.inboundPort,
 		"ipFamilyMode":                &intermediateConfig.ipFamilyMode,
-		"inboundPortV6":               &intermediateConfig.inboundPortV6,
 		"excludeInboundPorts":         &intermediateConfig.excludeInboundPorts,
 		"excludeOutboundPorts":        &intermediateConfig.excludeOutboundPorts,
 		"isGateway":                   &intermediateConfig.isGateway,
@@ -198,6 +195,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
+		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
 		"excludeOutboundIPs":          &intermediateConfig.excludeOutboundIPs,
 	}
 
@@ -207,8 +205,6 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
-	// defaults to the ipv4 port if ipv6 port is not set
-	assignIPv6InboundRedirectPort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -219,24 +215,4 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	}
 	*field = val
 	return nil
-}
-
-func assignIPv6InboundRedirectPort(allFields map[string]*string) {
-	v6PortFieldPointer := allFields["inboundPortV6"]
-	ipFamilyModeAnno := allFields["ipFamilyMode"]
-
-	if *ipFamilyModeAnno == defaultIPFamilyMode {
-		defaultIpMode := "dualstack"
-		// an existing pod can disable ipv6 by setting inboundPortV6 to 0, and they don't have ipFamilyMode set
-		if *v6PortFieldPointer == zeroInboundPortV6 {
-			defaultIpMode = "ipv4"
-		}
-		*ipFamilyModeAnno = defaultIpMode
-	}
-
-	if *ipFamilyModeAnno == "ipv4" {
-		*v6PortFieldPointer = "0"
-	} else if *v6PortFieldPointer == defaultInboundPortV6 {
-		*v6PortFieldPointer = *allFields["inboundPort"]
-	}
 }

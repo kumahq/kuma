@@ -22,8 +22,8 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane, timeout time.Duratio
 	if err != nil {
 		return errors.Wrap(err, "could not connect to the Control Plane API Server")
 	}
-	if response.Tagline != version.Product && !version.IsPreviewVersion(response.Version) {
-		return errors.Errorf("this CLI is for %s but the control plane you're connected to is %s. Please use the CLI for your control plane", version.Product, response.Tagline)
+	if response.Product != version.Product && !version.IsPreviewVersion(response.Version) {
+		return errors.Errorf("this CLI is for %s but the control plane you're connected to is %s. Please use the CLI for your control plane", version.Product, response.Product)
 	}
 	return nil
 }

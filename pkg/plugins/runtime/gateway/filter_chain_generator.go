@@ -73,11 +73,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 	// if there's already a filter chain, we have nothing to do.
 	chain := newHTTPFilterChain(ctx.Mesh, info)
 
-	if len(info.ListenerHostnames) != 1 {
-		return nil, nil, errors.New("expected exactly one ListenerHostname with HTTP listener")
-	}
-	routeName := info.ListenerHostnames[0].EnvoyRouteName(info.Listener.EnvoyListenerName)
-	chain.Configure(envoy_listeners.HttpDynamicRoute(routeName))
+	chain.Configure(envoy_listeners.HttpDynamicRoute(info.Listener.EnvoyListenerName + ":*"))
 	return nil, []*envoy_listeners.FilterChainBuilder{chain}, nil
 }
 

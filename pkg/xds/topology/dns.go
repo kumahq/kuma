@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -132,6 +133,40 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 				domains = append(domains, address.Hostname)
 			}
 			vipDomains = append(vipDomains, xds.VIPDomains{Address: meshExternalService.Status.VIP.IP, Domains: domains})
+		}
+	}
+
+	return vipDomains, outbounds
+}
+
+func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+	var vipDomains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
+	for _, svc := range services {
+		for _, vip := range svc.Status.VIPs {
+			for _, port := range svc.Status.Ports {
+				outbound := &mesh_proto.Dataplane_Networking_Outbound{
+					Address: vip.IP,
+					Port:    port.Port,
+					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+						Kind: string(v1alpha1.MeshMultiZoneServiceType),
+						Name: svc.Meta.GetName(),
+						Port: port.Port,
+					},
+				}
+				outbounds = append(outbounds, outbound)
+			}
+		}
+		if len(svc.Status.VIPs) > 0 {
+			var domains []string
+			for _, addr := range svc.Status.Addresses {
+				domains = append(domains, addr.Hostname)
+			}
+			vipDomains = append(vipDomains, xds.VIPDomains{
+				Address: svc.Status.VIPs[0].IP,
+				Domains: domains,
+			})
 		}
 	}
 

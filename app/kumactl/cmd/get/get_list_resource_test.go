@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -24,7 +23,6 @@ var _ = Describe("kumactl get [resource]", func() {
 	var outbuf *bytes.Buffer
 	var store core_store.ResourceStore
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-01T16:05:36.995Z")
-	var _ resources.ApiServerClient = &testApiServerClient{}
 	BeforeEach(func() {
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCtx, _ := test_kumactl.MakeRootContext(rootTime, store)

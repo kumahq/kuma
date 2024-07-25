@@ -23,7 +23,6 @@ endif
 
 .PHONY: fmt/ci
 fmt/ci:
-	$(YQ) -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
 	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
 	grep -r "golangci/golangci-lint-action" .github/workflows --include \*ml | cut -d ':' -f 1 | xargs -n 1 $(YQ) -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
 

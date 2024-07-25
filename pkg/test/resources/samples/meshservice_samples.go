@@ -3,11 +3,15 @@ package samples
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
 
 func MeshServiceBackendBuilder() *builders.MeshServiceBuilder {
 	return builders.MeshService().
+		WithLabels(map[string]string{
+			mesh_proto.DisplayName: "backend",
+		}).
 		WithDataplaneTagsSelector(map[string]string{
 			mesh_proto.ServiceTag: "backend",
 		}).
@@ -31,4 +35,20 @@ func MeshServiceWebBuilder() *builders.MeshServiceBuilder {
 
 func MeshServiceWeb() *v1alpha1.MeshServiceResource {
 	return MeshServiceBackendBuilder().Build()
+}
+
+func MeshServiceSyncedBackendBuilder() *builders.MeshServiceBuilder {
+	return MeshServiceBackendBuilder().
+		WithName(hash.HashedName("default", "backend", mesh_proto.ZoneTag, "east")).
+		WithLabels(map[string]string{
+			mesh_proto.DisplayName:         "backend",
+			mesh_proto.ZoneTag:             "east",
+			mesh_proto.ResourceOriginLabel: "global",
+		}).
+		WithState(v1alpha1.StateAvailable).
+		WithKumaVIP("240.0.0.3")
+}
+
+func MeshServiceSyncedBackend() *v1alpha1.MeshServiceResource {
+	return MeshServiceSyncedBackendBuilder().Build()
 }

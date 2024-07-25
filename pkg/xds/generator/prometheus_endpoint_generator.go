@@ -30,7 +30,7 @@ const OriginPrometheus = "prometheus"
 // rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct{}
 
-var prometheusLog = core.Log.WithName("prometheus-endpoint-generator")
+var prometheusLog = core.Log.WithName("xds").WithName("prometheus-endpoint-generator")
 
 func (g PrometheusEndpointGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(xdsCtx.Mesh.Resource)

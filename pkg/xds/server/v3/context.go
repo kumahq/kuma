@@ -17,14 +17,10 @@ type XdsContext interface {
 }
 
 func NewXdsContext() XdsContext {
-	return newXdsContext("xds-server", true)
-}
-
-func newXdsContext(name string, ads bool) XdsContext {
-	log := core.Log.WithName(name)
+	log := core.Log.WithName("xds").WithName("server")
 	hasher := hasher{log}
 	logger := util_xds.NewLogger(log)
-	cache := envoy_cache.NewSnapshotCache(ads, hasher, logger)
+	cache := envoy_cache.NewSnapshotCache(true, hasher, logger)
 	return &xdsContext{
 		NodeHash:      hasher,
 		Logger:        logger,

@@ -675,3 +675,19 @@ type PolicyWithSingleItem interface {
 	Policy
 	GetPolicyItem() PolicyItem
 }
+
+func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
+	indexedResources := make(map[ResourceKey]T)
+	for _, resource := range resources {
+		key := MetaToResourceKey(resource.GetMeta())
+		indexedResources[key] = resource
+	}
+	return indexedResources
+}
+
+// Resource can implement defaulter to provide static default fields.
+// Kubernetes Webhook and Resource Manager will make sure that Default() is called before Create/Update
+type Defaulter interface {
+	Resource
+	Default() error
+}

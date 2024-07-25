@@ -4,6 +4,7 @@ import (
 	"context"
 
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -43,6 +44,18 @@ func (m *MeshMultiZoneServiceBuilder) WithMesh(mesh string) *MeshMultiZoneServic
 
 func (m *MeshMultiZoneServiceBuilder) WithServiceLabelSelector(labels map[string]string) *MeshMultiZoneServiceBuilder {
 	m.res.Spec.Selector.MeshService.MatchLabels = labels
+	return m
+}
+
+func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(name string) *MeshMultiZoneServiceBuilder {
+	m.res.Status.MeshServices = append(m.res.Status.MeshServices, meshmzservice_api.MatchedMeshService{
+		Name: name,
+	})
+	return m
+}
+
+func (m *MeshMultiZoneServiceBuilder) AddPort(port meshservice_api.Port) *MeshMultiZoneServiceBuilder {
+	m.res.Status.Ports = append(m.res.Status.Ports, port)
 	return m
 }
 
