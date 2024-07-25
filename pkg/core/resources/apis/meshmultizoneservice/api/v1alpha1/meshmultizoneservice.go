@@ -14,6 +14,7 @@ type MeshMultiZoneService struct {
 	// Selector is a way to select multiple MeshServices
 	Selector Selector `json:"selector"`
 	// Ports is a list of ports from selected MeshServices
+	// +kubebuilder:validation:MinItems=1
 	Ports []meshservice_api.Port `json:"ports,omitempty"`
 }
 

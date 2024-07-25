@@ -62,6 +62,7 @@ spec:
                   required:
                   - port
                   type: object
+                minItems: 1
                 type: array
               selector:
                 description: Selector is a way to select multiple MeshServices
