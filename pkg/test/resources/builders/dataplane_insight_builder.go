@@ -58,6 +58,11 @@ func (d *DataplaneInsightBuilder) WithMTLS(mtls *mesh_proto.DataplaneInsight_MTL
 	return d
 }
 
+func (d *DataplaneInsightBuilder) AddSubscription(sub *mesh_proto.DiscoverySubscription) *DataplaneInsightBuilder {
+	d.res.Spec.Subscriptions = append(d.res.Spec.Subscriptions, sub)
+	return d
+}
+
 func (d *DataplaneInsightBuilder) WithMTLSIssuedBackend(issuedBackend string) *DataplaneInsightBuilder {
 	if d.res.Spec.MTLS == nil {
 		d.res.Spec.MTLS = &mesh_proto.DataplaneInsight_MTLS{}
