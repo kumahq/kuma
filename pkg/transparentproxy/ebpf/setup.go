@@ -102,8 +102,8 @@ func Setup(cfg config.InitializedConfigIPvX) (string, error) {
 	// exclude inbound ports
 
 	excludeInboundPorts := [MaxItemLen]uint16{
-		cfg.Redirect.Inbound.Port,
-		cfg.Redirect.Outbound.Port,
+		uint16(cfg.Redirect.Inbound.Port),
+		uint16(cfg.Redirect.Outbound.Port),
 	}
 
 	allowedAmountOfExcludeInPorts := MaxItemLen - len(excludeInboundPorts)

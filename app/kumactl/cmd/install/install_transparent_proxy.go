@@ -16,24 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
-type transparentProxyArgs struct {
-	RedirectPortOutBound string
-	RedirectPortInBound  string
-	ExcludeInboundPorts  string
-	ExcludeOutboundPorts string
-	AgentDNSListenerPort string
-}
-
 func newInstallTransparentProxy() *cobra.Command {
 	cfg := config.DefaultConfig()
-
-	args := transparentProxyArgs{
-		RedirectPortOutBound: "15001",
-		RedirectPortInBound:  "15006",
-		ExcludeInboundPorts:  "",
-		ExcludeOutboundPorts: "",
-		AgentDNSListenerPort: "15053",
-	}
 
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -131,10 +115,6 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			if err := parseArgs(&cfg, &args); err != nil {
-				return errors.Wrap(err, "failed to setup transparent proxy")
-			}
-
 			initializedConfig, err := cfg.Initialize(cmd.Context())
 			if err != nil {
 				return errors.Wrap(err, "failed to initialize config")
@@ -167,16 +147,16 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
 	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
 	cmd.Flags().Var(&cfg.IPFamilyMode, "ip-family-mode", "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
-	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
+	cmd.Flags().Var(&cfg.Redirect.Outbound.Port, "redirect-outbound-port", `outbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortOutbound"`)
 	cmd.Flags().BoolVar(&cfg.Redirect.Inbound.Enabled, "redirect-inbound", cfg.Redirect.Inbound.Enabled, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
-	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
-	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
+	cmd.Flags().Var(&cfg.Redirect.Inbound.Port, "redirect-inbound-port", `inbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortInbound"`)
+	cmd.Flags().Var(&cfg.Redirect.Inbound.ExcludePorts, "exclude-inbound-ports", "a comma separated list of inbound ports to exclude from redirect to Envoy")
+	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().Var(&cfg.Owner, "kuma-dp-user", fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
 	cmd.Flags().Var(&cfg.Owner, "kuma-dp-uid", "the uid of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, "redirect-dns", cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
-	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
+	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip-dns-conntrack-zone-split", cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
@@ -208,47 +188,4 @@ runuser -u kuma-dp -- \
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
 
 	return cmd
-}
-
-func parseArgs(cfg *config.Config, args *transparentProxyArgs) error {
-	redirectInboundPort, err := transparentproxy.ParseUint16(args.RedirectPortInBound)
-	if err != nil {
-		return errors.Wrap(err, "parsing inbound redirect port failed")
-	}
-
-	redirectOutboundPort, err := transparentproxy.ParseUint16(args.RedirectPortOutBound)
-	if err != nil {
-		return errors.Wrap(err, "parsing outbound redirect port failed")
-	}
-
-	agentDNSListenerPort, err := transparentproxy.ParseUint16(args.AgentDNSListenerPort)
-	if err != nil {
-		return errors.Wrap(err, "parsing agent DNS listener port failed")
-	}
-
-	var excludeInboundPorts []uint16
-	if args.ExcludeInboundPorts != "" {
-		excludeInboundPorts, err = transparentproxy.SplitPorts(args.ExcludeInboundPorts)
-		if err != nil {
-			return errors.Wrap(err, "cannot parse inbound ports to exclude")
-		}
-	}
-
-	var excludeOutboundPorts []uint16
-	if args.ExcludeOutboundPorts != "" {
-		excludeOutboundPorts, err = transparentproxy.SplitPorts(args.ExcludeOutboundPorts)
-		if err != nil {
-			return errors.Wrap(err, "cannot parse outbound ports to exclude")
-		}
-	}
-
-	cfg.Redirect.Inbound.Port = redirectInboundPort
-	cfg.Redirect.Inbound.ExcludePorts = excludeInboundPorts
-
-	cfg.Redirect.Outbound.Port = redirectOutboundPort
-	cfg.Redirect.Outbound.ExcludePorts = excludeOutboundPorts
-
-	cfg.Redirect.DNS.Port = agentDNSListenerPort
-
-	return nil
 }

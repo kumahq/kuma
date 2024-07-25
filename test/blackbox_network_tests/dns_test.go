@@ -47,7 +47,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -121,7 +121,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -211,7 +211,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -301,11 +301,11 @@ var _ = Describe("Outbound IPv4 DNS/TCP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       dnsPort,
+						Port:       config.Port(dnsPort),
 						CaptureAll: true,
 					},
 					Outbound: config.TrafficFlow{
-						Port:    outboundPort,
+						Port:    config.Port(outboundPort),
 						Enabled: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -390,7 +390,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -465,11 +465,11 @@ var _ = Describe("Outbound IPv6 DNS/TCP traffic to port 53", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       dnsPort,
+						Port:       config.Port(dnsPort),
 						CaptureAll: true,
 					},
 					Outbound: config.TrafficFlow{
-						Port:    outboundPort,
+						Port:    config.Port(outboundPort),
 						Enabled: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -559,7 +559,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:                true,
-						Port:                   port,
+						Port:                   config.Port(port),
 						SkipConntrackZoneSplit: false,
 						CaptureAll:             true,
 					},
@@ -676,7 +676,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP conntrack zone splitting", func() {
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:                true,
-						Port:                   port,
+						Port:                   config.Port(port),
 						SkipConntrackZoneSplit: false,
 						CaptureAll:             true,
 					},
@@ -791,7 +791,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 only for addresses in
 					DNS: config.DNS{
 						Enabled:          true,
 						CaptureAll:       false,
-						Port:             randomPort,
+						Port:             config.Port(randomPort),
 						ResolvConfigPath: "testdata/resolv4.conf",
 					},
 				},
@@ -868,7 +868,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 only for addresses in
 					DNS: config.DNS{
 						Enabled:          true,
 						CaptureAll:       false,
-						Port:             randomPort,
+						Port:             config.Port(randomPort),
 						ResolvConfigPath: "testdata/resolv6.conf",
 					},
 				},
@@ -950,7 +950,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP conntrack zone splitting with specific I
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:                true,
-						Port:                   port,
+						Port:                   config.Port(port),
 						SkipConntrackZoneSplit: false,
 						CaptureAll:             false,
 						ResolvConfigPath:       "testdata/resolv4.conf",
@@ -1080,7 +1080,7 @@ var _ = Describe("Outbound IPv4 DNS/UDP traffic to port 53 from specific input i
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{
@@ -1170,7 +1170,7 @@ var _ = Describe("Outbound IPv6 DNS/UDP traffic to port 53 from specific input i
 				Redirect: config.Redirect{
 					DNS: config.DNS{
 						Enabled:    true,
-						Port:       randomPort,
+						Port:       config.Port(randomPort),
 						CaptureAll: true,
 					},
 					Inbound: config.TrafficFlow{

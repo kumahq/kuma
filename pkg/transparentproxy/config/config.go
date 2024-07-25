@@ -123,6 +123,96 @@ func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList 
 	}
 }
 
+var _ json.Unmarshaler = (*Port)(nil)
+
+type Port uint16
+
+func (p *Port) String() string { return strconv.Itoa(int(*p)) }
+
+func (p *Port) Type() string { return "uint16" }
+
+func (p *Port) Set(s string) error {
+	var err error
+
+	if *p, err = parsePort(s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Port) UnmarshalJSON(bs []byte) error { return p.Set(string(bs)) }
+
+var _ json.Unmarshaler = &Ports{}
+
+type Ports []Port
+
+func (p *Ports) String() string {
+	var ports []string
+	for _, port := range *p {
+		ports = append(ports, strconv.Itoa(int(port)))
+	}
+	return strings.Join(ports, ",")
+}
+
+func (p *Ports) Type() string { return "uint16[,...]" }
+
+func (p *Ports) Set(s string) error {
+	if s = strings.TrimSpace(s); s == "" {
+		return nil
+	}
+
+	for _, port := range strings.Split(s, ",") {
+		trimmedPort := strings.TrimSpace(port)
+		if trimmedPort == "" {
+			continue
+		}
+
+		parsedPort, err := parsePort(trimmedPort)
+		if err != nil {
+			return err
+		}
+
+		*p = append(*p, parsedPort)
+	}
+
+	return nil
+}
+
+func parsePort(s string) (Port, error) {
+	u, err := parseUint16(s)
+
+	if err != nil || u == 0 {
+		return 0, errors.Errorf("value '%s' is not a valid port (uint16 in the range [1, 65535])", s)
+	}
+
+	return Port(u), nil
+}
+
+func (p *Ports) UnmarshalJSON(bs []byte) error {
+	var jsonValue interface{}
+
+	if err := json.Unmarshal(bs, &jsonValue); err != nil {
+		return err
+	}
+
+	switch typedValue := jsonValue.(type) {
+	case []interface{}:
+		var values []string
+		for _, item := range typedValue {
+			switch i := item.(type) {
+			case string, float64:
+				values = append(values, fmt.Sprint(i))
+			}
+		}
+		return p.Set(strings.Join(values, ","))
+	case string, float64:
+		return p.Set(fmt.Sprint(typedValue))
+	}
+
+	return p.Set(string(bs))
+}
+
 type Exclusion struct {
 	Protocol ProtocolL4
 	Address  string
@@ -133,13 +223,13 @@ type Exclusion struct {
 // TrafficFlow is a struct for Inbound/Outbound configuration
 type TrafficFlow struct {
 	Enabled             bool
-	Port                uint16
+	Port                Port
 	ChainName           string
 	RedirectChainName   string
-	ExcludePorts        []uint16
+	IncludePorts        Ports
+	ExcludePorts        Ports
 	ExcludePortsForUIDs []string
 	ExcludePortsForIPs  []string
-	IncludePorts        []uint16
 }
 
 func (c TrafficFlow) Initialize(
@@ -186,7 +276,7 @@ func (c TrafficFlow) Initialize(
 type InitializedTrafficFlow struct {
 	TrafficFlow
 	Exclusions        []Exclusion
-	Port              uint16
+	Port              Port
 	ChainName         string
 	RedirectChainName string
 }
@@ -194,7 +284,7 @@ type InitializedTrafficFlow struct {
 type DNS struct {
 	Enabled    bool
 	CaptureAll bool
-	Port       uint16
+	Port       Port
 	// The iptables chain where the upstream DNS requests should be directed to.
 	// It is only applied for IP V4. Use with care. (default "RETURN")
 	UpstreamTargetChain    string
@@ -763,22 +853,22 @@ func DefaultConfig() Config {
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
 				Enabled:           true,
-				Port:              DefaultRedirectInbountPort,
+				Port:              Port(DefaultRedirectInbountPort),
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
-				ExcludePorts:      []uint16{},
-				IncludePorts:      []uint16{},
+				ExcludePorts:      Ports{},
+				IncludePorts:      Ports{},
 			},
 			Outbound: TrafficFlow{
 				Enabled:           true,
-				Port:              DefaultRedirectOutboundPort,
+				Port:              Port(DefaultRedirectOutboundPort),
 				ChainName:         "OUTBOUND",
 				RedirectChainName: "OUTBOUND_REDIRECT",
-				ExcludePorts:      []uint16{},
-				IncludePorts:      []uint16{},
+				ExcludePorts:      Ports{},
+				IncludePorts:      Ports{},
 			},
 			DNS: DNS{
-				Port:                   DefaultRedirectDNSPort,
+				Port:                   Port(DefaultRedirectDNSPort),
 				Enabled:                false,
 				CaptureAll:             false,
 				SkipConntrackZoneSplit: false,
