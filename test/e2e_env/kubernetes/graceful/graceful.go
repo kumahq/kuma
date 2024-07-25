@@ -131,7 +131,7 @@ spec:
 	})
 
 	requestThroughGateway := func() error {
-		resp, err := httpClient.Get("http://" + gwIP)
+		resp, err := httpClient.Get("http://" + gwIP + ":8080")
 		if err != nil {
 			return err
 		}
