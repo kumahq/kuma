@@ -140,6 +140,13 @@ Migration step:
 3. Deploy the gateway and verify if traffic works correctly.
 4. Remove the old resources.
 
+### kumactl
+
+#### Default prometheus scrape config removes `service`
+
+If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
+Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit
