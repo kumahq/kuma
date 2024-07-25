@@ -21,7 +21,7 @@ import (
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 )
 
-var reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
+var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
 
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 

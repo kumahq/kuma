@@ -13,6 +13,8 @@ import (
 	generator_core "github.com/kumahq/kuma/pkg/xds/generator/core"
 )
 
+var generatorLogger = core.Log.WithName("secrets-generator")
+
 // OriginSecrets is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginSecrets = "secrets"
 
@@ -50,7 +52,7 @@ func (g Generator) GenerateForZoneEgress(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	log := core.Log.WithName("secrets-generator").WithValues("proxyID", proxyId.String())
+	log := generatorLogger.WithValues("proxyID", proxyId.String())
 
 	if !mesh.MTLSEnabled() {
 		return nil, nil
@@ -88,7 +90,7 @@ func (g Generator) Generate(
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	log := core.Log.WithName("secrets-generator").WithValues("proxyID", proxy.Id.String())
+	log := generatorLogger.WithValues("proxyID", proxy.Id.String())
 
 	if proxy.Dataplane != nil {
 		log = log.WithValues("mesh", xdsCtx.Mesh.Resource.GetMeta().GetName())
