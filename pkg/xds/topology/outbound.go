@@ -147,7 +147,7 @@ func fillMeshMultiZoneServices(
 			if !ok {
 				continue
 			}
-			for _, port := range mzSvc.Status.Ports {
+			for _, port := range mzSvc.Spec.Ports {
 				serviceName := mzSvc.DestinationName(port.Port)
 
 				existingEndpoints := outbound[ms.DestinationName(port.Port)]

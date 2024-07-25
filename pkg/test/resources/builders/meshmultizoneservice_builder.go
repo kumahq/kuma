@@ -55,7 +55,7 @@ func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(name string) *Me
 }
 
 func (m *MeshMultiZoneServiceBuilder) AddPort(port meshservice_api.Port) *MeshMultiZoneServiceBuilder {
-	m.res.Status.Ports = append(m.res.Status.Ports, port)
+	m.res.Spec.Ports = append(m.res.Spec.Ports, port)
 	return m
 }
 
