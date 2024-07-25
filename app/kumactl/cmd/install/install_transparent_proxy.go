@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
@@ -17,6 +18,8 @@ import (
 )
 
 func newInstallTransparentProxy() *cobra.Command {
+	var configFile string
+
 	cfg := config.DefaultConfig()
 
 	cmd := &cobra.Command{
@@ -73,6 +76,10 @@ runuser -u kuma-dp -- \
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
+
+			if err := core_config.LoadWithOption(configFile, &cfg, false, true, false, "kuma_transparent_proxy"); err != nil {
+				return err
+			}
 
 			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
 			// or if the value was not set in the config file. The Set method contains logic to check
@@ -186,6 +193,8 @@ runuser -u kuma-dp -- \
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
+
+	cmd.Flags().StringVar(&configFile, "transparent-proxy-config-file", configFile, "path to the transparent proxy configuration file")
 
 	return cmd
 }
