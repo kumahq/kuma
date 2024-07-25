@@ -101,7 +101,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		return nil
 	}
 	defer resp.Body.Close()
-	requestTime := time.Now()
+	requestTime := time.Now().UTC()
 
 	metricsFromApplication, err := app.MeshMetricMutator(resp.Body)
 	if err != nil {

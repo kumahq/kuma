@@ -119,7 +119,7 @@ func histogramDataPoints(prometheusData []*io_prometheus_client.Metric, extraAtt
 
 func getTimeOrFallback(timestampMs *int64, fallback time.Time) time.Time {
 	if timestampMs != nil {
-		return time.Unix(0, int64(time.Millisecond)**timestampMs)
+		return time.UnixMilli(*timestampMs).UTC()
 	} else {
 		return fallback
 	}
