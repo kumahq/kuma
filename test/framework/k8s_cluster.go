@@ -1027,30 +1027,32 @@ func (c *K8sCluster) DeleteMesh(mesh string) error {
 	return err
 }
 
-func (c *K8sCluster) GetServiceIP(serviceName, namespace string) (string, error) {
+func (c *K8sCluster) GetClusterIP(serviceName, namespace string) (string, error) {
 	service, err := k8s.GetServiceE(
 		c.t,
 		c.GetKubectlOptions(namespace),
 		serviceName,
 	)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-	switch service.Spec.Type {
-	case v1.ServiceTypeClusterIP:
-		return service.Spec.ClusterIP, nil
-	case v1.ServiceTypeLoadBalancer:
-		ingress := service.Status.LoadBalancer.Ingress
-		if len(ingress) == 0 {
-			return "", errors.New("address not found")
-		}
-		if ingress[0].Hostname == "" {
-			return ingress[0].IP, nil
-		}
-		return ingress[0].Hostname, nil
-	default:
-		return "", errors.Errorf("type: %s not supported", service.Spec.Type)
+	return service.Spec.ClusterIP, nil
+}
+
+func (c *K8sCluster) GetLBIngressIP(serviceName, namespace string) (string, error) {
+	service, err := k8s.GetServiceE(
+		c.t,
+		c.GetKubectlOptions(namespace),
+		serviceName,
+	)
+	if err != nil {
+		return "", err
 	}
+	ingress := service.Status.LoadBalancer.Ingress
+	if len(ingress) == 0 {
+		return "", errors.New("ingress not found")
+	}
+	return ingress[0].IP, nil
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {

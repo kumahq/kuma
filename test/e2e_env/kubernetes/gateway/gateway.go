@@ -119,7 +119,7 @@ type: system.kuma.io/secret
 
 		Eventually(func(g Gomega) {
 			var err error
-			gwIP, err = kubernetes.Cluster.GetServiceIP("simple-gateway", namespace)
+			gwIP, err = kubernetes.Cluster.GetClusterIP("simple-gateway", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(gwIP).ToNot(BeEmpty())
 		}, "30s", "1s").Should(Succeed())

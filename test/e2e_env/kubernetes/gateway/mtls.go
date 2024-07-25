@@ -445,7 +445,7 @@ spec:
 
 		It("should passthrough TLS connections", func() {
 			Eventually(func(g Gomega) {
-				clusterIP, err := kubernetes.Cluster.GetServiceIP("mtls-edge-gateway", namespace)
+				clusterIP, err := kubernetes.Cluster.GetClusterIP("mtls-edge-gateway", namespace)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				response, err := client.CollectEchoResponse(
@@ -463,7 +463,7 @@ spec:
 
 		It("should not passthrough TLS connections that don't match SNI", func() {
 			Consistently(func(g Gomega) {
-				clusterIP, err := kubernetes.Cluster.GetServiceIP("mtls-edge-gateway", namespace)
+				clusterIP, err := kubernetes.Cluster.GetClusterIP("mtls-edge-gateway", namespace)
 				g.Expect(err).ToNot(HaveOccurred())
 
 				g.Expect(err).ToNot(HaveOccurred())

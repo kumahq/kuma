@@ -111,7 +111,7 @@ spec:
 		Expect(err).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			address, err := kubernetes.Cluster.GetServiceIP("edge-gateway", namespace)
+			address, err := kubernetes.Cluster.GetLBIngressIP("edge-gateway", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(address).ToNot(BeEmpty())
 			gwIP = address
