@@ -92,6 +92,40 @@ networking:
 
 Ensure to update your Dataplane resources to the new format to avoid any validation errors.
 
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Flags
+
+The flags `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` have been removed from the `kumactl install transparent-proxy` command. Users should now use the consolidated flag `--exclude-outbound-ports-for-uids <protocol:>?<ports:>?<uids>` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids tcp:22:1000 ...
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids udp:53:1000 ...
+  ```
+
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Annotations
+
+The annotations `traffic.kuma.io/exclude-outbound-tcp-ports-for-uids` and `traffic.kuma.io/exclude-outbound-udp-ports-for-uids` have also been removed. Use the annotation `traffic.kuma.io/exclude-outbound-ports-for-uids` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: tcp:22:1000
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: udp:53:1000
+  ```
+
+Make sure to update your configuration files and scripts accordingly to accommodate these changes.
+
 #### Deprecation of `--kuma-dp-uid` Flag
 
 In this release, the `--kuma-dp-uid` flag used in the `kumactl install transparent-proxy` command has been deprecated. The functionality of specifying a user by UID is now included in the `--kuma-dp-user` flag, which accepts both usernames and UIDs.

@@ -76,15 +76,13 @@ const (
 	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
 	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
-	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
-	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
-	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
-	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
-	KumaTrafficDropInvalidPackets             = "traffic.kuma.io/drop-invalid-packets"
-	KumaTrafficIptablesLogs                   = "traffic.kuma.io/iptables-logs"
-	KumaTrafficExcludeInboundIPs              = "traffic.kuma.io/exclude-inbound-ips"
-	KumaTrafficExcludeOutboundIPs             = "traffic.kuma.io/exclude-outbound-ips"
+	KumaTrafficExcludeInboundPorts         = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts        = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs = "traffic.kuma.io/exclude-outbound-ports-for-uids"
+	KumaTrafficDropInvalidPackets          = "traffic.kuma.io/drop-invalid-packets"
+	KumaTrafficIptablesLogs                = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs           = "traffic.kuma.io/exclude-inbound-ips"
+	KumaTrafficExcludeOutboundIPs          = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
