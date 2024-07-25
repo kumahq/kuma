@@ -44,20 +44,35 @@ Instead of having `targetRef` always refer to a workload,
 `targetRef` selects some part of the Envoy configuration of a workload,
 where that part is represented by a real Kuma resource.
 
-In fact `targetRef` is the wrong concept for selecting workloads,
-since "targetRef refers to a workload" means we aren't targeting
-an arbitrary `Kind` of resource but instead always a `Dataplane`.
+In order to allow limiting the effects of a policy further we can have
+`spec.workloadRef`.
 
-In order to allow limiting the effects of a policy further
-we can introduce `spec.workloadSelector` which would basically be some variation of `labelSelector`.
+Maybe `targetRef` is the wrong concept for selecting workloads,
+since "targetRef refers to a workload" means we aren't targeting
+an arbitrary `Kind` of resource but instead always a `Dataplane` or a
+`Gateway`, it doesn't depend on the policy. We could potentially introduce
+`spec.workloadSelector` which would basically be some variation of `labelSelector`,
+though how this works with Dataplane vs Gateway is not clear, maybe some kind of
+`spec.gatewaySelector`.
+
+What's not clear in this model is how to handle policies that can reasonably be both inbound
+and outbound, such as `MeshTimeout`, and be applied to the whole mesh.
+In order to target the whole mesh, we'd need to split such a policy
+into `InboundTimeout` and `OutboundTimeout` and set `spec.targetRef.kind: Mesh`.
+Otherwise a simple `spec.targetRef.kind: Mesh` wouldn't be enough to determine
+whether an inbound or outbound timeout is wanted.
 
 #### Advantages:
 
 - the workloads targeted by the policy is often "all workloads" or can be
-  inferred from the namespace so we kind of waste the top level, "special" `spec.targetRef`
-- tends to be less noisy as we move most interesting part of the policy from `to` /`from`section
+  inferred from the namespace so we don't waste the top level, "special" `spec.targetRef`
 - Doesn't force every potential resource into a "to" or a "from", instead using the semantics of the `kind` itself
 	- `HTTPRoute` is a route, regardless of whether it's inbound or outbound
+        - in case the route itself targes a `MeshService`, it is an outbound route
+        - if it targets a `MeshGateway`, it's a gateway route
+        - whatever an inbound route is, it would target a different resource
+        - if I'm targeting a route, I don't need to specify on the policy again
+          whether it's inbound or outbound
 	- `MeshService` _is_ a destination so `spec.targetRef.kind: MeshService` targets the configuration for a given destination
 	- `WorkloadIdentity` (obviously doesn't exist yet but we want to change how we manage identity)
       would represent an identity so fits as `spec.targetRef` for e.g. `MeshTrafficPermission`
@@ -68,6 +83,22 @@ we can introduce `spec.workloadSelector` which would basically be some variation
   in a single resource to avoid duplication.
   Though the very WIP policy attachment GEPs do propose a `targetRefs` field
 - requires a huge migration
+
+### Don't use `spec.targetRef` and have `spec.sourceTargetRef` and `spec.destinationTargetRef`
+
+It's clear that it's very important when applying a policy, that we often need
+to apply the policy based on its source _and_ its destination.
+We always end up having to choose one of these to put in `spec.targetRef`. In
+the `MeshTimeout.to` case it's the source of the traffic. With
+`MeshTrafficPermission` it's the destination.
+
+But it could be argued that this distinction is an implementation detail. The user doesn't need
+to know which sidecar is used to apply the policy, as long as its effects are
+as desired.
+
+Therefore maybe the usage of our policies would be most clear if the user
+didn't sometimes see `to` and sometimes `from` and instead always thought about
+both source and destination equally.
 
 ## Comparing UX of two approaches
 
