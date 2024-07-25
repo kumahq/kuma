@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -102,6 +103,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		return nil
 	}
 	defer resp.Body.Close()
+	requestTime := time.Now().UTC()
 
 	metricsFromApplication, err := app.OtelMutator(resp.Body)
 	if err != nil {
@@ -112,7 +114,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		Scope: instrumentation.Scope{
 			Name: app.Name,
 		},
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service),
+		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, requestTime),
 	}
 }
 

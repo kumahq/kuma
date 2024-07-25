@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"sort"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,7 +24,7 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := ParsePrometheusMetrics(input)
 		Expect(err).ToNot(HaveOccurred())
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service")
+		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
 
 		// then
 		sort.SliceStable(openTelemetryMetrics, func(i, j int) bool {
