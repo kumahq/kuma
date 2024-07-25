@@ -45,6 +45,7 @@ func MeshServiceSyncedBackendBuilder() *builders.MeshServiceBuilder {
 			mesh_proto.ZoneTag:             "east",
 			mesh_proto.ResourceOriginLabel: "global",
 		}).
+		WithState(v1alpha1.StateAvailable).
 		WithKumaVIP("240.0.0.3")
 }
 

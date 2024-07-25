@@ -129,11 +129,66 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			ms.Status.TLS = tls
 		}
 
+		dataplaneProxies := buildDataplaneProxies(dpps, insightsByKey, ms.Spec.Ports)
+		if !reflect.DeepEqual(ms.Status.DataplaneProxies, dataplaneProxies) {
+			changeReasons = append(changeReasons, "data plane proxies")
+			ms.Status.DataplaneProxies = dataplaneProxies
+		}
+
+		state := meshservice_api.StateUnavailable
+		if dataplaneProxies.Healthy > 0 {
+			state = meshservice_api.StateAvailable
+		}
+		if ms.Spec.State != state {
+			changeReasons = append(changeReasons, "availability state")
+			ms.Spec.State = state
+		}
+
 		if len(changeReasons) > 0 {
 			log.Info("updating mesh service", "reason", changeReasons)
 			if err := s.resManager.Update(ctx, ms); err != nil {
 				log.Error(err, "could not update mesh service", "reason", changeReasons)
 			}
+		}
+	}
+	return nil
+}
+
+func buildDataplaneProxies(
+	dpps []*core_mesh.DataplaneResource,
+	insightsByKey map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
+	ports []meshservice_api.Port,
+) meshservice_api.DataplaneProxies {
+	result := meshservice_api.DataplaneProxies{}
+	for _, dpp := range dpps {
+		result.Total++
+		if insight := insightsByKey[core_model.MetaToResourceKey(dpp.Meta)]; insight != nil {
+			if insight.Spec.IsOnline() {
+				result.Connected++
+			}
+		}
+		healthyInbounds := 0
+		for _, port := range ports {
+			if inbound := dpInboundForMeshServicePort(dpp.Spec.GetNetworking().Inbound, port); inbound != nil {
+				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready {
+					healthyInbounds++
+				}
+			}
+		}
+		if healthyInbounds == len(ports) {
+			result.Healthy++
+		}
+	}
+	return result
+}
+
+func dpInboundForMeshServicePort(inbounds []*mesh_proto.Dataplane_Networking_Inbound, port meshservice_api.Port) *mesh_proto.Dataplane_Networking_Inbound {
+	for _, inbound := range inbounds {
+		if port.Name != "" && inbound.Name == port.Name {
+			return inbound
+		}
+		if port.Port == inbound.Port {
+			return inbound
 		}
 	}
 	return nil

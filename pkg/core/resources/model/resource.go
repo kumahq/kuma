@@ -636,3 +636,10 @@ func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
 	}
 	return indexedResources
 }
+
+// Resource can implement defaulter to provide static default fields.
+// Kubernetes Webhook and Resource Manager will make sure that Default() is called before Create/Update
+type Defaulter interface {
+	Resource
+	Default() error
+}
