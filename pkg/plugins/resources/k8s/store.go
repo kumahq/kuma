@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -35,15 +34,13 @@ type KubernetesStore struct {
 	Client    kube_client.Client
 	Converter k8s_common.Converter
 	Scheme    *kube_runtime.Scheme
-	CpMode    config_core.CpMode
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter, cpMode config_core.CpMode) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: converter,
 		Scheme:    scheme,
-		CpMode:    cpMode,
 	}, nil
 }
 
@@ -62,14 +59,6 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 
 	labels, annotations := SplitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	if core_model.IsLocallyOriginated(s.CpMode, r) {
-		if _, ok := labels[v1alpha1.KubeNamespaceTag]; !ok && namespace != "" {
-			labels[v1alpha1.KubeNamespaceTag] = namespace
-		}
-	}
 	obj.GetObjectMeta().SetLabels(labels)
 	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(opts.Mesh)

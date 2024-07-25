@@ -8,11 +8,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
+
+var log = core.Log.WithName("webhook")
 
 type Defaulter interface {
 	core_model.Resource
@@ -70,6 +73,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
 		return resp
 	}
+	log.Info("RUNNING DEFAULTER", "req", req, "l", core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName))
 	labels, annotations := k8s.SplitLabelsAndAnnotations(
 		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName),
 		obj.GetAnnotations(),

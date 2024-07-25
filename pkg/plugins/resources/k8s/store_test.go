@@ -92,7 +92,6 @@ var _ = Describe("KubernetesStore", func() {
 				},
 			},
 			Scheme: k8sClientScheme,
-			CpMode: "global",
 		}
 		s = store.NewStrictResourceStore(store.NewPaginationStore(ks))
 	})
