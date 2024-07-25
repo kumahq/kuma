@@ -179,6 +179,8 @@ type Config struct {
 	CoreResources *apis.Config `json:"coreResources"`
 	// IP administration and management config
 	IPAM IPAMConfig `json:"ipam"`
+	// MeshService holds configuration for features around MeshServices
+	MeshService MeshServiceConfig `json:"meshService"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -291,6 +293,9 @@ var DefaultConfig = func() Config {
 				CIDR: "243.0.0.0/8",
 			},
 			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+		},
+		MeshService: MeshServiceConfig{
+			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
 		},
 	}
 }
@@ -529,5 +534,15 @@ func (i MeshMultiZoneServiceIPAM) Validate() error {
 	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
 		return errors.Wrap(err, ".MeshMultiZoneServiceCIDR is invalid")
 	}
+	return nil
+}
+
+type MeshServiceConfig struct {
+	// How often we check whether MeshServices need to be generated from
+	// Dataplanes
+	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
+}
+
+func (i MeshServiceConfig) Validate() error {
 	return nil
 }

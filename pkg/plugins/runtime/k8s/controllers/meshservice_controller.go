@@ -349,7 +349,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
-		ms.ObjectMeta.Labels[metadata.ManagedBy] = "k8s-controller"
+		ms.ObjectMeta.Labels[mesh_proto.ManagedByLabel] = "k8s-controller"
 
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
