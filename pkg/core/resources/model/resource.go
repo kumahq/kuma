@@ -409,9 +409,6 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 }
 
 func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
-	if r.GetMeta() == nil {
-		return false
-	}
 	return IsLocallyOriginatedByLabels(mode, r.GetMeta().GetLabels())
 }
 
