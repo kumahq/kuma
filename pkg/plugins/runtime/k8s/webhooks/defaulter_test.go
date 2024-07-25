@@ -514,5 +514,51 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
+		Entry("should not add namespace label when resource originates from universal zone", testCase{
+			checker: globalChecker(),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1",
+                  "kuma.io/policy-role": "system"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
 	)
 })

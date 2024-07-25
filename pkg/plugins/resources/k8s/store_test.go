@@ -3,22 +3,17 @@ package k8s_test
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	meshtimeout_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	v1alpha1_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -80,7 +75,6 @@ var _ = Describe("KubernetesStore", func() {
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&v1alpha1.MeshTrace{}, &v1alpha1_k8s.MeshTrace{})).To(Succeed())
-		Expect(kubeTypes.RegisterObjectType(&meshtimeout_api.MeshTimeout{}, &meshtimeout_k8s.MeshTimeout{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 
@@ -237,52 +231,6 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(owners).To(HaveLen(1))
 			Expect(owners[0].Name).To(Equal("mesh"))
 			Expect(owners[0].Kind).To(Equal("Mesh"))
-		})
-
-		It("should not add namespace label when resource is synced from zone", func() {
-			// setup
-			name := "demo-b4xvb9w446dcf5ff.kuma-system"
-			mt := meshtimeout_api.MeshTimeoutResource{
-				Meta: &k8s.KubernetesMetaAdapter{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      name,
-						Namespace: "kuma-system",
-						Labels: map[string]string{
-							"kuma.io/zone":   "zone-1",
-							"kuma.io/origin": "zone",
-						},
-						Annotations: map[string]string{
-							"kuma.io/display-name": "demo",
-						},
-					},
-					Mesh: "default",
-				},
-				Spec: &meshtimeout_api.MeshTimeout{
-					TargetRef: common_api.TargetRef{
-						Kind: "Mesh",
-					},
-					To: []meshtimeout_api.To{
-						{
-							TargetRef: common_api.TargetRef{},
-							Default: meshtimeout_api.Conf{
-								ConnectionTimeout: &v1.Duration{Duration: 10 * time.Second},
-							},
-						},
-					},
-				},
-			}
-			err := ks.Create(context.Background(), &mt, store.CreateByKey(name, mesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			// given
-			actual := meshtimeout_api.NewMeshTimeoutResource()
-
-			// when
-			err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual.Meta.GetLabels()[mesh_proto.KubeNamespaceTag]).To(Equal(""))
 		})
 	})
 
