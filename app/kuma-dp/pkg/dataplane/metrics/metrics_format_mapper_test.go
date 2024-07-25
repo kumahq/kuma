@@ -24,11 +24,7 @@ var _ = Describe("Metrics format mapper", func() {
 		// when
 		metrics, err := ParsePrometheusMetrics(input)
 		Expect(err).ToNot(HaveOccurred())
-<<<<<<< HEAD
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service")
-=======
-		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", map[string]string{"extraLabel": "test"}, time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
->>>>>>> 404572688 (fix(meshmetric): add missing timestamp in mapper (#10966))
+		openTelemetryMetrics := FromPrometheusMetrics(metrics, "default", "dpp-1", "test-service", time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC))
 
 		// then
 		sort.SliceStable(openTelemetryMetrics, func(i, j int) bool {

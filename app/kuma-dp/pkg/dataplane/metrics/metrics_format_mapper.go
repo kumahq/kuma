@@ -11,13 +11,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-<<<<<<< HEAD
-func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string) []metricdata.Metrics {
+func FromPrometheusMetrics(appMetrics []*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, requestTime time.Time) []metricdata.Metrics {
 	extraAttributes := extraAttributesFrom(mesh, dataplane, service)
-=======
-func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFamily, mesh string, dataplane string, service string, extraLabels map[string]string, requestTime time.Time) []metricdata.Metrics {
-	extraAttributes := extraAttributesFrom(mesh, dataplane, service, extraLabels)
->>>>>>> 404572688 (fix(meshmetric): add missing timestamp in mapper (#10966))
 
 	var openTelemetryMetrics []metricdata.Metrics
 	for _, prometheusMetric := range appMetrics {

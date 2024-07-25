@@ -114,11 +114,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		Scope: instrumentation.Scope{
 			Name: app.Name,
 		},
-<<<<<<< HEAD
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service),
-=======
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels, requestTime),
->>>>>>> 404572688 (fix(meshmetric): add missing timestamp in mapper (#10966))
+		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, requestTime),
 	}
 }
 
