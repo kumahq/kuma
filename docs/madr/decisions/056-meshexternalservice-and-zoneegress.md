@@ -134,6 +134,7 @@ FaultInjection and MeshFaultInjection is configured for ExternalService on egres
 
 If on sidecar:
 - less traffic in the cluster (it won't even exit the pod)
+- you won't be able to validate if your policies (MeshRetry, MeshTimeout, etc.) work correctly because they won't be triggered
 
 ###### Verdict
 
