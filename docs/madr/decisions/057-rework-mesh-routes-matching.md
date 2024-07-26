@@ -14,6 +14,17 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 - add possibility to put `Mesh*Routes` in `spec.to[].targetRef`
 
+### Positive Consequences
+
+* We have a relatively small migration
+* a policy can target a subset of the sidecars that a `MeshHTTPRoute` targets
+  * this is especially important on universal where the zone isn't granular enough and there are no namespaces to implicitly limit the effects of a policy
+* easy to target multiple `MeshHTTPRoutes` with a policy
+
+### Negative Consequences
+
+* `spec.targetRef` **must be combined** with `spec.to[].targetRef` to figure out which sidecars are actually affected since policies referenced in `spec.to[].targetRef` also select sidecars.
+* `spec.targetRef`, given that it's likely to be empty, is relegated to not being very useful on its own for figuring out what a policy affects in the policy attachment sense
 ## Considered options
 
 1. add possibility to put `Mesh*Routes` in `spec.to[].targetRef` -> `spec.targetRef` selects proxies, `spec.from[].targetRef` selects inbounds, `spec.to[].targetRef` selects outbounds.
