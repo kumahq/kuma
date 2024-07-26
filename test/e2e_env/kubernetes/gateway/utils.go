@@ -106,25 +106,6 @@ metadata:
 spec:
   replicas: 1
   serviceType: ClusterIP
-  tags:
-    kuma.io/service: %s
-`, name, namespace, mesh, name)
-
-	return instance
-}
-
-func MkGatewayInstanceNoServiceTag(name, namespace, mesh string) string {
-	instance := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshGatewayInstance
-metadata:
-  name: %s
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  replicas: 1
-  serviceType: ClusterIP
 `, name, namespace, mesh)
 
 	return instance
