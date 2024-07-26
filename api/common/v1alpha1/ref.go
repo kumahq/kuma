@@ -46,6 +46,15 @@ func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
 }
 
+func (k TargetRefKind) IsRealResource() bool {
+	switch k {
+	case MeshSubset, MeshServiceSubset:
+		return false
+	default:
+		return true
+	}
+}
+
 func AllTargetRefKinds() []TargetRefKind {
 	keys := maps.Keys(order)
 	sort.Sort(TargetRefKindSlice(keys))

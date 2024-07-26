@@ -171,6 +171,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					},
 				},
+				ResourceRules: map[core_rules.UniqueResourceKey]core_rules.ResourceRule{},
 			},
 		}),
 	)

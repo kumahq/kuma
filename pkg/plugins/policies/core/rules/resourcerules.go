@@ -106,6 +106,10 @@ type resolvedPolicyItem struct {
 }
 
 func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPolicyItem {
+	if !item.GetTargetRef().Kind.IsRealResource() {
+		return nil
+	}
+
 	list := l.ListOrEmpty(core_model.ResourceType(item.GetTargetRef().Kind)).GetItems()
 
 	switch {

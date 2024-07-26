@@ -143,6 +143,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceKey]core_rules.ResourceRule{},
 	},
 }), Entry("tie-breaking", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -235,6 +236,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceKey]core_rules.ResourceRule{},
 	},
 }), Entry("ordering", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -483,6 +485,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceKey]core_rules.ResourceRule{},
 	},
 }),
 )
