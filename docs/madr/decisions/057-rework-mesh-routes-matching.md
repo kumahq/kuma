@@ -44,6 +44,7 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 #### Disadvantages
 
 - can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
+- which sidecars are actually configured depends on both `spec.targetRef` of the policy _and_ the `spec.targetRef` of the `MeshHTTPRoute`.
 - yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
 - mixing outbounds and routes in `spec.to[].targetRef`
 - hides the most often most important information under `to[]` adding noise when targeting Mesh in `spec.targetRef`
