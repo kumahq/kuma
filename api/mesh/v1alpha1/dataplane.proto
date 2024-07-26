@@ -338,5 +338,6 @@ message Dataplane {
   // See
   // https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
   // for more information.
+  // Deprecated: this feature will be removed for Universal; on Kubernetes, it's not needed anymore.
   Probes probes = 3;
 }
