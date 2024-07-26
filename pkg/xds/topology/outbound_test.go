@@ -1522,7 +1522,6 @@ var _ = Describe("TrafficRoute", func() {
 					samples.MeshMultiZoneServiceBackendBuilder().
 						AddMatchedMeshServiceName(samples.MeshServiceBackend().GetMeta().GetName()).
 						AddMatchedMeshServiceName(samples.MeshServiceSyncedBackend().GetMeta().GetName()).
-						AddPort(samples.MeshServiceBackend().Spec.Ports[0]).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
