@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -69,9 +68,18 @@ func (p *Prober) Start(stop <-chan struct{}) error {
 	}
 
 	logger.Info("starting Virtual Probes Server", "port", p.listenPort)
+
+	// routes:
+	// /tcp/<port>
+	// /grpc/<port>
+	// /<port>/<original-path-query>
+	mux := http.NewServeMux()
+	mux.HandleFunc(pathPrefixTCP, p.probeTCP)
+	mux.HandleFunc(pathPrefixGRPC, p.probeGRPC)
+	mux.HandleFunc("/", p.probeHTTP)
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
-		Handler:           p,
+		Handler:           mux,
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
@@ -89,25 +97,6 @@ func (p *Prober) Start(stop <-chan struct{}) error {
 		logger.Info("stopping Virtual Probes Server")
 		return server.Shutdown(context.Background())
 	}
-}
-
-func (p *Prober) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	// routes:
-	// /tcp/<port>
-	// /grpc/<port>
-	// /<port>/<original-path-query>
-
-	if strings.HasPrefix(req.URL.Path, pathPrefixTCP) {
-		p.probeTCP(writer, req)
-		return
-	}
-
-	if strings.HasPrefix(req.URL.Path, pathPrefixGRPC) {
-		p.probeGRPC(writer, req)
-		return
-	}
-
-	p.probeHTTP(writer, req)
 }
 
 func (p *Prober) NeedLeaderElection() bool {
