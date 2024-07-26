@@ -34,10 +34,8 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 #### Advantages
 
-- simplifying policy api as `spec.targetRef` will always pick proxy and `spec.to[].targetRef` section will select outgoing traffic
 - ability to set different confs on different proxy for the same route (overriding default conf for route without producer/consumer policies, on universal)
 - gives more flexibility as you can target multiple outbounds in single policy. Reducing number of consumer policies
-- more consistent with current approach
 - easier policy matching code
 - least problematic migration
 
