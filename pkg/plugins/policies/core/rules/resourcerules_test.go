@@ -24,15 +24,6 @@ import (
 var _ = Describe("BuildResourceRules", func() {
 	DescribeTableSubtree("BuildToRules",
 		func(inputFile string) {
-			// Input:
-			//   - policy spec
-			//   - existing resources
-			// What do we want to check?
-			// 1. Rules when Input is applied on Global 'global.golden'
-			// 2. Rules when Input is applied on Zone 'zone.golden'
-			// 3. Rules when Input is synced from Zone to Global 'z2g.golden'
-			// 4. Rules when Input is synced from Global to Zone 'g2z.golden'
-			// 5. Rules when Input is synced from Zone to Global to Zone 'z2z.golden'
 			type metaFn func(name, mesh string, labels map[string]string) core_model.ResourceMeta
 
 			globalUni := metaFn(func(name, mesh string, labels map[string]string) core_model.ResourceMeta {
