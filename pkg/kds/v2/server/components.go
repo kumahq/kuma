@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/status"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/v2/util"
@@ -35,8 +34,8 @@ func New(
 	providedTypes []model.ResourceType,
 	serverID string,
 	refresh time.Duration,
-	filter reconcile.ResourceFilter,
-	mapper reconcile.ResourceMapper,
+	filter reconcile_v2.ResourceFilter,
+	mapper reconcile_v2.ResourceMapper,
 	nackBackoff time.Duration,
 ) (Server, error) {
 	hasher, cache := newKDSContext(log)
