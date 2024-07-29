@@ -408,11 +408,7 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return refName == GetDisplayName(resourceMeta)
 }
 
-func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
-	return IsLocallyOriginatedByLabels(mode, r.GetMeta().GetLabels())
-}
-
-func IsLocallyOriginatedByLabels(mode config_core.CpMode, labels map[string]string) bool {
+func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool {
 	switch mode {
 	case config_core.Global:
 		origin, ok := resourceOrigin(labels)
@@ -472,7 +468,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if isK8s && IsLocallyOriginatedByLabels(mode, labels) {
+	if isK8s && IsLocallyOriginated(mode, labels) {
 		ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
 		if ok && ns != "" {
 			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)

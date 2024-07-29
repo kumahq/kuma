@@ -311,7 +311,7 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 					// todo: remove in 2 releases after 2.6.x
 					return zi.IsRemoteIngress(localZone)
 				}
-				return !core_model.IsLocallyOriginated(config_core.Zone, r) || !isExpectedOnZoneCP(r.Descriptor())
+				return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels()) || !isExpectedOnZoneCP(r.Descriptor())
 			}))
 		},
 	}
