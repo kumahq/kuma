@@ -1,3 +1,23 @@
+Mesh.mesh-1:
+  Conf:
+    connectionTimeout: 21s
+    idleTimeout: 9s
+  Origin:
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-mt-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-1
+    NameExtensions: null
+    Version: ""
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
 MeshService.mesh-1.backend:
   Conf:
     connectionTimeout: 21s

@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -135,6 +136,9 @@ var _ = Describe("BuildResourceRules", func() {
 
 			updFn := func(fn metaFn, rs []core_model.Resource) {
 				for _, r := range rs {
+					if r.Descriptor().Name == mesh.MeshType {
+						continue
+					}
 					r.SetMeta(fn(r.GetMeta().GetName(), r.GetMeta().GetMesh(), r.GetMeta().GetLabels()))
 				}
 			}

@@ -1,20 +1,56 @@
-MeshService.mesh-1.backend-586b984b597z5874.kuma-system:
+Mesh.mesh-1:
   Conf:
-    connectionTimeout: 11s
+    connectionTimeout: 1m41s
     http:
-      requestTimeout: 12s
-    idleTimeout: 10s
+      requestTimeout: 1m42s
+    idleTimeout: 1m40s
   Origin:
   - CreationTime: "0001-01-01T00:00:00Z"
     Labels:
-      kuma.io/display-name: matched-for-rules-mt-1
+      kuma.io/display-name: matched-for-rules-mt-bbbbbb
       kuma.io/origin: zone
       kuma.io/zone: zone-uni
     Mesh: mesh-1
     ModificationTime: "0001-01-01T00:00:00Z"
-    Name: matched-for-rules-mt-1-484ffbf4cvf7b447.kuma-system
+    Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v.kuma-system
     NameExtensions:
-      k8s.kuma.io/name: matched-for-rules-mt-1-484ffbf4cvf7b447
+      k8s.kuma.io/name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+MeshService.mesh-1.backend-586b984b597z5874.kuma-system:
+  Conf:
+    connectionTimeout: 1m41s
+    http:
+      requestTimeout: 1m42s
+    idleTimeout: 1m40s
+  Origin:
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-mt-aaaaaa
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-aaaaaa-4c245b25672df2cd.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: matched-for-rules-mt-aaaaaa-4c245b25672df2cd
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: matched-for-rules-mt-bbbbbb
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
       k8s.kuma.io/namespace: kuma-system
     Version: ""
   Resource:

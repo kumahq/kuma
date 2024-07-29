@@ -3,9 +3,6 @@ package rules
 import (
 	"fmt"
 	"slices"
-	"sort"
-
-	"golang.org/x/exp/maps"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -44,11 +41,15 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 		}
 
 		confs := []interface{}{}
-		distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+		var origins []core_model.ResourceMeta
+		originSet := map[core_model.ResourceKey]struct{}{}
 		for _, j := range resolvedItems {
 			if includes(j.r, i.r) {
 				confs = append(confs, j.item.GetDefault())
-				distinctOrigins[core_model.MetaToResourceKey(i.item.ResourceMeta)] = i.item.ResourceMeta
+				if _, ok := originSet[core_model.MetaToResourceKey(j.item.ResourceMeta)]; !ok {
+					origins = append(origins, j.item.ResourceMeta)
+					originSet[core_model.MetaToResourceKey(j.item.ResourceMeta)] = struct{}{}
+				}
 			}
 		}
 
@@ -57,10 +58,6 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 			return nil, err
 		}
 		if len(merged) == 1 {
-			origins := maps.Values(distinctOrigins)
-			sort.Slice(origins, func(i, j int) bool {
-				return origins[i].GetName() < origins[j].GetName()
-			})
 			rules[key] = ResourceRule{
 				Resource: i.r.GetMeta(),
 				Conf:     merged[0],
@@ -73,14 +70,24 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 }
 
 func uniqueKey(r core_model.Resource) UniqueResourceKey {
-	return UniqueResourceKey(fmt.Sprintf("%s.%s.%s", r.Descriptor().Name, r.GetMeta().GetMesh(), r.GetMeta().GetName()))
+	switch r.Descriptor().Scope {
+	case core_model.ScopeMesh:
+		return UniqueResourceKey(fmt.Sprintf("%s.%s.%s", r.Descriptor().Name, r.GetMeta().GetMesh(), r.GetMeta().GetName()))
+	default:
+		return UniqueResourceKey(fmt.Sprintf("%s.%s", r.Descriptor().Name, r.GetMeta().GetName()))
+	}
 }
 
 // includes if resource 'y' is part of the resource 'x', i.e. 'MeshService' is always included in 'Mesh'
 func includes(x, y core_model.Resource) bool {
 	switch x.Descriptor().Name {
 	case mesh.MeshType:
-		return x.GetMeta().GetName() == y.GetMeta().GetMesh()
+		switch y.Descriptor().Name {
+		case mesh.MeshType:
+			return x.GetMeta().GetName() == y.GetMeta().GetName()
+		default:
+			return x.GetMeta().GetName() == y.GetMeta().GetMesh()
+		}
 	case meshservice_api.MeshServiceType:
 		switch y.Descriptor().Name {
 		case meshservice_api.MeshServiceType:
