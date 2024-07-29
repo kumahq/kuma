@@ -143,10 +143,7 @@ would disable this behavior to switch to local zone behavior.
 
 #### Cons
 
-* Is it coherent?
-  - the set of endpoints is shared between MeshServices local
-    and synced from other zones
-  - HostnameGenerator can't/shouldn't by default generate with a zone suffix
+* How does this work with synced MeshServices? Are they cross-zone?
 * Need to keep using ZoneIngress availableServices
 
 ### Generate MeshMultiZoneService
