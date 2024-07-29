@@ -26,25 +26,11 @@ Mesh.mesh-1:
     type: Mesh
 MeshService.mesh-1.backend-z7f47x24v9f5x2b4.kuma-system:
   Conf:
-    connectionTimeout: 1m41s
+    connectionTimeout: 11s
     http:
-      requestTimeout: 1m42s
-    idleTimeout: 1m40s
+      requestTimeout: 12s
+    idleTimeout: 10s
   Origin:
-  - CreationTime: "0001-01-01T00:00:00Z"
-    Labels:
-      k8s.kuma.io/namespace: ns-k8s
-      kuma.io/display-name: matched-for-rules-mt-aaaaaa
-      kuma.io/mesh: mesh-1
-      kuma.io/origin: zone
-      kuma.io/zone: zone-k8s
-    Mesh: mesh-1
-    ModificationTime: "0001-01-01T00:00:00Z"
-    Name: matched-for-rules-mt-aaaaaa-wxx42d7xz229f8wx.kuma-system
-    NameExtensions:
-      k8s.kuma.io/name: matched-for-rules-mt-aaaaaa-wxx42d7xz229f8wx
-      k8s.kuma.io/namespace: kuma-system
-    Version: ""
   - CreationTime: "0001-01-01T00:00:00Z"
     Labels:
       k8s.kuma.io/namespace: ns-k8s
@@ -57,6 +43,20 @@ MeshService.mesh-1.backend-z7f47x24v9f5x2b4.kuma-system:
     Name: matched-for-rules-mt-bbbbbb-25x7vw24b48f4v96.kuma-system
     NameExtensions:
       k8s.kuma.io/name: matched-for-rules-mt-bbbbbb-25x7vw24b48f4v96
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  - CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: matched-for-rules-mt-aaaaaa
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-k8s
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: matched-for-rules-mt-aaaaaa-wxx42d7xz229f8wx.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: matched-for-rules-mt-aaaaaa-wxx42d7xz229f8wx
       k8s.kuma.io/namespace: kuma-system
     Version: ""
   Resource:

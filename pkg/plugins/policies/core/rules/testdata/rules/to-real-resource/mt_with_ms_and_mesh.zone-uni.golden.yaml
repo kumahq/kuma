@@ -20,7 +20,7 @@ Mesh.mesh-1:
     type: Mesh
 MeshService.mesh-1.backend:
   Conf:
-    connectionTimeout: 21s
+    connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 9s

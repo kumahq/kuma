@@ -109,6 +109,7 @@ type SingleItemRules struct {
 type PolicyItemWithMeta struct {
 	core_model.PolicyItem
 	core_model.ResourceMeta
+	TopLevel common_api.TargetRef
 }
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -293,7 +294,7 @@ func BuildFromRules(
 			if !ok {
 				return FromRules{}, nil
 			}
-			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta())...)
+			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
 		rules, err := BuildRules(fromList)
 		if err != nil {
@@ -336,7 +337,10 @@ func BuildToList(matchedPolicies []core_model.Resource, lister ResourceLister) (
 		if err != nil {
 			return nil, err
 		}
-		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
+		if len(tl) > 0 {
+			topLevel := mp.GetSpec().(core_model.PolicyWithToList).GetTargetRef()
+			toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta(), topLevel)...)
+		}
 	}
 	return toList, nil
 }
@@ -447,12 +451,13 @@ func (a *artificialPolicyItem) GetDefault() interface{} {
 	return a.conf
 }
 
-func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {
+func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta, topLevel common_api.TargetRef) []PolicyItemWithMeta {
 	var result []PolicyItemWithMeta
 	for _, item := range items {
 		result = append(result, PolicyItemWithMeta{
 			PolicyItem:   item,
 			ResourceMeta: meta,
+			TopLevel:     topLevel,
 		})
 	}
 	return result

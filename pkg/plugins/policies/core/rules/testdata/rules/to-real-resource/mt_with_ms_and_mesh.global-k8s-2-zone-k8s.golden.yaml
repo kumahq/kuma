@@ -23,7 +23,7 @@ Mesh.mesh-1:
     type: Mesh
 MeshService.mesh-1.backend-xdc9b75d4z2w5b6d.kuma-system:
   Conf:
-    connectionTimeout: 21s
+    connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 9s
