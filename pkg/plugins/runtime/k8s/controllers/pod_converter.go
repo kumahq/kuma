@@ -44,7 +44,7 @@ func (p *PodConverter) PodToDataplane(
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 
 	var exisingProbes *mesh_proto.Dataplane_Probes
-	if dpSpec, err := dataplane.GetSpec(); err == nil && dpSpec != nil {
+	if dpSpec, err := dataplane.GetSpec(); err == nil {
 		if existingProbe, ok := dpSpec.(*mesh_proto.Dataplane); ok {
 			exisingProbes = existingProbe.Probes
 		}
