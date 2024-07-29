@@ -11,11 +11,11 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -29,8 +29,6 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
 	rm                manager.ReadOnlyResourceManager
@@ -162,7 +160,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
 	meshServices := resources.MeshServices().Items
-	meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(dataplanes))
+	meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(meshServices))
 	for _, ms := range meshServices {
 		meshServicesByName[ms.Meta.GetName()] = ms
 	}
@@ -170,6 +168,11 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	meshExternalServicesByName := make(map[string]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
 	for _, mes := range meshExternalServices {
 		meshExternalServicesByName[mes.Meta.GetName()] = mes
+	}
+	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
+	meshMultiZoneServicesByName := make(map[string]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
+	for _, svc := range meshMultiZoneServices {
+		meshMultiZoneServicesByName[svc.Meta.GetName()] = svc
 	}
 
 	var domains []xds.VIPDomains
@@ -190,15 +193,19 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	mesDomains, mesOutbounds := xds_topology.MeshExternalServiceOutbounds(meshExternalServices)
 	outbounds = append(outbounds, mesOutbounds...)
 	domains = append(domains, mesDomains...)
+	mzmsDomains, mzmsOutbounds := xds_topology.MeshMultiZoneServiceOutbounds(meshMultiZoneServices)
+	outbounds = append(outbounds, mzmsOutbounds...)
+	domains = append(domains, mzmsDomains...)
+
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 
 	mesh := baseMeshContext.Mesh
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
 	externalServices := resources.ExternalServices().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, meshExternalServices, loader, m.zone)
-	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(mesh, m.zone, meshServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses)
+	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(mesh, m.zone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, externalServices, resources.Gateways().Items, zoneEgresses)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
 	for otherMeshName, gateways := range resources.gatewaysAndDataplanesForMesh(mesh) {
@@ -220,6 +227,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		DataplanesByName:            dataplanesByName,
 		MeshServiceByName:           meshServicesByName,
 		MeshExternalServiceByName:   meshExternalServicesByName,
+		MeshMultiZoneServiceByName:  meshMultiZoneServicesByName,
 		EndpointMap:                 endpointMap,
 		ExternalServicesEndpointMap: esEndpointMap,
 		IngressEndpointMap:          ingressEndpointMap,

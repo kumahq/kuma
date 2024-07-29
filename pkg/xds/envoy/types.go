@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -145,8 +146,7 @@ type Service struct {
 	clusters           []Cluster
 	hasExternalService bool
 	tlsReady           bool
-	meshServiceName    string
-	meshServicePort    uint32
+	backendRef         common_api.BackendRef
 }
 
 func (c *Service) Add(cluster Cluster) {
@@ -176,12 +176,8 @@ func (c *Service) TLSReady() bool {
 	return c.tlsReady
 }
 
-func (c *Service) MeshServiceName() string {
-	return c.meshServiceName
-}
-
-func (c *Service) MeshServicePort() uint32 {
-	return c.meshServicePort
+func (c *Service) BackendRef() common_api.BackendRef {
+	return c.backendRef
 }
 
 type Services map[string]*Service
@@ -223,18 +219,15 @@ func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 	}
 }
 
-func (sa ServicesAccumulator) AddMeshService(name string, port uint32, clusters ...Cluster) {
-	for _, c := range clusters {
-		if sa.services[c.Service()] == nil {
-			sa.services[c.Service()] = &Service{
-				tlsReady:        sa.tlsReadiness[c.Service()],
-				name:            c.Service(),
-				meshServiceName: name,
-				meshServicePort: port,
-			}
+func (sa ServicesAccumulator) AddBackendRef(backendRef common_api.BackendRef, cluster Cluster) {
+	if sa.services[cluster.Service()] == nil {
+		sa.services[cluster.Service()] = &Service{
+			tlsReady:   sa.tlsReadiness[cluster.Service()],
+			name:       cluster.Service(),
+			backendRef: backendRef,
 		}
-		sa.services[c.Service()].Add(c)
 	}
+	sa.services[cluster.Service()].Add(cluster)
 }
 
 type CLACache interface {

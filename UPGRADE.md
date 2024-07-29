@@ -6,6 +6,181 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.9.x`
+
+### Upgrading Transparent Proxy Configuration
+
+#### Removal of Deprecated IPv6 Redirection Flag and Annotation
+
+In this release, the following deprecated options for configuring IPv6 transparent proxy redirection have been removed:
+
+- The `--redirect-inbound-port-ipv6` flag in `kumactl install transparent-proxy`.
+- The `kuma.io/transparent-proxying-inbound-v6-port` annotation.
+
+Previously, disabling IPv6 transparent proxy redirection could be achieved by setting these options to `0`. This method is no longer supported.
+
+To disable IPv6 transparent proxy redirection, you should now use the `--ip-family-mode` flag or the `kuma.io/transparent-proxying-ip-family-mode` annotation and set their value to `ipv4`. The default value for these options is `dualstack`.
+
+**Example:**
+
+In Universal mode, to install a transparent proxy:
+
+```sh
+kumactl install transparent-proxy --ip-family-mode ipv4 ...
+```
+
+In the definition of the `Dataplane` resource:
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+    ipFamilyMode: ipv4
+```
+
+To set the configuration for Kubernetes workloads:
+
+```sh
+kumactl install control-plane --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ...
+```
+
+or
+
+```sh
+helm install --set controlPlane.envVars.KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE=ipv4 ... kuma kuma/kuma
+```
+
+For more information about disabling IPv6 in transparent proxy redirection, visit our documentation: [Disabling IPv6](https://kuma.io/docs/2.8.x/production/dp-config/ipv6/#disabling-ipv6).
+
+Please update your configurations accordingly to ensure a smooth transition and avoid any disruptions in your service.
+
+#### Removal of `redirectPortInboundV6` Field from Dataplane Resource
+
+The `Dataplane` resource no longer includes the `redirectPortInboundV6` field. Any configuration containing this field will fail validation. Update your `Dataplane` resources as shown below:
+
+**Previous configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortInboundV6: 15006
+    redirectPortOutbound: 15001
+```
+
+**Updated configuration:**
+
+```yaml
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  # ...
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+```
+
+Ensure to update your Dataplane resources to the new format to avoid any validation errors.
+
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Flags
+
+The flags `--exclude-outbound-tcp-ports-for-uids` and `--exclude-outbound-udp-ports-for-uids` have been removed from the `kumactl install transparent-proxy` command. Users should now use the consolidated flag `--exclude-outbound-ports-for-uids <protocol:>?<ports:>?<uids>` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids tcp:22:1000 ...
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```sh
+  kumactl install transparent-proxy --exclude-outbound-ports-for-uids udp:53:1000 ...
+  ```
+
+#### Removal of Deprecated Exclude Outbound TCP/UDP Ports for UIDs Annotations
+
+The annotations `traffic.kuma.io/exclude-outbound-tcp-ports-for-uids` and `traffic.kuma.io/exclude-outbound-udp-ports-for-uids` have also been removed. Use the annotation `traffic.kuma.io/exclude-outbound-ports-for-uids` instead.
+
+##### Examples:
+
+- To disable redirection of outbound TCP traffic on port 22 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: tcp:22:1000
+  ```
+
+- To disable redirection of outbound UDP traffic on port 53 for users with UID 1000:
+  ```yaml
+  traffic.kuma.io/exclude-outbound-ports-for-uids: udp:53:1000
+  ```
+
+Make sure to update your configuration files and scripts accordingly to accommodate these changes.
+
+#### Deprecation of `--kuma-dp-uid` Flag
+
+In this release, the `--kuma-dp-uid` flag used in the `kumactl install transparent-proxy` command has been deprecated. The functionality of specifying a user by UID is now included in the `--kuma-dp-user` flag, which accepts both usernames and UIDs.
+
+**New Usage Example:**
+
+Instead of using:
+```sh
+kumactl install transparent-proxy --kuma-dp-uid 1234
+```
+
+You should now use:
+```sh
+kumactl install transparent-proxy --kuma-dp-user 1234
+```
+
+If the `--kuma-dp-user` flag is not provided, the system will attempt to use the default UID (`5678`) or the default username (`kuma-dp`).
+
+Please update your scripts and configurations accordingly to accommodate this change.
+
+### Setting `kuma.io/service` in tags of `MeshGatewayInstance` had been forbidden
+
+To increase security, in version 2.7.x, setting a `kuma.io/service` tag for the `MeshGatewayInstance` was deprecated and since 2.9.x is not supported. We generate the `kuma.io/service` tag based on the `MeshGatewayInstance` resource. The service name is constructed as `{MeshGatewayInstance name}_{MeshGatewayInstance namespace}_svc`.
+
+E.g.:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayInstance
+metadata:
+  name: demo-app
+  namespace: kuma-demo
+  labels:
+    kuma.io/mesh: default
+```
+
+The generated `kuma.io/service` value is `demo-app_kuma-demo_svc`.
+
+#### Migration
+
+The migration process requires updating all policies and `MeshGateway` resources using the old `kuma.io/service` value to adopt the new one.
+
+Migration step:
+1. Create a copy of policies using the new `kuma.io/service` and the new resource name to avoid overwriting previous policies.
+2. Duplicate the `MeshGateway` resource with a selector using the new `kuma.io/service` value.
+3. Deploy the gateway and verify if traffic works correctly.
+4. Remove the old resources.
+
+### kumactl
+
+#### Default prometheus scrape config removes `service`
+
+If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
+Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

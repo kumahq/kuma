@@ -39,9 +39,8 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-				RedirectPortOutbound:  12345,
-				RedirectPortInbound:   12346,
-				RedirectPortInboundV6: 12347,
+				RedirectPortOutbound: 12345,
+				RedirectPortInbound:  12346,
 			},
 			expected: `
             name: inbound:192.168.0.1:8080

@@ -8,11 +8,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
+
+var logger = core.Log.WithName("xds").WithName("context")
 
 type Context struct {
 	ControlPlane *ControlPlaneContext
@@ -67,6 +70,7 @@ type MeshContext struct {
 	DataplanesByName            map[string]*core_mesh.DataplaneResource
 	MeshServiceByName           map[string]*meshservice_api.MeshServiceResource
 	MeshExternalServiceByName   map[string]*meshexternalservice_api.MeshExternalServiceResource
+	MeshMultiZoneServiceByName  map[string]*meshmzservice_api.MeshMultiZoneServiceResource
 	EndpointMap                 xds.EndpointMap
 	IngressEndpointMap          xds.EndpointMap
 	ExternalServicesEndpointMap xds.EndpointMap
@@ -89,7 +93,7 @@ func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *me
 		return nil
 	}
 	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		core.Log.WithName("xds").Info("Tracing backend is not found. Ignoring.",
+		logger.Info("Tracing backend is not found. Ignoring.",
 			"backendName", tt.Spec.GetConf().GetBackend(),
 			"trafficTraceName", tt.GetMeta().GetName(),
 			"trafficTraceMesh", tt.GetMeta().GetMesh())
@@ -104,7 +108,7 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 		return nil
 	}
 	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		core.Log.WithName("xds").Info("Logging backend is not found. Ignoring.",
+		logger.Info("Logging backend is not found. Ignoring.",
 			"backendName", tl.Spec.GetConf().GetBackend(),
 			"trafficLogName", tl.GetMeta().GetName(),
 			"trafficLogMesh", tl.GetMeta().GetMesh())

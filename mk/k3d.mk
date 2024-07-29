@@ -107,7 +107,8 @@ k3d/configure/metallb:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/metallb/metallb/$(METALLB_VERSION)/config/manifests/metallb-native.yaml
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n metallb-system --all pods
 	@# Construct a valid address space from the docker network and the template IPAddressPool
-	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
+	@# Make sure we only take an IPv4 network
+	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format json | jq -r '.[0].IPAM.Config[].Subnet | select(. | contains(":") | not)')"; \
 		IFS=/ read -r _byte prefix <<< "$${NETWORK_ADDR_SPACE[3]}"; \
 		    if [[ "$${prefix}" -gt 16 ]]; then echo "Unexpected docker network, expecting a prefix of at most 16 bits"; exit 1; fi; \
 		IFS=. read -ra BASE_ADDR_SPACE <<< "$$($(YQ) 'select(.kind == "IPAddressPool") | .spec.addresses[0]' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml)"; \

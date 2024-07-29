@@ -9,10 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -48,7 +46,7 @@ var _ = Describe("Updater", func() {
 		close(stopCh)
 	})
 
-	It("should add mesh services and port to the status of multizone service", func() {
+	It("should add mesh services to the status of multizone service", func() {
 		// when
 		ms1Builder := samples.MeshServiceBackendBuilder().
 			WithName("backend").
@@ -70,7 +68,6 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{{Name: "backend"}}))
-			g.Expect(mzsvc.Status.Ports).To(Equal(ms1Builder.Build().Spec.Ports))
 		}, "10s", "100ms").Should(Succeed())
 
 		// when new service is added
@@ -79,7 +76,6 @@ var _ = Describe("Updater", func() {
 			WithDataplaneTagsSelector(map[string]string{
 				"app": "backend",
 			}).
-			AddIntPort(71, 8081, core_mesh.ProtocolHTTP).
 			WithLabels(map[string]string{
 				mesh_proto.DisplayName: "backend",
 				mesh_proto.ZoneTag:     "west",
@@ -95,11 +91,6 @@ var _ = Describe("Updater", func() {
 			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{
 				{Name: "backend"},
 				{Name: "backend-syncedhash"},
-			}))
-			// ports are sorted
-			g.Expect(mzsvc.Status.Ports).To(Equal([]meshservice_api.Port{
-				ms2Builder.Build().Spec.Ports[1],
-				ms1Builder.Build().Spec.Ports[0],
 			}))
 		}, "10s", "100ms").Should(Succeed())
 	})

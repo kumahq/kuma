@@ -3,7 +3,11 @@ package builders
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -43,6 +47,30 @@ func (m *MeshMultiZoneServiceBuilder) WithMesh(mesh string) *MeshMultiZoneServic
 
 func (m *MeshMultiZoneServiceBuilder) WithServiceLabelSelector(labels map[string]string) *MeshMultiZoneServiceBuilder {
 	m.res.Spec.Selector.MeshService.MatchLabels = labels
+	return m
+}
+
+func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(name string) *MeshMultiZoneServiceBuilder {
+	m.res.Status.MeshServices = append(m.res.Status.MeshServices, meshmzservice_api.MatchedMeshService{
+		Name: name,
+	})
+	return m
+}
+
+func (m *MeshMultiZoneServiceBuilder) AddPort(port meshservice_api.Port) *MeshMultiZoneServiceBuilder {
+	m.res.Spec.Ports = append(m.res.Spec.Ports, port)
+	return m
+}
+
+func (m *MeshMultiZoneServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.Protocol) *MeshMultiZoneServiceBuilder {
+	m.res.Spec.Ports = append(m.res.Spec.Ports, meshservice_api.Port{
+		Port: port,
+		TargetPort: intstr.IntOrString{
+			Type:   intstr.Int,
+			IntVal: int32(target),
+		},
+		AppProtocol: protocol,
+	})
 	return m
 }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -100,6 +101,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		return nil
 	}
 	defer resp.Body.Close()
+	requestTime := time.Now().UTC()
 
 	metricsFromApplication, err := app.MeshMetricMutator(resp.Body)
 	if err != nil {
@@ -110,7 +112,7 @@ func (ap *AggregatedProducer) fetchStats(ctx context.Context, app ApplicationToS
 		Scope: instrumentation.Scope{
 			Name: app.Name,
 		},
-		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels),
+		Metrics: FromPrometheusMetrics(metricsFromApplication, ap.mesh, ap.dataplane, ap.service, app.ExtraLabels, requestTime),
 	}
 }
 

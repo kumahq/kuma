@@ -98,6 +98,10 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
 	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDs
 
+	if intermediateConfig.excludeOutboundIPs != "" {
+		cfg.Redirect.Outbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeOutboundIPs, ",")
+	}
+
 	cfg.DropInvalidPackets, err = GetEnabled(intermediateConfig.dropInvalidPackets)
 	if err != nil {
 		return nil, err
@@ -113,18 +117,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	var inboundPortV6 uint16
-	if intermediateConfig.ipFamilyMode == "ipv4" {
-		inboundPortV6 = 0
-	} else {
-		inboundPortV6, err = convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	cfg.IPv6, err = transparentproxy.ShouldEnableIPv6(inboundPortV6)
-	if err != nil {
+	if err := cfg.IPFamilyMode.Set(intermediateConfig.ipFamilyMode); err != nil {
 		return nil, err
 	}
 
@@ -141,8 +134,11 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		}
 
 		cfg.Redirect.Inbound.Port = inboundPort
-		cfg.Redirect.Inbound.PortIPv6 = inboundPortV6
 		cfg.Redirect.Inbound.ExcludePorts = excludedPorts
+
+		if intermediateConfig.excludeInboundIPs != "" {
+			cfg.Redirect.Inbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeInboundIPs, ",")
+		}
 	}
 
 	cfg.Redirect.DNS.Enabled, err = GetEnabled(intermediateConfig.builtinDNS)

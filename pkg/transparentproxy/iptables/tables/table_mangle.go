@@ -48,17 +48,11 @@ func (t *MangleTable) CustomChains() []*chains.Chain {
 }
 
 func Mangle() *MangleTable {
-	prerouting, _ := chains.NewChain(consts.TableMangle, consts.ChainPrerouting)
-	input, _ := chains.NewChain(consts.TableMangle, consts.ChainInput)
-	forward, _ := chains.NewChain(consts.TableMangle, consts.ChainForward)
-	output, _ := chains.NewChain(consts.TableMangle, consts.ChainOutput)
-	postrouting, _ := chains.NewChain(consts.TableMangle, consts.ChainPostrouting)
-
 	return &MangleTable{
-		prerouting:  prerouting,
-		input:       input,
-		forward:     forward,
-		output:      output,
-		postrouting: postrouting,
+		prerouting:  chains.MustNewChain(consts.TableMangle, consts.ChainPrerouting),
+		input:       chains.MustNewChain(consts.TableMangle, consts.ChainInput),
+		forward:     chains.MustNewChain(consts.TableMangle, consts.ChainForward),
+		output:      chains.MustNewChain(consts.TableMangle, consts.ChainOutput),
+		postrouting: chains.MustNewChain(consts.TableMangle, consts.ChainPostrouting),
 	}
 }

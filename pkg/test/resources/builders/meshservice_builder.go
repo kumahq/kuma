@@ -93,8 +93,18 @@ func (m *MeshServiceBuilder) WithKumaVIP(vip string) *MeshServiceBuilder {
 	return m
 }
 
+func (m *MeshServiceBuilder) WithState(state v1alpha1.State) *MeshServiceBuilder {
+	m.res.Spec.State = state
+	return m
+}
+
 func (m *MeshServiceBuilder) WithoutVIP() *MeshServiceBuilder {
 	m.res.Status.VIPs = []v1alpha1.VIP{}
+	return m
+}
+
+func (m *MeshServiceBuilder) WithTLSStatus(status v1alpha1.TLSStatus) *MeshServiceBuilder {
+	m.res.Status.TLS.Status = status
 	return m
 }
 

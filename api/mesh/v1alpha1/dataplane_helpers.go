@@ -40,6 +40,9 @@ const (
 	// Listener tag is used to select Gateway listeners
 	ListenerTag = "gateways.kuma.io/listener-name"
 
+	// Port tag is used to select Gateway listeners
+	PortTag = "gateways.kuma.io/listener-port"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 
@@ -60,6 +63,9 @@ const (
 	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
+
+	// ManagedByLabel is used when a MeshService is auto-generated
+	ManagedByLabel = "kuma.io/managed-by"
 )
 
 type ResourceOrigin string
