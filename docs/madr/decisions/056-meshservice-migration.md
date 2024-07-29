@@ -24,9 +24,10 @@ If for example we have a policy targeted at:
 
 ```
 spec:
-  targetRef:
-    kind: MeshService
-    name: demo-app_kuma-demo_svc_5000
+  to:
+  - targetRef:
+      kind: MeshService
+      name: demo-app_kuma-demo_svc_5000
 ```
 
 when switching over to MeshService, this policy will no longer apply.
