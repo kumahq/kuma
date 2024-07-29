@@ -32,7 +32,7 @@ var (
 )
 
 const (
-	pathPrefixTCP     = "/tcp"
+	pathPrefixTCP     = "/tcp/"
 	pathPrefixGRPC    = "/grpc/"
 	maxRespBodyLength = 10 * 1 << 10 // 10KB
 
