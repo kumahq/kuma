@@ -6,9 +6,12 @@ Technical story: https://github.com/kumahq/kuma/issues/10247
 
 ## Context and Problem Statement
 
+This MADR is focused to targeting outbound routes configured on client proxy. 
+
 At the moment when targeting `Mesh*Route` you need to put it in topLevel targetRef. 
 We want to iterate over policy design and move `Mesh*Route` to `spec.to[].targetRef` section follow model where `spec.targetRef`
-selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].targetRef` selects outbounds
+selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].targetRef` selects outbounds.
+
 
 ## Decision Outcome
 
@@ -475,58 +478,6 @@ spec:
 
 To introduce this change we need to deprecate specifying `Mesh*Route` in `spec.targetRef`.
 
-Should we allow selecting MeshGateway in `spec.targetRef` when `Mesh*Route` is configured in `spec.to[].targetRef`? probably this 
-is obsolete as Route will select gateway, and we want to apply policy on a route. Is there a need to make it more specific than route? 
-For example when user creates route targeting MeshGateway:
-
-```yaml
-kind: MeshHTTPRoute
-metadata:
-  name: demo-app-route
-  namespace: kuma-system
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: default
-spec:
-  targetRef:
-    kind: MeshGateway
-    name: demo-app
-  to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: "/"
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: demo-app_kuma-demo_svc_5000
-```
-
-then when you create timeout that targets this route: 
-
-```yaml
-kind: MeshTimeout
-metadata:
-  name: demo-app-timeout
-  namespace: kuma-system
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: default
-spec:
-  to:
-    - targetRef:
-        kind: MeshHTTPRoute
-        name: demo-app-route
-      default:
-        requestTimeout: 5s
-```
-
-This route already will be created only on MeshGateway, so is there a need to specify anything else then a Mesh in `spec.targetRef`
-of timeout policy?
-
 #### Additional validation
 
 When referencing Mesh*Route we should validate policy configuration to make sure user is applying only configuration 
@@ -773,10 +724,16 @@ multiple outbounds.
 Possible solutions:
 
 1. We can deprecate and then remove possibility to have multiple `spec.to[]` items in `Mesh*Route` policy to make it referencable. 
-(this is basically step into removing `to` section altogether, why do we need it if we cannot put multiple items in it)
+(this is basically step into removing `to` section altogether, why do we need it if we cannot put multiple items in it).
 2. When merging we should only merge confs for given resource, don't treat `Mesh*Route` as subtype of `MeshService` and then
 when applying configuration to resource we should be more mindful on which outbound the route is configured and configure 
 it based on conf for that MeshService
+
+**Decision outcome**
+
+We've decided to go with option 1, which is to deprecate and later on remove possibility to put multiple items in `spec.to[]`
+section of `Mesh*Route`. This will align `Mesh*Route` design with GatewayAPI. In the future we should also discuss removing 
+`spec.to[]` section entirely leaving only `spec.targetRef` section in `Mesh*Route`.
 
 #### Overriding configuration
 
