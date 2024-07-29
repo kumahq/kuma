@@ -87,16 +87,36 @@ func generateGatewayRoutes(
 		return nil, nil
 	}
 
-	resources := core_xds.NewResourceSet()
-	// Make a pass over the generators for each virtual host.
-	for _, hostInfos := range listenerHostnames {
+	routeConfigs := map[string]*envoy_routes.RouteConfigurationBuilder{}
+	switch info.Listener.Protocol {
+	case mesh_proto.MeshGateway_Listener_HTTPS:
+		for _, hostInfos := range listenerHostnames {
+			routeConfig := plugin_gateway.GenerateRouteConfig(
+				info.Proxy,
+				info.Listener.Protocol,
+				hostInfos.EnvoyRouteName(info.Listener.EnvoyListenerName),
+			)
+			routeConfigs[hostInfos.Hostname] = routeConfig
+		}
+	case mesh_proto.MeshGateway_Listener_HTTP:
 		routeConfig := plugin_gateway.GenerateRouteConfig(
 			info.Proxy,
 			info.Listener.Protocol,
-			hostInfos.EnvoyRouteName(info.Listener.EnvoyListenerName),
+			info.Listener.EnvoyListenerName+":*",
 		)
+		for _, hostInfos := range listenerHostnames {
+			routeConfigs[hostInfos.Hostname] = routeConfig
+		}
+	default:
+		return nil, nil
+	}
+
+	resources := core_xds.NewResourceSet()
+	// Make a pass over the generators for each virtual host.
+	for _, hostInfos := range listenerHostnames {
+		routeConfig := routeConfigs[hostInfos.Hostname]
 		for _, hostInfo := range hostInfos.HostInfos {
-			vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries())
+			vh, err := plugin_gateway.GenerateVirtualHost(ctx, info, hostInfo.Host.Hostname, hostInfo.Entries())
 			if err != nil {
 				return nil, err
 			}

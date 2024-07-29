@@ -1,5 +1,10 @@
 package parameters
 
+import (
+	"fmt"
+	"strings"
+)
+
 var _ ParameterBuilder = &MatchParameter{}
 
 type MatchParameter struct {
@@ -32,6 +37,29 @@ func Multiport() *MatchParameter {
 	}
 }
 
+// Comment allows you to add comments (up to 256 characters) to any rule.
+//
+//	Example:
+//	  iptables -A INPUT -i eth1 -m comment --comment "my local LAN"
+//
+// ref. iptables-extensions(8) > comment
+func Comment(comments ...string) *MatchParameter {
+	comment := fmt.Sprintf("%q", strings.Join(comments, "/"))
+	if len(comment) > 256 {
+		comment = comment[:256]
+	}
+
+	return &MatchParameter{
+		name: "comment",
+		parameters: []ParameterBuilder{
+			&SimpleParameter{
+				long:  "--comment",
+				value: comment,
+			},
+		},
+	}
+}
+
 func Match(matchParameters ...*MatchParameter) *Parameter {
 	var parameters []ParameterBuilder
 
@@ -45,4 +73,12 @@ func Match(matchParameters ...*MatchParameter) *Parameter {
 		parameters: parameters,
 		negate:     negateNestedParameters,
 	}
+}
+
+func MatchIf(predicate bool, matchParameters ...*MatchParameter) *Parameter {
+	if !predicate {
+		return nil
+	}
+
+	return Match(matchParameters...)
 }

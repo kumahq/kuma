@@ -21,7 +21,7 @@ type denyingValidator struct{}
 
 var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
-func (d *denyingValidator) InjectDecoder(*kube_admission.Decoder) {
+func (d *denyingValidator) InjectDecoder(kube_admission.Decoder) {
 }
 
 func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_admission.Response {

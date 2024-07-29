@@ -1,6 +1,3 @@
-.PHONY: fmt
-fmt: golangci-lint-fmt fmt/proto fmt/ci ## Dev: Run various format tools
-
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
 	find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT) -i
@@ -24,15 +21,8 @@ else
 	@echo "skipping golangci-lint as it's done as a github action"
 endif
 
-.PHONY: golangci-lint-fmt
-golangci-lint-fmt:
-	GOMEMLIMIT=7GiB $(GOENV) $(GOLANGCI_LINT) run --timeout=10m -v \
-		--disable-all \
-		--enable gofumpt
-
 .PHONY: fmt/ci
 fmt/ci:
-	$(YQ) -i '.parameters.go_version.default = "$(GO_VERSION)" | .parameters.first_k8s_version.default = "$(K8S_MIN_VERSION)" | .parameters.last_k8s_version.default = "$(K8S_MAX_VERSION)"' .circleci/config.yml
 	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
 	grep -r "golangci/golangci-lint-action" .github/workflows --include \*ml | cut -d ':' -f 1 | xargs -n 1 $(YQ) -i '(.jobs.* | select(. | has("steps")) | .steps[] | select(.uses == "golangci/golangci-lint-action*") | .with.version) |= "$(GOLANGCI_LINT_VERSION)"'
 
@@ -52,7 +42,7 @@ ginkgo/lint:
 format/common: generate docs tidy ginkgo/unfocus fmt/ci
 
 .PHONY: format
-format: fmt format/common
+format: fmt/proto fmt/ci format/common
 
 .PHONY: kube-lint
 kube-lint:
@@ -72,7 +62,7 @@ hadolint:
 lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
 
 .PHONY: check
-check: format/common lint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format lint ## Dev: Run code checks (go fmt, go vet, ...)
 	@untracked() { git ls-files --other --directory --exclude-standard --no-empty-directory; }; \
 	check-changes() { git --no-pager diff "$$@"; }; \
 	if [ $$(untracked | wc -l) -gt 0 ]; then \

@@ -6,11 +6,6 @@ package apis
 var DefaultEnabled = []string{
 	"hostnamegenerators",
 	"meshexternalservices",
+	"meshmultizoneservices",
 	"meshservices",
-}
-
-func Default() *Config {
-	return &Config{
-		Enabled: DefaultEnabled,
-	}
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-var log = core.Log.WithName("bootstrap")
+var log = core.Log.WithName("xds").WithName("bootstrap")
 
 type BootstrapHandler struct {
 	Generator BootstrapGenerator

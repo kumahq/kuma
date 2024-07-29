@@ -5,6 +5,20 @@ info:
   version: v1alpha1
   x-ref-schema-name: MeshService
 paths:
+  /:
+    get:
+      operationId: index
+      summary: The index endpoint
+      description: The index endpoint, some common metadata
+      tags:
+        - System
+      resources:
+        '200':
+          $ref: '#/components/responses/IndexResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -1756,6 +1770,101 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceList'
+  /meshes/{mesh}/meshmultizoneservices/{name}:
+    get:
+      summary: Returns MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceItem'
+    put:
+      summary: Creates or Updates MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMultiZoneServiceItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+    delete:
+      summary: Deletes MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshmultizoneservices:
+    get:
+      summary: Returns a list of MeshMultiZoneService in the mesh.
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceList'
   /meshes/{mesh}/meshservices/{name}:
     get:
       summary: Returns MeshService entity
@@ -1851,6 +1960,40 @@ paths:
           $ref: '#/components/responses/MeshServiceList'
 components:
   schemas:
+    Index:
+      type: object
+      title: Index
+      description: Some metadata about the service
+      required:
+        - hostname
+        - product
+        - version
+        - instanceId
+        - clusterId
+        - gui
+      properties:
+        hostname:
+          type: string
+        product:
+          type: string
+          description: The product line (Kuma for OSS, different for other distributions)
+        version:
+          type: string
+          description: The semantic version of the server running
+        instanceId:
+          type: string
+          description: A unique id to identify the instance requested
+        clusterId:
+          type: string
+          description: A unique id to identify the cluster being connected to
+        gui:
+          type: string
+          description: The path to the GUI
+        basedOnKuma:
+          type: string
+          description: >-
+            In case of an alternative distribution of Kuma the Kuma version this
+            release is based on
     ResourceTypeDescriptionList:
       type: object
       title: ResourceTypeDescriptionList
@@ -7105,8 +7248,6 @@ components:
                       value:
                         description: Value for the specified Type.
                         type: string
-                    required:
-                      - port
                     type: object
                   type: array
                 passthroughMode:
@@ -10547,6 +10688,13 @@ components:
                         type: string
                       type: object
                   type: object
+                meshMultiZoneService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
                 meshService:
                   properties:
                     matchLabels:
@@ -10815,10 +10963,10 @@ components:
                     type: string
                   hostnameGeneratorRef:
                     properties:
-                      name:
+                      coreName:
                         type: string
                     required:
-                      - name
+                      - coreName
                     type: object
                   origin:
                     type: string
@@ -10898,10 +11046,10 @@ components:
                     x-kubernetes-list-type: map
                   hostnameGeneratorRef:
                     properties:
-                      name:
+                      coreName:
                         type: string
                     required:
-                      - name
+                      - coreName
                     type: object
                 required:
                   - hostnameGeneratorRef
@@ -10918,6 +11066,217 @@ components:
               type: object
           type: object
     MeshExternalServiceCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshMultiZoneServiceItem:
+      type: object
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshMultiZoneService
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshMultiZoneService resource.
+          properties:
+            ports:
+              description: Ports is a list of ports from selected MeshServices
+              items:
+                properties:
+                  appProtocol:
+                    default: tcp
+                    description: Protocol identifies a protocol supported by a service.
+                    type: string
+                  name:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  targetPort:
+                    anyOf:
+                      - type: integer
+                      - type: string
+                    x-kubernetes-int-or-string: true
+                required:
+                  - port
+                type: object
+              minItems: 1
+              type: array
+            selector:
+              description: Selector is a way to select multiple MeshServices
+              properties:
+                meshService:
+                  description: MeshService selects MeshServices
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      description: MatchLabels matches multiple MeshServices by labels
+                      type: object
+                  required:
+                    - matchLabels
+                  type: object
+              required:
+                - meshService
+              type: object
+          required:
+            - selector
+          type: object
+        status:
+          description: >-
+            Status is the current status of the Kuma MeshMultiZoneService
+            resource.
+          properties:
+            addresses:
+              description: Addresses is a list of addresses generated by HostnameGenerator
+              items:
+                properties:
+                  hostname:
+                    type: string
+                  hostnameGeneratorRef:
+                    properties:
+                      coreName:
+                        type: string
+                    required:
+                      - coreName
+                    type: object
+                  origin:
+                    type: string
+                type: object
+              type: array
+            hostnameGenerators:
+              description: Status of hostnames generator applied on this resource
+              items:
+                properties:
+                  conditions:
+                    description: Conditions is an array of hostname generator conditions.
+                    items:
+                      properties:
+                        message:
+                          description: >-
+                            message is a human readable message indicating
+                            details about the transition.
+
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        reason:
+                          description: >-
+                            reason contains a programmatic identifier indicating
+                            the reason for the condition's last transition.
+
+                            Producers of specific condition types may define
+                            expected values and meanings for this field,
+
+                            and whether the values are considered a guaranteed
+                            API.
+
+                            The value should be a CamelCase string.
+
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: >-
+                            status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                            - 'True'
+                            - 'False'
+                            - Unknown
+                          type: string
+                        type:
+                          description: >-
+                            type of condition in CamelCase or in
+                            foo.example.com/CamelCase.
+
+                            ---
+
+                            Many .condition.type values are consistent across
+                            resources like Available, but because arbitrary
+                            conditions can be
+
+                            useful (see .node.status.conditions), the ability to
+                            deconflict is important.
+
+                            The regex it matches is
+                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                          maxLength: 316
+                          pattern: >-
+                            ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                        - message
+                        - reason
+                        - status
+                        - type
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                      - type
+                    x-kubernetes-list-type: map
+                  hostnameGeneratorRef:
+                    properties:
+                      coreName:
+                        type: string
+                    required:
+                      - coreName
+                    type: object
+                required:
+                  - hostnameGeneratorRef
+                type: object
+              type: array
+            meshServices:
+              description: MeshServices is a list of matched MeshServices
+              items:
+                properties:
+                  name:
+                    description: Name is a core name of MeshService
+                    type: string
+                required:
+                  - name
+                type: object
+              type: array
+            vips:
+              description: VIPs is a list of assigned Kuma VIPs.
+              items:
+                properties:
+                  ip:
+                    type: string
+                type: object
+              type: array
+          type: object
+    MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
@@ -11010,6 +11369,18 @@ components:
                     type: string
                   type: object
               type: object
+            state:
+              description: >-
+                State of MeshService. Available if there is at least one healthy
+                endpoint. Otherwise, Unavailable.
+
+                It's used for cross zone communication to check if we should
+                send traffic to it, when MeshService is aggregated into
+                MeshMultiZoneService.
+              enum:
+                - Available
+                - Unavailable
+              type: string
           type: object
         status:
           description: Status is the current status of the Kuma MeshService resource.
@@ -11021,15 +11392,32 @@ components:
                     type: string
                   hostnameGeneratorRef:
                     properties:
-                      name:
+                      coreName:
                         type: string
                     required:
-                      - name
+                      - coreName
                     type: object
                   origin:
                     type: string
                 type: object
               type: array
+            dataplaneProxies:
+              description: Data plane proxies statistics selected by this MeshService.
+              properties:
+                connected:
+                  description: >-
+                    Number of data plane proxies connected to the zone control
+                    plane
+                  type: integer
+                healthy:
+                  description: >-
+                    Number of data plane proxies with all healthy inbounds
+                    selected by this MeshService.
+                  type: integer
+                total:
+                  description: Total number of data plane proxies.
+                  type: integer
+              type: object
             hostnameGenerators:
               items:
                 properties:
@@ -11104,10 +11492,10 @@ components:
                     x-kubernetes-list-type: map
                   hostnameGeneratorRef:
                     properties:
-                      name:
+                      coreName:
                         type: string
                     required:
-                      - name
+                      - coreName
                     type: object
                 required:
                   - hostnameGeneratorRef
@@ -11143,6 +11531,12 @@ components:
           items:
             type: string
   responses:
+    IndexResponse:
+      description: A response for the index endpoint
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Index'
     ResourceTypeDescriptionListResponse:
       description: A response containing a list of all resources installed in Kuma
       content:
@@ -11576,6 +11970,29 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshExternalServiceItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshMultiZoneServiceItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshMultiZoneServiceItem'
+    MeshMultiZoneServiceList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshMultiZoneServiceItem'
               total:
                 type: number
                 description: The total number of entities

@@ -14,11 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
-type Defaulter interface {
-	core_model.Resource
-	Default() error
-}
-
 func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter, checker ResourceAdmissionChecker) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &defaultingHandler{
@@ -33,7 +28,7 @@ type defaultingHandler struct {
 	ResourceAdmissionChecker
 
 	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	decoder   admission.Decoder
 }
 
 func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) admission.Response {
@@ -56,7 +51,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if defaulter, ok := resource.(Defaulter); ok {
+	if defaulter, ok := resource.(core_model.Defaulter); ok {
 		if err := defaulter.Default(); err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}

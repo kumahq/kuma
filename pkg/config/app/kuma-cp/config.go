@@ -179,6 +179,8 @@ type Config struct {
 	CoreResources *apis.Config `json:"coreResources"`
 	// IP administration and management config
 	IPAM IPAMConfig `json:"ipam"`
+	// MeshService holds configuration for features around MeshServices
+	MeshService MeshServiceConfig `json:"meshService"`
 }
 
 func (c Config) IsFederatedZoneCP() bool {
@@ -287,7 +289,13 @@ var DefaultConfig = func() Config {
 			MeshExternalService: MeshExternalServiceIPAM{
 				CIDR: "242.0.0.0/8",
 			},
+			MeshMultiZoneService: MeshMultiZoneServiceIPAM{
+				CIDR: "243.0.0.0/8",
+			},
 			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+		},
+		MeshService: MeshServiceConfig{
+			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
 		},
 	}
 }
@@ -469,8 +477,9 @@ type ExperimentalKDSEventBasedWatchdog struct {
 }
 
 type IPAMConfig struct {
-	MeshService         MeshServiceIPAM         `json:"meshService"`
-	MeshExternalService MeshExternalServiceIPAM `json:"meshExternalService"`
+	MeshService          MeshServiceIPAM          `json:"meshService"`
+	MeshExternalService  MeshExternalServiceIPAM  `json:"meshExternalService"`
+	MeshMultiZoneService MeshMultiZoneServiceIPAM `json:"meshMultiZoneService"`
 	// Interval on which Kuma will allocate new IPs and generate hostnames.
 	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
 }
@@ -514,4 +523,26 @@ func (c Config) GetEnvoyAdminPort() uint32 {
 		return 0
 	}
 	return c.BootstrapServer.Params.AdminPort
+}
+
+type MeshMultiZoneServiceIPAM struct {
+	// CIDR for MeshMultiZone IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"`
+}
+
+func (i MeshMultiZoneServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshMultiZoneServiceCIDR is invalid")
+	}
+	return nil
+}
+
+type MeshServiceConfig struct {
+	// How often we check whether MeshServices need to be generated from
+	// Dataplanes
+	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
+}
+
+func (i MeshServiceConfig) Validate() error {
+	return nil
 }

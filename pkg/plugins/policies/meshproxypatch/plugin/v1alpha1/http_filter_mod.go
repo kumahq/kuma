@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -98,13 +100,9 @@ func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filt
 }
 
 func (h *httpFilterModificator) remove(hcm *envoy_hcm.HttpConnectionManager) {
-	var filters []*envoy_hcm.HttpFilter
-	for _, filter := range hcm.HttpFilters {
-		if !h.filterMatches(filter) {
-			filters = append(filters, filter)
-		}
-	}
-	hcm.HttpFilters = filters
+	hcm.HttpFilters = slices.DeleteFunc(hcm.HttpFilters, func(filter *envoy_hcm.HttpFilter) bool {
+		return h.filterMatches(filter)
+	})
 }
 
 func (h *httpFilterModificator) addBefore(hcm *envoy_hcm.HttpConnectionManager, filterMod *envoy_hcm.HttpFilter) {

@@ -84,7 +84,7 @@ networking:
 `, mesh, "13000", "3000", name, "80", "8080", port, outboundService, outboundMesh)
 }
 
-func MkGateway(name, mesh string, crossMesh bool, hostname, backendService string, port int) string {
+func MkGateway(name, mesh, serviceName string, crossMesh bool, hostname, backendService string, port int) string {
 	meshGateway := fmt.Sprintf(`
 type: MeshGateway
 name: %s
@@ -98,7 +98,7 @@ conf:
     protocol: HTTP
     crossMesh: %t
     hostname: %s
-`, name, mesh, name, port, crossMesh, hostname)
+`, name, mesh, serviceName, port, crossMesh, hostname)
 
 	route := fmt.Sprintf(`
 type: MeshGatewayRoute
@@ -117,14 +117,14 @@ conf:
       backends:
       - destination:
           kuma.io/service: %s
-`, name, mesh, name, backendService)
+`, name, mesh, serviceName, backendService)
 
 	return strings.Join([]string{meshGateway, route}, "\n---\n")
 }
 
-func mkGatewayDataplane(name, mesh string) InstallFunc {
+func mkGatewayDataplane(name, mesh, serviceName string) InstallFunc {
 	return func(cluster Cluster) error {
-		token, err := universal.Cluster.GetKuma().GenerateDpToken(mesh, name)
+		token, err := universal.Cluster.GetKuma().GenerateDpToken(mesh, serviceName)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ networking:
     type: BUILTIN
     tags:
       kuma.io/service: %s
-`, mesh, name)
+`, mesh, serviceName)
 
 		return universal.Cluster.DeployApp(
 			WithName(name),

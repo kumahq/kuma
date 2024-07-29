@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	kube_core "k8s.io/api/core/v1"
@@ -182,6 +183,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				// gateway-api routes are configured using direct references to
 				// Gateways, so just create a tag specifically for this listener
 				mesh_proto.ListenerTag: string(l.Name),
+				mesh_proto.PortTag:     strconv.Itoa(int(l.Port)),
 			},
 			CrossMesh: config.CrossMesh,
 		}

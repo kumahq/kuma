@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-var sep = regexp.MustCompile("(?:^|\\s*\n)---\\s*")
+var (
+	sep     = regexp.MustCompile("(?:^|\\s*\n)---\\s*")
+	comment = regexp.MustCompile("^#.*$")
+)
 
 // SplitYAML takes YAMLs separated by `---` line and splits it into multiple YAMLs. Empty entries are ignored
 func SplitYAML(yamls string) []string {
@@ -14,6 +17,7 @@ func SplitYAML(yamls string) []string {
 	trimYAMLs := strings.TrimSpace(yamls)
 	docs := sep.Split(trimYAMLs, -1)
 	for _, doc := range docs {
+		doc = comment.ReplaceAllString(doc, "")
 		if doc == "" {
 			continue
 		}

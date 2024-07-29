@@ -340,6 +340,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", "KUMA_DNS_SERVER_CIDR=fd00:fd00::/64")
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64")
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64")
+		args = append(args, "--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64")
 	}
 
 	for k, v := range c.opts.env {
@@ -393,6 +394,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = "fd00:fd00::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
+		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
 	}
 
 	switch mode {
@@ -520,7 +522,13 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	var wg sync.WaitGroup
 	var appsToInstall []appInstallation
 	if c.opts.cni {
-		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, Config.CNINamespace, 1, nil})
+		namespace := ""
+		if c.opts.cniNamespace != "" {
+			namespace = c.opts.cniNamespace
+		} else {
+			namespace = Config.CNINamespace
+		}
+		appsToInstall = append(appsToInstall, appInstallation{Config.CNIApp, namespace, 1, nil})
 	}
 	if c.opts.zoneIngress {
 		appsToInstall = append(appsToInstall, appInstallation{Config.ZoneIngressApp, Config.KumaNamespace, 1, nil})

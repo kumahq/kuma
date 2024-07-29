@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -38,6 +39,28 @@ func DebugUniversal(cluster Cluster, mesh string) {
 func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	ensureDebugDir()
 	errorSeen := false
+
+	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
+	defaultKubeOptions := *cluster.GetKubectlOptions("default") // copy to not override fields globally
+	defaultKubeOptions.Logger = logger.Discard
+	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
+	if err != nil {
+		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err)
+		errorSeen = true
+	} else {
+		for _, node := range nodes {
+			exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, uuid.New().String()))
+			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
+			if e != nil {
+				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
+				errorSeen = true
+			} else {
+				Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
+				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), exportFilePath)
+			}
+		}
+	}
+
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
 		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
@@ -73,4 +96,18 @@ func ensureDebugDir() {
 		return
 	}
 	Expect(err).ToNot(HaveOccurred())
+}
+
+func CpRestarted(cluster Cluster) bool {
+	switch cluster.(type) {
+	case *UniversalCluster:
+		// CP does not recover restart on universal. If it crashed, we can just check if the process is still running.
+		out, _, _ := cluster.Exec("", "", AppModeCP, "ps", "aux")
+		return !strings.Contains(out, "kuma-cp run")
+	case *K8sCluster:
+		restartCount := RestartCount(cluster.GetKuma().(*K8sControlPlane).GetKumaCPPods())
+		return restartCount > 0
+	default:
+		return false
+	}
 }

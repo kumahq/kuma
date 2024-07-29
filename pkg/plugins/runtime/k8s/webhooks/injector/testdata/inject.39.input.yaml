@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    traffic.kuma.io/exclude-inbound-ips : "192.168.0.1,172.32.16.8/16,a81b:a033:6399:73c7:72b6:aa8c:6f22:7098,fe80::/10"
+spec:
+  volumes:
+    - name: default-token-w7dxf
+      secret:
+        secretName: default-token-w7dxf
+  containers:
+    - name: busybox
+      image: busybox
+      resources: {}
+      volumeMounts:
+        - name: default-token-w7dxf
+          readOnly: true
+          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+  initContainers:
+    - name: init
+      image: busybox
+      command: ['sh', '-c', 'sleep 5']

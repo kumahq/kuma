@@ -26,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	tp_cfg "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -523,6 +522,33 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 
 	podAnnotations := metadata.Annotations(pod.Annotations)
 
+	if val, ok, _ := metadata.Annotations(pod.Annotations).GetEnabled(
+		metadata.KumaTransparentProxyingAnnotation,
+	); ok && !val {
+		logger.Info(fmt.Sprintf(
+			"WARNING: cannot change the value of annotation %s as the transparent proxy must be enabled in Kubernetes",
+			metadata.KumaTransparentProxyingAnnotation,
+		))
+	}
+
+	if val, ok, _ := metadata.Annotations(pod.Annotations).GetUint32(
+		metadata.KumaTransparentProxyingInboundPortAnnotation,
+	); ok && val != i.cfg.SidecarContainer.RedirectPortInbound {
+		logger.Info(fmt.Sprintf(
+			"WARNING: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
+			metadata.KumaTransparentProxyingInboundPortAnnotation,
+		))
+	}
+
+	if val, ok, _ := metadata.Annotations(pod.Annotations).GetUint32(
+		metadata.KumaTransparentProxyingOutboundPortAnnotation,
+	); ok && val != i.cfg.SidecarContainer.RedirectPortOutbound {
+		logger.Info(fmt.Sprintf(
+			"WARNING: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
+			metadata.KumaTransparentProxyingOutboundPortAnnotation,
+		))
+	}
+
 	ebpfEnabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.EBPF.Enabled, metadata.KumaTransparentProxyingEbpf)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEbpf)
@@ -550,18 +576,6 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
 		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
 			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
-		}
-
-		// ebpf works only with transparent proxy engine v2
-		if enabled, _, err := podAnnotations.GetEnabled(metadata.KumaTransparentProxyingEngineV1); err != nil {
-			return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEngineV1)
-		} else if enabled {
-			return nil, errors.Wrapf(
-				err,
-				"%s is unsupported with %s",
-				metadata.KumaTransparentProxyingEngineV1,
-				metadata.KumaTransparentProxyingEbpf,
-			)
 		}
 	}
 
@@ -599,21 +613,44 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	}
 
-	defaultTPCfg := tp_cfg.DefaultConfig()
-	if i.cfg.SidecarContainer.RedirectPortInboundV6 == 0 {
-		i.cfg.SidecarContainer.IpFamilyMode = metadata.IpFamilyModeIPv4
-	} else if i.cfg.SidecarContainer.RedirectPortInboundV6 > 0 &&
-		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.PortIPv6) &&
-		i.cfg.SidecarContainer.RedirectPortInboundV6 != uint32(defaultTPCfg.Redirect.Inbound.Port) {
-		annotations[metadata.KumaTransparentProxyingInboundPortAnnotationV6] = fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6)
+	ipFamilyMode, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(i.cfg.SidecarContainer.IpFamilyMode, metadata.KumaTransparentProxyingIPFamilyMode)
+	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = ipFamilyMode
+	dropInvalidPackets, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets)
+	if err != nil {
+		return nil, err
 	}
-	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = i.cfg.SidecarContainer.IpFamilyMode
+	if dropInvalidPackets {
+		annotations[metadata.KumaTrafficDropInvalidPackets] = "true"
+	}
+
+	iptablesLogs, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
+	if err != nil {
+		return nil, err
+	}
+	if iptablesLogs {
+		annotations[metadata.KumaTrafficIptablesLogs] = "true"
+	}
 
 	val, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err
 	}
 	annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", val)
+
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(
+		strings.Join(i.cfg.SidecarTraffic.ExcludeOutboundIPs, ","),
+		metadata.KumaTrafficExcludeOutboundIPs,
+	); val != "" {
+		annotations[metadata.KumaTrafficExcludeOutboundIPs] = val
+	}
+
+	if val, _ := metadata.Annotations(pod.Annotations).GetStringWithDefault(
+		strings.Join(i.cfg.SidecarTraffic.ExcludeInboundIPs, ","),
+		metadata.KumaTrafficExcludeInboundIPs,
+	); val != "" {
+		annotations[metadata.KumaTrafficExcludeInboundIPs] = val
+	}
+
 	return annotations, nil
 }
 

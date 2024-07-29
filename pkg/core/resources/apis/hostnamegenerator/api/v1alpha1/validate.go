@@ -11,8 +11,27 @@ import (
 func (r *HostnameGeneratorResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
+	verr.Add(validateSelectors(path.Field("selector"), r.Spec.Selector))
 	verr.AddErrorAt(path.Field("template"), validateTemplate(r.Spec.Template))
 	return verr.OrNil()
+}
+
+func validateSelectors(path validators.PathBuilder, selector Selector) validators.ValidationError {
+	var verr validators.ValidationError
+	selectorsDefined := 0
+	if selector.MeshService != nil {
+		selectorsDefined++
+	}
+	if selector.MeshExternalService != nil {
+		selectorsDefined++
+	}
+	if selector.MeshMultiZoneService != nil {
+		selectorsDefined++
+	}
+	if selectorsDefined != 1 {
+		verr.AddViolationAt(path, "exact one selector (meshService, meshExternalService) must be defined")
+	}
+	return verr
 }
 
 func validateTemplate(tmpl string) validators.ValidationError {

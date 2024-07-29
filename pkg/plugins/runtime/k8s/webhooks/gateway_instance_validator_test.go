@@ -67,15 +67,10 @@ var _ = Describe("MeshGatewayInstanceValidator", func() {
                   labels:
                     kuma.io/mesh: default
                 spec:
-                  selectors:
-                    - match:
-                        kuma.io/service: edge-gateway_kuma-demo_svc
-                  conf:
-                    listeners:
-                      - port: 8080
-                        protocol: HTTP
-                        tags:
-                          port: http/8080
+                  tags:
+                    custom.io/gateway: my-gateway
+                  replicas: 1
+                  serviceType: LoadBalancer
               operation: CREATE
 `,
 			expectedMessage: "",
@@ -100,18 +95,42 @@ var _ = Describe("MeshGatewayInstanceValidator", func() {
                   labels:
                     kuma.io/mesh: default
                 spec:
-                  selectors:
-                    - match:
-                        kuma.io/service: edge-gateway_kuma-demo_svc
-                  conf:
-                    listeners:
-                      - port: 8080
-                        protocol: HTTP
-                        tags:
-                          port: http/8080
+                  tags:
+                    custom.io/gateway: my-gateway
+                  replicas: 1
+                  serviceType: LoadBalancer
               operation: CREATE
 `,
 			expectedMessage: "Operation not allowed. Kuma resources like MeshGatewayInstance can be created only from the 'zone' control plane and not from a 'global' control plane.",
+		}),
+
+		Entry("should not allow create MeshGatewayInstance with kuma.io/service tag", testCase{
+			cpMode: core.Zone,
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: "kuma.io"
+                kind: "MeshGatewayInstance"
+                version: v1alpha1
+              name: my-gateway
+              object:
+                apiVersion: kuma.io/v1alpha1
+                kind: MeshGatewayInstance
+                metadata:
+                  name: my-gateway
+                  labels:
+                    kuma.io/mesh: default
+                spec:
+                  tags:
+                    kuma.io/service: edge-gateway_kuma-demo_svc
+                  replicas: 1
+                  serviceType: LoadBalancer
+              operation: CREATE
+`,
+			expectedMessage: "tags: \"kuma.io/service\" must not be defined",
 		}),
 	)
 })

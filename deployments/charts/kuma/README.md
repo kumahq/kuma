@@ -86,6 +86,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
 | controlPlane.secrets | object with { Env: string, Secret: string, Key: string } | `nil` | Secrets to add as environment variables, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
+| controlPlane.envVarEntries | string | `nil` | Additional environment variables that will be passed to the control plane. Can be used with Kubernetes downward API |
 | controlPlane.extraConfigMaps | list | `[]` | Additional config maps to mount into the control plane, with optional inline values |
 | controlPlane.extraSecrets | object with { name: string, mountPath: string, readOnly: string } | `nil` | Additional secrets to mount into the control plane, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |

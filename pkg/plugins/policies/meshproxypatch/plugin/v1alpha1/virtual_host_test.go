@@ -180,6 +180,111 @@ var _ = Describe("Virtual Host modifications", func() {
                     name: outbound:192.168.0.1:8080
                     trafficDirection: INBOUND`,
 		}),
+		Entry("should remove virtual hosts of given name from all listeners", testCase{
+			routeCfgs: []string{
+				`
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                      routeConfig:
+                        name: outbound:backend
+                        virtualHosts:
+                        - domains:
+                          - backend.com
+                          name: backend
+                          routes:
+                          - match:
+                              prefix: /
+                            route:
+                              cluster: backend
+                      statPrefix: localhost_8080
+                name: outbound:192.168.0.1:8080
+                trafficDirection: INBOUND
+`,
+				`
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 80
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      httpFilters:
+                      - name: envoy.filters.http.router
+                      routeConfig:
+                        name: outbound:backend
+                        virtualHosts:
+                        - domains:
+                          - backend.com
+                          name: backend
+                          routes:
+                          - match:
+                              prefix: /
+                            route:
+                              cluster: backend
+                      statPrefix: localhost_80
+                name: outbound:192.168.0.1:80
+                trafficDirection: INBOUND
+`,
+			},
+			modifications: []string{
+				`
+                virtualHost:
+                   operation: Remove
+                   match:
+                     name: backend`,
+			},
+			expected: `
+                resources:
+                - name: outbound:192.168.0.1:80
+                  resource:
+                    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                    address:
+                      socketAddress:
+                        address: 192.168.0.1
+                        portValue: 80
+                    filterChains:
+                    - filters:
+                      - name: envoy.filters.network.http_connection_manager
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                          httpFilters:
+                          - name: envoy.filters.http.router
+                          routeConfig:
+                            name: outbound:backend
+                          statPrefix: localhost_80
+                    name: outbound:192.168.0.1:80
+                    trafficDirection: INBOUND
+                - name: outbound:192.168.0.1:8080
+                  resource:
+                    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                    address:
+                      socketAddress:
+                        address: 192.168.0.1
+                        portValue: 8080
+                    filterChains:
+                    - filters:
+                      - name: envoy.filters.network.http_connection_manager
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                          httpFilters:
+                          - name: envoy.filters.http.router
+                          routeConfig:
+                            name: outbound:backend
+                          statPrefix: localhost_8080
+                    name: outbound:192.168.0.1:8080
+                    trafficDirection: INBOUND`,
+		}),
 		Entry("should patch a virtual host", testCase{
 			routeCfgs: []string{
 				`

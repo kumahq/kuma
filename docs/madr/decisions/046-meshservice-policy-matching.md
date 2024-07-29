@@ -206,8 +206,13 @@ On a k8s zone:
 
 On a universal zone, `namespace` is not valid.
 
-Note that this means it's possible to refer to synced `MeshServices` via their
-transformed `<service>-<hash-suffix>` name.
+Note that referring to synced `MeshServices` using transformed `<service>-<hash-suffix>` name
+shouldn't be possible. 
+Using hashed name in the ref would make it extremely difficult to implement Inspect API on Global.
+For example, MeshTimeout is synced from Zone to Global, and it refers to the `targetRef.name: <value>`. 
+There is no easy way to process `<value>` to figure out what resource on Global it refers to.
+When `name/namespace` are referring to the `<service>-<hash-suffix>`, the policy is accepted but has no effect
+as the search for `name/namespace` resource is happening only across locally-originated resources.
 
 ##### Backwards compatibility
 
