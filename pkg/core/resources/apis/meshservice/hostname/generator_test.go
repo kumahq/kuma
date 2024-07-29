@@ -15,7 +15,7 @@ import (
 	meshservice_hostname "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/hostname"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -24,12 +24,14 @@ import (
 
 var _ = Describe("MeshService Hostname Generator", func() {
 	var stopChSend chan<- struct{}
+	var store core_store.ResourceStore
 	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
 		m, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		resManager = manager.NewResourceManager(memory.NewStore())
+		store = memory.NewStore()
+		resManager = manager.NewResourceManager(store)
 		allocator, err := hostname.NewGenerator(
 			logr.Discard(), m, resManager, 50*time.Millisecond,
 			[]hostname.HostnameGenerator{meshservice_hostname.NewMeshServiceHostnameGenerator(resManager)},
@@ -44,30 +46,16 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		}()
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
-
-		err = builders.HostnameGenerator().
-			WithName("backend").
-			WithTemplate("{{ .Name }}.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
-			Create(resManager)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = builders.HostnameGenerator().
-			WithName("static").
-			WithTemplate("static.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
-			Create(resManager)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		close(stopChSend)
-		Expect(resManager.Delete(context.Background(), &meshservice_api.MeshServiceResource{}, store.DeleteByKey("backend", "default"))).To(Succeed())
+		Expect(resManager.DeleteAll(context.Background(), &meshservice_api.MeshServiceResourceList{}, core_store.DeleteAllByMesh(model.DefaultMesh))).To(Succeed())
 	})
 
 	meshServiceStatus := func(name string) *meshservice_api.MeshServiceStatus {
 		ms := meshservice_api.NewMeshServiceResource()
-		err := resManager.Get(context.Background(), ms, store.GetByKey(name, model.DefaultMesh))
+		err := resManager.Get(context.Background(), ms, core_store.GetByKey(name, model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 		return ms.Status
 	}
@@ -76,6 +64,13 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		// when
 		err := samples.MeshServiceBackendBuilder().WithoutVIP().Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
+
+		Expect(builders.HostnameGenerator().
+			WithName("backend").
+			WithTemplate("{{ .Name }}.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
+			Create(resManager),
+		).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
@@ -87,6 +82,13 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should generate hostname if a generator selects a given MeshService", func() {
 		// when
+		Expect(builders.HostnameGenerator().
+			WithName("backend").
+			WithTemplate("{{ .Name }}.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
+			Create(resManager),
+		).To(Succeed())
+
 		err := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 			"label": "value",
 		}).Create(resManager)
@@ -102,6 +104,13 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should set an error if there's a collision", func() {
 		// when
+		Expect(builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager),
+		).To(Succeed())
+
 		Expect(
 			samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 				"generate": "static",
@@ -143,19 +152,114 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should generate hostnames for services in a consistent order", func() {
+		backend := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+			"generate": "static",
+		})
+		other := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+			"generate": "static",
+		}).WithName("other")
+		createdFirst := time.Now()
+		createdSecond := createdFirst
+		createdSecond = createdSecond.Add(1 * time.Minute)
+
+		// when
+		Expect(backend.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
+		Expect(other.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
+
+		Expect(builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager),
+		).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			otherStatus := meshServiceStatus("other")
+			backendStatus := meshServiceStatus("backend")
+			g.Expect(otherStatus.Addresses).Should(BeEmpty())
+			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:    hostnamegenerator_api.GeneratedCondition,
+						Status:  kube_meta.ConditionFalse,
+						Reason:  hostnamegenerator_api.CollisionReason,
+						Message: "Hostname collision with MeshService: other",
+					}},
+				},
+			))
+			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
+			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:   hostnamegenerator_api.GeneratedCondition,
+						Status: kube_meta.ConditionTrue,
+						Reason: hostnamegenerator_api.GeneratedReason,
+					}},
+				},
+			))
+		}, "2s", "100ms").Should(Succeed())
+
+		// when
+		Expect(resManager.DeleteAll(context.Background(), &meshservice_api.MeshServiceResourceList{}, core_store.DeleteAllByMesh(model.DefaultMesh))).To(Succeed())
+		Expect(resManager.DeleteAll(context.Background(), &hostnamegenerator_api.HostnameGeneratorResourceList{})).To(Succeed())
+
+		Expect(other.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
+		Expect(backend.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
+
+		Expect(builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager),
+		).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			otherStatus := meshServiceStatus("other")
+			backendStatus := meshServiceStatus("backend")
+			g.Expect(otherStatus.Addresses).Should(BeEmpty())
+			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:    hostnamegenerator_api.GeneratedCondition,
+						Status:  kube_meta.ConditionFalse,
+						Reason:  hostnamegenerator_api.CollisionReason,
+						Message: "Hostname collision with MeshService: other",
+					}},
+				},
+			))
+			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
+			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:   hostnamegenerator_api.GeneratedCondition,
+						Status: kube_meta.ConditionTrue,
+						Reason: hostnamegenerator_api.GeneratedReason,
+					}},
+				},
+			))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should not generate hostname when selector is not MeshService", func() {
 		// when
-		err := builders.HostnameGenerator().
+		Expect(builders.HostnameGenerator().
 			WithName("mes-generator").
 			WithTemplate("{{ .DisplayName }}.mesh").
 			WithMeshExternalServiceMatchLabels(map[string]string{"test": "true"}).
-			Create(resManager)
-		Expect(err).ToNot(HaveOccurred())
+			Create(resManager),
+		).To(Succeed())
 
-		err = samples.MeshServiceBackendBuilder().
+		Expect(samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{"test": "true"}).
-			Create(resManager)
-		Expect(err).ToNot(HaveOccurred())
+			Create(resManager),
+		).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
