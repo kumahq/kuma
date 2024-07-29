@@ -70,13 +70,13 @@ outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
 
 ##### Status quo
 
-- On Kubernetes there are two outbound listeners:
+- On Kubernetes there are two DNS names/outbound IP addresses:
   - Traffic to the Kubernetes DNS name/ClusterIP is load-balanced cross-zone
   - Traffic to the `<kuma.io/service>.mesh`/VIP is load-balanced cross-zone
 
 ##### `MeshService`
 
-- We now have one outbound listener:
+- We now have one outbound IP address:
   - Traffic to the generated hostname of the `MeshService` goes through the Cluster IP
   - This cluster IP is no longer cross-zone load balanced
 
