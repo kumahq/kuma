@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 type StatusUpdater struct {
@@ -102,21 +101,14 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			}
 		}
 
-		var sortedPorts []meshservice_api.Port
-		for _, port := range util_maps.SortedKeys(ports) {
-			sortedPorts = append(sortedPorts, ports[port])
-		}
-
 		sort.Slice(matched, func(i, j int) bool {
 			return matched[i].Name < matched[j].Name
 		})
 
-		if !reflect.DeepEqual(mzSvc.Status.Ports, sortedPorts) ||
-			!reflect.DeepEqual(mzSvc.Status.MeshServices, matched) {
+		if !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) {
 			log := s.logger.WithValues("meshmultizoneservice", mzSvc.Meta.GetName())
-			mzSvc.Status.Ports = sortedPorts
 			mzSvc.Status.MeshServices = matched
-			log.Info("updating ports and mesh services", "matchedMeshServices", matched, "ports", sortedPorts)
+			log.Info("updating matched mesh services", "matchedMeshServices", matched)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
 				log.Error(err, "could not update ports and mesh services")
 			}

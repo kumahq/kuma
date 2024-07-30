@@ -10,5 +10,8 @@ func (r *MeshMultiZoneServiceResource) validate() error {
 	if len(r.Spec.Selector.MeshService.MatchLabels) == 0 {
 		verr.AddViolationAt(path.Field("selector").Field("meshService").Field("matchLabels"), "cannot be empty")
 	}
+	if len(r.Spec.Ports) == 0 {
+		verr.AddViolationAt(path.Field("ports"), "cannot be empty")
+	}
 	return verr.OrNil()
 }

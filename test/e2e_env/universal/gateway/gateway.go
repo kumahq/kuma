@@ -33,9 +33,9 @@ func Gateway() {
 			Install(GatewayClientAppUniversal("gateway-client")).
 			Install(echoServerApp(mesh, "echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
-			Install(YamlUniversal(MkGateway("gateway-proxy", mesh, false, "example.kuma.io", "echo-service", gatewayPort))).
+			Install(YamlUniversal(MkGateway("gateway-proxy", mesh, "gateway-proxy", false, "example.kuma.io", "echo-service", gatewayPort))).
 			Install(GatewayProxyUniversal(mesh, "second-gateway-proxy")).
-			Install(YamlUniversal(MkGateway("second-gateway-proxy", mesh, false, "test.kuma.io", "echo-service", gateway2Port)))
+			Install(YamlUniversal(MkGateway("second-gateway-proxy", mesh, "second-gateway-proxy", false, "test.kuma.io", "echo-service", gateway2Port)))
 
 		Expect(setup.Setup(universal.Cluster)).To(Succeed())
 	})
