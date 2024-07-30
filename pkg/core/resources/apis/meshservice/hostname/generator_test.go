@@ -153,33 +153,31 @@ var _ = Describe("MeshService Hostname Generator", func() {
 	})
 
 	It("should generate hostnames for services in a consistent order", func() {
-		backend := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+		createdFirst := time.Now()
+		createdSecond := createdFirst.Add(1 * time.Minute)
+
+		meshServiceCreatedFirst := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 			"generate": "static",
 		})
-		other := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
+		meshServiceCreatedSecond := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 			"generate": "static",
 		}).WithName("other")
-		createdFirst := time.Now()
-		createdSecond := createdFirst
-		createdSecond = createdSecond.Add(1 * time.Minute)
-
-		// when
-		Expect(backend.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
-		Expect(other.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
-
-		Expect(builders.HostnameGenerator().
-			WithName("static").
-			WithTemplate("static.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
-			Create(resManager),
-		).To(Succeed())
-
-		// then
-		Eventually(func(g Gomega) {
-			otherStatus := meshServiceStatus("other")
-			backendStatus := meshServiceStatus("backend")
-			g.Expect(otherStatus.Addresses).Should(BeEmpty())
-			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
+		firstCreatedAtMeshServiceGetsHostnameAndOtherDoesnt := func(g Gomega) {
+			firstStatus := meshServiceStatus(meshServiceCreatedFirst.Key().Name)
+			secondStatus := meshServiceStatus(meshServiceCreatedSecond.Key().Name)
+			g.Expect(firstStatus.Addresses).Should(Not(BeEmpty()))
+			g.Expect(firstStatus.HostnameGenerators).Should(ConsistOf(
+				hostnamegenerator_api.HostnameGeneratorStatus{
+					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
+					Conditions: []hostnamegenerator_api.Condition{{
+						Type:   hostnamegenerator_api.GeneratedCondition,
+						Status: kube_meta.ConditionTrue,
+						Reason: hostnamegenerator_api.GeneratedReason,
+					}},
+				},
+			))
+			g.Expect(secondStatus.Addresses).Should(BeEmpty())
+			g.Expect(secondStatus.HostnameGenerators).Should(ConsistOf(
 				hostnamegenerator_api.HostnameGeneratorStatus{
 					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
 					Conditions: []hostnamegenerator_api.Condition{{
@@ -190,25 +188,29 @@ var _ = Describe("MeshService Hostname Generator", func() {
 					}},
 				},
 			))
-			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
-			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
-				hostnamegenerator_api.HostnameGeneratorStatus{
-					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []hostnamegenerator_api.Condition{{
-						Type:   hostnamegenerator_api.GeneratedCondition,
-						Status: kube_meta.ConditionTrue,
-						Reason: hostnamegenerator_api.GeneratedReason,
-					}},
-				},
-			))
-		}, "2s", "100ms").Should(Succeed())
+		}
 
-		// when
+		// when backend is in the store first
+		Expect(meshServiceCreatedFirst.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
+		Expect(meshServiceCreatedSecond.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
+
+		Expect(builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager),
+		).To(Succeed())
+
+		// then
+		Eventually(firstCreatedAtMeshServiceGetsHostnameAndOtherDoesnt, "2s", "100ms").Should(Succeed())
+
+		// when we clear the store
 		Expect(resManager.DeleteAll(context.Background(), &meshservice_api.MeshServiceResourceList{}, core_store.DeleteAllByMesh(model.DefaultMesh))).To(Succeed())
 		Expect(resManager.DeleteAll(context.Background(), &hostnamegenerator_api.HostnameGeneratorResourceList{})).To(Succeed())
 
-		Expect(other.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
-		Expect(backend.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
+		// when other is in the store first
+		Expect(meshServiceCreatedSecond.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
+		Expect(meshServiceCreatedFirst.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
 
 		Expect(builders.HostnameGenerator().
 			WithName("static").
@@ -218,33 +220,7 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) {
-			otherStatus := meshServiceStatus("other")
-			backendStatus := meshServiceStatus("backend")
-			g.Expect(otherStatus.Addresses).Should(BeEmpty())
-			g.Expect(otherStatus.HostnameGenerators).Should(ConsistOf(
-				hostnamegenerator_api.HostnameGeneratorStatus{
-					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []hostnamegenerator_api.Condition{{
-						Type:    hostnamegenerator_api.GeneratedCondition,
-						Status:  kube_meta.ConditionFalse,
-						Reason:  hostnamegenerator_api.CollisionReason,
-						Message: "Hostname collision with MeshService: other",
-					}},
-				},
-			))
-			g.Expect(backendStatus.Addresses).Should(Not(BeEmpty()))
-			g.Expect(backendStatus.HostnameGenerators).Should(ConsistOf(
-				hostnamegenerator_api.HostnameGeneratorStatus{
-					HostnameGeneratorRef: hostnamegenerator_api.HostnameGeneratorRef{CoreName: "static"},
-					Conditions: []hostnamegenerator_api.Condition{{
-						Type:   hostnamegenerator_api.GeneratedCondition,
-						Status: kube_meta.ConditionTrue,
-						Reason: hostnamegenerator_api.GeneratedReason,
-					}},
-				},
-			))
-		}, "2s", "100ms").Should(Succeed())
+		Eventually(firstCreatedAtMeshServiceGetsHostnameAndOtherDoesnt, "2s", "100ms").Should(Succeed())
 	})
 
 	It("should not generate hostname when selector is not MeshService", func() {
