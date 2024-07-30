@@ -80,7 +80,9 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 		}
 	}
 
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner))...)
+	allOpts := []store.CreateOptionsFunc{store.CreatedAt(core.Now()), store.CreateWithOwner(owner)}
+	allOpts = append(allOpts, fs...)
+	return r.Store.Create(ctx, resource, allOpts...)
 }
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
