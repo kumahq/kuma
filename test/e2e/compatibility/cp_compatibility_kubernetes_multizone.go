@@ -114,7 +114,7 @@ metadata:
 		// then resource is synchronized to Global (The namespace here will need to be updated as soon as the minimum version is 2.5.x
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
-			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("default"), "get", "dataplanes")
+			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("kuma-system"), "get", "dataplanes")
 		}, "30s", "1s").Should(ContainSubstring("demo-client"))
 	}, Entry(
 		"Sync new global and old zone",
