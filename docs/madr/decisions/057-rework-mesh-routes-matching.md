@@ -429,6 +429,9 @@ spec:
       requestTimeout: 15s
 ```
 
+When looking at functionality both approaches covers all our examples. We can imagine moving in the future to `apiVersion: v1`, 
+and translating things over to new version.
+
 ## Mesh*Route in spec.to[].targetRef design
 
 The design is grounded in multiple recent MADRs around improvements to policies: 
@@ -485,10 +488,14 @@ that can be applied on route.
 
 ### Affected policies
 
-At the moment we can only target `Mesh*Routes` in MeshTimeout policy. This MADR is based on MeshTimeout policy.
-Looking at what can be configured at Envoy route we can also apply this to our MeshRetry policy. Rate limit is also configurable on route,
-but we are configuring rate limit on inbound traffic, which does not apply to this MADR. `MeshLoadBalancingStrategy` also
-configures hashing per route and we should probably add support for routes in the future
+Policies that can be configured per route: 
+
+- `MeshTimeout` - at the moment only implemented policy, we should enforce validation to only accept config that can be set per route.  
+- `MeshRetry` - would need to be implemented. Like timeout should only accept route related config.
+- `MeshLoadBalancingStrategy` - would need to be implemented. Like timeout should only accept route related config.
+- `MeshRateLimit` - while it's possible to set rate limit on a route. We currently only set rate limits on the inbound so 
+supporting `spec.to[].target.kind: Mesh*Route` doesn't make sense.
+- `MeshAccessLog` - would need to be implemented, with access log filter
 
 #### Producer/consumer model for targeting Mesh*Route in other policies
 
@@ -543,8 +550,12 @@ spec:
 
 For MeshLoadBalancingStrategy adding producer/consumer model can be problematic, for load balancing and hashing. Since this
 is configured on outbound it falls into producer/consumer policy model. But who should have more power on deciding hashing rules?
-I think it should be producer who is an owner of service who decides how to apply this configuration which is not compliant
-with our consumer/producer model.
+It should be producer who is an owner of service who decides how to apply this configuration which is not compliant
+with our consumer/producer model. 
+
+For example, we could have a service that each instance is responsible for handling specific clients. We can use `RingHash`
+to make sure that specific clients requests are processed by the same instance. This should be configured in producer policy. 
+Changing this at consumer level can influence correctness of computations in our service.
 
 ### Merging and applying configurations
 
@@ -893,3 +904,10 @@ At the moment we are building `Rules` object with Subset for matching. This will
 we can still build old `Rules` for old policies and new `ResourceRule` for newly created policies with `Mesh*Route` in `spec.to[].targetRef`.
 At the policy level we can prioritize new `ResourceRule` over old `Rules`. Thanks to this new way of targeting `Mesh*Routes`
 will take precedence, so that users can easily switch to new targeting mechanism without any downtime.
+
+With migration, we can take advantage of producer/consumer policies. We can enforce rules from this MADR like:
+
+- putting `Mesh*Route` in `spec.to[].targetRef`
+- single entry in `Mesh*Route` policy `spec.to[]` section
+
+in producer/consumer policies, as no one is using them at the moment, and deprecate it in system policies.
