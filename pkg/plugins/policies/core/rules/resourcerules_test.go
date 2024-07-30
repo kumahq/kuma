@@ -12,14 +12,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/k8s"
-	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ = Describe("BuildResourceRules", func() {
@@ -143,27 +141,6 @@ var _ = Describe("BuildResourceRules", func() {
 				}
 			}
 
-			buildMeshContext := func(rs []core_model.Resource) context.Resources {
-				meshCtxResources := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
-				for _, p := range rs {
-					if _, ok := meshCtxResources.MeshLocalResources[p.Descriptor().Name]; !ok {
-						meshCtxResources.MeshLocalResources[p.Descriptor().Name] = registry.Global().MustNewList(p.Descriptor().Name)
-					}
-					Expect(meshCtxResources.MeshLocalResources[p.Descriptor().Name].AddItem(p)).To(Succeed())
-				}
-				return meshCtxResources
-			}
-
-			matchedPolicies := func(rs []core_model.Resource) []core_model.Resource {
-				var matched []core_model.Resource
-				for _, p := range rs {
-					if strings.HasPrefix(p.GetMeta().GetName(), "matched-for-rules-") {
-						matched = append(matched, p)
-					}
-				}
-				return matched
-			}
-
 			type testCase struct {
 				meta   metaFn
 				golden string
@@ -256,5 +233,6 @@ var _ = Describe("BuildResourceRules", func() {
 				}),
 			)
 		},
-		test.EntriesForFolder("rules/to-real-resource"))
+		test.EntriesForFolder("resourcerules"),
+	)
 })

@@ -9,8 +9,10 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/test"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
 func TestRules(t *testing.T) {
@@ -31,4 +33,25 @@ func readInputFile(inputFile string) []core_model.Resource {
 		policies = append(policies, policy)
 	}
 	return policies
+}
+
+func buildMeshContext(rs []core_model.Resource) context.Resources {
+	meshCtxResources := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
+	for _, p := range rs {
+		if _, ok := meshCtxResources.MeshLocalResources[p.Descriptor().Name]; !ok {
+			meshCtxResources.MeshLocalResources[p.Descriptor().Name] = registry.Global().MustNewList(p.Descriptor().Name)
+		}
+		Expect(meshCtxResources.MeshLocalResources[p.Descriptor().Name].AddItem(p)).To(Succeed())
+	}
+	return meshCtxResources
+}
+
+func matchedPolicies(rs []core_model.Resource) []core_model.Resource {
+	var matched []core_model.Resource
+	for _, p := range rs {
+		if strings.HasPrefix(p.GetMeta().GetName(), "matched-for-rules-") {
+			matched = append(matched, p)
+		}
+	}
+	return matched
 }
