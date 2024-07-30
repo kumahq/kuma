@@ -41,6 +41,9 @@ spec:
       matchLabels:
         kuma.io/display-name: test-server
         k8s.kuma.io/namespace: mzmsconnectivity
+  ports:
+  - port: 80
+    appProtocol: http
 `)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())

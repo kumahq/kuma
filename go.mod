@@ -9,7 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121
-	github.com/cilium/ebpf v0.15.0
+	github.com/cilium/ebpf v0.16.0
 	github.com/containernetworking/cni v1.2.3
 	github.com/containernetworking/plugins v1.5.1
 	github.com/emicklei/go-restful/v3 v3.12.1
@@ -36,8 +36,8 @@ require (
 	github.com/miekg/dns v1.1.61
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/ginkgo/v2 v2.19.1
+	github.com/onsi/gomega v1.34.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.1

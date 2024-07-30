@@ -32,12 +32,12 @@ mesh: %s
 spec:
   selectors:
   - match:
-      kuma.io/service: %s
+      kuma.io/service: %s_%s_svc
   conf:
     listeners:
     - port: 8080
       protocol: HTTP
-`, gatewayName, meshName, gatewayName)
+`, gatewayName, meshName, gatewayName, namespace)
 
 	meshGatewayWithLimit := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -48,14 +48,14 @@ mesh: %s
 spec:
   selectors:
   - match:
-      kuma.io/service: %s
+      kuma.io/service: %s_%s_svc
   conf:
     listeners:
     - port: 8080
       protocol: HTTP
       resources:
         connectionLimit: 1
-`, gatewayName, meshName, gatewayName)
+`, gatewayName, meshName, gatewayName, namespace)
 
 	serverSvc := fmt.Sprintf("test-server_%s_svc_80", namespace)
 
@@ -68,7 +68,7 @@ mesh: %s
 spec:
   selectors:
   - match:
-      kuma.io/service: %s
+      kuma.io/service: %s_%s_svc
   conf:
     http:
       rules:
@@ -79,7 +79,7 @@ spec:
         backends:
         - destination:
             kuma.io/service: %s
-`, gatewayName, meshName, gatewayName, serverSvc)
+`, gatewayName, meshName, gatewayName, namespace, serverSvc)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().

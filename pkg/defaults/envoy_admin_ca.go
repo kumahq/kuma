@@ -2,58 +2,26 @@ package defaults
 
 import (
 	"context"
-	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-retry"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
-type EnvoyAdminCaDefaultComponent struct {
-	ResManager manager.ResourceManager
-	Extensions context.Context
-}
-
-var _ component.Component = &EnvoyAdminCaDefaultComponent{}
-
-func (e *EnvoyAdminCaDefaultComponent) Start(stop <-chan struct{}) error {
-	ctx, cancelFn := context.WithCancel(user.Ctx(context.Background(), user.ControlPlane))
-	defer cancelFn()
-	logger := kuma_log.AddFieldsFromCtx(log, ctx, e.Extensions)
-	errChan := make(chan error)
-	go func() {
-		errChan <- retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)), func(ctx context.Context) error {
-			if err := EnsureEnvoyAdminCaExist(ctx, e.ResManager, e.Extensions); err != nil {
-				logger.V(1).Info("could not ensure that Envoy Admin CA exists. Retrying.", "err", err)
-				return retry.RetryableError(err)
-			}
-			return nil
-		})
-	}()
-	select {
-	case <-stop:
-		return nil
-	case err := <-errChan:
-		return err
-	}
-}
-
-func (e EnvoyAdminCaDefaultComponent) NeedLeaderElection() bool {
-	return true
-}
-
-func EnsureEnvoyAdminCaExist(
+func EnsureEnvoyAdminCaExists(
 	ctx context.Context,
 	resManager manager.ResourceManager,
-	extensions context.Context,
+	logger logr.Logger,
+	cfg kuma_cp.Config,
 ) error {
-	logger := kuma_log.AddFieldsFromCtx(log, ctx, extensions)
+	if cfg.Mode == config_core.Global {
+		return nil // Envoy Admin CA is not synced in multizone env and not needed in Global CP.
+	}
 	_, err := tls.LoadCA(ctx, resManager)
 	if err == nil {
 		logger.V(1).Info("Envoy Admin CA already exists. Skip creating Envoy Admin CA.")

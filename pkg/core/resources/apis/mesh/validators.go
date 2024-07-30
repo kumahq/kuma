@@ -36,6 +36,7 @@ type (
 type ValidateTagsOpts struct {
 	RequireAtLeastOneTag    bool
 	RequireService          bool
+	ForbidService           bool
 	ExtraTagsValidators     []TagsValidatorFunc
 	ExtraTagKeyValidators   []TagKeyValidatorFunc
 	ExtraTagValueValidators []TagValueValidatorFunc
@@ -135,6 +136,9 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 		}
 	}
 	_, defined := keyValues[mesh_proto.ServiceTag]
+	if opts.ForbidService && defined {
+		err.AddViolationAt(path, fmt.Sprintf("%q must not be defined", mesh_proto.ServiceTag))
+	}
 	if opts.RequireService && !defined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
 	}

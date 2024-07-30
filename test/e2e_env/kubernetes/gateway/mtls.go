@@ -30,7 +30,7 @@ mesh: gateway-mtls
 spec:
   selectors:
   - match:
-      kuma.io/service: mtls-edge-gateway
+      kuma.io/service: mtls-edge-gateway_gateway-mtls_svc
   conf:
     listeners:
     - port: 8080
@@ -113,7 +113,7 @@ mesh: gateway-mtls
 spec:
   selectors:
   - match:
-      kuma.io/service: mtls-edge-gateway
+      kuma.io/service: mtls-edge-gateway_gateway-mtls_svc
       hostname: example.kuma.io
   conf:
     http:
@@ -318,8 +318,9 @@ spec:
     name: non-accessible-echo-server_gateway-mtls_svc_80
   from:
     - targetRef:
-        kind: MeshService
-        name: not-mtls-edge-gateway
+        kind: MeshSubset
+        tags:
+          kuma.io/service: not-mtls-edge-gateway_gateway-mtls_svc
       default:
         action: Allow`
 			Expect(kubernetes.Cluster.Install(YamlK8s(tp))).To(Succeed())
@@ -347,7 +348,7 @@ mesh: gateway-mtls
 spec:
   selectors:
   - match:
-      kuma.io/service: mtls-edge-gateway
+      kuma.io/service: mtls-edge-gateway_gateway-mtls_svc
       protocol: tcp
   conf:
     tcp:
@@ -393,7 +394,7 @@ mesh: gateway-mtls
 spec:
   selectors:
   - match:
-      kuma.io/service: mtls-edge-gateway
+      kuma.io/service: mtls-edge-gateway_gateway-mtls_svc
       name: tls-passthrough
   conf:
     tcp:
@@ -411,7 +412,7 @@ mesh: gateway-mtls
 spec:
   selectors:
   - match:
-      kuma.io/service: mtls-edge-gateway
+      kuma.io/service: mtls-edge-gateway_gateway-mtls_svc
       name: tls-terminate
   conf:
     tcp:
