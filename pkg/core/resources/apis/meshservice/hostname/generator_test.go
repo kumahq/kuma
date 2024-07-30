@@ -24,14 +24,12 @@ import (
 
 var _ = Describe("MeshService Hostname Generator", func() {
 	var stopChSend chan<- struct{}
-	var store core_store.ResourceStore
 	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
 		m, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
-		store = memory.NewStore()
-		resManager = manager.NewResourceManager(store)
+		resManager = manager.NewResourceManager(memory.NewStore())
 		allocator, err := hostname.NewGenerator(
 			logr.Discard(), m, resManager, 50*time.Millisecond,
 			[]hostname.HostnameGenerator{meshservice_hostname.NewMeshServiceHostnameGenerator(resManager)},
