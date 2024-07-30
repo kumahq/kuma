@@ -10,7 +10,7 @@ This MADR is focused to targeting outbound routes configured on client proxy.
 
 At the moment when targeting `Mesh*Route` you need to put it in topLevel targetRef. 
 We want to iterate over policy design and move `Mesh*Route` to `spec.to[].targetRef` section follow model where `spec.targetRef`
-selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].targetRef` selects outbounds.
+selects whole proxies, `spec.from[].targetRef` selects clients and `spec.to[].targetRef` selects outbounds.
 
 
 ## Decision Outcome
@@ -46,7 +46,7 @@ selects whole proxies, `spec.from[].targetRef` selects inbounds and `spec.to[].t
 
 - can be harder to understand because `spec.targetRef` can be MeshSubset (which is optional and probably will rarely be used)
 - which sidecars are actually configured depends on both `spec.targetRef` of the policy _and_ the `spec.targetRef` of the `MeshHTTPRoute`.
-- yet another migration for users (only for system policies as for namespaced policies this is already not allowed) 
+- yet another migration for users (only for MeshTimeout system policy as for namespaced policies this is already not allowed) 
 - mixing outbounds and routes in `spec.to[].targetRef`
 - hides the most often most important information under `to[]` adding noise when targeting Mesh in `spec.targetRef`
 - is it consistent in the case of MeshGateways? MeshHTTPRoutes aren't on outbound listeners in the case of MeshGateways, they're on inbound listeners
@@ -511,7 +511,7 @@ spec:
   to:
     - targetRef:
         kind: MeshHTTPRoute
-        name: backend-route
+        name: backend-route # backend-route must be a producer route, for it to be synced to other zones and work
       default:
         http:
           numRetries: 3
