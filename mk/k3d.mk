@@ -89,7 +89,7 @@ k3d/setup-docker-credentials:
 	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
   		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
   		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
-  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" | $(YQ) -o yaml -P > /tmp/.kuma-dev/k3d-registry.yaml ; \
+  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" > /tmp/.kuma-dev/k3d-registry.yaml ; \
   	fi
 
 .PHONY: k3d/cleanup-docker-credentials
