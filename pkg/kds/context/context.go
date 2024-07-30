@@ -268,7 +268,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			}...)
 		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
-			// Reference: https://github.com/kumahq/kuma/issues/10988
+			// Reference: https://github.com/kumahq/kuma/issues/10952
 			zoneTag := util.ZoneTag(r)
 
 			if clusterID == zoneTag {
