@@ -201,6 +201,13 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should not generate hostname when selector is not MeshService", func() {
 		// when
+		Expect(builders.HostnameGenerator().
+			WithName("mes-generator").
+			WithTemplate("{{ .DisplayName }}.mesh").
+			WithMeshExternalServiceMatchLabels(map[string]string{"test": "true"}).
+			Create(resManager),
+		).To(Succeed())
+
 		Expect(samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{"test": "true"}).
 			Create(resManager),
