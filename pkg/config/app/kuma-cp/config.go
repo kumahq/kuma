@@ -42,6 +42,8 @@ type Defaults struct {
 	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
 	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
 	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
+	// If true, it skips creating default hostname generators
+	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
 
 type Metrics struct {
@@ -428,6 +430,7 @@ func DefaultDefaultsConfig() *Defaults {
 		SkipMeshCreation:           false,
 		SkipTenantResources:        false,
 		CreateMeshRoutingResources: false,
+		SkipHostnameGenerators:     false,
 	}
 }
 

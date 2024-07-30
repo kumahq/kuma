@@ -61,6 +61,9 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 		if m.SkipMeshOwnerReference {
 			return admission.Allowed("ignored. Configuration setup to ignore Mesh owner reference.")
 		}
+		if coreRes.Descriptor().Scope != core_model.ScopeMesh {
+			return admission.Allowed("ignored. It's not a Mesh scoped resource.")
+		}
 		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
 		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
