@@ -85,7 +85,7 @@ DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: k3d/setup-docker-credentials
 k3d/setup-docker-credentials:
 	@mkdir -p /tmp/.kuma-dev ; \
-	echo '{\"configs\": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
+	echo '{"configs": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
 	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
   		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
   		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \

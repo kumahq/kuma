@@ -4,26 +4,25 @@ on:
       matrix:
         required: true
         type: string
-      runnersByArch:
+      runner:
         type: string
-        required: false
-        default: ''
+        required: true
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
+  CI_TOOLS_DIR: ${{ contains(inputs.runner, '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
   E2E_PARAM_SIDECAR_CONTAINERS: ${{ fromJSON(inputs.matrix).sidecarContainers }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
-  E2E_RUN_NAME: ${{ fromJSON(inputs.matrix).target }}_${{ fromJSON(inputs.matrix).k8sVersion }}_${{ fromJSON(inputs.matrix).cniNetworkPlugin }}_${{ fromJSON(inputs.matrix).arch }}_${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
     timeout-minutes: 60
-    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
-    if: ${{ inputs.runnersByArch != '' && fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] != '' }}
+    # can't use env vars here
+    runs-on: ${{ inputs.runner }}
+    if: ${{ inputs.runner != '' }}
     strategy:
       fail-fast: false
       matrix:

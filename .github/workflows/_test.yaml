@@ -108,7 +108,7 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ inputs.RUNNERS_BY_ARCH }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[fromJSON(matrix).arch] }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -120,5 +120,5 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ inputs.RUNNERS_BY_ARCH }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[fromJSON(matrix).arch] }}
     secrets: inherit
