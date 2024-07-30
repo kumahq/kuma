@@ -408,13 +408,13 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return refName == GetDisplayName(resourceMeta)
 }
 
-func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool {
 	switch mode {
 	case config_core.Global:
-		origin, ok := ResourceOrigin(r.GetMeta())
+		origin, ok := resourceOrigin(labels)
 		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, _ := ResourceOrigin(r.GetMeta())
+		origin, _ := resourceOrigin(labels)
 		return origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
@@ -432,7 +432,14 @@ func GetDisplayName(rm ResourceMeta) string {
 }
 
 func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
-	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+	if rm == nil {
+		return "", false
+	}
+	return resourceOrigin(rm.GetLabels())
+}
+
+func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) {
+	if labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
 		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
 	}
 	return "", false
@@ -461,7 +468,14 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+	if isK8s && IsLocallyOriginated(mode, labels) {
+		ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
+		if ok && ns != "" {
+			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
+		}
+	}
+
+	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
 		var role mesh_proto.PolicyRole
 		switch ns {
 		case systemNamespace:
