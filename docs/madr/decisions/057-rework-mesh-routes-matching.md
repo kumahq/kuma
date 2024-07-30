@@ -654,7 +654,7 @@ spec:
         name: route-to-backend
 ```
 
-After applying this two policies timeout won't be applied to any proxy, since `Mesh*Route` and MeshTimeout is applied
+After applying these two policies timeout won't be applied to any proxy, since `Mesh*Route` and MeshTimeout is applied
 on different subset of proxies. We should ignore this situation as this will just have no effect. Also we don't have possibility
 to show warnings with this information to users. 
 
