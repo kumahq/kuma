@@ -683,7 +683,7 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 }
 
 func (r ResourceIdentifier) String() string {
-	pairs := []string{}
+	var pairs []string
 	if r.Mesh != "" {
 		pairs = append(pairs, fmt.Sprintf("mesh/%s", r.Mesh))
 	}
@@ -697,13 +697,4 @@ func (r ResourceIdentifier) String() string {
 		pairs = append(pairs, fmt.Sprintf("name/%s", r.Name))
 	}
 	return strings.Join(pairs, ":")
-}
-
-type TypedResourceIdentifier struct {
-	ResourceIdentifier
-	ResourceType ResourceType
-}
-
-func (r TypedResourceIdentifier) String() string {
-	return fmt.Sprintf("%s:%s", strings.ToLower(string(r.ResourceType)), r.ResourceIdentifier.String())
 }

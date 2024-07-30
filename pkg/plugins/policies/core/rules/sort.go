@@ -20,18 +20,25 @@ func SortByTargetRefV2(list []PolicyItemWithMeta) {
 			return less
 		}
 
-		if a.GetTargetRef().Kind == common_api.MeshGateway {
-			if less := len(a.GetTargetRef().Tags) - len(b.GetTargetRef().Tags); less != 0 {
-				return less
-			}
-		}
-
 		if less := core_model.PolicyRole(a.ResourceMeta).Compare(core_model.PolicyRole(b.ResourceMeta)); less != 0 {
 			return less
 		}
 
 		if less := a.PolicyItem.GetTargetRef().Kind.Compare(b.PolicyItem.GetTargetRef().Kind); less != 0 {
 			return less
+		}
+
+		if a.PolicyItem.GetTargetRef().Kind == common_api.MeshService {
+			sectionNameToNum := func(tr common_api.TargetRef) int {
+				if tr.SectionName != "" {
+					return 1
+				}
+				return 0
+			}
+
+			if less := sectionNameToNum(a.PolicyItem.GetTargetRef()) - sectionNameToNum(b.PolicyItem.GetTargetRef()); less != 0 {
+				return less
+			}
 		}
 
 		return cmp.Compare(core_model.GetDisplayName(b.ResourceMeta), core_model.GetDisplayName(a.ResourceMeta))

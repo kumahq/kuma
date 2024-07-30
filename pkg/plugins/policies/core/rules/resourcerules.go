@@ -1,7 +1,9 @@
 package rules
 
 import (
+	"fmt"
 	"slices"
+	"strings"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -16,12 +18,52 @@ type ResourceRule struct {
 	Origin   []core_model.ResourceMeta
 }
 
+type UniqueResourceIdentifier struct {
+	core_model.ResourceIdentifier
+
+	ResourceType core_model.ResourceType
+	SectionName  string
+}
+
+func (ri UniqueResourceIdentifier) String() string {
+	var pairs []string
+	if ri.ResourceType != "" {
+		pairs = append(pairs, strings.ToLower(string(ri.ResourceType)))
+	}
+	pairs = append(pairs, ri.ResourceIdentifier.String())
+	if ri.SectionName != "" {
+		pairs = append(pairs, fmt.Sprintf("section/%s", ri.SectionName))
+	}
+	return strings.Join(pairs, ":")
+}
+
 type UniqueResourceKey string
 
 type ResourceRules map[UniqueResourceKey]ResourceRule
 
-func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister) *ResourceRule {
-	key := uniqueKey(r)
+type ComputeOpts struct {
+	sectionName string
+}
+
+func NewComputeOpts(fn ...ComputeOptsFn) *ComputeOpts {
+	opts := &ComputeOpts{}
+	for _, f := range fn {
+		f(opts)
+	}
+	return opts
+}
+
+type ComputeOptsFn func(*ComputeOpts)
+
+func WithSectionName(sectionName string) ComputeOptsFn {
+	return func(opts *ComputeOpts) {
+		opts.sectionName = sectionName
+	}
+}
+
+func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister, fn ...ComputeOptsFn) *ResourceRule {
+	opts := NewComputeOpts(fn...)
+	key := uniqueKey(r, opts.sectionName)
 	if rule, ok := rr[key]; ok {
 		return &rule
 	}
@@ -38,6 +80,10 @@ func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister) *Resour
 
 	switch r.Descriptor().Name {
 	case meshservice_api.MeshServiceType:
+		// find MeshService without the sectionName and compute rules for it
+		if opts.sectionName != "" {
+			return rr.Compute(r, l)
+		}
 		// find MeshService's Mesh and compute rules for it
 		if mesh := findMesh(r.GetMeta().GetMesh()); mesh != nil {
 			return rr.Compute(mesh, l)
@@ -65,7 +111,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 	}
 
 	for _, i := range resolvedItems {
-		key := uniqueKey(i.r)
+		key := uniqueKey(i.resource, i.sectionName())
 		if _, ok := rules[key]; ok {
 			continue
 		}
@@ -74,7 +120,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 		var origins []core_model.ResourceMeta
 		originSet := map[core_model.ResourceKey]struct{}{}
 		for _, j := range resolvedItems {
-			if includes(j.r, i.r) {
+			if includes(j, i) {
 				confs = append(confs, j.item.GetDefault())
 				if _, ok := originSet[core_model.MetaToResourceKey(j.item.ResourceMeta)]; !ok {
 					origins = append(origins, j.item.ResourceMeta)
@@ -89,7 +135,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 		}
 		if len(merged) == 1 {
 			rules[key] = ResourceRule{
-				Resource: i.r.GetMeta(),
+				Resource: i.resource.GetMeta(),
 				Conf:     merged[0],
 				Origin:   origins,
 			}
@@ -99,36 +145,44 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 	return rules, nil
 }
 
-func uniqueKey(r core_model.Resource) UniqueResourceKey {
-	tri := core_model.TypedResourceIdentifier{
+func uniqueKey(r core_model.Resource, sectionName string) UniqueResourceKey {
+	tri := UniqueResourceIdentifier{
 		ResourceIdentifier: core_model.NewResourceIdentifier(r),
 		ResourceType:       r.Descriptor().Name,
+		SectionName:        sectionName,
 	}
 
 	return UniqueResourceKey(tri.String())
 }
 
 // includes if resource 'y' is part of the resource 'x', i.e. 'MeshService' is always included in 'Mesh'
-func includes(x, y core_model.Resource) bool {
-	switch x.Descriptor().Name {
+func includes(x, y *resolvedPolicyItem) bool {
+	switch x.resource.Descriptor().Name {
 	case core_mesh.MeshType:
-		switch y.Descriptor().Name {
+		switch y.resource.Descriptor().Name {
 		case core_mesh.MeshType:
-			return x.GetMeta().GetName() == y.GetMeta().GetName()
+			return x.resource.GetMeta().GetName() == y.resource.GetMeta().GetName()
 		default:
-			return x.GetMeta().GetName() == y.GetMeta().GetMesh()
+			return x.resource.GetMeta().GetName() == y.resource.GetMeta().GetMesh()
 		}
 	case meshservice_api.MeshServiceType:
-		switch y.Descriptor().Name {
+		switch y.resource.Descriptor().Name {
 		case meshservice_api.MeshServiceType:
-			return uniqueKey(x) == uniqueKey(y)
+			switch {
+			case uniqueKey(x.resource, x.sectionName()) == uniqueKey(y.resource, y.sectionName()):
+				return true
+			case uniqueKey(x.resource, "") == uniqueKey(y.resource, "") && x.sectionName() == "" && y.sectionName() != "":
+				return true
+			default:
+				return false
+			}
 		default:
 			return false
 		}
 	case meshextenralservice_api.MeshExternalServiceType:
-		switch y.Descriptor().Name {
+		switch y.resource.Descriptor().Name {
 		case meshextenralservice_api.MeshExternalServiceType:
-			return uniqueKey(x) == uniqueKey(y)
+			return uniqueKey(x.resource, "") == uniqueKey(y.resource, "")
 		default:
 			return false
 		}
@@ -138,8 +192,12 @@ func includes(x, y core_model.Resource) bool {
 }
 
 type resolvedPolicyItem struct {
-	item PolicyItemWithMeta
-	r    core_model.Resource
+	item     PolicyItemWithMeta
+	resource core_model.Resource
+}
+
+func (r *resolvedPolicyItem) sectionName() string {
+	return r.item.PolicyItem.GetTargetRef().SectionName
 }
 
 func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPolicyItem {
@@ -155,7 +213,7 @@ func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPoli
 		for _, r := range list {
 			rLabels := NewSubset(r.GetMeta().GetLabels())
 			if trLabels.IsSubset(rLabels) {
-				rv = append(rv, &resolvedPolicyItem{r: r, item: item})
+				rv = append(rv, &resolvedPolicyItem{resource: r, item: item})
 			}
 		}
 		return rv
@@ -165,7 +223,7 @@ func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPoli
 	if i := slices.IndexFunc(list, func(r core_model.Resource) bool {
 		return ri == core_model.NewResourceIdentifier(r)
 	}); i >= 0 {
-		return []*resolvedPolicyItem{{r: list[i], item: item}}
+		return []*resolvedPolicyItem{{resource: list[i], item: item}}
 	}
 
 	return nil
