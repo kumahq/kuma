@@ -493,7 +493,7 @@ configures hashing per route and we should probably add support for routes in th
 #### Producer/consumer model for targeting Mesh*Route in other policies
 
 For MeshRetry our producer/consumer makes sense since producer config is a suggestion from owner of the service. If consumer
-wants to override it because they don't want to retry, they just want to fail fast or the want to retry on bigger number of errors
+wants to override it because they don't want to retry, they just want to fail fast or they want to retry on bigger number of errors
 they can configure it by applying consumer policy.
 
 MeshRetry example:
