@@ -193,6 +193,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe HTTPS upstream without verifying server certificates and keep query", func() {
+			// time.Sleep(100 * time.Second)
 			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8443/healthz?scheme=https"), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
@@ -376,30 +377,24 @@ type mockApplication struct {
 }
 
 func (m *mockApplication) Start(stop <-chan struct{}) error {
-	errChs := make([]chan error, 3)
-	errChs[0] = make(chan error)
-	errChs[1] = make(chan error)
-	errChs[2] = make(chan error)
-	go func() {
-		errChs[0] <- m.startHTTPServer(stop)
-	}()
-	go func() {
-		errChs[1] <- m.startTCPServer(stop)
-	}()
-	go func() {
-		errChs[2] <- m.startGRPCServer(stop)
-	}()
+	errCh := make(chan error)
 
-	var err error
-	select {
-	case err = <-errChs[0]:
-		break
-	case err = <-errChs[1]:
-		break
-	case err = <-errChs[2]:
-		break
+	switch {
+	case m.HTTP != nil:
+		go func() {
+			errCh <- m.startHTTPServer(stop)
+		}()
+	case m.TCP != nil:
+		go func() {
+			errCh <- m.startTCPServer(stop)
+		}()
+	case m.GRPC != nil:
+		go func() {
+			errCh <- m.startGRPCServer(stop)
+		}()
 	}
-	return err
+
+	return <-errCh
 }
 
 func (m *mockApplication) startHTTPServer(stop <-chan struct{}) error {
@@ -496,7 +491,7 @@ func (m *mockApplication) startTCPServer(stop <-chan struct{}) error {
 	}, stop)
 }
 
-func (s *mockApplication) handleTcpConnections(l net.Listener, cExit <-chan struct{}, cErr chan<- error) {
+func (m *mockApplication) handleTcpConnections(l net.Listener, cExit <-chan struct{}, cErr chan<- error) {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
