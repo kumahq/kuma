@@ -35,6 +35,8 @@ var _ = Describe("MeshService generator", func() {
 	var meshContextBuilder xds_context.MeshContextBuilder
 	var metrics core_metrics.Metrics
 
+	gracePeriodInterval := 500 * time.Millisecond
+
 	BeforeEach(func() {
 		m, err := core_metrics.NewMetrics("")
 		Expect(err).ToNot(HaveOccurred())
@@ -61,6 +63,7 @@ var _ = Describe("MeshService generator", func() {
 		allocator, err := generate.New(
 			logr.Discard(),
 			50*time.Millisecond,
+			gracePeriodInterval,
 			metrics,
 			resManager,
 			meshCache,
@@ -173,7 +176,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	It("should delete MeshService if all Dataplanes disappear", func() {
+	It("should eventually delete MeshService if all Dataplanes disappear", func() {
 		err := samples.DataplaneBackendBuilder().Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -207,6 +210,45 @@ var _ = Describe("MeshService generator", func() {
 		ms := meshservice_api.NewMeshServiceResource()
 		Consistently(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("web", model.DefaultMesh))).To(Succeed())
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should not delete MeshService immediately", func() {
+		err := samples.DataplaneBackendBuilder().Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		ms := meshservice_api.NewMeshServiceResource()
+
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
+				{
+					Port:        80,
+					TargetPort:  intstr.FromInt(80),
+					AppProtocol: core_mesh.ProtocolTCP,
+				},
+			}))
+		}, "2s", "100ms").Should(Succeed())
+
+		dp := core_mesh.NewDataplaneResource()
+		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
+
+		// Wait until the MeshService has been marked with grace period start
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/grace-period-started-at"))
+		}, "2s", "100ms").Should(Succeed())
+		labelExistedSince := time.Now()
+
+		// Before the grace period it still exists and afterwards it eventually
+		// disappears
+		Consistently(func(g Gomega) {
+			if time.Now().Before(labelExistedSince.Add(gracePeriodInterval)) {
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			}
+		}, "2s", "100ms").Should(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
 		}, "2s", "100ms").Should(Succeed())
 	})
 
