@@ -11,13 +11,16 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/k8s"
+	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ = Describe("BuildResourceRules", func() {
@@ -235,4 +238,73 @@ var _ = Describe("BuildResourceRules", func() {
 		},
 		test.EntriesForFolder("resourcerules"),
 	)
+})
+
+var _ = Describe("Compute", func() {
+	It("should return rule for the given resource", func() {
+		// given
+		rr := core_rules.ResourceRules{
+			"MeshService.mesh-1.backend": {Conf: "conf-1"},
+		}
+		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
+
+		// when
+		rule := rr.Compute(
+			&model.Resource{
+				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
+				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			},
+			meshCtx,
+		)
+
+		// then
+		Expect(rule).ToNot(BeNil())
+		Expect(rule.Conf).To(Equal("conf-1"))
+	})
+
+	It("should return Mesh rule if MeshService is not found", func() {
+		// given
+		rr := core_rules.ResourceRules{
+			"MeshService.mesh-1.backend": {Conf: "conf-1"},
+			"Mesh.mesh-1":                {Conf: "conf-2"},
+		}
+		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+			mesh.MeshType: &mesh.MeshResourceList{
+				Items: []*mesh.MeshResource{
+					builders.Mesh().WithName("mesh-1").Build(),
+				},
+			},
+		}}
+
+		// when
+		rule := rr.Compute(
+			&model.Resource{
+				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
+				Meta:           &model.ResourceMeta{Name: "frontend", Mesh: "mesh-1"},
+			},
+			meshCtx,
+		)
+
+		// then
+		Expect(rule).ToNot(BeNil())
+		Expect(rule.Conf).To(Equal("conf-2"))
+	})
+
+	It("should return nil if resource and parent resource are not found", func() {
+		// given
+		rr := core_rules.ResourceRules{}
+		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
+
+		// when
+		rule := rr.Compute(
+			&model.Resource{
+				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
+				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			},
+			meshCtx,
+		)
+
+		// then
+		Expect(rule).To(BeNil())
+	})
 })

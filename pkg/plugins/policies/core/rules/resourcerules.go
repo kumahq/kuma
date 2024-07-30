@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -20,10 +20,43 @@ type ResourceRule struct {
 	Origin   []core_model.ResourceMeta
 }
 
-type (
-	UniqueResourceKey string
-	ResourceRules     map[UniqueResourceKey]ResourceRule
-)
+type UniqueResourceKey string
+
+type ResourceRules map[UniqueResourceKey]ResourceRule
+
+func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister) *ResourceRule {
+	key := uniqueKey(r)
+	if rule, ok := rr[key]; ok {
+		return &rule
+	}
+
+	findMesh := func(meshName string) core_model.Resource {
+		meshes := l.ListOrEmpty(core_mesh.MeshType).GetItems()
+		if i := slices.IndexFunc(meshes, func(resource core_model.Resource) bool {
+			return resource.GetMeta().GetName() == meshName
+		}); i >= 0 {
+			return meshes[i]
+		}
+		return nil
+	}
+
+	switch r.Descriptor().Name {
+	case meshservice_api.MeshServiceType:
+		// find MeshService's Mesh and compute rules for it
+		if mesh := findMesh(r.GetMeta().GetMesh()); mesh != nil {
+			return rr.Compute(mesh, l)
+		}
+	case meshextenralservice_api.MeshExternalServiceType:
+		// find MeshExternalService's Mesh and compute rules for it
+		if mesh := findMesh(r.GetMeta().GetMesh()); mesh != nil {
+			return rr.Compute(mesh, l)
+		}
+	case meshhttproute_api.MeshHTTPRouteType:
+		// todo(lobkovilya): handle MeshHTTPRoute
+	}
+
+	return nil
+}
 
 func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRules, error) {
 	rules := ResourceRules{}
@@ -74,18 +107,26 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 func uniqueKey(r core_model.Resource) UniqueResourceKey {
 	switch r.Descriptor().Scope {
 	case core_model.ScopeMesh:
-		return UniqueResourceKey(fmt.Sprintf("%s.%s.%s", r.Descriptor().Name, r.GetMeta().GetMesh(), r.GetMeta().GetName()))
+		return meshScopedUniqueKey(r.Descriptor().Name, r.GetMeta().GetMesh(), r.GetMeta().GetName())
 	default:
-		return UniqueResourceKey(fmt.Sprintf("%s.%s", r.Descriptor().Name, r.GetMeta().GetName()))
+		return globalScopedUniqueKey(r.Descriptor().Name, r.GetMeta().GetName())
 	}
+}
+
+func meshScopedUniqueKey(rtype core_model.ResourceType, mesh, name string) UniqueResourceKey {
+	return UniqueResourceKey(fmt.Sprintf("%s.%s.%s", rtype, mesh, name))
+}
+
+func globalScopedUniqueKey(rtype core_model.ResourceType, name string) UniqueResourceKey {
+	return UniqueResourceKey(fmt.Sprintf("%s.%s", rtype, name))
 }
 
 // includes if resource 'y' is part of the resource 'x', i.e. 'MeshService' is always included in 'Mesh'
 func includes(x, y core_model.Resource) bool {
 	switch x.Descriptor().Name {
-	case mesh.MeshType:
+	case core_mesh.MeshType:
 		switch y.Descriptor().Name {
-		case mesh.MeshType:
+		case core_mesh.MeshType:
 			return x.GetMeta().GetName() == y.GetMeta().GetName()
 		default:
 			return x.GetMeta().GetName() == y.GetMeta().GetMesh()
