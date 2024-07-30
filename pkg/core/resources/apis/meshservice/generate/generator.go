@@ -2,6 +2,7 @@ package generate
 
 import (
 	"context"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -25,17 +26,19 @@ import (
 )
 
 const (
-	managedByValue string = "meshservice-generator"
+	managedByValue          string = "meshservice-generator"
+	gracePeriodStartedLabel string = "kuma.io/grace-period-started-at"
 )
 
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
-	logger           logr.Logger
-	generateInterval time.Duration
-	metric           prometheus.Summary
-	resManager       manager.ResourceManager
-	meshCache        *mesh.Cache
+	logger              logr.Logger
+	generateInterval    time.Duration
+	gracePeriodInterval time.Duration
+	metric              prometheus.Summary
+	resManager          manager.ResourceManager
+	meshCache           *mesh.Cache
 }
 
 var _ component.Component = &Generator{}
@@ -43,6 +46,7 @@ var _ component.Component = &Generator{}
 func New(
 	logger logr.Logger,
 	generateInterval time.Duration,
+	gracePeriodInterval time.Duration,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 	meshCache *mesh.Cache,
@@ -56,11 +60,12 @@ func New(
 		return nil, err
 	}
 	return &Generator{
-		logger:           logger,
-		generateInterval: generateInterval,
-		metric:           metric,
-		resManager:       resManager,
-		meshCache:        meshCache,
+		logger:              logger,
+		generateInterval:    generateInterval,
+		gracePeriodInterval: gracePeriodInterval,
+		metric:              metric,
+		resManager:          resManager,
+		meshCache:           meshCache,
 	}, nil
 }
 
@@ -175,22 +180,51 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
-		if newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService) {
+		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[gracePeriodStartedLabel]
+
+		if newMeshService != nil && (servicesDiffer(meshService.Spec, newMeshService) || hasGracePeriodLabel) {
 			meta := meshService.GetMeta()
 			meshService = meshservice_api.NewMeshServiceResource()
 			meshService.Meta = meta
 			meshService.Spec = newMeshService
-			if err := g.resManager.Update(ctx, meshService); err != nil {
+
+			// Unset the grace period by deleting the label
+			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
+			delete(newLabels, gracePeriodStartedLabel)
+
+			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")
 				continue
 			}
 			log.Info("updated MeshService")
 		} else if newMeshService == nil {
-			if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
-				log.Error(err, "couldn't delete MeshService")
-				continue
+			gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
+			if hasGracePeriodLabel && err == nil {
+				// If we have a valid grace period set, check if it's expired
+				if time.Since(gracePeriodStartedAt) > g.gracePeriodInterval {
+					if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
+						log.Error(err, "couldn't delete MeshService")
+						continue
+					}
+					log.Info("deleted MeshService")
+				}
+			} else {
+				// Start the grace period if we don't have the label or it's invalid
+				if hasGracePeriodLabel && err != nil {
+					log.Info("couldn't parse grace period label, ignoring", "value", gracePeriodStartedAtText)
+				}
+				nowText, err := time.Now().MarshalText()
+				if err != nil {
+					log.Error(err, "couldn't marshal time.Now as text, this shouldn't be possible")
+					continue
+				}
+				newLabels := maps.Clone(meshService.GetMeta().GetLabels())
+				newLabels[gracePeriodStartedLabel] = string(nowText)
+				if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
+					log.Error(err, "couldn't update MeshService")
+					continue
+				}
 			}
-			log.Info("deleted MeshService")
 		}
 	}
 	for name, meshServices := range meshservicesByName {

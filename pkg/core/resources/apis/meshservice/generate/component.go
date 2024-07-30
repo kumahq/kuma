@@ -2,6 +2,7 @@ package generate
 
 import (
 	"slices"
+	"time"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -25,6 +26,7 @@ func Setup(rt runtime.Runtime) error {
 	generator, err := New(
 		logger,
 		rt.Config().MeshService.GenerationInterval.Duration,
+		1*time.Minute, // TODO
 		rt.Metrics(),
 		rt.ResourceManager(),
 		rt.MeshCache(),
