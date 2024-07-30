@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-1-94xw4w28b89c9v49:
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-1:
   Conf:
     connectionTimeout: 11s
     http:
@@ -31,7 +31,7 @@ MeshService.mesh-1.backend-1-94xw4w28b89c9v49:
     Name: backend-1-94xw4w28b89c9v49
     NameExtensions: null
     Version: ""
-MeshService.mesh-1.backend-2-c55fdc8fdfd62f24:
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-2:
   Conf:
     connectionTimeout: 11s
     http:

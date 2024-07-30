@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-1-bx94w75xd89bcx6f:
+meshservice:mesh/mesh-1:zone/zone-uni:name/backend-1:
   Conf:
     connectionTimeout: 11s
     http:
@@ -27,7 +27,7 @@ MeshService.mesh-1.backend-1-bx94w75xd89bcx6f:
     Name: backend-1-bx94w75xd89bcx6f
     NameExtensions: null
     Version: ""
-MeshService.mesh-1.backend-2-z5xwx6z697b2447x:
+meshservice:mesh/mesh-1:zone/zone-uni:name/backend-2:
   Conf:
     connectionTimeout: 11s
     http:

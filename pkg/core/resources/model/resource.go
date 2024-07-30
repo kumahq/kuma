@@ -691,3 +691,45 @@ type Defaulter interface {
 	Resource
 	Default() error
 }
+
+type ResourceIdentifier struct {
+	Name      string
+	Mesh      string
+	Namespace string
+	Zone      string
+}
+
+func NewResourceIdentifier(r Resource) ResourceIdentifier {
+	return ResourceIdentifier{
+		Name:      GetDisplayName(r.GetMeta()),
+		Mesh:      r.GetMeta().GetMesh(),
+		Namespace: r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		Zone:      r.GetMeta().GetLabels()[mesh_proto.ZoneTag],
+	}
+}
+
+func (r ResourceIdentifier) String() string {
+	pairs := []string{}
+	if r.Mesh != "" {
+		pairs = append(pairs, fmt.Sprintf("mesh/%s", r.Mesh))
+	}
+	if r.Zone != "" {
+		pairs = append(pairs, fmt.Sprintf("zone/%s", r.Zone))
+	}
+	if r.Namespace != "" {
+		pairs = append(pairs, fmt.Sprintf("namespace/%s", r.Namespace))
+	}
+	if r.Name != "" {
+		pairs = append(pairs, fmt.Sprintf("name/%s", r.Name))
+	}
+	return strings.Join(pairs, ":")
+}
+
+type TypedResourceIdentifier struct {
+	ResourceIdentifier
+	ResourceType ResourceType
+}
+
+func (r TypedResourceIdentifier) String() string {
+	return fmt.Sprintf("%s:%s", strings.ToLower(string(r.ResourceType)), r.ResourceIdentifier.String())
+}

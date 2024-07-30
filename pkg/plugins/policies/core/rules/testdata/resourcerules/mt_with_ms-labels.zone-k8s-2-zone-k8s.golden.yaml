@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-1-94xw4w28b89c9v49.kuma-system:
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-1:
   Conf:
     connectionTimeout: 11s
     http:
@@ -35,7 +35,7 @@ MeshService.mesh-1.backend-1-94xw4w28b89c9v49.kuma-system:
       k8s.kuma.io/name: backend-1-94xw4w28b89c9v49
       k8s.kuma.io/namespace: kuma-system
     Version: ""
-MeshService.mesh-1.backend-2-c55fdc8fdfd62f24.kuma-system:
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-2:
   Conf:
     connectionTimeout: 11s
     http:

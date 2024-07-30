@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend:
+meshservice:mesh/mesh-1:name/backend:
   Conf:
     default:
       backendRefs:

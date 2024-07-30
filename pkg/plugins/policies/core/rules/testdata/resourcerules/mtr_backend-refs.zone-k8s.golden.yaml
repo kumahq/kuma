@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend.ns-k8s:
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
   Conf:
     default:
       backendRefs:

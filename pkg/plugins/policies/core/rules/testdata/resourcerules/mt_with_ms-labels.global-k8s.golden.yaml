@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-1.ns-k8s:
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-1:
   Conf:
     connectionTimeout: 11s
     http:
@@ -33,7 +33,7 @@ MeshService.mesh-1.backend-1.ns-k8s:
       k8s.kuma.io/name: backend-1
       k8s.kuma.io/namespace: ns-k8s
     Version: ""
-MeshService.mesh-1.backend-2.ns-k8s:
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-2:
   Conf:
     connectionTimeout: 11s
     http:

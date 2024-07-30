@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -105,20 +104,12 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 }
 
 func uniqueKey(r core_model.Resource) UniqueResourceKey {
-	switch r.Descriptor().Scope {
-	case core_model.ScopeMesh:
-		return meshScopedUniqueKey(r.Descriptor().Name, r.GetMeta().GetMesh(), r.GetMeta().GetName())
-	default:
-		return globalScopedUniqueKey(r.Descriptor().Name, r.GetMeta().GetName())
+	tri := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.NewResourceIdentifier(r),
+		ResourceType:       r.Descriptor().Name,
 	}
-}
 
-func meshScopedUniqueKey(rtype core_model.ResourceType, mesh, name string) UniqueResourceKey {
-	return UniqueResourceKey(fmt.Sprintf("%s.%s.%s", rtype, mesh, name))
-}
-
-func globalScopedUniqueKey(rtype core_model.ResourceType, name string) UniqueResourceKey {
-	return UniqueResourceKey(fmt.Sprintf("%s.%s", rtype, name))
+	return UniqueResourceKey(tri.String())
 }
 
 // includes if resource 'y' is part of the resource 'x', i.e. 'MeshService' is always included in 'Mesh'

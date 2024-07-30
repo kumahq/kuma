@@ -1,4 +1,4 @@
-Mesh.mesh-1:
+mesh:name/mesh-1:
   Conf:
     connectionTimeout: 21s
     idleTimeout: 9s
@@ -19,7 +19,7 @@ Mesh.mesh-1:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh
-MeshService.mesh-1.backend-z6v4648zfz9c6wbv.kuma-system:
+meshservice:mesh/mesh-1:name/backend:
   Conf:
     connectionTimeout: 11s
     http:

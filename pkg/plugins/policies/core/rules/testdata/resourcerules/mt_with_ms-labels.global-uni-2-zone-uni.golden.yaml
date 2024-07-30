@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-1-794dc6v4z827xbcx:
+meshservice:mesh/mesh-1:name/backend-1:
   Conf:
     connectionTimeout: 11s
     http:
@@ -25,7 +25,7 @@ MeshService.mesh-1.backend-1-794dc6v4z827xbcx:
     Name: backend-1-794dc6v4z827xbcx
     NameExtensions: null
     Version: ""
-MeshService.mesh-1.backend-2-794dc9v4z827xwf9:
+meshservice:mesh/mesh-1:name/backend-2:
   Conf:
     connectionTimeout: 11s
     http:

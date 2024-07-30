@@ -1,4 +1,4 @@
-MeshService.mesh-1.backend-xdc9b75d4z2w5b6d:
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
   Conf:
     default:
       backendRefs:

@@ -244,7 +244,7 @@ var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"MeshService.mesh-1.backend": {Conf: "conf-1"},
+			"meshservice:mesh/mesh-1:name/backend": {Conf: "conf-1"},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
 
@@ -265,8 +265,8 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"MeshService.mesh-1.backend": {Conf: "conf-1"},
-			"Mesh.mesh-1":                {Conf: "conf-2"},
+			"meshservice:mesh/mesh-1:name/backend": {Conf: "conf-1"},
+			"mesh:name/mesh-1":                     {Conf: "conf-2"},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{

@@ -1,4 +1,4 @@
-Mesh.mesh-1:
+mesh:name/mesh-1:
   Conf:
     connectionTimeout: 1m41s
     http:
@@ -20,7 +20,7 @@ Mesh.mesh-1:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh
-MeshService.mesh-1.backend-586b984b597z5874:
+meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
   Conf:
     connectionTimeout: 11s
     http:
