@@ -31,18 +31,18 @@ const (
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
-	logger     logr.Logger
-	interval   time.Duration
-	metric     prometheus.Summary
-	resManager manager.ResourceManager
-	meshCache  *mesh.Cache
+	logger           logr.Logger
+	generateInterval time.Duration
+	metric           prometheus.Summary
+	resManager       manager.ResourceManager
+	meshCache        *mesh.Cache
 }
 
 var _ component.Component = &Generator{}
 
 func New(
 	logger logr.Logger,
-	interval time.Duration,
+	generateInterval time.Duration,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 	meshCache *mesh.Cache,
@@ -56,11 +56,11 @@ func New(
 		return nil, err
 	}
 	return &Generator{
-		logger:     logger,
-		interval:   interval,
-		metric:     metric,
-		resManager: resManager,
-		meshCache:  meshCache,
+		logger:           logger,
+		generateInterval: generateInterval,
+		metric:           metric,
+		resManager:       resManager,
+		meshCache:        meshCache,
 	}, nil
 }
 
@@ -222,7 +222,7 @@ func (g *Generator) NeedLeaderElection() bool {
 
 func (g *Generator) Start(stop <-chan struct{}) error {
 	g.logger.Info("starting")
-	ticker := time.NewTicker(g.interval)
+	ticker := time.NewTicker(g.generateInterval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 
 	for {
