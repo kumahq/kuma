@@ -379,6 +379,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
 			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
+			Expect(cfg.MeshService.GracePeriod.Duration).To(Equal(11 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
@@ -782,6 +783,7 @@ ipam:
   allocationInterval: 7s
 meshService:
   generationInterval: 8s
+  gracePeriod: 11s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -1069,6 +1071,7 @@ meshService:
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
 				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
+				"KUMA_MESH_SERVICE_GRACE_PERIOD":                                                           "11s",
 			},
 			yamlFileConfig: "",
 		}),
