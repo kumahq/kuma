@@ -44,6 +44,20 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		}()
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+
+		Expect(builders.HostnameGenerator().
+			WithName("backend").
+			WithTemplate("{{ .Name }}.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
+			Create(resManager),
+		).To(Succeed())
+
+		Expect(builders.HostnameGenerator().
+			WithName("static").
+			WithTemplate("static.mesh").
+			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
+			Create(resManager),
+		).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -63,13 +77,6 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		err := samples.MeshServiceBackendBuilder().WithoutVIP().Create(resManager)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(builders.HostnameGenerator().
-			WithName("backend").
-			WithTemplate("{{ .Name }}.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
-			Create(resManager),
-		).To(Succeed())
-
 		// then
 		Eventually(func(g Gomega) {
 			status := meshServiceStatus("backend")
@@ -80,13 +87,6 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should generate hostname if a generator selects a given MeshService", func() {
 		// when
-		Expect(builders.HostnameGenerator().
-			WithName("backend").
-			WithTemplate("{{ .Name }}.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"label": "value"}).
-			Create(resManager),
-		).To(Succeed())
-
 		err := samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 			"label": "value",
 		}).Create(resManager)
@@ -102,13 +102,6 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should set an error if there's a collision", func() {
 		// when
-		Expect(builders.HostnameGenerator().
-			WithName("static").
-			WithTemplate("static.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
-			Create(resManager),
-		).To(Succeed())
-
 		Expect(
 			samples.MeshServiceBackendBuilder().WithoutVIP().WithLabels(map[string]string{
 				"generate": "static",
@@ -192,30 +185,15 @@ var _ = Describe("MeshService Hostname Generator", func() {
 		Expect(meshServiceCreatedFirst.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
 		Expect(meshServiceCreatedSecond.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
 
-		Expect(builders.HostnameGenerator().
-			WithName("static").
-			WithTemplate("static.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
-			Create(resManager),
-		).To(Succeed())
-
 		// then
 		Eventually(firstCreatedAtMeshServiceGetsHostnameAndOtherDoesnt, "2s", "100ms").Should(Succeed())
 
 		// when we clear the store
 		Expect(resManager.DeleteAll(context.Background(), &meshservice_api.MeshServiceResourceList{}, core_store.DeleteAllByMesh(model.DefaultMesh))).To(Succeed())
-		Expect(resManager.DeleteAll(context.Background(), &hostnamegenerator_api.HostnameGeneratorResourceList{})).To(Succeed())
 
 		// when other is in the store first
 		Expect(meshServiceCreatedSecond.Create(resManager, core_store.CreatedAt(createdSecond))).To(Succeed())
 		Expect(meshServiceCreatedFirst.Create(resManager, core_store.CreatedAt(createdFirst))).To(Succeed())
-
-		Expect(builders.HostnameGenerator().
-			WithName("static").
-			WithTemplate("static.mesh").
-			WithMeshServiceMatchLabels(map[string]string{"generate": "static"}).
-			Create(resManager),
-		).To(Succeed())
 
 		// then
 		Eventually(firstCreatedAtMeshServiceGetsHostnameAndOtherDoesnt, "2s", "100ms").Should(Succeed())
@@ -223,13 +201,6 @@ var _ = Describe("MeshService Hostname Generator", func() {
 
 	It("should not generate hostname when selector is not MeshService", func() {
 		// when
-		Expect(builders.HostnameGenerator().
-			WithName("mes-generator").
-			WithTemplate("{{ .DisplayName }}.mesh").
-			WithMeshExternalServiceMatchLabels(map[string]string{"test": "true"}).
-			Create(resManager),
-		).To(Succeed())
-
 		Expect(samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{"test": "true"}).
 			Create(resManager),
