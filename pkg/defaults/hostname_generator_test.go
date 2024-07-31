@@ -18,11 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
-var _ = Describe("", func() {
-	It("", func() {
-		Expect(true).To(BeTrue())
-	})
-
+var _ = Describe("Ensure Hostname Generators", func() {
 	type testCase struct {
 		cpConfig         kuma_cp.Config
 		expectedGenNames []string
