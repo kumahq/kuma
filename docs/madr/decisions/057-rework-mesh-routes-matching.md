@@ -555,7 +555,8 @@ with our consumer/producer model.
 
 For example, we could have a service that each instance is responsible for handling specific clients. We can use `RingHash`
 to make sure that specific clients requests are processed by the same instance. This should be configured in producer policy. 
-Changing this at consumer level can influence correctness of computations in our service.
+Changing this at consumer level can influence correctness of computations in our service. We've decided to allow this as 
+consumer can broke things in other ways and they will be affecting only themselves
 
 ### Merging and applying configurations
 
