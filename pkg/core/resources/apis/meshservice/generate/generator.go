@@ -182,7 +182,8 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		delete(meshservicesByName, meshService.GetMeta().GetName())
 		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[gracePeriodStartedLabel]
 
-		if newMeshService != nil && (servicesDiffer(meshService.Spec, newMeshService) || hasGracePeriodLabel) {
+		servicesDiffer := newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService)
+		if newMeshService != nil && (servicesDiffer || hasGracePeriodLabel) {
 			meta := meshService.GetMeta()
 			meshService = meshservice_api.NewMeshServiceResource()
 			meshService.Meta = meta
@@ -196,7 +197,14 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 				log.Error(err, "couldn't update MeshService")
 				continue
 			}
-			log.Info("updated MeshService")
+			var reasons []string
+			if servicesDiffer {
+				reasons = append(reasons, "spec changed")
+			}
+			if hasGracePeriodLabel {
+				reasons = append(reasons, "no longer scheduled for deletion")
+			}
+			log.Info("updated MeshService", "reasons", reasons)
 		} else if newMeshService == nil {
 			gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
 			if hasGracePeriodLabel && err == nil {
@@ -224,6 +232,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 					log.Error(err, "couldn't update MeshService")
 					continue
 				}
+				log.Info("MeshService deletion grace period started", "period", g.gracePeriod.String())
 			}
 		}
 	}
