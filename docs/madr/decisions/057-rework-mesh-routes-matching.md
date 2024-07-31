@@ -600,7 +600,7 @@ spec:
       name: backend
     default: conf1
 ---
-# MeshTimeout targeting producer route
+# Producer MeshTimeout targeting producer route
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -613,7 +613,21 @@ spec:
   - targetRef:
       kind: MeshHTTPRoute
       name: route-to-backend
-    default: conf2
+    default: producer_conf
+# Consumer MeshTimeout targeting producer route
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: timeout-on-backend-route
+  namespace: frontend-ns
+  labels:
+    kuma.io/mesh: default
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: route-to-backend
+      default: consumer_conf
 ```
 
 All of these policies have `spec.targetRef` `Mesh` and these are producer policies so this configuration will be applied 
@@ -627,8 +641,11 @@ resourceRules:
   backend.backend-ns:
     conf: $conf1
   backend-route.backend-ns:
-    conf: $conf2
+    conf: merge($producer_conf, $consumer_conf)
 ```
+
+Because of this when inspecting configuration we will get only route specific config, without defaults from Mesh or
+MeshService as they could not be even applicable on route. 
 
 Route configuration will be applied when route was created for a given DPP, if not MeshService config will be applied. 
 Route may not be present if `Mesh*Route` was applied only for subset of proxies, for example:
