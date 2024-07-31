@@ -147,6 +147,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh str
 			instance.Labels = map[string]string{}
 		}
 		instance.Labels[metadata.KumaMeshAnnotation] = mesh
+		instance.Labels[core_model.K8sNamespaceComponent] = gateway.Namespace
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
 			Tags:                    config.Tags,

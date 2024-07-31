@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -23,6 +24,9 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
+			Labels: map[string]string{
+				model.K8sNamespaceComponent: pod.Namespace,
+			},
 		},
 		Mesh: k8s_util.MeshOfByAnnotation(pod, ns),
 	}

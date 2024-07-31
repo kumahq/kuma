@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"maps"
 
 	"github.com/go-logr/logr"
@@ -350,6 +351,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
 		ms.ObjectMeta.Labels[mesh_proto.ManagedByLabel] = "k8s-controller"
+		ms.ObjectMeta.Labels[model.K8sNamespaceComponent] = meshServiceName.Namespace
 
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}

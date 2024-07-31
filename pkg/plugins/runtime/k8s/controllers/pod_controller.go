@@ -321,6 +321,9 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
+			Labels: map[string]string{
+				model.K8sNamespaceComponent: pod.Namespace,
+			},
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
@@ -357,6 +360,9 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
+			Labels: map[string]string{
+				model.K8sNamespaceComponent: pod.Namespace,
+			},
 		},
 		Mesh: model.NoMesh,
 	}
@@ -391,6 +397,9 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
+			Labels: map[string]string{
+				model.K8sNamespaceComponent: pod.Namespace,
+			},
 		},
 		Mesh: model.NoMesh,
 	}
