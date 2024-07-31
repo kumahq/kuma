@@ -5,16 +5,18 @@ mesh:name/mesh-1:
       requestTimeout: 1m42s
     idleTimeout: 1m40s
   Origin:
-  - CreationTime: "0001-01-01T00:00:00Z"
-    Labels:
-      kuma.io/display-name: matched-for-rules-mt-bbbbbb
-      kuma.io/origin: zone
-      kuma.io/zone: zone-uni
-    Mesh: mesh-1
-    ModificationTime: "0001-01-01T00:00:00Z"
-    Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
-    NameExtensions: null
-    Version: ""
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
   Resource:
     creationTime: "0001-01-01T00:00:00Z"
     modificationTime: "0001-01-01T00:00:00Z"
@@ -27,26 +29,30 @@ meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
       requestTimeout: 12s
     idleTimeout: 10s
   Origin:
-  - CreationTime: "0001-01-01T00:00:00Z"
-    Labels:
-      kuma.io/display-name: matched-for-rules-mt-bbbbbb
-      kuma.io/origin: zone
-      kuma.io/zone: zone-uni
-    Mesh: mesh-1
-    ModificationTime: "0001-01-01T00:00:00Z"
-    Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
-    NameExtensions: null
-    Version: ""
-  - CreationTime: "0001-01-01T00:00:00Z"
-    Labels:
-      kuma.io/display-name: matched-for-rules-mt-aaaaaa
-      kuma.io/origin: zone
-      kuma.io/zone: zone-uni
-    Mesh: mesh-1
-    ModificationTime: "0001-01-01T00:00:00Z"
-    Name: matched-for-rules-mt-aaaaaa-4c245b25672df2cd
-    NameExtensions: null
-    Version: ""
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-49cz499w5458c56v
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-aaaaaa
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-aaaaaa-4c245b25672df2cd
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:

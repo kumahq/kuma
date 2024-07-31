@@ -14,7 +14,15 @@ import (
 type ResourceRule struct {
 	Resource core_model.ResourceMeta
 	Conf     []interface{}
-	Origin   []core_model.ResourceMeta
+	Origin   []Origin
+}
+
+type Origin struct {
+	Resource core_model.ResourceMeta
+	// RuleIndex is an index in the 'to[]' array, so we could unambiguously detect what to-item contributed to the final conf.
+	// Especially useful when to-item uses `targetRef.Labels`, because there is no obvious matching between the specific resource
+	// in `ResourceRule.Resource` and to-item.
+	RuleIndex int
 }
 
 type UniqueResourceIdentifier struct {
@@ -143,13 +151,24 @@ func mergeConfs(ri []*resolvedPolicyItem) ([]interface{}, error) {
 	return MergeConfs(confs)
 }
 
-func origins(ri []*resolvedPolicyItem) []core_model.ResourceMeta {
-	var rv []core_model.ResourceMeta
-	set := map[core_model.ResourceKey]struct{}{}
+func origins(ri []*resolvedPolicyItem) []Origin {
+	var rv []Origin
+
+	type keyType struct {
+		core_model.ResourceKey
+		ruleIndex int
+	}
+	key := func(policyItem PolicyItemWithMeta) keyType {
+		return keyType{
+			ResourceKey: core_model.MetaToResourceKey(policyItem.ResourceMeta),
+			ruleIndex:   policyItem.RuleIndex,
+		}
+	}
+	set := map[keyType]struct{}{}
 	for _, i := range ri {
-		if _, ok := set[core_model.MetaToResourceKey(i.item.ResourceMeta)]; !ok {
-			rv = append(rv, i.item.ResourceMeta)
-			set[core_model.MetaToResourceKey(i.item.ResourceMeta)] = struct{}{}
+		if _, ok := set[key(i.item)]; !ok {
+			rv = append(rv, Origin{Resource: i.item.ResourceMeta, RuleIndex: i.item.RuleIndex})
+			set[key(i.item)] = struct{}{}
 		}
 	}
 	return rv

@@ -14,6 +14,7 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-aaa
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: Mesh
 - PolicyItem:
@@ -32,6 +33,7 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-bbb
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: Mesh
 - PolicyItem:
@@ -52,6 +54,7 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-ccc
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: Mesh
 - PolicyItem:
@@ -68,6 +71,7 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-ddd
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: MeshSubset
     tags:

@@ -10,6 +10,7 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-aaaaaa
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: Mesh
 - PolicyItem:
@@ -26,5 +27,6 @@
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-bbbbbb
     type: MeshTimeout
+  RuleIndex: 0
   TopLevel:
     kind: Mesh

@@ -109,7 +109,8 @@ type SingleItemRules struct {
 type PolicyItemWithMeta struct {
 	core_model.PolicyItem
 	core_model.ResourceMeta
-	TopLevel common_api.TargetRef
+	TopLevel  common_api.TargetRef
+	RuleIndex int
 }
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -454,11 +455,12 @@ func (a *artificialPolicyItem) GetDefault() interface{} {
 
 func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta, topLevel common_api.TargetRef) []PolicyItemWithMeta {
 	var result []PolicyItemWithMeta
-	for _, item := range items {
+	for i, item := range items {
 		result = append(result, PolicyItemWithMeta{
 			PolicyItem:   item,
 			ResourceMeta: meta,
 			TopLevel:     topLevel,
+			RuleIndex:    i,
 		})
 	}
 	return result
