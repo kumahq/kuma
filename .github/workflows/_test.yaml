@@ -4,6 +4,9 @@ on:
       FULL_MATRIX:
         required: true
         type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
 permissions:
   contents: read
 env:
@@ -105,6 +108,10 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+<<<<<<< HEAD
+=======
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+>>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -116,4 +123,8 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+<<<<<<< HEAD
+=======
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+>>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
     secrets: inherit

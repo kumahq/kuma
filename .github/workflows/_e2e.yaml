@@ -4,26 +4,35 @@ on:
       matrix:
         required: true
         type: string
-      runnersByArch:
+      runner:
         type: string
+<<<<<<< HEAD
         required: false
         default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
+=======
+        required: true
+>>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
+  CI_TOOLS_DIR: ${{ contains(inputs.runner, '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
   E2E_PARAM_SIDECAR_CONTAINERS: ${{ fromJSON(inputs.matrix).sidecarContainers }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
-  E2E_RUN_NAME: ${{ fromJSON(inputs.matrix).target }}_${{ fromJSON(inputs.matrix).k8sVersion }}_${{ fromJSON(inputs.matrix).cniNetworkPlugin }}_${{ fromJSON(inputs.matrix).arch }}_${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
     timeout-minutes: 60
+<<<<<<< HEAD
     # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
     runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+=======
+    # can't use env vars here
+    runs-on: ${{ inputs.runner }}
+    if: ${{ inputs.runner != '' }}
+>>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +89,8 @@ jobs:
           EOF
           sudo service docker restart
       - name: "Run E2E tests"
+        env:
+          DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
         run: |
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
@@ -108,6 +119,21 @@ jobs:
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
             export KUMA_DEFAULT_RETRIES=60
           fi
+          
+          function on_exit()
+          {
+            docker logout docker.io
+          }
+          
+          # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
+          # to prevent this, we support specifying a pull credential here
+          if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
+            DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+            DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
+            echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
+            trap "on_exit" EXIT
+          fi
+          
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else
