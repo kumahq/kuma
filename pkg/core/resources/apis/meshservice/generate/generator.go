@@ -33,12 +33,12 @@ const (
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
-	logger              logr.Logger
-	generateInterval    time.Duration
-	gracePeriodInterval time.Duration
-	metric              prometheus.Summary
-	resManager          manager.ResourceManager
-	meshCache           *mesh.Cache
+	logger           logr.Logger
+	generateInterval time.Duration
+	gracePeriod      time.Duration
+	metric           prometheus.Summary
+	resManager       manager.ResourceManager
+	meshCache        *mesh.Cache
 }
 
 var _ component.Component = &Generator{}
@@ -60,12 +60,12 @@ func New(
 		return nil, err
 	}
 	return &Generator{
-		logger:              logger,
-		generateInterval:    generateInterval,
-		gracePeriodInterval: gracePeriodInterval,
-		metric:              metric,
-		resManager:          resManager,
-		meshCache:           meshCache,
+		logger:           logger,
+		generateInterval: generateInterval,
+		gracePeriod:      gracePeriodInterval,
+		metric:           metric,
+		resManager:       resManager,
+		meshCache:        meshCache,
 	}, nil
 }
 
@@ -201,7 +201,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
 			if hasGracePeriodLabel && err == nil {
 				// If we have a valid grace period set, check if it's expired
-				if time.Since(gracePeriodStartedAt) > g.gracePeriodInterval {
+				if time.Since(gracePeriodStartedAt) > g.gracePeriod {
 					if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
 						log.Error(err, "couldn't delete MeshService")
 						continue
