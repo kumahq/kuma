@@ -113,7 +113,7 @@ type: system.kuma.io/secret
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
-			Install(YamlK8s(MkGatewayInstanceNoServiceTag("simple-gateway", namespace, meshName))).
+			Install(YamlK8s(MkGatewayInstance("simple-gateway", namespace, meshName))).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

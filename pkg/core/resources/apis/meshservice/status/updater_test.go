@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,6 +19,7 @@ import (
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Updater", func() {
@@ -34,10 +36,10 @@ var _ = Describe("Updater", func() {
 		updater, err := NewStatusUpdater(logr.Discard(), resManager, resManager, 50*time.Millisecond, m, "east")
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
-		go func() {
+		go func(stopCh chan struct{}) {
 			defer GinkgoRecover()
 			Expect(updater.Start(stopCh)).To(Succeed())
-		}()
+		}(stopCh)
 
 		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 	})
@@ -155,6 +157,109 @@ var _ = Describe("Updater", func() {
 			dpInsightIssuedBackend: "",
 			existingTLSStatus:      "",
 			expectedTLSStatus:      meshservice_api.TLSNotReady,
+		}),
+	)
+
+	type dpProxiesTestCase struct {
+		meshService       *builders.MeshServiceBuilder
+		dpps              []*builders.DataplaneBuilder
+		insights          []*builders.DataplaneInsightBuilder
+		expectedState     meshservice_api.State
+		expectedDpProxies meshservice_api.DataplaneProxies
+	}
+
+	DescribeTable("data plane proxies and state update",
+		func(given dpProxiesTestCase) {
+			// given
+			Expect(samples.MeshDefaultBuilder().WithName("test").Create(resManager)).To(Succeed())
+			for _, dpp := range given.dpps {
+				Expect(dpp.WithMesh("test").Create(resManager)).To(Succeed())
+			}
+			for _, insight := range given.insights {
+				Expect(insight.WithMesh("test").Create(resManager)).To(Succeed())
+			}
+			Expect(given.meshService.WithMesh("test").Create(resManager)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				// when
+				ms := meshservice_api.NewMeshServiceResource()
+				err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "test"))
+
+				// then
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(ms.Status.DataplaneProxies).To(Equal(given.expectedDpProxies))
+				g.Expect(ms.Spec.State).To(Equal(given.expectedState))
+			}, "10s", "50ms").Should(Succeed())
+		},
+		Entry("should set empty stats and state unavailable", dpProxiesTestCase{
+			meshService:   samples.MeshServiceBackendBuilder(),
+			expectedState: meshservice_api.StateUnavailable,
+			expectedDpProxies: meshservice_api.DataplaneProxies{
+				Connected: 0,
+				Healthy:   0,
+				Total:     0,
+			},
+		}),
+		Entry("should count connected DPPs", dpProxiesTestCase{
+			meshService: samples.MeshServiceBackendBuilder(),
+			dpps: []*builders.DataplaneBuilder{
+				samples.DataplaneBackendBuilder().WithName("dp-connected"),
+				samples.DataplaneBackendBuilder().WithName("dp-disconnected"),
+				samples.DataplaneBackendBuilder().WithName("dp-never-connected"),
+			},
+			insights: []*builders.DataplaneInsightBuilder{
+				samples.DataplaneInsightBackendBuilder().
+					WithName("dp-connected").
+					AddSubscription(&v1alpha1.DiscoverySubscription{
+						ConnectTime: proto.MustTimestampProto(time.Now()),
+					}),
+				samples.DataplaneInsightBackendBuilder().
+					WithName("dp-disconnected").
+					AddSubscription(&v1alpha1.DiscoverySubscription{
+						ConnectTime:    proto.MustTimestampProto(time.Now()),
+						DisconnectTime: proto.MustTimestampProto(time.Now()),
+					}),
+				samples.DataplaneInsightBackendBuilder().
+					WithName("dp-never-connected"),
+			},
+			expectedState: meshservice_api.StateAvailable,
+			expectedDpProxies: meshservice_api.DataplaneProxies{
+				Connected: 1,
+				Healthy:   3,
+				Total:     3,
+			},
+		}),
+		Entry("should count healthy DPPs", dpProxiesTestCase{
+			meshService: samples.MeshServiceBackendBuilder().
+				WithDataplaneTagsSelectorKV("app", "backend").
+				AddIntPort(builders.FirstInboundPort+1, builders.FirstInboundServicePort+1, core_mesh.ProtocolHTTP),
+			dpps: []*builders.DataplaneBuilder{
+				builders.Dataplane().
+					WithName("dp-all-inbounds-healthy").
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}),
+				builders.Dataplane().
+					WithName("dp-one-inbounds-healthy").
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					With(func(resource *core_mesh.DataplaneResource) {
+						resource.Spec.Networking.Inbound[0].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
+					}),
+				builders.Dataplane().
+					WithName("dp-no-inbounds-healthy").
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy", "app": "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api", "app": "backend"}).
+					With(func(resource *core_mesh.DataplaneResource) {
+						resource.Spec.Networking.Inbound[0].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
+						resource.Spec.Networking.Inbound[1].State = v1alpha1.Dataplane_Networking_Inbound_NotReady
+					}),
+			},
+			expectedState: meshservice_api.StateAvailable,
+			expectedDpProxies: meshservice_api.DataplaneProxies{
+				Connected: 0,
+				Healthy:   1,
+				Total:     3,
+			},
 		}),
 	)
 

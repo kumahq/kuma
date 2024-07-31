@@ -25,7 +25,7 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 }
 
 func (m *MeshMultiZoneServiceResource) FindPort(port uint32) (meshservice_api.Port, bool) {
-	for _, p := range m.Status.Ports {
+	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
 		}

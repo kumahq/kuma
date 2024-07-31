@@ -91,6 +91,14 @@ spec:
                       type: string
                     type: object
                 type: object
+              state:
+                description: |-
+                  State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
+                  It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
+                enum:
+                - Available
+                - Unavailable
+                type: string
             type: object
           status:
             description: Status is the current status of the Kuma MeshService resource.
@@ -111,6 +119,21 @@ spec:
                       type: string
                   type: object
                 type: array
+              dataplaneProxies:
+                description: Data plane proxies statistics selected by this MeshService.
+                properties:
+                  connected:
+                    description: Number of data plane proxies connected to the zone
+                      control plane
+                    type: integer
+                  healthy:
+                    description: Number of data plane proxies with all healthy inbounds
+                      selected by this MeshService.
+                    type: integer
+                  total:
+                    description: Total number of data plane proxies.
+                    type: integer
+                type: object
               hostnameGenerators:
                 items:
                   properties:

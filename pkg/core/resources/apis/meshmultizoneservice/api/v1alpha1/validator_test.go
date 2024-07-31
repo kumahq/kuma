@@ -18,6 +18,10 @@ var _ = Describe("validation", func() {
 					Field:   "spec.selector.meshService.matchLabels",
 					Message: "cannot be empty",
 				},
+				{
+					Field:   "spec.ports",
+					Message: "cannot be empty",
+				},
 			},
 			``),
 	)
@@ -31,6 +35,8 @@ selector:
   meshService:
     matchLabels:
       app: xyz
+ports:
+- port: 123
 `),
 	)
 })

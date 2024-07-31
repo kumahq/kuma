@@ -13,6 +13,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	meshservice_generate "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/generate"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	"github.com/kumahq/kuma/pkg/dns"
@@ -150,6 +151,10 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 			if err := ipam.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up IPAM")
+				return err
+			}
+			if err := meshservice_generate.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up MeshService generator")
 				return err
 			}
 			if err := zone.Setup(rt); err != nil {

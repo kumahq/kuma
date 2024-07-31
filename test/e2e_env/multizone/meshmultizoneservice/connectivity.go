@@ -41,6 +41,9 @@ spec:
       matchLabels:
         kuma.io/display-name: test-server
         k8s.kuma.io/namespace: mzmsconnectivity
+  ports:
+  - port: 80
+    appProtocol: http
 `)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -171,7 +174,6 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(responseFromInstance(multizone.UniZone1), "30s", "1s").
-			Should(Equal("kube-test-server-2"))
-		// todo(jakubdyszkiewicz) add MustPassRepeatedly(5) after we solve excluding zones without any endpoints
+			MustPassRepeatedly(5).Should(Equal("kube-test-server-2"))
 	})
 }

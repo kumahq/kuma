@@ -571,7 +571,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[$__rate_interval])) by (envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "Outgoing {{envoy_response_code_class}}xx",

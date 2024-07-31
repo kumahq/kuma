@@ -181,3 +181,4 @@ jobs:
           name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
+          use-executable: "false"
