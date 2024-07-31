@@ -795,11 +795,14 @@ resourceRules:
     conf: merge($conf1, $conf2)
 ```
 
-Configuration priority (from most to least important): 
-1. consumer policy targeting `Mesh*Route`
-2. producer policy targeting `Mesh*Route`
-3. consumer policy targeting MeshService
-4. producer policy targeting MeshService
+Configuration priority (from most to least important):
+1. consumer policy targeting consumer `Mesh*Route`
+2. consumer policy targeting producer `Mesh*Route`
+3. producer policy targeting producer `Mesh*Route`
+4. consumer policy targeting `MeshService`
+5. producer policy targeting `MeshService`
+
+**When configuring routes consumer route always takes precedence over producer route** 
 
 We always prioritize policies targeting `Mesh*Route` than the one targeting MeshService because route can have more specific
 requirements than a whole MeshService
