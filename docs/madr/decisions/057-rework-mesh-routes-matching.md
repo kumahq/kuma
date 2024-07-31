@@ -627,7 +627,7 @@ resourceRules:
   backend.backend-ns:
     conf: $conf1
   backend-route.backend-ns:
-    conf: merge($conf1, $conf2)
+    conf: $conf2
 ```
 
 Route configuration will be applied when route was created for a given DPP, if not MeshService config will be applied. 
@@ -666,7 +666,7 @@ spec:
 ```
 
 After applying these two policies timeout won't be applied to any proxy, since `Mesh*Route` and MeshTimeout is applied
-on different subset of proxies. We should ignore this situation as this will just have no effect. Also we don't have possibility
+on different subset of proxies. We should ignore this situation as this will just have no effect. Also, we don't have possibility
 to show warnings with this information to users. 
 
 #### Mesh*Route with multiple spec.to[].targetRef
@@ -717,7 +717,8 @@ spec:
     default: conf3
 ```
 
-When merging we will merge `$conf1` and `$conf2` for MeshService with `$conf3` for `Mesh*Route`. 
+When merging we will merge `$conf1` and `$conf2` for MeshService with `$conf3` for `Mesh*Route`. After changes to `ResourceRules`
+which no longer merge confs for different resources we will get config:
 
 ```yaml
 resourceRules:
@@ -726,25 +727,15 @@ resourceRules:
   frontend.backend-ns:
     conf: $conf2
   backend-route.backend-ns:
-    conf: merge($conf1, $conf2, $conf3)
+    conf: $conf3
 ```
 
-Which makes it problematic when applying conf since we are applying policy per outbound, and we have merged config for 
-multiple outbounds. 
+Decision on which conf should be applied should be made on plugin level. As we know to which MeshService outbound we are 
+applying configuration.
 
-Possible solutions:
-
-1. We can deprecate and then remove possibility to have multiple `spec.to[]` items in `Mesh*Route` policy to make it referencable. 
-(this is basically step into removing `to` section altogether, why do we need it if we cannot put multiple items in it).
-2. When merging we should only merge confs for given resource, don't treat `Mesh*Route` as subtype of `MeshService` and then
-when applying configuration to resource we should be more mindful on which outbound the route is configured and configure 
-it based on conf for that MeshService
-
-**Decision outcome**
-
-We've decided to go with option 1, which is to deprecate and later on remove possibility to put multiple items in `spec.to[]`
+There is also question of deprecating and later on removing possibility to put multiple items in `spec.to[]`
 section of `Mesh*Route`. This will align `Mesh*Route` design with GatewayAPI. In the future we should also discuss removing 
-`spec.to[]` section entirely leaving only `spec.targetRef` section in `Mesh*Route`.
+`spec.to[]` section entirely leaving only `spec.targetRef` section in `Mesh*Route`. This is tracked by issue: https://github.com/kumahq/kuma/issues/11021
 
 #### Overriding configuration
 
@@ -752,21 +743,21 @@ For policies on namespace this is as simple as creating consumer policy that tar
 (This can be useful when we consume MeshService from other zone)
 
 ```yaml
-# Consumer MeshTimeout targeting whole MeshService
+# Producer MeshTimeout targeting whole MeshHTTPRoute
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
-  name: timeout-on-backend-service
-  namespace: frontend-ns
+  name: default-timeout-on-backend-route
+  namespace: backend-ns
   labels:
     kuma.io/mesh: default
 spec:
   to:
   - targetRef:
-      kind: MeshService
-      name: backend
+      kind: MeshHTTPRoute
+      name: route-to-backend
       namespace: backend-ns
-    default: $conf1
+    default: $producer_conf
 ---
 # Consumer MeshTimeout targeting producer route
 apiVersion: kuma.io/v1alpha1
@@ -782,17 +773,15 @@ spec:
       kind: MeshHTTPRoute
       name: route-to-backend
       namespace: backend-ns
-    default: $conf2
+    default: $consumer_conf
 ```
 
 After merging conf we will get:
 
 ```yaml
 resourceRules:
-  backend.backend-ns: 
-    conf: $conf1
   backend-route.backend-ns:
-    conf: merge($conf1, $conf2)
+    conf: merge($producer_conf, $consumer_conf)
 ```
 
 Configuration priority (from most to least important):
@@ -805,7 +794,7 @@ Configuration priority (from most to least important):
 **When configuring routes consumer route always takes precedence over producer route** 
 
 We always prioritize policies targeting `Mesh*Route` than the one targeting MeshService because route can have more specific
-requirements than a whole MeshService
+requirements than a whole MeshService.
 
 ##### Overriding on universal
 
@@ -896,7 +885,7 @@ resourceRules:
   backend:
     conf: merge($conf1, $conf3)
   backend-route:
-    conf: merge($conf1, $conf2, $conf3, $conf4)
+    conf: merge($conf2, $conf4)
 ```
 
 ### Backward compatibility and migration
