@@ -133,20 +133,6 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 				Origin:   origins(relevant),
 			}
 		}
-
-		//// merge all relevant confs into one, the order of merging is guaranteed by SortByTargetRefV2
-		//merged, err := mergeConfs(relevant)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//if len(merged) == 1 {
-		//	rules[UniqueResourceKey(uri.String())] = ResourceRule{
-		//		Resource: resource.GetMeta(),
-		//		Conf:     merged[0],
-		//		Origin:   origins(relevant),
-		//	}
-		//}
 	}
 
 	return rules, nil
