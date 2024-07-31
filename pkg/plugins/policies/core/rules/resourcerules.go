@@ -14,7 +14,7 @@ import (
 
 type ResourceRule struct {
 	Resource core_model.ResourceMeta
-	Conf     interface{}
+	Conf     []interface{}
 	Origin   []core_model.ResourceMeta
 }
 
@@ -64,7 +64,7 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister, fn ...ComputeOptsFn) *ResourceRule {
 	opts := NewComputeOpts(fn...)
 	key := uniqueKey(r, opts.sectionName)
-	if rule, ok := rr[key]; ok {
+	if rule, ok := rr[UniqueResourceKey(key.String())]; ok {
 		return &rule
 	}
 
@@ -110,68 +110,101 @@ func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRu
 		resolvedItems = append(resolvedItems, resolveTargetRef(item, l)...)
 	}
 
-	for _, i := range resolvedItems {
-		key := uniqueKey(i.resource, i.sectionName())
-		if _, ok := rules[key]; ok {
-			continue
-		}
-
-		confs := []interface{}{}
-		var origins []core_model.ResourceMeta
-		originSet := map[core_model.ResourceKey]struct{}{}
-		for _, j := range resolvedItems {
-			if includes(j, i) {
-				confs = append(confs, j.item.GetDefault())
-				if _, ok := originSet[core_model.MetaToResourceKey(j.item.ResourceMeta)]; !ok {
-					origins = append(origins, j.item.ResourceMeta)
-					originSet[core_model.MetaToResourceKey(j.item.ResourceMeta)] = struct{}{}
-				}
+	// we could've built ResourceRule for all resources in the cluster, but we only need to build rules for resources
+	// that are part of the policy to reduce the size of the ResourceRules
+	for uri, resource := range indexResources(resolvedItems) {
+		// take only policy items that have isRelevant conf for the resource
+		var relevant []*resolvedPolicyItem
+		for _, policyItem := range resolvedItems {
+			if isRelevant(policyItem, resource, uri.SectionName) {
+				relevant = append(relevant, policyItem)
 			}
 		}
 
-		merged, err := MergeConfs(confs)
-		if err != nil {
-			return nil, err
-		}
-		if len(merged) == 1 {
-			rules[key] = ResourceRule{
-				Resource: i.resource.GetMeta(),
-				Conf:     merged[0],
-				Origin:   origins,
+		if len(relevant) > 0 {
+			// merge all relevant confs into one, the order of merging is guaranteed by SortByTargetRefV2
+			merged, err := mergeConfs(relevant)
+			if err != nil {
+				return nil, err
+			}
+			rules[UniqueResourceKey(uri.String())] = ResourceRule{
+				Resource: resource.GetMeta(),
+				Conf:     merged,
+				Origin:   origins(relevant),
 			}
 		}
+
+		//// merge all relevant confs into one, the order of merging is guaranteed by SortByTargetRefV2
+		//merged, err := mergeConfs(relevant)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//if len(merged) == 1 {
+		//	rules[UniqueResourceKey(uri.String())] = ResourceRule{
+		//		Resource: resource.GetMeta(),
+		//		Conf:     merged[0],
+		//		Origin:   origins(relevant),
+		//	}
+		//}
 	}
 
 	return rules, nil
 }
 
-func uniqueKey(r core_model.Resource, sectionName string) UniqueResourceKey {
-	tri := UniqueResourceIdentifier{
+func indexResources(ri []*resolvedPolicyItem) map[UniqueResourceIdentifier]core_model.Resource {
+	index := map[UniqueResourceIdentifier]core_model.Resource{}
+	for _, i := range ri {
+		index[uniqueKey(i.resource, i.sectionName())] = i.resource
+	}
+	return index
+}
+
+func mergeConfs(ri []*resolvedPolicyItem) ([]interface{}, error) {
+	var confs []interface{}
+	for _, i := range ri {
+		confs = append(confs, i.item.GetDefault())
+	}
+	return MergeConfs(confs)
+}
+
+func origins(ri []*resolvedPolicyItem) []core_model.ResourceMeta {
+	var rv []core_model.ResourceMeta
+	set := map[core_model.ResourceKey]struct{}{}
+	for _, i := range ri {
+		if _, ok := set[core_model.MetaToResourceKey(i.item.ResourceMeta)]; !ok {
+			rv = append(rv, i.item.ResourceMeta)
+			set[core_model.MetaToResourceKey(i.item.ResourceMeta)] = struct{}{}
+		}
+	}
+	return rv
+}
+
+func uniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifier {
+	return UniqueResourceIdentifier{
 		ResourceIdentifier: core_model.NewResourceIdentifier(r),
 		ResourceType:       r.Descriptor().Name,
 		SectionName:        sectionName,
 	}
-
-	return UniqueResourceKey(tri.String())
 }
 
-// includes if resource 'y' is part of the resource 'x', i.e. 'MeshService' is always included in 'Mesh'
-func includes(x, y *resolvedPolicyItem) bool {
-	switch x.resource.Descriptor().Name {
+// isRelevant returns true if the policyItem is relevant to the resource or section of the resource
+func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionName string) bool {
+	switch policyItem.resource.Descriptor().Name {
 	case core_mesh.MeshType:
-		switch y.resource.Descriptor().Name {
+		switch r.Descriptor().Name {
 		case core_mesh.MeshType:
-			return x.resource.GetMeta().GetName() == y.resource.GetMeta().GetName()
+			return policyItem.resource.GetMeta().GetName() == r.GetMeta().GetName()
 		default:
-			return x.resource.GetMeta().GetName() == y.resource.GetMeta().GetMesh()
+			return policyItem.resource.GetMeta().GetName() == r.GetMeta().GetMesh()
 		}
 	case meshservice_api.MeshServiceType:
-		switch y.resource.Descriptor().Name {
+		switch r.Descriptor().Name {
 		case meshservice_api.MeshServiceType:
 			switch {
-			case uniqueKey(x.resource, x.sectionName()) == uniqueKey(y.resource, y.sectionName()):
+			case uniqueKey(policyItem.resource, policyItem.sectionName()) == uniqueKey(r, sectionName):
 				return true
-			case uniqueKey(x.resource, "") == uniqueKey(y.resource, "") && x.sectionName() == "" && y.sectionName() != "":
+			case uniqueKey(policyItem.resource, "") == uniqueKey(r, "") && policyItem.sectionName() == "" && sectionName != "":
 				return true
 			default:
 				return false
@@ -180,9 +213,9 @@ func includes(x, y *resolvedPolicyItem) bool {
 			return false
 		}
 	case meshextenralservice_api.MeshExternalServiceType:
-		switch y.resource.Descriptor().Name {
+		switch r.Descriptor().Name {
 		case meshextenralservice_api.MeshExternalServiceType:
-			return uniqueKey(x.resource, "") == uniqueKey(y.resource, "")
+			return uniqueKey(policyItem.resource, "") == uniqueKey(r, "")
 		default:
 			return false
 		}

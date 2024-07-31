@@ -244,7 +244,7 @@ var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend": {Conf: "conf-1"},
+			"meshservice:mesh/mesh-1:name/backend": {Conf: []interface{}{"conf-1"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
 
@@ -259,14 +259,14 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal("conf-1"))
+		Expect(rule.Conf).To(Equal([]interface{}{"conf-1"}))
 	})
 
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend": {Conf: "conf-1"},
-			"mesh:name/mesh-1":                     {Conf: "conf-2"},
+			"meshservice:mesh/mesh-1:name/backend": {Conf: []interface{}{"conf-1"}},
+			"mesh:name/mesh-1":                     {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -287,14 +287,14 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal("conf-2"))
+		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
 	})
 
 	It("should return MeshService with section", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend":                   {Conf: "conf-1"},
-			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: "conf-2"},
+			"meshservice:mesh/mesh-1:name/backend":                   {Conf: []interface{}{"conf-1"}},
+			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -316,14 +316,14 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal("conf-2"))
+		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
 	})
 
 	It("should return MeshService rule if MeshService with section is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend":                   {Conf: "conf-1"},
-			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: "conf-2"},
+			"meshservice:mesh/mesh-1:name/backend":                   {Conf: []interface{}{"conf-1"}},
+			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -345,7 +345,7 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).ToNot(BeNil())
-		Expect(rule.Conf).To(Equal("conf-1"))
+		Expect(rule.Conf).To(Equal([]interface{}{"conf-1"}))
 	})
 
 	It("should return nil if resource and parent resource are not found", func() {

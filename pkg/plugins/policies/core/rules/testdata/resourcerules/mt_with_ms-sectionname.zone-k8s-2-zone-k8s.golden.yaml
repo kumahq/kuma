@@ -1,6 +1,6 @@
 meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
   Conf:
-    connectionTimeout: 1m51s
+  - connectionTimeout: 1m51s
     idleTimeout: 9s
   Origin:
   - CreationTime: "0001-01-01T00:00:00Z"
@@ -34,7 +34,7 @@ meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
     Version: ""
 meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:section/http-port:
   Conf:
-    connectionTimeout: 11s
+  - connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 9s

@@ -1,6 +1,6 @@
 mesh:name/mesh-1:
   Conf:
-    connectionTimeout: 1m41s
+  - connectionTimeout: 1m41s
     http:
       requestTimeout: 1m42s
     idleTimeout: 1m40s
@@ -26,7 +26,7 @@ mesh:name/mesh-1:
     type: Mesh
 meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
   Conf:
-    connectionTimeout: 11s
+  - connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 10s

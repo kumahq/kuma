@@ -1,6 +1,6 @@
 meshservice:mesh/mesh-1:name/backend-1:
   Conf:
-    connectionTimeout: 11s
+  - connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 10s
@@ -27,7 +27,7 @@ meshservice:mesh/mesh-1:name/backend-1:
     Version: ""
 meshservice:mesh/mesh-1:name/backend-2:
   Conf:
-    connectionTimeout: 11s
+  - connectionTimeout: 11s
     http:
       requestTimeout: 12s
     idleTimeout: 10s
