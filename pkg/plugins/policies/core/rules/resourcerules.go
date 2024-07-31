@@ -2,7 +2,6 @@ package rules
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -61,37 +60,27 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 	}
 }
 
-func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister, fn ...ComputeOptsFn) *ResourceRule {
+func (rr ResourceRules) Compute(r core_model.Resource, reader ResourceReader, fn ...ComputeOptsFn) *ResourceRule {
 	opts := NewComputeOpts(fn...)
 	key := uniqueKey(r, opts.sectionName)
 	if rule, ok := rr[UniqueResourceKey(key.String())]; ok {
 		return &rule
 	}
 
-	findMesh := func(meshName string) core_model.Resource {
-		meshes := l.ListOrEmpty(core_mesh.MeshType).GetItems()
-		if i := slices.IndexFunc(meshes, func(resource core_model.Resource) bool {
-			return resource.GetMeta().GetName() == meshName
-		}); i >= 0 {
-			return meshes[i]
-		}
-		return nil
-	}
-
 	switch r.Descriptor().Name {
 	case meshservice_api.MeshServiceType:
 		// find MeshService without the sectionName and compute rules for it
 		if opts.sectionName != "" {
-			return rr.Compute(r, l)
+			return rr.Compute(r, reader)
 		}
 		// find MeshService's Mesh and compute rules for it
-		if mesh := findMesh(r.GetMeta().GetMesh()); mesh != nil {
-			return rr.Compute(mesh, l)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
+			return rr.Compute(mesh, reader)
 		}
 	case meshextenralservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
-		if mesh := findMesh(r.GetMeta().GetMesh()); mesh != nil {
-			return rr.Compute(mesh, l)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
+			return rr.Compute(mesh, reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// todo(lobkovilya): handle MeshHTTPRoute
@@ -100,14 +89,14 @@ func (rr ResourceRules) Compute(r core_model.Resource, l ResourceLister, fn ...C
 	return nil
 }
 
-func BuildResourceRules(list []PolicyItemWithMeta, l ResourceLister) (ResourceRules, error) {
+func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (ResourceRules, error) {
 	rules := ResourceRules{}
 
 	SortByTargetRefV2(list)
 
 	var resolvedItems []*resolvedPolicyItem
 	for _, item := range list {
-		resolvedItems = append(resolvedItems, resolveTargetRef(item, l)...)
+		resolvedItems = append(resolvedItems, resolveTargetRef(item, reader)...)
 	}
 
 	// we could've built ResourceRule for all resources in the cluster, but we only need to build rules for resources
@@ -219,12 +208,12 @@ func (r *resolvedPolicyItem) sectionName() string {
 	return r.item.PolicyItem.GetTargetRef().SectionName
 }
 
-func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPolicyItem {
+func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolvedPolicyItem {
 	if !item.GetTargetRef().Kind.IsRealResource() {
 		return nil
 	}
-
-	list := l.ListOrEmpty(core_model.ResourceType(item.GetTargetRef().Kind)).GetItems()
+	rtype := core_model.ResourceType(item.GetTargetRef().Kind)
+	list := reader.ListOrEmpty(rtype).GetItems()
 
 	if len(item.GetTargetRef().Labels) > 0 {
 		var rv []*resolvedPolicyItem
@@ -239,10 +228,8 @@ func resolveTargetRef(item PolicyItemWithMeta, l ResourceLister) []*resolvedPoli
 	}
 
 	ri := core_model.TargetRefToResourceIdentifier(item.ResourceMeta, item.GetTargetRef())
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool {
-		return ri == core_model.NewResourceIdentifier(r)
-	}); i >= 0 {
-		return []*resolvedPolicyItem{{resource: list[i], item: item}}
+	if resource := reader.Get(rtype, ri); resource != nil {
+		return []*resolvedPolicyItem{{resource: resource, item: item}}
 	}
 
 	return nil

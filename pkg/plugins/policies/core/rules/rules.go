@@ -307,12 +307,13 @@ func BuildFromRules(
 	}, nil
 }
 
-type ResourceLister interface {
+type ResourceReader interface {
+	Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource
 	ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList
 }
 
-func BuildToRules(matchedPolicies []core_model.Resource, lister ResourceLister) (ToRules, error) {
-	toList, err := BuildToList(matchedPolicies, lister)
+func BuildToRules(matchedPolicies []core_model.Resource, reader ResourceReader) (ToRules, error) {
+	toList, err := BuildToList(matchedPolicies, reader)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -322,7 +323,7 @@ func BuildToRules(matchedPolicies []core_model.Resource, lister ResourceLister) 
 		return ToRules{}, err
 	}
 
-	resourceRules, err := BuildResourceRules(toList, lister)
+	resourceRules, err := BuildResourceRules(toList, reader)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -330,10 +331,10 @@ func BuildToRules(matchedPolicies []core_model.Resource, lister ResourceLister) 
 	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
 }
 
-func BuildToList(matchedPolicies []core_model.Resource, lister ResourceLister) ([]PolicyItemWithMeta, error) {
+func BuildToList(matchedPolicies []core_model.Resource, reader ResourceReader) ([]PolicyItemWithMeta, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
-		tl, err := buildToList(mp, lister.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+		tl, err := buildToList(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
 		if err != nil {
 			return nil, err
 		}
@@ -348,19 +349,19 @@ func BuildToList(matchedPolicies []core_model.Resource, lister ResourceLister) (
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
 	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
-	lister ResourceLister,
+	reader ResourceReader,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]Rules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]Rules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, lister)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules.Rules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, lister)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
