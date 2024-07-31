@@ -32,6 +32,7 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
       k8s.kuma.io/name: backend-xdc9b75d4z2w5b6d
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:section/http-port:
   Conf:
   - connectionTimeout: 11s
@@ -83,3 +84,4 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:section/http-port:
       k8s.kuma.io/name: backend-xdc9b75d4z2w5b6d
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: http-port

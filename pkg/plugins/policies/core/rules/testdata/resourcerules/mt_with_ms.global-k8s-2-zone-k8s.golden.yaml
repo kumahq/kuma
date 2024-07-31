@@ -25,6 +25,7 @@ mesh:name/mesh-1:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
   Conf:
   - connectionTimeout: 11s
@@ -76,3 +77,4 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
       k8s.kuma.io/name: backend-xdc9b75d4z2w5b6d
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: ""

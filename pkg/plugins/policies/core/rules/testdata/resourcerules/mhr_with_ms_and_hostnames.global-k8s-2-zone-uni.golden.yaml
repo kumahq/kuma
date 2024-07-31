@@ -49,3 +49,4 @@ mesh:name/mesh-1:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh
+  ResourceSectionName: ""

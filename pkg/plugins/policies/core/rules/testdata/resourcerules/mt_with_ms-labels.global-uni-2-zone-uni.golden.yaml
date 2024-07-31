@@ -27,6 +27,7 @@ meshservice:mesh/mesh-1:name/backend-1:
     Name: backend-1-794dc6v4z827xbcx
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:name/backend-2:
   Conf:
   - connectionTimeout: 11s
@@ -56,3 +57,4 @@ meshservice:mesh/mesh-1:name/backend-2:
     Name: backend-2-794dc9v4z827xwf9
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""

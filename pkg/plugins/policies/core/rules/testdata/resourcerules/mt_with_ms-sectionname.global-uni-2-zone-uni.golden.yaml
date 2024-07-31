@@ -24,6 +24,7 @@ meshservice:mesh/mesh-1:name/backend:
     Name: backend-z6v4648zfz9c6wbv
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:name/backend:section/http-port:
   Conf:
   - connectionTimeout: 11s
@@ -63,3 +64,4 @@ meshservice:mesh/mesh-1:name/backend:section/http-port:
     Name: backend-z6v4648zfz9c6wbv
     NameExtensions: null
     Version: ""
+  ResourceSectionName: http-port

@@ -12,9 +12,10 @@ import (
 )
 
 type ResourceRule struct {
-	Resource core_model.ResourceMeta
-	Conf     []interface{}
-	Origin   []Origin
+	Resource            core_model.ResourceMeta
+	ResourceSectionName string
+	Conf                []interface{}
+	Origin              []Origin
 }
 
 type Origin struct {
@@ -125,9 +126,10 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 				return nil, err
 			}
 			rules[UniqueResourceKey(uri.String())] = ResourceRule{
-				Resource: resource.GetMeta(),
-				Conf:     merged,
-				Origin:   origins(relevant),
+				Resource:            resource.GetMeta(),
+				ResourceSectionName: uri.SectionName,
+				Conf:                merged,
+				Origin:              origins(relevant),
 			}
 		}
 	}

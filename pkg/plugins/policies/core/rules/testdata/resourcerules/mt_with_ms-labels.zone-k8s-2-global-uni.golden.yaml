@@ -33,6 +33,7 @@ meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-1:
     Name: backend-1-94xw4w28b89c9v49
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-2:
   Conf:
   - connectionTimeout: 11s
@@ -68,3 +69,4 @@ meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend-2:
     Name: backend-2-c55fdc8fdfd62f24
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""

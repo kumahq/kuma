@@ -31,6 +31,7 @@ meshservice:mesh/mesh-1:name/backend-1:
       k8s.kuma.io/name: backend-1-794dc6v4z827xbcx
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:name/backend-2:
   Conf:
   - connectionTimeout: 11s
@@ -64,3 +65,4 @@ meshservice:mesh/mesh-1:name/backend-2:
       k8s.kuma.io/name: backend-2-794dc9v4z827xwf9
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: ""

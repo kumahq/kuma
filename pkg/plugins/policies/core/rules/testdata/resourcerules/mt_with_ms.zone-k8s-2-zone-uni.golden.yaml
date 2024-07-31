@@ -24,6 +24,7 @@ mesh:name/mesh-1:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mesh-1
     type: Mesh
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
   Conf:
   - connectionTimeout: 11s
@@ -72,3 +73,4 @@ meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
     Name: backend-z7f47x24v9f5x2b4
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""

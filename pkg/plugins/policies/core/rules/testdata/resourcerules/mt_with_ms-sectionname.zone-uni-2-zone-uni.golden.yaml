@@ -26,6 +26,7 @@ meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
     Name: backend-586b984b597z5874
     NameExtensions: null
     Version: ""
+  ResourceSectionName: ""
 meshservice:mesh/mesh-1:zone/zone-uni:name/backend:section/http-port:
   Conf:
   - connectionTimeout: 11s
@@ -68,3 +69,4 @@ meshservice:mesh/mesh-1:zone/zone-uni:name/backend:section/http-port:
     Name: backend-586b984b597z5874
     NameExtensions: null
     Version: ""
+  ResourceSectionName: http-port
