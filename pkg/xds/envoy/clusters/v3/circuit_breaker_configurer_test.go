@@ -59,6 +59,7 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
+            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: backend
         type: EDS`,
