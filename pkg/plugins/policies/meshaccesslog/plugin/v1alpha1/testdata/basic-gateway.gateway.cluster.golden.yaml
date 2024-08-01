@@ -2,6 +2,7 @@ connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend-c58ee0574727fc94
 perConnectionBufferLimitBytes: 32768

@@ -1,64 +1,36 @@
 resources:
-- name: mesh1:backend
+- name: mesh1:backend2_svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh1_backend
+    altStatName: mesh1_backend2_svc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh1:backend
+    name: mesh1:backend2_svc_80
     type: EDS
-- name: mesh2:mesh-gateway
+- name: mesh1:backend_svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh2_mesh-gateway
+    altStatName: mesh1_backend_svc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh2:mesh-gateway
+    name: mesh1:backend_svc_80
     type: EDS
-- name: mesh1:backend
+- name: mesh1:backend2_svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh1:backend
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.1
-              portValue: 2521
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              mesh: mesh1
-            envoy.transport_socket_match:
-              mesh: mesh1
-- name: mesh2:mesh-gateway
+    clusterName: mesh1:backend2_svc_80
+- name: mesh1:backend_svc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh2:mesh-gateway
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.2
-              portValue: 80
-        loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              mesh: mesh2
-            envoy.transport_socket_match:
-              mesh: mesh2
+    clusterName: mesh1:backend_svc_80
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -70,24 +42,24 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - backend{mesh=mesh1}
+        - a601e0c00295a9fbe.backend.80.default.ms
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh1:backend
-          statPrefix: mesh1_backend
+          cluster: default:backend_svc_80
+          statPrefix: default_backend_svc_80
     - filterChainMatch:
         serverNames:
-        - mesh-gateway{mesh=mesh2}
+        - aec60634adf0f45d6.backend2.80.default.ms
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh2:mesh-gateway
-          statPrefix: mesh2_mesh-gateway
+          cluster: default:backend2_svc_80
+          statPrefix: default_backend2_svc_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
