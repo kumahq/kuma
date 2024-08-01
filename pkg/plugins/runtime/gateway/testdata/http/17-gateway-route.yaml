@@ -11,6 +11,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       healthChecks:
       - healthyThreshold: 2
@@ -41,6 +42,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       healthChecks:
       - healthyThreshold: 3
@@ -71,6 +73,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       healthChecks:
       - healthyThreshold: 1
@@ -184,6 +187,7 @@ Listeners:
             rds:
               configSource:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
