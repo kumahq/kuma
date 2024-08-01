@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"google.golang.org/protobuf/types/known/durationpb"
 	"net"
 	"strconv"
 	"time"
@@ -21,6 +20,7 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/config/xds"
