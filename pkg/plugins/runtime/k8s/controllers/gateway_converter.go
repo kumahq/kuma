@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -12,6 +11,7 @@ import (
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
