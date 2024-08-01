@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"google.golang.org/protobuf/types/known/durationpb"
 	"net"
 	"strconv"
 	"time"
@@ -158,10 +159,12 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		DynamicResources: &envoy_bootstrap_v3.Bootstrap_DynamicResources{
 			LdsConfig: &envoy_core_v3.ConfigSource{
 				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
 				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
 			},
 			CdsConfig: &envoy_core_v3.ConfigSource{
 				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
 				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
 			},
 			AdsConfig: &envoy_core_v3.ApiConfigSource{
