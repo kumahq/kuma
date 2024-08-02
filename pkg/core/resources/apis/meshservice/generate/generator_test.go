@@ -236,7 +236,7 @@ var _ = Describe("MeshService generator", func() {
 		// Wait until the MeshService has been marked with grace period start
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
-			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/grace-period-started-at"))
+			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
 		}, "2s", "100ms").Should(Succeed())
 		labelExistedSince := time.Now()
 
@@ -275,7 +275,7 @@ var _ = Describe("MeshService generator", func() {
 		// Wait until the MeshService has been marked with grace period start
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
-			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/grace-period-started-at"))
+			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
 		}, "2s", "100ms").Should(Succeed())
 
 		Expect(

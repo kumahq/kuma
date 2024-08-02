@@ -26,19 +26,19 @@ import (
 )
 
 const (
-	managedByValue          string = "meshservice-generator"
-	gracePeriodStartedLabel string = "kuma.io/grace-period-started-at"
+	managedByValue                  string = "meshservice-generator"
+	deletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
 )
 
 // Generator generates MeshService objects from Dataplane resources created on
 // universal.
 type Generator struct {
-	logger           logr.Logger
-	generateInterval time.Duration
-	gracePeriod      time.Duration
-	metric           prometheus.Summary
-	resManager       manager.ResourceManager
-	meshCache        *mesh.Cache
+	logger              logr.Logger
+	generateInterval    time.Duration
+	deletionGracePeriod time.Duration
+	metric              prometheus.Summary
+	resManager          manager.ResourceManager
+	meshCache           *mesh.Cache
 }
 
 var _ component.Component = &Generator{}
@@ -46,7 +46,7 @@ var _ component.Component = &Generator{}
 func New(
 	logger logr.Logger,
 	generateInterval time.Duration,
-	gracePeriodInterval time.Duration,
+	deletionGracePeriod time.Duration,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 	meshCache *mesh.Cache,
@@ -60,12 +60,12 @@ func New(
 		return nil, err
 	}
 	return &Generator{
-		logger:           logger,
-		generateInterval: generateInterval,
-		gracePeriod:      gracePeriodInterval,
-		metric:           metric,
-		resManager:       resManager,
-		meshCache:        meshCache,
+		logger:              logger,
+		generateInterval:    generateInterval,
+		deletionGracePeriod: deletionGracePeriod,
+		metric:              metric,
+		resManager:          resManager,
+		meshCache:           meshCache,
 	}, nil
 }
 
@@ -180,7 +180,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
-		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[gracePeriodStartedLabel]
+		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[deletionGracePeriodStartedLabel]
 
 		servicesDiffer := newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService)
 		if newMeshService != nil && (servicesDiffer || hasGracePeriodLabel) {
@@ -191,7 +191,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 
 			// Unset the grace period by deleting the label
 			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-			delete(newLabels, gracePeriodStartedLabel)
+			delete(newLabels, deletionGracePeriodStartedLabel)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")
@@ -209,7 +209,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			gracePeriodStartedAt, err := time.Parse(time.RFC3339, gracePeriodStartedAtText)
 			if hasGracePeriodLabel && err == nil {
 				// If we have a valid grace period set, check if it's expired
-				if time.Since(gracePeriodStartedAt) > g.gracePeriod {
+				if time.Since(gracePeriodStartedAt) > g.deletionGracePeriod {
 					if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
 						log.Error(err, "couldn't delete MeshService")
 						continue
@@ -227,12 +227,12 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 					continue
 				}
 				newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-				newLabels[gracePeriodStartedLabel] = string(nowText)
+				newLabels[deletionGracePeriodStartedLabel] = string(nowText)
 				if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 					log.Error(err, "couldn't update MeshService")
 					continue
 				}
-				log.Info("MeshService deletion grace period started", "period", g.gracePeriod.String())
+				log.Info("MeshService deletion grace period started", "period", g.deletionGracePeriod.String())
 			}
 		}
 	}
