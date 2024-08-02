@@ -7,6 +7,9 @@
    "name": "es-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/mesh": "default"
+   },
    "networking": {
     "address": "httpbin.org:443"
    },
@@ -20,6 +23,9 @@
    "name": "es-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/mesh": "default"
+   },
    "networking": {
     "address": "httpbin.org:443"
    },

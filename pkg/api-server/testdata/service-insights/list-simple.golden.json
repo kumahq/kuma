@@ -7,6 +7,9 @@
    "name": "backend",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/mesh": "mesh-1"
+   },
    "status": "partially_degraded",
    "dataplanes": {
     "total": 20,
@@ -21,6 +24,9 @@
    "name": "frontend",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/mesh": "mesh-1"
+   },
    "status": "partially_degraded",
    "dataplanes": {
     "total": 100,

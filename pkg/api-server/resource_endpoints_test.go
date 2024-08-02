@@ -189,6 +189,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			Expect(actualMtp.Meta.GetLabels()).To(Equal(map[string]string{
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 				mesh_proto.ZoneTag:             zone,
+				mesh_proto.MeshTag:             "mesh-1",
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -227,6 +228,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             "mesh-1",
 		}))
 	})
 })

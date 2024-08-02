@@ -1,7 +1,9 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": {},
+  "labels": {
+   "kuma.io/mesh": "default"
+  },
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
