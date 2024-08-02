@@ -297,7 +297,8 @@ var DefaultConfig = func() Config {
 			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
 		},
 		MeshService: MeshServiceConfig{
-			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
+			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
+			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
 		},
 	}
 }
@@ -544,6 +545,8 @@ type MeshServiceConfig struct {
 	// How often we check whether MeshServices need to be generated from
 	// Dataplanes
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
+	// How long we wait before deleting a MeshService if all Dataplanes are gone
+	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`
 }
 
 func (i MeshServiceConfig) Validate() error {
