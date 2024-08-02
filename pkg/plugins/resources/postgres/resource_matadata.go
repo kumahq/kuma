@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	"maps"
 	"time"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -42,5 +44,12 @@ func (r *resourceMetaObject) GetModificationTime() time.Time {
 }
 
 func (r *resourceMetaObject) GetLabels() map[string]string {
-	return r.Labels
+	l := maps.Clone(r.Labels)
+	if r.Mesh != "" {
+		if l == nil {
+			l = map[string]string{}
+		}
+		l[mesh_proto.MeshTag] = r.Mesh
+	}
+	return l
 }
