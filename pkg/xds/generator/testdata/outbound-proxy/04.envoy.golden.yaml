@@ -6,6 +6,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: api-http
     outlierDetection:
@@ -53,6 +54,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbPolicy: LEAST_REQUEST
     leastRequestLbConfig:
@@ -95,6 +97,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbPolicy: MAGLEV
     name: backend
@@ -135,6 +138,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: db-_0_
     transportSocket:

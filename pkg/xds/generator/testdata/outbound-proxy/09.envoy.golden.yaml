@@ -6,6 +6,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: api-http-_0__mesh2
     outlierDetection:
