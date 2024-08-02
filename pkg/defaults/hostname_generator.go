@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
@@ -145,7 +146,7 @@ func ensureHostnameGeneratorExist(
 	spec hostnamegenerator_api.HostnameGenerator,
 ) error {
 	if namespace != "" {
-		name += "." + namespace
+		name = k8s.K8sNamespacedNameToCoreName(name, namespace)
 	}
 	hostnameGen := hostnamegenerator_api.NewHostnameGeneratorResource()
 	err := resManager.Get(ctx, hostnameGen, core_store.GetByKey(name, core_model.NoMesh))
