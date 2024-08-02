@@ -3,6 +3,7 @@ package clusters
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type EdsClusterConfigurer struct{}
@@ -17,6 +18,7 @@ func (e *EdsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
 			ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
 				Ads: &envoy_core.AggregatedConfigSource{},
 			},
+			InitialFetchTimeout: durationpb.New(0),
 		},
 	}
 	return nil

@@ -5,6 +5,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: tcp-backend
     type: EDS
