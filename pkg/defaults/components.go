@@ -27,6 +27,7 @@ var EnsureDefaultFuncs = []EnsureDefaultFunc{
 	EnsureOnlyOneZoneExists,
 	EnsureDefaultMeshExists,
 	EnsureZoneTokenSigningKeyExists,
+	EnsureHostnameGeneratorExists,
 }
 
 func Setup(runtime runtime.Runtime) error {
