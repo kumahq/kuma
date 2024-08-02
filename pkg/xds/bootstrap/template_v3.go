@@ -19,6 +19,7 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/config/xds"
@@ -157,10 +158,12 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		DynamicResources: &envoy_bootstrap_v3.Bootstrap_DynamicResources{
 			LdsConfig: &envoy_core_v3.ConfigSource{
 				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
 				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
 			},
 			CdsConfig: &envoy_core_v3.ConfigSource{
 				ConfigSourceSpecifier: &envoy_core_v3.ConfigSource_Ads{Ads: &envoy_core_v3.AggregatedConfigSource{}},
+				InitialFetchTimeout:   durationpb.New(0),
 				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
 			},
 			AdsConfig: &envoy_core_v3.ApiConfigSource{
