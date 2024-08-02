@@ -33,7 +33,7 @@ type UniqueResourceIdentifier struct {
 	SectionName  string
 }
 
-func (ri UniqueResourceIdentifier) MarshalText() (text []byte, err error) {
+func (ri UniqueResourceIdentifier) MarshalText() ([]byte, error) {
 	return []byte(ri.String()), nil
 }
 
