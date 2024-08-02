@@ -37,7 +37,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: "{{ .DisplayName }}.mzsvc.mesh.local",
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "synced-mesh-multi-zone-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-multi-zone-service", namespace, spec); err != nil {
 			return err
 		}
 
@@ -53,7 +53,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "synced-kube-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-kube-mesh-service", namespace, spec); err != nil {
 			return err
 		}
 
@@ -69,7 +69,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "synced-headless-kube-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-headless-kube-mesh-service", namespace, spec); err != nil {
 			return err
 		}
 
@@ -84,7 +84,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "synced-universal-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-universal-mesh-service", namespace, spec); err != nil {
 			return err
 		}
 
@@ -98,7 +98,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.extsvc.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "synced-mesh-external-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-external-service", namespace, spec); err != nil {
 			return err
 		}
 	}
@@ -114,7 +114,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.extsvc.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExist(ctx, resManager, log, "local-mesh-external-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-mesh-external-service", namespace, spec); err != nil {
 			return err
 		}
 
@@ -129,7 +129,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 				},
 				Template: `{{ .DisplayName }}.svc.mesh.local`,
 			}
-			if err := ensureHostnameGeneratorExist(ctx, resManager, log, "local-universal-mesh-service", namespace, spec); err != nil {
+			if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-universal-mesh-service", namespace, spec); err != nil {
 				return err
 			}
 		}
@@ -137,7 +137,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 	return nil
 }
 
-func ensureHostnameGeneratorExist(
+func ensureHostnameGeneratorExists(
 	ctx context.Context,
 	resManager core_manager.ResourceManager,
 	logger logr.Logger,
