@@ -28,7 +28,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -351,7 +350,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
 		ms.ObjectMeta.Labels[mesh_proto.ManagedByLabel] = "k8s-controller"
-		ms.ObjectMeta.Labels[model.K8sNamespaceComponent] = meshServiceName.Namespace
+		ms.ObjectMeta.Labels[mesh_proto.KubeNamespaceTag] = meshServiceName.Namespace
 
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}

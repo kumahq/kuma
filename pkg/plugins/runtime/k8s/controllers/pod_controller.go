@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -322,7 +322,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 			Labels: map[string]string{
-				model.K8sNamespaceComponent: pod.Namespace,
+				mesh_proto.KubeNamespaceTag: pod.Namespace,
 			},
 		},
 	}
@@ -361,7 +361,7 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 			Labels: map[string]string{
-				model.K8sNamespaceComponent: pod.Namespace,
+				mesh_proto.KubeNamespaceTag: pod.Namespace,
 			},
 		},
 		Mesh: model.NoMesh,
@@ -398,7 +398,7 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 			Labels: map[string]string{
-				model.K8sNamespaceComponent: pod.Namespace,
+				mesh_proto.KubeNamespaceTag: pod.Namespace,
 			},
 		},
 		Mesh: model.NoMesh,

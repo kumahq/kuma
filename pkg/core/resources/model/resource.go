@@ -414,8 +414,8 @@ func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool
 		origin, ok := resourceOrigin(labels)
 		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, _ := resourceOrigin(labels)
-		return origin == mesh_proto.ZoneResourceOrigin
+		origin, ok := resourceOrigin(labels)
+		return !ok || origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
 	}
