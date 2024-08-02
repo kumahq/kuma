@@ -244,7 +244,10 @@ var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend": {Conf: []interface{}{"conf-1"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+			}: {Conf: []interface{}{"conf-1"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
 
@@ -265,8 +268,14 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend": {Conf: []interface{}{"conf-1"}},
-			"mesh:name/mesh-1":                     {Conf: []interface{}{"conf-2"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+			}: {Conf: []interface{}{"conf-1"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       mesh.MeshType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
+			}: {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -293,8 +302,15 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService with section", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend":                   {Conf: []interface{}{"conf-1"}},
-			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: []interface{}{"conf-2"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+			}: {Conf: []interface{}{"conf-1"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+				SectionName:        "http-port",
+			}: {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{
@@ -322,8 +338,15 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService rule if MeshService with section is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			"meshservice:mesh/mesh-1:name/backend":                   {Conf: []interface{}{"conf-1"}},
-			"meshservice:mesh/mesh-1:name/backend:section/http-port": {Conf: []interface{}{"conf-2"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+			}: {Conf: []interface{}{"conf-1"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+				SectionName:        "http-port",
+			}: {Conf: []interface{}{"conf-2"}},
 		}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mesh.MeshType: &mesh.MeshResourceList{

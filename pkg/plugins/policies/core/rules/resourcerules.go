@@ -33,6 +33,10 @@ type UniqueResourceIdentifier struct {
 	SectionName  string
 }
 
+func (ri UniqueResourceIdentifier) MarshalText() (text []byte, err error) {
+	return []byte(ri.String()), nil
+}
+
 func (ri UniqueResourceIdentifier) String() string {
 	var pairs []string
 	if ri.ResourceType != "" {
@@ -45,9 +49,7 @@ func (ri UniqueResourceIdentifier) String() string {
 	return strings.Join(pairs, ":")
 }
 
-type UniqueResourceKey string
-
-type ResourceRules map[UniqueResourceKey]ResourceRule
+type ResourceRules map[UniqueResourceIdentifier]ResourceRule
 
 type ComputeOpts struct {
 	sectionName string
@@ -72,7 +74,7 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 func (rr ResourceRules) Compute(r core_model.Resource, reader ResourceReader, fn ...ComputeOptsFn) *ResourceRule {
 	opts := NewComputeOpts(fn...)
 	key := uniqueKey(r, opts.sectionName)
-	if rule, ok := rr[UniqueResourceKey(key.String())]; ok {
+	if rule, ok := rr[key]; ok {
 		return &rule
 	}
 
@@ -125,7 +127,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 			if err != nil {
 				return nil, err
 			}
-			rules[UniqueResourceKey(uri.String())] = ResourceRule{
+			rules[uri] = ResourceRule{
 				Resource:            resource.GetMeta(),
 				ResourceSectionName: uri.SectionName,
 				Conf:                merged,
