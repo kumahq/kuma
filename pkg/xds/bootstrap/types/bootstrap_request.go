@@ -19,6 +19,7 @@ type BootstrapRequest struct {
 	Workdir          string            `json:"workdir"`
 	MetricsResources MetricsResources  `json:"metricsResources"`
 	SystemCaPath     string            `json:"systemCaPath"`
+	XDSConfigType    string            `json:"xdsConfigType,omitempty"`
 }
 
 type Version struct {

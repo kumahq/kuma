@@ -113,6 +113,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsCertPath: request.MetricsResources.CertPath,
 		MetricsKeyPath:  request.MetricsResources.KeyPath,
 		SystemCaPath:    request.SystemCaPath,
+		UseDelta:        request.XDSConfigType == "delta",
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {

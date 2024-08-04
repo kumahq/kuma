@@ -2,6 +2,7 @@ package meshcircuitbreaker
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -81,6 +82,7 @@ func MeshCircuitBreaker() {
 		// when
 		Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
 
+		time.Sleep(1*time.Hour)
 		// then
 		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
 			return client.CollectResponsesAndFailures(
@@ -98,7 +100,7 @@ func MeshCircuitBreaker() {
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
 	},
-		Entry("outbound circuit breaker", fmt.Sprintf(`
+		FEntry("outbound circuit breaker", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:

@@ -210,6 +210,8 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
+	// XDSConfigType
+	XDSConfigType string `json:"xdsConfigType,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_xds_config_type"`
 }
 
 type Metrics struct {

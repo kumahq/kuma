@@ -40,6 +40,7 @@ type tracker struct {
 
 	sync.RWMutex       // protects access to the fields below
 	streamsAssociation map[xds.StreamID]core_model.ResourceKey
+	// deltaStreamsAssociation map[xds.StreamID]core_model.ResourceKey
 	dpStreams          map[core_model.ResourceKey]streams
 }
 
@@ -56,6 +57,7 @@ func NewCallbacks(
 	return &tracker{
 		resourceManager:    resourceManager,
 		streamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
+		// deltaStreamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
 		dpStreams:          map[core_model.ResourceKey]streams{},
 		config:             config,
 		log:                log,
@@ -67,6 +69,14 @@ func NewCallbacks(
 			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
 		},
 	}
+}
+
+func (t *tracker) OnDeltaStreamOpen(ctx context.Context, streamID int64) error {
+	return t.OnStreamOpen(ctx, streamID)
+}
+
+func (t *tracker) OnDeltaStreamClosed(streamID xds.StreamID) {
+	t.OnStreamClosed(streamID)
 }
 
 func (t *tracker) OnStreamOpen(ctx context.Context, streamID int64) error {

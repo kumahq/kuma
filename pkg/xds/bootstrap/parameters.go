@@ -50,4 +50,5 @@ type configParameters struct {
 	IsGatewayDataplane bool
 	Resources          types.ProxyResources
 	SystemCaPath       string
+	UseDelta 		   bool
 }

@@ -94,4 +94,11 @@ type RestCallbacks interface {
 type MultiCallbacks interface {
 	Callbacks
 	RestCallbacks
+	DeltaCallbacks
 }
+
+type MultiXDSCallbacks interface {
+	Callbacks
+	DeltaCallbacks
+}
+

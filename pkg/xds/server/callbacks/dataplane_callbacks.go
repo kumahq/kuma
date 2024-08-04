@@ -35,13 +35,15 @@ type xdsCallbacks struct {
 
 	sync.RWMutex
 	dpStreams     map[core_xds.StreamID]dpStream
+	dpDeltaStreams     map[core_xds.StreamID]dpStream
 	activeStreams map[core_model.ResourceKey]int
 }
 
-func DataplaneCallbacksToXdsCallbacks(callbacks DataplaneCallbacks) util_xds.Callbacks {
+func DataplaneCallbacksToXdsCallbacks(callbacks DataplaneCallbacks) util_xds.MultiXDSCallbacks {
 	return &xdsCallbacks{
 		callbacks:     callbacks,
 		dpStreams:     map[core_xds.StreamID]dpStream{},
+		dpDeltaStreams:     map[core_xds.StreamID]dpStream{},
 		activeStreams: map[core_model.ResourceKey]int{},
 	}
 }
@@ -51,7 +53,8 @@ type dpStream struct {
 	ctx context.Context
 }
 
-var _ util_xds.Callbacks = &xdsCallbacks{}
+var _ util_xds.MultiXDSCallbacks = &xdsCallbacks{}
+
 
 func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 	var lastStreamDpKey *core_model.ResourceKey
@@ -112,6 +115,92 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 	dpStream := d.dpStreams[streamID]
 	dpStream.dp = &dpKey
 	d.dpStreams[streamID] = dpStream
+
+	activeStreams := d.activeStreams[dpKey]
+	d.activeStreams[dpKey]++
+	d.Unlock()
+
+	if activeStreams == 0 {
+		if err := d.callbacks.OnProxyConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
+			return err
+		}
+	} else {
+		if err := d.callbacks.OnProxyReconnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *xdsCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+	d.Lock()
+	defer d.Unlock()
+	dps := dpStream{
+		ctx: ctx,
+	}
+	d.dpDeltaStreams[streamID] = dps
+	return nil
+}
+
+func (d *xdsCallbacks) OnDeltaStreamClosed(streamID core_xds.StreamID) {
+	var lastStreamDpKey *core_model.ResourceKey
+	d.Lock()
+	dpStream := d.dpDeltaStreams[streamID]
+	if dpKey := dpStream.dp; dpKey != nil {
+		d.activeStreams[*dpKey]--
+		if d.activeStreams[*dpKey] == 0 {
+			lastStreamDpKey = dpKey
+			delete(d.activeStreams, *dpKey)
+		}
+	}
+	delete(d.dpDeltaStreams, streamID)
+	d.Unlock()
+	if lastStreamDpKey != nil {
+		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
+		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *lastStreamDpKey)
+	}
+}
+
+func (d *xdsCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, request util_xds.DeltaDiscoveryRequest) error {
+	if request.NodeId() == "" {
+		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
+		// Only the first request on a stream is guaranteed to carry the node identifier.
+		// The subsequent discovery requests on the same stream may carry an empty node identifier.
+		// This holds true regardless of the acceptance of the discovery responses on the same stream.
+		// The node identifier should always be identical if present more than once on the stream.
+		// It is sufficient to only check the first message for the node identifier as a result.
+		return nil
+	}
+
+	d.RLock()
+	alreadyProcessed := d.dpDeltaStreams[streamID].dp != nil
+	d.RUnlock()
+	if alreadyProcessed {
+		return nil
+	}
+
+	proxyId, err := core_xds.ParseProxyIdFromString(request.NodeId())
+	if err != nil {
+		return errors.Wrap(err, "invalid node ID")
+	}
+	dpKey := proxyId.ToResourceKey()
+	metadata := core_xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
+	if metadata == nil {
+		return errors.New("metadata in xDS Node cannot be nil")
+	}
+
+	d.Lock()
+	// in case client will open 2 concurrent request for the same streamID then
+	// we don't to increment the counter twice, so checking once again that stream
+	// wasn't processed
+	alreadyProcessed = d.dpDeltaStreams[streamID].dp != nil
+	if alreadyProcessed {
+		return nil
+	}
+
+	dpStream := d.dpDeltaStreams[streamID]
+	dpStream.dp = &dpKey
+	d.dpDeltaStreams[streamID] = dpStream
 
 	activeStreams := d.activeStreams[dpKey]
 	d.activeStreams[dpKey]++

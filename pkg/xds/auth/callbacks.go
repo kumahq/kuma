@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -30,7 +31,7 @@ type DPNotFoundRetry struct {
 	MaxTimes uint
 }
 
-func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
+func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.MultiXDSCallbacks {
 	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
 		dpNotFoundRetry.Backoff = 1 * time.Millisecond
 	}
@@ -38,6 +39,7 @@ func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator
 		resManager:      resManager,
 		authenticator:   authenticator,
 		streams:         map[core_xds.StreamID]stream{},
+		deltaStreams:         map[core_xds.StreamID]stream{},
 		dpNotFoundRetry: dpNotFoundRetry,
 	}
 }
@@ -51,6 +53,7 @@ type authCallbacks struct {
 
 	sync.RWMutex // protects streams
 	streams      map[core_xds.StreamID]stream
+	deltaStreams      map[core_xds.StreamID]stream
 }
 
 type stream struct {
@@ -62,7 +65,7 @@ type stream struct {
 	nodeID string
 }
 
-var _ util_xds.Callbacks = &authCallbacks{}
+var _ util_xds.MultiXDSCallbacks = &authCallbacks{}
 
 func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	a.Lock()
@@ -98,6 +101,72 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds
 	a.streams[streamID] = s
 	a.Unlock()
 	return nil
+}
+
+func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+	a.Lock()
+	defer a.Unlock()
+
+	a.deltaStreams[streamID] = stream{
+		ctx:      ctx,
+		resource: nil,
+	}
+
+	core.Log.V(1).Info("OnDeltaStreamOpen", "streamID", streamID)
+	return nil
+}
+
+func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
+	a.Lock()
+	delete(a.deltaStreams, streamID)
+	a.Unlock()
+}
+
+func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
+	s, err := a.deltaStream(streamID, req)
+	if err != nil {
+		return err
+	}
+	core.Log.V(1).Info("OnStreamDeltaRequest auth", "req", req)
+
+	credential, err := ExtractCredential(s.ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
+	}
+	if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
+		return errors.Wrap(err, "authentication failed")
+	}
+	a.Lock()
+	a.deltaStreams[streamID] = s
+	a.Unlock()
+	return nil
+}
+
+func (a *authCallbacks) deltaStream(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) (stream, error) {
+	a.RLock()
+	s, ok := a.deltaStreams[streamID]
+	a.RUnlock()
+	if !ok {
+		return stream{}, errors.New("stream is not present")
+	}
+
+	if s.nodeID == "" {
+		s.nodeID = req.NodeId()
+	}
+
+	if s.nodeID != req.NodeId() {
+		return stream{}, errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", s.nodeID, req.NodeId())
+	}
+
+	if s.resource == nil {
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
+		if err != nil {
+			return stream{}, err
+		}
+		s.resource = res
+	}
+	return s, nil
 }
 
 func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) (stream, error) {
