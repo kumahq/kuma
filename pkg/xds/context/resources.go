@@ -2,9 +2,11 @@ package context
 
 import (
 	"hash/fnv"
+	"slices"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -45,6 +47,15 @@ func NewResources() Resources {
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
 		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 	}
+}
+
+func (r Resources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
+	// todo: we can probably optimize it by using indexing on ResourceIdentifier
+	list := r.ListOrEmpty(resourceType).GetItems()
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+		return list[i]
+	}
+	return nil
 }
 
 func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
@@ -161,6 +172,18 @@ func (r Resources) MeshExternalServices() *meshextsvc.MeshExternalServiceResourc
 		}
 	}
 	return list.(*meshextsvc.MeshExternalServiceResourceList)
+}
+
+func (r Resources) MeshMultiZoneServices() *meshmzservice_api.MeshMultiZoneServiceResourceList {
+	list, ok := r.MeshLocalResources[meshmzservice_api.MeshMultiZoneServiceType]
+	if !ok {
+		var err error
+		list, err = registry.Global().NewList(meshmzservice_api.MeshMultiZoneServiceType)
+		if err != nil {
+			return &meshmzservice_api.MeshMultiZoneServiceResourceList{}
+		}
+	}
+	return list.(*meshmzservice_api.MeshMultiZoneServiceResourceList)
 }
 
 type MeshGatewayDataplanes struct {

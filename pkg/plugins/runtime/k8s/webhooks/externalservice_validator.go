@@ -24,10 +24,10 @@ func NewExternalServiceValidatorWebhook(validator externalservice_managers.Exter
 type ExternalServiceValidator struct {
 	validator externalservice_managers.ExternalServiceValidator
 	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	decoder   admission.Decoder
 }
 
-func (h *ExternalServiceValidator) InjectDecoder(d *admission.Decoder) {
+func (h *ExternalServiceValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 

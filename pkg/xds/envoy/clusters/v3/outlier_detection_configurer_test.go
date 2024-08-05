@@ -50,6 +50,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -76,6 +77,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -102,6 +104,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -130,6 +133,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -159,6 +163,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -190,6 +195,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -220,6 +226,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:
@@ -251,6 +258,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             outlierDetection:

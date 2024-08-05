@@ -251,8 +251,7 @@ var _ = Describe("AllowedRoutes support", func() {
 })
 
 var _ = Describe("NoMatchingParent support", func() {
-	simpleRef := *gatewayRef.DeepCopy()
-	simpleRef.Name = gatewayapi.ObjectName(gateway.Name)
+	var simpleRef gatewayapi.ParentReference
 
 	var kubeClient kube_client.Client
 	BeforeEach(func() {
@@ -263,6 +262,8 @@ var _ = Describe("NoMatchingParent support", func() {
 			defaultRouteNs,
 			otherRouteNs,
 		).Build()
+		simpleRef = *gatewayRef.DeepCopy()
+		simpleRef.Name = gatewayapi.ObjectName(gateway.Name)
 	})
 
 	It("allows no SectionName", func() {
@@ -295,6 +296,67 @@ var _ = Describe("NoMatchingParent support", func() {
 	It("doesn't allow SectionName mismatches", func() {
 		someNonexistentSection := gatewayapi.SectionName("someNonexistentSection")
 		simpleRef.SectionName = &someNonexistentSection
+		res, kind, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.NoMatchingParent))
+		Expect(kind).To(Equal(attachment.Gateway))
+	})
+
+	It("allows Port matches", func() {
+		simpleRef.Port = &simpleListener.Port
+		res, kind, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Allowed))
+		Expect(kind).To(Equal(attachment.Gateway))
+	})
+
+	It("allows SectionName & Port matches", func() {
+		simpleRef.SectionName = &simpleListenerName
+		simpleRef.Port = &simpleListener.Port
+		res, kind, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Allowed))
+		Expect(kind).To(Equal(attachment.Gateway))
+	})
+
+	It("doesn't allow SectionName mismatches but Port matches", func() {
+		someNonexistentSection := gatewayapi.SectionName("someNonexistentSection")
+		simpleRef.SectionName = &someNonexistentSection
+		simpleRef.Port = &simpleListener.Port
+		res, kind, err := attachment.EvaluateParentRefAttachment(
+			context.Background(),
+			kubeClient,
+			nil,
+			defaultRouteNs,
+			simpleRef,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.NoMatchingParent))
+		Expect(kind).To(Equal(attachment.Gateway))
+	})
+
+	It("doesn't allow SectionName matches but Port mismatches", func() {
+		simpleRef.SectionName = &simpleListenerName
+		someNonexistentPort := gatewayapi.PortNumber(10101)
+		simpleRef.Port = &someNonexistentPort
 		res, kind, err := attachment.EvaluateParentRefAttachment(
 			context.Background(),
 			kubeClient,

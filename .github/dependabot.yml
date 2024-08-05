@@ -11,7 +11,7 @@ updates:
     groups:
       k8s-libs:
           patterns:
-            - "k8s.io/*"
+            - "*k8s.io/*"
       go.opentelemetry.io:
           patterns:
             - "go.opentelemetry.io/*"

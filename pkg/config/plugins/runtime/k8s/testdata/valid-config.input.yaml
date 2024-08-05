@@ -8,7 +8,6 @@ injector:
     image: kuma-sidecar:latest
     redirectPortOutbound: 1234
     redirectPortInbound: 1236
-    redirectPortInboundV6: 1237
     ipFamilyMode: "ipv4"
     uid: 2345
     gid: 3456

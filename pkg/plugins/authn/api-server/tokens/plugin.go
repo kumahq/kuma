@@ -1,15 +1,19 @@
 package tokens
 
 import (
-	go_context "context"
+	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	config_access "github.com/kumahq/kuma/pkg/config/access"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
@@ -75,16 +79,14 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	if !c.isInitialised {
 		return nil
 	}
-	ctx := go_context.Background()
-	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
-	component := core_tokens.NewDefaultSigningKeyComponent(ctx, signingKeyManager, log, context.Extensions())
-	if err := context.ComponentManager().Add(component); err != nil {
-		return err
-	}
+
+	defaults.EnsureDefaultFuncs = append(defaults.EnsureDefaultFuncs, EnsureUserTokenSigningKeyExists)
+
 	accessFn, ok := AccessStrategies[context.Config().Access.Type]
 	if !ok {
 		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
+	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
 	tokenIssuer := NewUserTokenIssuer(signingKeyManager)
 	if !context.Config().ApiServer.Authn.Tokens.EnableIssuer {
 		tokenIssuer = issuer.DisabledIssuer{}
@@ -97,6 +99,10 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	webService := server.NewWebService(tokenIssuer, accessFn(context))
 	context.APIManager().Add(webService)
 	return nil
+}
+
+func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+	return core_tokens.EnsureDefaultSigningKeyExist(issuer.UserTokenSigningKeyPrefix, ctx, resManager, logger)
 }
 
 func (c *plugin) Name() plugins.PluginName {

@@ -48,9 +48,10 @@ var _ = Describe("snapshotGenerator", func() {
 				Mesh:    "demo",
 				Service: "backend",
 				Targets: []*observability_v1.MonitoringAssignment_Target{{
-					Name:    "backend-02",
-					Address: "192.168.0.2:1234",
-					Scheme:  "http",
+					Name:        "backend-02",
+					Address:     "192.168.0.2:1234",
+					Scheme:      "http",
+					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"env":              "intg",
 						"envs":             ",intg,",

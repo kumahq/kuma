@@ -5,8 +5,8 @@ import (
 
 	"github.com/emicklei/go-restful/v3"
 
+	"github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/pkg/api-server/authn"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -30,14 +30,15 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 			}
 
 			response := types.IndexResponse{
-				Hostname:    hostname,
-				Tagline:     kuma_version.Product,
-				Product:     kuma_version.Product,
-				Version:     kuma_version.Build.Version,
-				BasedOnKuma: kuma_version.Build.BasedOnKuma,
-				InstanceId:  instanceId,
-				ClusterId:   clusterId,
-				GuiURL:      guiURL,
+				Hostname:   hostname,
+				Product:    kuma_version.Product,
+				Version:    kuma_version.Build.Version,
+				InstanceId: instanceId,
+				ClusterId:  clusterId,
+				Gui:        guiURL,
+			}
+			if kuma_version.Build.BasedOnKuma != "" {
+				response.BasedOnKuma = &kuma_version.Build.BasedOnKuma
 			}
 
 			if err := resp.WriteAsJson(response); err != nil {

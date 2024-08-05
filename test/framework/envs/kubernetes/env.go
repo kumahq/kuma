@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 var Cluster *framework.K8sCluster
@@ -101,7 +102,21 @@ func PrintKubeState(report ginkgo.Report) {
 	}
 }
 
-func ExpectCpToNotCrash() {
-	restartCount := framework.RestartCount(Cluster.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "CP restarted in this suite, this should not happen.")
+func ExpectCpToNotPanic() {
+	logs, err := Cluster.GetKumaCPLogs()
+	if err != nil {
+		framework.Logf("could not retrieve cp logs")
+	} else {
+		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
+	}
+}
+
+func SynchronizedAfterSuite() {
+	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
+	ExpectCpToNotPanic()
+}
+
+func AfterSuite(report ginkgo.Report) {
+	PrintCPLogsOnFailure(report)
+	PrintKubeState(report)
 }

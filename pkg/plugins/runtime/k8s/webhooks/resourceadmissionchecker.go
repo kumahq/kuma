@@ -30,8 +30,11 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return admission.Allowed("")
 	}
 
-	if c.Mode == core.Global && r.Descriptor().IsPluginOriginated && ns != c.SystemNamespace {
-		return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
+	if ns != "" {
+		// check only namespace-scoped resources
+		if resp := c.isNamespaceAllowed(r, ns); !resp.Allowed {
+			return resp
+		}
 	}
 
 	if !c.isResourceTypeAllowed(r.Descriptor()) {
@@ -42,6 +45,20 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return *errResponse
 	}
 
+	return admission.Allowed("")
+}
+
+func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns string) admission.Response {
+	switch c.Mode {
+	case core.Global:
+		if ns != c.SystemNamespace {
+			return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
+		}
+	case core.Zone:
+		if r.Descriptor().AllowedOnSystemNamespaceOnly && ns != c.SystemNamespace {
+			return admission.Denied(fmt.Sprintf("resource type %v can be created only in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
+		}
+	}
 	return admission.Allowed("")
 }
 
@@ -82,9 +99,12 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 
 func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
 	if c.Mode != core.Global {
-		zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		if ok && zoneTag != c.ZoneName {
-			return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName, zoneTag)
+		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
+		if originPresent && resourceOrigin != mesh_proto.GlobalResourceOrigin {
+			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+			if ok && zoneTag != c.ZoneName {
+				return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName, zoneTag)
+			}
 		}
 	}
 

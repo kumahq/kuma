@@ -153,7 +153,8 @@ func processToRules(tags map[string]string, policies []core_model.Resource, mes 
 
 	var toList []core_rules.PolicyItemWithMeta
 	for _, policy := range matchedPolicies {
-		for _, item := range policy.GetSpec().(core_model.PolicyWithToList).GetToList() {
+		toPolicy := policy.GetSpec().(core_model.PolicyWithToList)
+		for _, item := range toPolicy.GetToList() {
 			if !serviceSelectedByTargetRef(policy.GetMeta(), item.GetTargetRef(), tags, mes) {
 				continue
 			}
@@ -163,7 +164,7 @@ func processToRules(tags map[string]string, policies []core_model.Resource, mes 
 				targetRef: policy.GetSpec().(core_model.Policy).GetTargetRef(),
 			}
 			toList = append(toList, core_rules.BuildPolicyItemsWithMeta([]core_model.PolicyItem{artificial},
-				policy.GetMeta())...)
+				policy.GetMeta(), toPolicy.GetTargetRef())...)
 		}
 	}
 

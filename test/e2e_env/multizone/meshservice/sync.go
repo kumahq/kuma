@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -22,6 +23,21 @@ func Sync() {
 		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(YamlUniversal(`
+type: MeshMultiZoneService
+name: backend
+mesh: meshservice
+labels:
+  test-name: mssync
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        test-name: backend
+  ports:
+  - port: 80
+    appProtocol: http
+`)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -32,6 +48,7 @@ name: backend
 mesh: meshservice
 labels:
   kuma.io/origin: zone
+  test-name: backend
 spec:
   selector:
     dataplaneTags:
@@ -54,6 +71,7 @@ name: backend
 mesh: meshservice
 labels:
   kuma.io/origin: zone
+  test-name: backend
 spec:
   selector:
     dataplaneTags:
@@ -67,7 +85,30 @@ spec:
 			Setup(multizone.UniZone2)).To(Succeed())
 
 		err := NewClusterSetup().
+			Setup(multizone.KubeZone1)
+		Expect(err).ToNot(HaveOccurred())
+
+		veryLongNamedService := `
+kind: MeshService
+apiVersion: kuma.io/v1alpha1
+metadata:
+  name: this-service-has-a-name-thats-the-exact-length-allowed-for-svcs
+  namespace: meshservice
+  labels:
+    kuma.io/mesh: meshservice
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: some-service
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+`
+
+		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(YamlK8s(veryLongNamedService)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
@@ -166,6 +207,56 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			_, _, err = msStatus(multizone.KubeZone2, fmt.Sprintf("%s.%s", hash.HashedName(meshName, "backend", "kuma-5"), Config.KumaNamespace))
 			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should sync MeshServices with a long name", func() {
+		hashedName := hash.HashedName(meshName, "this-service-has-a-name-thats-the-exact-length-allowed-for-svcs", "kuma-2", "meshservice")
+		// MeshServices are synced to global zone without conflict
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.Global, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+
+		// MeshServices are synced to other zone without conflict
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.KubeZone1, fmt.Sprintf("%s.%s", hashedName, Config.KumaNamespace))
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+		Eventually(func(g Gomega) {
+			_, _, err := msStatus(multizone.UniZone2, hashedName)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	mzStatus := func(cluster Cluster, name string) (*meshmzservice_api.MeshMultiZoneServiceStatus, error) {
+		out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshmultizoneservice", "-m", meshName, hash.HashedName(meshName, name), "-ojson")
+		if err != nil {
+			return nil, err
+		}
+		res, err := rest.JSON.Unmarshal([]byte(out), meshmzservice_api.MeshMultiZoneServiceResourceTypeDescriptor)
+		if err != nil {
+			return nil, err
+		}
+		return res.GetStatus().(*meshmzservice_api.MeshMultiZoneServiceStatus), nil
+	}
+
+	It("should update MeshMultiZoneService status", func() {
+		Eventually(func(g Gomega) {
+			status, err := mzStatus(multizone.UniZone1, "backend")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(status.MeshServices).To(HaveLen(2))
+			g.Expect(status.VIPs).To(HaveLen(1))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should assign hostname to MeshMultiZoneService", func() {
+		Eventually(func(g Gomega) {
+			status, err := mzStatus(multizone.UniZone1, "backend")
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(status.Addresses).To(HaveLen(1))
+			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mzsvc.mesh.local"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

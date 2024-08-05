@@ -9,6 +9,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
+	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -17,11 +18,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
+
+var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
 func BuildExternalServicesEndpointMap(
 	ctx context.Context,
@@ -70,10 +75,29 @@ func BuildEgressEndpointMap(
 	return outbound
 }
 
+func BuildIngressEndpointMap(
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
+) core_xds.EndpointMap {
+	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
+	// This way we only keep local endpoints.
+	outbound := BuildEdsEndpointMap(mesh, localZone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
+	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
+	return outbound
+}
+
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServices []*meshservice_api.MeshServiceResource,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
@@ -81,6 +105,8 @@ func BuildEdsEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
+
+	meshServices := exp_maps.Values(meshServicesByName)
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
 	// we want to prefer endpoints build by MeshService
@@ -104,7 +130,38 @@ func BuildEdsEndpointMap(
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
 	}
 
+	// it has to be last because it reuses endpoints for other cases
+	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices, localZone)
+
 	return outbound
+}
+
+func fillMeshMultiZoneServices(
+	outbound core_xds.EndpointMap,
+	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	localZone string,
+) {
+	for _, mzSvc := range meshMultiZoneServices {
+		for _, matchedMs := range mzSvc.Status.MeshServices {
+			ms, ok := meshServicesByName[matchedMs.Name]
+			if !ok {
+				continue
+			}
+			if !ms.IsLocalMeshService(localZone) && ms.Spec.State != meshservice_api.StateAvailable {
+				// we don't want to load balance to zones that has no available endpoints.
+				// we check this only for non-local services, because if service is unavailable in the local zone it has no endpoints.
+				// if a new local endpoint just become healthy, we can add it immediately without waiting for state to be reconciled.
+				continue
+			}
+			for _, port := range mzSvc.Spec.Ports {
+				serviceName := mzSvc.DestinationName(port.Port)
+
+				existingEndpoints := outbound[ms.DestinationName(port.Port)]
+				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
+			}
+		}
+	}
 }
 
 func fillRemoteMeshServices(
@@ -161,6 +218,10 @@ func fillRemoteMeshServices(
 			serviceName := ms.DestinationName(port.Port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
+				ep.Locality = &core_xds.Locality{
+					Zone:     msZone,
+					Priority: priorityRemote,
+				}
 				ep.Tags = map[string]string{
 					mesh_proto.ServiceTag: serviceName,
 					mesh_proto.ZoneTag:    msZone,
@@ -260,24 +321,15 @@ func fillLocalMeshServices(
 	mesh *core_mesh.MeshResource,
 	localZone string,
 ) {
-	// O(dataplane*meshsvc) can be optimized by sharding both by namespace
-	for _, dataplane := range dataplanes {
-		dpNetworking := dataplane.Spec.GetNetworking()
+	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
+	for meshSvc, dpps := range dppsForMs {
+		if !meshSvc.IsLocalMeshService(localZone) {
+			continue
+		}
 
-		for _, meshSvc := range meshServices {
-			if !meshSvc.IsLocalMeshService(localZone) {
-				continue
-			}
-
-			tagSelector := mesh_proto.TagSelector(meshSvc.Spec.Selector.DataplaneTags)
-			if meshSvc.Spec.Selector.DataplaneRef != nil {
-				continue
-			}
-
+		for _, dpp := range dpps {
+			dpNetworking := dpp.Spec.GetNetworking()
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
-				if !tagSelector.Matches(inbound.GetTags()) {
-					continue
-				}
 				for _, port := range meshSvc.Spec.Ports {
 					switch port.TargetPort.Type {
 					case intstr.Int:
@@ -366,7 +418,18 @@ func BuildCrossMeshEndpointMap(
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
+	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, endpointWeight, localZone)
+	return outbound
+}
 
+func fillLocalCrossMeshOutbounds(
+	outbound core_xds.EndpointMap,
+	mesh *core_mesh.MeshResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	gateways []*core_mesh.MeshGatewayResource,
+	endpointWeight uint32,
+	localZone string,
+) {
 	for _, dataplane := range dataplanes {
 		if !dataplane.Spec.IsBuiltinGateway() {
 			continue
@@ -398,8 +461,6 @@ func BuildCrossMeshEndpointMap(
 			})
 		}
 	}
-
-	return outbound
 }
 
 func buildCoordinates(address string, port uint32) string {
@@ -553,7 +614,7 @@ func fillExternalServicesReachableFromZone(
 		if mes.IsReachableFromZone(zone) {
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 			if err != nil {
-				core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 				return
 			}
 		}
@@ -576,7 +637,7 @@ func fillExternalServicesOutbounds(
 	for _, mes := range meshExternalServices {
 		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 		if err != nil {
-			core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 		}
 	}
 }
@@ -724,7 +785,7 @@ func createExternalServiceEndpoint(
 	service := externalService.Spec.GetService()
 	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
 	if err != nil {
-		core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
+		outboundLog.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 		return
 	}
 	outbound[service] = append(outbound[service], *externalServiceEndpoint)

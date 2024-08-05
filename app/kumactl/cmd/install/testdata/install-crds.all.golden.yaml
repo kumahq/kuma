@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -54,7 +54,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -168,7 +168,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -218,7 +218,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -288,7 +288,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -338,7 +338,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -388,7 +388,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -438,7 +438,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -484,6 +484,13 @@ spec:
                           type: string
                         type: object
                     type: object
+                  meshMultiZoneService:
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   meshService:
                     properties:
                       matchLabels:
@@ -503,7 +510,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -1059,7 +1066,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -1797,7 +1804,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -1847,7 +1854,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -2091,10 +2098,10 @@ spec:
                       type: string
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                     origin:
                       type: string
@@ -2154,10 +2161,10 @@ spec:
                       x-kubernetes-list-type: map
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                   required:
                   - hostnameGeneratorRef
@@ -2180,7 +2187,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -2599,7 +2606,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -2822,7 +2829,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -3020,8 +3027,8 @@ spec:
                   type: string
                 description: |-
                   Tags specifies the Kuma tags that are propagated to the managed
-                  dataplane proxies. These tags should include exactly one
-                  `kuma.io/service` tag, and should match exactly one Gateway
+                  dataplane proxies. These tags should not include `kuma.io/service` tag
+                  since is auto-generated, and should match exactly one Gateway
                   resource.
                 type: object
             type: object
@@ -3174,6 +3181,7 @@ spec:
                           x-kubernetes-list-type: atomic
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                 type: object
             type: object
         type: object
@@ -3186,7 +3194,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -3236,7 +3244,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -3286,7 +3294,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -3668,7 +3676,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -4332,7 +4340,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -4382,7 +4390,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -4954,7 +4962,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -5247,7 +5255,202 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: meshmultizoneservices.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshMultiZoneService
+    listKind: MeshMultiZoneServiceList
+    plural: meshmultizoneservices
+    singular: meshmultizoneservice
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshMultiZoneService
+              resource.
+            properties:
+              ports:
+                description: Ports is a list of ports from selected MeshServices
+                items:
+                  properties:
+                    appProtocol:
+                      default: tcp
+                      description: Protocol identifies a protocol supported by a service.
+                      type: string
+                    name:
+                      type: string
+                    port:
+                      format: int32
+                      type: integer
+                    targetPort:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - port
+                  type: object
+                minItems: 1
+                type: array
+              selector:
+                description: Selector is a way to select multiple MeshServices
+                properties:
+                  meshService:
+                    description: MeshService selects MeshServices
+                    properties:
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels matches multiple MeshServices by
+                          labels
+                        type: object
+                    required:
+                    - matchLabels
+                    type: object
+                required:
+                - meshService
+                type: object
+            required:
+            - selector
+            type: object
+          status:
+            description: Status is the current status of the Kuma MeshMultiZoneService
+              resource.
+            properties:
+              addresses:
+                description: Addresses is a list of addresses generated by HostnameGenerator
+                items:
+                  properties:
+                    hostname:
+                      type: string
+                    hostnameGeneratorRef:
+                      properties:
+                        coreName:
+                          type: string
+                      required:
+                      - coreName
+                      type: object
+                    origin:
+                      type: string
+                  type: object
+                type: array
+              hostnameGenerators:
+                description: Status of hostnames generator applied on this resource
+                items:
+                  properties:
+                    conditions:
+                      description: Conditions is an array of hostname generator conditions.
+                      items:
+                        properties:
+                          message:
+                            description: |-
+                              message is a human readable message indicating details about the transition.
+                              This may be an empty string.
+                            maxLength: 32768
+                            type: string
+                          reason:
+                            description: |-
+                              reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                              Producers of specific condition types may define expected values and meanings for this field,
+                              and whether the values are considered a guaranteed API.
+                              The value should be a CamelCase string.
+                              This field may not be empty.
+                            maxLength: 1024
+                            minLength: 1
+                            pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                            type: string
+                          status:
+                            description: status of the condition, one of True, False,
+                              Unknown.
+                            enum:
+                            - "True"
+                            - "False"
+                            - Unknown
+                            type: string
+                          type:
+                            description: |-
+                              type of condition in CamelCase or in foo.example.com/CamelCase.
+                              ---
+                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                              useful (see .node.status.conditions), the ability to deconflict is important.
+                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            maxLength: 316
+                            pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                            type: string
+                        required:
+                        - message
+                        - reason
+                        - status
+                        - type
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - type
+                      x-kubernetes-list-type: map
+                    hostnameGeneratorRef:
+                      properties:
+                        coreName:
+                          type: string
+                      required:
+                      - coreName
+                      type: object
+                  required:
+                  - hostnameGeneratorRef
+                  type: object
+                type: array
+              meshServices:
+                description: MeshServices is a list of matched MeshServices
+                items:
+                  properties:
+                    name:
+                      description: Name is a core name of MeshService
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              vips:
+                description: VIPs is a list of assigned Kuma VIPs.
+                items:
+                  properties:
+                    ip:
+                      type: string
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -5325,16 +5528,18 @@ spec:
                         value:
                           description: Value for the specified Type.
                           type: string
-                      required:
-                      - port
                       type: object
                     type: array
-                  enabled:
+                  passthroughMode:
+                    default: None
                     description: |-
-                      Enabled defines whether the passthrough behavior, which allows all traffic going
-                      outside of the cluster, is active. If true, AppendMatch
-                      has no effect.
-                    type: boolean
+                      Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+                      When `All` or `None` `appendMatch` has no effect.
+                    enum:
+                    - All
+                    - Matched
+                    - None
+                    type: string
                 type: object
               targetRef:
                 description: |-
@@ -5410,7 +5615,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -5970,7 +6175,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -6468,7 +6673,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -6975,7 +7180,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -7063,6 +7268,14 @@ spec:
                       type: string
                     type: object
                 type: object
+              state:
+                description: |-
+                  State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
+                  It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
+                enum:
+                - Available
+                - Unavailable
+                type: string
             type: object
           status:
             description: Status is the current status of the Kuma MeshService resource.
@@ -7074,15 +7287,30 @@ spec:
                       type: string
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                     origin:
                       type: string
                   type: object
                 type: array
+              dataplaneProxies:
+                description: Data plane proxies statistics selected by this MeshService.
+                properties:
+                  connected:
+                    description: Number of data plane proxies connected to the zone
+                      control plane
+                    type: integer
+                  healthy:
+                    description: Number of data plane proxies with all healthy inbounds
+                      selected by this MeshService.
+                    type: integer
+                  total:
+                    description: Total number of data plane proxies.
+                    type: integer
+                type: object
               hostnameGenerators:
                 items:
                   properties:
@@ -7137,10 +7365,10 @@ spec:
                       x-kubernetes-list-type: map
                     hostnameGeneratorRef:
                       properties:
-                        name:
+                        coreName:
                           type: string
                       required:
-                      - name
+                      - coreName
                       type: object
                   required:
                   - hostnameGeneratorRef
@@ -7170,7 +7398,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -7451,7 +7679,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -7813,7 +8041,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -8097,7 +8325,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8300,7 +8528,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -8350,7 +8578,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -8400,7 +8628,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -8450,7 +8678,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -8500,7 +8728,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -8550,7 +8778,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -8600,7 +8828,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8650,7 +8878,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -8700,7 +8928,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -8750,7 +8978,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -8800,7 +9028,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -8856,7 +9084,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8906,7 +9134,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -8962,7 +9190,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9013,7 +9241,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -9063,7 +9291,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: zones.kuma.io
 spec:
   group: kuma.io

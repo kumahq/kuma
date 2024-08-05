@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -141,6 +142,14 @@ var _ = Describe("SNI", func() {
 				"x": "a",
 			},
 			expected: "a5b91d8a08567bf09.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax.8080.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbx.ms",
+		}),
+		Entry("mesh multizone service", testCase{
+			resName:        "backend",
+			meshName:       "demo",
+			resType:        meshmzservice_api.MeshMultiZoneServiceType,
+			port:           8080,
+			additionalData: nil,
+			expected:       "ae10a8071b8a8eeb8.backend.8080.demo.mzms",
 		}),
 	)
 

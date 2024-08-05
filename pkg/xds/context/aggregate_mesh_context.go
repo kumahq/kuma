@@ -25,6 +25,7 @@ func AggregateMeshContexts(
 
 	var meshContexts []MeshContext
 	meshContextsByName := map[string]MeshContext{}
+	var meshes []*core_mesh.MeshResource
 	for _, mesh := range meshList.Items {
 		meshCtx, err := fetcher(ctx, mesh.GetMeta().GetName())
 		if err != nil {
@@ -36,6 +37,7 @@ func AggregateMeshContexts(
 		}
 		meshContexts = append(meshContexts, meshCtx)
 		meshContextsByName[mesh.Meta.GetName()] = meshCtx
+		meshes = append(meshes, mesh)
 	}
 
 	hash := aggregatedHash(meshContexts)
@@ -60,7 +62,7 @@ func AggregateMeshContexts(
 
 	result := AggregatedMeshContexts{
 		Hash:               hash,
-		Meshes:             meshList.Items,
+		Meshes:             meshes,
 		MeshContextsByName: meshContextsByName,
 		ZoneEgressByName:   egressByName,
 	}

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -201,8 +201,8 @@ spec:
                   type: string
                 description: |-
                   Tags specifies the Kuma tags that are propagated to the managed
-                  dataplane proxies. These tags should include exactly one
-                  `kuma.io/service` tag, and should match exactly one Gateway
+                  dataplane proxies. These tags should not include `kuma.io/service` tag
+                  since is auto-generated, and should match exactly one Gateway
                   resource.
                 type: object
             type: object
@@ -355,6 +355,7 @@ spec:
                           x-kubernetes-list-type: atomic
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                 type: object
             type: object
         type: object

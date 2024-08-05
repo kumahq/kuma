@@ -27,11 +27,16 @@ type Port struct {
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
 }
 
+const maxNameLength = 63
+
 // MeshService
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag
 type MeshService struct {
+	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
+	// It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
+	State    State    `json:"state,omitempty"`
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port
 	// +patchStrategy=merge
@@ -45,6 +50,14 @@ type MeshService struct {
 type VIP struct {
 	IP string `json:"ip,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=Available;Unavailable
+type State string
+
+const (
+	StateAvailable   State = "Available"
+	StateUnavailable State = "Unavailable"
+)
 
 // +kubebuilder:validation:Enum=Ready;NotReady
 type TLSStatus string
@@ -63,6 +76,8 @@ type MeshServiceStatus struct {
 	VIPs               []VIP                                           `json:"vips,omitempty"`
 	TLS                TLS                                             `json:"tls,omitempty"`
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
+	// Data plane proxies statistics selected by this MeshService.
+	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=ServiceTag
@@ -75,4 +90,13 @@ const (
 type MeshServiceIdentity struct {
 	Type  MeshServiceIdentityType `json:"type"`
 	Value string                  `json:"value"`
+}
+
+type DataplaneProxies struct {
+	// Number of data plane proxies connected to the zone control plane
+	Connected int `json:"connected,omitempty"`
+	// Number of data plane proxies with all healthy inbounds selected by this MeshService.
+	Healthy int `json:"healthy,omitempty"`
+	// Total number of data plane proxies.
+	Total int `json:"total,omitempty"`
 }

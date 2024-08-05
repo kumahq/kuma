@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -45,6 +47,7 @@ const (
 	// FailedToGenerateMeshServiceReason is added to an event when
 	// a MeshService cannot be generated.
 	FailedToGenerateMeshServiceReason = "FailedToGenerateMeshService"
+	IgnoredUnsupportedPortReason      = "IgnoredUnsupportedPort"
 )
 
 // MeshServiceReconciler reconciles a MeshService object
@@ -204,12 +207,18 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 	for current, endpoint := range servicePodEndpoints {
 		// Our name is unique depending on the service identity and pod name
-		// Note that a Pod name can be max 63 characters so we won't hit the 253
-		// limit with our MeshService name
+		// Note that a Pod name can be the same length as a Service name
+		// so we might need to truncate the MeshService name
+		namePrefix := current.Name
 		canonicalNameHasher := k8s.NewHasher()
 		canonicalNameHasher.Write([]byte(svc.Name))
 		canonicalNameHasher.Write([]byte(svc.Namespace))
-		canonicalName := fmt.Sprintf("%s-%s", current.Name, k8s.HashToString(canonicalNameHasher))
+		// name + `-` + 10 characters
+		if len(current.Name)+k8s.MaxHashStringLength+1 > 63 {
+			canonicalNameHasher.Write([]byte(current.Name))
+			namePrefix = k8s.EnsureMaxLength(namePrefix, 63-k8s.MaxHashStringLength-1)
+		}
+		canonicalName := fmt.Sprintf("%s-%s", namePrefix, k8s.HashToString(canonicalNameHasher))
 		op, err := r.manageMeshService(
 			ctx,
 			svc,
@@ -300,12 +309,14 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 				Name: fmt.Sprintf("%s.%s", endpoint.TargetRef.Name, endpoint.TargetRef.Namespace),
 			},
 		}
+		var vips []meshservice_api.VIP
 		for _, address := range endpoint.Addresses {
-			ms.Status.VIPs = append(ms.Status.VIPs,
+			vips = append(vips,
 				meshservice_api.VIP{
 					IP: address,
 				})
 		}
+		ms.Status.VIPs = vips
 		owner := kube_core.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      endpoint.TargetRef.Name,
@@ -334,14 +345,16 @@ func (r *MeshServiceReconciler) manageMeshService(
 		},
 	}
 
-	return kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
+	var unsupportedPorts []string
+
+	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
 		ms.ObjectMeta.Labels = maps.Clone(svc.GetLabels())
 		if ms.ObjectMeta.Labels == nil {
 			ms.ObjectMeta.Labels = map[string]string{}
 		}
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
-		ms.ObjectMeta.Labels[metadata.ManagedBy] = "k8s-controller"
+		ms.ObjectMeta.Labels[mesh_proto.ManagedByLabel] = "k8s-controller"
 
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
@@ -350,6 +363,11 @@ func (r *MeshServiceReconciler) manageMeshService(
 		ms.Spec.Ports = []meshservice_api.Port{}
 		for _, port := range svc.Spec.Ports {
 			if port.Protocol != kube_core.ProtocolTCP {
+				portName := port.Name
+				if portName == "" {
+					portName = strconv.Itoa(int(port.Port))
+				}
+				unsupportedPorts = append(unsupportedPorts, portName)
 				continue
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
@@ -365,6 +383,13 @@ func (r *MeshServiceReconciler) manageMeshService(
 		}
 		return setSpec(ctx, ms, svc)
 	})
+
+	if result != kube_controllerutil.OperationResultNone && len(unsupportedPorts) > 0 {
+		ports := strings.Join(unsupportedPorts, ", ")
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, IgnoredUnsupportedPortReason, "Ignored unsupported ports: %s", ports)
+	}
+
+	return result, err
 }
 
 func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_types.NamespacedName) error {

@@ -13,23 +13,25 @@ import (
 type TargetRefKind string
 
 var (
-	Mesh                TargetRefKind = "Mesh"
-	MeshSubset          TargetRefKind = "MeshSubset"
-	MeshGateway         TargetRefKind = "MeshGateway"
-	MeshService         TargetRefKind = "MeshService"
-	MeshExternalService TargetRefKind = "MeshExternalService"
-	MeshServiceSubset   TargetRefKind = "MeshServiceSubset"
-	MeshHTTPRoute       TargetRefKind = "MeshHTTPRoute"
+	Mesh                 TargetRefKind = "Mesh"
+	MeshSubset           TargetRefKind = "MeshSubset"
+	MeshGateway          TargetRefKind = "MeshGateway"
+	MeshService          TargetRefKind = "MeshService"
+	MeshExternalService  TargetRefKind = "MeshExternalService"
+	MeshMultiZoneService TargetRefKind = "MeshMultiZoneService"
+	MeshServiceSubset    TargetRefKind = "MeshServiceSubset"
+	MeshHTTPRoute        TargetRefKind = "MeshHTTPRoute"
 )
 
 var order = map[TargetRefKind]int{
-	Mesh:                1,
-	MeshSubset:          2,
-	MeshGateway:         3,
-	MeshService:         4,
-	MeshExternalService: 5,
-	MeshServiceSubset:   6,
-	MeshHTTPRoute:       7,
+	Mesh:                 1,
+	MeshSubset:           2,
+	MeshGateway:          3,
+	MeshService:          4,
+	MeshExternalService:  5,
+	MeshMultiZoneService: 6,
+	MeshServiceSubset:    7,
+	MeshHTTPRoute:        8,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
@@ -42,6 +44,15 @@ var (
 
 func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
+}
+
+func (k TargetRefKind) IsRealResource() bool {
+	switch k {
+	case MeshSubset, MeshServiceSubset:
+		return false
+	default:
+		return true
+	}
 }
 
 func AllTargetRefKinds() []TargetRefKind {
@@ -102,6 +113,17 @@ type BackendRef struct {
 	Weight *uint `json:"weight,omitempty"`
 	// Port is only supported when this ref refers to a real MeshService object
 	Port *uint32 `json:"port,omitempty"`
+}
+
+func (b BackendRef) ReferencesRealObject() bool {
+	switch b.Kind {
+	case MeshService:
+		return b.Port != nil
+	case MeshServiceSubset:
+		return false
+	default:
+		return true
+	}
 }
 
 type BackendRefHash string

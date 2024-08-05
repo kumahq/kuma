@@ -46,7 +46,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -122,6 +122,35 @@ var _ = Describe("MeshHTTPRoute", func() {
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.DataplaneWebBuilder().
 						AddOutboundToService("external-service")).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					Build(),
+			}
+		}()),
+		Entry("default-route-outbound-with-tags-with-mtls", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshBuilder(samples.MeshMTLSBuilder()).
+					WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+						AddOutbound(builders.Outbound().
+							WithPort(builders.FirstOutboundPort).
+							WithTags(map[string]string{
+								mesh_proto.ServiceTag: "backend",
+								"region":              "us",
+							}))).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),
 			}

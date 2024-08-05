@@ -19,13 +19,14 @@ import (
 )
 
 type ZoneAvailableServicesTracker struct {
-	logger            logr.Logger
-	metric            prometheus.Summary
-	resManager        manager.ResourceManager
-	meshCache         *mesh.Cache
-	interval          time.Duration
-	ingressTagFilters []string
-	zone              string
+	logger                   logr.Logger
+	metric                   prometheus.Summary
+	resManager               manager.ResourceManager
+	meshCache                *mesh.Cache
+	interval                 time.Duration
+	ingressTagFilters        []string
+	zone                     string
+	disableAvailableServices bool
 }
 
 func NewZoneAvailableServicesTracker(
@@ -36,6 +37,7 @@ func NewZoneAvailableServicesTracker(
 	interval time.Duration,
 	ingressTagFilters []string,
 	zone string,
+	disableAvailableServices bool,
 ) (*ZoneAvailableServicesTracker, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_zone_available_services",
@@ -46,13 +48,14 @@ func NewZoneAvailableServicesTracker(
 		return nil, err
 	}
 	return &ZoneAvailableServicesTracker{
-		logger:            logger,
-		metric:            metric,
-		resManager:        resManager,
-		meshCache:         meshCache,
-		interval:          interval,
-		ingressTagFilters: ingressTagFilters,
-		zone:              zone,
+		logger:                   logger,
+		metric:                   metric,
+		resManager:               resManager,
+		meshCache:                meshCache,
+		interval:                 interval,
+		ingressTagFilters:        ingressTagFilters,
+		zone:                     zone,
+		disableAvailableServices: disableAvailableServices,
 	}, nil
 }
 
@@ -115,22 +118,24 @@ func (t *ZoneAvailableServicesTracker) getIngressExternalServices(
 }
 
 func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) error {
-	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
-	if err != nil {
-		return err
-	}
-
 	zis := core_mesh.ZoneIngressResourceList{}
 	if err := t.resManager.List(ctx, &zis); err != nil {
 		return err
 	}
 
-	availableServices := ingress.GetAvailableServices(
-		aggregatedMeshCtxs.AllDataplanes(),
-		aggregatedMeshCtxs.AllMeshGateways(),
-		t.getIngressExternalServices(aggregatedMeshCtxs),
-		t.ingressTagFilters,
-	)
+	var availableServices []*mesh_proto.ZoneIngress_AvailableService
+	if !t.disableAvailableServices {
+		aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
+		if err != nil {
+			return err
+		}
+		availableServices = ingress.GetAvailableServices(
+			aggregatedMeshCtxs.AllDataplanes(),
+			aggregatedMeshCtxs.AllMeshGateways(),
+			t.getIngressExternalServices(aggregatedMeshCtxs),
+			t.ingressTagFilters,
+		)
+	}
 
 	var names []string
 	for _, zi := range zis.Items {

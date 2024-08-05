@@ -6,6 +6,7 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 // ResourceGenerator creates a resource of a pre-defined type.
@@ -16,6 +17,7 @@ type ResourceGenerator interface {
 // ResourceValidationCase captures a resource YAML and any corresponding validation error.
 type ResourceValidationCase struct {
 	Resource   string
+	Name       string
 	Violations []validators.Violation
 }
 
@@ -25,12 +27,27 @@ type ResourceValidationCase struct {
 func DescribeValidCases[T core_model.Resource](generator func() T, cases ...TableEntry) {
 	DescribeTable(
 		"should pass validation",
-		func(given string) {
+		func(anyGiven any) {
+			var given ResourceValidationCase
+			if resource, ok := anyGiven.(string); ok {
+				given = ResourceValidationCase{
+					Resource: resource,
+				}
+			} else if c, ok := anyGiven.(ResourceValidationCase); ok {
+				given = c
+			} else {
+				panic("invalid DescribeValidCases case")
+			}
 			// setup
 			resource := generator()
 
 			// when
-			err := core_model.FromYAML([]byte(given), resource.GetSpec())
+			err := core_model.FromYAML([]byte(given.Resource), resource.GetSpec())
+			if given.Name != "" {
+				resource.SetMeta(&test_model.ResourceMeta{
+					Name: given.Name,
+				})
+			}
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -58,6 +75,12 @@ func DescribeErrorCases[T core_model.Resource](generator func() T, cases ...Tabl
 			Expect(
 				core_model.FromYAML([]byte(given.Resource), resource.GetSpec()),
 			).ToNot(HaveOccurred())
+
+			if given.Name != "" {
+				resource.SetMeta(&test_model.ResourceMeta{
+					Name: given.Name,
+				})
+			}
 
 			expected := validators.ValidationError{
 				Violations: given.Violations,

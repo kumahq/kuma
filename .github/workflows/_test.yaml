@@ -4,6 +4,9 @@ on:
       FULL_MATRIX:
         required: true
         type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
 permissions:
   contents: read
 env:
@@ -20,7 +23,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -105,6 +108,7 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -116,4 +120,5 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     secrets: inherit

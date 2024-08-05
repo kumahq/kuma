@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@c8f55efbd427e7465d6da1106e7979bc8aaee856 # v1.10.1
+        uses: actions/create-github-app-token@31c86eb3b33c9b601a1f60f98dcbfd1d70f379b4 # v1.10.3
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -44,7 +44,7 @@ jobs:
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -64,6 +64,7 @@ jobs:
         if: contains(github.event.comment.body, '/golden_files') # check the comment if it contains the keywords
         run: |
           make test UPDATE_GOLDEN_FILES=true
+          make test/transparentproxy UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

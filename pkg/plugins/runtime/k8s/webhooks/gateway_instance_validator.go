@@ -28,12 +28,12 @@ func NewGatewayInstanceValidatorWebhook(converter k8s_common.Converter, resource
 
 type GatewayInstanceValidator struct {
 	converter       k8s_common.Converter
-	decoder         *admission.Decoder
+	decoder         admission.Decoder
 	resourceManager manager.ResourceManager
 	cpMode          config_core.CpMode
 }
 
-func (h *GatewayInstanceValidator) InjectDecoder(d *admission.Decoder) {
+func (h *GatewayInstanceValidator) InjectDecoder(d admission.Decoder) {
 	h.decoder = d
 }
 
@@ -87,8 +87,7 @@ func (h *GatewayInstanceValidator) ValidateUpdate(ctx context.Context, req admis
 func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) admission.Response {
 	tags := gatewayInstance.Spec.Tags
 
-	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{})
-
+	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{ForbidService: true})
 	if err.HasViolations() {
 		return convertValidationErrorOf(err, gatewayInstance, gatewayInstance.GetObjectMeta())
 	}

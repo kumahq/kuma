@@ -44,7 +44,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
           cache: false
@@ -84,6 +84,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:
@@ -168,7 +169,7 @@ jobs:
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@8c47c26142749129401332a44d0aeac87243c40d # v0.6.10
+        uses: cloudsmith-io/action@8fe2c21805b379148b31e94ef1b509d2a83342c3 # v0.6.13
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           command: "push"
@@ -180,3 +181,4 @@ jobs:
           name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
+          use-executable: "false"

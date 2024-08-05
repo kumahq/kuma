@@ -9,26 +9,10 @@ type LabelSelector struct {
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
-type NameLabelsSelector struct {
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-}
-
 type Selector struct {
-	MeshService         LabelSelector      `json:"meshService,omitempty"`
-	MeshExternalService NameLabelsSelector `json:"meshExternalService,omitempty"`
-}
-
-func (s NameLabelsSelector) Matches(labels map[string]string) bool {
-	for tag, matchValue := range s.MatchLabels {
-		labelValue, exist := labels[tag]
-		if !exist {
-			return false
-		}
-		if matchValue != labelValue {
-			return false
-		}
-	}
-	return true
+	MeshService          *LabelSelector `json:"meshService,omitempty"`
+	MeshExternalService  *LabelSelector `json:"meshExternalService,omitempty"`
+	MeshMultiZoneService *LabelSelector `json:"meshMultiZoneService,omitempty"`
 }
 
 func (s LabelSelector) Matches(labels map[string]string) bool {
@@ -46,6 +30,7 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 
 // HostnameGenerator
 // +kuma:policy:is_policy=false
+// +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:scope=Global
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
@@ -76,7 +61,7 @@ const (
 )
 
 type HostnameGeneratorRef struct {
-	CoreName string `json:"name"`
+	CoreName string `json:"coreName"`
 }
 
 type HostnameGeneratorStatus struct {

@@ -1,5 +1,5 @@
 resources:
-- name: outbound:10.20.20.1:9090
+- name: meshexternalservice_example
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -17,7 +17,7 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           normalizePath: true
           routeConfig:
-            name: outbound:example
+            name: meshexternalservice_example
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -33,11 +33,11 @@ resources:
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
-                  cluster: example
+                  cluster: meshexternalservice_example
                   timeout: 0s
-          statPrefix: example
+          statPrefix: meshexternalservice_example
     metadata:
       filterMetadata:
         io.kuma.tags: {}
-    name: outbound:10.20.20.1:9090
+    name: meshexternalservice_example
     trafficDirection: OUTBOUND

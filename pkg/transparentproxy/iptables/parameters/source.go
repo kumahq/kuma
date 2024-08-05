@@ -15,6 +15,10 @@ func (p *SourceParameter) Negate() ParameterBuilder {
 }
 
 func Address(address string) *SourceParameter {
+	if address == "" {
+		return nil
+	}
+
 	return &SourceParameter{address: address}
 }
 
@@ -28,6 +32,10 @@ func Address(address string) *SourceParameter {
 //
 // ref. iptables(8) > PARAMETERS
 func Source(parameter *SourceParameter) *Parameter {
+	if parameter == nil {
+		return nil
+	}
+
 	return &Parameter{
 		long:       "--source",
 		short:      "-s",

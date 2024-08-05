@@ -42,6 +42,9 @@ const (
 	// Listener tag is used to select Gateway listeners
 	ListenerTag = "gateways.kuma.io/listener-name"
 
+	// Port tag is used to select Gateway listeners
+	PortTag = "gateways.kuma.io/listener-port"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 
@@ -63,6 +66,9 @@ const (
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
 
+	// ManagedByLabel is used when a MeshService is auto-generated
+	ManagedByLabel = "kuma.io/managed-by"
+
 	// SectionName is a standard label that reflects the name of the specific section of resource. It is used for targeting
 	// specific section of resource in policies
 	SectionName = "kuma.io/sectionName"
@@ -71,18 +77,33 @@ const (
 type ResourceOrigin string
 
 const (
-	GlobalResourceOrigin ResourceOrigin = "global"
-	ZoneResourceOrigin   ResourceOrigin = "zone"
+	UnknownResourceOrigin ResourceOrigin = ""
+	GlobalResourceOrigin  ResourceOrigin = "global"
+	ZoneResourceOrigin    ResourceOrigin = "zone"
 )
 
-type PolicyRole string
+var originOrder = map[ResourceOrigin]int{
+	GlobalResourceOrigin:  1,
+	UnknownResourceOrigin: 2,
+	ZoneResourceOrigin:    3,
+}
 
-const (
-	ProducerPolicyRole      PolicyRole = "producer"
-	ConsumerPolicyRole      PolicyRole = "consumer"
-	SystemPolicyRole        PolicyRole = "system"
-	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
-)
+// Compare recreates the following comparison table:
+//
+// origin_1 | origin_2 | has_more_priority
+// ---------|----------|-------------
+// Global   | Zone     | origin_2
+// Global   | Unknown  | origin_2
+// Zone     | Global   | origin_1
+// Zone     | Unknown  | origin_1
+// Unknown  | Global   | origin_1
+// Unknown  | Zone     | origin_2
+//
+// If we assign numbers to origins like Global=1, Zone=3, Unknown=2, then we can compare them as numbers
+// and get the same result as in the table above.
+func (o ResourceOrigin) Compare(other ResourceOrigin) int {
+	return originOrder[o] - originOrder[other]
+}
 
 func (o ResourceOrigin) IsValid() error {
 	switch o {
@@ -91,6 +112,26 @@ func (o ResourceOrigin) IsValid() error {
 	default:
 		return errors.Errorf("unknown resource origin %q", o)
 	}
+}
+
+type PolicyRole string
+
+const (
+	SystemPolicyRole        PolicyRole = "system"
+	ProducerPolicyRole      PolicyRole = "producer"
+	ConsumerPolicyRole      PolicyRole = "consumer"
+	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
+)
+
+var roleOrder = map[PolicyRole]int{
+	SystemPolicyRole:        1,
+	ProducerPolicyRole:      2,
+	ConsumerPolicyRole:      3,
+	WorkloadOwnerPolicyRole: 4,
+}
+
+func (r PolicyRole) Compare(o PolicyRole) int {
+	return roleOrder[r] - roleOrder[o]
 }
 
 type ProxyType string

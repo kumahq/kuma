@@ -258,9 +258,6 @@ runtime:
         image: kuma/kuma-dp:latest # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
-        # Redirect port for inbound traffic.
-        # Deprecated: Use redirectPortInbound or ipFamilyMode instead.
-        redirectPortInboundV6: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
         # IP family mode enabled for traffic redirection, can be 'dualstack' or 'ipv4'
         ipFamilyMode: dualstack # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE
         # Redirect port for outbound traffic.
@@ -337,6 +334,14 @@ runtime:
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        # List of inbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeInboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_IPS
+        # List of outbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeOutboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_IPS
       builtinDNS:
         # Use the built-in DNS
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
@@ -410,6 +415,8 @@ defaults:
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
   # If true, it creates the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh
   createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
+  # If true, it skips creating default hostname generators
+  skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
 # Metrics configuration
 metrics:
   dataplane:
@@ -794,9 +801,15 @@ policies:
     - meshtraces
     - meshtrafficpermissions
 coreResources:
+  status:
+    # How often we compute status of MeshMultiZoneService
+    meshMultiZoneServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_MULTI_ZONE_SERVICE_INTERVAL
+    # How often we compute status of MeshService
+    meshServiceInterval: 5s # ENV: KUMA_CORE_RESOURCES_STATUS_MESH_SERVICE_INTERVAL
   enabled: # ENV: KUMA_CORE_RESOURCES_ENABLED
     - hostnamegenerators
     - meshexternalservices
+    - meshmultizoneservices
     - meshservices
 # IP address management configuration
 ipam:
@@ -807,5 +820,13 @@ ipam:
   meshExternalService:
     # CIDR for MeshExternalService IPs
     cidr: 242.0.0.0/8 # ENV: KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR
+  meshMultiZoneService:
+    # CIDR for MeshMultiZoneService IPs
+    cidr: 243.0.0.0/8 # ENV: KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR
   # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
   allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL
+meshService:
+  # How often we check whether MeshServices need to be generated from Dataplanes
+  generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
+  # How long we wait before deleting a MeshService if all Dataplanes are gone
+  deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD

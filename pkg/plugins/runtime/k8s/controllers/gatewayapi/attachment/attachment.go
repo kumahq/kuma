@@ -15,6 +15,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type Attachment int
@@ -38,18 +39,22 @@ const (
 	Service
 )
 
-// findRouteListenerAttachment reports whether this ref is allowed to attach to
+// checkListenerFrom reports whether this ref is allowed to attach to
 // the Gateway or specific Listener.
-// refSectionName is nil if the ref refers to the whole Gateway.
-func findRouteListenerAttachment(
-	gateway *gatewayapi.Gateway,
+func checkListenerFrom(
+	gatewayNs string,
 	routeNs kube_client.Object,
-	refSectionName *gatewayapi.SectionName,
+	attemptedAttachments []gatewayapi.Listener,
 ) (Attachment, error) {
-	// Build a map of whether attaching to each listener is possible
-	listeners := map[gatewayapi.SectionName]Attachment{}
+	// If we don't have any attachments, our ref has NoMatchingParent
+	if len(attemptedAttachments) == 0 {
+		return NoMatchingParent, nil
+	}
 
-	for _, l := range gateway.Spec.Listeners {
+	// Build a map of whether attaching to each listener is possible
+	listenerAttachments := map[gatewayapi.SectionName]Attachment{}
+
+	for _, l := range attemptedAttachments {
 		ns := l.AllowedRoutes.Namespaces
 
 		// The gateway controller ensures Kinds is either empty or contains
@@ -66,43 +71,25 @@ func findRouteListenerAttachment(
 			}
 
 			if !selector.Matches(kube_labels.Set(routeNs.GetLabels())) {
-				listeners[l.Name] = NotPermitted
+				listenerAttachments[l.Name] = NotPermitted
 			} else {
-				listeners[l.Name] = Allowed
+				listenerAttachments[l.Name] = Allowed
 			}
 		case gatewayapi_v1.NamespacesFromSame:
-			if gateway.Namespace != routeNs.GetName() {
-				listeners[l.Name] = NotPermitted
+			if gatewayNs != routeNs.GetName() {
+				listenerAttachments[l.Name] = NotPermitted
 			} else {
-				listeners[l.Name] = Allowed
+				listenerAttachments[l.Name] = Allowed
 			}
 		case gatewayapi_v1.NamespacesFromAll:
-			listeners[l.Name] = Allowed
+			listenerAttachments[l.Name] = Allowed
 		}
-	}
-
-	sectionName := ""
-	if refSectionName != nil {
-		sectionName = string(*refSectionName)
-	}
-
-	// Look through the potential Listeners:
-	// If it's our specific listener, we return that status
-	for name, status := range listeners {
-		if string(name) == sectionName {
-			return status, nil
-		}
-	}
-
-	// If we don't find our listener, our ref has NoMatchingParent
-	if sectionName != "" {
-		return NoMatchingParent, nil
 	}
 
 	// If we aren't attaching to a specific listener then
 	// as soon as one attaches we're attached (see ParentRef.Name docs)
-	for _, status := range listeners {
-		if status == Allowed {
+	for _, listener := range attemptedAttachments {
+		if listenerAttachments[listener.Name] == Allowed {
 			return Allowed, nil
 		}
 	}
@@ -200,23 +187,27 @@ func evaluateGatewayAttachment(
 		return Unknown, nil
 	}
 
+	var attemptedAttachments []gatewayapi.Listener
 	var listenerHostnames []gatewayapi.Hostname
 	for _, listener := range gateway.Spec.Listeners {
 		if ref.SectionName != nil && *ref.SectionName != listener.Name {
 			continue
 		}
-		listenerHostname := gatewayapi.Hostname("")
-		if listener.Hostname != nil {
-			listenerHostname = *listener.Hostname
+		if ref.Port != nil && *ref.Port != listener.Port {
+			continue
 		}
-		listenerHostnames = append(listenerHostnames, listenerHostname)
+		attemptedAttachments = append(attemptedAttachments, listener)
+		listenerHostnames = append(
+			listenerHostnames,
+			pointer.DerefOr(listener.Hostname, gatewayapi.Hostname("")),
+		)
 	}
 
 	if !hostnamesIntersect(routeHostnames, listenerHostnames) {
 		return NoHostnameIntersection, nil
 	}
 
-	return findRouteListenerAttachment(gateway, routeNs, ref.SectionName)
+	return checkListenerFrom(gateway.Namespace, routeNs, attemptedAttachments)
 }
 
 // EvaluateParentRefAttachment reports whether a route in the given namespace can attach

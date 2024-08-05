@@ -5,6 +5,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend
     type: EDS
@@ -13,12 +14,12 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: example
+- name: meshexternalservice_example
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: example
+      clusterName: meshexternalservice_example
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -33,7 +34,7 @@ resources:
                 address: example.com
                 portValue: 10000
           loadBalancingWeight: 1
-    name: example
+    name: meshexternalservice_example
     transportSocketMatches:
     - name: example.com
       transportSocket:

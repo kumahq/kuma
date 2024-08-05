@@ -17,6 +17,8 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -47,7 +49,8 @@ type FromRules struct {
 }
 
 type ToRules struct {
-	Rules Rules
+	Rules         Rules
+	ResourceRules ResourceRules
 }
 
 type InboundListenerHostname struct {
@@ -110,6 +113,8 @@ type SingleItemRules struct {
 type PolicyItemWithMeta struct {
 	core_model.PolicyItem
 	core_model.ResourceMeta
+	TopLevel  common_api.TargetRef
+	RuleIndex int
 }
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -121,6 +126,14 @@ type Tag struct {
 
 // Subset represents a group of proxies
 type Subset []Tag
+
+func NewSubset(m map[string]string) Subset {
+	var s Subset
+	for _, k := range util_maps.SortedKeys(m) {
+		s = append(s, Tag{Key: k, Value: m[k]})
+	}
+	return s
+}
 
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
@@ -312,7 +325,7 @@ func BuildFromRules(
 			if !ok {
 				return FromRules{}, nil
 			}
-			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta())...)
+			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
 		rules, err := BuildRules(fromList)
 		if err != nil {
@@ -325,14 +338,15 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model.Resource) (ToRules, error) {
-	toList := []PolicyItemWithMeta{}
-	for _, mp := range matchedPolicies {
-		tl, err := buildToList(mp, httpRoutes)
-		if err != nil {
-			return ToRules{}, err
-		}
-		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
+type ResourceReader interface {
+	Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource
+	ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList
+}
+
+func BuildToRules(matchedPolicies []core_model.Resource, reader ResourceReader) (ToRules, error) {
+	toList, err := BuildToList(matchedPolicies, reader)
+	if err != nil {
+		return ToRules{}, err
 	}
 
 	rules, err := BuildRules(toList)
@@ -340,25 +354,45 @@ func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model
 		return ToRules{}, err
 	}
 
-	return ToRules{Rules: rules}, nil
+	resourceRules, err := BuildResourceRules(toList, reader)
+	if err != nil {
+		return ToRules{}, err
+	}
+
+	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
+}
+
+func BuildToList(matchedPolicies []core_model.Resource, reader ResourceReader) ([]PolicyItemWithMeta, error) {
+	toList := []PolicyItemWithMeta{}
+	for _, mp := range matchedPolicies {
+		tl, err := buildToList(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+		if err != nil {
+			return nil, err
+		}
+		if len(tl) > 0 {
+			topLevel := mp.GetSpec().(core_model.PolicyWithToList).GetTargetRef()
+			toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta(), topLevel)...)
+		}
+	}
+	return toList, nil
 }
 
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
 	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
-	httpRoutes []core_model.Resource,
+	reader ResourceReader,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]Rules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]Rules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, httpRoutes)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules.Rules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, httpRoutes)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
@@ -449,12 +483,14 @@ func (a *artificialPolicyItem) GetDefault() interface{} {
 	return a.conf
 }
 
-func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta) []PolicyItemWithMeta {
+func BuildPolicyItemsWithMeta(items []core_model.PolicyItem, meta core_model.ResourceMeta, topLevel common_api.TargetRef) []PolicyItemWithMeta {
 	var result []PolicyItemWithMeta
-	for _, item := range items {
+	for i, item := range items {
 		result = append(result, PolicyItemWithMeta{
 			PolicyItem:   item,
 			ResourceMeta: meta,
+			TopLevel:     topLevel,
+			RuleIndex:    i,
 		})
 	}
 	return result

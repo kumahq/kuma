@@ -1,0 +1,32 @@
+*mangle
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:FORWARD ACCEPT
+:OUTPUT ACCEPT
+:POSTROUTING ACCEPT
+COMMIT
+*raw
+:PREROUTING ACCEPT
+:OUTPUT ACCEPT
+COMMIT
+*nat
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:OUTPUT ACCEPT
+:POSTROUTING ACCEPT
+:KUMA_MESH_INBOUND -
+:KUMA_MESH_INBOUND_REDIRECT -
+:KUMA_MESH_OUTBOUND -
+:KUMA_MESH_OUTBOUND_REDIRECT -
+-A PREROUTING -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect inbound TCP traffic to our custom chain for processing" -j KUMA_MESH_INBOUND
+-A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic to our custom chain for processing" -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect all inbound traffic to the custom chain for processing" -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_INBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15006)" -j REDIRECT --to-ports 15006
+-A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o ifPlaceholder -m comment --comment "kuma/mesh/transparent/proxy/prevent traffic loops by ensuring traffic from the sidecar proxy (using 127.0.0.6/32) to loopback interface is not redirected again" -j RETURN
+-A KUMA_MESH_OUTBOUND ! -d 127.0.0.1/32 -o ifPlaceholder -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic (except to DNS port 53) destined for loopback interface, but not targeting address 127.0.0.1/32, and owned by UID 5678 (kuma-dp user) to KUMA_MESH_INBOUND_REDIRECT chain for proper handling" -m owner --uid-owner 5678 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -o ifPlaceholder -p tcp -m comment --comment "kuma/mesh/transparent/proxy/return outbound TCP traffic (except to DNS port 53) destined for loopback interface, owned by any UID other than 5678 (kuma-dp user)" -m owner ! --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -m comment --comment "kuma/mesh/transparent/proxy/return outbound traffic owned by UID 5678 (kuma-dp user)" -m owner --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -d 127.0.0.1/32 -m comment --comment "kuma/mesh/transparent/proxy/return traffic destined for localhost (127.0.0.1/32) to avoid redirection" -j RETURN
+-A KUMA_MESH_OUTBOUND -m comment --comment "kuma/mesh/transparent/proxy/redirect all other outbound traffic to our custom chain for further processing" -j KUMA_MESH_OUTBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15001)" -j REDIRECT --to-ports 15001
+COMMIT

@@ -57,10 +57,10 @@ func Uid(id string) *OwnerParameter {
 
 // UidRangeOrValue matches if the packet socket's file structure (if it has one) is owned by the user
 // with given list of UID values or ranges
-func UidRangeOrValue(uIDsToPorts config.UIDsToPorts) *OwnerParameter {
+func UidRangeOrValue(exclusion config.Exclusion) *OwnerParameter {
 	return &OwnerParameter{
 		flag:  "--uid-owner",
-		value: string(uIDsToPorts.UIDs),
+		value: string(exclusion.UIDs),
 	}
 }
 

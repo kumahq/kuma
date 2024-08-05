@@ -165,6 +165,9 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 	if err := f.resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err
 	}
+	if !zoneInsightRes.Spec.IsOnline() {
+		return "", &ZoneOfflineError{rpcName: rpcName}
+	}
 	streams := zoneInsightRes.Spec.GetEnvoyAdminStreams()
 	var globalInstanceID string
 	switch rpcName {
@@ -212,5 +215,17 @@ func (e *ForwardKDSRequestError) Error() string {
 }
 
 func (e *ForwardKDSRequestError) Is(err error) bool {
+	return reflect.TypeOf(e) == reflect.TypeOf(err)
+}
+
+type ZoneOfflineError struct {
+	rpcName string
+}
+
+func (e *ZoneOfflineError) Error() string {
+	return fmt.Sprintf("couldn't execute %s operation, zone is oflline", e.rpcName)
+}
+
+func (e *ZoneOfflineError) Is(err error) bool {
 	return reflect.TypeOf(e) == reflect.TypeOf(err)
 }

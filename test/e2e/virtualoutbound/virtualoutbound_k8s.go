@@ -24,7 +24,7 @@ func VirtualOutboundOnK8s() {
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh("default"))).
-			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2), testserver.WithNamespace(namespace))).
+			Install(testserver.Install(testserver.WithStatefulSet(), testserver.WithReplicas(2), testserver.WithNamespace(namespace))).
 			Setup(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

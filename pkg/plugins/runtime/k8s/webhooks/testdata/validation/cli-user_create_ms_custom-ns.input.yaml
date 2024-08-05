@@ -1,0 +1,30 @@
+# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: redis
+  labels:
+    kuma.io/mesh: default
+    team: db-operators
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+      k8s.kuma.io/namespace: redis-system
+      kuma.io/zone: east-1
+  ports:
+    - port: 6739
+      targetPort: 6739
+      appProtocol: tcp
+    - name: some-port
+      port: 16739
+      targetPort: target-port-from-container
+      appProtocol: TCP
+status:
+  addresses:
+    - hostname: redis.mesh
+      origin: HostnameGenerator
+      hostnameGeneratorRef:
+        name: my-hostname-generator
+  vips:
+    - ip: 10.0.1.1
