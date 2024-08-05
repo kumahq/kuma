@@ -54,6 +54,7 @@
      }
     ]
    },
+   "toResourceRules": null,
    "toRules": [],
    "type": "MeshTrace",
    "warnings": []
