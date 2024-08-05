@@ -294,15 +294,13 @@ spec:
 			expectedInstance: "kube-test-server-2",
 			should:           Not(Succeed()),
 		}),
-		Entry("should NOT YET access service in the same Universal cluster via a mesh-targeted generator name", testCase{
+		Entry("should access service in the same Universal cluster via a mesh-targeted generator name", testCase{
 			address:          func() string { return "http://test-server.svc.kuma-4.mesh-specific.mesh.local:80" },
 			expectedInstance: "uni-test-server-1",
-			should:           Not(Succeed()),
 		}),
-		Entry("should NOT YET access service in another Universal cluster via a mesh-targeted generator name", testCase{
+		Entry("should access service in another Universal cluster via a mesh-targeted generator name", testCase{
 			address:          func() string { return "http://test-server.svc.kuma-5.mesh-specific.mesh.local:80" },
 			expectedInstance: "uni-test-server",
-			should:           Not(Succeed()),
 		}),
 		Entry("should access service in another Universal cluster", testCase{
 			address:          func() string { return "http://test-server.svc.kuma-5.mesh.local:80" },
