@@ -16,7 +16,6 @@ This MADR will go into the details of:
 
 ## Decision Drivers
 
-* not restricting any useful use-cases
 * flexible enough that we don't limit users in scenarios where it makes sense to configuration in both/one place
 * restrictive enough so that it's hard for the user to "shoot themselves in the foot" (e.g. having squared no. of circuit breakers)
 
