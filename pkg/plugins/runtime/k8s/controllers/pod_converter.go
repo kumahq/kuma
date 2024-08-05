@@ -170,7 +170,10 @@ func (p *PodConverter) dataplaneFor(
 				}
 				backendRefs = append(backendRefs, backendRef)
 			}
-			dataplane.Networking.TransparentProxying.ReachableBackendRefs = backendRefs
+			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			if len(backendRefs) > 0 {
+				dataplane.Networking.TransparentProxying.ReachableBackends.Refs = backendRefs
+			}
 		}
 	}
 

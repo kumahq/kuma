@@ -285,11 +285,13 @@ message Dataplane {
         //  +optional
         map<string, string> labels = 5;
       }
-      // List of reachable backend refs via transparent proxy when running with
+
+      message ReachableBackends { repeated ReachableBackendRef refs = 1; }
+      // Reachable backend via transparent proxy when running with
       // MeshExternalService, MeshService and MeshMultiZoneService. Setting an
-      // explicit list can dramatically improve the performance of the mesh. If
-      // not specified, all services in the mesh are reachable.
-      repeated ReachableBackendRef reachable_backend_refs = 7;
+      // explicit list of refs can dramatically improve the performance of the
+      // mesh. If not specified, all services in the mesh are reachable.
+      ReachableBackends reachable_backends = 7;
     }
 
     // Gateway describes a configuration of the gateway of the data plane proxy.

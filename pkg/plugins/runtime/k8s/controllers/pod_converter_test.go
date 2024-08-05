@@ -297,6 +297,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "28.services-for-pod.yaml",
 			dataplane:      "28.dataplane.yaml",
 		}),
+		Entry("29. Pod with empty reachable backend refs", testCase{
+			pod:            "29.pod.yaml",
+			servicesForPod: "29.services-for-pod.yaml",
+			dataplane:      "29.dataplane.yaml",
+		}),
 		Entry("should create dataplane even if service ports don't match", testCase{
 			pod:            "mismatch-ports.pod.yaml",
 			servicesForPod: "mismatch-ports.services-for-pod.yaml",

@@ -326,15 +326,16 @@ var _ = Describe("Dataplane", func() {
                     kuma.io/service: backend
                     version: "1"
               transparentProxying:
-                reachableBackendRefs:
-                - kind: MeshService
-                  name: a
-                - kind: MeshExternalService
-                  name: es
-                  namespace: es1
-                - kind: MeshService
-                  labels:
-                    kuma.io/test: abc`,
+                reachableBackends:
+                  refs:
+                  - kind: MeshService
+                    name: a
+                  - kind: MeshExternalService
+                    name: es
+                    namespace: es1
+                  - kind: MeshService
+                    labels:
+                      kuma.io/test: abc`,
 		),
 	)
 
@@ -1293,29 +1294,30 @@ var _ = Describe("Dataplane", func() {
                     kuma.io/service: backend
                     version: "1"
               transparentProxying:
-                reachableBackendRefs:
-                - kind: Something
-                  name: first
-                  labels:
-                    kuma.io/test: test
-                - kind: MeshService
-                  name: second
-                  namespace: not-valid
-                  labels:
-                    kuma.io/test: test
-                - kind: MeshService
-                  name: third
-                  labels:
-                    kuma.io/test: test`,
+                reachableBackends:
+                  refs:
+                  - kind: Something
+                    name: first
+                    labels:
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: second
+                    namespace: not-valid
+                    labels:
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: third
+                    labels:
+                      kuma.io/test: test`,
 			expected: `
                 violations:
-                - field: networking.transparentProxing.reachableBackendRefs[0].kind
+                - field: networking.transparentProxing.reachableBackends.refs[0].kind
                   message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
-                - field: networking.transparentProxing.reachableBackendRefs[0].labels
+                - field: networking.transparentProxing.reachableBackends.refs[0].labels
                   message: labels cannot be defined when name is specified
-                - field: networking.transparentProxing.reachableBackendRefs[1].labels
+                - field: networking.transparentProxing.reachableBackends.refs[1].labels
                   message: labels cannot be defined when name is specified
-                - field: networking.transparentProxing.reachableBackendRefs[2].labels
+                - field: networking.transparentProxing.reachableBackends.refs[2].labels
                   message: labels cannot be defined when name is specified`,
 		}),
 	)

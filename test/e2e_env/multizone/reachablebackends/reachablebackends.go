@@ -106,6 +106,9 @@ labels:
   reachable: "true"
   test-name: mmzsreachable
 spec:
+  ports:
+  - port: 80
+    appProtocol: http
   selector:
     meshService:
       matchLabels:
@@ -121,6 +124,9 @@ labels:
   reachable: "false"
   test-name: mmzsreachable
 spec:
+  ports:
+  - port: 80
+    appProtocol: http
   selector:
     meshService:
       matchLabels:
@@ -154,6 +160,13 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 				testserver.WithReachableBackends(reachableBackends),
+				testserver.WithReachableServices("non-existing"), // non existing so we don't get non targetRef outbounds
+			)).
+			Install(testserver.Install(
+				testserver.WithName("client-server-no-access"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+				testserver.WithReachableBackends("{}"),
 				testserver.WithReachableServices("non-existing"), // non existing so we don't get non targetRef outbounds
 			)).
 			Install(testserver.Install(
@@ -334,6 +347,28 @@ spec:
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(6)))
+		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
+
+		Consistently(func(g Gomega) {
+			// when trying to connect to non-reachable services via Kuma DNS
+			response, err := client.CollectFailure(
+				multizone.KubeZone1, "client-server-no-access", "second-test-server.mesh",
+				client.FromKubernetesPod(namespace, "client-server-no-access"),
+			)
+			// then it fails because Kuma DP has no such DNS
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Equal(6))
+		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
+
+		Consistently(func(g Gomega) {
+			// when trying to connect to non-reachable service via Kubernetes DNS
+			response, err := client.CollectFailure(
+				multizone.KubeZone1, "client-server-no-access", "second-test-server.reachable-backends.svc.cluster.local",
+				client.FromKubernetesPod(namespace, "client-server-no-access"),
+			)
+			// then it fails because we don't encrypt traffic to unknown destination in the mesh
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
 		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 	})
 }

@@ -18,6 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -138,14 +139,14 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 			}
 		} else {
-			if len(reachableBackends) != 0 {
+			if reachableBackends != nil {
 				backendKey := xds_context.BackendKey{
 					Kind: outbound.BackendRef.Kind,
 					Name: outbound.BackendRef.Name,
 					Port: outbound.BackendRef.Port,
 				}
 				// check if there is an entry with specific port or without port
-				if !reachableBackends[backendKey] && !reachableBackends[xds_context.BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
+				if !pointer.Deref(reachableBackends)[backendKey] && !pointer.Deref(reachableBackends)[xds_context.BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
 					continue

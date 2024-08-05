@@ -100,9 +100,12 @@ type BackendKey struct {
 
 type ReachableBackends map[BackendKey]bool
 
-func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) ReachableBackends {
+func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
+	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
+		return nil
+	}
 	reachableBackends := ReachableBackends{}
-	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.ReachableBackendRefs {
+	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
 		key := BackendKey{Kind: reachableBackend.Kind}
 		name := ""
 		if reachableBackend.Name != "" {
@@ -130,7 +133,7 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 			reachableBackends[key] = true
 		}
 	}
-	return reachableBackends
+	return &reachableBackends
 }
 
 func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[string]int {

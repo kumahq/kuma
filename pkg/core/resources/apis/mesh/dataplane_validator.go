@@ -265,9 +265,9 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 
 func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_TransparentProxying) validators.ValidationError {
 	var result validators.ValidationError
-	path := validators.RootedAt("reachableBackendRefs")
-	if tp != nil && tp.ReachableBackendRefs != nil {
-		for i, backendRef := range tp.ReachableBackendRefs {
+	path := validators.RootedAt("reachableBackends.refs")
+	if tp != nil && tp.ReachableBackends != nil && tp.ReachableBackends.Refs != nil {
+		for i, backendRef := range tp.ReachableBackends.Refs {
 			switch backendRef.Kind {
 			case meshMultiZoneServiceKind, meshServiceKind, meshExternalServiceKind:
 			default:

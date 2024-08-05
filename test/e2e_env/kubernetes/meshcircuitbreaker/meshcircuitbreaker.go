@@ -82,7 +82,7 @@ func MeshCircuitBreaker() {
 		Expect(kubernetes.Cluster.Install(YamlK8s(config))).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+		time.Sleep(1 * time.Hour)
 			return client.CollectResponsesAndFailures(
 				kubernetes.Cluster,
 				"demo-client",
