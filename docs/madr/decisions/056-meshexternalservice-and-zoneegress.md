@@ -383,6 +383,15 @@ spec:
     default: ...
 ```
 
+##### Empty `proxyType`
+
+Currently, egress is not selected by `kind: Mesh` targetRef, but missing `proxyType` means both `gateway` and `sidecar`.
+We don't want to assume empty `proxyType` selecting `egress` because we want greater control over what is configured and to make sure user is aware that egress is affected.
+To avoid breaking changes now and in the future we can extend this more easily.
+
+We will require `proxyType: egress` in validation:
+- on top level `MeshExternalService`
+- on to egress policies
 
 #### Only on the egress
 
