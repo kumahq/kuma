@@ -76,15 +76,13 @@ const (
 	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
 	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
-	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
-	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
-	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
-	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
-	KumaTrafficDropInvalidPackets             = "traffic.kuma.io/drop-invalid-packets"
-	KumaTrafficIptablesLogs                   = "traffic.kuma.io/iptables-logs"
-	KumaTrafficExcludeInboundIPs              = "traffic.kuma.io/exclude-inbound-ips"
-	KumaTrafficExcludeOutboundIPs             = "traffic.kuma.io/exclude-outbound-ips"
+	KumaTrafficExcludeInboundPorts         = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts        = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs = "traffic.kuma.io/exclude-outbound-ports-for-uids"
+	KumaTrafficDropInvalidPackets          = "traffic.kuma.io/drop-invalid-packets"
+	KumaTrafficIptablesLogs                = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs           = "traffic.kuma.io/exclude-inbound-ips"
+	KumaTrafficExcludeOutboundIPs          = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
@@ -117,10 +115,6 @@ const (
 	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 
-	// ManagedBy points to the Service that a MeshService is derived from. If
-	// it's converted from a Kubernetes Service, it has the value
-	// "k8s-controller"
-	ManagedBy = "kuma.io/managed-by"
 	// KumaServiceName points to the Service that a MeshService is derived from
 	KumaServiceName = "k8s.kuma.io/service-name"
 

@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -30,8 +29,6 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
-
-var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
 	rm                manager.ReadOnlyResourceManager

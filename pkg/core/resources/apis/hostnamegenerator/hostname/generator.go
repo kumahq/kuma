@@ -104,6 +104,17 @@ func sortGenerators(generators []*hostnamegenerator_api.HostnameGeneratorResourc
 	return sorted
 }
 
+func sortResources(resources []model.Resource) {
+	slices.SortFunc(resources, func(a, b model.Resource) int {
+		if a, b := a.GetMeta().GetCreationTime(), b.GetMeta().GetCreationTime(); a.Before(b) {
+			return -1
+		} else if a.After(b) {
+			return 1
+		}
+		return strings.Compare(a.GetMeta().GetName(), b.GetMeta().GetName())
+	})
+}
+
 func (g *Generator) generateHostnames(ctx context.Context) error {
 	generators := &hostnamegenerator_api.HostnameGeneratorResourceList{}
 	if err := g.resManager.List(ctx, generators); err != nil {
@@ -118,18 +129,21 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 		conditions []hostnamegenerator_api.Condition
 	}
 	for _, generatorType := range g.generators {
-		resources, err := generatorType.GetResources(ctx)
+		resourceList, err := generatorType.GetResources(ctx)
 		if err != nil {
 			g.logger.Error(err, "couldn't get resources", "type", generatorType)
 			continue
 		}
+		resources := resourceList.GetItems()
+		sortResources(resources)
+
 		type meshName string
 		type serviceName string
 		type hostname string
 		generatedHostnames := map[meshName]map[hostname]serviceName{}
 		newStatuses := map[serviceKey]map[string]status{}
 		for _, generator := range sortGenerators(generators.Items) {
-			for _, service := range resources.GetItems() {
+			for _, service := range resources {
 				serviceKey := serviceKey{
 					name: service.GetMeta().GetName(),
 					mesh: service.GetMeta().GetMesh(),
@@ -155,7 +169,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 						if svcName, ok := generatedHostnames[meshName(serviceKey.mesh)][hostname(generated)]; ok && string(svcName) != serviceKey.name {
 							generationConditionStatus = kube_meta.ConditionFalse
 							reason = hostnamegenerator_api.CollisionReason
-							message = fmt.Sprintf("Hostname collision with %s: %s", resources.GetItemType(), serviceKey.name)
+							message = fmt.Sprintf("Hostname collision with %s: %s", resourceList.GetItemType(), serviceKey.name)
 							generated = ""
 						} else {
 							generationConditionStatus = kube_meta.ConditionTrue
@@ -186,7 +200,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 				newStatuses[serviceKey] = generatorStatuses
 			}
 		}
-		for _, service := range resources.GetItems() {
+		for _, service := range resources {
 			statuses := newStatuses[serviceKey{
 				name: service.GetMeta().GetName(),
 				mesh: service.GetMeta().GetMesh(),
@@ -219,14 +233,14 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
 			if changedErr != nil {
-				g.logger.Error(err, "couldn't check status", "type", resources.GetItemType())
+				g.logger.Error(err, "couldn't check status", "type", resourceList.GetItemType())
 				continue
 			}
 			if !changed {
 				continue
 			}
 			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
-				g.logger.Error(err, "couldn't update status", "type", resources.GetItemType())
+				g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())
 				continue
 			}
 		}

@@ -26,6 +26,8 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
+var outboundLog = core.Log.WithName("xds").WithName("outbound")
+
 func BuildExternalServicesEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
@@ -129,7 +131,7 @@ func BuildEdsEndpointMap(
 	}
 
 	// it has to be last because it reuses endpoints for other cases
-	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices)
+	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices, localZone)
 
 	return outbound
 }
@@ -138,6 +140,7 @@ func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
 	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	localZone string,
 ) {
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
@@ -145,7 +148,13 @@ func fillMeshMultiZoneServices(
 			if !ok {
 				continue
 			}
-			for _, port := range mzSvc.Status.Ports {
+			if !ms.IsLocalMeshService(localZone) && ms.Spec.State != meshservice_api.StateAvailable {
+				// we don't want to load balance to zones that has no available endpoints.
+				// we check this only for non-local services, because if service is unavailable in the local zone it has no endpoints.
+				// if a new local endpoint just become healthy, we can add it immediately without waiting for state to be reconciled.
+				continue
+			}
+			for _, port := range mzSvc.Spec.Ports {
 				serviceName := mzSvc.DestinationName(port.Port)
 
 				existingEndpoints := outbound[ms.DestinationName(port.Port)]
@@ -605,7 +614,7 @@ func fillExternalServicesReachableFromZone(
 		if mes.IsReachableFromZone(zone) {
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 			if err != nil {
-				core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 				return
 			}
 		}
@@ -628,7 +637,7 @@ func fillExternalServicesOutbounds(
 	for _, mes := range meshExternalServices {
 		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 		if err != nil {
-			core.Log.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
 		}
 	}
 }
@@ -776,7 +785,7 @@ func createExternalServiceEndpoint(
 	service := externalService.Spec.GetService()
 	externalServiceEndpoint, err := NewExternalServiceEndpoint(ctx, externalService, mesh, loader, zone)
 	if err != nil {
-		core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
+		outboundLog.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 		return
 	}
 	outbound[service] = append(outbound[service], *externalServiceEndpoint)

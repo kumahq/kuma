@@ -36,7 +36,7 @@ func TestPlugin() {
 				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
 			).
 			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
-			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, false, "example.kuma.io", "test-server", 8080))).
+			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, "edge-gateway", false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(universal.Cluster)).To(Succeed())

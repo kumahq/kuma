@@ -41,6 +41,29 @@ spec:
             description: Spec is the specification of the Kuma MeshMultiZoneService
               resource.
             properties:
+              ports:
+                description: Ports is a list of ports from selected MeshServices
+                items:
+                  properties:
+                    appProtocol:
+                      default: tcp
+                      description: Protocol identifies a protocol supported by a service.
+                      type: string
+                    name:
+                      type: string
+                    port:
+                      format: int32
+                      type: integer
+                    targetPort:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - port
+                  type: object
+                minItems: 1
+                type: array
               selector:
                 description: Selector is a way to select multiple MeshServices
                 properties:
@@ -156,29 +179,6 @@ spec:
                       type: string
                   required:
                   - name
-                  type: object
-                type: array
-              ports:
-                description: Ports is an aggregated distinct list of ports from selected
-                  MeshServices
-                items:
-                  properties:
-                    appProtocol:
-                      default: tcp
-                      description: Protocol identifies a protocol supported by a service.
-                      type: string
-                    name:
-                      type: string
-                    port:
-                      format: int32
-                      type: integer
-                    targetPort:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      x-kubernetes-int-or-string: true
-                  required:
-                  - port
                   type: object
                 type: array
               vips:

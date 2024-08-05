@@ -7248,8 +7248,6 @@ components:
                       value:
                         description: Value for the specified Type.
                         type: string
-                    required:
-                      - port
                     type: object
                   type: array
                 passthroughMode:
@@ -11109,6 +11107,29 @@ components:
         spec:
           description: Spec is the specification of the Kuma MeshMultiZoneService resource.
           properties:
+            ports:
+              description: Ports is a list of ports from selected MeshServices
+              items:
+                properties:
+                  appProtocol:
+                    default: tcp
+                    description: Protocol identifies a protocol supported by a service.
+                    type: string
+                  name:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  targetPort:
+                    anyOf:
+                      - type: integer
+                      - type: string
+                    x-kubernetes-int-or-string: true
+                required:
+                  - port
+                type: object
+              minItems: 1
+              type: array
             selector:
               description: Selector is a way to select multiple MeshServices
               properties:
@@ -11246,30 +11267,6 @@ components:
                   - name
                 type: object
               type: array
-            ports:
-              description: >-
-                Ports is an aggregated distinct list of ports from selected
-                MeshServices
-              items:
-                properties:
-                  appProtocol:
-                    default: tcp
-                    description: Protocol identifies a protocol supported by a service.
-                    type: string
-                  name:
-                    type: string
-                  port:
-                    format: int32
-                    type: integer
-                  targetPort:
-                    anyOf:
-                      - type: integer
-                      - type: string
-                    x-kubernetes-int-or-string: true
-                required:
-                  - port
-                type: object
-              type: array
             vips:
               description: VIPs is a list of assigned Kuma VIPs.
               items:
@@ -11372,6 +11369,18 @@ components:
                     type: string
                   type: object
               type: object
+            state:
+              description: >-
+                State of MeshService. Available if there is at least one healthy
+                endpoint. Otherwise, Unavailable.
+
+                It's used for cross zone communication to check if we should
+                send traffic to it, when MeshService is aggregated into
+                MeshMultiZoneService.
+              enum:
+                - Available
+                - Unavailable
+              type: string
           type: object
         status:
           description: Status is the current status of the Kuma MeshService resource.
@@ -11392,6 +11401,23 @@ components:
                     type: string
                 type: object
               type: array
+            dataplaneProxies:
+              description: Data plane proxies statistics selected by this MeshService.
+              properties:
+                connected:
+                  description: >-
+                    Number of data plane proxies connected to the zone control
+                    plane
+                  type: integer
+                healthy:
+                  description: >-
+                    Number of data plane proxies with all healthy inbounds
+                    selected by this MeshService.
+                  type: integer
+                total:
+                  description: Total number of data plane proxies.
+                  type: integer
+              type: object
             hostnameGenerators:
               items:
                 properties:

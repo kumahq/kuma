@@ -28,6 +28,7 @@ items:
       dataplaneRef:
         name: example-1.demo
   status:
+    dataplaneProxies: {}
     tls: {}
     vips:
     - ip: 192.168.0.5
@@ -60,6 +61,7 @@ items:
       dataplaneRef:
         name: example-2.demo
   status:
+    dataplaneProxies: {}
     tls: {}
     vips:
     - ip: 192.168.0.6
@@ -90,6 +92,7 @@ items:
       dataplaneRef:
         name: very-long-very-long-very-long-very-long-very-long-v.demo
   status:
+    dataplaneProxies: {}
     tls: {}
     vips:
     - ip: 192.168.0.7

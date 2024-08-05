@@ -798,7 +798,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])) by (envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_xx{mesh=\"$mesh\",kuma_io_service=\"$source_service\", envoy_cluster_name=\"$destination_cluster\"}[$__rate_interval])) by (envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{envoy_response_code_class}}xx",

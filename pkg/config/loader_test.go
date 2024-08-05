@@ -278,6 +278,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
 			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
+			Expect(cfg.Defaults.SkipHostnameGenerators).To(BeTrue())
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -378,6 +379,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
 			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
 			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
+			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
+			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
 
 			Expect(cfg.CoreResources.Enabled).To(Equal([]string{"meshservice"}))
 			Expect(cfg.CoreResources.Status.MeshServiceInterval.Duration).To(Equal(6 * time.Second))
@@ -637,6 +640,7 @@ dnsServer:
   serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
+  skipHostnameGenerators: true
   skipTenantResources: true
   createMeshRoutingResources: true
 diagnostics:
@@ -779,6 +783,9 @@ ipam:
   meshMultiZoneService:
     cidr: 253.0.0.0/8
   allocationInterval: 7s
+meshService:
+  generationInterval: 8s
+  deletionGracePeriod: 11s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -970,6 +977,7 @@ ipam:
 				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
+				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
 				"KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES":                                              "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
@@ -1065,6 +1073,8 @@ ipam:
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
 				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
+				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
+				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
 			},
 			yamlFileConfig: "",
 		}),

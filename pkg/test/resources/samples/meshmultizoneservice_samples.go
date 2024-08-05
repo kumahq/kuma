@@ -7,9 +7,11 @@ import (
 )
 
 func MeshMultiZoneServiceBackendBuilder() *builders.MeshMultiZoneServiceBuilder {
-	return builders.MeshMultiZoneService().WithServiceLabelSelector(map[string]string{
-		mesh_proto.DisplayName: "backend",
-	})
+	return builders.MeshMultiZoneService().
+		WithServiceLabelSelector(map[string]string{
+			mesh_proto.DisplayName: "backend",
+		}).
+		AddIntPort(builders.FirstInboundPort, builders.FirstInboundPort, "http")
 }
 
 func MeshMultiZoneServiceBackend() *meshmzservice_api.MeshMultiZoneServiceResource {

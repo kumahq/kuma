@@ -144,12 +144,11 @@ var _ = Context("kumactl install transparent proxy", func() {
 		Entry("should generate defaults with outbound exclude ports", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "root",
-				"--exclude-outbound-tcp-ports-for-uids", "1900,1902,1000-2000:106-108",
-				"--exclude-outbound-tcp-ports-for-uids", "2900,2902,3000-5000:203",
-				"--exclude-outbound-udp-ports-for-uids", "3900,3902,4000-6000:303",
+				"--exclude-outbound-ports-for-uids", "tcp:1900,1902,1000-2000:106-108",
+				"--exclude-outbound-ports-for-uids", "tcp:2900,2902,3000-5000:203",
+				"--exclude-outbound-ports-for-uids", "udp:3900,3902,4000-6000:303",
 			},
-			errorMatcher: Equal("# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead\n# [WARNING] flag --exclude-outbound-udp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead\n"),
-			goldenFile:   "install-transparent-proxy.excludedports.txt",
+			goldenFile: "install-transparent-proxy.excludedports.txt",
 		}),
 		Entry("should generate defaults with outbound exclude ports for uids wildcard", testCase{
 			extraArgs: []string{
