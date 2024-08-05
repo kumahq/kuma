@@ -121,6 +121,7 @@ In paragraphs below I go deeper into each policy.
 
 MeshAccessLog is not applied on egress at all, and we don't provide a way to configure it.
 I don't see any reason not to do this though.
+To define a specific mesh we can use `kuma.io/mesh` label.
 
 ##### MeshCircuitBreaker
 
