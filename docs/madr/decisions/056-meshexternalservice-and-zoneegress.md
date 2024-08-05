@@ -38,22 +38,22 @@ Chosen option: egress only
 
 Chosen option for configuration placement:
 
-| Policy                    | Implementation on                                           |
-|---------------------------|-------------------------------------------------------------|
-| MeshAccessLog             | Sidecar (to), Egress (to + proxyType: egress)               |
-| MeshCircuitBreaker        | Egress (to + proxyType: egress)                             |
-| MeshFaultInjection        | Egress (kind: MeshExternalService, from, proxyType: egress) |
-| MeshHealthCheck           | Egress (to + proxyType: egress)                             |
-| MeshMetric                | Out of scope (single item)                                  |
-| MeshProxyPatch            | Out of scope (single item)                                  |
-| MeshRateLimit             | Egress (kind: MeshExternalService, from, proxyType: egress) |
-| MeshRetry                 | Sidecar (to)                                                |
-| MeshTimeout               | Sidecar (to), Egress (to + proxyType: egress)               |
-| MeshTrace                 | Out of scope (single item)                                  |
-| MeshTrafficPermission     | Egress (kind: MeshExternalService, from, proxyType: egress) |
-| MeshLoadBalancingStrategy | Egress (to + proxyType: egress)                             |
-| MeshTCPRoute              | Sidecar (to)                                                |
-| MeshHTTPRoute             | Sidecar (to)                                                |
+| Policy                    | Implementation on                                               |
+|---------------------------|-----------------------------------------------------------------|
+| MeshAccessLog             | Sidecar (to), Egress (to + proxyType: ["egress"])               |
+| MeshCircuitBreaker        | Egress (to + proxyType: ["egress"])                             |
+| MeshFaultInjection        | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
+| MeshHealthCheck           | Egress (to + proxyType: ["egress"])                             |
+| MeshMetric                | Out of scope (single item)                                      |
+| MeshProxyPatch            | Out of scope (single item)                                      |
+| MeshRateLimit             | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
+| MeshRetry                 | Sidecar (to)                                                    |
+| MeshTimeout               | Sidecar (to), Egress (to + proxyType: ["egress"])               |
+| MeshTrace                 | Out of scope (single item)                                      |
+| MeshTrafficPermission     | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
+| MeshLoadBalancingStrategy | Egress (to + proxyType: ["egress"])                             |
+| MeshTCPRoute              | Sidecar (to)                                                    |
+| MeshHTTPRoute             | Sidecar (to)                                                    |
 
 ## Pros and Cons of the Options
 
@@ -299,7 +299,7 @@ spec:
   targetRef:
     kind: MeshExternalService
     name: httpbin
-    proxyType: egress
+    proxyType: ["egress"]
   from:
     - targetRef:
         kind: MeshService
@@ -350,7 +350,7 @@ name: circuit-breaker
 spec:
   targetRef:
     kind: Mesh
-    proxyType: egress
+    proxyType: ["egress"]
   to:
     - targetRef:
         kind: MeshExternalService
@@ -374,7 +374,7 @@ kind: MeshAccessLog
 spec:
   targetRef:
     kind: Mesh
-    proxyType: egress
+    proxyType: ["egress"]
   to:
   - targetRef:
       kind: MeshExternalService
@@ -388,7 +388,7 @@ Currently, egress is not selected by `kind: Mesh` targetRef, but missing `proxyT
 We don't want to assume empty `proxyType` selecting `egress` because we want greater control over what is configured and to make sure user is aware that egress is affected.
 To avoid breaking changes now and in the future we can extend this more easily.
 
-We will require `proxyType: egress` in validation:
+We will require `proxyType: ["egress"]` in validation:
 - on top level `MeshExternalService`
 - on to egress policies
 
