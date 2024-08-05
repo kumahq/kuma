@@ -1050,7 +1050,7 @@ func (c *K8sCluster) GetLBIngressIP(serviceName, namespace string) (string, erro
 	}
 	ingress := service.Status.LoadBalancer.Ingress
 	if len(ingress) == 0 {
-		return "", errors.New("ingress not found")
+		return "", errors.New(fmt.Sprintf("ingress information not found on the load balancer service '%s'", serviceName))
 	}
 	return ingress[0].IP, nil
 }
