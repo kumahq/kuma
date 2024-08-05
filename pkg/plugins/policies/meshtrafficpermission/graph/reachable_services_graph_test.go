@@ -41,8 +41,8 @@ var _ = Describe("Reachable Services Graph", func() {
 					_, fromAll := given.expectedFromAll[to]
 					_, conn := given.expectedConnections[from][to]
 					Expect(g.CanReach(
-						map[string]string{core_rules.ResourceNameTag: from},
-						map[string]string{core_rules.ResourceNameTag: to},
+						map[string]string{mesh_proto.ServiceTag: from},
+						map[string]string{mesh_proto.ServiceTag: to},
 					)).To(Equal(fromAll || conn))
 				}
 			}
@@ -211,12 +211,12 @@ var _ = Describe("Reachable Services Graph", func() {
 
 		// then
 		Expect(graph.CanReach(
-			map[string]string{core_rules.ResourceNameTag: "b", "version": "v1"},
-			map[string]string{core_rules.ResourceNameTag: "a"},
+			map[string]string{mesh_proto.ServiceTag: "b", "version": "v1"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeTrue())
 		Expect(graph.CanReach(
-			map[string]string{core_rules.ResourceNameTag: "b", "version": "v2"},
-			map[string]string{core_rules.ResourceNameTag: "a"},
+			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
+			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeFalse())
 	})
 

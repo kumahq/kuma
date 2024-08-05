@@ -224,7 +224,7 @@ func MeshSubset() Subset {
 // this can be removed after we start using MeshService by default, with policies on namespace
 func DeprecatedMeshService(name string) Subset {
 	return Subset{{
-		Key: ResourceNameTag, Value: name,
+		Key: mesh_proto.ServiceTag, Value: name,
 	}}
 }
 
