@@ -160,14 +160,12 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 				testserver.WithReachableBackends(reachableBackends),
-				testserver.WithReachableServices("non-existing"), // non existing so we don't get non targetRef outbounds
 			)).
 			Install(testserver.Install(
 				testserver.WithName("client-server-no-access"),
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 				testserver.WithReachableBackends("{}"),
-				testserver.WithReachableServices("non-existing"), // non existing so we don't get non targetRef outbounds
 			)).
 			Install(testserver.Install(
 				testserver.WithName("first-test-server"),

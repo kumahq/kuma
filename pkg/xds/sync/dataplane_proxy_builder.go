@@ -125,6 +125,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.BackendRef == nil {
+			if reachableBackends != nil {
+				continue
+			}
 			service := outbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {
@@ -139,6 +142,9 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 			}
 		} else {
+			if len(reachableServices) != 0 {
+				continue
+			}
 			if reachableBackends != nil {
 				backendKey := xds_context.BackendKey{
 					Kind: outbound.BackendRef.Kind,

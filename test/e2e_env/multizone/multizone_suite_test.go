@@ -77,5 +77,5 @@ var (
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
-	_ = FDescribe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
+	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 )
