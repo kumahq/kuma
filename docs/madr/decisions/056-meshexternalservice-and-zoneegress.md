@@ -37,7 +37,24 @@ Configuration placement:
 
 Chosen option: egress only
 
-Chosen option for configuration placement: for outbound policies on the sidecar, for inbound policies on egress
+Chosen option for configuration placement:
+
+| Policy                    | Implementation on                                           |
+|---------------------------|-------------------------------------------------------------|
+| MeshAccessLog             | Sidecar (to), Egress (to + proxyType: egress)               |
+| MeshCircuitBreaker        | Egress (to + proxyType: egress)                             |
+| MeshFaultInjection        | Egress (kind: MeshExternalService, from, proxyType: egress) |
+| MeshHealthCheck           | Egress (to + proxyType: egress)                             |
+| MeshMetric                | Out of scope (single item)                                  |
+| MeshProxyPatch            | Out of scope (single item)                                  |
+| MeshRateLimit             | Egress (kind: MeshExternalService, from, proxyType: egress) |
+| MeshRetry                 | Sidecar (to)                                                |
+| MeshTimeout               | Sidecar (to), Egress (to + proxyType: egress)               |
+| MeshTrace                 | Out of scope (single item)                                  |
+| MeshTrafficPermission     | Egress (kind: MeshExternalService, from, proxyType: egress) |
+| MeshLoadBalancingStrategy | Egress (to + proxyType: egress)                             |
+| MeshTCPRoute              | Sidecar (to)                                                |
+| MeshHTTPRoute             | Sidecar (to)                                                |
 
 ## Pros and Cons of the Options
 
@@ -269,70 +286,103 @@ Configuring outbound policies on the sidecar avoids the problem with different c
 
 ##### How to configure it
 
-###### `to`
+###### From ONLY policy (policies that do not have to)
 
-In `to` section we want to capture all the traffic going `to` a `MeshExternalService.
-
-The situation is pretty straightforward:
-
-```yaml
-kind: MeshTimeout
-spec:
-  targetRef:
-    kind: Mesh
-    proxyType: sidecar # just to be explicit that it's on the sidecar? see section 'Configurable where it makes sense on both sidecar and egress, predefined where only one makes sense'
-  to:
-  - targetRef:
-      kind: MeshExternalService
-    default:
-      idleTimeout: 20s
-```
-
-###### `from`
-
-It never makes sense to put `MeshExternalService` in `from` section because traffic never comes from `MeshExternalService`.
-
-###### Top level
-
-We want to have the option to configure inbound policies for `MeshExternalService`.
-
-One option is to use `kind: Mesh`, `proxyType` + `sectionName` just like in [MeshService](https://github.com/kumahq/kuma/blob/7e69b872404251d4e5cd766225fdd1b821cc6c5d/docs/madr/decisions/046-meshservice-policy-matching.md?plain=1#L192):
+Policies:
+- MeshTrafficPermission
+- MeshRateLimit
+- MeshGlobalRateLimit
+- MeshFaultInjection
 
 ```yaml
-kind: MeshAccessLog
-spec:
-  targetRef:
-    kind: Mesh
-    proxyType: egress # when it's egress it's MES name
-    sectionName: httpbin
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        backends:
-          - type: File
-            file:
-              path: /tmp/access.log
-```
-
-Another option is to use `MeshExternalService` as a top level target + `proxyType: egress` + `name`.
-
-```yaml
-kind: MeshAccessLog
+kind: MeshTrafficPermission
 spec:
   targetRef:
     kind: MeshExternalService
-    proxyType: egress
     name: httpbin
+    proxyType: egress
   from:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        action: Allow
     - targetRef:
         kind: Mesh
       default:
-        backends:
-          - type: File
-            file:
-              path: /tmp/access.log
+        action: Deny
 ```
+
+###### `To` policy on sidecar
+
+Policies:
+- MeshRetry
+- MeshHTTPRoute
+- MeshTCPRoute
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: backend
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: backend
+      default:
+        http:
+          numRetries: 10
+```
+
+###### `To` policy on egress
+
+The following policy we're going to configure on Egerss: 
+- `MeshCircuitBreaker` - we don't want to cut out whole egress from traffic only faulty instance of MeshExternalService
+- `MeshLoadBalancingStrategy` - (we only care about `default.loadBalancer` portion) we don't want to change the loadbalancing to Egress but to the underlying MeshExternalServices
+- `MeshHealthCheck` - we don't want to be health checking Egress but the underlying MeshExternalServices
+
+```yaml
+type: MeshCircuitBreaker
+mesh: default
+name: circuit-breaker
+spec:
+  targetRef:
+    kind: Mesh
+    proxyType: egress
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: backend
+      default:
+        outlierDetection:
+          detectors:
+            totalFailures:
+              consecutive: 10
+```
+
+###### `To` and `From` policies
+
+Policies:
+- MeshAccessLog
+- MeshTimeout
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  targetRef:
+    kind: Mesh
+    proxyType: egress
+  to:
+  - targetRef:
+      kind: MeshExternalService
+      name: backend
+    default: ...
+```
+
 
 #### Only on the egress
 
