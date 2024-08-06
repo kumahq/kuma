@@ -31,8 +31,79 @@ type Executable struct {
 	prefix string
 }
 
+// verifyIptablesMode checks if the provided 'path' corresponds to an iptables
+// executable operating in the expected mode.
+//
+// This function verifies the mode by:
+//  1. Executing the iptables command specified by 'path' with the `--version`
+//     argument to obtain the version output.
+//  2. Parsing the standard output using the `consts.IptablesModeRegex`.
+//     - The regex is designed to extract the mode string from the output (e.g.,
+//     "legacy" or "nf_tables").
+//     - If a match is found, the extracted mode is compared with the expected
+//     mode (`mode`) using the `consts.IptablesModeMap`.
+//  3. Returning:
+//     - `true` if the extracted mode matches the expected mode.
+//     - `false` if the command execution fails, parsing fails, or the extracted
+//     mode doesn't match the expected mode.
+//
+// Special Considerations:
+// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
+// flag and exhibit the following behaviors:
+//   - The command exits with a non-zero code and a warning is written to
+//     stderr.
+//   - A warning is written to stderr but the command exits with code 0.
+//
+// In these cases, the function assumes the iptables mode is legacy
+// (`consts.IptablesModeLegacy`) due to the age of these versions.
+func (c Executable) verifyIptablesMode(ctx context.Context, l Logger, cniMode bool, path string) bool {
+	isVersionMissing := func(output string) bool {
+		return strings.Contains(
+			output,
+			fmt.Sprintf("unrecognized option '%s'", FlagVersion),
+		)
+	}
+
+	stdout, stderr, err := execCmd(ctx, l, cniMode, c.NeedLock(), path, FlagVersion)
+	if err != nil {
+		return isVersionMissing(err.Error()) && c.mode == IptablesModeLegacy
+	}
+
+	if stderr != nil && stderr.Len() > 0 && isVersionMissing(stderr.String()) {
+		return c.mode == IptablesModeLegacy
+	}
+
+	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) == 2 {
+		return slices.Contains(IptablesModeMap[c.mode], matched[1])
+	}
+
+	return false
+}
+
+func (c Executable) NeedLock() bool {
+	// iptables-nft does not use the xtables lock, so no lock is needed for this
+	// mode
+	if c.mode == IptablesModeNft {
+		return false
+	}
+
+	// Only iptables and iptables-restore executables need a lock because they
+	// perform write operations
+	switch c.name {
+	case "", "restore":
+		return true
+	}
+
+	// For all other cases (such as iptables-save), no lock is needed as they
+	// don't perform write operations
+	return false
+}
+
 func (c Executable) Initialize(
 	ctx context.Context,
+	l Logger,
+	cniMode bool,
 	args []string,
 ) (InitializedExecutable, error) {
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
@@ -45,10 +116,12 @@ func (c Executable) Initialize(
 
 	for _, path := range paths {
 		if found := findPath(path); found != "" {
-			if verifyIptablesMode(ctx, path, c.mode) {
+			if c.verifyIptablesMode(ctx, l, cniMode, path) {
 				return InitializedExecutable{
 					Executable: c,
 					Path:       path,
+					logger:     l,
+					cniMode:    cniMode,
 					args:       args,
 				}, nil
 			}
@@ -63,7 +136,9 @@ func (c Executable) Initialize(
 
 type InitializedExecutable struct {
 	Executable
-	Path string
+	Path    string
+	logger  Logger
+	cniMode bool
 
 	// args holds a set of default parameters or flags that are automatically
 	// added to every execution of this executable. These parameters are
@@ -77,7 +152,7 @@ func (c InitializedExecutable) Exec(
 	ctx context.Context,
 	args ...string,
 ) (*bytes.Buffer, *bytes.Buffer, error) {
-	return execCmd(ctx, c.Path, append(c.args, args...)...)
+	return execCmd(ctx, c.logger, c.cniMode, c.NeedLock(), c.Path, append(c.args, args...)...)
 }
 
 type ExecutablesIPvX struct {
@@ -109,18 +184,18 @@ func (c ExecutablesIPvX) Initialize(
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
-	iptables, err := c.Iptables.Initialize(ctx, nil)
+	iptables, err := c.Iptables.Initialize(ctx, l, cfg.CNIMode, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	iptablesSave, err := c.IptablesSave.Initialize(ctx, nil)
+	iptablesSave, err := c.IptablesSave.Initialize(ctx, l, cfg.CNIMode, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
 	restoreArgs := buildRestoreArgs(cfg, c.IptablesRestore.mode)
-	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, restoreArgs)
+	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, l, cfg.CNIMode, restoreArgs)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -482,60 +557,6 @@ func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
 	return flags
 }
 
-// verifyIptablesMode checks if the provided 'path' corresponds to an iptables
-// executable operating in the expected mode.
-//
-// This function verifies the mode by:
-//  1. Executing the iptables command specified by 'path' with the `--version`
-//     argument to obtain the version output.
-//  2. Parsing the standard output using the `consts.IptablesModeRegex`.
-//     - The regex is designed to extract the mode string from the output (e.g.,
-//     "legacy" or "nf_tables").
-//     - If a match is found, the extracted mode is compared with the expected
-//     mode (`mode`) using the `consts.IptablesModeMap`.
-//  3. Returning:
-//     - `true` if the extracted mode matches the expected mode.
-//     - `false` if the command execution fails, parsing fails, or the extracted
-//     mode doesn't match the expected mode.
-//
-// Special Considerations:
-// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
-// flag and exhibit the following behaviors:
-//   - The command exits with a non-zero code and a warning is written to
-//     stderr.
-//   - A warning is written to stderr but the command exits with code 0.
-//
-// In these cases, the function assumes the iptables mode is legacy
-// (`consts.IptablesModeLegacy`) due to the age of these versions.
-func verifyIptablesMode(
-	ctx context.Context,
-	path string,
-	mode IptablesMode,
-) bool {
-	isVersionMissing := func(output string) bool {
-		return strings.Contains(
-			output,
-			fmt.Sprintf("unrecognized option '%s'", FlagVersion),
-		)
-	}
-
-	stdout, stderr, err := execCmd(ctx, path, FlagVersion)
-	if err != nil {
-		return isVersionMissing(err.Error()) && mode == IptablesModeLegacy
-	}
-
-	if stderr != nil && stderr.Len() > 0 && isVersionMissing(stderr.String()) {
-		return mode == IptablesModeLegacy
-	}
-
-	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
-	if len(matched) == 2 {
-		return slices.Contains(IptablesModeMap[mode], matched[1])
-	}
-
-	return false
-}
-
 // getPathsToSearchForExecutable generates a list of potential paths for the
 // given executable considering both versions with and without the mode suffix.
 //
@@ -632,44 +653,6 @@ func joinNonEmptyWithHyphen(elems ...string) string {
 	)
 }
 
-// execCmd executes a command specified by 'path' and its arguments ('args')
-// within the provided context ('ctx').
-//   - Success: If the command executes successfully, the captured standard
-//     output is returned as a bytes.Buffer and nil error.
-//   - Error with stderr output: If the command execution encounters an error
-//     and there's content captured in the standard error buffer, the error
-//     includes the stderr content. The original error is wrapped with a
-//     formatted stderr message and a nil buffer is returned.
-//   - Error without stderr output: If the command execution encounters an error
-//     but there's no captured standard error, the original error is simply
-//     returned with a nil buffer.
-func execCmd(
-	ctx context.Context,
-	path string,
-	args ...string,
-) (*bytes.Buffer, *bytes.Buffer, error) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	// #nosec G204
-	cmd := exec.CommandContext(ctx, path, args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		if stderr.Len() > 0 {
-			stderrTrimmed := strings.TrimSpace(stderr.String())
-			stderrLines := strings.Split(stderrTrimmed, "\n")
-			stderrFormated := strings.Join(stderrLines, ", ")
-
-			return nil, nil, errors.Errorf("%s: %s", err, stderrFormated)
-		}
-
-		return nil, nil, err
-	}
-
-	return &stdout, &stderr, nil
-}
-
 // createBackupFile generates a backup file with a specified prefix and a
 // timestamp suffix. The file is created in the system's temporary directory and
 // is used to store iptables rules for backup purposes.
@@ -732,4 +715,16 @@ func writeToFile(content string, f *os.File) error {
 	}
 
 	return nil
+}
+
+func handleRunError(err error, stderr *bytes.Buffer) error {
+	if stderr.Len() > 0 {
+		stderrTrimmed := strings.TrimSpace(stderr.String())
+		stderrLines := strings.Split(stderrTrimmed, "\n")
+		stderrFormated := strings.Join(stderrLines, ", ")
+
+		return errors.Errorf("%s: %s", err, stderrFormated)
+	}
+
+	return err
 }
