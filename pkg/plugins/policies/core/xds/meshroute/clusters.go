@@ -1,6 +1,7 @@
 package meshroute
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -11,7 +12,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -119,10 +119,11 @@ func GenerateClusters(
 			}
 
 			resources = resources.Add(&core_xds.Resource{
-				Name:          clusterName,
-				Origin:        generator.OriginOutbound,
-				Resource:      edsCluster,
-				ResourceOwner: createOwner(service.BackendRef(), meshCtx),
+				Name:           clusterName,
+				Origin:         generator.OriginOutbound,
+				Resource:       edsCluster,
+				ResourceOrigin: createOwner(service.BackendRef(), meshCtx),
+				Protocol:       protocol,
 			})
 		}
 	}

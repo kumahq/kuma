@@ -80,7 +80,7 @@ func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceRea
 	case meshservice_api.MeshServiceType:
 		// find MeshService without the sectionName and compute rules for it
 		if uri.SectionName != "" {
-			uriWithoutSection := copyIdentifier(uri)
+			uriWithoutSection := uri
 			uriWithoutSection.SectionName = ""
 			return rr.Compute(uriWithoutSection, reader)
 		}
@@ -256,17 +256,4 @@ func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolve
 	}
 
 	return nil
-}
-
-func copyIdentifier(uri UniqueResourceIdentifier) UniqueResourceIdentifier {
-	return UniqueResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      uri.Name,
-			Mesh:      uri.Mesh,
-			Namespace: uri.Namespace,
-			Zone:      uri.Zone,
-		},
-		ResourceType: uri.ResourceType,
-		SectionName:  uri.SectionName,
-	}
 }
