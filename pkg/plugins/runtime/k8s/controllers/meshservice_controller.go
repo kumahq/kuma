@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -45,6 +47,7 @@ const (
 	// FailedToGenerateMeshServiceReason is added to an event when
 	// a MeshService cannot be generated.
 	FailedToGenerateMeshServiceReason = "FailedToGenerateMeshService"
+	IgnoredUnsupportedPortReason      = "IgnoredUnsupportedPort"
 )
 
 // MeshServiceReconciler reconciles a MeshService object
@@ -342,7 +345,9 @@ func (r *MeshServiceReconciler) manageMeshService(
 		},
 	}
 
-	return kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
+	var unsupportedPorts []string
+
+	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
 		ms.ObjectMeta.Labels = maps.Clone(svc.GetLabels())
 		if ms.ObjectMeta.Labels == nil {
 			ms.ObjectMeta.Labels = map[string]string{}
@@ -358,6 +363,11 @@ func (r *MeshServiceReconciler) manageMeshService(
 		ms.Spec.Ports = []meshservice_api.Port{}
 		for _, port := range svc.Spec.Ports {
 			if port.Protocol != kube_core.ProtocolTCP {
+				portName := port.Name
+				if portName == "" {
+					portName = strconv.Itoa(int(port.Port))
+				}
+				unsupportedPorts = append(unsupportedPorts, portName)
 				continue
 			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
@@ -373,6 +383,13 @@ func (r *MeshServiceReconciler) manageMeshService(
 		}
 		return setSpec(ctx, ms, svc)
 	})
+
+	if result != kube_controllerutil.OperationResultNone && len(unsupportedPorts) > 0 {
+		ports := strings.Join(unsupportedPorts, ", ")
+		r.EventRecorder.Eventf(svc, kube_core.EventTypeNormal, IgnoredUnsupportedPortReason, "Ignored unsupported ports: %s", ports)
+	}
+
+	return result, err
 }
 
 func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_types.NamespacedName) error {

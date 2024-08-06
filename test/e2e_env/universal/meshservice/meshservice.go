@@ -44,18 +44,6 @@ func MeshService() {
 	})
 
 	It("should be able to create and use MeshService with HostnameGenerator", func() {
-		generator := `
-type: HostnameGenerator
-name: basic
-labels:
-  kuma.io/origin: zone
-spec:
-  template: "{{ .Name }}.meshservice.mesh"
-  selector:
-    meshService:
-      matchLabels:
-        app: backend
-`
 		otherTLDGenerator := `
 type: HostnameGenerator
 name: basic-other-tld
@@ -84,13 +72,12 @@ spec:
     dataplaneTags:
       app: test-server
 `, meshName)
-		Expect(universal.Cluster.Install(YamlUniversal(generator))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(otherTLDGenerator))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(service))).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "backend.meshservice.mesh",
+				universal.Cluster, "demo-client", "backend.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			_, err = client.CollectEchoResponse(
