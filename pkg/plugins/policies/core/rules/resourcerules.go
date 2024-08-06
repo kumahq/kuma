@@ -71,27 +71,27 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 	}
 }
 
-func (rr ResourceRules) Compute(r core_model.Resource, reader ResourceReader, fn ...ComputeOptsFn) *ResourceRule {
-	opts := NewComputeOpts(fn...)
-	key := UniqueKey(r, opts.sectionName)
-	if rule, ok := rr[key]; ok {
+func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceReader) *ResourceRule {
+	if rule, ok := rr[uri]; ok {
 		return &rule
 	}
 
-	switch r.Descriptor().Name {
+	switch uri.ResourceType {
 	case meshservice_api.MeshServiceType:
 		// find MeshService without the sectionName and compute rules for it
-		if opts.sectionName != "" {
-			return rr.Compute(r, reader)
+		if uri.SectionName != "" {
+			uriWithoutSection := copyIdentifier(uri)
+			uriWithoutSection.SectionName = ""
+			return rr.Compute(uriWithoutSection, reader)
 		}
 		// find MeshService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
-			return rr.Compute(mesh, reader)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
 	case meshextenralservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
-			return rr.Compute(mesh, reader)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// todo(lobkovilya): handle MeshHTTPRoute
@@ -256,4 +256,17 @@ func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolve
 	}
 
 	return nil
+}
+
+func copyIdentifier(uri UniqueResourceIdentifier) UniqueResourceIdentifier {
+	return UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      uri.Name,
+			Mesh:      uri.Mesh,
+			Namespace: uri.Namespace,
+			Zone:      uri.Zone,
+		},
+		ResourceType: uri.ResourceType,
+		SectionName:  uri.SectionName,
+	}
 }
