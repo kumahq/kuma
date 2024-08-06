@@ -2,12 +2,13 @@ package cni
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
