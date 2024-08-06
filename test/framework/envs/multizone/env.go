@@ -57,6 +57,7 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 	wg.Add(1)
 	options := []framework.KumaDeploymentOption{
 		WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+		WithEnv("KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS", "true"),
 		WithIngress(),
 		WithIngressEnvoyAdminTunnel(),
 		WithEgress(),
@@ -82,6 +83,7 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framew
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS", "true"),
 		},
 		extraOptions...,
 	)
@@ -105,6 +107,7 @@ func SetupAndGetState() []byte {
 	globalOptions := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS", "true"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
