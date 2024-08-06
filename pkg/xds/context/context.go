@@ -15,6 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
+var logger = core.Log.WithName("xds").WithName("context")
+
 type Context struct {
 	ControlPlane *ControlPlaneContext
 	Mesh         MeshContext
@@ -91,7 +93,7 @@ func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *me
 		return nil
 	}
 	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
-		core.Log.WithName("xds").Info("Tracing backend is not found. Ignoring.",
+		logger.Info("Tracing backend is not found. Ignoring.",
 			"backendName", tt.Spec.GetConf().GetBackend(),
 			"trafficTraceName", tt.GetMeta().GetName(),
 			"trafficTraceMesh", tt.GetMeta().GetMesh())
@@ -106,7 +108,7 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 		return nil
 	}
 	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
-		core.Log.WithName("xds").Info("Logging backend is not found. Ignoring.",
+		logger.Info("Logging backend is not found. Ignoring.",
 			"backendName", tl.Spec.GetConf().GetBackend(),
 			"trafficLogName", tl.GetMeta().GetName(),
 			"trafficLogMesh", tl.GetMeta().GetMesh())

@@ -20,16 +20,6 @@ func Connectivity() {
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
-type: HostnameGenerator
-name: mzmsconnectivity
-spec:
-  template: '{{ .DisplayName }}.global.mzmsconnectivity'
-  selector:
-    meshMultiZoneService:
-      matchLabels:
-        test-name: mzmsconnectivity
-`)).
-			Install(YamlUniversal(`
 type: MeshMultiZoneService
 name: test-server
 mesh: mzmsconnectivity
@@ -41,6 +31,9 @@ spec:
       matchLabels:
         kuma.io/display-name: test-server
         k8s.kuma.io/namespace: mzmsconnectivity
+  ports:
+  - port: 80
+    appProtocol: http
 `)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -138,7 +131,7 @@ spec:
 			if _, ok := cluster.(*K8sCluster); ok {
 				opts = append(opts, client.FromKubernetesPod(meshName, "demo-client"))
 			}
-			response, err := client.CollectEchoResponse(cluster, "demo-client", "http://test-server.global.mzmsconnectivity:80", opts...)
+			response, err := client.CollectEchoResponse(cluster, "demo-client", "http://test-server.mzsvc.mesh.local:80", opts...)
 			if err != nil {
 				return "", err
 			}
@@ -171,7 +164,6 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(responseFromInstance(multizone.UniZone1), "30s", "1s").
-			Should(Equal("kube-test-server-2"))
-		// todo(jakubdyszkiewicz) add MustPassRepeatedly(5) after we solve excluding zones without any endpoints
+			MustPassRepeatedly(5).Should(Equal("kube-test-server-2"))
 	})
 }

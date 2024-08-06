@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -35,6 +34,9 @@ spec:
     meshService:
       matchLabels:
         test-name: backend
+  ports:
+  - port: 80
+    appProtocol: http
 `)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
@@ -244,36 +246,17 @@ spec:
 			status, err := mzStatus(multizone.UniZone1, "backend")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.MeshServices).To(HaveLen(2))
-			g.Expect(status.Ports).To(Equal([]v1alpha1.Port{
-				{
-					Port:        80,
-					TargetPort:  intstr.FromInt32(80),
-					AppProtocol: "http",
-				},
-			}))
-
 			g.Expect(status.VIPs).To(HaveLen(1))
 		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should assign hostname to MeshMultiZoneService", func() {
-		Expect(multizone.Global.Install(YamlUniversal(`
-type: HostnameGenerator
-name: mz-msstatus
-spec:
-  template: '{{ .DisplayName }}.mssync'
-  selector:
-    meshMultiZoneService:
-      matchLabels:
-        test-name: mssync
-`))).To(Succeed())
-
 		Eventually(func(g Gomega) {
 			status, err := mzStatus(multizone.UniZone1, "backend")
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.Addresses).To(HaveLen(1))
-			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mssync"))
+			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mzsvc.mesh.local"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

@@ -74,7 +74,7 @@ func buildMeshMultiZoneServiceDestinations(
 ) []BackendRefDestination {
 	var msDestinations []BackendRefDestination
 	for _, ms := range meshMzSvc {
-		for _, port := range ms.Status.Ports {
+		for _, port := range ms.Spec.Ports {
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),

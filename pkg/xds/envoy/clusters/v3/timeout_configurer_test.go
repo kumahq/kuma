@@ -95,6 +95,7 @@ connectTimeout: 100s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS
@@ -112,6 +113,7 @@ connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS
@@ -128,6 +130,7 @@ connectTimeout: 100s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS
@@ -162,6 +165,7 @@ connectTimeout: 100s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS
@@ -179,6 +183,7 @@ connectTimeout: 5s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS
@@ -195,6 +200,7 @@ connectTimeout: 100s
 edsClusterConfig:
   edsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 name: backend
 type: EDS

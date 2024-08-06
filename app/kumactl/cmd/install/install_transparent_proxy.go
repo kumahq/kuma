@@ -17,28 +17,24 @@ import (
 )
 
 type transparentProxyArgs struct {
-	RedirectPortOutBound           string
-	RedirectPortInBound            string
-	ExcludeInboundPorts            string
-	ExcludeOutboundPorts           string
-	ExcludeOutboundTCPPortsForUIDs []string
-	ExcludeOutboundUDPPortsForUIDs []string
-	AgentDNSListenerPort           string
-	SkipDNSConntrackZoneSplit      bool
+	RedirectPortOutBound      string
+	RedirectPortInBound       string
+	ExcludeInboundPorts       string
+	ExcludeOutboundPorts      string
+	AgentDNSListenerPort      string
+	SkipDNSConntrackZoneSplit bool
 }
 
 func newInstallTransparentProxy() *cobra.Command {
 	cfg := config.DefaultConfig()
 
 	args := transparentProxyArgs{
-		RedirectPortOutBound:           "15001",
-		RedirectPortInBound:            "15006",
-		ExcludeInboundPorts:            "",
-		ExcludeOutboundPorts:           "",
-		ExcludeOutboundTCPPortsForUIDs: []string{},
-		ExcludeOutboundUDPPortsForUIDs: []string{},
-		AgentDNSListenerPort:           "15053",
-		SkipDNSConntrackZoneSplit:      false,
+		RedirectPortOutBound:      "15001",
+		RedirectPortInBound:       "15006",
+		ExcludeInboundPorts:       "",
+		ExcludeOutboundPorts:      "",
+		AgentDNSListenerPort:      "15053",
+		SkipDNSConntrackZoneSplit: false,
 	}
 
 	cmd := &cobra.Command{
@@ -136,22 +132,6 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			if len(args.ExcludeOutboundPorts) > 0 && (len(args.ExcludeOutboundUDPPortsForUIDs) > 0 || len(args.ExcludeOutboundTCPPortsForUIDs) > 0) {
-				return errors.Errorf("--exclude-outbound-ports-for-uids set you can't use --exclude-outbound-tcp-ports-for-uids and --exclude-outbound-udp-ports-for-uids anymore")
-			}
-			if len(args.ExcludeOutboundTCPPortsForUIDs) > 0 {
-				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-tcp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
-				for _, v := range args.ExcludeOutboundTCPPortsForUIDs {
-					cfg.Redirect.Outbound.ExcludePortsForUIDs = append(cfg.Redirect.Outbound.ExcludePortsForUIDs, fmt.Sprintf("tcp:%s", v))
-				}
-			}
-			if len(args.ExcludeOutboundUDPPortsForUIDs) > 0 {
-				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] flag --exclude-outbound-udp-ports-for-uids is deprecated use --exclude-outbound-ports-for-uids instead")
-				for _, v := range args.ExcludeOutboundUDPPortsForUIDs {
-					cfg.Redirect.Outbound.ExcludePortsForUIDs = append(cfg.Redirect.Outbound.ExcludePortsForUIDs, fmt.Sprintf("udp:%s", v))
-				}
-			}
-
 			if err := parseArgs(&cfg, &args); err != nil {
 				return errors.Wrap(err, "failed to setup transparent proxy")
 			}
@@ -211,8 +191,6 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&cfg.Ebpf.CgroupPath, "ebpf-cgroup-path", cfg.Ebpf.CgroupPath, "the path of cgroup2")
 	cmd.Flags().StringVar(&cfg.Ebpf.TCAttachIface, "ebpf-tc-attach-iface", cfg.Ebpf.TCAttachIface, "name of the interface which TC eBPF programs should be attached to")
 
-	cmd.Flags().StringArrayVar(&args.ExcludeOutboundTCPPortsForUIDs, "exclude-outbound-tcp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] tcp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
-	cmd.Flags().StringArrayVar(&args.ExcludeOutboundUDPPortsForUIDs, "exclude-outbound-udp-ports-for-uids", []string{}, "[DEPRECATED (use --exclude-outbound-ports-for-uids)] udp outbound ports to exclude for specific uids in a format of ports:uids where ports can be a single value, a list, a range or a combination of all and uid can be a value or a range e.g. 53, 3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForUIDs, "exclude-outbound-ports-for-uids", []string{}, "outbound ports to exclude for specific uids in a format of protocol:ports:uids where protocol and ports can be omitted or have value tcp or udp and ports can be a single value, a list, a range or a combination of all or * and uid can be a value or a range e.g. 53,3000-5000:106-108 would mean exclude ports 53 and from 3000 to 5000 for both TCP and UDP for uids 106, 107, 108")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 	cmd.Flags().UintVar(&cfg.Wait, "wait", cfg.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")

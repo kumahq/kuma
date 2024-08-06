@@ -145,7 +145,7 @@ func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceReso
 
 	for _, svc := range services {
 		for _, vip := range svc.Status.VIPs {
-			for _, port := range svc.Status.Ports {
+			for _, port := range svc.Spec.Ports {
 				outbound := &mesh_proto.Dataplane_Networking_Outbound{
 					Address: vip.IP,
 					Port:    port.Port,

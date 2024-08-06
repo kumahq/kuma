@@ -72,20 +72,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.ExcludeOutboundPortsForUIDs = strings.Split(excludeOutboundPortsForUIDs, ";")
 	}
 
-	excludeOutboundTCPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs)
-	if exists {
-		for _, v := range strings.Split(excludeOutboundTCPPortsForUIDs, ";") {
-			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("tcp:%s", v))
-		}
-	}
-
-	excludeOutboundUDPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs)
-	if exists {
-		for _, v := range strings.Split(excludeOutboundUDPPortsForUIDs, ";") {
-			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("udp:%s", v))
-		}
-	}
-
 	podRedirect.RedirectPortOutbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 	if err != nil {
 		return nil, err

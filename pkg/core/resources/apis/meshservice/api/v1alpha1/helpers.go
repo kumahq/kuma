@@ -70,3 +70,10 @@ func (t *MeshServiceResource) SNIName(systemNamespace string) string {
 	}
 	return t.GetMeta().GetName()
 }
+
+func (t *MeshServiceResource) Default() error {
+	if t.Spec.State == "" {
+		t.Spec.State = StateUnavailable
+	}
+	return nil
+}

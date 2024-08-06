@@ -46,8 +46,6 @@ metadata:
 spec:
   replicas: %d
   serviceType: LoadBalancer
-  tags:
-    kuma.io/service: edge-gateway
 `, replicas)
 	}
 
@@ -62,7 +60,7 @@ mesh: graceful
 spec:
   selectors:
   - match:
-      kuma.io/service: edge-gateway
+      kuma.io/service: edge-gateway_graceful_svc
   conf:
     listeners:
     - port: 8080
@@ -77,7 +75,7 @@ mesh: graceful
 spec:
   selectors:
   - match:
-      kuma.io/service: edge-gateway
+      kuma.io/service: edge-gateway_graceful_svc
   conf:
     http:
       rules:
