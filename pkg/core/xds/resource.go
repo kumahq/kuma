@@ -1,7 +1,6 @@
 package xds
 
 import (
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"sort"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -9,6 +8,7 @@ import (
 	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 )
 
