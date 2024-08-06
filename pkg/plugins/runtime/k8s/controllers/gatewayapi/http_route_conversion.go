@@ -57,21 +57,21 @@ func (r *HTTPRouteReconciler) gapiToMeshRules(
 }
 
 func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
-	route *gatewayapi.HTTPRoute,
+	routeNamespace string,
 	rules []v1alpha1.Rule,
-	svc *kube_core.Service,
-	refPort *gatewayapi_v1.PortNumber,
+	parent *kube_core.Service,
+	parentPort *gatewayapi_v1.PortNumber,
 ) core_model.ResourceSpec {
 	// consumer route
 	targetRef := common_api.TargetRef{
 		Kind: common_api.MeshSubset,
 		Tags: map[string]string{
-			mesh_proto.KubeNamespaceTag: route.Namespace,
+			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
 
 	// producer route
-	if route.Namespace == svc.GetNamespace() {
+	if routeNamespace == parent.GetNamespace() {
 		targetRef = common_api.TargetRef{
 			Kind: common_api.Mesh,
 		}
@@ -80,17 +80,17 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	var tos []v1alpha1.To
 
 	var ports []int32
-	if refPort != nil {
-		ports = []int32{int32(*refPort)}
+	if parentPort != nil {
+		ports = []int32{int32(*parentPort)}
 	} else {
-		for _, port := range svc.Spec.Ports {
+		for _, port := range parent.Spec.Ports {
 			ports = append(ports, port.Port)
 		}
 	}
 
 	for _, port := range ports {
 		serviceName := k8s_util.ServiceTag(
-			kube_client.ObjectKeyFromObject(svc),
+			kube_client.ObjectKeyFromObject(parent),
 			pointer.To(port),
 		)
 
