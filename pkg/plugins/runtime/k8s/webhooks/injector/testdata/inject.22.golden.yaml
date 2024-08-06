@@ -64,6 +64,10 @@ spec:
       value: /some/other/path
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     - name: NEW_ENV_VAR
       value: "123"
     - name: POD_NAME
@@ -78,10 +82,6 @@ spec:
           fieldPath: metadata.namespace
     - name: TEST_ENV_VAR
       value: test123
-    - name: VIRTUAL_PROBES_SERVER_ENABLED
-      value: "true"
-    - name: VIRTUAL_PROBES_SERVER_PORT
-      value: "9000"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:

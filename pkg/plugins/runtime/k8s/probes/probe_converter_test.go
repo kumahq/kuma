@@ -99,6 +99,7 @@ var _ = Describe("KumaProbe", func() {
 			Expect(getHeader(virtual.Headers(), probes.HeaderNameHost)).To(Equal("example.com"))
 			Expect(getHeader(virtual.Headers(), probes.HeaderNameScheme)).To(Equal("HTTPS"))
 			Expect(getHeader(virtual.Headers(), probes.HeaderNameTimeout)).To(Equal("15"))
+			Expect(getHeader(virtual.Headers(), "X-Custom-Header")).To(Equal("custom-value"))
 		})
 
 		It("should return an error if virtual port is equal to real", func() {

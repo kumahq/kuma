@@ -393,8 +393,8 @@ func (d *DNS) Validate() error {
 type VirtualProbesServer struct {
 	config.BaseConfig
 
-	Enabled bool   `json:"enabled,omitempty" envconfig:"virtual_probes_server_enabled"`
-	Port    uint32 `json:"port,omitempty" envconfig:"virtual_probes_server_port"`
+	Enabled bool   `json:"enabled,omitempty" envconfig:"kuma_virtual_probes_server_enabled"`
+	Port    uint32 `json:"port,omitempty" envconfig:"kuma_virtual_probes_server_port"`
 }
 
 func (p *VirtualProbesServer) Validate() error {

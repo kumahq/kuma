@@ -46,16 +46,16 @@ func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		probePath = fmt.Sprintf("/%s", p.Path())
 	}
 
-	headers := p.HTTPGet.HTTPHeaders
-	headerIdx := slices.IndexFunc(headers, func(header kube_core.HTTPHeader) bool {
+	var headers []kube_core.HTTPHeader
+	headerIdx := slices.IndexFunc(p.HTTPGet.HTTPHeaders, func(header kube_core.HTTPHeader) bool {
 		return header.Name == "Host"
 	})
 
 	var hostHeader kube_core.HTTPHeader
 	if headerIdx != -1 {
-		hostHeader = headers[headerIdx]
-		headers = append(headers[:headerIdx], HostHeader(hostHeader.Value))
-		headers = append(headers, headers[headerIdx+1:]...)
+		hostHeader = p.HTTPGet.HTTPHeaders[headerIdx]
+		headers = append(p.HTTPGet.HTTPHeaders[:headerIdx], HostHeader(hostHeader.Value))
+		headers = append(headers, p.HTTPGet.HTTPHeaders[headerIdx+1:]...)
 	}
 
 	if p.HTTPGet.Scheme != "" && p.HTTPGet.Scheme != kube_core.URISchemeHTTP {

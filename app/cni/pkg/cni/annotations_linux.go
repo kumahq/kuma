@@ -2,6 +2,7 @@ package cni
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"net"
 	"strconv"
 	"strings"
@@ -206,7 +207,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
-		"virtualProbesEnabled":        &valTrue,
+		"virtualProbesEnabled":        pointer.To(valTrue),
 		"virtualProbesPort":           &valDefaultVirtualPort,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,

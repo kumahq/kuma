@@ -324,12 +324,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 	if vpEnabled, _, _ := metadata.Annotations(annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); vpEnabled {
 		virtualProbesPort, _, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
-		envVars["VIRTUAL_PROBES_SERVER_ENABLED"] = kube_core.EnvVar{
-			Name:  "VIRTUAL_PROBES_SERVER_ENABLED",
+		envVars["KUMA_VIRTUAL_PROBES_SERVER_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_VIRTUAL_PROBES_SERVER_ENABLED",
 			Value: "true",
 		}
-		envVars["VIRTUAL_PROBES_SERVER_PORT"] = kube_core.EnvVar{
-			Name:  "VIRTUAL_PROBES_SERVER_PORT",
+		envVars["KUMA_VIRTUAL_PROBES_SERVER_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_VIRTUAL_PROBES_SERVER_PORT",
 			Value: strconv.Itoa(int(virtualProbesPort)),
 		}
 	}

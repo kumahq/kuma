@@ -127,6 +127,10 @@ spec:
       value: "false"
     - name: KUMA_DNS_ENVOY_DNS_PORT
       value: "25055"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     - name: POD_NAME
       valueFrom:
         fieldRef:
@@ -137,10 +141,6 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: metadata.namespace
-    - name: VIRTUAL_PROBES_SERVER_ENABLED
-      value: "true"
-    - name: VIRTUAL_PROBES_SERVER_PORT
-      value: "9000"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     lifecycle:
