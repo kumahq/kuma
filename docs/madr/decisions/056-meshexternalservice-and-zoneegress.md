@@ -285,7 +285,7 @@ Configuring outbound policies on the sidecar avoids the problem with different c
 
 ##### How to configure it
 
-###### From only policy (policies that do not have to)
+###### `from` only policy
 
 Policies:
 - MeshTrafficPermission
