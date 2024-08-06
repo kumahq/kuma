@@ -65,10 +65,17 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	for _, namespace := range namespaces {
 		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 		kubeOptions.Logger = logger.Discard                  // to not print on stdout
-		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma,gateway-api", "-oyaml")
+		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
 		if err != nil {
 			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err)
 			errorSeen = true
+		}
+		// Ignore it if we don't have Gateway API resources installed
+		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
+		if err == nil {
+			out += gatewayAPIOut
+		} else {
+			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
 		exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
