@@ -34,26 +34,29 @@ Configuration placement:
 
 ## Decision Outcome
 
-Chosen option: egress only
+Chosen option:
+- egress only
 
 Chosen option for configuration placement:
 
-| Policy                    | Implementation on                                               |
-|---------------------------|-----------------------------------------------------------------|
-| MeshAccessLog             | Sidecar (to), Egress (to + proxyType: ["egress"])               |
-| MeshCircuitBreaker        | Egress (to + proxyType: ["egress"])                             |
-| MeshFaultInjection        | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
-| MeshHealthCheck           | Egress (to + proxyType: ["egress"])                             |
-| MeshMetric                | Out of scope (single item)                                      |
-| MeshProxyPatch            | Out of scope (single item)                                      |
-| MeshRateLimit             | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
-| MeshRetry                 | Sidecar (to)                                                    |
-| MeshTimeout               | Sidecar (to), Egress (to + proxyType: ["egress"])               |
-| MeshTrace                 | Out of scope (single item)                                      |
-| MeshTrafficPermission     | Egress (kind: MeshExternalService, from, proxyType: ["egress"]) |
-| MeshLoadBalancingStrategy | Egress (to + proxyType: ["egress"])                             |
-| MeshTCPRoute              | Sidecar (to)                                                    |
-| MeshHTTPRoute             | Sidecar (to)                                                    |
+| Policy                    | Implementation on                        |
+|---------------------------|------------------------------------------|
+| MeshAccessLog             | Sidecar (to), Egress (from)              |
+| MeshCircuitBreaker        | Egress (to)                              |
+| MeshFaultInjection        | Egress (kind: MeshExternalService, from) |
+| MeshHealthCheck           | Egress (to)                              |
+| MeshMetric                | Out of scope (single item)               |
+| MeshProxyPatch            | Out of scope (single item)               |
+| MeshRateLimit             | Egress (kind: MeshExternalService, from) |
+| MeshRetry                 | Sidecar (to)                             |
+| MeshTimeout               | Sidecar (to), Egress (from)              |
+| MeshTrace                 | Out of scope (single item)               |
+| MeshTrafficPermission     | Egress (kind: MeshExternalService, from) |
+| MeshLoadBalancingStrategy | Egress (to)                              |
+| MeshTCPRoute              | Sidecar (to)                             |
+| MeshHTTPRoute             | Sidecar (to)                             |
+
+Targeting Egress is out of the scope of this issue and should be addressed as part of https://github.com/kumahq/kuma/issues/8417
 
 ## Pros and Cons of the Options
 
@@ -277,6 +280,8 @@ Configuring outbound policies on the sidecar avoids the problem with different c
 
 ##### How to configure it
 
+We decide to implicitly configure sidecar and egress based on the policy.
+
 ###### `from` only policy
 
 Policies:
@@ -291,7 +296,6 @@ spec:
   targetRef:
     kind: MeshExternalService
     name: httpbin
-    proxyType: ["egress"]
   from:
     - targetRef:
         kind: MeshService
@@ -319,7 +323,6 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-    proxyType: ["sidecar"]
   to:
     - targetRef:
         kind: MeshExternalService
@@ -343,7 +346,6 @@ name: circuit-breaker
 spec:
   targetRef:
     kind: Mesh
-    proxyType: ["egress"]
   to:
     - targetRef:
         kind: MeshExternalService
@@ -361,13 +363,13 @@ Policies:
 - MeshAccessLog
 - MeshTimeout
 
+On sidecar
 ```yaml
 apiVersion: kuma.io/v1alpha1
 kind: MeshAccessLog
 spec:
   targetRef:
     kind: Mesh
-    proxyType: ["egress"]
   to:
   - targetRef:
       kind: MeshExternalService
@@ -375,13 +377,19 @@ spec:
     default: ...
 ```
 
-##### Empty `proxyType`
-
-Currently, egress is not selected by `kind: Mesh` targetRef, but missing `proxyType` means both `gateway` and `sidecar`.
-We don't want to assume empty `proxyType` selecting `egress` because we want greater control over what is configured and to make sure user is aware that egress is affected.
-To avoid breaking changes now and in the future we can extend this more easily.
-
-We will require `proxyType` in validation whenever `MeshExternalService` is referenced.
+On egress
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+spec:
+  targetRef:
+    kind: MeshExternalService
+    name: httpbin
+  from:
+  - targetRef:
+      kind: Mesh
+    default: ...
+```
 
 #### Only on the egress
 
