@@ -131,15 +131,16 @@ Circuit Breaker is configured on the sidecar always.
 
 ###### New behaviour
 
+If left on sidecar:
+- a circuit breaker can break whole egress traffic even if only one of the destinations is unhealthy
+
 If on egress
 - services from one zone will act as an aggregate - if a CB triggers by service-1 then service-2 will also see that result immediately
   - this makes the configuration more sensitive to drastic changes
   - if a MES starts failing on one endpoint /example1 that is only consumed by service-1 it will also trigger for service-2 that might be happily consuming endpoint /example2
   - this could be mitigated by re-defining a MeshExternalService under a different name (a bit awkward)
 
-###### Verdict
-
-There might be situations where it makes sense on egress but seems like it's more natural on the sidecar.
+The above drawbacks are acceptable. That's the cost of centralized access.
 
 ##### MeshFaultInjection
 
