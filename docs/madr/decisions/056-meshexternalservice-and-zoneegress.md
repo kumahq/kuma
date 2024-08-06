@@ -154,9 +154,6 @@ If on sidecar:
 - less traffic in the cluster (it won't even exit the pod)
 - you won't be able to validate if your policies (MeshRetry, MeshTimeout, etc.) work correctly because they won't be triggered
 
-###### Verdict
-
-Probably should stay on egress.
 
 ##### MeshHealthCheck
 
@@ -170,9 +167,6 @@ If on egress:
 - Seems to be the same story as circuit breaker in terms of acting as an aggregate / sensitivity
 - Doing it on the egress could cause less traffic to MES (assuming there is fewer instances of egress than services HC-ing)
 
-###### Verdict
-
-To me, it makes a little bit more sense (than circuit breaker) to have HC be configurable on where it's placed
 
 ##### MeshMetric
 
@@ -199,9 +193,6 @@ If on sidecar:
 - limit is multiplied by the number of instances (which is bad)
 - less traffic in the mesh (traffic does )
 
-###### Verdict
-
-It seems that it only makes sense on egress, we don't want the ratelimit to be changing with number of instances.
 
 ##### MeshRetry
 
