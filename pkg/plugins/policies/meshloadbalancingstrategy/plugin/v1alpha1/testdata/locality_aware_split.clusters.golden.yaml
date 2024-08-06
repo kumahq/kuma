@@ -7,7 +7,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbPolicy: RANDOM
     name: backend-bb38a94289f18fb9
@@ -20,7 +19,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbPolicy: RANDOM
     name: backend-c72efb5be46fae6b

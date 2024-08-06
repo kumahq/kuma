@@ -11,7 +11,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: api-service-ec4b46e15b91ec0d
       perConnectionBufferLimitBytes: 32768
@@ -51,7 +50,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: echo-service-6376c7d971a22370
       perConnectionBufferLimitBytes: 32768
@@ -91,7 +89,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: external-tcp-httpbin-bcf553986bd60283
       perConnectionBufferLimitBytes: 32768

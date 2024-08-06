@@ -20,7 +20,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
-            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: test:cluster
         type: EDS`
