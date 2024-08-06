@@ -211,8 +211,7 @@ Both Retry and MeshRetry are configured on the sidecar
 ###### New behaviour
 
 If on egress:
-- when an ExternalService is unavailable a retry will only occur `numRetries` tries - not `numRetries` * instances (in sidecar case) - which is good because we're not overwhelming the service
-- same story as circuit breaker in terms of acting as an aggregate / sensitivity
+- will behave the same as on sidecar
 - we definitely shouldn't configure it both on sidecar and egress, that way we'll have squared retries
 
 ##### MeshTimeout
