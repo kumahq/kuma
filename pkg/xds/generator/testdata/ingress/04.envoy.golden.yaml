@@ -7,7 +7,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
@@ -28,7 +27,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh2:backend
     type: EDS
@@ -40,7 +38,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT

@@ -6,7 +6,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-26cb64fa4e85e7b7
     perConnectionBufferLimitBytes: 32768
@@ -18,7 +17,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: go-backend-1-a3e0f78d6b8a9607
     perConnectionBufferLimitBytes: 32768
@@ -30,7 +28,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: go-backend-2-3568c8790af04ca0
     perConnectionBufferLimitBytes: 32768
@@ -42,7 +39,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: other-backend-d14e06e801b3b5d6
     perConnectionBufferLimitBytes: 32768
