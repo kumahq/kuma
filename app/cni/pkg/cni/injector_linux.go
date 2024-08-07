@@ -90,6 +90,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		excludePortsForUIDs = strings.Split(intermediateConfig.excludeOutboundPortsForUIDs, ";")
 	}
 
+	cfg.CNIMode = true
 	cfg.Verbose = true
 	cfg.RuntimeStdout = logWriter
 	cfg.Owner.UID = intermediateConfig.noRedirectUID

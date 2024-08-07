@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -94,7 +93,7 @@ data:
 type: system.kuma.io/secret
 `, Config.KumaNamespace, secretData)
 	}
-	var clusterIP string
+	var gwIP string
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -120,13 +119,9 @@ type: system.kuma.io/secret
 
 		Eventually(func(g Gomega) {
 			var err error
-			clusterIP, err = k8s.RunKubectlAndGetOutputE(
-				kubernetes.Cluster.GetTesting(),
-				kubernetes.Cluster.GetKubectlOptions(namespace),
-				"get", "service", "simple-gateway", "-ojsonpath={.spec.clusterIP}",
-			)
+			gwIP, err = kubernetes.Cluster.GetClusterIP("simple-gateway", namespace)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(clusterIP).ToNot(BeEmpty())
+			g.Expect(gwIP).ToNot(BeEmpty())
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -373,7 +368,7 @@ spec:
 					response, err := client.CollectEchoResponse(
 						kubernetes.Cluster, "demo-client",
 						"https://example.kuma.io:8081/",
-						client.Resolve("example.kuma.io:8081", clusterIP),
+						client.Resolve("example.kuma.io:8081", gwIP),
 						client.FromKubernetesPod(clientNamespace, "demo-client"),
 						client.Insecure(),
 					)
@@ -421,7 +416,7 @@ spec:
 					response, err := client.CollectEchoResponse(
 						kubernetes.Cluster, "demo-client",
 						"https://otherexample.kuma.io:8081/-specific-listener",
-						client.Resolve("otherexample.kuma.io:8081", clusterIP),
+						client.Resolve("otherexample.kuma.io:8081", gwIP),
 						client.FromKubernetesPod(clientNamespace, "demo-client"),
 						client.Insecure(),
 					)
@@ -438,7 +433,7 @@ spec:
 					response, err := client.CollectEchoResponse(
 						kubernetes.Cluster, "demo-client",
 						"https://example.kuma.io:8081/-specific-listener",
-						client.Resolve("example.kuma.io:8081", clusterIP),
+						client.Resolve("example.kuma.io:8081", gwIP),
 						client.FromKubernetesPod(clientNamespace, "demo-client"),
 						client.Insecure(),
 					)
@@ -455,7 +450,7 @@ spec:
 					status, err := client.CollectFailure(
 						kubernetes.Cluster, "demo-client",
 						"https://otherexample.kuma.io:8081/-specific-listener",
-						client.Resolve("otherexample.kuma.io:8081", clusterIP),
+						client.Resolve("otherexample.kuma.io:8081", gwIP),
 						// Note the header differs from the SNI
 						client.WithHeader("host", "example.kuma.io"),
 						client.FromKubernetesPod(clientNamespace, "demo-client"),
