@@ -472,7 +472,7 @@ var _ = Describe("Context", func() {
 			var r model.Resource = core_mesh.NewCircuitBreakerResource()
 			switch given.scope {
 			case model.ScopeGlobal:
-				r = core_mesh.NewZoneIngressResource()
+				r = core_system.NewGlobalSecretResource()
 			}
 			if given.isResourcePluginOriginated {
 				r = v1alpha1.NewMeshCircuitBreakerResource()
