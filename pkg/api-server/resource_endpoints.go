@@ -924,6 +924,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
 				})
 			}
+			sort.Slice(toResourceRules, func(i, j int) bool {
+				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
+			})
 
 			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
 				// No matches for this policy, keep going...
