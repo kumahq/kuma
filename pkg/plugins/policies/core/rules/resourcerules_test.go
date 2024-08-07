@@ -253,9 +253,13 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			&model.Resource{
-				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
-				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "backend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "",
 			},
 			meshCtx,
 		)
@@ -287,9 +291,13 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			&model.Resource{
-				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
-				Meta:           &model.ResourceMeta{Name: "frontend", Mesh: "mesh-1"},
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "frontend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "",
 			},
 			meshCtx,
 		)
@@ -322,12 +330,15 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			&model.Resource{
-				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
-				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "backend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "http-port",
 			},
 			meshCtx,
-			core_rules.WithSectionName("http-port"),
 		)
 
 		// then
@@ -358,12 +369,15 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			&model.Resource{
-				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
-				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "backend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "tcp-port",
 			},
 			meshCtx,
-			core_rules.WithSectionName("tcp-port"),
 		)
 
 		// then
@@ -378,9 +392,13 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			&model.Resource{
-				TypeDescriptor: meshservice_api.MeshServiceResourceTypeDescriptor,
-				Meta:           &model.ResourceMeta{Name: "backend", Mesh: "mesh-1"},
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "backend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "",
 			},
 			meshCtx,
 		)
