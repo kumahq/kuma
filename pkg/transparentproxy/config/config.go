@@ -492,6 +492,7 @@ type Config struct {
 	// crucial for environments where both IP families are in use, ensuring that
 	// the correct iptables rules are applied for the specified IP family.
 	IPFamilyMode IPFamilyMode
+	CNIMode      bool
 }
 
 type IPFamilyMode string
