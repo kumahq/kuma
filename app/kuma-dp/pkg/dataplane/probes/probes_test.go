@@ -23,21 +23,17 @@ import (
 	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 )
 
+const podIP = "127.0.0.1"
+
 var _ = Describe("Virtual Probes", func() {
 	probes.LocalAddrIPv4 = &net.TCPAddr{IP: net.ParseIP("127.0.0.1")}
 	probes.LocalAddrIPv6 = &net.TCPAddr{IP: net.ParseIP("::1")}
-	podIP := "127.0.0.1"
-	listenPort := uint32(9000)
-
-	virtualProbesURL := func(path string) string {
-		return fmt.Sprintf("http://%s%s", net.JoinHostPort(podIP, strconv.Itoa(int(listenPort))), path)
-	}
 
 	Describe("Virtual Probe Listener", func() {
 		It("should start and stop the listener", func() {
 			stopCh := make(chan struct{})
 			errCh := make(chan error)
-			prober := probes.NewProber(podIP, listenPort)
+			prober := probes.NewProber(podIP, 9001)
 
 			go func() {
 				errCh <- prober.Start(stopCh)
@@ -59,11 +55,12 @@ var _ = Describe("Virtual Probes", func() {
 	Describe("HTTP Probes", func() {
 		var stopCh chan struct{}
 		var errCh chan error
+		vProbePort := uint32(9002)
 
 		BeforeAll(func() {
 			stopCh = make(chan struct{})
 			errCh = make(chan error)
-			prober := probes.NewProber(podIP, listenPort)
+			prober := probes.NewProber(podIP, vProbePort)
 			mockApp := &mockApplication{
 				HTTP: &mockHTTPServerConfig{
 					ListenPort:        8080,
@@ -96,7 +93,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe HTTP upstream when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
 
@@ -107,7 +104,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe HTTP upstream when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8081/healthz"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8081/healthz", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -118,7 +115,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTP upstream when the application reports a failure and return application status code", func() {
 			// given a header set to trigger a failure
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set("x-custom-header-triggers-failure", "present")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
@@ -131,7 +128,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTP upstream when path does not match", func() {
 			// given a header set to trigger a failure
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/bad-path"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/bad-path", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5") // 5s is longer than the execution duration	(3s)
 
@@ -143,7 +140,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should fail with short timeout when probing", func() {
 			// given a timeout shorter than the execution duration
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8080/healthz", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2") // 2s is shorter than the execution duration (3s)
 
@@ -155,13 +152,14 @@ var _ = Describe("Virtual Probes", func() {
 	}, Ordered)
 
 	Describe("HTTPS Probes", func() {
+		vProbePort := uint32(9003)
 		var stopCh chan struct{}
 		var errCh chan error
 
 		BeforeAll(func() {
 			stopCh = make(chan struct{})
 			errCh = make(chan error)
-			prober := probes.NewProber(podIP, listenPort)
+			prober := probes.NewProber(podIP, vProbePort)
 			mockApp := &mockApplication{
 				HTTP: &mockHTTPServerConfig{
 					Path:             "/healthz?scheme=https",
@@ -194,7 +192,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTPS upstream without verifying server certificates and keep query", func() {
 			// time.Sleep(100 * time.Second)
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/18443/healthz?scheme=https"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/18443/healthz?scheme=https", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
 
@@ -208,11 +206,12 @@ var _ = Describe("Virtual Probes", func() {
 	Describe("TCP Probes", func() {
 		var stopCh chan struct{}
 		var errCh chan error
+		vProbePort := uint32(9004)
 
 		BeforeAll(func() {
 			stopCh = make(chan struct{})
 			errCh = make(chan error)
-			prober := probes.NewProber(podIP, listenPort)
+			prober := probes.NewProber(podIP, vProbePort)
 			go func() {
 				errCh <- prober.Start(stopCh)
 			}()
@@ -242,7 +241,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe TCP server when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6379"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6379", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			response, err := http.DefaultClient.Do(probeReq)
@@ -252,7 +251,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe TCP server when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6000"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/tcp/6000", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "3")
 
@@ -266,11 +265,12 @@ var _ = Describe("Virtual Probes", func() {
 	Describe("GRPC Probes", func() {
 		var stopCh chan struct{}
 		var errCh chan error
+		vProbePort := uint32(9005)
 
 		BeforeAll(func() {
 			stopCh = make(chan struct{})
 			errCh = make(chan error)
-			prober := probes.NewProber(podIP, listenPort)
+			prober := probes.NewProber(podIP, vProbePort)
 			go func() {
 				errCh <- prober.Start(stopCh)
 			}()
@@ -303,7 +303,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe gRPC server when it's healthy", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "5")
@@ -315,7 +315,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should fail with a short timeout when probing", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "liveness")
 			probeReq.Header.Set(kuma_probes.HeaderNameTimeout, "2")
@@ -327,7 +327,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe gRPC server when the port is not listening", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5656"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5656", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			response, err := http.DefaultClient.Do(probeReq)
 
@@ -336,7 +336,7 @@ var _ = Describe("Virtual Probes", func() {
 		})
 
 		It("should probe gRPC server when the application reports a failure", func() {
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/grpc/5678", vProbePort), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameGRPCService, "readiness")
 
@@ -578,4 +578,8 @@ func startServer(starter func(chan func()) error, stop <-chan struct{}) error {
 		}
 		return nil
 	}
+}
+
+func virtualProbesURL(path string, virtProbePort uint32) string {
+	return fmt.Sprintf("http://%s%s", net.JoinHostPort(podIP, strconv.Itoa(int(virtProbePort))), path)
 }
