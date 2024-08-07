@@ -71,27 +71,27 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 	}
 }
 
-func (rr ResourceRules) Compute(r core_model.Resource, reader ResourceReader, fn ...ComputeOptsFn) *ResourceRule {
-	opts := NewComputeOpts(fn...)
-	key := uniqueKey(r, opts.sectionName)
-	if rule, ok := rr[key]; ok {
+func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceReader) *ResourceRule {
+	if rule, ok := rr[uri]; ok {
 		return &rule
 	}
 
-	switch r.Descriptor().Name {
+	switch uri.ResourceType {
 	case meshservice_api.MeshServiceType:
 		// find MeshService without the sectionName and compute rules for it
-		if opts.sectionName != "" {
-			return rr.Compute(r, reader)
+		if uri.SectionName != "" {
+			uriWithoutSection := uri
+			uriWithoutSection.SectionName = ""
+			return rr.Compute(uriWithoutSection, reader)
 		}
 		// find MeshService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
-			return rr.Compute(mesh, reader)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
 	case meshextenralservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: r.GetMeta().GetMesh()}); mesh != nil {
-			return rr.Compute(mesh, reader)
+		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// todo(lobkovilya): handle MeshHTTPRoute
@@ -142,7 +142,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 func indexResources(ri []*resolvedPolicyItem) map[UniqueResourceIdentifier]core_model.Resource {
 	index := map[UniqueResourceIdentifier]core_model.Resource{}
 	for _, i := range ri {
-		index[uniqueKey(i.resource, i.sectionName())] = i.resource
+		index[UniqueKey(i.resource, i.sectionName())] = i.resource
 	}
 	return index
 }
@@ -178,7 +178,7 @@ func origins(ri []*resolvedPolicyItem) []Origin {
 	return rv
 }
 
-func uniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifier {
+func UniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifier {
 	return UniqueResourceIdentifier{
 		ResourceIdentifier: core_model.NewResourceIdentifier(r),
 		ResourceType:       r.Descriptor().Name,
@@ -200,9 +200,9 @@ func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionNa
 		switch r.Descriptor().Name {
 		case meshservice_api.MeshServiceType:
 			switch {
-			case uniqueKey(policyItem.resource, policyItem.sectionName()) == uniqueKey(r, sectionName):
+			case UniqueKey(policyItem.resource, policyItem.sectionName()) == UniqueKey(r, sectionName):
 				return true
-			case uniqueKey(policyItem.resource, "") == uniqueKey(r, "") && policyItem.sectionName() == "" && sectionName != "":
+			case UniqueKey(policyItem.resource, "") == UniqueKey(r, "") && policyItem.sectionName() == "" && sectionName != "":
 				return true
 			default:
 				return false
@@ -213,7 +213,7 @@ func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionNa
 	case meshextenralservice_api.MeshExternalServiceType:
 		switch r.Descriptor().Name {
 		case meshextenralservice_api.MeshExternalServiceType:
-			return uniqueKey(policyItem.resource, "") == uniqueKey(r, "")
+			return UniqueKey(policyItem.resource, "") == UniqueKey(r, "")
 		default:
 			return false
 		}

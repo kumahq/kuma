@@ -20,6 +20,16 @@ func Connectivity() {
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
+type: HostnameGenerator
+name: mzmsconnectivity
+spec:
+  template: '{{ .DisplayName }}.global.mzmsconnectivity'
+  selector:
+    meshMultiZoneService:
+      matchLabels:
+        test-name: mzmsconnectivity
+`)).
+			Install(YamlUniversal(`
 type: MeshMultiZoneService
 name: test-server
 mesh: mzmsconnectivity
@@ -131,7 +141,7 @@ spec:
 			if _, ok := cluster.(*K8sCluster); ok {
 				opts = append(opts, client.FromKubernetesPod(meshName, "demo-client"))
 			}
-			response, err := client.CollectEchoResponse(cluster, "demo-client", "http://test-server.mzsvc.mesh.local:80", opts...)
+			response, err := client.CollectEchoResponse(cluster, "demo-client", "http://test-server.global.mzmsconnectivity:80", opts...)
 			if err != nil {
 				return "", err
 			}
