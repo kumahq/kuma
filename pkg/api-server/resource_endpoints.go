@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -124,9 +125,10 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		if r.mode == config_core.Global {
-			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed("")).
-				Doc("Not allowed on Global CP.").
-				Returns(http.StatusMethodNotAllowed, "Not allowed on Global CP.", restful.ServiceError{}))
+			msg := "Not allowed on global CP"
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed(msg)).
+				Doc(msg).
+				Returns(http.StatusMethodNotAllowed, msg, restful.ServiceError{}))
 		} else {
 			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.configForProxy()).
 				Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
@@ -137,9 +139,14 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	}
 }
 
-func (r *resourceEndpoints) methodNotAllowed(title string) func(request *restful.Request, response *restful.Response) {
+func (r *resourceEndpoints) methodNotAllowed(detail string) func(request *restful.Request, response *restful.Response) {
 	return func(request *restful.Request, response *restful.Response) {
-		rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, title)
+		err := &types.Error{
+			Status: 405,
+			Title:  "Method not allowed",
+			Detail: detail,
+		}
+		rest_errors.HandleError(request.Request.Context(), response, err, "")
 	}
 }
 
