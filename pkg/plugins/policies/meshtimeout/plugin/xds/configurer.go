@@ -25,13 +25,16 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-type ListenerConfigurer struct {
+// DeprecatedListenerConfigurer should be only used for configuring old MeshService outbounds.
+// It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
+// Deprecated
+type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
 	Subset   rules.Subset
 }
 
-func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
+func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
 	if listener == nil {
 		return nil
 	}
@@ -69,7 +72,7 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 	return nil
 }
 
-func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
@@ -90,7 +93,7 @@ func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_r
 	}
 }
 
-func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
 	if conf := c.getConf(c.Subset); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
@@ -99,7 +102,7 @@ func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpC
 	}
 }
 
-func (c *ListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
+func (c *DeprecatedListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
@@ -219,12 +222,12 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 	return util_proto.Duration(d.Duration)
 }
 
-type RealResourceListenerConfigurer struct {
+type ListenerConfigurer struct {
 	Conf     api.Conf
 	Protocol core_mesh.Protocol
 }
 
-func (rc *RealResourceListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
+func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
 	if listener == nil {
 		return nil
 	}
@@ -260,14 +263,14 @@ func (rc *RealResourceListenerConfigurer) ConfigureListener(listener *envoy_list
 	return nil
 }
 
-func (rc *RealResourceListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+func (rc *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
 	hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 		pointer.Deref(rc.Conf.Http).RequestHeadersTimeout,
 		policies_defaults.DefaultRequestHeadersTimeout,
 	)
 }
 
-func (rc *RealResourceListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+func (rc *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {

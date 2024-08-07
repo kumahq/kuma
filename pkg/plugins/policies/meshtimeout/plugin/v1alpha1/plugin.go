@@ -90,9 +90,12 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		}
 
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		if conf == nil {
+			continue
+		}
 		configurer := plugin_xds.ListenerConfigurer{
-			Rules:    fromRules.Rules[listenerKey],
-			Subset:   core_rules.MeshSubset(),
+			Conf:     *conf,
 			Protocol: protocol,
 		}
 
@@ -102,11 +105,6 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 
 		cluster, ok := inboundClusters[createInboundClusterName(inbound.ServicePort, listenerKey.Port)]
 		if !ok {
-			continue
-		}
-
-		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
-		if conf == nil {
 			continue
 		}
 
@@ -134,7 +132,7 @@ func applyToOutbounds(
 		}
 
 		serviceName := outbound.GetService()
-		configurer := plugin_xds.ListenerConfigurer{
+		configurer := plugin_xds.DeprecatedListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 			Subset:   core_rules.MeshService(serviceName),
@@ -307,7 +305,7 @@ func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRul
 
 func configureListeners(resources []*core_xds.Resource, conf api.Conf) error {
 	for _, resource := range resources {
-		configurer := plugin_xds.RealResourceListenerConfigurer{Conf: conf, Protocol: resource.Protocol}
+		configurer := plugin_xds.ListenerConfigurer{Conf: conf, Protocol: resource.Protocol}
 		err := configurer.ConfigureListener(resource.Resource.(*envoy_listener.Listener))
 		if err != nil {
 			return err
