@@ -195,3 +195,15 @@ const (
 	OwnerDefaultUID      = "5678"
 	OwnerDefaultUsername = "kuma-dp"
 )
+
+// EnvVarXtablesLockfile is the name of the environment variable that specifies
+// the path to the lock file used by iptables-legacy version 1.8.6 and later.
+const EnvVarXtablesLockfile = "XTABLES_LOCKFILE"
+
+const (
+	// Before iptables-legacy v1.8.6 iptables were using hardcoded path to lock
+	// file which was /run/xtables.lock
+	PathLegacyXtablesLock = "/run/xtables.lock"
+	PathDevNull           = "/dev/null"
+	PathNSSwitchConf      = "/etc/nsswitch.conf"
+)
