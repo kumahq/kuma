@@ -36,22 +36,24 @@ Configuration placement:
 
 Chosen option:
 - egress only
+- support only `to` policies
+- don't require `MeshTrafficPermission` to communicate with `MeshExternalService` through egress
 
 Chosen option for configuration placement:
 
 | Policy                    | Implementation on                        |
 |---------------------------|------------------------------------------|
-| MeshAccessLog             | Sidecar (to), Egress (from)              |
+| MeshAccessLog             | Sidecar (to)                             |
 | MeshCircuitBreaker        | Egress (to)                              |
-| MeshFaultInjection        | Egress (kind: MeshExternalService, from) |
+| MeshFaultInjection        | Out of scope (Egress targeting)          |
 | MeshHealthCheck           | Egress (to)                              |
 | MeshMetric                | Out of scope (single item)               |
 | MeshProxyPatch            | Out of scope (single item)               |
-| MeshRateLimit             | Egress (kind: MeshExternalService, from) |
+| MeshRateLimit             | Out of scope (Egress targeting)          |
 | MeshRetry                 | Sidecar (to)                             |
-| MeshTimeout               | Sidecar (to), Egress (from)              |
+| MeshTimeout               | Sidecar (to)                             |
 | MeshTrace                 | Out of scope (single item)               |
-| MeshTrafficPermission     | Egress (kind: MeshExternalService, from) |
+| MeshTrafficPermission     | Out of scope (Egress targeting)          |
 | MeshLoadBalancingStrategy | Egress (to)                              |
 | MeshTCPRoute              | Sidecar (to)                             |
 | MeshHTTPRoute             | Sidecar (to)                             |
@@ -287,26 +289,9 @@ We decide to implicitly configure sidecar and egress based on the policy.
 Policies:
 - MeshTrafficPermission
 - MeshRateLimit
-- MeshGlobalRateLimit
 - MeshFaultInjection
 
-```yaml
-kind: MeshTrafficPermission
-spec:
-  targetRef:
-    kind: MeshExternalService
-    name: httpbin
-  from:
-    - targetRef:
-        kind: MeshService
-        name: backend
-      default:
-        action: Allow
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Deny
-```
+Not supported as a part of this task.
 
 ###### `To` policy on sidecar
 
@@ -359,6 +344,8 @@ spec:
 
 ###### `To` and `From` policies
 
+In this case, we will support only `to` policies.
+
 Policies:
 - MeshAccessLog
 - MeshTimeout
@@ -377,18 +364,20 @@ spec:
     default: ...
 ```
 
-On egress
-```yaml
-apiVersion: kuma.io/v1alpha1
-kind: MeshAccessLog
-spec:
-  targetRef:
-    kind: MeshExternalService
-    name: httpbin
-  from:
-  - targetRef:
-      kind: Mesh
-    default: ...
+`From` section not supported as a part of this task.
+
+#### Include default allow rbac configuration for MeshExternalService
+
+When `mTLS` is enabled (which is required with `Egress`), we require users to explicitly create a `MeshTrafficPolicy` to enable traffic. In the case of `MeshExternalService` and the current lack of targeting `Egress`, we have decided to, by default, allow all traffic through `Egress` for `MeshExternalService`.
+
+However, users will be able to disable this behavior on the `Mesh` object.
+```proto
+// Routing defines configuration for the routing in the mesh
+message Routing {
+  ...
+  // Changes the default behavior to not include the allow RBAC filter.
+  bool forbidMeshExternalServiceAccess = 3;
+}
 ```
 
 #### Only on the egress
