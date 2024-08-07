@@ -166,7 +166,7 @@ var _ = Describe("Virtual Probes", func() {
 				HTTP: &mockHTTPServerConfig{
 					Path:             "/healthz?scheme=https",
 					HTTPS:            true,
-					ListenPort:       8443,
+					ListenPort:       18443,
 					ReturnStatusCode: 200,
 				},
 			}
@@ -194,7 +194,7 @@ var _ = Describe("Virtual Probes", func() {
 
 		It("should probe HTTPS upstream without verifying server certificates and keep query", func() {
 			// time.Sleep(100 * time.Second)
-			probeReq, err := http.NewRequest("GET", virtualProbesURL("/8443/healthz?scheme=https"), nil)
+			probeReq, err := http.NewRequest("GET", virtualProbesURL("/18443/healthz?scheme=https"), nil)
 			Expect(err).ToNot(HaveOccurred())
 			probeReq.Header.Set(kuma_probes.HeaderNameScheme, "HTTPS")
 
@@ -426,6 +426,7 @@ func (m *mockApplication) startHTTPServer(stop <-chan struct{}) error {
 		}
 
 		errCh := make(chan error)
+		GinkgoLogr.Info("starting mock HTTP Server", "address", server.Addr)
 		if err := kuma_srv.StartServer(GinkgoLogr, server, &httpReady, errCh); err != nil {
 			return err
 		}
@@ -474,9 +475,10 @@ func (m *mockApplication) startTCPServer(stop <-chan struct{}) error {
 		return nil
 	}
 	return startServer(func(stopper chan func()) error {
-		GinkgoLogr.Info("starting the mock TCP server")
 		config := &net.ListenConfig{}
-		l, err := config.Listen(context.Background(), "tcp", fmt.Sprintf(":%d", m.TCP.ListenPort))
+		addr := fmt.Sprintf(":%d", m.TCP.ListenPort)
+		GinkgoLogr.Info("starting the mock TCP server", "address", addr)
+		l, err := config.Listen(context.Background(), "tcp", addr)
 		if err != nil {
 			return err
 		}
@@ -524,8 +526,9 @@ func (m *mockApplication) startGRPCServer(stop <-chan struct{}) error {
 			grpcS.Stop()
 		}
 
-		GinkgoLogr.Info("starting the mock gRPC server")
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", m.GRPC.ListenPort))
+		addr := fmt.Sprintf(":%d", m.GRPC.ListenPort)
+		GinkgoLogr.Info("starting the mock gRPC server", "address", addr)
+		lis, err := net.Listen("tcp", addr)
 		if err != nil {
 			return err_pkg.Wrap(err, "unable to listen the mock gRPC server")
 		}
