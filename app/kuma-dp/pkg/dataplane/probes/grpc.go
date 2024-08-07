@@ -78,7 +78,7 @@ func (p *Prober) probeGRPC(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	if resp.GetStatus() != grpchealth.HealthCheckResponse_SERVING {
-		logger.V(1).Info(fmt.Sprintf("the upstream server returned status %s", resp.GetStatus()))
+		logger.V(1).Info("the upstream server returned as not serving", "status", resp.GetStatus())
 		writeProbeResult(writer, Unhealthy)
 		return
 	}
