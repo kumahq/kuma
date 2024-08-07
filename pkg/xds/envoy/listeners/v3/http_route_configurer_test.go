@@ -44,6 +44,7 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
             rds:
               configSource:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: routes/inbound
             statPrefix: inbound

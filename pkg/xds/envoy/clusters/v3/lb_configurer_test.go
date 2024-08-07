@@ -44,6 +44,7 @@ var _ = Describe("Lb", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             type: EDS`,
@@ -62,6 +63,7 @@ var _ = Describe("Lb", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             lbPolicy: LEAST_REQUEST
             leastRequestLbConfig:
@@ -85,6 +87,7 @@ var _ = Describe("Lb", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             lbPolicy: RING_HASH
             name: backend
@@ -104,6 +107,7 @@ var _ = Describe("Lb", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             lbPolicy: RANDOM
             name: backend
@@ -119,6 +123,7 @@ var _ = Describe("Lb", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             lbPolicy: MAGLEV
             name: backend

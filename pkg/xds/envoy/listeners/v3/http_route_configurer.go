@@ -6,6 +6,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
@@ -52,6 +53,7 @@ func (c *HttpDynamicRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 					ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
 						Ads: &envoy_core.AggregatedConfigSource{},
 					},
+					InitialFetchTimeout: durationpb.New(0),
 				},
 			},
 		}
