@@ -380,13 +380,13 @@ message Routing {
 }
 ```
 
-#### Only on the egress
+#### Only configuring policies on the egress
 
-There are policies that make sense to be in both places and the ones like MeshTimeout that only have drawbacks on egress.
+This doesn't work since there are policies that make sense to be in both places and the ones like MeshTimeout that only have drawbacks on egress.
 
-#### Only on sidecar
+#### Only configuring policies on sidecar
 
-There are policies that make more sense on egress and in both places.
+This doesn't work because there are policies that make more sense on egress and in both places.
 
 ## Links
 
