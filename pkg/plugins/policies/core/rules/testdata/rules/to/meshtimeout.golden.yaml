@@ -1,3 +1,4 @@
+ResourceRules: {}
 Rules:
 - Conf:
     connectionTimeout: 2s

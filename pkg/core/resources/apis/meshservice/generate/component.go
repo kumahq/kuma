@@ -25,6 +25,7 @@ func Setup(rt runtime.Runtime) error {
 	generator, err := New(
 		logger,
 		rt.Config().MeshService.GenerationInterval.Duration,
+		rt.Config().MeshService.DeletionGracePeriod.Duration,
 		rt.Metrics(),
 		rt.ResourceManager(),
 		rt.MeshCache(),

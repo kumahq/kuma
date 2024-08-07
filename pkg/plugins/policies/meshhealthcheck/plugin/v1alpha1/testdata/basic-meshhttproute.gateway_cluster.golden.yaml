@@ -11,6 +11,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     healthChecks:
     - eventLogger:
@@ -67,6 +68,7 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
+        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-945e63bff332f46a
     perConnectionBufferLimitBytes: 32768

@@ -11,6 +11,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: exact-service-6c25eaca226749f3
       perConnectionBufferLimitBytes: 32768
@@ -35,6 +36,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: prefix-service-bfa07e23a84b267b
       perConnectionBufferLimitBytes: 32768
@@ -130,6 +132,7 @@ Listeners:
             rds:
               configSource:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s

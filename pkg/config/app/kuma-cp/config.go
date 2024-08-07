@@ -42,6 +42,8 @@ type Defaults struct {
 	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
 	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
 	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
+	// If true, it skips creating default hostname generators
+	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
 
 type Metrics struct {
@@ -295,7 +297,8 @@ var DefaultConfig = func() Config {
 			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
 		},
 		MeshService: MeshServiceConfig{
-			GenerationInterval: config_types.Duration{Duration: 2 * time.Second},
+			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
+			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
 		},
 	}
 }
@@ -428,6 +431,7 @@ func DefaultDefaultsConfig() *Defaults {
 		SkipMeshCreation:           false,
 		SkipTenantResources:        false,
 		CreateMeshRoutingResources: false,
+		SkipHostnameGenerators:     false,
 	}
 }
 
@@ -541,6 +545,8 @@ type MeshServiceConfig struct {
 	// How often we check whether MeshServices need to be generated from
 	// Dataplanes
 	GenerationInterval config_types.Duration `json:"generationInterval" envconfig:"KUMA_MESH_SERVICE_GENERATION_INTERVAL"`
+	// How long we wait before deleting a MeshService if all Dataplanes are gone
+	DeletionGracePeriod config_types.Duration `json:"deletionGracePeriod" envconfig:"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD"`
 }
 
 func (i MeshServiceConfig) Validate() error {

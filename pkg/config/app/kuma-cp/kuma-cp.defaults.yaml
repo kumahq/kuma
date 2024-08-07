@@ -415,6 +415,8 @@ defaults:
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
   # If true, it creates the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh
   createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
+  # If true, it skips creating default hostname generators
+  skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
 # Metrics configuration
 metrics:
   dataplane:
@@ -826,3 +828,5 @@ ipam:
 meshService:
   # How often we check whether MeshServices need to be generated from Dataplanes
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
+  # How long we wait before deleting a MeshService if all Dataplanes are gone
+  deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
