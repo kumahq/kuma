@@ -25,9 +25,11 @@ dynamicResources:
     transportApiVersion: V3
   cdsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
   ldsConfig:
     ads: {}
+    initialFetchTimeout: 0s
     resourceApiVersion: V3
 hdsConfig:
   apiType: GRPC
