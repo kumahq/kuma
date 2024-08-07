@@ -122,7 +122,7 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         generator.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: createOwner(service.BackendRef(), meshCtx),
+				ResourceOrigin: createResourceOrigin(service.BackendRef(), meshCtx),
 				Protocol:       protocol,
 			})
 		}
@@ -131,7 +131,7 @@ func GenerateClusters(
 	return resources, nil
 }
 
-func createOwner(ref common_api.BackendRef, meshCtx xds_context.MeshContext) *core_rules.UniqueResourceIdentifier {
+func createResourceOrigin(ref common_api.BackendRef, meshCtx xds_context.MeshContext) *core_rules.UniqueResourceIdentifier {
 	if ref.Kind == common_api.MeshService && ref.ReferencesRealObject() {
 		ms := meshCtx.MeshServiceByName[ref.Name]
 		port, ok := ms.FindPort(pointer.Deref(ref.Port))
