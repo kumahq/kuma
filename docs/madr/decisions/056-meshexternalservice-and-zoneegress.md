@@ -376,7 +376,7 @@ However, users will be able to disable this behavior on the `Mesh` object.
 message Routing {
   ...
   // Changes the default behavior to not include the allow RBAC filter.
-  bool forbidMeshExternalServiceAccess = 3;
+  bool defaultForbidMeshExternalServiceAccess = 3;
 }
 ```
 
