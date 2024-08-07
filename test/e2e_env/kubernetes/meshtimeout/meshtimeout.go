@@ -238,8 +238,6 @@ spec:
 		// when
 		Expect(YamlK8s(timeoutConfig)(kubernetes.Cluster)).To(Succeed())
 
-		// time.Sleep(2 * time.Hour)
-
 		// then
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
