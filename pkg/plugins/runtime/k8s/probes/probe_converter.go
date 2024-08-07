@@ -56,6 +56,8 @@ func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		hostHeader = p.HTTPGet.HTTPHeaders[headerIdx]
 		headers = append(p.HTTPGet.HTTPHeaders[:headerIdx], HostHeader(hostHeader.Value))
 		headers = append(headers, p.HTTPGet.HTTPHeaders[headerIdx+1:]...)
+	} else {
+		headers = append(headers, p.HTTPGet.HTTPHeaders...)
 	}
 
 	if p.HTTPGet.Scheme != "" && p.HTTPGet.Scheme != kube_core.URISchemeHTTP {

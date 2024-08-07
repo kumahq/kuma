@@ -69,7 +69,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	logger.V(1).Info(fmt.Sprintf("probe failed for %s", upstreamReq.URL.Path),
+	logger.V(1).Info("probe failed", "path", upstreamReq.URL.Path,
 		"headers", upstreamReq.Header, "statusCode", res.StatusCode, "body", body)
 
 	// for HTTP failures, we try to re-use original status code
