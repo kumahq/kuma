@@ -66,6 +66,10 @@ const (
 
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
+
+	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
+	// universal, it's here to avoid import cycles
+	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
 )
 
 type ResourceOrigin string
