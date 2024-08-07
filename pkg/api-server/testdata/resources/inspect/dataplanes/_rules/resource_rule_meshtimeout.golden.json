@@ -36,7 +36,7 @@
        "env": "dev"
       },
       "mesh": "mesh-1",
-      "name": "backend-1",
+      "name": "backend-2",
       "type": "MeshService"
      },
      "resourceSectionName": ""
@@ -67,7 +67,7 @@
        "env": "dev"
       },
       "mesh": "mesh-1",
-      "name": "backend-2",
+      "name": "backend-1",
       "type": "MeshService"
      },
      "resourceSectionName": ""
