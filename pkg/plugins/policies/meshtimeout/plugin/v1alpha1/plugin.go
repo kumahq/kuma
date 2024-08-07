@@ -4,6 +4,7 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -37,7 +38,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 {
+	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 && len(policies.ToRules.ResourceRules) == 0 {
 		return nil
 	}
 
@@ -65,6 +66,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			return err
 		}
 	}
+
+	err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -271,4 +278,51 @@ func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
 	} else {
 		return envoy_names.GetLocalClusterName(listenerPort)
 	}
+}
+
+func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
+	for uri, resType := range rs.IndexByOrigin() {
+		conf := rules.Compute(uri, meshCtx.Resources)
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				err := configureListeners(resources, conf.Conf[0].(api.Conf))
+				if err != nil {
+					return err
+				}
+			case envoy_resource.ClusterType:
+				err := configureClusters(resources, conf.Conf[0].(api.Conf))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func configureListeners(resources []*core_xds.Resource, conf api.Conf) error {
+	for _, resource := range resources {
+		configurer := plugin_xds.RealResourceListenerConfigurer{Conf: conf, Protocol: resource.Protocol}
+		err := configurer.ConfigureListener(resource.Resource.(*envoy_listener.Listener))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func configureClusters(resources []*core_xds.Resource, conf api.Conf) error {
+	for _, resource := range resources {
+		configurer := plugin_xds.ClusterConfigurerFromConf(conf, resource.Protocol)
+		err := configurer.Configure(resource.Resource.(*envoy_cluster.Cluster))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

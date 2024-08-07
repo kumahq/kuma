@@ -218,3 +218,65 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 	}
 	return util_proto.Duration(d.Duration)
 }
+
+type RealResourceListenerConfigurer struct {
+	Conf     api.Conf
+	Protocol core_mesh.Protocol
+}
+
+func (rc *RealResourceListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
+	if listener == nil {
+		return nil
+	}
+
+	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
+		rc.configureRequestTimeout(hcm.GetRouteConfig())
+		rc.configureRequestHeadersTimeout(hcm)
+		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
+		if hcm.CommonHttpProtocolOptions == nil {
+			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+		}
+
+		hcm.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(0)
+		return nil
+	}
+	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
+		proxy.IdleTimeout = toProtoDurationOrDefault(rc.Conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
+		return nil
+	}
+	for _, filterChain := range listener.FilterChains {
+		switch rc.Protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (rc *RealResourceListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+	hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
+		pointer.Deref(rc.Conf.Http).RequestHeadersTimeout,
+		policies_defaults.DefaultRequestHeadersTimeout,
+	)
+}
+
+func (rc *RealResourceListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+	if routeConfiguration != nil {
+		for _, vh := range routeConfiguration.VirtualHosts {
+			for _, route := range vh.Routes {
+				ConfigureRouteAction(
+					route.GetRoute(),
+					pointer.Deref(rc.Conf.Http).RequestTimeout,
+					pointer.Deref(rc.Conf.Http).StreamIdleTimeout,
+				)
+			}
+		}
+	}
+}
