@@ -9,7 +9,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -117,14 +119,28 @@ func GenerateClusters(
 			}
 
 			resources = resources.Add(&core_xds.Resource{
-				Name:     clusterName,
-				Origin:   generator.OriginOutbound,
-				Resource: edsCluster,
+				Name:           clusterName,
+				Origin:         generator.OriginOutbound,
+				Resource:       edsCluster,
+				ResourceOrigin: createResourceOrigin(service.BackendRef(), meshCtx),
+				Protocol:       protocol,
 			})
 		}
 	}
 
 	return resources, nil
+}
+
+func createResourceOrigin(ref common_api.BackendRef, meshCtx xds_context.MeshContext) *core_rules.UniqueResourceIdentifier {
+	if ref.Kind == common_api.MeshService && ref.ReferencesRealObject() {
+		ms := meshCtx.MeshServiceByName[ref.Name]
+		port, ok := ms.FindPort(pointer.Deref(ref.Port))
+		if ok {
+			return pointer.To(core_rules.UniqueKey(ms, port.Name))
+		}
+		return pointer.To(core_rules.UniqueKey(ms, ""))
+	}
+	return nil
 }
 
 func sniForBackendRef(
