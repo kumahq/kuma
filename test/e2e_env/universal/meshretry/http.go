@@ -173,8 +173,7 @@ mesh: "%s"
 name: meshretry-policy
 spec:
   targetRef:
-    kind: MeshService
-    name: demo-client
+    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -266,7 +265,8 @@ spec:
     name: demo-client
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshService
+        name: test-server
       rules:
         - matches:
             - path:
