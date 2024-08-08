@@ -34,27 +34,13 @@ networking:
 `, meshName))
 	}
 
-	hostnameGenerator := func(meshName string) InstallFunc {
-		return YamlUniversal(fmt.Sprintf(`
-type: HostnameGenerator
-name: mes-hg
-mesh: "%s"
-spec:
-  selector:
-    meshExternalService:
-      matchLabels:
-        hostname: "true"
-  template: "{{ .Name }}.mesh"
-`, meshName))
-	}
-
 	meshExternalService := func(service, host, meshName string, port int, tls bool, caCert []byte) *v1alpha1.MeshExternalServiceResource {
 		mes := &v1alpha1.MeshExternalServiceResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: meshName,
 				Name: service,
 				Labels: map[string]string{
-					"hostname": "true",
+					"kuma.io/origin": "zone",
 				},
 			},
 			Spec: &v1alpha1.MeshExternalService{
@@ -98,7 +84,6 @@ spec:
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
-			Install(hostnameGenerator(meshNameNoDefaults)).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
@@ -134,7 +119,7 @@ spec:
 				err := universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-1", esHttpContainerName, meshName, 80, false, nil)))
 				Expect(err).ToNot(HaveOccurred())
 
-				checkSuccessfulRequest("ext-srv-1.mesh", clientName, And(
+				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
 					ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
@@ -149,10 +134,10 @@ spec:
 				Expect(err).ToNot(HaveOccurred())
 
 				// when access the first external service with .mesh
-				checkSuccessfulRequest("ext-srv-1.mesh", clientName,
+				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName,
 					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http")))
 
-				checkSuccessfulRequest("ext-srv-2.mesh", clientName,
+				checkSuccessfulRequest("ext-srv-2.extsvc.mesh.local", clientName,
 					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http-2")))
 			})
 
@@ -165,7 +150,7 @@ spec:
 
 				// then accessing the secured external service fails
 				Eventually(func(g Gomega) {
-					response, err := client.CollectFailure(universal.Cluster, clientName, "http://ext-srv-tls.mesh")
+					response, err := client.CollectFailure(universal.Cluster, clientName, "http://ext-srv-tls.extsvc.mesh.local")
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(response.ResponseCode).To(Equal(503))
 				}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
@@ -179,7 +164,7 @@ spec:
 				Expect(err).ToNot(HaveOccurred())
 
 				// then accessing the secured external service succeeds
-				checkSuccessfulRequest("http://ext-srv-tls.mesh", clientName, Not(ContainSubstring("HTTPS")))
+				checkSuccessfulRequest("http://ext-srv-tls.extsvc.mesh.local", clientName, Not(ContainSubstring("HTTPS")))
 			})
 		})
 	}

@@ -37,7 +37,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: "{{ .DisplayName }}.mzsvc.mesh.local",
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-multi-zone-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-multi-zone-service", namespace, nil, spec); err != nil {
 			return err
 		}
 
@@ -53,7 +53,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-kube-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-kube-mesh-service", namespace, nil, spec); err != nil {
 			return err
 		}
 
@@ -69,7 +69,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ label "statefulset.kubernetes.io/pod-name" }}.{{ label "k8s.kuma.io/service-name" }}.{{ .Namespace }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-headless-kube-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-headless-kube-mesh-service", namespace, nil, spec); err != nil {
 			return err
 		}
 
@@ -84,7 +84,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.svc.{{ .Zone }}.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-universal-mesh-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-universal-mesh-service", namespace, nil, spec); err != nil {
 			return err
 		}
 
@@ -98,12 +98,15 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.extsvc.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-external-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-external-service", namespace, nil, spec); err != nil {
 			return err
 		}
 	}
 
 	if cfg.Mode == core.Zone {
+		labels := map[string]string{
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+		}
 		spec := hostnamegenerator_api.HostnameGenerator{
 			Selector: hostnamegenerator_api.Selector{
 				MeshExternalService: &hostnamegenerator_api.LabelSelector{
@@ -114,7 +117,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 			},
 			Template: `{{ .DisplayName }}.extsvc.mesh.local`,
 		}
-		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-mesh-external-service", namespace, spec); err != nil {
+		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-mesh-external-service", namespace, labels, spec); err != nil {
 			return err
 		}
 
@@ -129,7 +132,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 				},
 				Template: `{{ .DisplayName }}.svc.mesh.local`,
 			}
-			if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-universal-mesh-service", namespace, spec); err != nil {
+			if err := ensureHostnameGeneratorExists(ctx, resManager, log, "local-universal-mesh-service", namespace, labels, spec); err != nil {
 				return err
 			}
 		}
@@ -143,6 +146,7 @@ func ensureHostnameGeneratorExists(
 	logger logr.Logger,
 	name string,
 	namespace string,
+	labels map[string]string,
 	spec hostnamegenerator_api.HostnameGenerator,
 ) error {
 	if namespace != "" {
@@ -156,7 +160,11 @@ func ensureHostnameGeneratorExists(
 		return nil
 	case core_store.IsResourceNotFound(err):
 		hostnameGen.Spec = &spec
-		if err := resManager.Create(ctx, hostnameGen, core_store.CreateByKey(name, core_model.NoMesh)); err != nil {
+		opts := []core_store.CreateOptionsFunc{
+			core_store.CreateByKey(name, core_model.NoMesh),
+			core_store.CreateWithLabels(labels),
+		}
+		if err := resManager.Create(ctx, hostnameGen, opts...); err != nil {
 			return errors.Wrapf(err, "could not create a hostname generator %q", name)
 		}
 		logger.Info("hostname generator created", "name", name)
