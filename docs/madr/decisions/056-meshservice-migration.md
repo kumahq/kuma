@@ -15,10 +15,24 @@ In general the migration process for MeshService consists of no longer using
 `kuma.io/service` so:
 
 - targeting policies to the real `MeshService` resource
-- switching over to the `MeshService` i.e. `HostnameGenerator` hostnames, if not
-  using Kubernetes DNS
+- switching over to the `MeshService` i.e. `HostnameGenerator` hostnames and
+  local-zone load balancing from cross-zone load balancing
 
-### `MeshService`-targetted policy
+Ideally users can try out `MeshService` behavior for individual consumers.
+
+Note that we in general can't be smart about which behavior should be the
+default because we can't differentiate between a new user, who doesn't care
+about `kuma.io/service`-style behavior, and an existing user who's just
+redeploying on a new `Mesh` or control plane.
+
+We have to make a choice between:
+
+- new behavior by default, `UPGRADE.md` tells users to set a variable to keep
+  old behavior
+- old behavior by default, new users have to be convinced to set a variable to
+  get new behavior
+
+### `MeshService`-targeted policy
 
 If for example we have a policy targeted at:
 
@@ -43,6 +57,32 @@ We can always convert the above to an additional entry:
       port: 5000
 ```
 
+Potentially we could offer a tool to convert these refs from old-style to
+new-style `MeshService`.
+
+#### Require `sectionName`
+
+Because the original refers to instances of `demo-app_kuma-demo_svc_5000` from
+any zone, we have to use `labels` to match instances outside of the local
+zone.
+
+Note that there's an ambiguity here with universal. We can't tell whether:
+
+```
+spec:
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+```
+
+is meant to target `kuma.io/service` or a `MeshService` named `backend` and thus
+we can't determine whether all instances of `kuma.io/service: backend` are meant
+or only the instances matched by `MeshService`.
+
+Thus we have to require `sectionName` to a port, in order to refer to
+`MeshServices` unambiguously.
+
 ### Stats
 
 For the Kuma API it's important that we can derive the destination that corresponds
@@ -61,20 +101,22 @@ listener and a cluster being created.
 
 #### Before `MeshService` we have
 
-- `<kuma.io/service>.mesh` -> Kuma generated VIP
+- One cross-zone cluster for a `kuma.io/service`
+
+- A `<kuma.io/service>.mesh` listener for Kuma generated VIP -> cross-zone cluster
 
 On Kubernetes we also have
 
-- `name.namespace.svc.cluster.local` -> ClusterIP
+- `name.namespace.svc.cluster.local` -> ClusterIP -> same cross-zone cluster
 
 #### Once `MeshService` is created
 
 `MeshService` takes over _the cluster generation_ but does
 not affect the VIP generation. So we now have:
 
-- `<kuma.io/service>.mesh` -> Kuma VIP
-- `name_namespace_svc_port` -> ClusterIP
-- `HostnameGenerator` DNS name for the `MeshService` -> New Kuma VIP
+- `<kuma.io/service>.mesh` -> Kuma VIP -> local-zone cluster
+- `name_namespace_svc_port` -> ClusterIP -> local-zone cluster
+- `HostnameGenerator` DNS name for the `MeshService` -> New Kuma VIP -> local-zone cluster
   - note that this includes synced `MeshServices`
 
 `MeshService` load balances only to the local zone, as opposed to cross-zone.
@@ -88,25 +130,15 @@ upon upgrade.
 In particular with Kubernetes, it's important to keep in mind that after
 MeshService is enabled we no longer generate our own VIP.
 So any requests to MeshService hostnames go to the same
-outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
-
-###### Status quo
-
-- On Kubernetes there are two DNS names/outbound IP addresses:
-  - Traffic to `name_namespace_svc_port`/ClusterIP is load-balanced cross-zone
-  - Traffic to the `<kuma.io/service>.mesh`/VIP is load-balanced cross-zone
-
-###### `MeshService`
-
-- We now have one outbound IP address:
-  - Traffic to the generated hostname of the `MeshService` goes through the Cluster IP
-  - This cluster IP is no longer cross-zone load balanced
+outbound listener as with requests to Kubernetes DNS names,
+the listener for the ClusterIP.
 
 ## Considered Options
 
 - Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService labels: {kuma.io/display-name: demo-app, kuma.io/namespace: kuma-demo}, port: 5000`.
   - we can drop this behavior when we drop `kuma.io/service` support
+  - require `sectionName` to disambiguate
 - For traffic:
   - don't generate MeshService by default
   - have a setting to disable using MeshServices
@@ -121,8 +153,8 @@ outbound listener as with requests to Kubernetes DNS names, the ClusterIP.
 
 - Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService `{name: demo-app, namespace: kuma-demo, spec.ports[port == 5000]}`.
-- Change `MeshService` to do cross-zone load balancing by default and have users
-  switch over to local zone plus `MeshMultiZoneServices`
+- Generate new clusters for `MeshServices` and allow users to gradually switch
+  consumers over
 
 ## Pros and Cons of the Options
 
@@ -157,6 +189,8 @@ Users would disable this behavior explicitly to switch to local zone behavior.
 
 This means that the clusters generated by Envoy would no longer change on upgrade,
 preserving the traffic.
+
+It also means that policies targeted to real `MeshServices` also target `.mesh` traffic, which is probably fine.
 
 #### Migration
 
@@ -214,13 +248,6 @@ Instead of `MeshService` taking over cluster generation, generate separate clust
   - this includes synced `MeshServices`
 - `name.namespace.svc.cluster.local` -> ClusterIP -> depends
 
-Kubernetes has an extra complication because the Kube DNS name/ClusterIP
-has to point at one cluster or the other, so we need a switch here:
-
-```
-KUMA_RUNTIME_KUBERNETES_DNS_CLUSTER_PRIORITY=ServiceTag|MeshService
-```
-
 For example, we could have two formats like `name_namespace_svc_port` and `name_namespace_msvc_port`.
 
 This means increasing the number of synced clusters when **not using reachable
@@ -230,6 +257,27 @@ thus both clusters are required.
 However, with reachable services, things become very straightforward because it's always
 very explicit which services are actually in use and need to be synced.
 
+#### Kubernetes DNS ClusterIP
+
+Kubernetes has an extra complication because the Kube DNS name/ClusterIP
+has to point at one cluster or the other.
+
+We either need a switch here:
+
+```
+KUMA_RUNTIME_KUBERNETES_DNS_CLUSTER_PRIORITY=ServiceTag|MeshService
+```
+
+or maybe it's OK to switch to local-zone load balancing here:
+
+- we currently only add an outbound for a service on k8s if there's a local
+  instance of it
+- with `localityAwareLoadBalancing: false`
+  - only if local instances becomes unhealthy does traffic flow to other zones
+- with `localityAwareLoadBalancing: true`
+  - traffic never flows cross-zone
+- what about `MeshLoadBalancingStrategy`?
+
 #### Migration
 
 1. Upgrade to new version
@@ -237,6 +285,9 @@ very explicit which services are actually in use and need to be synced.
    yet
 1. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
    depending on whether they need cross-zone
+   - we can sync new clusters on a case-by-case basis by setting an annotation,
+     for example:
+        `reachableBackendRefs: { kind: MeshService, labels: {} }`
 1. Disable old cluster/VIP generation
 
 #### Pros
