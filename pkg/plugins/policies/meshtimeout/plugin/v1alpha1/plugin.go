@@ -92,7 +92,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
 		if conf == nil {
-			continue
+			conf = &plugin_xds.DefaultTimeoutConf
 		}
 		configurer := plugin_xds.ListenerConfigurer{
 			Conf:     *conf,
@@ -282,7 +282,7 @@ func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRul
 	for uri, resType := range rs.IndexByOrigin() {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
-			continue
+			conf = &core_rules.ResourceRule{Conf: []interface{}{plugin_xds.DefaultTimeoutConf}}
 		}
 
 		for typ, resources := range resType {
