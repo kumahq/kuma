@@ -13,10 +13,10 @@
     {
      "conf": [
       {
-       "connectionTimeout": "11s",
-       "idleTimeout": "10s",
+       "connectionTimeout": "5s",
+       "idleTimeout": "5s",
        "http": {
-        "requestTimeout": "12s"
+        "requestTimeout": "5s"
        }
       }
      ],
@@ -28,46 +28,15 @@
         "name": "matched-for-rules-mt-1",
         "type": "MeshService"
        },
-       "ruleIndex": 0
+       "ruleIndex": 1
       }
      ],
      "resourceMeta": {
       "labels": {
-       "env": "dev"
+       "env": "prod"
       },
       "mesh": "mesh-1",
-      "name": "backend-1",
-      "type": "MeshService"
-     },
-     "resourceSectionName": ""
-    },
-    {
-     "conf": [
-      {
-       "connectionTimeout": "11s",
-       "idleTimeout": "10s",
-       "http": {
-        "requestTimeout": "12s"
-       }
-      }
-     ],
-     "origin": [
-      {
-       "resourceMeta": {
-        "labels": {},
-        "mesh": "mesh-1",
-        "name": "matched-for-rules-mt-1",
-        "type": "MeshService"
-       },
-       "ruleIndex": 0
-      }
-     ],
-     "resourceMeta": {
-      "labels": {
-       "env": "dev"
-      },
-      "mesh": "mesh-1",
-      "name": "backend-2",
+      "name": "backend-3",
       "type": "MeshService"
      },
      "resourceSectionName": ""
@@ -76,10 +45,34 @@
    "toRules": [
     {
      "conf": {
-      "connectionTimeout": "11s",
-      "idleTimeout": "10s",
+      "connectionTimeout": "7s",
+      "idleTimeout": "7s",
       "http": {
-       "requestTimeout": "12s"
+       "requestTimeout": "7s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend-4"
+      }
+     ],
+     "origin": [
+      {
+       "labels": {},
+       "mesh": "mesh-1",
+       "name": "matched-for-rules-mt-1",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "connectionTimeout": "5s",
+      "idleTimeout": "5s",
+      "http": {
+       "requestTimeout": "5s"
       }
      },
      "matchers": [

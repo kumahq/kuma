@@ -22,44 +22,16 @@ spec:
   to:
     - targetRef:
         kind: MeshService
-        labels:
-          env: dev
+        name: backend-4
+        sectionName: super-port
       default:
-        idleTimeout: 10s
-        connectionTimeout: 11s
+        idleTimeout: 7s
+        connectionTimeout: 7s
         http:
-          requestTimeout: 12s
+          requestTimeout: 7s
 ---
 type: MeshService
-name: backend-1
-mesh: mesh-1
-labels:
-  env: dev
-spec:
-  selector:
-    dataplaneTags:
-      app: backend
-  ports:
-    - port: 80
-      targetPort: 80
-      appProtocol: http
----
-type: MeshService
-name: backend-2
-mesh: mesh-1
-labels:
-  env: dev
-spec:
-  selector:
-    dataplaneTags:
-      app: backend
-  ports:
-    - port: 80
-      targetPort: 80
-      appProtocol: http
----
-type: MeshService
-name: backend-3
+name: backend-4
 mesh: mesh-1
 labels:
   env: prod
@@ -68,6 +40,7 @@ spec:
     dataplaneTags:
       app: backend
   ports:
-    - port: 80
+    - name: super-port
+      port: 80
       targetPort: 80
       appProtocol: http

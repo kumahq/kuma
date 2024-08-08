@@ -13,10 +13,10 @@
     {
      "conf": [
       {
-       "connectionTimeout": "11s",
-       "idleTimeout": "10s",
+       "connectionTimeout": "7s",
+       "idleTimeout": "7s",
        "http": {
-        "requestTimeout": "12s"
+        "requestTimeout": "7s"
        }
       }
      ],
@@ -33,60 +33,29 @@
      ],
      "resourceMeta": {
       "labels": {
-       "env": "dev"
+       "env": "prod"
       },
       "mesh": "mesh-1",
-      "name": "backend-1",
+      "name": "backend-4",
       "type": "MeshService"
      },
-     "resourceSectionName": ""
-    },
-    {
-     "conf": [
-      {
-       "connectionTimeout": "11s",
-       "idleTimeout": "10s",
-       "http": {
-        "requestTimeout": "12s"
-       }
-      }
-     ],
-     "origin": [
-      {
-       "resourceMeta": {
-        "labels": {},
-        "mesh": "mesh-1",
-        "name": "matched-for-rules-mt-1",
-        "type": "MeshService"
-       },
-       "ruleIndex": 0
-      }
-     ],
-     "resourceMeta": {
-      "labels": {
-       "env": "dev"
-      },
-      "mesh": "mesh-1",
-      "name": "backend-2",
-      "type": "MeshService"
-     },
-     "resourceSectionName": ""
+     "resourceSectionName": "super-port"
     }
    ],
    "toRules": [
     {
      "conf": {
-      "connectionTimeout": "11s",
-      "idleTimeout": "10s",
+      "connectionTimeout": "7s",
+      "idleTimeout": "7s",
       "http": {
-       "requestTimeout": "12s"
+       "requestTimeout": "7s"
       }
      },
      "matchers": [
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": ""
+       "value": "backend-4"
       }
      ],
      "origin": [
