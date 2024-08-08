@@ -291,10 +291,6 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_EBPF_PROGRAMS_SOURCE_PATH
   value: {{ .Values.experimental.ebpf.programsSourcePath }}
 {{- end }}
-{{- if not .Values.experimental.deltaKds }}
-- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-  value: "false"
-{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
@@ -353,10 +349,6 @@ env:
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
-{{- end }}
-{{- if not .Values.experimental.deltaKds }}
-- name: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
-  value: "false"
 {{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY

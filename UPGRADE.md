@@ -181,6 +181,10 @@ Migration step:
 If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
 Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
 
+### Removal of KDS `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` configuration option
+
+In this release, KDS Delta is used by default and the CP environment variable `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` doesn't exist anymore.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

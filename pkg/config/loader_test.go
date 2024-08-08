@@ -261,7 +261,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
-			Expect(cfg.Multizone.Global.KDS.DisableSOTW).To(BeTrue())
 			Expect(cfg.Multizone.Global.KDS.ResponseBackoff.Duration).To(Equal(time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration).To(Equal(110 * time.Second))
@@ -360,7 +359,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
-			Expect(cfg.Experimental.KDSDeltaEnabled).To(BeTrue())
 			Expect(cfg.Experimental.UseTagFirstVirtualOutboundModel).To(BeFalse())
 			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.Enabled).To(BeTrue())
@@ -616,7 +614,6 @@ multizone:
       msgSendTimeout: 10s
       nackBackoff: 11s
       responseBackoff: 1s
-      disableSOTW: true
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
@@ -744,7 +741,6 @@ access:
 experimental:
   kubeOutboundsAsVIPs: true
   cniApp: "kuma-cni"
-  kdsDeltaEnabled: true
   useTagFirstVirtualOutboundModel: false
   ingressTagFilters: ["kuma.io/service"]
   kdsEventBasedWatchdog:
@@ -960,7 +956,6 @@ meshService:
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF":                                               "1s",
-				"KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW":                                                   "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_POLL_INTERVAL":                                "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_TIMEOUT":                                      "110s",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
@@ -974,7 +969,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
-				"KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED":                                                      "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
