@@ -155,7 +155,39 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
 	})
 
-	It("should return 400 when mesh label is set", func() {
+	It("should return 400 when mesh label is different from resource mesh", func() {
+		// given
+		apiServer, store, stop := createServer(true, true)
+		defer stop()
+		createMesh(store, "mesh-1")
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-1",
+				Mesh: "mesh-1",
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.MeshTag:             "some-other-mesh",
+					mesh_proto.ResourceOriginLabel: "zone",
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), "mesh-1", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
+
+		// and then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onmeshlabeldiffer.golden.json")))
+	})
+
+	It("should not return 400 when mesh label is identical to resource mesh", func() {
 		// given
 		apiServer, store, stop := createServer(true, true)
 		defer stop()
@@ -181,10 +213,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// and then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onmeshlabelset.golden.json")))
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 	})
 
 	DescribeTable("should set origin label automatically when origin validation is disabled",

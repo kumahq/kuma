@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/mesh\"]",
-   "reason": "kuma.io/mesh label should not be set"
+   "reason": "kuma.io/mesh label must not differ from mesh set on resource"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/mesh\"]",
-   "message": "kuma.io/mesh label should not be set"
+   "message": "kuma.io/mesh label must not differ from mesh set on resource"
   }
  ]
 }

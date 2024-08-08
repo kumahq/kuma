@@ -538,8 +538,8 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			if ok && zoneTag != r.zoneName {
 				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
 			}
-			if _, ok = resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label should not be set", mesh_proto.MeshTag))
+			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 			}
 		}
 	}
