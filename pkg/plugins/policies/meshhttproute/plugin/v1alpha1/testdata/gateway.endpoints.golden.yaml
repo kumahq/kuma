@@ -11,11 +11,3 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us

@@ -11,14 +11,6 @@ resources:
               address: 192.168.0.4
               portValue: 8004
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: kafka
-              region: eu
-            envoy.transport_socket_match:
-              kuma.io/protocol: kafka
-              region: eu
 - name: backend-c72efb5be46fae6b
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -31,11 +23,3 @@ resources:
               address: 192.168.0.5
               portValue: 8005
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: kafka
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: kafka
-              region: us

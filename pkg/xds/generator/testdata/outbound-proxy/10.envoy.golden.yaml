@@ -52,12 +52,6 @@ resources:
               address: 192.168.0.1
               portValue: 8081
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              region: us
-            envoy.transport_socket_match:
-              region: us
       - endpoint:
           address:
             socketAddress:

@@ -59,15 +59,15 @@ func (r *Retriever) GetCLA(_ context.Context, _, _ string, cluster envoy_common.
 		}
 	}
 
-	// For the majority of cases we don't have custom tags, we can just take a slice
-	endpoints := endpointMap[cluster.Service()]
-	if len(matchTags) > 0 {
-		endpoints = []xds.Endpoint{}
-		for _, endpoint := range endpointMap[cluster.Service()] {
-			if endpoint.ContainsTags(matchTags) {
-				endpoints = append(endpoints, endpoint)
-			}
+	var endpoints []xds.Endpoint
+	for _, endpoint := range endpointMap[cluster.Service()] {
+		if len(matchTags) > 0 && !endpoint.ContainsTags(matchTags) {
+			continue
 		}
+		ep := endpoint
+		// clear tags to lower the size of CLA. We don't need metadata in endpoints. Endpoints are already prefiltered.
+		ep.Tags = nil
+		endpoints = append(endpoints, ep)
 	}
 	return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpoints, apiVersion)
 }
