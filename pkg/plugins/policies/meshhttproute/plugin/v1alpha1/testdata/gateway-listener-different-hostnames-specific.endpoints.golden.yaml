@@ -11,14 +11,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us
 - name: backend-6d0a1cf7605e8b1e
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -31,14 +23,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us
 - name: backend-a285094d9b0d7032
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -51,14 +35,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us
 - name: backend-dda53ef9426194b2
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -71,14 +47,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us
 - name: backend-ed49e74a1f66b25c
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
@@ -91,14 +59,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: us
 - name: backend-wild-aac0221a73d6116a
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment

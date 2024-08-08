@@ -116,7 +116,9 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		expectedCla := envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{endpointMap["backend"][0]})
+		ep := endpointMap["backend"][0]
+		ep.Tags = nil
+		expectedCla := envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{ep})
 		Expect(claV1).To(matchers.MatchProto(expectedCla))
 
 		// when
@@ -128,7 +130,9 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		expectedCla = envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{endpointMap["backend"][1]})
+		ep = endpointMap["backend"][1]
+		ep.Tags = nil
+		expectedCla = envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{ep})
 		Expect(claV2).To(matchers.MatchProto(expectedCla))
 	})
 })

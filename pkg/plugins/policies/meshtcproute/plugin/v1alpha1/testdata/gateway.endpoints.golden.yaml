@@ -11,14 +11,6 @@ resources:
               address: 192.168.0.4
               portValue: 8084
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: tcp
-              region: us
-            envoy.transport_socket_match:
-              kuma.io/protocol: tcp
-              region: us
 - name: go-backend-1-a3e0f78d6b8a9607
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment

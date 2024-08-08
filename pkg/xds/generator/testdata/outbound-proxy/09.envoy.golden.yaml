@@ -59,14 +59,6 @@ resources:
               address: 192.168.0.6
               portValue: 8086
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: http
-              region: eu
-            envoy.transport_socket_match:
-              kuma.io/protocol: http
-              region: eu
 - name: outbound:127.0.0.1:30001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
