@@ -266,8 +266,7 @@ spec:
     name: demo-client
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server
+        kind: Mesh
       rules:
         - matches:
             - path:
