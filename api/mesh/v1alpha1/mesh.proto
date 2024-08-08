@@ -275,4 +275,8 @@ message Routing {
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false
   bool zoneEgress = 2;
+
+  // If true, blocks traffic to MeshExternalServices.
+  // Default: false
+  bool defaultForbidMeshExternalServiceAccess = 3;
 }
