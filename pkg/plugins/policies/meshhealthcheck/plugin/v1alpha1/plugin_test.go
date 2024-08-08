@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -45,6 +46,18 @@ var _ = Describe("MeshHealthCheck", func() {
 	splitHttpServiceTag := "echo-http-_0_"
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
+
+	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
 	type testCase struct {
 		resources        []core_xds.Resource
 		toRules          core_rules.ToRules
@@ -242,6 +255,29 @@ var _ = Describe("MeshHealthCheck", func() {
 				},
 			},
 			expectedClusters: []string{"basic_grpc_health_check_cluster.golden.yaml"},
+		}),
+		Entry("TCP HealthCheck to real MeshService", testCase{
+			resources: tcpCluster,
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Interval:           test.ParseDuration("10s"),
+								Timeout:            test.ParseDuration("2s"),
+								UnhealthyThreshold: pointer.To[int32](3),
+								HealthyThreshold:   pointer.To[int32](1),
+								Tcp: &api.TcpHealthCheck{
+									Disabled: pointer.To(false),
+									Send:     pointer.To("cGluZwo="),
+									Receive:  &[]string{"cG9uZwo="},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedClusters: []string{"basic_tcp_health_check_cluster_real_ms.golden.yaml"},
 		}),
 	)
 
