@@ -26,8 +26,7 @@ import (
 )
 
 const (
-	managedByValue                  string = "meshservice-generator"
-	deletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
+	managedByValue string = "meshservice-generator"
 )
 
 // Generator generates MeshService objects from Dataplane resources created on
@@ -180,7 +179,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		delete(meshservicesByName, meshService.GetMeta().GetName())
-		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[deletionGracePeriodStartedLabel]
+		gracePeriodStartedAtText, hasGracePeriodLabel := meshService.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 
 		servicesDiffer := newMeshService != nil && servicesDiffer(meshService.Spec, newMeshService)
 		if newMeshService != nil && (servicesDiffer || hasGracePeriodLabel) {
@@ -191,7 +190,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 
 			// Unset the grace period by deleting the label
 			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-			delete(newLabels, deletionGracePeriodStartedLabel)
+			delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 				log.Error(err, "couldn't update MeshService")
@@ -227,7 +226,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 					continue
 				}
 				newLabels := maps.Clone(meshService.GetMeta().GetLabels())
-				newLabels[deletionGracePeriodStartedLabel] = string(nowText)
+				newLabels[mesh_proto.DeletionGracePeriodStartedLabel] = string(nowText)
 				if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 					log.Error(err, "couldn't update MeshService")
 					continue
