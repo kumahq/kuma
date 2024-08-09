@@ -20,7 +20,8 @@ func MeshExternalServices() {
 	namespace := "mesh-external-services"
 	clientNamespace := "client-mesh-external-services"
 
-	egressMesh := fmt.Sprintf(`
+	egressMesh := func(disallowMesTraffic string) InstallFunc {
+		return YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
@@ -36,12 +37,14 @@ spec:
       passthrough: false
   routing:
     zoneEgress: true
-`, meshNameEgress)
+    defaultForbidMeshExternalServiceAccess: %s
+`, meshNameEgress, disallowMesTraffic))
+	}
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
-			Install(YamlK8s(egressMesh)).
+			Install(egressMesh("true")).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -160,25 +163,8 @@ spec:
 				g.Expect(response.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 
-			// when MTP targeting MeshExternalService added
-			Expect(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshTrafficPermission
-metadata:
-  name: mtp1
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshExternalService
-    name: mesh-external-service-egress
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
-        action: Allow
-`, Config.KumaNamespace, meshNameEgress))(kubernetes.Cluster)).To(Succeed())
+			// when allow all traffic
+			Expect(kubernetes.Cluster.Install(egressMesh("false"))).To(Succeed())
 
 			// then traffic works
 			Eventually(func(g Gomega) {
