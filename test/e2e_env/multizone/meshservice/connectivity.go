@@ -71,7 +71,6 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: msconnectivity
-    kuma.io/managed-by: k8s-controller
     k8s.kuma.io/is-headless-service: "false"
 spec:
   selector:
@@ -101,7 +100,6 @@ name: test-server
 mesh: msconnectivity
 labels:
   kuma.io/origin: zone
-  kuma.io/managed-by: meshservice-generator # should be changed to kuma.io/env: universal long term
 spec:
   selector:
     dataplaneTags:

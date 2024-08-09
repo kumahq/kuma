@@ -458,6 +458,11 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 			setIfNotExist(mesh_proto.ZoneTag, localZone)
+			env := mesh_proto.UniversalEnvironment
+			if isK8s {
+				env = mesh_proto.KubernetesEnvironment
+			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 
