@@ -142,6 +142,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 			}
 		} else {
+			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
+			// of the dataplane
 			if len(reachableServices) != 0 && reachableBackends == nil {
 				continue
 			}
@@ -157,6 +159,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					// Reachable services takes precedence over reachable services graph.
 					continue
 				}
+				// we don't support MeshTrafficPermission for MeshExternalService at the moment
+				// TODO: https://github.com/kumahq/kuma/issues/11077
 			} else if outbound.BackendRef.Kind != "MeshExternalService" {
 				// static reachable services takes precedence over the graph
 				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {

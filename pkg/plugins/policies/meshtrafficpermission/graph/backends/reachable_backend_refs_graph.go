@@ -5,13 +5,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
 )
 
 var log = core.Log.WithName("rms-graph")
@@ -56,42 +54,14 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 		if ms.GetMeta().GetLabels() != nil && ms.GetMeta().GetLabels()[mesh_proto.ZoneTag] != "" {
 			dpTags[mesh_proto.ZoneTag] = ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 		}
-		resources := context.Resources{
-			MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-				mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
-					Items: trimNotSupportedTags(mtps, dpTags),
-				},
-			},
-		}
-		// build artificial dpp for matching
-		dp := mesh.NewDataplaneResource()
-
-		dp.Spec = &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "1.1.1.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Tags: dpTags,
-						Port: 1234,
-					},
-				},
-			},
-		}
-
-		matched, err := matchers.MatchedPolicies(mtp_api.MeshTrafficPermissionType, dp, resources)
+		rl, ok, err := graph_util.ComputeMtpRulesForTags(dpTags, trimNotSupportedTags(mtps, dpTags))
 		if err != nil {
 			log.Error(err, "service could not be matched. It won't be reached by any other service", "service", ms.Meta.GetName())
-			continue // it's better to ignore one service that to break the whole graph
+			continue
 		}
-
-		rl, ok := matched.FromRules.Rules[core_rules.InboundListener{
-			Address: "1.1.1.1",
-			Port:    1234,
-		}]
 		if !ok {
 			continue
 		}
-
 		rules[BackendKey{
 			Kind: "MeshService",
 			Name: ms.Meta.GetName(),

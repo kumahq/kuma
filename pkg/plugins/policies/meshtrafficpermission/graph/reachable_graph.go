@@ -11,12 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var SupportedTags = map[string]struct{}{
-	mesh_proto.KubeNamespaceTag: {},
-	mesh_proto.KubeServiceTag:   {},
-	mesh_proto.KubePortTag:      {},
-}
-
 type Graph struct {
 	rules        map[string]core_rules.Rules
 	backendRules map[backends.BackendKey]core_rules.Rules

@@ -28,6 +28,12 @@ func ReachableBackends() {
         labels:
           reachable: "true"
 `, namespace)
+	reachableBackendsNamespaceLabel := fmt.Sprintf(`
+      refs:
+      - kind: MeshService
+        labels:
+          k8s.kuma.io/namespace: %s
+`, namespace)
 
 	meshPassthrough := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1 
@@ -64,39 +70,6 @@ spec:
       port: 80
 `, serviceName, meshName, serviceName, serviceName)
 	}
-
-	hostnameGeneratorMs := fmt.Sprintf(`
-type: HostnameGenerator
-name: hg-ms-reachable
-spec:
-  selector:
-    meshService:
-      matchLabels:
-        k8s.kuma.io/namespace: %s
-  template: "{{ .DisplayName }}.mesh"
-`, namespace)
-
-	hostnameGeneratorMes := fmt.Sprintf(`
-type: HostnameGenerator
-name: hg-mes-reachable
-spec:
-  selector:
-    meshExternalService:
-      matchLabels:
-        k8s.kuma.io/namespace: %s
-  template: "{{ .DisplayName }}.mesh"
-`, namespaceOutside)
-
-	hostnameGeneratorMmzs := `
-type: HostnameGenerator
-name: hg-mmzs-reachable
-spec:
-  template: '{{ .DisplayName }}.global.mmzsreachable'
-  selector:
-    meshMultiZoneService:
-      matchLabels:
-        test-name: mmzsreachable
-`
 
 	mmzs := fmt.Sprintf(`
 type: MeshMultiZoneService
@@ -139,9 +112,6 @@ spec:
 		err := NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
-			Install(YamlUniversal(hostnameGeneratorMes)).
-			Install(YamlUniversal(hostnameGeneratorMs)).
-			Install(YamlUniversal(hostnameGeneratorMmzs)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).
 			Install(YamlUniversal(meshExternalService("external-service"))).
@@ -160,6 +130,12 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 				testserver.WithReachableBackends(reachableBackends),
+			)).
+			Install(testserver.Install(
+				testserver.WithName("client-server-namespace"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+				testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
 			)).
 			Install(testserver.Install(
 				testserver.WithName("client-server-no-access"),
@@ -265,26 +241,47 @@ spec:
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
+	It("should be able to connect to all services in the namespace", func() {
+		Eventually(func(g Gomega) {
+			// when
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "client-server-namespace", "first-test-server.reachable-backends.svc.cluster.local",
+				client.FromKubernetesPod(namespace, "client-server-namespace"),
+			)
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
+		Eventually(func(g Gomega) {
+			// when
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "client-server-namespace", "second-test-server.reachable-backends.svc.cluster.local",
+				client.FromKubernetesPod(namespace, "client-server-namespace"),
+			)
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
+	})
+
 	It("should be able to connect to reachable backends", func() {
 		Eventually(func(g Gomega) {
-			_, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "first-test-server.mesh",
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "client-server", "first-test-server.reachable-backends.svc.cluster.local",
+				client.FromKubernetesPod(namespace, "client-server"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").Should(Succeed())
+		// time.Sleep(1*time.Hour)
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "client-server", "external-service-reachable.extsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			_, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "external-service.mesh",
-				client.FromKubernetesPod(namespace, "client-server"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			_, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "other-zone-test-server.global.mmzsreachable",
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1, "client-server", "other-zone-test-server.mzsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -292,17 +289,6 @@ spec:
 	})
 
 	It("should not connect to non reachable service", func() {
-		Consistently(func(g Gomega) {
-			// when trying to connect to non-reachable services via Kuma DNS
-			response, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "second-test-server.mesh",
-				client.FromKubernetesPod(namespace, "client-server"),
-			)
-			// then it fails because Kuma DP has no such DNS
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
-
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
 			response, err := client.CollectFailure(
@@ -312,61 +298,42 @@ spec:
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 
-		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable services via Kuma DNS
-			response, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "not-accessible-es.mesh",
+			response, err = client.CollectFailure(
+				multizone.KubeZone1, "client-server", "not-accessible-es.extsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because Kuma DP has no such DNS
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(6))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 
-		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			response, err := client.CollectFailure(
+			response, err = client.CollectFailure(
 				multizone.KubeZone1, "client-server", "not-accessible-es.reachable-backends-non-mesh.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 
-		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable mesh multizone service via Kuma DNS
-			response, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server", "other-zone-not-accessible.global.mmzsreachable",
+			response, err = client.CollectFailure(
+				multizone.KubeZone1, "client-server", "other-zone-not-accessible.mzsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(6)))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
 
-		Consistently(func(g Gomega) {
-			// when trying to connect to non-reachable services via Kuma DNS
-			response, err := client.CollectFailure(
-				multizone.KubeZone1, "client-server-no-access", "second-test-server.mesh",
-				client.FromKubernetesPod(namespace, "client-server-no-access"),
-			)
-			// then it fails because Kuma DP has no such DNS
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
-
-		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			response, err := client.CollectFailure(
+			response, err = client.CollectFailure(
 				multizone.KubeZone1, "client-server-no-access", "second-test-server.reachable-backends.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "client-server-no-access"),
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "5s", "100ms", MustPassRepeatedly(3)).Should(Succeed())
+		}, "5s", "100ms").Should(Succeed())
 	})
 }

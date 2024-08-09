@@ -1308,7 +1308,13 @@ var _ = Describe("Dataplane", func() {
                   - kind: MeshService
                     name: third
                     labels:
-                      kuma.io/test: test`,
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: first.kuma
+                  - kind: MeshService
+                  - kind: MeshService
+                    namespace: xyz
+`,
 			expected: `
                 violations:
                 - field: networking.transparentProxing.reachableBackends.refs[0].kind
@@ -1318,7 +1324,13 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.transparentProxing.reachableBackends.refs[1].labels
                   message: labels cannot be defined when name is specified
                 - field: networking.transparentProxing.reachableBackends.refs[2].labels
-                  message: labels cannot be defined when name is specified`,
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackends.refs[3].name
+                  message: name cannot contains namespace
+                - field: networking.transparentProxing.reachableBackends.refs[4].name
+                  message: name or labels are required
+                - field: networking.transparentProxing.reachableBackends.refs[5].name
+                  message: name is required, when namespace is defined`,
 		}),
 	)
 })

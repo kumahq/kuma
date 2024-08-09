@@ -73,7 +73,7 @@ Chosen option: Support reachable and autoreachable services for `MeshService` an
 In the case of Kubernetes, we can introduce a new annotation that has a more structured model and better flexibility.
 
 ```yaml
-kuma.io/reachable-backend-refs: |
+kuma.io/reachable-backends: |
   refs:
   - kind: MeshService
     name: demo-app
@@ -123,12 +123,13 @@ message TransparentProxying {
         map<string, string> labels = 5;
     }
 
-    // List of reachable backend refs via transparent proxy when running with 
-    // MeshExternalService and MeshService. Setting an explicit list
-    // can dramatically improve the performance of the mesh. If not specified,
-    // all services in the mesh are reachable.
-    repeated ReachableBackendRef reachable_backends_ref = 7;
-    }
+    message ReachableBackends { repeated ReachableBackendRef refs = 1; }
+    // Reachable backend via transparent proxy when running with
+    // MeshExternalService, MeshService and MeshMultiZoneService. Setting an
+    // explicit list of refs can dramatically improve the performance of the
+    // mesh. If not specified, all services in the mesh are reachable.
+    ReachableBackends reachable_backends = 7;
+}
 ```
 
 Most of the fields are optional and may not be used simultaneously. We need to support the following cases:

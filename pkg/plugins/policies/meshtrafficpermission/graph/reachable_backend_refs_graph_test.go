@@ -343,7 +343,7 @@ var _ = Describe("Reachable Backends Graph", func() {
 		Entry("MeshSubset by app and kube service port", builders.TargetRefMeshSubset("app", "a", mesh_proto.KubePortTag, "1234")),
 	)
 
-	XIt("should match only dp with specific labels", func() {
+	It("should match only dp with specific labels", func() {
 		// given
 		services := []*meshservice_api.MeshServiceResource{
 			builders.MeshService().
@@ -352,7 +352,7 @@ var _ = Describe("Reachable Backends Graph", func() {
 				Build(),
 			builders.MeshService().
 				WithName("b").
-				WithDataplaneTagsSelectorKV("app", "b").
+				WithDataplaneTagsSelectorKV("app", "b", "k8s.kuma.io/namespace", "not-available").
 				Build(),
 		}
 
@@ -377,15 +377,13 @@ var _ = Describe("Reachable Backends Graph", func() {
 				Name: "a",
 			},
 		)).To(BeTrue())
-		// because we are removing tags for MTP that are not in a MeshService selector + origin and zone
-		// it passes MeshSubset with empty list and matches this service
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "a"},
 			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 				Kind: "MeshService",
 				Name: "b",
 			},
-		)).To(BeFalse()) // it's not selected by top-level target ref
+		)).To(BeFalse())
 	})
 
 	It("should not modify MeshTrafficPermission passed to the func when replacing tags in subsets", func() {

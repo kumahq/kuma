@@ -266,17 +266,23 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_TransparentProxying) validators.ValidationError {
 	var result validators.ValidationError
 	path := validators.RootedAt("reachableBackends.refs")
-	if tp != nil && tp.ReachableBackends != nil && tp.ReachableBackends.Refs != nil {
+	if tp != nil && tp.ReachableBackends != nil {
 		for i, backendRef := range tp.ReachableBackends.Refs {
 			switch backendRef.Kind {
 			case meshMultiZoneServiceKind, meshServiceKind, meshExternalServiceKind:
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
+			if backendRef.Name == "" && backendRef.Namespace == "" && len(backendRef.Labels) == 0 {
+				result.AddViolationAt(path.Index(i).Field("name"), "name or labels are required")
+			}
 			if backendRef.Name == "" && backendRef.Namespace != "" {
 				result.AddViolationAt(path.Index(i).Field("name"), "name is required, when namespace is defined")
 			}
-			if backendRef.Name != "" && len(backendRef.Labels) > 0 {
+			if s := strings.Split(backendRef.Name, "."); len(s) > 1 {
+				result.AddViolationAt(path.Index(i).Field("name"), "name cannot contains namespace")
+			}
+			if (backendRef.Name != "" || backendRef.Namespace != "") && len(backendRef.Labels) > 0 {
 				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")
 			}
 		}

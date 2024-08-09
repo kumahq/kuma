@@ -41,6 +41,7 @@ spec:
 			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
 				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(MTLSMeshKubernetes(meshName)).
@@ -116,6 +117,6 @@ spec:
 			)
 			g.Expect(err).To(Not(HaveOccurred()))
 			g.Expect(failures.Exitcode).To(Equal(6))
-		}, "30s", "1s").Should(Succeed())
+		}, "5s", "1s").Should(Succeed())
 	})
 }

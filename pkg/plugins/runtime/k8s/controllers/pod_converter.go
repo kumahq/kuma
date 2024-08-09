@@ -147,11 +147,11 @@ func (p *PodConverter) dataplaneFor(
 			dataplane.Networking.TransparentProxying.ReachableServices = reachableServicesValue
 			reachableServices = reachableServicesValue
 		}
-		if reachableBackendsRef, exist := annotations.GetString(metadata.KumaReachableBackendsRef); exist {
+		if reachableBackendsRef, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 			refs := ReachableBackendRefs{}
 			err := yaml.Unmarshal([]byte(reachableBackendsRef), &refs)
 			if err != nil {
-				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackendsRef)
+				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 			}
 			backendRefs := []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{}
 			for _, ref := range refs.Refs {
@@ -162,18 +162,12 @@ func (p *PodConverter) dataplaneFor(
 				if ref.Port != nil {
 					backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
 				}
-				if ref.Name != nil {
-					backendRef.Name = pointer.Deref(ref.Name)
-				}
-				if ref.Namespace != nil {
-					backendRef.Namespace = pointer.Deref(ref.Namespace)
-				}
+				backendRef.Name = pointer.Deref(ref.Name)
+				backendRef.Namespace = pointer.Deref(ref.Namespace)
 				backendRefs = append(backendRefs, backendRef)
 			}
 			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
-			if len(backendRefs) > 0 {
-				dataplane.Networking.TransparentProxying.ReachableBackends.Refs = backendRefs
-			}
+			dataplane.Networking.TransparentProxying.ReachableBackends.Refs = backendRefs
 		}
 	}
 
