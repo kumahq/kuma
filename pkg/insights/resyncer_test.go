@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -100,7 +101,7 @@ var _ = Describe("Insight Persistence", func() {
 			insight := core_mesh.NewMeshInsightResource()
 			err := rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
+			g.Expect(insight.Spec.Resources[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -325,7 +326,7 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should not count dataplane or secrets as a policy", func() {
+	It("should count dataplane secrets and mesh service as a resource but not as policy", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -333,6 +334,7 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = rm.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
+		Expect(samples2.MeshServiceBackendBuilder().WithMesh("mesh-1").Create(rm)).To(Succeed())
 
 		step(stepsToResync)
 
@@ -340,6 +342,11 @@ var _ = Describe("Insight Persistence", func() {
 		Eventually(func() error {
 			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
+
+		Expect(insight.Spec.Resources[string(core_mesh.DataplaneType)].Total).To(Equal(uint32(1)))
+		Expect(insight.Spec.Resources[string(system.SecretType)].Total).To(Equal(uint32(1)))
+		Expect(insight.Spec.Resources[string(meshservice_api.MeshServiceType)].Total).To(Equal(uint32(1)))
+
 		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
 		Expect(insight.Spec.Policies[string(system.SecretType)]).To(BeNil())
 		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
