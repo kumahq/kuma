@@ -33,13 +33,16 @@ const (
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
 
-type Configurer struct {
+// DeprecatedConfigurer should be only used for configuring old MeshService outbounds.
+// It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
+// Deprecated
+type DeprecatedConfigurer struct {
 	Subset   core_rules.Subset
 	Rules    core_rules.Rules
 	Protocol core_mesh.Protocol
 }
 
-func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
+func (c *DeprecatedConfigurer) ConfigureListener(ln *envoy_listener.Listener) error {
 	conf := c.getConf(c.Subset)
 
 	for _, fc := range ln.FilterChains {
@@ -58,19 +61,19 @@ func (c *Configurer) ConfigureListener(ln *envoy_listener.Listener) error {
 	return nil
 }
 
-func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
+func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
 	if route == nil {
 		return nil
 	}
 
-	defaultPolicy, err := c.getRouteRetryConfig(c.getConf(c.Subset))
+	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Subset), c.Protocol)
 	if err != nil {
 		return err
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
 			routeConfig := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, route.Name, false))
-			policy, err := c.getRouteRetryConfig(routeConfig)
+			policy, err := getRouteRetryConfig(routeConfig, c.Protocol)
 			if err != nil {
 				return err
 			}
@@ -90,11 +93,11 @@ func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error
 	return nil
 }
 
-func (c *Configurer) getRouteRetryConfig(conf *api.Conf) (*envoy_route.RetryPolicy, error) {
+func getRouteRetryConfig(conf *api.Conf, protocol core_mesh.Protocol) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
 		return nil, nil
 	}
-	switch c.Protocol {
+	switch protocol {
 	case "http":
 		return genHttpRetryPolicy(conf.HTTP)
 	case "grpc":
@@ -416,9 +419,55 @@ func ensureRetriableStatusCodes(policyRetryOn string) string {
 	return policyRetryOn
 }
 
-func (c *Configurer) getConf(subset core_rules.Subset) *api.Conf {
+func (c *DeprecatedConfigurer) getConf(subset core_rules.Subset) *api.Conf {
 	if c.Rules == nil {
 		return nil
 	}
 	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
+}
+
+type Configurer struct {
+	Conf     api.Conf
+	Protocol core_mesh.Protocol
+}
+
+func (c *Configurer) ConfigureListener(listener *envoy_listener.Listener) error {
+	for _, fc := range listener.FilterChains {
+		if c.Protocol == core_mesh.ProtocolTCP && c.Conf.TCP != nil && c.Conf.TCP.MaxConnectAttempt != nil {
+			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
+				proxy.MaxConnectAttempts = util_proto.UInt32(*c.Conf.TCP.MaxConnectAttempt)
+				return nil
+			})
+		} else {
+			return v3.UpdateHTTPConnectionManager(fc, func(manager *envoy_hcm.HttpConnectionManager) error {
+				return c.ConfigureRoute(manager.GetRouteConfig())
+			})
+		}
+	}
+
+	return nil
+}
+
+func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
+	if route == nil {
+		return nil
+	}
+
+	policy, err := getRouteRetryConfig(&c.Conf, c.Protocol)
+	if err != nil {
+		return err
+	}
+	if policy == nil {
+		return nil
+	}
+	for _, virtualHost := range route.VirtualHosts {
+		for _, route := range virtualHost.Routes {
+			switch a := route.GetAction().(type) {
+			case *envoy_route.Route_Route:
+				a.Route.RetryPolicy = policy
+			}
+		}
+	}
+
+	return nil
 }
