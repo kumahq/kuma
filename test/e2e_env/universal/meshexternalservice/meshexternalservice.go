@@ -31,6 +31,8 @@ mtls:
 networking:
   outbound:
     passthrough: false
+routing:
+  zoneEgress: true
 `, meshName))
 	}
 

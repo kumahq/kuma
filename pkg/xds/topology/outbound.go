@@ -32,13 +32,12 @@ func BuildExternalServicesEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	externalServices []*core_mesh.ExternalServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 	zone string,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	if !mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutbounds(ctx, outbound, externalServices, meshExternalServices, mesh, loader, zone)
+		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
 	}
 	return outbound
 }
@@ -625,20 +624,12 @@ func fillExternalServicesOutbounds(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
 	zone string,
 ) {
 	for _, externalService := range externalServices {
 		createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
-	}
-
-	for _, mes := range meshExternalServices {
-		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
-		if err != nil {
-			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-		}
 	}
 }
 
