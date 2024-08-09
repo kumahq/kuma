@@ -7,6 +7,9 @@
       "name": "web1-to-backend1",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "kuma.io/mesh": "default"
+      },
       "sources": [
         {
           "match": {
@@ -32,6 +35,9 @@
       "name": "web2-to-backend2",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "kuma.io/mesh": "default"
+      },
       "sources": [
         {
           "match": {

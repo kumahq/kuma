@@ -7,6 +7,9 @@
    "name": "gateway-builtin",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "labels": {
+    "kuma.io/mesh": "mesh1"
+   },
    "dataplane": {
     "networking": {
      "address": "127.0.0.1",
@@ -42,6 +45,9 @@
    "name": "gateway-delegated",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "labels": {
+    "kuma.io/mesh": "mesh1"
+   },
    "dataplane": {
     "networking": {
      "address": "127.0.0.1",

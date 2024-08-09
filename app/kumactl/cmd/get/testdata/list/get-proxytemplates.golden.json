@@ -6,14 +6,20 @@
       "mesh": "default",
       "name": "custom-template",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "kuma.io/mesh": "default"
+      }
     },
     {
       "type": "ProxyTemplate",
       "mesh": "default",
       "name": "another-template",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "labels": {
+        "kuma.io/mesh": "default"
+      }
     }
   ],
   "next": null

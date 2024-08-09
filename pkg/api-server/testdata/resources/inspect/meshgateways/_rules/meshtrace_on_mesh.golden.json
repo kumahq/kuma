@@ -3,7 +3,8 @@
  "resource": {
   "labels": {
    "k8s.kuma.io/namespace": "kuma-demo",
-   "kuma.io/display-name": "the-gateway"
+   "kuma.io/display-name": "the-gateway",
+   "kuma.io/mesh": "default"
   },
   "mesh": "default",
   "name": "the-gateway",
@@ -27,7 +28,8 @@
      {
       "labels": {
        "k8s.kuma.io/namespace": "kuma-demo",
-       "kuma.io/display-name": "default"
+       "kuma.io/display-name": "default",
+       "kuma.io/mesh": "default"
       },
       "mesh": "default",
       "name": "default",

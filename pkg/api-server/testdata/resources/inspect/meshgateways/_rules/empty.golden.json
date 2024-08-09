@@ -1,7 +1,9 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": {},
+  "labels": {
+   "kuma.io/mesh": "default"
+  },
   "mesh": "default",
   "name": "gw-1",
   "type": "MeshGateway"

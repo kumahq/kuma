@@ -129,6 +129,9 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	"type": "DataplaneOverview",
 	"name": "dp-1",
 	"mesh": "mesh1",
+	"labels": {
+		"kuma.io/mesh": "mesh1"
+	},
 	"creationTime": "2018-07-17T16:05:36.995Z",
 	"modificationTime": "2018-07-17T16:05:36.995Z",
 	"dataplane": {

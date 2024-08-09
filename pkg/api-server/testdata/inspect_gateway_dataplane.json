@@ -25,7 +25,10 @@
            "mesh": "default",
            "name": "hc-1",
            "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z"
+           "modificationTime": "0001-01-01T00:00:00Z",
+           "labels": {
+            "kuma.io/mesh": "default"
+           }
           }
          }
         },
@@ -39,7 +42,10 @@
            "mesh": "default",
            "name": "t-1",
            "creationTime": "0001-01-01T00:00:00Z",
-           "modificationTime": "0001-01-01T00:00:00Z"
+           "modificationTime": "0001-01-01T00:00:00Z",
+           "labels": {
+            "kuma.io/mesh": "default"
+           }
           }
          }
         }
@@ -56,7 +62,10 @@
    "mesh": "default",
    "name": "tl-1",
    "creationTime": "0001-01-01T00:00:00Z",
-   "modificationTime": "0001-01-01T00:00:00Z"
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "kuma.io/mesh": "default"
+   }
   }
  }
 }

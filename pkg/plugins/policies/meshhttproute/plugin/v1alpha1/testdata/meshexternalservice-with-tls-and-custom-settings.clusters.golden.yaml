@@ -13,12 +13,24 @@ resources:
                 address: example.com
                 portValue: 10000
           loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/mesh: default
+              envoy.transport_socket_match:
+                kuma.io/mesh: default
         - endpoint:
             address:
               socketAddress:
                 address: example2.com
                 portValue: 11111
           loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/mesh: default
+              envoy.transport_socket_match:
+                kuma.io/mesh: default
     name: meshexternalservice_example
     transportSocketMatches:
     - name: example.com

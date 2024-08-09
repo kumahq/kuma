@@ -3,7 +3,8 @@
   {
    "labels": {
     "k8s.kuma.io/namespace": "kuma-demo",
-    "kuma.io/display-name": "dp-3"
+    "kuma.io/display-name": "dp-3",
+    "kuma.io/mesh": "default"
    },
    "mesh": "default",
    "name": "dp-3",
