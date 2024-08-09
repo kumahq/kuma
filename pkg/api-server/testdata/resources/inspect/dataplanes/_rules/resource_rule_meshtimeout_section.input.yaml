@@ -1,0 +1,46 @@
+#/meshes/mesh-1/dataplanes/dp-1/_rules 200
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        app: backend
+        kuma.io/service: foo
+---
+type: MeshTimeout
+name: matched-for-rules-mt-1
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend-4
+        sectionName: super-port
+      default:
+        idleTimeout: 7s
+        connectionTimeout: 7s
+        http:
+          requestTimeout: 7s
+---
+type: MeshService
+name: backend-4
+mesh: mesh-1
+labels:
+  env: prod
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - name: super-port
+      port: 80
+      targetPort: 80
+      appProtocol: http

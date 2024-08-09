@@ -12,6 +12,40 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "connectionTimeout": "2s",
+       "idleTimeout": "20s",
+       "http": {
+        "requestTimeout": "10s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {
+         "k8s.kuma.io/namespace": "kuma-demo",
+         "kuma.io/display-name": "mt-on-gateway"
+        },
+        "mesh": "default",
+        "name": "mt-on-gateway",
+        "type": "Mesh"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {},
+      "mesh": "",
+      "name": "default",
+      "type": "Mesh"
+     },
+     "resourceSectionName": ""
+    }
+   ],
    "toRules": [
     {
      "conf": {
@@ -21,7 +55,7 @@
        "requestTimeout": "10s"
       }
      },
-     "matchers": [],
+     "matchers": null,
      "origin": [
       {
        "labels": {
@@ -63,6 +97,7 @@
      }
     ]
    },
+   "toResourceRules": null,
    "toRules": [],
    "type": "MeshProxyPatch",
    "warnings": []

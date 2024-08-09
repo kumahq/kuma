@@ -2416,6 +2416,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
+    ResourceRuleOrigin:
+      type: object
+      properties:
+        resourceMeta:
+          $ref: '#/components/schemas/Meta'
+        ruleIndex:
+          description: index of the to-item in the policy
+          type: integer
+    ResourceRule:
+      type: object
+      required:
+        - resourceMeta
+        - conf
+        - origin
+      properties:
+        resourceMeta:
+          $ref: '#/components/schemas/Meta'
+        resourceSectionName:
+          type: string
+        conf:
+          description: The actual conf generated
+          type: object
+          x-go-type: interface{}
+        origin:
+          type: array
+          description: >
+            The list of policies that contributed to the 'conf'. The order is
+            important as it reflects
+
+            in what order confs were merged to get the resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
     Inbound:
       type: object
       required:
@@ -2456,6 +2488,11 @@ components:
           description: a set of rules for the outbounds of this proxy
           items:
             $ref: '#/components/schemas/Rule'
+        toResourceRules:
+          type: array
+          description: a set of rules for the resources targeted by this proxy
+          items:
+            $ref: '#/components/schemas/ResourceRule'
         fromRules:
           type: array
           description: a set of rules for each inbound of this proxy
