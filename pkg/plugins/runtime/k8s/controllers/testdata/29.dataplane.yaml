@@ -1,0 +1,24 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc_80
+        kuma.io/zone: zone-1
+        version: "0.1"
+    transparentProxying:
+      ipFamilyMode: DualStack
+      reachableBackends: {}
+      redirectPortInbound: 15006
+      redirectPortOutbound: 15001

@@ -1,4 +1,4 @@
-package graph
+package services
 
 import (
 	"golang.org/x/exp/maps"
@@ -6,11 +6,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/xds/context"
+	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
 )
 
 var log = core.Log.WithName("rs-graph")
@@ -19,40 +17,6 @@ var SupportedTags = map[string]struct{}{
 	mesh_proto.KubeNamespaceTag: {},
 	mesh_proto.KubeServiceTag:   {},
 	mesh_proto.KubePortTag:      {},
-}
-
-type Graph struct {
-	rules map[string]core_rules.Rules
-}
-
-func NewGraph() *Graph {
-	return &Graph{
-		rules: map[string]core_rules.Rules{},
-	}
-}
-
-func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) bool {
-	if _, crossMeshTagExist := toTags[mesh_proto.MeshTag]; crossMeshTagExist {
-		// we cannot compute graph for cross mesh, so it's better to allow the traffic
-		return true
-	}
-	rule := r.rules[toTags[mesh_proto.ServiceTag]].Compute(core_rules.SubsetFromTags(fromTags))
-	if rule == nil {
-		return false
-	}
-	action := rule.Conf.(mtp_api.Conf).Action
-	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
-}
-
-func Builder(meshName string, resources context.Resources) context.ReachableServicesGraph {
-	services := BuildServices(
-		meshName,
-		resources.Dataplanes().Items,
-		resources.ExternalServices().Items,
-		resources.ZoneIngresses().Items,
-	)
-	mtps := resources.ListOrEmpty(mtp_api.MeshTrafficPermissionType).(*mtp_api.MeshTrafficPermissionResourceList)
-	return BuildGraph(services, mtps.Items)
 }
 
 // BuildServices we could just take result of xds_topology.VIPOutbounds, however it does not have a context of additional tags
@@ -95,52 +59,25 @@ func BuildServices(
 	return services
 }
 
-func BuildGraph(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) *Graph {
-	resources := context.Resources{
-		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{
-				Items: trimNotSupportedTags(mtps),
-			},
-		},
-	}
-
-	graph := NewGraph()
-
+func BuildRules(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_api.MeshTrafficPermissionResource) map[string]core_rules.Rules {
+	trimmedMtps := trimNotSupportedTags(mtps)
+	rules := map[string]core_rules.Rules{}
 	for service, tags := range services {
 		// build artificial dpp for matching
-		dp := mesh.NewDataplaneResource()
 		dpTags := maps.Clone(tags)
 		dpTags[mesh_proto.ServiceTag] = service
-		dp.Spec = &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Address: "1.1.1.1",
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Tags: dpTags,
-						Port: 1234,
-					},
-				},
-			},
-		}
-
-		matched, err := matchers.MatchedPolicies(mtp_api.MeshTrafficPermissionType, dp, resources)
+		rl, ok, err := graph_util.ComputeMtpRulesForTags(dpTags, trimmedMtps)
 		if err != nil {
 			log.Error(err, "service could not be matched. It won't be reached by any other service", "service", service)
 			continue // it's better to ignore one service that to break the whole graph
 		}
-
-		rl, ok := matched.FromRules.Rules[core_rules.InboundListener{
-			Address: "1.1.1.1",
-			Port:    1234,
-		}]
 		if !ok {
 			continue
 		}
-
-		graph.rules[service] = rl
+		rules[service] = rl
 	}
 
-	return graph
+	return rules
 }
 
 // trimNotSupportedTags replaces tags present in subsets of top-level target ref.
