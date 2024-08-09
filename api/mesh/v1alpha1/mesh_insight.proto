@@ -28,6 +28,7 @@ message MeshInsight {
   DataplaneStat dataplanes = 2;
 
   // PolicyStat defines statistic for all policies in general
+  // Deprecated: use resources
   message PolicyStat { uint32 total = 1; }
   map<string, PolicyStat> policies = 3;
 
@@ -68,4 +69,7 @@ message MeshInsight {
     DataplaneStat gatewayDelegated = 4;
   }
   DataplanesByType dataplanesByType = 7;
+
+  message ResourceStat { uint32 total = 1; }
+  map<string, ResourceStat> resources = 8;
 }
