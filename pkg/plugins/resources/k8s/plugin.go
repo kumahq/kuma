@@ -27,7 +27,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	if !ok {
 		return nil, nil, errors.Errorf("k8s resource converter hasn't been configured")
 	}
-	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
+	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter, pc.Config().Mode)
 	return store, core_store.NoTransactions{}, err
 }
 

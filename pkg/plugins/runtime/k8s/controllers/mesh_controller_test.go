@@ -45,7 +45,7 @@ var _ = Describe("MeshReconciler", func() {
 					return []string{string(secret.Type)}
 				}).
 			Build()
-		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
+		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter(), "zone")
 		Expect(err).ToNot(HaveOccurred())
 
 		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,

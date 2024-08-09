@@ -601,6 +601,8 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
+          labels:
+            k8s.kuma.io/namespace: demo
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
