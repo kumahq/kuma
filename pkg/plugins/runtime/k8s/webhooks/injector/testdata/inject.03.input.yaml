@@ -55,20 +55,30 @@ spec:
       readOnly: true
       mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
     livenessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      successThreshold: 1
+      failureThreshold: 5
+      timeoutSeconds: 5
       httpGet:
         path: "/health"
-        port: 8080
-        scheme: HTTP
+        port: 9999
+        scheme: HTTPS
+        httpHeaders:
+        - name: x-custom-header
+          value: "custom-value"
+    startupProbe:
+      grpc:
+        service: "/startup"
+        port: 5678
       initialDelaySeconds: 60
       timeoutSeconds: 5
       periodSeconds: 10
       successThreshold: 1
       failureThreshold: 5
     readinessProbe:
-      httpGet:
-        path: "/health"
-        port: 8080
-        scheme: HTTP
+      tcpSocket:
+        port: 1433
       timeoutSeconds: 1
       periodSeconds: 10
       successThreshold: 1

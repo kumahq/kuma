@@ -17,7 +17,7 @@
                 "probes": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
                     "additionalProperties": true,
-                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information."
+                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information. Deprecated: this feature will be removed for Universal; on Kubernetes, it's not needed anymore."
                 }
             },
             "additionalProperties": true,

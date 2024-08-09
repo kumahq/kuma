@@ -64,6 +64,10 @@ spec:
       value: /some/other/path
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     - name: NEW_ENV_VAR
       value: "123"
     - name: POD_NAME
@@ -147,7 +151,7 @@ spec:
     - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
-    - ""
+    - "9000"
     - --exclude-outbound-ports
     - ""
     - --verbose

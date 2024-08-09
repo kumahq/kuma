@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -13,6 +14,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -32,6 +34,8 @@ type DataplaneProxyFactory struct {
 	BuiltinDNS               runtime_k8s.BuiltinDNS
 	WaitForDataplane         bool
 	sidecarContainersEnabled bool
+	virtualProbesEnabled     bool
+	virtualProbesPort        uint32
 }
 
 func NewDataplaneProxyFactory(
@@ -42,6 +46,8 @@ func NewDataplaneProxyFactory(
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
 	sidecarContainersEnabled bool,
+	virtualProbesEnabled bool,
+	virtualProbesPort uint32,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:          controlPlaneURL,
@@ -51,6 +57,8 @@ func NewDataplaneProxyFactory(
 		BuiltinDNS:               builtinDNS,
 		WaitForDataplane:         waitForDataplane,
 		sidecarContainersEnabled: sidecarContainersEnabled,
+		virtualProbesEnabled:     virtualProbesEnabled,
+		virtualProbesPort:        virtualProbesPort,
 	}
 }
 
@@ -293,6 +301,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: "false",
 		}
 	}
+
 	if logLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaEnvoyLogLevel); exist {
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL",
@@ -303,6 +312,25 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL",
 			Value: complogLevel,
+		}
+	}
+
+	annotations := make(map[string]string)
+	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, podAnnotations, i.virtualProbesEnabled); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
+	}
+	if err := probes.SetVirtualProbesPortAnnotation(annotations, podAnnotations, i.virtualProbesPort); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
+	}
+	if vpEnabled, _, _ := metadata.Annotations(annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); vpEnabled {
+		virtualProbesPort, _, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
+		envVars["KUMA_VIRTUAL_PROBES_SERVER_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_VIRTUAL_PROBES_SERVER_ENABLED",
+			Value: "true",
+		}
+		envVars["KUMA_VIRTUAL_PROBES_SERVER_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_VIRTUAL_PROBES_SERVER_PORT",
+			Value: strconv.Itoa(int(virtualProbesPort)),
 		}
 	}
 

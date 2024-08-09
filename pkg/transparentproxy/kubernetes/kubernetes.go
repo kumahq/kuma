@@ -86,8 +86,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.RedirectInbound = false
 	}
 
-	podRedirect.ExcludeInboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
-
+	podRedirect.ExcludeInboundPorts = excludeVirtualProbePort(pod.Annotations)
 	podRedirect.RedirectPortInbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
 	if err != nil {
 		return nil, err
@@ -156,6 +155,22 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	}
 
 	return podRedirect, nil
+}
+
+func excludeVirtualProbePort(annotations map[string]string) string {
+	// the annotations are validated/defaulted in a previous step in injector.NewAnnotations, so we can safely ignore the errors here
+	inboundPortsToExclude, _ := metadata.Annotations(annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
+	vpEnabled, _, _ := metadata.Annotations(annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	if !vpEnabled {
+		return inboundPortsToExclude
+	}
+
+	vpPort, _ := metadata.Annotations(annotations).GetString(metadata.KumaVirtualProbesPortAnnotation)
+	if inboundPortsToExclude == "" {
+		return vpPort
+	}
+
+	return fmt.Sprintf("%s,%s", inboundPortsToExclude, vpPort)
 }
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {

@@ -64,6 +64,10 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_ENABLED
+      value: "true"
+    - name: KUMA_VIRTUAL_PROBES_SERVER_PORT
+      value: "9000"
     - name: POD_NAME
       valueFrom:
         fieldRef:
@@ -143,7 +147,7 @@ spec:
     - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
-    - 1234,5678
+    - 1234,5678,9000
     - --exclude-outbound-ports
     - 4321,7654
     - --verbose
